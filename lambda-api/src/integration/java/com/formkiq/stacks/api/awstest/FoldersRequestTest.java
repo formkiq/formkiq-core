@@ -41,16 +41,80 @@ import com.formkiq.client.model.AddFolderRequest;
 import com.formkiq.client.model.AddFolderResponse;
 import com.formkiq.client.model.DeleteFolderResponse;
 import com.formkiq.client.model.GetFoldersResponse;
+import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
 
 /**
  * 
  * GET/POST/DELETE /folders integration tests.
  *
  */
-public class FoldersRequestTest extends AbstractApiTest {
+public class FoldersRequestTest extends AbstractAwsIntegrationTest {
 
   /** JUnit Test Timeout. */
   private static final int TEST_TIMEOUT = 30;
+
+  /**
+   * Test POST/DELETE /folders.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  public void testDeleteFolders01() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      List<ApiClient> clients = getApiClients(siteId);
+
+      for (ApiClient apiClient : clients) {
+
+        DocumentFoldersApi foldersApi = new DocumentFoldersApi(apiClient);
+        String folder = "somefolder123";
+        AddFolderRequest req = new AddFolderRequest().path(folder);
+
+        // when
+        AddFolderResponse response = foldersApi.addFolder(req, siteId, null);
+
+        // then
+        assertNotNull(response.getIndexKey());
+        assertEquals("created folder", response.getMessage());
+
+        // when
+        DeleteFolderResponse deleteFolder =
+            foldersApi.deleteFolder(response.getIndexKey(), siteId, null);
+
+        // then
+        assertEquals("deleted folder", deleteFolder.getMessage());
+      }
+    }
+  }
+
+  /**
+   * Test GET /folders.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  public void testGetFolders01() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      List<ApiClient> clients = getApiClients(siteId);
+
+      for (ApiClient apiClient : clients) {
+
+        DocumentFoldersApi foldersApi = new DocumentFoldersApi(apiClient);
+
+        // when
+        GetFoldersResponse folderDocuments =
+            foldersApi.getFolderDocuments(siteId, null, null, null, null);
+
+        // then
+        assertNotNull(folderDocuments.getDocuments());
+      }
+    }
+  }
 
   /**
    * Test POST/GET /folders.
@@ -91,42 +155,6 @@ public class FoldersRequestTest extends AbstractApiTest {
             foldersApi.getFolderDocuments(siteId, response.getIndexKey(), "100", null, null);
         assertEquals(1, folderDocuments.getDocuments().size());
         assertEquals(folder + "/test.txt", folderDocuments.getDocuments().get(0).getPath());
-      }
-    }
-  }
-
-  /**
-   * Test POST/DELETE /folders.
-   * 
-   * @throws Exception Exception
-   */
-  @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
-  public void testDeleteFolders01() throws Exception {
-    // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-
-      List<ApiClient> clients = getApiClients(siteId);
-
-      for (ApiClient apiClient : clients) {
-
-        DocumentFoldersApi foldersApi = new DocumentFoldersApi(apiClient);
-        String folder = "somefolder123";
-        AddFolderRequest req = new AddFolderRequest().path(folder);
-
-        // when
-        AddFolderResponse response = foldersApi.addFolder(req, siteId, null);
-
-        // then
-        assertNotNull(response.getIndexKey());
-        assertEquals("created folder", response.getMessage());
-
-        // when
-        DeleteFolderResponse deleteFolder =
-            foldersApi.deleteFolder(response.getIndexKey(), siteId, null);
-
-        // then
-        assertEquals("deleted folder", deleteFolder.getMessage());
       }
     }
   }

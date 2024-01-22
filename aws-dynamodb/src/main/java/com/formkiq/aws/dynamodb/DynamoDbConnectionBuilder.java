@@ -24,7 +24,6 @@
 package com.formkiq.aws.dynamodb;
 
 import java.net.URI;
-import com.amazonaws.xray.interceptors.TracingInterceptor;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
@@ -55,9 +54,9 @@ public class DynamoDbConnectionBuilder {
         "software.amazon.awssdk.http.urlconnection.UrlConnectionSdkHttpService");
     Builder clientConfig = ClientOverrideConfiguration.builder();
 
-    if (enableAwsXray) {
-      clientConfig.addExecutionInterceptor(new TracingInterceptor());
-    }
+    // if (enableAwsXray) {
+    // clientConfig.addExecutionInterceptor(new TracingInterceptor());
+    // }
 
     this.builder = DynamoDbClient.builder().overrideConfiguration(clientConfig.build());
   }

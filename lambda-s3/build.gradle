@@ -14,23 +14,14 @@ configurations {
     integrationRuntime.extendsFrom testRuntime
 }
 
-def getCmd() {
-    String os = System.getProperty("os.name").toLowerCase()
-    return os.contains("win") ? "cmd" : "bash"
-}
-
-def getCmdParam() {
-    String os = System.getProperty("os.name").toLowerCase()
-    return os.contains("win") ? "/c" : "-c"
-}
-
 dependencies {
 
- 	annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.4.0'
+ 	annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.4.1'
  
 	implementation project(':aws-s3')
 	implementation project(':aws-sns')
 	implementation project(':aws-ssm')
+	implementation project(':aws-ses')
 	implementation project(':aws-dynamodb')
 	implementation project(':fkq-plugins')
 	implementation project(':dynamodb-documents')
@@ -39,43 +30,33 @@ dependencies {
 	implementation project(':fkq-lambda-services')
 	implementation project(':typesense')
 	implementation project(':http')
+	implementation project(':http-sigv4')
 	
-	implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.2'
+	implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.3'
     implementation group: 'com.google.code.gson', name: 'gson', version: '2.10.1'
     
 	implementation group: 'com.formkiq', name: 'lambda-runtime-graalvm', version:'2.3.1'
     implementation group: 'com.formkiq', name: 'graalvm-annotations', version: '1.2.0'
-	implementation group: 'com.formkiq.stacks', name: 'client', version:'1.11.1-SNAPSHOT'
     
 	implementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.7'
 	
 	testImplementation project(':aws-sqs')	
 	testImplementation project(':fkq-test-utils')
-    testImplementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.12.0'
+    testImplementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.13.0'
 
-	testImplementation group: 'software.amazon.awssdk', name: 'dynamodb', version: '2.20.121'
-	testImplementation group: 'software.amazon.awssdk', name: 's3', version: '2.20.121'
+	testImplementation group: 'software.amazon.awssdk', name: 'dynamodb', version: '2.20.140'
+	testImplementation group: 'software.amazon.awssdk', name: 's3', version: '2.20.140'
 
-	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.9.1'
-    testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.18.3'
-	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.18.3'
-    testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.18.3'
-	testImplementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.12.488'
+	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.10.0'
+    testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.19.0'
+	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.19.0'
+    testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.19.0'
+	testImplementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.12.543'
 	testImplementation group: 'org.mock-server', name: 'mockserver-netty', version: '5.15.0'
 }
 
 compileJava {
     options.annotationProcessorPath += configurations.runtimeClasspath
-}
-
-nativeImage { 
-	outputFileName = "server"
-	dockerImage = "ghcr.io/graalvm/graalvm-ce:ol9-java17-22.3.1"
-	mainClassName = "com.formkiq.lambda.runtime.graalvm.LambdaRuntime"
-    enableHttp = true
-    enableHttps = true
-    enableStatic = true
-	systemProperty = ["java.net.preferIPv4Stack=true"]
 }
 
 test {
@@ -88,43 +69,3 @@ task integrationTest(type: Test) {
     classpath = sourceSets.integration.runtimeClasspath
     useJUnitPlatform()
 }
-
-task buildZip(type: Zip) {
-	dependsOn test, graalvmNativeImage
-	inputs.files("${project.projectDir}/runtime/bootstrap", "${buildDir}/graalvm/server")
-  	outputs.files("${buildDir}/lambda-s3-graalvm.zip")
-  	
-	archiveFileName = "lambda-s3-graalvm.zip"
-    destinationDirectory = file("${buildDir}")
-    from("${project.projectDir}/runtime") {
-        include 'bootstrap'
-    }
-    from("${buildDir}/graalvm") {
-        include 'server'
-    }
-}
-
-task assembleTemplate {
-    dependsOn buildZip
-	inputs.files("src/main/resources/cloudformation/template-sar.yaml")
-	outputs.dir("${buildDir}/distributions/formkiq-core")
-
-	def randomtext = ('0'..'z').shuffled().take(10).join();
-	def sha256 = randomtext.digest('SHA-256')
-
-	doLast {
-		
-		copy {
-		  from layout.buildDirectory.file("${buildDir}/lambda-s3-graalvm.zip")
-	      into "${buildDir}/distributions/formkiq-core/sam/storage"
-	    }
-	    
-		exec {
-			commandLine getCmd(), getCmdParam(), "ytt --data-value hash=${sha256} -f src/main/resources/cloudformation/template-sar.yaml > ${buildDir}/distributions/formkiq-core/sam/storage/template.yaml"
-		}
-	}
-}
-
-graalvmNativeImage.dependsOn check
-
-build.dependsOn assembleTemplate

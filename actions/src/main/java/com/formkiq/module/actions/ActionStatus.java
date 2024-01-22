@@ -33,6 +33,10 @@ public enum ActionStatus {
   COMPLETE,
   /** FAILED. */
   FAILED,
+  /** Failed Retry. */
+  FAILED_RETRY,
+  /** In Queue. */
+  IN_QUEUE,
   /** Pending. */
   PENDING,
   /** Running. */

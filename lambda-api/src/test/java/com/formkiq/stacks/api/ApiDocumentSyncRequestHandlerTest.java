@@ -117,13 +117,11 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractRequestHandler {
       assertEquals(2, list.size());
 
       assertEquals("TYPESENSE", list.get(0).get("service"));
-      assertEquals(documentId, list.get(0).get("documentId"));
       assertEquals("FAILED", list.get(0).get("status"));
       assertEquals("METADATA", list.get(0).get("type"));
       assertNotNull(list.get(0).get("syncDate"));
 
       assertEquals("OPENSEARCH", list.get(1).get("service"));
-      assertEquals(documentId, list.get(1).get("documentId"));
       assertEquals("COMPLETE", list.get(1).get("status"));
       assertEquals("METADATA", list.get(1).get("type"));
       assertNotNull(list.get(1).get("syncDate"));

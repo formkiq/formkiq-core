@@ -77,6 +77,18 @@ public class WriteRequestBuilder {
   }
 
   /**
+   * Append {@link WriteRequest}.
+   * 
+   * @param tableName {@link String}
+   * @param writes {@link List} {@link WriteRequest}
+   * @return {@link WriteRequestBuilder}
+   */
+  public WriteRequestBuilder append(final String tableName, final List<WriteRequest> writes) {
+    this.items.put(tableName, writes);
+    return this;
+  }
+
+  /**
    * Append {@link Map} {@link AttributeValue}.
    * 
    * @param tableName {@link String}
@@ -151,6 +163,7 @@ public class WriteRequestBuilder {
           BatchWriteItemRequest batch =
               BatchWriteItemRequest.builder().requestItems(Map.of(e.getKey(), writelist)).build();
           dbClient.batchWriteItem(batch);
+
           write = true;
         }
       }

@@ -25,7 +25,6 @@ package com.formkiq.module.ocr;
 
 import java.util.List;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 
 /**
@@ -64,9 +63,9 @@ public interface DocumentOcrService {
    * 
    * @param siteId {@link String}
    * @param documentId {@link String}
-   * @return {@link DynamicObject}
+   * @return {@link Ocr}
    */
-  DynamicObject get(String siteId, String documentId);
+  Ocr get(String siteId, String documentId);
 
   /**
    * Get / Find OCR Document S3 Key.
@@ -91,9 +90,10 @@ public interface DocumentOcrService {
   /**
    * Save {@link Ocr}.
    * 
+   * @param siteId {@link String}
    * @param ocr {@link Ocr}
    */
-  void save(Ocr ocr);
+  void save(String siteId, Ocr ocr);
 
   /**
    * Set Optical character recognition of Document.

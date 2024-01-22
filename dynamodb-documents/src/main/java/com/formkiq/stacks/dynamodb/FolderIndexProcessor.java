@@ -24,6 +24,7 @@
 package com.formkiq.stacks.dynamodb;
 
 import java.io.IOException;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import com.formkiq.aws.dynamodb.DynamicObject;
@@ -97,9 +98,11 @@ public interface FolderIndexProcessor {
    * @param path {@link String}
    * @param pathType {@link String}
    * @param userId {@link String}
+   * @param nowTimestamp {@link Date}
    * @return {@link List} {@link FolderIndexRecordExtended}
    */
-  List<FolderIndexRecordExtended> get(String siteId, String path, String pathType, String userId);
+  List<FolderIndexRecordExtended> get(String siteId, String path, String pathType, String userId,
+      Date nowTimestamp);
 
   /**
    * Get Folder Index by documentId.

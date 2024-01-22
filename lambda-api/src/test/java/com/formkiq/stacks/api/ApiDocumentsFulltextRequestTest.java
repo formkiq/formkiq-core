@@ -49,18 +49,18 @@ import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.FormKiqApiExtension;
 import com.formkiq.testutils.aws.JwtTokenEncoder;
 import com.formkiq.testutils.aws.LocalStackExtension;
-import com.formkiq.testutils.aws.TypeSenseExtension;
+import com.formkiq.testutils.aws.TypesenseExtension;
 
 /** Unit Tests for request /documents/{documentId}/fulltext. */
 @ExtendWith(LocalStackExtension.class)
 @ExtendWith(DynamoDbExtension.class)
-@ExtendWith(TypeSenseExtension.class)
+@ExtendWith(TypesenseExtension.class)
 public class ApiDocumentsFulltextRequestTest {
-
+  /** {@link FormKiQResponseCallback}. */
+  private static final FormKiQResponseCallback CALLBACK = new FormKiQResponseCallback();
   /** FormKiQ Server. */
   @RegisterExtension
-  static FormKiqApiExtension server =
-      new FormKiqApiExtension().setCallback(new FormKiQResponseCallback());
+  static FormKiqApiExtension server = new FormKiqApiExtension(CALLBACK);
   /** {@link ApiClient}. */
   private ApiClient client =
       Configuration.getDefaultApiClient().setReadTimeout(0).setBasePath(server.getBasePath());

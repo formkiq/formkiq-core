@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+<!DOCTYPE import-control PUBLIC "-//Puppy Crawl//DTD Import Control 1.1//EN" "http://www.puppycrawl.com/dtds/import_control_1_1.dtd">
+
+<import-control pkg="com.formkiq">
+	<subpackage name="server">
+		
+		<allow pkg="io.netty.bootstrap" />
+		<allow pkg="io.netty.buffer" />
+		<allow pkg="io.netty.channel" />
+		<allow pkg="io.netty.handler.codec" />
+		<allow pkg="io.netty.handler.codec.http" />
+		<allow pkg="io.netty.handler.logging" />
+		<allow pkg="io.netty.handler.stream" />
+		<allow pkg="io.netty.util" />
+
+		<allow pkg="java.nio.charset" />
+		<allow pkg="java.io" />
+		<allow pkg="java.net" />
+		<allow pkg="java.util" />
+		<allow pkg="java.security" />
+		
+		<allow pkg="io.minio" />
+		<allow pkg="io.minio.errors" />
+		<allow pkg="io.minio.messages" />
+						
+		<allow pkg="com.amazonaws.services.lambda.runtime" />
+		<allow pkg="com.formkiq.aws.services.lambda" />
+		<allow pkg="com.formkiq.aws.dynamodb" />
+		<allow pkg="com.formkiq.aws.s3" />
+		<allow pkg="com.formkiq.aws.sns" />
+		<allow pkg="com.formkiq.aws.sqs" />
+		<allow pkg="com.formkiq.stacks.dynamodb" />
+		<allow pkg="com.formkiq.module.lambda.typesense" />
+		<allow pkg="com.formkiq.stacks.lambda.s3" />
+		
+		<allow pkg="org.apache.commons.cli" />
+		
+		<allow pkg="com.formkiq.module.lambdaservices" />
+		<allow pkg="com.formkiq.aws.ssm" />
+		<allow pkg="com.formkiq.lambda.runtime.graalvm" />
+		<allow pkg="com.formkiq.plugins.tagschema" />
+		<allow pkg="com.formkiq.stacks.api" />
+		<allow pkg="com.google.gson" />
+		
+		<allow pkg="software.amazon.awssdk.auth.credentials" />
+		<allow pkg="software.amazon.awssdk.regions" />
+		<allow pkg="software.amazon.awssdk.services.dynamodb" />
+		<allow pkg="software.amazon.awssdk.utils" />
+
+	</subpackage>
+
+</import-control>

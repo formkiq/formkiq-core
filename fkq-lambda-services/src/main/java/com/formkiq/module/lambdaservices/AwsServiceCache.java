@@ -25,6 +25,7 @@ package com.formkiq.module.lambdaservices;
 
 import java.util.HashMap;
 import java.util.Map;
+import software.amazon.awssdk.regions.Region;
 
 /**
  * Get Aws Services from Cache.
@@ -32,31 +33,34 @@ import java.util.Map;
  */
 public class AwsServiceCache {
 
-  /** {@link AwsServiceExtension}. */
-  private static final Map<Class<?>, AwsServiceExtension<?>> EXTENSIONS = new HashMap<>();
-
-  /**
-   * Registers an {@link AwsServiceExtension}.
-   * 
-   * @param clazz {@link Class}
-   * @param <T> Type of Class
-   * @param extension {@link AwsServiceExtension}
-   */
-  public static <T> void register(final Class<T> clazz, final AwsServiceExtension<T> extension) {
-    EXTENSIONS.put(clazz, extension);
-  }
-
   /** Is Debug Mode. */
   private boolean debug;
+  /** Enable X Ray. */
+  private boolean enableXray;
   /** Environment {@link Map}. */
   private Map<String, String> environment;
+  /** {@link AwsServiceExtension}. */
+  private final Map<Class<?>, AwsServiceExtension<?>> extensions = new HashMap<>();
   /** FormKiQ Type. */
   private String formKiQType;
+  /** {@link Region}. */
+  private Region region;
 
   /**
    * constructor.
    */
   public AwsServiceCache() {}
+
+  /**
+   * Contains {@link AwsServiceExtension}.
+   * 
+   * @param <T> Type of Class.
+   * @param clazz {@link Class}
+   * @return Class instance
+   */
+  public <T> boolean containsExtension(final Class<T> clazz) {
+    return this.extensions.containsKey(clazz);
+  }
 
   /**
    * Is Debug.
@@ -79,6 +83,36 @@ public class AwsServiceCache {
   }
 
   /**
+   * De-register Extension.
+   * 
+   * @param <T> Type of Class
+   * @param clazz {@link Class}
+   */
+  public <T> void deregister(final Class<T> clazz) {
+    this.extensions.remove(clazz);
+  }
+
+  /**
+   * Get Enable X Ray.
+   * 
+   * @return boolean
+   */
+  public boolean enableXray() {
+    return this.enableXray;
+  }
+
+  /**
+   * Set Enable X Ray.
+   * 
+   * @param enabled boolean
+   * @return {@link AwsServiceCache}
+   */
+  public AwsServiceCache enableXray(final boolean enabled) {
+    this.enableXray = enabled;
+    return this;
+  }
+
+  /**
    * Get Environment parameters.
    * 
    * @return {@link Map}
@@ -94,7 +128,7 @@ public class AwsServiceCache {
    * @return {@link AwsServiceCache}
    */
   public AwsServiceCache environment(final Map<String, String> map) {
-    this.environment = map;
+    this.environment = new HashMap<>(map);
     this.formKiQType = map.containsKey("FormKiQType") ? map.get("FormKiQType") : "core";
     return this;
   }
@@ -127,7 +161,30 @@ public class AwsServiceCache {
    */
   @SuppressWarnings("unchecked")
   public <T> T getExtension(final Class<T> clazz) {
-    return EXTENSIONS.containsKey(clazz) ? (T) EXTENSIONS.get(clazz).loadService(this) : null;
+    if (this.extensions.containsKey(clazz)) {
+      return (T) this.extensions.get(clazz).loadService(this);
+    }
+
+    throw new RuntimeException("class " + clazz.getName() + " is not registered");
+  }
+
+  /**
+   * Load {@link AwsServiceExtension}.
+   * 
+   * @param <T> Type of Class.
+   * @param clazz {@link Class}
+   * @return Class instance
+   */
+  @SuppressWarnings("unchecked")
+  public <T> T getExtensionOrNull(final Class<T> clazz) {
+
+    T result = null;
+
+    if (this.extensions.containsKey(clazz)) {
+      result = (T) this.extensions.get(clazz).loadService(this);
+    }
+
+    return result;
   }
 
   /**
@@ -138,5 +195,36 @@ public class AwsServiceCache {
    */
   public boolean hasModule(final String module) {
     return "true".equals(environment("MODULE_" + module));
+  }
+
+  /**
+   * Get {@link Region}.
+   * 
+   * @return {@link Region}
+   */
+  public Region region() {
+    return this.region;
+  }
+
+  /**
+   * Set {@link Region}.
+   * 
+   * @param awsRegion {@link Region}
+   * @return {@link AwsServiceCache}
+   */
+  public AwsServiceCache region(final Region awsRegion) {
+    this.region = awsRegion;
+    return this;
+  }
+
+  /**
+   * Registers an {@link AwsServiceExtension}.
+   * 
+   * @param clazz {@link Class}
+   * @param <T> Type of Class
+   * @param extension {@link AwsServiceExtension}
+   */
+  public <T> void register(final Class<T> clazz, final AwsServiceExtension<T> extension) {
+    this.extensions.put(clazz, extension);
   }
 }

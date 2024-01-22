@@ -23,9 +23,11 @@
  */
 package com.formkiq.aws.dynamodb;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 
 /**
@@ -43,6 +45,14 @@ public interface DynamoDbService {
    * @return boolean
    */
   boolean deleteItem(AttributeValue pk, AttributeValue sk);
+
+  /**
+   * Delete Items.
+   * 
+   * @param attrs {@link Collection} {@link Map} {@link AttributeValue}
+   * @return boolean
+   */
+  boolean deleteItems(Collection<Map<String, AttributeValue>> attrs);
 
   /**
    * Whether Database Record Exists.
@@ -75,10 +85,21 @@ public interface DynamoDbService {
   /**
    * Batch Get a number of Keys.
    * 
+   * @param config {@link BatchGetConfig}
    * @param keys {@link List}
    * @return {@link List}
    */
-  List<Map<String, AttributeValue>> getBatch(List<Map<String, AttributeValue>> keys);
+  List<Map<String, AttributeValue>> getBatch(BatchGetConfig config,
+      List<Map<String, AttributeValue>> keys);
+
+  /**
+   * Move Records.
+   * 
+   * @param attrs {@link Collection} {@link Map}
+   * @param func {@link MoveAttributeFunction}
+   * @return boolean
+   */
+  boolean moveItems(Collection<Map<String, AttributeValue>> attrs, MoveAttributeFunction func);
 
   /**
    * Put DynamoDb Record.
@@ -132,11 +153,22 @@ public interface DynamoDbService {
   /**
    * Update DynamoDB Record.
    * 
-   * @param pk {@link String}
-   * @param sk {@link String}
+   * @param pk {@link AttributeValue}
+   * @param sk {@link AttributeValue}
    * @param updateValues {@link Map}
    * @return {@link Map}
    */
-  Map<String, AttributeValue> updateFields(AttributeValue pk, AttributeValue sk,
+  Map<String, AttributeValue> updateItem(AttributeValue pk, AttributeValue sk,
+      Map<String, AttributeValueUpdate> updateValues);
+
+  /**
+   * Update DynamoDB Record.
+   * 
+   * @param pk {@link AttributeValue}
+   * @param sk {@link AttributeValue}
+   * @param updateValues {@link Map}
+   * @return {@link Map}
+   */
+  Map<String, AttributeValue> updateValues(AttributeValue pk, AttributeValue sk,
       Map<String, AttributeValue> updateValues);
 }

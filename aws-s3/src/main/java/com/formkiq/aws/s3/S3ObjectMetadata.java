@@ -82,7 +82,8 @@ public class S3ObjectMetadata {
    * @return {@link Map}
    */
   public Map<String, String> getMetadata() {
-    return Collections.unmodifiableMap(this.metadata);
+    return this.metadata != null ? Collections.unmodifiableMap(this.metadata)
+        : Collections.emptyMap();
   }
 
   /**

@@ -25,23 +25,37 @@ package com.formkiq.stacks.api;
 
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
+import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
+import com.formkiq.aws.s3.S3AwsServiceRegistry;
+import com.formkiq.aws.sns.SnsAwsServiceRegistry;
+import com.formkiq.aws.sqs.SqsAwsServiceRegistry;
+import com.formkiq.aws.ssm.SmsAwsServiceRegistry;
 import com.formkiq.graalvm.annotations.Reflectable;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPluginEmpty;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
-import software.amazon.awssdk.regions.Region;
 
 /** {@link RequestStreamHandler} for handling API Gateway 'GET' requests. */
 @Reflectable
 public class CoreRequestHandler extends AbstractCoreRequestHandler {
 
+  /** {@link AwsServiceCache}. */
+  private static AwsServiceCache serviceCache;
+
   static {
 
-    if (System.getenv("AWS_REGION") != null) {
-      AbstractCoreRequestHandler.configureHandler(System.getenv(),
-          Region.of(System.getenv("AWS_REGION")), EnvironmentVariableCredentialsProvider.create(),
-          Map.of(), new DocumentTagSchemaPluginEmpty());
-    }
+    serviceCache = new AwsServiceCacheBuilder(System.getenv(), Map.of(),
+        EnvironmentVariableCredentialsProvider.create())
+        .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
+            new SnsAwsServiceRegistry(), new SqsAwsServiceRegistry(), new SmsAwsServiceRegistry())
+        .build();
 
-    AbstractCoreRequestHandler.buildUrlMap();
+    initialize(serviceCache, new DocumentTagSchemaPluginEmpty());
+  }
+
+  @Override
+  public AwsServiceCache getAwsServices() {
+    return serviceCache;
   }
 }

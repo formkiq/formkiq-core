@@ -61,7 +61,12 @@ public class HttpRequestToApiHttpRequest implements Function<HttpRequest, ApiHtt
   @Override
   public ApiHttpRequest apply(final HttpRequest httpRequest) {
 
-    String authorization = httpRequest.getHeader("Authorization").get(0);
+    List<String> headers = httpRequest.getHeader("Authorization");
+    if (headers.isEmpty()) {
+      throw new RuntimeException("missing 'Authorization' header");
+    }
+
+    String authorization = headers.get(0);
     JwtTokenDecoder decoder = new JwtTokenDecoder(authorization);
 
     String path = httpRequest.getPath().getValue();

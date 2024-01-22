@@ -6,3 +6,8 @@ dependencies {
 	implementation project(':fkq-lambda-services')
 	implementation project(':fkq-validation')
 }
+
+test {
+  failFast = true
+  useJUnitPlatform() 
+}

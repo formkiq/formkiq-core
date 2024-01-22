@@ -23,6 +23,7 @@
  */
 package com.formkiq.aws.services.lambda;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_BAD_REQUEST;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_ERROR;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_FORBIDDEN;
@@ -275,6 +276,11 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
     return event;
   }
 
+  private ApiRequestHandlerInterceptor getApiRequestHandlerInterceptor(
+      final AwsServiceCache awsServices) {
+    return awsServices.getExtensionOrNull(ApiRequestHandlerInterceptor.class);
+  }
+
   /**
    * Get {@link AwsServiceCache}.
    *
@@ -314,6 +320,16 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
    */
   public abstract Map<String, ApiGatewayRequestHandler> getUrlMap();
 
+  /**
+   * Final Request Handler.
+   * 
+   * @param requestContext {@link Context}
+   * @param input {@link String}
+   */
+  public void handleOtherRequest(final Context requestContext, final String input) {
+    // empty
+  }
+
   @Override
   public void handleRequest(final InputStream input, final OutputStream output,
       final Context context) throws IOException {
@@ -332,12 +348,17 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
     } else {
 
-      logger.log(str);
-      LambdaInputRecords records = this.gson.fromJson(str, LambdaInputRecords.class);
-      for (LambdaInputRecord record : records.getRecords()) {
-        if ("aws:sqs".equals(record.getEventSource())) {
-          handleSqsRequest(logger, awsServices, record);
+      if (str.contains("aws:sqs")) {
+        LambdaInputRecords records = this.gson.fromJson(str, LambdaInputRecords.class);
+        for (LambdaInputRecord record : records.getRecords()) {
+          if ("aws:sqs".equals(record.getEventSource())) {
+            handleSqsRequest(logger, awsServices, record);
+          }
         }
+
+      } else {
+
+        handleOtherRequest(context, str);
       }
     }
   }
@@ -424,7 +445,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
       final ApiAuthorization authorization, final Optional<Boolean> hasAccess) {
 
     AuthorizationHandler authorizationHandler =
-        getAwsServices().getExtension(AuthorizationHandler.class);
+        getAwsServices().getExtensionOrNull(AuthorizationHandler.class);
 
     Optional<Boolean> isAuthorized = hasAccess;
 
@@ -520,19 +541,14 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
     try {
 
-      ApiAuthorizationInterceptor interceptor =
-          awsServices.getExtension(ApiAuthorizationInterceptor.class);
-
-      if (interceptor != null) {
-        interceptor.awsServiceCache(awsServices);
-      }
+      ApiAuthorizationInterceptor interceptor = setupApiAuthorizationInterceptor(awsServices);
 
       ApiAuthorization authorization =
           new ApiAuthorizationBuilder().interceptors(interceptor).build(event);
       log(logger, event, authorization);
 
       ApiRequestHandlerInterceptor requestInterceptor =
-          awsServices.getExtension(ApiRequestHandlerInterceptor.class);
+          getApiRequestHandlerInterceptor(awsServices);
 
       executeRequestInterceptor(requestInterceptor, event, awsServices, authorization);
 
@@ -622,9 +638,9 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
       final ApiGatewayRequestEvent event, final ApiRequestHandlerResponse resp)
       throws BadException {
 
-    String webnotify = event.getQueryStringParameter("webnotify");
+    String websocket = event.getQueryStringParameter("ws");
 
-    if ("true".equals(webnotify)) {
+    if ("true".equals(websocket)) {
 
       AwsServiceCache aws = getAwsServices();
       switch (resp.getStatus()) {
@@ -635,26 +651,34 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
           String body = getBodyAsString(event);
           String documentId = event.getPathParameters().get("documentId");
 
-          Map<String, String> m = new HashMap<>();
-          if (siteId != null) {
-            m.put("siteId", siteId);
-          }
-
           if (documentId != null) {
+
+            Map<String, String> m = new HashMap<>();
+            m.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
             m.put("documentId", documentId);
+            m.put("message", body);
+
+            String json = this.gson.toJson(m);
+            SqsService sqsService = aws.getExtension(SqsService.class);
+            sqsService.sendMessage(aws.environment("WEBSOCKET_SQS_URL"), json);
           }
-
-          m.put("message", body);
-
-          String json = this.gson.toJson(m);
-          SqsService sqsService = aws.getExtension(SqsService.class);
-          sqsService.sendMessage(aws.environment("WEBSOCKET_SQS_URL"), json);
           break;
 
         default:
           break;
       }
     }
+  }
+
+  private ApiAuthorizationInterceptor setupApiAuthorizationInterceptor(
+      final AwsServiceCache awsServices) {
+    ApiAuthorizationInterceptor interceptor =
+        awsServices.getExtensionOrNull(ApiAuthorizationInterceptor.class);
+
+    if (interceptor != null) {
+      interceptor.awsServiceCache(awsServices);
+    }
+    return interceptor;
   }
 
   private String toStringFromMap(final Map<String, String> map) {

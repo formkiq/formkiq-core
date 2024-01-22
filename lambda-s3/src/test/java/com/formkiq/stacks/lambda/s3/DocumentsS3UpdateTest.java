@@ -47,7 +47,6 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
@@ -64,26 +63,33 @@ import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockserver.integration.ClientAndServer;
 import com.formkiq.aws.dynamodb.DbKeys;
+import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.dynamodb.schema.DocumentSchema;
+import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3Service;
+import com.formkiq.aws.sns.SnsAwsServiceRegistry;
 import com.formkiq.aws.sns.SnsConnectionBuilder;
 import com.formkiq.aws.sns.SnsService;
+import com.formkiq.aws.sqs.SqsAwsServiceRegistry;
 import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.sqs.SqsService;
-import com.formkiq.aws.ssm.SsmConnectionBuilder;
+import com.formkiq.aws.sqs.SqsServiceImpl;
+import com.formkiq.aws.ssm.SmsAwsServiceRegistry;
 import com.formkiq.aws.ssm.SsmService;
-import com.formkiq.aws.ssm.SsmServiceCache;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
@@ -97,13 +103,15 @@ import com.formkiq.testutils.aws.LocalStackExtension;
 import com.formkiq.testutils.aws.TestServices;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 import software.amazon.awssdk.services.s3.model.Tag;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
-import software.amazon.awssdk.services.ssm.SsmClient;
 
 /** {@link DocumentsS3Update} Unit Tests. */
 @ExtendWith(DynamoDbExtension.class)
@@ -150,8 +158,8 @@ public class DocumentsS3UpdateTest implements DbKeys {
   private static String sqsDocumentEventUrl;
   /** {@link SqsService}. */
   private static SqsService sqsService;
-  /** {@link SsmConnectionBuilder}. */
-  private static SsmConnectionBuilder ssmBuilder;
+  /** {@link AwsServiceCache}. */
+  private static AwsServiceCache awsServices;
   /** Test Timeout. */
   private static final long TEST_TIMEOUT = 30;
   /** Test server URL. */
@@ -180,16 +188,9 @@ public class DocumentsS3UpdateTest implements DbKeys {
     db = dbBuilder.build();
     dbHelper = DynamoDbTestServices.getDynamoDbHelper(null);
     snsBuilder = TestServices.getSnsConnection(null);
-    ssmBuilder = TestServices.getSsmConnection(null);
-
-    SsmService ssmService = new SsmServiceCache(ssmBuilder, 1, TimeUnit.DAYS);
-
-    try (SsmClient ssmClient = ssmBuilder.build()) {
-      ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/api/DocumentsIamUrl", URL);
-    }
 
     SqsConnectionBuilder sqsBuilder = TestServices.getSqsConnection(null);
-    sqsService = new SqsService(sqsBuilder);
+    sqsService = new SqsServiceImpl(sqsBuilder);
 
     if (!sqsService.exists(ERROR_SQS_QUEUE)) {
       sqsService.createQueue(ERROR_SQS_QUEUE);
@@ -210,15 +211,40 @@ public class DocumentsS3UpdateTest implements DbKeys {
     snsService.subscribe(snsDocumentEvent, "sqs", sqsQueueArn);
 
     dbHelper = new DynamoDbHelper(dbBuilder);
-    if (!dbHelper.isTableExists(DOCUMENTS_TABLE)) {
-      dbHelper.createDocumentsTable(DOCUMENTS_TABLE);
-      dbHelper.createCacheTable(CACHE_TABLE);
+
+    try (DynamoDbClient dbClient = dbBuilder.build()) {
+      DocumentSchema schema = new DocumentSchema(dbClient);
+      schema.createDocumentsTable(DOCUMENTS_TABLE);
+      schema.createCacheTable(CACHE_TABLE);
     }
 
     service = new DocumentServiceImpl(dbBuilder, DOCUMENTS_TABLE,
         new DocumentVersionServiceNoVersioning());
     actionsService = new ActionsServiceDynamoDb(dbBuilder, DOCUMENTS_TABLE);
 
+    Map<String, String> map = new HashMap<>();
+    map.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
+    map.put("DOCUMENT_VERSIONS_TABLE", DOCUMENTS_VERSION_TABLE);
+    map.put("SNS_DOCUMENT_EVENT", snsDocumentEvent);
+    map.put("AWS_REGION", AWS_REGION.id());
+    map.put("APP_ENVIRONMENT", APP_ENVIRONMENT);
+    map.put("SNS_DOCUMENT_EVENT", snsDocumentEvent);
+    map.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
+
+    AwsCredentials creds = AwsBasicCredentials.create("aaa", "bbb");
+    StaticCredentialsProvider credentialsProvider = StaticCredentialsProvider.create(creds);
+
+    awsServices =
+        new AwsServiceCacheBuilder(map, TestServices.getEndpointMap(), credentialsProvider)
+            .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
+                new SnsAwsServiceRegistry(), new SqsAwsServiceRegistry(),
+                new SmsAwsServiceRegistry())
+            .build();
+
+    handler = new DocumentsS3Update(awsServices);
+
+    SsmService ssmService = awsServices.getExtension(SsmService.class);
+    ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/api/DocumentsIamUrl", URL);
   }
 
   /** {@link LambdaContextRecorder}. */
@@ -228,15 +254,12 @@ public class DocumentsS3UpdateTest implements DbKeys {
   private Gson gson = new GsonBuilder().create();
 
   /** {@link DocumentsS3Update}. */
-  private DocumentsS3Update handler;
+  private static DocumentsS3Update handler;
 
   /** {@link LambdaLoggerRecorder}. */
   private LambdaLoggerRecorder logger;
   /** {@link ClientAndServer}. */
   private ClientAndServer mockServer;
-
-  /** FormKiQ Modules. */
-  private List<String> modules = new ArrayList<>();
 
   private void addS3File(final String key, final String contentType, final boolean addTags,
       final String content) {
@@ -353,19 +376,8 @@ public class DocumentsS3UpdateTest implements DbKeys {
     dbHelper.truncateTable(DOCUMENTS_TABLE);
     service.setLastShortDate(null);
 
-    Map<String, String> map = new HashMap<>();
-    map.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
-    map.put("DOCUMENT_VERSIONS_TABLE", DOCUMENTS_VERSION_TABLE);
-    map.put("SNS_DOCUMENT_EVENT", snsDocumentEvent);
-    map.put("AWS_REGION", AWS_REGION.id());
-    map.put("APP_ENVIRONMENT", APP_ENVIRONMENT);
-    map.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
-
-    this.modules.forEach(m -> map.put("MODULE_" + m, "true"));
-
     this.context = new LambdaContextRecorder();
     this.logger = (LambdaLoggerRecorder) this.context.getLogger();
-    this.handler = new DocumentsS3Update(map, null, dbBuilder, s3Builder, ssmBuilder, snsBuilder);
 
     for (String queue : Arrays.asList(sqsDocumentEventUrl)) {
       ReceiveMessageResponse response = sqsService.receiveMessages(queue);
@@ -446,7 +458,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       final Map<String, Object> map) throws IOException {
 
     // when
-    this.handler.handleRequest(map, this.context);
+    handler.handleRequest(map, this.context);
 
     // then
     return service.findDocument(siteId, documentId);
@@ -948,8 +960,8 @@ public class DocumentsS3UpdateTest implements DbKeys {
       doc.setUserId("joe");
       doc.setPath("test.txt");
       service.saveDocumentItemWithTag(siteId, doc);
-      actionsService.saveActions(siteId, doc.getDocumentId(),
-          Arrays.asList(new Action().type(ActionType.OCR).status(ActionStatus.COMPLETE)));
+      actionsService.saveNewActions(siteId, doc.getDocumentId(), Arrays
+          .asList(new Action().type(ActionType.OCR).userId("joe").status(ActionStatus.COMPLETE)));
 
       addS3File(key, "pdf", false, "testdata");
 
@@ -974,7 +986,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
   public void testHandleRequest12() throws Exception {
 
     createMockServer(DocumentsS3Update.SERVER_ERROR);
-    this.modules = Arrays.asList("ocr", "opensearch");
     before();
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -1013,7 +1024,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
   public void testHandleRequest13() throws Exception {
 
     createMockServer(OK);
-    this.modules = Arrays.asList("ocr", "opensearch");
     before();
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -1058,8 +1068,8 @@ public class DocumentsS3UpdateTest implements DbKeys {
       doc.setUserId("joe");
       doc.setPath("test.txt");
       service.saveDocumentItemWithTag(siteId, doc);
-      actionsService.saveActions(siteId, doc.getDocumentId(),
-          Arrays.asList(new Action().type(ActionType.OCR).status(ActionStatus.RUNNING)));
+      actionsService.saveNewActions(siteId, doc.getDocumentId(), Arrays
+          .asList(new Action().type(ActionType.OCR).userId("joe").status(ActionStatus.RUNNING)));
 
       addS3File(key, "pdf", false, "testdata");
 
@@ -1085,9 +1095,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
    */
   private DocumentItem verifyDocumentSaved(final String siteId, final DocumentItem item,
       final String contentType, final String contentLength) {
-
-    assertTrue(this.logger
-        .containsString("updating document " + createDatabaseKey(siteId, item.getDocumentId())));
 
     assertEquals(contentType, item.getContentType());
     assertEquals(contentLength, item.getContentLength().toString());

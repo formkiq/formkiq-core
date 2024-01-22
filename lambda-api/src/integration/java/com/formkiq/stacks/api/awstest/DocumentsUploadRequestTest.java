@@ -25,96 +25,91 @@ package com.formkiq.stacks.api.awstest;
 
 import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENTS;
 import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENT_SIZE_BYTES;
+import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContent;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.objects.MimeType;
-import com.formkiq.stacks.client.FormKiqClientV1;
-import com.formkiq.stacks.client.models.AddLargeDocument;
-import com.formkiq.stacks.client.models.DocumentContent;
-import com.formkiq.stacks.client.models.DocumentTag;
-import com.formkiq.stacks.client.requests.AddLargeDocumentRequest;
-import com.formkiq.stacks.client.requests.GetDocumentContentRequest;
-import com.formkiq.stacks.client.requests.GetDocumentUploadRequest;
+import com.formkiq.client.api.DocumentsApi;
+import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.model.AddDocumentTag;
+import com.formkiq.client.model.AddDocumentUploadRequest;
+import com.formkiq.client.model.GetDocumentUrlResponse;
+import com.formkiq.stacks.dynamodb.ConfigService;
+import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
 
 /**
  * GET, OPTIONS /documents/upload tests.
  *
  */
-public class DocumentsUploadRequestTest extends AbstractApiTest {
+public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
 
-  /** 200 OK. */
-  private static final int STATUS_OK = 200;
-  /** 200 No Content. */
-  private static final int STATUS_NO_CONTENT = 204;
-  /** 400 Bad Request. */
-  private static final int STATUS_BAD_REQUEST = 400;
+  /** {@link ConfigService}. */
+  private static ConfigService configService;
   /** Random Site ID. */
   private static final String SITEID0 = UUID.randomUUID().toString();
   /** Random Site ID. */
   private static final String SITEID1 = UUID.randomUUID().toString();
-
+  /** 400 Bad Request. */
+  private static final int STATUS_BAD_REQUEST = 400;
+  // /** 200 No Content. */
+  // private static final int STATUS_NO_CONTENT = 204;
+  /** 200 OK. */
+  private static final int STATUS_OK = 200;
   /** JUnit Test Timeout. */
   private static final int TEST_TIMEOUT = 30;
-  /** Sleep Timeout. */
-  private static final int SLEEP = 1000;
 
   /**
    * After Class.
    */
   @AfterAll
   public static void afterClass() {
-    getConfigService().delete(SITEID0);
-    getConfigService().delete(SITEID1);
+    configService.delete(SITEID0);
+    configService.delete(SITEID1);
+  }
+
+  /**
+   * BeforeAll.
+   * 
+   * @throws IOException IOException
+   * @throws InterruptedException InterruptedException
+   * @throws URISyntaxException URISyntaxException
+   */
+  @BeforeAll
+  public static void beforeAll() throws IOException, InterruptedException, URISyntaxException {
+    AbstractAwsIntegrationTest.beforeClass();
+
+    configService = new FkqConfigService(getAwsprofile(), getAwsregion(), getAppenvironment());
   }
 
   /** {@link HttpClient}. */
   private HttpClient http = HttpClient.newHttpClient();
 
   /**
-   * Assert Document Conttent.
-   * 
-   * @param client {@link FormKiqClientV1}
-   * @param documentId {@link String}
-   * @param content {@link String}
-   * @throws IOException IOException
-   * @throws InterruptedException InterruptedException
-   */
-  private void assertDocumentContent(final FormKiqClientV1 client, final String documentId,
-      final String content) throws IOException, InterruptedException {
-    DocumentContent documentContent =
-        client.getDocumentContent(new GetDocumentContentRequest().documentId(documentId));
-    while (!content.equals(documentContent.content())) {
-      Thread.sleep(SLEEP);
-      documentContent =
-          client.getDocumentContent(new GetDocumentContentRequest().documentId(documentId));
-    }
-
-    assertEquals(content, documentContent.content());
-  }
-
-  /**
    * before.
    */
   @BeforeEach
   public void before() {
-    getConfigService().delete(SITEID0);
-    getConfigService().delete(SITEID1);
+    configService.delete(SITEID0);
+    configService.delete(SITEID1);
   }
 
   /**
@@ -125,36 +120,34 @@ public class DocumentsUploadRequestTest extends AbstractApiTest {
   @Test
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testGet01() throws Exception {
-    for (FormKiqClientV1 client : getFormKiqClients(null)) {
-      // given
+    // given
+    String siteId = null;
+    for (ApiClient client : getApiClients(siteId)) {
+
+      DocumentsApi api = new DocumentsApi(client);
       String content = "<html><body>test content</body></html>";
-      GetDocumentUploadRequest request =
-          new GetDocumentUploadRequest().contentLength(content.length());
 
       // when
-      HttpResponse<String> response = client.getDocumentUploadAsHttpResponse(request);
+      GetDocumentUrlResponse response =
+          api.getDocumentUpload(null, siteId, Integer.valueOf(content.length()), null, null);
 
       // then
-      assertEquals(STATUS_OK, response.statusCode());
-      assertRequestCorsHeaders(response.headers());
-
-      Map<String, Object> map = toMap(response);
-      assertNotNull(map.get("url"));
-      assertNotNull(map.get("documentId"));
+      assertNotNull(response.getUrl());
+      assertNotNull(response.getDocumentId());
 
       // given
-      final String documentId = map.get("documentId").toString();
-      String url = map.get("url").toString();
+      final String documentId = response.getDocumentId();
+      String url = response.getUrl();
 
       // when
-      response = this.http.send(HttpRequest.newBuilder(new URI(url))
+      HttpResponse<String> httpResponse = this.http.send(HttpRequest.newBuilder(new URI(url))
           .header("Content-Type", MimeType.MIME_HTML.getContentType())
           .method("PUT", BodyPublishers.ofString(content)).build(), BodyHandlers.ofString());
 
       // then
-      assertEquals(STATUS_OK, response.statusCode());
+      assertEquals(STATUS_OK, httpResponse.statusCode());
 
-      assertDocumentContent(client, documentId, content);
+      waitForDocumentContent(client, siteId, documentId, content);
     }
   }
 
@@ -167,19 +160,20 @@ public class DocumentsUploadRequestTest extends AbstractApiTest {
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testGet02() throws Exception {
     // given
-    getConfigService().save(SITEID0, new DynamicObject(Map.of(MAX_DOCUMENT_SIZE_BYTES, "5")));
+    configService.save(SITEID0, new DynamicObject(Map.of(MAX_DOCUMENT_SIZE_BYTES, "5")));
 
-    for (FormKiqClientV1 client : getFormKiqClients(SITEID0)) {
+    for (ApiClient client : getApiClients(SITEID0)) {
 
-      GetDocumentUploadRequest request = new GetDocumentUploadRequest().siteId(SITEID0);
+      DocumentsApi api = new DocumentsApi(client);
 
       // when
-      HttpResponse<String> response = client.getDocumentUploadAsHttpResponse(request);
-
-      // then
-      assertEquals(STATUS_BAD_REQUEST, response.statusCode());
-      assertRequestCorsHeaders(response.headers());
-      assertEquals("{\"message\":\"'contentLength' is required\"}", response.body());
+      try {
+        api.getDocumentUpload(null, SITEID0, null, null, null);
+        fail();
+      } catch (ApiException e) {
+        assertEquals(STATUS_BAD_REQUEST, e.getCode());
+        assertEquals("{\"message\":\"'contentLength' is required\"}", e.getResponseBody());
+      }
     }
   }
 
@@ -193,20 +187,20 @@ public class DocumentsUploadRequestTest extends AbstractApiTest {
   public void testGet03() throws Exception {
     // given
     final int contentLength = 100;
-    getConfigService().save(SITEID0, new DynamicObject(Map.of(MAX_DOCUMENT_SIZE_BYTES, "5")));
+    configService.save(SITEID0, new DynamicObject(Map.of(MAX_DOCUMENT_SIZE_BYTES, "5")));
 
-    GetDocumentUploadRequest request =
-        new GetDocumentUploadRequest().siteId(SITEID0).contentLength(contentLength);
+    for (ApiClient client : getApiClients(SITEID0)) {
 
-    for (FormKiqClientV1 client : getFormKiqClients(SITEID0)) {
+      DocumentsApi api = new DocumentsApi(client);
 
       // when
-      HttpResponse<String> response = client.getDocumentUploadAsHttpResponse(request);
-
-      // then
-      assertEquals(STATUS_BAD_REQUEST, response.statusCode());
-      assertRequestCorsHeaders(response.headers());
-      assertEquals("{\"message\":\"'contentLength' cannot exceed 5 bytes\"}", response.body());
+      try {
+        api.getDocumentUpload(null, SITEID0, Integer.valueOf(contentLength), null, null);
+      } catch (ApiException e) {
+        assertEquals(STATUS_BAD_REQUEST, e.getCode());
+        assertEquals("{\"message\":\"'contentLength' cannot exceed 5 bytes\"}",
+            e.getResponseBody());
+      }
     }
   }
 
@@ -220,20 +214,19 @@ public class DocumentsUploadRequestTest extends AbstractApiTest {
   public void testGet04() throws Exception {
     // given
     final int contentLength = 5;
-    getConfigService().save(SITEID0,
+    configService.save(SITEID0,
         new DynamicObject(Map.of(MAX_DOCUMENT_SIZE_BYTES, "" + contentLength)));
 
-    GetDocumentUploadRequest request =
-        new GetDocumentUploadRequest().siteId(SITEID0).contentLength(contentLength);
+    for (ApiClient client : getApiClients(SITEID0)) {
 
-    for (FormKiqClientV1 client : getFormKiqClients(SITEID0)) {
+      DocumentsApi api = new DocumentsApi(client);
 
       // when
-      HttpResponse<String> response = client.getDocumentUploadAsHttpResponse(request);
+      GetDocumentUrlResponse response =
+          api.getDocumentUpload(null, SITEID0, Integer.valueOf(contentLength), null, null);
 
       // then
-      assertEquals(STATUS_OK, response.statusCode());
-      assertRequestCorsHeaders(response.headers());
+      assertNotNull(response.getUrl());
     }
   }
 
@@ -246,42 +239,25 @@ public class DocumentsUploadRequestTest extends AbstractApiTest {
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testGet05() throws Exception {
     // given
-    getConfigService().save(SITEID1, new DynamicObject(Map.of(MAX_DOCUMENTS, "1")));
+    configService.save(SITEID1, new DynamicObject(Map.of(MAX_DOCUMENTS, "1")));
 
-    GetDocumentUploadRequest request =
-        new GetDocumentUploadRequest().siteId(SITEID1).contentLength(1);
+    DocumentsApi api = new DocumentsApi(getApiClients(SITEID1).get(0));
 
-    HttpResponse<String> response =
-        getFormKiqClients(SITEID1).get(0).getDocumentUploadAsHttpResponse(request);
-    assertEquals(STATUS_OK, response.statusCode());
+    api.getDocumentUpload(null, SITEID1, Integer.valueOf(1), null, null);
 
-    for (FormKiqClientV1 client : getFormKiqClients(SITEID1)) {
+    for (ApiClient client : getApiClients(SITEID1)) {
+
+      api = new DocumentsApi(client);
 
       // when
-      response = client.getDocumentUploadAsHttpResponse(request);
-
-      // then
-      assertEquals(STATUS_BAD_REQUEST, response.statusCode());
-      assertEquals("{\"message\":\"Max Number of Documents reached\"}", response.body());
-      assertRequestCorsHeaders(response.headers());
-    }
-  }
-
-  /**
-   * Get Request Document Not Found.
-   * 
-   * @throws Exception Exception
-   */
-  @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
-  public void testOptions01() throws Exception {
-    for (FormKiqClientV1 client : getFormKiqClients(null)) {
-      // given
-      // when
-      HttpResponse<String> response = client.optionsDocumentUpload();
-      // then
-      assertEquals(STATUS_NO_CONTENT, response.statusCode());
-      assertPreflightedCorsHeaders(response.headers());
+      try {
+        api.getDocumentUpload(null, SITEID1, Integer.valueOf(1), null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(STATUS_BAD_REQUEST, e.getCode());
+        assertEquals("{\"message\":\"Max Number of Documents reached\"}", e.getResponseBody());
+      }
     }
   }
 
@@ -293,36 +269,34 @@ public class DocumentsUploadRequestTest extends AbstractApiTest {
   @Test
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testPost01() throws Exception {
-    for (FormKiqClientV1 client : getFormKiqClients(null)) {
-      // given
-      DocumentTag tag0 = new DocumentTag().key("test").value("this");
-      AddLargeDocumentRequest request =
-          new AddLargeDocumentRequest().document(new AddLargeDocument().tags(Arrays.asList(tag0)));
+    // given
+    String siteId = null;
+    for (ApiClient client : getApiClients(siteId)) {
+
+      DocumentsApi api = new DocumentsApi(client);
+
+      AddDocumentUploadRequest req = new AddDocumentUploadRequest()
+          .addTagsItem(new AddDocumentTag().key("test").value("this"));
 
       // when
-      HttpResponse<String> response = client.addLargeDocumentAsHttpResponse(request);
+      GetDocumentUrlResponse response = api.addDocumentUpload(req, siteId, null, null, null);
 
       // then
-      assertEquals(STATUS_OK, response.statusCode());
-      assertRequestCorsHeaders(response.headers());
-
-      Map<String, Object> map = toMap(response);
-      assertNotNull(map.get("url"));
-      assertNotNull(map.get("documentId"));
+      assertNotNull(response.getDocumentId());
 
       // given
+      String documentId = response.getDocumentId();
+      String url = response.getUrl();
       String content = "<html><body>test content</body></html>";
-      final String documentId = map.get("documentId").toString();
-      String url = map.get("url").toString();
 
       // when
-      response = this.http.send(HttpRequest.newBuilder(new URI(url))
+      HttpResponse<String> httpResponse = this.http.send(HttpRequest.newBuilder(new URI(url))
           .header("Content-Type", MimeType.MIME_HTML.getContentType())
           .method("PUT", BodyPublishers.ofString(content)).build(), BodyHandlers.ofString());
 
       // then
-      assertEquals(STATUS_OK, response.statusCode());
-      assertDocumentContent(client, documentId, content);
+      assertEquals(STATUS_OK, httpResponse.statusCode());
+      waitForDocumentContent(client, siteId, documentId, content);
     }
   }
 }

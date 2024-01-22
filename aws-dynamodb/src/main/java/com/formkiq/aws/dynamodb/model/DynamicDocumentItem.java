@@ -70,6 +70,11 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
   }
 
   @Override
+  public String getDeepLinkPath() {
+    return getString("deepLinkPath");
+  }
+
+  @Override
   public String getDocumentId() {
     return getString("documentId");
   }
@@ -162,6 +167,11 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
   @Override
   public void setContentType(final String contentType) {
     put("contentType", contentType);
+  }
+
+  @Override
+  public void setDeepLinkPath(final String deepLinkPath) {
+    put("deepLinkPath", deepLinkPath);
   }
 
   @Override

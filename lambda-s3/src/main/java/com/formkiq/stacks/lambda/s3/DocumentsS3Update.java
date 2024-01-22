@@ -23,9 +23,9 @@
  */
 package com.formkiq.stacks.lambda.s3;
 
-import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.getSiteId;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static com.formkiq.aws.dynamodb.objects.Strings.removeQuotes;
 import static com.formkiq.module.events.document.DocumentEventType.CREATE;
 import static com.formkiq.module.events.document.DocumentEventType.DELETE;
@@ -41,12 +41,12 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilderExtension;
+import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
@@ -54,11 +54,12 @@ import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.dynamodb.objects.MimeType;
-import com.formkiq.aws.s3.S3ConnectionBuilder;
+import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3Service;
-import com.formkiq.aws.sns.SnsConnectionBuilder;
-import com.formkiq.aws.ssm.SsmConnectionBuilder;
+import com.formkiq.aws.s3.S3ServiceExtension;
+import com.formkiq.aws.sns.SnsAwsServiceRegistry;
+import com.formkiq.aws.ssm.SmsAwsServiceRegistry;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceExtension;
 import com.formkiq.graalvm.annotations.Reflectable;
@@ -66,16 +67,16 @@ import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.services.ActionsNotificationService;
 import com.formkiq.module.actions.services.ActionsNotificationServiceExtension;
 import com.formkiq.module.actions.services.ActionsService;
-import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
+import com.formkiq.module.actions.services.ActionsServiceExtension;
 import com.formkiq.module.events.EventService;
 import com.formkiq.module.events.EventServiceSns;
 import com.formkiq.module.events.EventServiceSnsExtension;
 import com.formkiq.module.events.document.DocumentEvent;
+import com.formkiq.module.http.HttpService;
+import com.formkiq.module.httpsigv4.HttpServiceSigv4;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.module.lambdaservices.ClassServiceExtension;
-import com.formkiq.stacks.client.FormKiqClientV1;
-import com.formkiq.stacks.client.requests.DeleteDocumentFulltextRequest;
-import com.formkiq.stacks.client.requests.DeleteDocumentOcrRequest;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
@@ -84,21 +85,50 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
-import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.s3.model.GetObjectTaggingResponse;
 import software.amazon.awssdk.utils.http.SdkHttpUtils;
 
 /** {@link RequestHandler} for writing MetaData for Documents to DynamoDB. */
 @Reflectable
-// @ReflectableImport(
-// classes = {DocumentVersionServiceDynamoDb.class, DocumentVersionServiceNoVersioning.class})
 public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Void> {
 
+  /** {@link ActionsService}. */
+  private static ActionsService actionsService;
   /** Bad Request. */
   static final int BAD_REQUEST = 400;
+  /** {@link EventService}. */
+  private static EventService documentEventService;
+
+  /** {@link ActionsNotificationService}. */
+  private static ActionsNotificationService notificationService;
+
+  /** {@link S3Service}. */
+  private static S3Service s3service;
+
   /** Server Error. */
   static final int SERVER_ERROR = 500;
+
+  /** {@link DocumentService}. */
+  private static DocumentService service;
+
+  /** {@link AwsServiceCache}. */
+  private static AwsServiceCache serviceCache;
+  /** SNS Document Event Arn. */
+  private static String snsDocumentEvent;
+
+  static {
+
+    if (System.getenv().containsKey("AWS_REGION")) {
+      serviceCache = new AwsServiceCacheBuilder(System.getenv(), Map.of(),
+          EnvironmentVariableCredentialsProvider.create())
+          .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
+              new SnsAwsServiceRegistry(), new SmsAwsServiceRegistry())
+          .build();
+
+      initialize(serviceCache);
+    }
+  }
 
   /**
    * Get Bucket Name.
@@ -131,6 +161,44 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
   }
 
   /**
+   * Initialize.
+   * 
+   * @param awsServiceCache {@link AwsServiceCache}
+   */
+  static void initialize(final AwsServiceCache awsServiceCache) {
+
+    awsServiceCache.register(S3Service.class, new S3ServiceExtension());
+    awsServiceCache.register(ActionsService.class, new ActionsServiceExtension());
+    awsServiceCache.register(SsmService.class, new SsmServiceExtension());
+    awsServiceCache.register(DocumentService.class, new DocumentServiceExtension());
+    awsServiceCache.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
+    awsServiceCache.register(EventService.class, new EventServiceSnsExtension());
+    awsServiceCache.register(ActionsNotificationService.class,
+        new ActionsNotificationServiceExtension());
+
+    AwsCredentials awsCredentials = awsServiceCache.getExtension(AwsCredentials.class);
+    awsServiceCache.register(HttpService.class, new ClassServiceExtension<HttpService>(
+        new HttpServiceSigv4(awsServiceCache.region(), awsCredentials)));
+
+    service = awsServiceCache.getExtension(DocumentService.class);
+    snsDocumentEvent = awsServiceCache.environment("SNS_DOCUMENT_EVENT");
+    actionsService = awsServiceCache.getExtension(ActionsService.class);
+    s3service = awsServiceCache.getExtension(S3Service.class);
+    documentEventService = awsServiceCache.getExtension(EventService.class);
+    notificationService = awsServiceCache.getExtension(ActionsNotificationService.class);
+
+    if (isEmpty(awsServiceCache.environment("DOCUMENTS_IAM_URL"))) {
+      SsmService ssm = awsServiceCache.getExtension(SsmService.class);
+
+      String appEnvironment = awsServiceCache.environment("APP_ENVIRONMENT");
+
+      String documentsIamUrl =
+          ssm.getParameterValue("/formkiq/" + appEnvironment + "/api/DocumentsIamUrl");
+      awsServiceCache.environment().put("DOCUMENTS_IAM_URL", documentsIamUrl);
+    }
+  }
+
+  /**
    * Decode the string according to RFC 3986: encoding for URI paths, query strings, etc. *
    *
    * @param value The string to decode.
@@ -140,73 +208,25 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     return SdkHttpUtils.urlDecode(value);
   }
 
-  /** {@link ActionsService}. */
-  private ActionsService actionsService;
-
   /** {@link SimpleDateFormat} in ISO Standard format. */
   private SimpleDateFormat df = DateUtil.getIsoDateFormatter();
-  /** {@link EventService}. */
-  private EventService documentEventService;
+
   /** {@link Gson}. */
   private Gson gson = new GsonBuilder().create();
-  /** {@link ActionsNotificationService}. */
-  private ActionsNotificationService notificationService;
-  /** {@link S3Service}. */
-  private S3Service s3service;
-  /** {@link DocumentService}. */
-  private DocumentService service;
-  /** {@link AwsServiceCache}. */
-  private AwsServiceCache services;
-  /** SNS Document Event Arn. */
-  private String snsDocumentEvent;
 
   /** constructor. */
   public DocumentsS3Update() {
-    this(System.getenv(), EnvironmentVariableCredentialsProvider.create().resolveCredentials(),
-        new DynamoDbConnectionBuilder("true".equals(System.getenv("ENABLE_AWS_X_RAY")))
-            .setRegion(Region.of(System.getenv("AWS_REGION"))),
-        new S3ConnectionBuilder("true".equals(System.getenv("ENABLE_AWS_X_RAY")))
-            .setRegion(Region.of(System.getenv("AWS_REGION"))),
-        new SsmConnectionBuilder("true".equals(System.getenv("ENABLE_AWS_X_RAY")))
-            .setRegion(Region.of(System.getenv("AWS_REGION"))),
-        new SnsConnectionBuilder("true".equals(System.getenv("ENABLE_AWS_X_RAY")))
-            .setRegion(Region.of(System.getenv("AWS_REGION"))));
+    // empty
   }
 
   /**
    * constructor.
    * 
-   * @param map {@link Map}
-   * @param creds {@link AwsCredentials}
-   * @param dbBuilder {@link DynamoDbConnectionBuilder}
-   * @param s3builder {@link S3ConnectionBuilder}
-   * @param ssmBuilder {@link SsmConnectionBuilder}
-   * @param snsBuilder {@link SnsConnectionBuilder}
+   * @param awsServiceCache {@link AwsServiceCache}
    */
-  protected DocumentsS3Update(final Map<String, String> map, final AwsCredentials creds,
-      final DynamoDbConnectionBuilder dbBuilder, final S3ConnectionBuilder s3builder,
-      final SsmConnectionBuilder ssmBuilder, final SnsConnectionBuilder snsBuilder) {
-
-    this.services = new AwsServiceCache().environment(map);
-    AwsServiceCache.register(DynamoDbConnectionBuilder.class,
-        new DynamoDbConnectionBuilderExtension(dbBuilder));
-    AwsServiceCache.register(SsmService.class, new SsmServiceExtension());
-    AwsServiceCache.register(SsmConnectionBuilder.class, new ClassServiceExtension<>(ssmBuilder));
-    AwsServiceCache.register(DocumentService.class, new DocumentServiceExtension());
-    AwsServiceCache.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
-    AwsServiceCache.register(EventService.class, new EventServiceSnsExtension(snsBuilder));
-    AwsServiceCache.register(ActionsNotificationService.class,
-        new ActionsNotificationServiceExtension());
-
-    Region region = Region.of(map.get("AWS_REGION"));
-    AwsServiceCache.register(FormKiqClientV1.class, new FormKiQClientV1Extension(region, creds));
-
-    this.service = this.services.getExtension(DocumentService.class);
-    this.snsDocumentEvent = map.get("SNS_DOCUMENT_EVENT");
-    this.actionsService = new ActionsServiceDynamoDb(dbBuilder, map.get("DOCUMENTS_TABLE"));
-    this.s3service = new S3Service(s3builder);
-    this.documentEventService = this.services.getExtension(EventService.class);
-    this.notificationService = this.services.getExtension(ActionsNotificationService.class);
+  public DocumentsS3Update(final AwsServiceCache awsServiceCache) {
+    initialize(awsServiceCache);
+    serviceCache = awsServiceCache;
   }
 
   /**
@@ -257,7 +277,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
     if (MimeType.isPlainText(contentType) && resp.getContentLength() != null
         && resp.getContentLength().longValue() < EventServiceSns.MAX_SNS_MESSAGE_SIZE) {
-      content = this.s3service.getContentAsString(s3bucket, key, null);
+      content = s3service.getContentAsString(s3bucket, key, null);
     }
 
     return content;
@@ -272,7 +292,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
    */
   private List<DocumentTag> getObjectTags(final String bucket, final String documentId) {
 
-    GetObjectTaggingResponse objectTags = this.s3service.getObjectTags(bucket, documentId);
+    GetObjectTaggingResponse objectTags = s3service.getObjectTags(bucket, documentId);
 
     List<DocumentTag> tags = objectTags.tagSet().stream()
         .map(t -> new DocumentTag(documentId, t.key(), t.value(), new Date(), "System"))
@@ -444,7 +464,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
   private void processS3Delete(final LambdaLogger logger, final String bucket, final String key)
       throws IOException, InterruptedException {
 
-    if (!this.s3service.getObjectMetadata(bucket, key, null).isObjectExists()) {
+    if (!s3service.getObjectMetadata(bucket, key, null).isObjectExists()) {
 
       String siteId = getSiteId(key.toString());
       String documentId = resetDatabaseKey(siteId, key.toString());
@@ -452,28 +472,37 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
       String msg = String.format("Removing %s from bucket %s.", key, bucket);
       logger.log(msg);
 
-      boolean moduleOcr = this.services.hasModule("ocr");
-      boolean moduleFulltext = this.services.hasModule("opensearch");
+      boolean moduleOcr = serviceCache.hasModule("ocr");
+      boolean moduleFulltext = serviceCache.hasModule("opensearch");
+      boolean moduleTypesense = serviceCache.hasModule("typesense");
 
-      if (moduleOcr || moduleFulltext) {
-        FormKiqClientV1 fkClient = this.services.getExtension(FormKiqClientV1.class);
+      if (moduleOcr || moduleFulltext || moduleTypesense) {
+
+        HttpService http = serviceCache.getExtension(HttpService.class);
+
+        // FormKiqClientV1 fkClient = this.services.getExtension(FormKiqClientV1.class);
+        Optional<Map<String, String>> parameters =
+            siteId != null ? Optional.of(Map.of("siteId", siteId)) : Optional.empty();
 
         if (moduleOcr) {
-          HttpResponse<String> deleteDocumentHttpResponse =
-              fkClient.deleteDocumentOcrAsHttpResponse(
-                  new DeleteDocumentOcrRequest().siteId(siteId).documentId(documentId));
-          checkResponse("ocr", siteId, documentId, deleteDocumentHttpResponse);
+
+          String u =
+              serviceCache.environment("DOCUMENTS_IAM_URL") + "/documents/" + documentId + "/ocr";
+          HttpResponse<String> response = http.delete(u, Optional.empty(), parameters);
+
+          checkResponse("ocr", siteId, documentId, response);
         }
 
-        if (moduleFulltext) {
-          HttpResponse<String> deleteDocumentFulltext =
-              fkClient.deleteDocumentFulltextAsHttpResponse(
-                  new DeleteDocumentFulltextRequest().siteId(siteId).documentId(documentId));
-          checkResponse("opensearch", siteId, documentId, deleteDocumentFulltext);
+        if (moduleFulltext || moduleTypesense) {
+          String u = serviceCache.environment("DOCUMENTS_IAM_URL") + "/documents/" + documentId
+              + "/fulltext";
+          HttpResponse<String> response = http.delete(u, Optional.empty(), parameters);
+
+          checkResponse("opensearch", siteId, documentId, response);
         }
       }
 
-      this.service.deleteDocument(siteId, documentId);
+      service.deleteDocument(siteId, documentId, false);
 
       DynamicDocumentItem doc = new DynamicDocumentItem(Map.of("documentId", documentId));
 
@@ -502,7 +531,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     String siteId = getSiteId(key);
     String documentId = resetDatabaseKey(siteId, key);
 
-    S3ObjectMetadata resp = this.s3service.getObjectMetadata(s3bucket, key, null);
+    S3ObjectMetadata resp = s3service.getObjectMetadata(s3bucket, key, null);
 
     if (!resp.isObjectExists()) {
       throw new FileNotFoundException("Object " + documentId + " not found in bucket " + s3bucket);
@@ -511,7 +540,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     String contentType = resp.getContentType();
     Long contentLength = resp.getContentLength();
 
-    DocumentItem item = this.service.findDocument(siteId, documentId);
+    DocumentItem item = service.findDocument(siteId, documentId);
 
     if (item != null) {
 
@@ -539,20 +568,16 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
         attributes.put("contentLength", AttributeValue.fromN("" + contentLength));
       }
 
-      attributes.put(S3VERSION_ATTRIBUTE, AttributeValue.fromS(resp.getVersionId()));
-
-      logger.log("updating document " + createDatabaseKey(siteId, documentId));
-
-      if (debug) {
-        logger.log("document attributes " + attributes);
+      if (resp.getVersionId() != null) {
+        attributes.put(S3VERSION_ATTRIBUTE, AttributeValue.fromS(resp.getVersionId()));
       }
 
-      this.service.updateDocument(siteId, documentId, attributes, isChecksumChanged);
+      service.updateDocument(siteId, documentId, attributes, isChecksumChanged);
 
       List<DocumentTag> tags = getObjectTags(s3bucket, key);
-      this.service.addTags(siteId, documentId, tags, null);
+      service.addTags(siteId, documentId, tags, null);
 
-      this.service.deleteDocumentFormats(siteId, documentId);
+      service.deleteDocumentFormats(siteId, documentId);
 
       DocumentEvent event =
           buildDocumentEvent(create ? CREATE : UPDATE, siteId, item, s3bucket, key, contentType);
@@ -585,7 +610,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
       event.content(content);
     }
 
-    String eventJson = this.documentEventService.publish(event);
+    String eventJson = documentEventService.publish(event);
 
     boolean debug = "true".equals(System.getenv("DEBUG"));
     if (debug) {
@@ -593,11 +618,11 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     }
 
     String eventType = event.type();
-    logger.log("publishing " + event.type() + " document message to " + this.snsDocumentEvent);
+    logger.log("publishing " + event.type() + " document message to " + snsDocumentEvent);
 
     if (CREATE.equals(eventType)) {
-      List<Action> actions = this.actionsService.getActions(siteId, documentId);
-      this.notificationService.publishNextActionEvent(actions, siteId, documentId);
+      List<Action> actions = actionsService.getActions(siteId, documentId);
+      notificationService.publishNextActionEvent(actions, siteId, documentId);
     }
   }
 }

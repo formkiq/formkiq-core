@@ -50,13 +50,11 @@ import com.formkiq.stacks.client.models.DocumentSearchQuery;
 import com.formkiq.stacks.client.models.DocumentSearchTag;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.formkiq.testutils.aws.LocalStackExtension;
-import com.formkiq.testutils.aws.TypeSenseExtension;
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import com.formkiq.testutils.aws.TypesenseExtension;
 
 /** Unit Tests for request /search. */
-@ExtendWith(TypeSenseExtension.class)
+@ExtendWith(TypesenseExtension.class)
 @ExtendWith(LocalStackExtension.class)
 @ExtendWith(DynamoDbExtension.class)
 public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
@@ -75,8 +73,7 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
         Map.of("S", item.getPath()));
     Map<String, Object> document = new DocumentMapToDocument().apply(data);
 
-    TypesenseProcessor processor = new TypesenseProcessor(getMap(),
-        DynamoDbTestServices.getDynamoDbConnection(), AwsBasicCredentials.create("asd", path));
+    TypesenseProcessor processor = new TypesenseProcessor(getAwsServices());
     processor.addOrUpdate(siteId, item.getDocumentId(), document, item.getUserId(), false);
   }
 

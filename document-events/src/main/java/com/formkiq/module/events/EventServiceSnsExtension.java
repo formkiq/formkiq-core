@@ -36,25 +36,19 @@ public class EventServiceSnsExtension implements AwsServiceExtension<EventServic
 
   /** {@link EventService}. */
   private EventService service;
-  /** {@link SnsConnectionBuilder}. */
-  private SnsConnectionBuilder sns;
 
   /**
    * constructor.
-   * 
-   * @param snsBuilder {@link SnsConnectionBuilder}
    */
-  public EventServiceSnsExtension(final SnsConnectionBuilder snsBuilder) {
-    this.sns = snsBuilder;
-  }
+  public EventServiceSnsExtension() {}
 
   @Override
   public EventService loadService(final AwsServiceCache awsServiceCache) {
 
     if (this.service == null) {
 
-      this.service =
-          new EventServiceSns(this.sns, awsServiceCache.environment("SNS_DOCUMENT_EVENT"));
+      SnsConnectionBuilder sns = awsServiceCache.getExtension(SnsConnectionBuilder.class);
+      this.service = new EventServiceSns(sns, awsServiceCache.environment("SNS_DOCUMENT_EVENT"));
     }
 
     return this.service;

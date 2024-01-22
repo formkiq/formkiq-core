@@ -29,6 +29,7 @@ import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static com.formkiq.aws.dynamodb.objects.Strings.isUuid;
 import static com.formkiq.aws.dynamodb.objects.Strings.removeQuotes;
+import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.fromS;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -51,6 +52,7 @@ import java.util.TimeZone;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import com.formkiq.aws.dynamodb.BatchGetConfig;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
@@ -60,6 +62,7 @@ import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResult;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.PaginationToAttributeValue;
+import com.formkiq.aws.dynamodb.QueryConfig;
 import com.formkiq.aws.dynamodb.QueryResponseToPagination;
 import com.formkiq.aws.dynamodb.ReadRequestBuilder;
 import com.formkiq.aws.dynamodb.WriteRequestBuilder;
@@ -69,6 +72,7 @@ import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.dynamodb.objects.Objects;
+import com.formkiq.aws.dynamodb.objects.Strings;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.BatchGetItemRequest;
@@ -141,8 +145,10 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   @Override
   public void addFolderIndex(final String siteId, final DocumentItem item) throws IOException {
 
+    Date now = item.getLastModifiedDate();
+
     List<FolderIndexRecordExtended> list =
-        this.folderIndexProcessor.get(siteId, item.getPath(), "folder", item.getUserId());
+        this.folderIndexProcessor.get(siteId, item.getPath(), "folder", item.getUserId(), now);
     List<Map<String, AttributeValue>> folderIndex = list.stream().filter(r -> r.isChanged())
         .map(r -> r.record().getAttributes(siteId)).collect(Collectors.toList());
 
@@ -228,9 +234,10 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
-  public boolean deleteDocument(final String siteId, final String documentId) {
+  public boolean deleteDocument(final String siteId, final String documentId,
+      final boolean softDelete) {
 
-    Map<String, AttributeValue> startkey = null;
+    boolean deleted = false;
 
     this.versionsService.deleteAllVersionIds(this.dbClient, siteId, documentId);
 
@@ -238,26 +245,34 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
     deleteFolderIndex(siteId, item);
 
-    do {
-      Map<String, AttributeValue> values =
-          queryKeys(keysGeneric(siteId, PREFIX_DOCS + documentId, null));
+    Map<String, AttributeValue> keys = keysGeneric(siteId, PREFIX_DOCS + documentId, null);
+    AttributeValue pk = keys.get(PK);
+    AttributeValue sk = null;
 
-      QueryRequest q = QueryRequest.builder().tableName(this.documentTableName)
-          .keyConditionExpression(PK + " = :pk").expressionAttributeValues(values)
-          .limit(Integer.valueOf(MAX_RESULTS)).build();
+    List<Map<String, AttributeValue>> list = queryDocumentAttributes(pk, sk, softDelete);
 
-      QueryResponse response = this.dbClient.query(q);
-      List<Map<String, AttributeValue>> results = response.items();
+    if (softDelete) {
 
-      for (Map<String, AttributeValue> map : results) {
-        deleteItem(Map.of("PK", map.get("PK"), "SK", map.get("SK")));
+      deleted = this.dbService.moveItems(list,
+          new DocumentDeleteMoveAttributeFunction(siteId, documentId));
+
+    } else {
+
+      pk = fromS(SOFT_DELETE + pk.s());
+      list.addAll(queryDocumentAttributes(pk, sk, false));
+
+      keys = keysGeneric(siteId, SOFT_DELETE + PREFIX_DOCS, null);
+      pk = keys.get(PK);
+      sk = fromS(SOFT_DELETE + "document#" + documentId);
+
+      list.addAll(queryDocumentAttributes(pk, sk, false));
+
+      if (this.dbService.deleteItems(list)) {
+        deleted = true;
       }
+    }
 
-      startkey = response.lastEvaluatedKey();
-
-    } while (startkey != null && !startkey.isEmpty());
-
-    return deleteItem(keysDocument(siteId, documentId, Optional.empty()));
+    return deleted;
   }
 
   @Override
@@ -557,14 +572,16 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   @Override
   public List<DocumentItem> findDocuments(final String siteId, final List<String> ids) {
 
-    List<DocumentItem> results = null;
+    List<DocumentItem> results = Collections.emptyList();
+
+    BatchGetConfig config = new BatchGetConfig();
 
     if (!ids.isEmpty()) {
 
       List<Map<String, AttributeValue>> keys = ids.stream()
           .map(documentId -> keysDocument(siteId, documentId)).collect(Collectors.toList());
 
-      Collection<List<Map<String, AttributeValue>>> values = getBatch(keys).values();
+      Collection<List<Map<String, AttributeValue>>> values = getBatch(config, keys).values();
       List<Map<String, AttributeValue>> result =
           !values.isEmpty() ? values.iterator().next() : Collections.emptyList();
 
@@ -573,7 +590,9 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
           .collect(Collectors.toList());
       items = sortByIds(ids, items);
 
-      results = !items.isEmpty() ? items : null;
+      if (!items.isEmpty()) {
+        results = items;
+      }
     }
 
     return results;
@@ -814,6 +833,22 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     return findAndTransform(keys, token, maxresults, new AttributeValueToPresetTag());
   }
 
+  @Override
+  public PaginationResults<DocumentItem> findSoftDeletedDocuments(final String siteId,
+      final Map<String, AttributeValue> startkey, final int limit) {
+
+    Map<String, AttributeValue> sdKeys =
+        keysGeneric(siteId, SOFT_DELETE + PREFIX_DOCS, SOFT_DELETE + "document");
+
+    QueryConfig config = new QueryConfig().scanIndexForward(Boolean.TRUE);
+    QueryResponse result =
+        this.dbService.queryBeginsWith(config, sdKeys.get(PK), sdKeys.get(SK), startkey, limit);
+
+    List<DocumentItem> items = result.items().stream()
+        .map(a -> new AttributeValueToDocumentItem().apply(a)).collect(Collectors.toList());
+    return new PaginationResults<>(items, new QueryResponseToPagination().apply(result));
+  }
+
   /**
    * Generate DynamoDB PK(s)/SK(s) to search.
    * 
@@ -866,13 +901,14 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
    * Get Batch Keys.
    * 
    * @param keys {@link List} {@link Map} {@link AttributeValue}
+   * @param config {@link BatchGetConfig}
    * @return {@link Map}
    */
-  private Map<String, List<Map<String, AttributeValue>>> getBatch(
+  private Map<String, List<Map<String, AttributeValue>>> getBatch(final BatchGetConfig config,
       final Collection<Map<String, AttributeValue>> keys) {
     ReadRequestBuilder builder = new ReadRequestBuilder();
     builder.append(this.documentTableName, keys);
-    return builder.batchReadItems(this.dbClient);
+    return builder.batchReadItems(this.dbClient, config);
   }
 
   /**
@@ -957,6 +993,8 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     document.setPath(path);
     addS(pkvalues, "path", path);
 
+    updateDeepLinkPath(pkvalues, document);
+
     addS(pkvalues, "version", document.getVersion());
     addS(pkvalues, DocumentVersionService.S3VERSION_ATTRIBUTE, document.getS3version());
     addS(pkvalues, "contentType", document.getContentType());
@@ -980,24 +1018,6 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     addMetadata(document, pkvalues);
 
     return pkvalues;
-  }
-
-  /**
-   * Because Document checksum are set in the DocumentsS3Update.class, the correct checksum maybe in
-   * the previous loaded document.
-   * 
-   * @param document {@link DocumentItem}
-   * @param previous {@link Map}
-   */
-  private void updateCurrentChecksumFromPrevious(final DocumentItem document,
-      final Map<String, AttributeValue> previous) {
-    AttributeValue pchecksum = previous.get("checksum");
-    if (pchecksum != null && !isEmpty(pchecksum.s())) {
-      String checksum = document.getChecksum();
-      if (isEmpty(checksum) || isUuid(checksum)) {
-        document.setChecksum(pchecksum.s());
-      }
-    }
   }
 
   /**
@@ -1117,6 +1137,38 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     String path0 = previous.containsKey("path") ? previous.get("path").s() : "";
     String path1 = current.containsKey("path") ? current.get("path").s() : "";
     return !path1.equals(path0) && !"".equals(path0);
+  }
+
+  /**
+   * Query For Document Attributes.
+   * 
+   * @param pk {@link AttributeValue}
+   * @param sk {@link AttributeValue}
+   * @param softDelete boolean
+   * @return {@link List} {@link Map}
+   */
+  private List<Map<String, AttributeValue>> queryDocumentAttributes(final AttributeValue pk,
+      final AttributeValue sk, final boolean softDelete) {
+
+    final int limit = 100;
+    Map<String, AttributeValue> startkey = null;
+    List<Map<String, AttributeValue>> list = new ArrayList<>();
+    QueryConfig config = new QueryConfig().projectionExpression(softDelete ? null : "PK,SK");
+
+    do {
+
+      QueryResponse response = this.dbService.queryBeginsWith(config, pk, sk, startkey, limit);
+
+      List<Map<String, AttributeValue>> attrs =
+          response.items().stream().collect(Collectors.toList());
+      list.addAll(attrs);
+
+      startkey = response.lastEvaluatedKey();
+
+    } while (startkey != null && !startkey.isEmpty());
+
+    return list;
+
   }
 
   /**
@@ -1248,6 +1300,63 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
         this.dbClient.deleteItem(deleteItemRequest);
       });
     }
+  }
+
+  @Override
+  public boolean restoreSoftDeletedDocument(final String siteId, final String documentId) {
+
+    boolean restored = false;
+
+    Map<String, AttributeValue> sdKeys = keysGeneric(siteId, SOFT_DELETE + PREFIX_DOCS, null);
+    AttributeValue pk = sdKeys.get(PK);
+    AttributeValue sk = AttributeValue.fromS(SOFT_DELETE + "document" + "#" + documentId);
+
+    final int limit = 100;
+
+    Map<String, AttributeValue> attr = this.dbService.get(pk, sk);
+
+    if (!attr.isEmpty()) {
+
+      List<Map<String, AttributeValue>> list = new ArrayList<>();
+      list.add(attr);
+
+      Map<String, AttributeValue> startkey = null;
+      QueryConfig config = new QueryConfig();
+
+      Map<String, AttributeValue> keys = keysDocument(siteId, documentId);
+
+      do {
+
+        QueryResponse response = this.dbService.queryBeginsWith(config,
+            fromS(SOFT_DELETE + keys.get(PK).s()), null, startkey, limit);
+
+        List<Map<String, AttributeValue>> attrs =
+            response.items().stream().collect(Collectors.toList());
+        list.addAll(attrs);
+
+        startkey = response.lastEvaluatedKey();
+
+      } while (startkey != null && !startkey.isEmpty());
+
+      restored = this.dbService.moveItems(list,
+          new DocumentRestoreMoveAttributeFunction(siteId, documentId));
+
+      String path = attr.get("path").s();
+      String userId = attr.get("userId").s();
+
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), userId);
+      item.setPath(path);
+
+      List<Map<String, AttributeValue>> folderIndex =
+          this.folderIndexProcessor.generateIndex(siteId, item);
+
+      WriteRequestBuilder writeBuilder =
+          new WriteRequestBuilder().appends(this.documentTableName, folderIndex);
+
+      writeBuilder.batchWriteItem(this.dbClient);
+    }
+
+    return restored;
   }
 
   /**
@@ -1493,6 +1602,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
     item.setDocumentId(doc.getDocumentId());
     item.setPath(path);
+    item.setDeepLinkPath(doc.getDeepLinkPath());
     item.setContentType(doc.getContentType());
     item.setChecksum(doc.getChecksum());
     item.setContentLength(doc.getContentLength());
@@ -1500,6 +1610,8 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     item.setBelongsToDocumentId(doc.getBelongsToDocumentId());
     item.setTagSchemaId(doc.getTagSchemaId());
     item.setMetadata(doc.getMetadata());
+
+    updatePathFromDeepLink(item);
 
     List<DocumentTag> tags = saveDocumentItemGenerateTags(siteId, doc, date, username);
 
@@ -1577,6 +1689,33 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
         .collect(Collectors.toList());
   }
 
+  /**
+   * Because Document checksum are set in the DocumentsS3Update.class, the correct checksum maybe in
+   * the previous loaded document.
+   * 
+   * @param document {@link DocumentItem}
+   * @param previous {@link Map}
+   */
+  private void updateCurrentChecksumFromPrevious(final DocumentItem document,
+      final Map<String, AttributeValue> previous) {
+    AttributeValue pchecksum = previous.get("checksum");
+    if (pchecksum != null && !isEmpty(pchecksum.s())) {
+      String checksum = document.getChecksum();
+      if (isEmpty(checksum) || isUuid(checksum)) {
+        document.setChecksum(pchecksum.s());
+      }
+    }
+  }
+
+  private void updateDeepLinkPath(final Map<String, AttributeValue> pkvalues,
+      final DocumentItem document) {
+    if (!isEmpty(document.getDeepLinkPath())) {
+      addS(pkvalues, "deepLinkPath", document.getDeepLinkPath());
+    } else {
+      addS(pkvalues, "deepLinkPath", "");
+    }
+  }
+
   @Override
   public void updateDocument(final String siteId, final String documentId,
       final Map<String, AttributeValue> attributes, final boolean updateVersioning) {
@@ -1605,6 +1744,15 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       }
     }
 
-    this.dbService.updateFields(keys.get(PK), keys.get(SK), attributes);
+    this.dbService.updateValues(keys.get(PK), keys.get(SK), attributes);
+  }
+
+  private void updatePathFromDeepLink(final DocumentItem item) {
+    if (!isEmpty(item.getDeepLinkPath())) {
+      String filename = Strings.getFilename(item.getDeepLinkPath());
+      if (!isEmpty(filename)) {
+        item.setPath(filename);
+      }
+    }
   }
 }

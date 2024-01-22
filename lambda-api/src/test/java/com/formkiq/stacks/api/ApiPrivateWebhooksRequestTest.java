@@ -40,8 +40,8 @@ import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 
 /** Unit Tests for request POST /public/webhooks. */
-@ExtendWith(LocalStackExtension.class)
 @ExtendWith(DynamoDbExtension.class)
+@ExtendWith(LocalStackExtension.class)
 public class ApiPrivateWebhooksRequestTest extends AbstractRequestHandler {
 
   /** Extension for FormKiQ config file. */

@@ -40,10 +40,12 @@ import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.containers.localstack.LocalStackContainer.Service;
 import org.testcontainers.utility.DockerImageName;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
+import com.formkiq.aws.s3.S3PresignerConnectionBuilder;
 import com.formkiq.aws.sns.SnsConnectionBuilder;
 import com.formkiq.aws.sns.SnsService;
 import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.sqs.SqsService;
+import com.formkiq.aws.sqs.SqsServiceImpl;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
@@ -76,6 +78,8 @@ public final class TestServices {
   public static final String OCR_BUCKET_NAME = "ocrbucket";
   /** {@link S3ConnectionBuilder}. */
   private static S3ConnectionBuilder s3Connection;
+  /** {@link S3PresignerConnectionBuilder}. */
+  private static S3PresignerConnectionBuilder s3PresignerConnection;
   /** {@link SnsConnectionBuilder}. */
   private static SnsConnectionBuilder snsConnection;
   /** SQS Document Formats Queue. */
@@ -102,7 +106,7 @@ public final class TestServices {
    * @throws URISyntaxException URISyntaxException
    */
   public static void clearSqsQueue(final String queueUrl) throws URISyntaxException {
-    SqsService sqsService = new SqsService(getSqsConnection(null));
+    SqsService sqsService = new SqsServiceImpl(getSqsConnection(null));
     ReceiveMessageResponse response = sqsService.receiveMessages(queueUrl);
     while (!response.messages().isEmpty()) {
       for (Message msg : response.messages()) {
@@ -133,7 +137,7 @@ public final class TestServices {
    */
   public static String createSqsSubscriptionToSnsTopic(final String snsTopicArn)
       throws URISyntaxException {
-    SqsService sqsService = new SqsService(getSqsConnection(null));
+    SqsService sqsService = new SqsServiceImpl(getSqsConnection(null));
     SnsService snsService = new SnsService(getSnsConnection(null));
     String queueUrl = sqsService.createQueue("sqs_" + UUID.randomUUID()).queueUrl();
     String sqsQueueArn = sqsService.getQueueArn(queueUrl);
@@ -181,6 +185,7 @@ public final class TestServices {
    */
   public static Map<String, URI> getEndpointMap() {
     Map<String, URI> endpoints = Map.of("dynamodb", DynamoDbTestServices.getEndpoint(), "s3",
+        TestServices.getEndpoint(Service.S3, null), "s3presigner",
         TestServices.getEndpoint(Service.S3, null), "ssm",
         TestServices.getEndpoint(Service.SSM, null), "sqs",
         TestServices.getEndpoint(Service.SQS, null), "sns",
@@ -208,34 +213,8 @@ public final class TestServices {
    * @throws URISyntaxException URISyntaxException
    */
   public static List<Message> getMessagesFromSqs(final String queueUrl) throws URISyntaxException {
-    SqsService sqsService = new SqsService(getSqsConnection(null));
+    SqsService sqsService = new SqsServiceImpl(getSqsConnection(null));
     List<Message> msgs = sqsService.receiveMessages(queueUrl).messages();
-    return msgs;
-  }
-
-  /**
-   * Get Messages from SQS queue.
-   * 
-   * @param queueUrl {@link String}
-   * @return {@link List}
-   * @throws URISyntaxException URISyntaxException
-   */
-  public static List<Message> waitForMessagesFromSqs(final String queueUrl)
-      throws URISyntaxException {
-
-    SqsService sqsService = new SqsService(getSqsConnection(null));
-    List<Message> msgs = Collections.emptyList();
-
-    while (msgs.isEmpty()) {
-      msgs = sqsService.receiveMessages(queueUrl).messages();
-      if (msgs.isEmpty()) {
-        try {
-          TimeUnit.SECONDS.sleep(1);
-        } catch (InterruptedException e) {
-          e.printStackTrace();
-        }
-      }
-    }
     return msgs;
   }
 
@@ -258,6 +237,27 @@ public final class TestServices {
     }
 
     return s3Connection;
+  }
+
+  /**
+   * Get Singleton {@link S3PresignerConnectionBuilder}.
+   * 
+   * @param endpointOverride {@link URI}
+   * 
+   * @return {@link S3ConnectionBuilder}
+   * @throws URISyntaxException URISyntaxException
+   */
+  public static synchronized S3PresignerConnectionBuilder getS3PresignerConnection(
+      final URI endpointOverride) throws URISyntaxException {
+    if (s3PresignerConnection == null) {
+      AwsCredentialsProvider cred = StaticCredentialsProvider
+          .create(AwsSessionCredentials.create("ACCESSKEY", "SECRETKEY", "TOKENKEY"));
+
+      s3PresignerConnection = new S3PresignerConnectionBuilder().setCredentials(cred)
+          .setRegion(AWS_REGION).setEndpointOverride(getEndpoint(Service.S3, endpointOverride));
+    }
+
+    return s3PresignerConnection;
   }
 
   /**
@@ -330,7 +330,7 @@ public final class TestServices {
   public static synchronized SqsService getSqsService(final SqsConnectionBuilder sqs)
       throws URISyntaxException {
     if (sqsservice == null) {
-      sqsservice = new SqsService(sqs);
+      sqsservice = new SqsServiceImpl(sqs);
     }
 
     return sqsservice;
@@ -418,6 +418,32 @@ public final class TestServices {
     if (localstack != null) {
       localstack.stop();
     }
+  }
+
+  /**
+   * Get Messages from SQS queue.
+   * 
+   * @param queueUrl {@link String}
+   * @return {@link List}
+   * @throws URISyntaxException URISyntaxException
+   */
+  public static List<Message> waitForMessagesFromSqs(final String queueUrl)
+      throws URISyntaxException {
+
+    SqsService sqsService = new SqsServiceImpl(getSqsConnection(null));
+    List<Message> msgs = Collections.emptyList();
+
+    while (msgs.isEmpty()) {
+      msgs = sqsService.receiveMessages(queueUrl).messages();
+      if (msgs.isEmpty()) {
+        try {
+          TimeUnit.SECONDS.sleep(1);
+        } catch (InterruptedException e) {
+          e.printStackTrace();
+        }
+      }
+    }
+    return msgs;
   }
 
   private TestServices() {}

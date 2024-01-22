@@ -35,6 +35,7 @@ import com.formkiq.graalvm.annotations.Reflectable;
 public class DocumentItemDynamoDb implements DocumentItem {
 
   /** Belongs To Document Id. */
+  @Reflectable
   private String belongsToDocumentId;
   /** Entity tag. */
   @Reflectable
@@ -45,10 +46,14 @@ public class DocumentItemDynamoDb implements DocumentItem {
   /** Content Type. */
   @Reflectable
   private String contentType;
+  /** Deep Link Path. */
+  @Reflectable
+  private String deepLinkPath;
   /** Document Id. */
   @Reflectable
   private String documentId;
   /** {@link List} {@link DocumentItem}. */
+  @Reflectable
   private List<DocumentItem> documents;
   /** Document Inserted Date. */
   @Reflectable
@@ -57,6 +62,7 @@ public class DocumentItemDynamoDb implements DocumentItem {
   @Reflectable
   private Date lastModifiedDate;
   /** {@link Collection} {@link DocumentMetadata}. */
+  @Reflectable
   private Collection<DocumentMetadata> metadata;
   /** Document Path. */
   @Reflectable
@@ -76,7 +82,6 @@ public class DocumentItemDynamoDb implements DocumentItem {
   /** Document Version. */
   @Reflectable
   private String version;
-
 
   /** constructor. */
   public DocumentItemDynamoDb() {}
@@ -113,6 +118,11 @@ public class DocumentItemDynamoDb implements DocumentItem {
   @Override
   public String getContentType() {
     return this.contentType;
+  }
+
+  @Override
+  public String getDeepLinkPath() {
+    return this.deepLinkPath;
   }
 
   @Override
@@ -188,6 +198,11 @@ public class DocumentItemDynamoDb implements DocumentItem {
   @Override
   public void setContentType(final String ct) {
     this.contentType = ct;
+  }
+
+  @Override
+  public void setDeepLinkPath(final String linkPath) {
+    this.deepLinkPath = linkPath;
   }
 
   @Override

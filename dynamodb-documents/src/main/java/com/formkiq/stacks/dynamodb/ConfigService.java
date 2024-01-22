@@ -40,6 +40,8 @@ public interface ConfigService {
   String MAX_WEBHOOKS = "MaxWebhooks";
   /** Webhook Time To Live Key. */
   String WEBHOOK_TIME_TO_LIVE = "WebhookTimeToLive";
+  /** Notification Email. */
+  String NOTIFICATION_EMAIL = "NotificationEmail";
 
   /**
    * Delete Config.

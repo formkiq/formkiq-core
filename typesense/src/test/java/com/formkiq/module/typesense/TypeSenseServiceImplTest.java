@@ -23,7 +23,7 @@
  */
 package com.formkiq.module.typesense;
 
-import static com.formkiq.testutils.aws.TypeSenseExtension.API_KEY;
+import static com.formkiq.testutils.aws.TypesenseExtension.API_KEY;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Arrays;
@@ -33,7 +33,9 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import com.formkiq.testutils.aws.TypeSenseExtension;
+import com.formkiq.testutils.aws.TypesenseExtension;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.regions.Region;
 
 /**
@@ -41,16 +43,19 @@ import software.amazon.awssdk.regions.Region;
  * Unit Tests for {@link TypeSenseService}.
  *
  */
-@ExtendWith(TypeSenseExtension.class)
+@ExtendWith(TypesenseExtension.class)
 class TypeSenseServiceImplTest {
 
   /** {@link TypeSenseService}. */
   private TypeSenseService service;
+  /** {@link AwsCredentials}. */
+  private AwsCredentials credentials = AwsBasicCredentials.create("ABC", "XYZ");
 
   @BeforeEach
   public void beforeEach() {
-    this.service = new TypeSenseServiceImpl(
-        "http://localhost:" + TypeSenseExtension.getMappedPort(), API_KEY, Region.US_EAST_1, null);
+    this.service =
+        new TypeSenseServiceImpl("http://localhost:" + TypesenseExtension.getMappedPort(), API_KEY,
+            Region.US_EAST_1, this.credentials);
   }
 
   /**
@@ -65,9 +70,11 @@ class TypeSenseServiceImplTest {
       String documentId = UUID.randomUUID().toString();
       final int maxResults = 10;
 
+      Map<String, Object> apply =
+          Map.of("path", "/something/else/My Document.pdf", "metadata#", "");
+
       // when
-      this.service.addDocument(siteId, documentId,
-          Map.of("text", "/something/else/My Document.pdf"));
+      this.service.addOrUpdateDocument(siteId, documentId, apply);
 
       // then
       List<String> documentIds = this.service.searchFulltext(siteId, "My Document", maxResults);
@@ -80,7 +87,7 @@ class TypeSenseServiceImplTest {
       String text = "Newstuff.pdf";
 
       // when
-      this.service.updateDocument(siteId, documentId, Map.of("text", text));
+      this.service.updateDocument(siteId, documentId, Map.of("path", text));
 
       // then
       documentIds = this.service.searchFulltext(siteId, "My Document", maxResults);

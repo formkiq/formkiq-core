@@ -1,0 +1,1097 @@
+#@ load("@ytt:data", "data")
+#@ load("@ytt:assert", "assert")
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: FormKiQ Core - Storage
+    
+Parameters:
+    
+  AppEnvironment:
+    Type: String
+    Description: The Application Environment
+    AllowedPattern: ".+"
+
+  LambdaMemory:
+    Type: Number
+    Description: The amount of memory used by lambda function (MB)
+    Default: 1024
+    MinValue: 128
+    MaxValue: 3008
+  
+  LambdaTimeout:
+    Type: String
+    Description: The maximum amount of seconds lambda function will run for (seconds)
+    Default: 60
+
+  FormKiQType:
+    Description: The type of FormKiQ installation
+    Default: "core"
+    Type: String
+    AllowedValues: ["core", "enterprise"]
+
+  Partition:
+    Description: The partition in which the resource is located. A partition is a group of AWS Regions
+    Type: String
+
+  VpcStackName:
+    Type: String
+    Description: FormKiQ VPC Stack Name 
+    
+  TypesenseApiKey:
+    Type: String
+    Description: TypeSense API Key
+    
+Conditions:
+        
+  HasVpcStackName:
+    Fn::Not:
+      - Fn::Equals: 
+        - Ref: VpcStackName
+        - ''
+
+  HasTypesenseApiKey:
+    Fn::Not:
+      - Fn::Equals: 
+        - Ref: TypesenseApiKey
+        - ''
+        
+  CreateTypesenseResources: 
+    Fn::And:
+      - Condition: HasVpcStackName
+      - Condition: HasTypesenseApiKey
+
+Resources:
+
+  SnsDocumentEventArnParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "SNS Topic for Document Create Events"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/sns/DocumentEventArn"
+      Type: String
+      Value: 
+        Ref: SnsDocumentEvent
+      Tags:
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+
+  DocumentsS3BucketParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Documents S3 Bucket Name"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket"
+      Type: String
+      Value:   
+        Ref: DocumentsS3Buckets
+      Tags:
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+
+  DocumentsStageS3BucketParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Documents Staging S3 Bucket Name"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/s3/DocumentsStageS3Bucket"
+      Type: String
+      Value: 
+        Ref: DocumentsStageS3Bucket
+      Tags:
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+                      
+  DocumentsStageS3Bucket:
+    Type: AWS::S3::Bucket
+    DependsOn:
+    - StagingS3Create
+    Properties:
+      BucketName: 
+        Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-staging-${AWS::AccountId}"
+      BucketEncryption: 
+        ServerSideEncryptionConfiguration: 
+        - ServerSideEncryptionByDefault:
+            SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        IgnorePublicAcls: true
+        BlockPublicPolicy: true
+        RestrictPublicBuckets: true
+      CorsConfiguration:
+        CorsRules:
+        -  AllowedOrigins: ["*"]
+           AllowedMethods: ["PUT", "POST", "GET"]
+           AllowedHeaders: ["*"]
+      NotificationConfiguration:
+        QueueConfigurations:
+        - Event: 's3:ObjectCreated:*'
+          Queue: 
+            Fn::GetAtt:
+            - DocumentsStagingQueue
+            - Arn
+      LifecycleConfiguration:
+        Rules:
+          - Id: ExpiryRule
+            Prefix: tempfiles/
+            Status: Enabled
+            ExpirationInDays: 1
+      Tags:
+        - Key: "Application"
+          Value: 
+            Fn::Sub: "FormKiQ ${FormKiQType}"
+        - Key: "AppEnvironment"
+          Value: 
+            Fn::Sub: "${AppEnvironment}"
+        - Key: "StackName"
+          Value: 
+            Fn::Sub: "${AWS::StackName}"
+
+  SnsDocumentEvent:
+    Type: "AWS::SNS::Topic"
+    Properties:
+      Tags:
+          - Key: "Application"
+            Value: 
+              Fn::Sub: "FormKiQ ${FormKiQType}"      
+          - Key: "AppEnvironment"
+            Value: 
+              Fn::Sub: "${AppEnvironment}"
+          - Key: "StackName"
+            Value: 
+              Fn::Sub: "${AWS::StackName}"            
+            
+  SnsDocumentEventPolicy:
+    Type: AWS::SNS::TopicPolicy
+    DependsOn:
+    - SnsDocumentEvent
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: lambda.amazonaws.com
+          Action: sns:Publish
+          Resource: 
+            Ref: SnsDocumentEvent
+      Topics:
+      - Ref: SnsDocumentEvent
+      
+  DocumentsS3Buckets:
+    Type: AWS::S3::Bucket
+    DependsOn:
+    - DocumentsS3Update
+    Properties:
+      BucketName: 
+        Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-documents-${AWS::AccountId}"
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+        - ServerSideEncryptionByDefault:
+            SSEAlgorithm: AES256
+      VersioningConfiguration:
+        Status: Enabled
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        IgnorePublicAcls: true
+        BlockPublicPolicy: true
+        RestrictPublicBuckets: true
+      CorsConfiguration:
+        CorsRules:
+        -  AllowedOrigins: ["*"]
+           AllowedMethods: ["PUT", "POST", "GET"]
+           AllowedHeaders: ["*"]
+      NotificationConfiguration:
+        LambdaConfigurations:
+        - Event: 's3:ObjectCreated:*'
+          Function: 
+            Fn::GetAtt:
+            - DocumentsS3Update
+            - Arn
+        - Event: 's3:ObjectRemoved:*'
+          Function: 
+            Fn::GetAtt:
+            - DocumentsS3Update
+            - Arn
+      Tags:
+        - Key: "Application"
+          Value: 
+            Fn::Sub: "FormKiQ ${FormKiQType}"
+        - Key: "AppEnvironment"
+          Value: 
+            Fn::Sub: "${AppEnvironment}"
+        - Key: "StackName"
+          Value: 
+            Fn::Sub: "${AWS::StackName}"
+
+  DocumentActionsProcessorParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Lambda function to process Document Actions requests"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/lambda/DocumentActionsProcessor"
+      Type: String
+      Value: 
+        Ref: DocumentActionsProcessor
+      Tags:
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+          
+  DocumentActionsProcessorLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: 
+        Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/${DocumentActionsProcessor}"
+      RetentionInDays: 90
+      
+  DocumentActionsProcessor:
+    Type: AWS::Serverless::Function
+    DependsOn:
+    - S3LambdaRolePolicy
+    - S3LambdaRole
+    Properties:
+      Handler: com.formkiq.stacks.lambda.s3.DocumentActionsProcessor
+      Description: Lambda function to process Document Actions requests
+      Runtime: provided.al2
+      Timeout: 
+        Fn::Sub: "${LambdaTimeout}"
+      MemorySize: 
+        Fn::Sub: "${LambdaMemory}"
+      CodeUri: ./lambda-s3-graalvm.zip
+      Tracing: Active
+      AutoPublishCodeSha256: #@ data.values.hash or assert.fail("missing version")
+      Environment:
+        Variables:
+          DOCUMENTS_S3_BUCKET: 
+            Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-documents-${AWS::AccountId}"
+          DOCUMENTS_TABLE: 
+            Ref: Documents
+          APP_ENVIRONMENT: 
+            Fn::Sub: "${AppEnvironment}"
+          DEBUG: false
+          ENABLE_AWS_X_RAY: true  
+          FormKiQType:
+            Ref: FormKiQType
+          SNS_DOCUMENT_EVENT: 
+            Ref: SnsDocumentEvent
+          DOCUMENT_VERSIONS_PLUGIN: "com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning"
+          DOCUMENT_SYNC_TABLE: 
+            Ref: DocumentSyncs
+          CHATGPT_API_COMPLETIONS_URL: "https://api.openai.com/v1/chat/completions"
+          MODULE_typesense:
+            Fn::If:
+            - CreateTypesenseResources
+            - "true"
+            - "false"
+      Role: 
+        Fn::GetAtt:
+        - S3LambdaRole
+        - Arn
+      Tags:
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+      Events:
+        ActionsEvent:
+          Type: SQS
+          Properties:
+            Queue: 
+              Fn::GetAtt: 
+              - DocumentActionsQueue
+              - Arn
+            BatchSize: 1          
+
+  StagingS3CreateLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: 
+        Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/${StagingS3Create}"
+      RetentionInDays: 90
+      
+  StagingS3Create:
+    Type: AWS::Serverless::Function
+    DependsOn:
+    - S3LambdaRolePolicy
+    - S3LambdaRole
+    Properties:
+      Handler: com.formkiq.stacks.lambda.s3.StagingS3Create
+      Description: Lambda function that processes document written to the Staging S3 Bucket
+      Runtime: provided.al2
+      Timeout: 
+        Fn::Sub: "${LambdaTimeout}"
+      MemorySize: 
+        Fn::Sub: "${LambdaMemory}"
+      CodeUri: ./lambda-s3-graalvm.zip
+      Tracing: Active
+      AutoPublishCodeSha256: #@ data.values.hash or assert.fail("missing version")
+      Environment:
+        Variables:
+          DOCUMENTS_S3_BUCKET: 
+            Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-documents-${AWS::AccountId}"
+          DOCUMENTS_TABLE: 
+            Ref: Documents
+          APP_ENVIRONMENT: 
+            Fn::Sub: "${AppEnvironment}"
+          DEBUG: false
+          ENABLE_AWS_X_RAY: true
+          FormKiQType:
+            Ref: FormKiQType
+          SNS_DOCUMENT_EVENT: 
+            Ref: SnsDocumentEvent
+          DOCUMENT_VERSIONS_PLUGIN: "com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning"
+          DOCUMENT_SYNC_TABLE: 
+            Ref: DocumentSyncs
+          MODULE_typesense:
+            Fn::If:
+            - CreateTypesenseResources
+            - "true"
+            - "false"
+      Role: 
+        Fn::GetAtt:
+        - S3LambdaRole
+        - Arn
+      Tags:
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+      Events:
+        CreateSQSEvent:
+          Type: SQS
+          Properties:
+            Queue: 
+              Fn::GetAtt: 
+              - DocumentsStagingQueue
+              - Arn
+            BatchSize: 1
+
+  StagingCreateObjectParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Lambda for processing Staging Document Create Events"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/lambda/StagingCreateObject"
+      Type: String
+      Value: 
+        Ref: StagingS3Create
+      Tags:
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+
+  DocumentsS3UpdateLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: 
+        Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/${DocumentsS3Update}"
+      RetentionInDays: 90
+
+  DocumentsS3Update:
+    Type: AWS::Serverless::Function
+    DependsOn:
+    - S3LambdaRolePolicy
+    - S3LambdaRole
+    Properties:    
+      Handler: com.formkiq.stacks.lambda.s3.DocumentsS3Update
+      Description: Lambda function that processes document written to the Documents S3 Bucket
+      Runtime: provided.al2
+      Timeout: 
+        Fn::Sub: "${LambdaTimeout}"
+      MemorySize: 
+        Fn::Sub: "${LambdaMemory}"
+      CodeUri: ./lambda-s3-graalvm.zip
+      Tracing: Active
+      AutoPublishCodeSha256: #@ data.values.hash or assert.fail("missing version")
+      Environment:
+        Variables:
+          DOCUMENTS_TABLE: 
+            Ref: Documents
+          APP_ENVIRONMENT: 
+            Fn::Sub: "${AppEnvironment}"
+          DEBUG: false
+          ENABLE_AWS_X_RAY: true
+          SNS_DOCUMENT_EVENT: 
+            Ref: SnsDocumentEvent
+          FormKiQType:
+            Ref: FormKiQType
+          DOCUMENT_VERSIONS_PLUGIN: "com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning"
+          DOCUMENT_SYNC_TABLE: 
+            Ref: DocumentSyncs
+          MODULE_typesense:
+            Fn::If:
+            - CreateTypesenseResources
+            - "true"
+            - "false"
+      Role: 
+        Fn::GetAtt:
+        - S3LambdaRole
+        - Arn
+      Tags:
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+      Events:
+        CreateSQSEvent:
+          Type: SQS
+          Properties:
+            Queue: 
+              Fn::GetAtt: 
+              - DocumentsUpdateQueue
+              - Arn
+            BatchSize: 1
+
+  DocumentActionsQueue:
+    Type: "AWS::SQS::Queue"
+    Properties:
+      VisibilityTimeout: 300
+      ReceiveMessageWaitTimeSeconds: 20
+      RedrivePolicy:
+        maxReceiveCount: 3
+        deadLetterTargetArn:
+          Fn::GetAtt:
+            - DocumentsDeadLetterQueue
+            - Arn
+      Tags:
+          - Key: "Application"
+            Value: 
+              Fn::Sub: "FormKiQ ${FormKiQType}"      
+          - Key: "AppEnvironment"
+            Value: 
+              Fn::Sub: "${AppEnvironment}"
+          - Key: "StackName"
+            Value: 
+              Fn::Sub: "${AWS::StackName}"
+
+  DocumentsStagingQueue:
+    Type: "AWS::SQS::Queue"
+    Properties:
+      VisibilityTimeout: 300
+      ReceiveMessageWaitTimeSeconds: 20
+      RedrivePolicy:
+        maxReceiveCount: 3
+        deadLetterTargetArn:
+          Fn::GetAtt:
+            - DocumentsDeadLetterQueue
+            - Arn
+      Tags:
+          - Key: "Application"
+            Value: 
+              Fn::Sub: "FormKiQ ${FormKiQType}"      
+          - Key: "AppEnvironment"
+            Value: 
+              Fn::Sub: "${AppEnvironment}"
+          - Key: "StackName"
+            Value: 
+              Fn::Sub: "${AWS::StackName}"
+
+  DocumentsDeadLetterQueue:
+    Type: "AWS::SQS::Queue"
+    Properties:
+      VisibilityTimeout: 300
+      ReceiveMessageWaitTimeSeconds: 20
+      Tags:
+          - Key: "Application"
+            Value: 
+              Fn::Sub: "FormKiQ ${FormKiQType}"      
+          - Key: "AppEnvironment"
+            Value: 
+              Fn::Sub: "${AppEnvironment}"
+          - Key: "StackName"
+            Value: 
+              Fn::Sub: "${AWS::StackName}"
+
+  DocumentsUpdateQueue:
+    Type: "AWS::SQS::Queue"
+    Properties:
+      VisibilityTimeout: 300
+      ReceiveMessageWaitTimeSeconds: 20
+      RedrivePolicy:
+        maxReceiveCount: 3
+        deadLetterTargetArn:
+          Fn::GetAtt:
+            - DocumentsDeadLetterQueue
+            - Arn
+      Tags:
+          - Key: "Application"
+            Value: 
+              Fn::Sub: "FormKiQ ${FormKiQType}"      
+          - Key: "AppEnvironment"
+            Value: 
+              Fn::Sub: "${AppEnvironment}"
+          - Key: "StackName"
+            Value: 
+              Fn::Sub: "${AWS::StackName}"
+            
+  DocumentsUpdateObjectParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Lambda for processing Document Update Events"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/lambda/DocumentsUpdateObject"
+      Type: String
+      Value: 
+        Ref: DocumentsS3Update
+      Tags:
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+
+  DocumentActionsQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    DependsOn: 
+    - DocumentActionsQueue
+    - SnsDocumentEvent
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Id: QueuePolicy
+        Statement:
+        - Sid: s3SendMessagesToQueue
+          Effect: Allow
+          Principal:
+            Service: sns.amazonaws.com
+          Action: sqs:SendMessage
+          Resource: 
+            Fn::GetAtt: 
+            - DocumentActionsQueue
+            - Arn
+          Condition:
+            ArnLike:
+              aws:SourceArn:
+                Ref: SnsDocumentEvent
+      Queues:
+      - Ref: DocumentActionsQueue
+      
+  SnsDocumentsCreateSubscriptionSqs:
+    Type: AWS::SNS::Subscription
+    DependsOn:
+    - DocumentActionsProcessor
+    Properties:
+      Protocol: sqs
+      Endpoint: 
+        Fn::GetAtt:
+        - DocumentActionsQueue
+        - Arn
+      TopicArn:
+        Ref: SnsDocumentEvent
+      FilterPolicy: '{"type": ["actions"]}'      
+
+  DocumentsStagingQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    DependsOn: 
+    - DocumentsStagingQueue
+    - SnsDocumentEvent
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Id: QueuePolicy
+        Statement:
+        - Sid: s3SendMessagesToQueue
+          Effect: Allow
+          Principal:
+            Service: s3.amazonaws.com
+          Action: 
+            - sqs:SendMessage
+          Resource: 
+            Fn::GetAtt: 
+            - DocumentsStagingQueue
+            - Arn
+          Condition:
+            StringEquals:
+              aws:SourceAccount: 
+                Ref: AWS::AccountId
+      Queues:
+      - Ref: DocumentsStagingQueue
+      
+  DocumentsUpdateQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    DependsOn: 
+    - DocumentsUpdateQueue
+    - SnsDocumentEvent
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Id: QueuePolicy
+        Statement:
+        - Sid: s3SendMessagesToQueue
+          Effect: Allow
+          Principal:
+            Service: lambda.amazonaws.com
+          Action: sqs:SendMessage
+          Resource: 
+            Fn::GetAtt: 
+            - DocumentsUpdateQueue
+            - Arn
+      Queues:
+      - Ref: DocumentsUpdateQueue
+      
+  DocumentsUpdateQueueUrlParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "SQS URL for processing Document Update Events"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/sqs/DocumentsUpdateUrl"
+      Type: String
+      Value: 
+        Ref: DocumentsUpdateQueue
+      Tags:
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+        
+  DocumentsUpdateQueueArnParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "SQS ARN for processing Document Update Events"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/sqs/DocumentsUpdateArn"
+      Type: String
+      Value: 
+        Fn::GetAtt: 
+        - DocumentsUpdateQueue
+        - Arn
+      Tags:
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+        
+  DocumentsUpdateObjectPermission:
+    DependsOn:
+    - DocumentsS3Update
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: 
+        Fn::GetAtt: 
+        - DocumentsS3Update
+        - Arn
+      Principal: s3.amazonaws.com
+      SourceAccount: 
+        Fn::Sub: "${AWS::AccountId}"
+      SourceArn:
+        Fn::Join:
+        - ''
+        - - Fn::Sub: "arn:${Partition}:s3:::"
+          - Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-documents-${AWS::AccountId}"
+
+  S3LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Tags:
+        - Key: "Application"
+          Value: 
+            Fn::Sub: "FormKiQ ${FormKiQType}"        
+        - Key: "AppEnvironment"
+          Value: 
+            Fn::Sub: "${AppEnvironment}"
+        - Key: "StackName"
+          Value: 
+            Fn::Sub: "${AWS::StackName}"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+      - Fn::Sub: "arn:${Partition}:iam::aws:policy/AWSXRayDaemonWriteAccess"
+  S3LambdaRolePolicy: 
+    Type: "AWS::IAM::Policy"
+    Properties: 
+      PolicyName: s3-lambdarole
+      Roles: 
+        - 
+          Ref: "S3LambdaRole"
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            Resource: "*"
+          - Effect: Allow
+            Action:
+            - ses:SendEmail
+            Resource: "*"
+          - Effect: Allow
+            Action:
+            - s3:ListBucket
+            Resource:
+            - Fn::Join:
+              - ''
+              - - Fn::Sub: "arn:${Partition}:s3:::"
+                - Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-documents-${AWS::AccountId}"
+            - Fn::Join:
+              - ''
+              - - Fn::Sub: "arn:${Partition}:s3:::"
+                - Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-staging-${AWS::AccountId}"
+          - Effect: Allow
+            Action:
+            - s3:GetObject*
+            - s3:PutObject*
+            - s3:DeleteObject
+            Resource:
+            - Fn::Join:
+              - ''
+              - - Fn::Sub: "arn:${Partition}:s3:::"
+                - Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-documents-${AWS::AccountId}"
+                - '/*'
+            - Fn::Join:
+              - ''
+              - - Fn::Sub: "arn:${Partition}:s3:::"
+                - Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-staging-${AWS::AccountId}"
+                - '/*'
+          - Effect: Allow
+            Action:
+            - dynamodb:BatchGetItem
+            - dynamodb:GetItem
+            - dynamodb:Query
+            - dynamodb:Scan
+            - dynamodb:BatchWriteItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+            Resource: 
+            - Fn::Sub: "arn:${Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Documents}"
+          - Effect: Allow
+            Action:
+            - dynamodb:Query
+            - dynamodb:Scan
+            Resource:
+            - Fn::Sub: "arn:${Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Documents}/index/*"
+          - Effect: Allow
+            Action:
+            - dynamodb:PutItem
+            Resource:
+            - Fn::Sub: "arn:${Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DocumentSyncs}"
+          - Effect: Allow
+            Action:
+            - sqs:ReceiveMessage
+            - sqs:DeleteMessage
+            - sqs:GetQueueAttributes
+            Resource:
+            - Fn::GetAtt: 
+              - DocumentActionsQueue
+              - Arn
+            - Fn::GetAtt: 
+              - DocumentsUpdateQueue
+              - Arn
+            - Fn::GetAtt: 
+              - DocumentsStagingQueue
+              - Arn
+          - Effect: Allow
+            Action:
+            - sns:Publish
+            Resource:
+            - Ref: SnsDocumentEvent
+          - Effect: Allow
+            Action:
+            - ssm:GetParameter
+            Resource: 
+            - Fn::Sub: "arn:${Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/formkiq/*"
+          - Effect: Allow
+            Action:
+            - execute-api:Invoke
+            - execute-api:ManageConnections
+            Resource: 
+            - Fn::Sub: "arn:${Partition}:execute-api:*:*:*"            
+
+  DocumentsParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: DynamoDB Documents table name
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName"
+      Type: String
+      Value: 
+        Ref: Documents
+      Tags:
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+
+  DocumentsStreamArnParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: DynamoDB Documents table name
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/dynamodb/DocumentsStreamArn"
+      Type: String
+      Value: 
+        Fn::GetAtt:
+        - Documents
+        - StreamArn
+      Tags:
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+          
+  Documents:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: 
+        Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-documents"
+      BillingMode: PAY_PER_REQUEST
+      TimeToLiveSpecification:
+        AttributeName: TimeToLive
+        Enabled: TRUE            
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      Tags:
+        - Key: "Application"
+          Value: 
+            Fn::Sub: "FormKiQ ${FormKiQType}"
+        - Key: "AppEnvironment"
+          Value: 
+            Fn::Sub: "${AppEnvironment}"
+      KeySchema: 
+        - 
+          AttributeName: "PK"
+          KeyType: "HASH"
+        - 
+          AttributeName: "SK"
+          KeyType: "RANGE"
+      AttributeDefinitions: 
+        - 
+          AttributeName: "PK"
+          AttributeType: "S"
+        - 
+          AttributeName: "SK"
+          AttributeType: "S"
+        - 
+          AttributeName: "GSI1PK"
+          AttributeType: "S"
+        - 
+          AttributeName: "GSI1SK"
+          AttributeType: "S"
+        - 
+          AttributeName: "GSI2PK"
+          AttributeType: "S"
+        - 
+          AttributeName: "GSI2SK"
+          AttributeType: "S"
+      GlobalSecondaryIndexes: 
+        - 
+          IndexName: "GSI1"
+          KeySchema: 
+            - 
+              AttributeName: "GSI1PK"
+              KeyType: "HASH"
+            - 
+              AttributeName: "GSI1SK"
+              KeyType: "RANGE"
+          Projection: 
+            ProjectionType: "INCLUDE"
+            NonKeyAttributes:
+            - inserteddate
+            - documentId
+            - tagKey
+            - tagValue
+        - 
+          IndexName: "GSI2"
+          KeySchema: 
+            - 
+              AttributeName: "GSI2PK"
+              KeyType: "HASH"
+            - 
+              AttributeName: "GSI2SK"
+              KeyType: "RANGE"
+          Projection: 
+            ProjectionType: "INCLUDE"
+            NonKeyAttributes:
+            - inserteddate
+            - documentId
+            - tagKey
+            - tagValue
+
+  CacheParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: DynamoDB Cache table name
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/dynamodb/CacheTableName"
+      Type: String
+      Value: 
+        Ref: Cache
+      Tags:
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+      
+  Cache:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: 
+        Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-cache"
+      BillingMode: PAY_PER_REQUEST
+      TimeToLiveSpecification:
+        AttributeName: TimeToLive
+        Enabled: TRUE
+      Tags:
+        - Key: "Application"
+          Value: 
+            Fn::Sub: "FormKiQ ${FormKiQType}"
+        - Key: "AppEnvironment"
+          Value: 
+            Fn::Sub: "${AppEnvironment}"
+      KeySchema: 
+        - 
+          AttributeName: "PK"
+          KeyType: "HASH"
+        - 
+          AttributeName: "SK"
+          KeyType: "RANGE"
+      AttributeDefinitions: 
+        - 
+          AttributeName: "PK"
+          AttributeType: "S"
+        - 
+          AttributeName: "SK"
+          AttributeType: "S"
+          
+  DocumentSyncs:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: 
+        Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-documentsyncs"
+      BillingMode: PAY_PER_REQUEST
+      TimeToLiveSpecification:
+        AttributeName: TimeToLive
+        Enabled: TRUE
+      Tags:
+        - Key: "Application"
+          Value: 
+            Fn::Sub: "FormKiQ ${FormKiQType}"
+        - Key: "AppEnvironment"
+          Value: 
+            Fn::Sub: "${AppEnvironment}"
+      KeySchema: 
+        - 
+          AttributeName: "PK"
+          KeyType: "HASH"
+        - 
+          AttributeName: "SK"
+          KeyType: "RANGE"
+      AttributeDefinitions: 
+        - 
+          AttributeName: "PK"
+          AttributeType: "S"
+        - 
+          AttributeName: "SK"
+          AttributeType: "S"
+
+  DocumentSyncsParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: DynamoDB Document Sync table name
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/dynamodb/DocumentSyncsTableName"
+      Type: String
+      Value: 
+        Ref: DocumentSyncs
+      Tags:
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+          
+Outputs:
+
+  DocumentsTableName:
+    Value:
+      Ref: Documents
+
+  DocumentSyncsTableName:
+    Value:
+      Ref: DocumentSyncs
+      
+  CacheTableName:
+    Value:
+      Ref: Cache
+      
+  DocumentsS3Buckets:
+    Description: Documents Bucket.
+    Value: 
+      Ref: DocumentsS3Buckets
+    
+  DocumentsStageS3Bucket:
+    Description: Documents Staging Bucket.
+    Value: 
+      Ref: DocumentsStageS3Bucket
+    
+  DocumentsUpdateQueueUrl:
+    Description: Documents Update Documents Queue Url
+    Value: 
+      Ref: DocumentsUpdateQueue
+  
+  DocumentsUpdateQueueArn:
+    Description: Documents S3 Update Documents Queue Arn
+    Value: 
+      Fn::GetAtt: 
+      - DocumentsUpdateQueue
+      - Arn
+        
+  SnsDocumentEventArn:
+    Description: SNS Topic for Document Events
+    Value: 
+      Ref: SnsDocumentEvent
+    
+  DocumentsS3Update:
+    Description: Documents MetaData Object Lambda
+    Value: 
+      Ref: DocumentsS3Update

@@ -25,8 +25,9 @@ package com.formkiq.stacks.lambda.s3;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFileAsByteArray;
-import static com.formkiq.testutils.aws.DynamoDbExtension.CACHE_TABLE;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
+import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
+import static com.formkiq.testutils.aws.TestServices.STAGE_BUCKET_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
@@ -56,6 +57,8 @@ import com.formkiq.module.lambdaservices.ClassServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
+import com.formkiq.stacks.dynamodb.DocumentVersionService;
+import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbHelper;
@@ -70,7 +73,7 @@ import com.formkiq.testutils.aws.TestServices;
 @ExtendWith(DynamoDbExtension.class)
 public class DocumentCompressorTest {
   /** {@link S3ConnectionBuilder}. */
-  private static S3ConnectionBuilder s3Builder;
+  // private static S3ConnectionBuilder s3Builder;
   /** {@link DynamoDbConnectionBuilder}. */
   private static DynamoDbConnectionBuilder dbBuilder;
   /** {@link DynamoDbHelper}. */
@@ -79,10 +82,6 @@ public class DocumentCompressorTest {
   private static S3Service s3;
   /** {@link DocumentService}. */
   private static DocumentService documentService;
-  /** Documents S3 bucket. */
-  private static final String DOCUMENTS_BUCKET = "documents";
-  /** Staging S3 bucket. */
-  private static final String STAGING_BUCKET = "staging";
   /** {@link DocumentCompressor}. */
   private DocumentCompressor compressor;
   /** {@link AwsServiceCache}. */
@@ -94,8 +93,8 @@ public class DocumentCompressorTest {
   @BeforeEach
   public void before() {
     dbHelper.truncateTable(DOCUMENTS_TABLE);
-    s3.deleteAllFiles(STAGING_BUCKET);
-    s3.deleteAllFiles(DOCUMENTS_BUCKET);
+    s3.deleteAllFiles(STAGE_BUCKET_NAME);
+    s3.deleteAllFiles(BUCKET_NAME);
 
     this.compressor = new DocumentCompressor(serviceCache);
   }
@@ -107,32 +106,27 @@ public class DocumentCompressorTest {
    */
   @BeforeAll
   public static void beforeClass() throws Exception {
+
     Map<String, String> env = new HashMap<>();
     env.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
     env.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
 
-    s3Builder = TestServices.getS3Connection(null);
-    AwsServiceCache.register(S3ConnectionBuilder.class,
-        new ClassServiceExtension<S3ConnectionBuilder>(s3Builder));
-    AwsServiceCache.register(S3Service.class, new S3ServiceExtension(s3Builder));
-
+    S3ConnectionBuilder s3Builder = TestServices.getS3Connection(null);
     dbBuilder = DynamoDbTestServices.getDynamoDbConnection();
-    AwsServiceCache.register(DynamoDbConnectionBuilder.class,
-        new DynamoDbConnectionBuilderExtension(dbBuilder));
-    AwsServiceCache.register(DocumentService.class, new DocumentServiceExtension());
 
     dbHelper = DynamoDbTestServices.getDynamoDbHelper(null);
     s3 = new S3Service(s3Builder);
     documentService = new DocumentServiceImpl(dbBuilder, DOCUMENTS_TABLE,
         new DocumentVersionServiceNoVersioning());
-    s3.createBucket(DOCUMENTS_BUCKET);
-    s3.createBucket(STAGING_BUCKET);
-    if (!dbHelper.isTableExists(DOCUMENTS_TABLE)) {
-      dbHelper.createDocumentsTable(DOCUMENTS_TABLE);
-      dbHelper.createCacheTable(CACHE_TABLE);
-    }
 
     serviceCache = new AwsServiceCache().environment(env);
+    serviceCache.register(S3ConnectionBuilder.class,
+        new ClassServiceExtension<S3ConnectionBuilder>(s3Builder));
+    serviceCache.register(DynamoDbConnectionBuilder.class,
+        new DynamoDbConnectionBuilderExtension(dbBuilder));
+    serviceCache.register(DocumentService.class, new DocumentServiceExtension());
+    serviceCache.register(S3Service.class, new S3ServiceExtension());
+    serviceCache.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
   }
 
   @Test
@@ -150,10 +144,10 @@ public class DocumentCompressorTest {
     final ArrayList<String> documentIds = new ArrayList<>(fileChecksums.keySet());
 
     this.compressor = new DocumentCompressor(serviceCache);
-    this.compressor.compressDocuments("default", DOCUMENTS_BUCKET, STAGING_BUCKET, archiveKey,
+    this.compressor.compressDocuments("default", BUCKET_NAME, STAGE_BUCKET_NAME, archiveKey,
         documentIds);
 
-    try (InputStream zipContent = s3.getContentAsInputStream(STAGING_BUCKET, archiveKey)) {
+    try (InputStream zipContent = s3.getContentAsInputStream(STAGE_BUCKET_NAME, archiveKey)) {
       // Check that all files are present and content checksum is the same
       validateZipContent(zipContent, fileChecksums);
     }
@@ -173,10 +167,10 @@ public class DocumentCompressorTest {
     final String archiveKey = "tempfiles/665f0228-4fbc-4511-912b-6cb6f566e1c0.zip";
     final ArrayList<String> documentIds = new ArrayList<>(fileChecksums.keySet());
 
-    this.compressor.compressDocuments("default", DOCUMENTS_BUCKET, STAGING_BUCKET, archiveKey,
+    this.compressor.compressDocuments("default", BUCKET_NAME, STAGE_BUCKET_NAME, archiveKey,
         documentIds);
 
-    try (InputStream zipContent = s3.getContentAsInputStream(STAGING_BUCKET, archiveKey)) {
+    try (InputStream zipContent = s3.getContentAsInputStream(STAGE_BUCKET_NAME, archiveKey)) {
       validateZipContent(zipContent, fileChecksums);
     }
   }
@@ -189,7 +183,7 @@ public class DocumentCompressorTest {
     final String documentId = item.getDocumentId();
     documentService.saveDocument(siteId, item, null);
     final String key = createS3Key(siteId, documentId);
-    s3.putObject(DOCUMENTS_BUCKET, key, content, null, null);
+    s3.putObject(BUCKET_NAME, key, content, null, null);
     return item.getDocumentId();
   }
 

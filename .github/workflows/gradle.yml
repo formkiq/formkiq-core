@@ -28,11 +28,14 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: Set up JDK 11
+    - name: Set up JDK 17
       uses: actions/setup-java@v3
       with:
-        java-version: '11'
+        java-version: '17'
         distribution: 'temurin'
+        cache: gradle
+#    - name: Setup Gradle
+#      uses: gradle/gradle-build-action@v2
     - name: add binaries to path
       run: |
         mkdir -p "$HOME/.local/bin"
@@ -40,13 +43,8 @@ jobs:
         chmod +x "$HOME/.local/bin/ytt"
         echo "$HOME/.local/bin" >> $GITHUB_PATH
         ytt --version
-        npm install openapi-generator -g
-        alias openapi-generator=openapi-generator-cli
-        openapi-generator --version
-    - name: Setup Gradle
-      uses: gradle/gradle-build-action@v2
     - name: Execute Gradle build
-      run: ./gradlew build --info
+      run: ./gradlew build --refresh-dependencies --info
     - name: Upload test reports
       uses: actions/upload-artifact@v3
       if: always()
@@ -67,4 +65,4 @@ jobs:
         S3_BUCKET: ${{ secrets.S3_BUCKET }}
         DISTRIBUTION_ID: ${{ secrets.DISTRIBUTION_ID }}
       run: |
-        aws s3 cp ./build/distributions/formkiq-core/formkiq-core-*.zip s3://${S3_BUCKET}/formkiq-core/
+        aws s3 cp ./build/distributions/formkiq-core-*.zip s3://${S3_BUCKET}/formkiq-core/

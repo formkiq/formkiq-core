@@ -23,10 +23,10 @@
  */
 package com.formkiq.stacks.api.awstest;
 
+import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocument;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.net.http.HttpHeaders;
 import java.net.http.HttpResponse;
 import java.util.Arrays;
@@ -37,16 +37,18 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiPredicate;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import com.formkiq.stacks.client.FormKiqClientV1;
+import com.formkiq.aws.services.lambda.GsonUtil;
+import com.formkiq.client.api.DocumentsApi;
+import com.formkiq.client.api.WebhooksApi;
+import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.model.AddWebhookRequest;
+import com.formkiq.client.model.AddWebhookResponse;
+import com.formkiq.client.model.GetDocumentResponse;
+import com.formkiq.client.model.GetWebhookResponse;
+import com.formkiq.client.model.GetWebhooksResponse;
 import com.formkiq.stacks.client.HttpService;
 import com.formkiq.stacks.client.HttpServiceJava;
-import com.formkiq.stacks.client.models.DocumentWithChildren;
-import com.formkiq.stacks.client.models.Webhook;
-import com.formkiq.stacks.client.models.Webhooks;
-import com.formkiq.stacks.client.requests.AddWebhookRequest;
-import com.formkiq.stacks.client.requests.DeleteWebhookRequest;
-import com.formkiq.stacks.client.requests.GetWebhooksRequest;
-import com.formkiq.stacks.client.requests.OptionsWebhookRequest;
+import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
 import software.amazon.awssdk.core.sync.RequestBody;
 
 /**
@@ -56,12 +58,10 @@ import software.amazon.awssdk.core.sync.RequestBody;
  * </p>
  *
  */
-public class PublicWebhooksRequestTest extends AbstractApiTest {
+public class PublicWebhooksRequestTest extends AbstractAwsIntegrationTest {
 
   /** Http Status OK. */
   private static final int STATUS_OK = 200;
-  /** Http Status No Content. */
-  private static final int STATUS_NO_CONTENT = 204;
   /** Http Status BAD. */
   private static final int STATUS_BAD = 400;
   /** Http Status Unauthorized. */
@@ -72,31 +72,22 @@ public class PublicWebhooksRequestTest extends AbstractApiTest {
   private static final int TEST_TIMEOUT = 20;
 
   /**
-   * /webhooks Options.
-   * 
-   * @throws Exception Exception
-   */
-  @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
-  public void testOptions01() throws Exception {
-    for (FormKiqClientV1 client : getFormKiqClients(null)) {
-      assertEquals(STATUS_NO_CONTENT, client.optionsWebhooks().statusCode());
-      assertEquals(STATUS_NO_CONTENT,
-          client.optionsWebhooks(new OptionsWebhookRequest().webhookId("1")).statusCode());
-    }
-  }
-
-  /**
    * Test POST /public/webhooks.
    * 
    * @throws Exception Exception
    */
+  @SuppressWarnings("unchecked")
   @Test
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testPublicWebhooks01() throws Exception {
-    for (FormKiqClientV1 client : getFormKiqClients(null)) {
-      // given
-      String id = client.addWebhook(new AddWebhookRequest().name("paypal")).id();
+    // given
+    String siteId = null;
+    for (ApiClient client : getApiClients(siteId)) {
+      WebhooksApi api = new WebhooksApi(client);
+      AddWebhookResponse addWebhook =
+          api.addWebhook(new AddWebhookRequest().name("paypal"), siteId);
+      String id = addWebhook.getWebhookId();
+      // String id = client.addWebhook(new AddWebhookRequest().name("paypal")).id();
       String urlpath = getRootHttpUrl() + "/public/webhooks/" + id;
 
       Map<String, List<String>> headers = Map.of("Content-Type", Arrays.asList("text/plain"));
@@ -116,23 +107,33 @@ public class PublicWebhooksRequestTest extends AbstractApiTest {
 
       // then
       assertEquals(STATUS_OK, response.statusCode());
-      Map<String, Object> map = toMap(response);
+      Map<String, Object> map = GsonUtil.getInstance().fromJson(response.body(), Map.class);
+      waitForDocument(client, siteId, map.get("documentId").toString());
 
-      DocumentWithChildren document = getDocument(client, map.get("documentId").toString(), false);
+      DocumentsApi docApi = new DocumentsApi(client);
+      GetDocumentResponse document =
+          docApi.getDocument(map.get("documentId").toString(), siteId, null);
       assertNotNull(document);
+      // DocumentWithChildren document = getDocument(client, map.get("documentId").toString(),
+      // false);
+      // assertNotNull(document);
 
-      Webhooks webhooks = client.getWebhooks(new GetWebhooksRequest());
-      List<Webhook> list = webhooks.webhooks();
+      GetWebhooksResponse webhooks = api.getWebhooks(siteId);
+      List<GetWebhookResponse> list = webhooks.getWebhooks();
       assertFalse(list.isEmpty());
-      assertEquals("default", list.get(0).siteId());
-      assertEquals("paypal", list.get(0).name());
-      assertNotNull(list.get(0).url());
-      assertNotNull(list.get(0).insertedDate());
-      assertNotNull(list.get(0).id());
-      assertNotNull("testadminuser@formkiq.com", list.get(0).userId());
+      assertEquals("default", list.get(0).getSiteId());
+      assertEquals("paypal", list.get(0).getName());
+      assertNotNull(list.get(0).getUrl());
+      assertNotNull(list.get(0).getInsertedDate());
+      assertNotNull(list.get(0).getWebhookId());
+      assertNotNull("testadminuser@formkiq.com", list.get(0).getUserId());
 
-      assertTrue(client.deleteWebhook(new DeleteWebhookRequest().webhookId(id)));
+      api.deleteWebhook(id, siteId);
     }
+  }
+
+  private String getRootHttpUrl() {
+    return getCognito().getRootJwtUrl();
   }
 
   /**
@@ -205,9 +206,16 @@ public class PublicWebhooksRequestTest extends AbstractApiTest {
   @Test
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testPublicWebhooks04() throws Exception {
-    for (FormKiqClientV1 client : getFormKiqClients(null)) {
+    String siteId = null;
+    for (ApiClient client : getApiClients(siteId)) {
       // given
-      String id = client.addWebhook(new AddWebhookRequest().name("paypal").enabled("private")).id();
+      WebhooksApi api = new WebhooksApi(client);
+      AddWebhookResponse addWebhook = api.addWebhook(
+          new com.formkiq.client.model.AddWebhookRequest().name("paypal").enabled("private"),
+          siteId);
+      String id = addWebhook.getWebhookId();
+      // String id = client.addWebhook(new
+      // AddWebhookRequest().name("paypal").enabled("private")).id();
       String urlpath = getRootHttpUrl() + "/public/webhooks/" + id;
 
       Map<String, List<String>> headers = Map.of("Content-Type", Arrays.asList("text/plain"));

@@ -15,18 +15,22 @@
 			<allow pkg="software.amazon.awssdk.auth.credentials" />
 			<allow pkg="com.amazonaws.services.lambda.runtime" />
 			
+			<allow pkg="com.formkiq.plugins.tagschema" />
 			<allow pkg="com.formkiq.stacks.lambda.s3" />
 			<allow pkg="com.formkiq.aws.dynamodb" />
 			<allow pkg="com.formkiq.aws.s3" />
 			<allow pkg="com.formkiq.aws.sns" />
 			<allow pkg="com.formkiq.aws.sqs" />
 			<allow pkg="com.formkiq.aws.ssm" />
+			<allow pkg="com.formkiq.aws.ses" />
+			<allow pkg="software.amazon.awssdk.services.ses.model" />
 			<allow pkg="com.formkiq.graalvm.annotations" />
 			<allow pkg="com.formkiq.module.actions" />
 			<allow pkg="com.formkiq.module.actions.services" />
 			<allow pkg="com.formkiq.module.events" />
 			<allow pkg="com.formkiq.module.events.document" />
 			<allow pkg="com.formkiq.module.http" />
+			<allow pkg="com.formkiq.module.httpsigv4" />
 			<allow pkg="com.formkiq.module.lambdaservices" />
 			<allow pkg="com.formkiq.module.typesense" />
 			<allow pkg="com.formkiq.plugins.version" />

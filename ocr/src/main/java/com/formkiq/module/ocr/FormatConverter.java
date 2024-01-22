@@ -39,10 +39,10 @@ public interface FormatConverter {
    * @param awsServices {@link AwsServiceCache}
    * @param sqsMessage {@link OcrSqsMessage}
    * @param file {@link File}
-   * @return {@link String}
+   * @return {@link FormatConverterResult}
    * @throws IOException IOException
    */
-  String convert(AwsServiceCache awsServices, OcrSqsMessage sqsMessage, File file)
+  FormatConverterResult convert(AwsServiceCache awsServices, OcrSqsMessage sqsMessage, File file)
       throws IOException;
 
   /**

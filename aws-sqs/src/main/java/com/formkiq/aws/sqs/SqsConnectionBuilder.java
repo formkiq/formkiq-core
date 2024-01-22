@@ -24,7 +24,6 @@
 package com.formkiq.aws.sqs;
 
 import java.net.URI;
-import com.amazonaws.xray.interceptors.TracingInterceptor;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
@@ -58,9 +57,9 @@ public class SqsConnectionBuilder {
 
     Builder clientConfig = ClientOverrideConfiguration.builder();
 
-    if (enableAwsXray) {
-      clientConfig.addExecutionInterceptor(new TracingInterceptor());
-    }
+    // if (enableAwsXray) {
+    // clientConfig.addExecutionInterceptor(new TracingInterceptor());
+    // }
 
     this.builder = SqsClient.builder().overrideConfiguration(clientConfig.build())
         .httpClientBuilder(UrlConnectionHttpClient.builder())

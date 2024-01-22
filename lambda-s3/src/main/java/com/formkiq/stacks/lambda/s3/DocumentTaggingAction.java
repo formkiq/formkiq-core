@@ -54,9 +54,12 @@ import com.formkiq.module.http.HttpServiceJdk11;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.ConfigService;
 import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.stacks.lambda.s3.openai.OpenAiChatCompletionsChoice;
+import com.formkiq.stacks.lambda.s3.openai.OpenAiChatCompletionsChoiceMessage;
+import com.formkiq.stacks.lambda.s3.openai.OpenAiChatCompletionsChoiceMessageFunctionCall;
+import com.formkiq.stacks.lambda.s3.openai.OpenAiChatCompletionsResponse;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonSyntaxException;
 
 /**
  * 
@@ -65,18 +68,10 @@ import com.google.gson.JsonSyntaxException;
  */
 public class DocumentTaggingAction implements DocumentAction {
 
-  /** Chat Gpt Frequency Penalty. */
-  private static final Double CHAT_GPT_FREQ_PENALTY = Double.valueOf(0.8);
   /** Maximum document size to send to ChatGpt. */
   private static final int CHAT_GPT_MAX_LENGTH = 2000;
-  /** Chat GPT Max Tokens. */
-  private static final Integer CHAT_GPT_MAX_TOKENS = Integer.valueOf(1000);
-  /** Chat Gpt Presence Penalty. */
-  private static final Double CHAT_GPT_PRESENCE_PENALTY = Double.valueOf(0.0);
   /** Chat Gpt Temperature. */
   private static final Double CHAT_GPT_TEMPERATURE = Double.valueOf(0.5);
-  /** Chat Gpt Top P. */
-  private static final Double CHAT_GPT_TOP_P = Double.valueOf(1.0);
   /** {@link ConfigService}. */
   private ConfigService configsService;
   /** {@link DocumentService}. */
@@ -99,26 +94,8 @@ public class DocumentTaggingAction implements DocumentAction {
     this.documentService = services.getExtension(DocumentService.class);
   }
 
-  /**
-   * Adjust Tag Key.
-   * 
-   * @param tags {@link List} {@link String}
-   * @param key {@link String}
-   * @return {@link String}
-   */
-  private String adjustKeyFromTags(final List<String> tags, final String key) {
-    String s = removeQuotes(key);
-
-    Optional<String> o = tags.stream().filter(t -> t.toLowerCase().replaceAll("[^A-Za-z0-9]", "")
-        .equals(key.toLowerCase().replaceAll("[^A-Za-z0-9]", ""))).findAny();
-
-    return o.isPresent() ? o.get() : s;
-  }
-
   private String createChatGptPrompt(final LambdaLogger logger, final String siteId,
       final String documentId, final Action action) throws IOException {
-
-    String tags = getTags(action);
 
     DocumentItem item = this.documentService.findDocument(siteId, documentId);
 
@@ -137,9 +114,26 @@ public class DocumentTaggingAction implements DocumentAction {
       text = text.substring(0, CHAT_GPT_MAX_LENGTH);
     }
 
-    String prompt = "Extract the tags " + tags + " from the text below in JSON format.\n\n" + text;
+    return "Extract the tags from the text below.\n\n" + text;
+  }
 
-    return prompt;
+  private Map<String, Object> generateOpenApiSchema(final Action action) throws IOException {
+
+    List<String> tags = getTagsAsList(action);
+
+    Map<String, Object> schema = new HashMap<>();
+    schema.put("type", "object");
+
+    Map<String, Object> properties = new HashMap<>();
+
+    for (String tag : tags) {
+      properties.put(tag, Map.of("type", "array", "description", "Get the tag values for " + tag,
+          "items", Map.of("type", "string")));
+    }
+
+    schema.put("properties", properties);
+
+    return schema;
   }
 
   private String getTags(final Action action) throws IOException {
@@ -156,19 +150,24 @@ public class DocumentTaggingAction implements DocumentAction {
 
   @SuppressWarnings("unchecked")
   private void parseChatGptResponse(final String siteId, final String documentId,
-      final Action action, final HttpResponse<String> response) throws IOException {
+      final Action action, final HttpResponse<String> httpResponse) throws IOException {
 
     List<String> paramTags = getTagsAsList(action);
 
-    Map<String, Object> responseMap = this.gson.fromJson(response.body(), Map.class);
-    List<Map<String, Object>> choices = (List<Map<String, Object>>) responseMap.get("choices");
+    OpenAiChatCompletionsResponse response =
+        this.gson.fromJson(httpResponse.body(), OpenAiChatCompletionsResponse.class);
+
+    List<OpenAiChatCompletionsChoice> choices = response.choices();
 
     Collection<DocumentTag> tags = new ArrayList<>();
 
-    for (Map<String, Object> choice : choices) {
+    for (OpenAiChatCompletionsChoice choice : choices) {
 
-      String text = choice.get("text").toString();
-      Map<String, Object> data = parseGptText(paramTags, text);
+      OpenAiChatCompletionsChoiceMessage message = choice.message();
+      OpenAiChatCompletionsChoiceMessageFunctionCall functionCall = message.functionCall();
+      String arguments = functionCall.arguments();
+
+      Map<String, Object> data = parseGptText(paramTags, arguments);
 
       for (Entry<String, Object> e : data.entrySet()) {
 
@@ -207,102 +206,29 @@ public class DocumentTaggingAction implements DocumentAction {
   @SuppressWarnings("unchecked")
   private Map<String, Object> parseGptText(final List<String> tags, final String text) {
 
-    Map<String, String> tagMap = tags.stream().filter(t -> !t.toLowerCase().equals(t))
-        .collect(Collectors.toMap(String::toLowerCase, s -> s));
+    Map<String, String> tagMap =
+        tags.stream().collect(Collectors.toMap(String::toLowerCase, s -> s));
 
-    Map<String, Object> data = new HashMap<>();
+    Map<String, Object> data = this.gson.fromJson(text, Map.class);
+    data = data.entrySet().stream()
+        .filter(e -> tagMap.containsKey(e.getKey().toLowerCase()) && e.getValue() != null)
+        .collect(Collectors.toMap(e -> tagMap.get(e.getKey().toLowerCase()),
+            e -> removeQuotesFromObject(e.getValue())));
 
-    try {
-      data = this.gson.fromJson(text, Map.class);
-    } catch (JsonSyntaxException e) {
-
-      String[] strs = text.split("\n");
-
-      for (String s : strs) {
-
-        int pos = s.indexOf(":");
-
-        if (pos > -1) {
-          String key = s.substring(0, pos).trim().toLowerCase();
-          String value = removeQuotes(removeEndingPunctuation(s.substring(pos + 1).trim()));
-
-          if (!key.isEmpty() && !value.isEmpty()) {
-
-            List<Object> list = getObjectAsJsonList(value);
-            if (list != null) {
-
-              List<String> slist = transformToStringList(list);
-              data.put(key, slist);
-
-            } else {
-              data.put(key, Arrays.asList(value));
-            }
-          }
-        }
-      }
-    }
-
-    for (Map.Entry<String, String> e : tagMap.entrySet()) {
-      Object object = data.get(e.getKey());
-      data.put(e.getValue(), object);
-      data.remove(e.getKey());
-    }
-
-    Map<String, Object> values =
-        data.entrySet().stream().filter(d -> d.getKey() != null && d.getValue() != null)
-            .collect(Collectors.toMap(d -> adjustKeyFromTags(tags, d.getKey()),
-                d -> removeQuotesFromObject(d.getValue())));
-
-    return tags.stream().filter(t -> values.containsKey(t))
-        .collect(Collectors.toMap(t -> t, t -> values.get(t)));
-  }
-
-  @SuppressWarnings("unchecked")
-  private List<String> transformToStringList(final List<Object> objs) {
-
-    List<String> list = new ArrayList<>();
-
-    for (Object ob : objs) {
-
-      if (ob instanceof Map) {
-
-        for (Map.Entry<String, String> e : ((Map<String, String>) ob).entrySet()) {
-          list.add(e.getKey() + ": " + e.getValue());
-        }
-
-      } else {
-        list.add(ob.toString());
-      }
-    }
-
-    return list;
-  }
-
-  @SuppressWarnings("unchecked")
-  private List<Object> getObjectAsJsonList(final String s) {
-
-    List<Object> list;
-
-    try {
-      list = this.gson.fromJson(s, List.class);
-    } catch (JsonSyntaxException e) {
-      list = null;
-    }
-
-    return list;
+    return data;
   }
 
   @SuppressWarnings("unchecked")
   private Object removeQuotesFromObject(final Object o) {
     Object oo = o;
     if (oo instanceof String) {
-      oo = removeQuotes((String) oo);
+      oo = removeEndingPunctuation(removeQuotes((String) oo));
     } else if (oo instanceof Collection) {
 
       Collection<Object> list = new ArrayList<>();
       for (Object obj : (Collection<Object>) oo) {
         if (obj instanceof String) {
-          list.add(removeQuotes((String) obj));
+          list.add(removeEndingPunctuation(removeQuotes((String) obj)));
         }
       }
 
@@ -343,29 +269,39 @@ public class DocumentTaggingAction implements DocumentAction {
       throw new IOException(String.format("missing config '%s'", CHATGPT_API_KEY));
     }
 
+    Map<String, Object> payload = new HashMap<>();
+
+    String prompt = createChatGptPrompt(logger, siteId, documentId, action);
+
+    Map<String, Object> schema = generateOpenApiSchema(action);
+
+    payload.put("model", "gpt-3.5-turbo");
+    payload.put("messages", Arrays.asList(Map.of("role", "user", "content", prompt)));
+    payload.put("functions", Arrays.asList(Map.of("name", "get_text_data", "parameters", schema)));
+    payload.put("function_call", Map.of("name", "get_text_data"));
+    payload.put("temperature", CHAT_GPT_TEMPERATURE);
+
+    String url = this.serviceCache.environment("CHATGPT_API_COMPLETIONS_URL");
+
     Optional<HttpHeaders> headers = Optional.of(new HttpHeaders()
         .add("Content-Type", "application/json").add("Authorization", "Bearer " + chatGptApiKey));
 
-    Map<String, Object> payload = new HashMap<>();
+    String body = this.gson.toJson(payload);
+    if (this.serviceCache.debug()) {
+      logger.log("sending POST request to " + url + " body: " + body);
+    }
 
-    payload.put("model", "text-davinci-003");
-    payload.put("max_tokens", CHAT_GPT_MAX_TOKENS);
-    payload.put("temperature", CHAT_GPT_TEMPERATURE);
-    payload.put("top_p", CHAT_GPT_TOP_P);
-    payload.put("frequency_penalty", CHAT_GPT_FREQ_PENALTY);
-    payload.put("presence_penalty", CHAT_GPT_PRESENCE_PENALTY);
-    payload.put("prompt", createChatGptPrompt(logger, siteId, documentId, action));
+    HttpResponse<String> response = this.http.post(url, headers, Optional.empty(), body);
 
-    String url = this.serviceCache.environment("CHATGPT_API_COMPLETIONS_URL");
-    HttpResponse<String> response = this.http.post(url, headers, this.gson.toJson(payload));
-    logger.log(String.format("{\"engine\":\"%s\",\"statusCode\":\"%s\",\"body\":\"%s\"}", "chatgpt",
-        String.valueOf(response.statusCode()), response.body()));
+    if (this.serviceCache.debug()) {
+      logger.log(String.format("{\"engine\":\"%s\",\"statusCode\":\"%s\",\"body\":\"%s\"}",
+          "chatgpt", String.valueOf(response.statusCode()), response.body()));
+    }
 
     if (is2XX(response)) {
       parseChatGptResponse(siteId, documentId, action, response);
     } else {
-      throw new IOException("ChatGpt status " + response.statusCode());
+      throw new IOException("ChatGpt status " + response.statusCode() + " " + response.body());
     }
   }
-
 }

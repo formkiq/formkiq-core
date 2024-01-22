@@ -34,6 +34,7 @@ import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
+import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -42,8 +43,10 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.ApiResponse;
+import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.plugins.useractivity.UserActivityPlugin;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
 
@@ -75,13 +78,17 @@ public class DocumentIdContentRequestHandler
     DynamoDbConnectionBuilder connection = awsservice.getExtension(DynamoDbConnectionBuilder.class);
     String versionId = versionService.getVersionId(connection, siteId, documentId, versionKey);
 
+    if (versionKey != null) {
+      throwIfNull(versionId, new BadException("invalid 'versionKey'"));
+    }
+
     ApiResponse response = null;
 
     String s3key = createS3Key(siteId, documentId);
-    S3Service s3Service = awsservice.getExtension(S3Service.class);
 
     if (MimeType.isPlainText(item.getContentType())) {
 
+      S3Service s3Service = awsservice.getExtension(S3Service.class);
       String content = s3Service.getContentAsString(awsservice.environment("DOCUMENTS_S3_BUCKET"),
           s3key, versionId);
 
@@ -97,12 +104,18 @@ public class DocumentIdContentRequestHandler
           new PresignGetUrlConfig().contentDispositionByPath(item.getPath(), false)
               .contentType(s3key).contentType(contentType);
 
+      S3PresignerService s3Service = awsservice.getExtension(S3PresignerService.class);
       Duration duration = Duration.ofHours(1);
       URL url = s3Service.presignGetUrl(awsservice.environment("DOCUMENTS_S3_BUCKET"), s3key,
           duration, versionId, config);
 
       response =
           new ApiMapResponse(Map.of("contentUrl", url.toString(), "contentType", contentType));
+    }
+
+    if (awsservice.containsExtension(UserActivityPlugin.class)) {
+      UserActivityPlugin plugin = awsservice.getExtension(UserActivityPlugin.class);
+      plugin.addViewActivity(siteId, documentId, versionKey, authorization.username());
     }
 
     return new ApiRequestHandlerResponse(SC_OK, response);

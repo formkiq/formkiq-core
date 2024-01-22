@@ -24,12 +24,13 @@
 package com.formkiq.testutils.aws;
 
 import java.util.Arrays;
-import com.formkiq.aws.cognito.CognitoConnectionBuilder;
-import com.formkiq.aws.cognito.CognitoService;
+import com.formkiq.aws.cognito.CognitoIdentityProviderConnectionBuilder;
+import com.formkiq.aws.cognito.CognitoIdentityProviderService;
 import com.formkiq.stacks.client.FormKiqClientConnection;
 import com.formkiq.stacks.client.FormKiqClientV1;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthenticationResultType;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UserType;
 
@@ -49,8 +50,8 @@ public class FkqCognitoService {
   private String rootJwtUrl;
   /** FormKiQ Key Api Url. */
   private String rootKeyUrl;
-  /** {@link CognitoService}. */
-  private CognitoService service;
+  /** {@link CognitoIdentityProviderService}. */
+  private CognitoIdentityProviderService service;
   /** {@link FkqSsmService}. */
   private FkqSsmService ssm;
 
@@ -83,13 +84,11 @@ public class FkqCognitoService {
     String cognitoClientId =
         this.ssm.getParameterValue("/formkiq/" + appEnvironment + "/cognito/UserPoolClientId");
 
-    String cognitoIdentitypool =
-        this.ssm.getParameterValue("/formkiq/" + appEnvironment + "/cognito/IdentityPoolId");
-
-    CognitoConnectionBuilder adminBuilder =
-        new CognitoConnectionBuilder(cognitoClientId, cognitoUserPoolId, cognitoIdentitypool)
+    CognitoIdentityProviderConnectionBuilder builder =
+        new CognitoIdentityProviderConnectionBuilder(cognitoClientId, cognitoUserPoolId)
             .setCredentials(awsProfile).setRegion(awsRegion);
-    this.service = new CognitoService(adminBuilder);
+
+    this.service = new CognitoIdentityProviderService(builder);
   }
 
   /**
@@ -207,6 +206,16 @@ public class FkqCognitoService {
   }
 
   /**
+   * Get User.
+   * 
+   * @param username {@link String}
+   * @return {@link AdminGetUserResponse}
+   */
+  public AdminGetUserResponse getUser(final String username) {
+    return this.service.getUser(username);
+  }
+
+  /**
    * Does Cognito User Exist.
    * 
    * @param email {@link String}
@@ -225,5 +234,17 @@ public class FkqCognitoService {
    */
   public AuthenticationResultType login(final String email, final String password) {
     return this.service.login(email, password);
+  }
+
+  /**
+   * Login User in NEW_PASSWORD_REQUIRED status.
+   * 
+   * @param email {@link String}
+   * @param password {@link String}
+   * @param newpassword {@link String}
+   */
+  public void loginWithNewPassword(final String email, final String password,
+      final String newpassword) {
+    this.service.loginWithNewPassword(email, password, newpassword);
   }
 }

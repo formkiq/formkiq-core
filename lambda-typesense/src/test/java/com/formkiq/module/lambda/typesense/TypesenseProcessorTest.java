@@ -24,7 +24,7 @@
 package com.formkiq.module.lambda.typesense;
 
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENT_SYNCS_TABLE;
-import static com.formkiq.testutils.aws.TypeSenseExtension.API_KEY;
+import static com.formkiq.testutils.aws.TypesenseExtension.API_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.io.IOException;
@@ -39,12 +39,15 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.amazonaws.services.lambda.runtime.Context;
+import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentSync;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
 import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
 import com.formkiq.aws.dynamodb.model.DocumentSyncType;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.module.typesense.TypeSenseService;
 import com.formkiq.module.typesense.TypeSenseServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentSyncService;
@@ -52,10 +55,13 @@ import com.formkiq.stacks.dynamodb.DocumentSyncServiceDynamoDb;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.formkiq.testutils.aws.LambdaContextRecorder;
-import com.formkiq.testutils.aws.TypeSenseExtension;
+import com.formkiq.testutils.aws.TestServices;
+import com.formkiq.testutils.aws.TypesenseExtension;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.utils.IoUtils;
 
@@ -65,7 +71,7 @@ import software.amazon.awssdk.utils.IoUtils;
  *
  */
 @ExtendWith(DynamoDbExtension.class)
-@ExtendWith(TypeSenseExtension.class)
+@ExtendWith(TypesenseExtension.class)
 class TypesenseProcessorTest {
 
   /** {@link Gson}. */
@@ -84,12 +90,20 @@ class TypesenseProcessorTest {
     AwsBasicCredentials cred = AwsBasicCredentials.create("asd", "asd");
     DynamoDbConnectionBuilder db = DynamoDbTestServices.getDynamoDbConnection();
 
-    processor = new TypesenseProcessor(Map.of("AWS_REGION", "us-east-1", "DOCUMENT_SYNC_TABLE",
+    Map<String, String> map = Map.of("AWS_REGION", "us-east-1", "DOCUMENT_SYNC_TABLE",
         DOCUMENT_SYNCS_TABLE, "TYPESENSE_HOST",
-        "http://localhost:" + TypeSenseExtension.getMappedPort(), "TYPESENSE_API_KEY", API_KEY), db,
-        cred);
+        "http://localhost:" + TypesenseExtension.getMappedPort(), "TYPESENSE_API_KEY", API_KEY);
 
-    service = new TypeSenseServiceImpl("http://localhost:" + TypeSenseExtension.getMappedPort(),
+    AwsCredentials creds = AwsBasicCredentials.create("aaa", "bbb");
+    StaticCredentialsProvider credentialsProvider = StaticCredentialsProvider.create(creds);
+
+    AwsServiceCache serviceCache =
+        new AwsServiceCacheBuilder(map, TestServices.getEndpointMap(), credentialsProvider)
+            .addService(new DynamoDbAwsServiceRegistry()).build();
+
+    processor = new TypesenseProcessor(serviceCache);
+
+    service = new TypeSenseServiceImpl("http://localhost:" + TypesenseExtension.getMappedPort(),
         API_KEY, Region.US_EAST_1, cred);
 
     syncService = new DocumentSyncServiceDynamoDb(db, DOCUMENT_SYNCS_TABLE);
@@ -442,5 +456,30 @@ class TypesenseProcessorTest {
     assertEquals("System", syncs.getResults().get(0).getUserId());
     assertEquals("added Document Metadata", syncs.getResults().get(0).getMessage());
     assertNotNull(syncs.getResults().get(0).getSyncDate());
+  }
+
+  /**
+   * Insert deep link path records.
+   * 
+   * @throws Exception Exception
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  void testHandleRequest10() throws Exception {
+    // given
+    String siteId = null;
+    String oldDocumentId = "acd4be1b-9466-4dcd-b8b8-e5b19135b460";
+    String documentId = UUID.randomUUID().toString();
+
+    Map<String, Object> map = loadRequest("/insert_deeplink.json", oldDocumentId, documentId);
+
+    // when
+    processor.handleRequest(map, this.context);
+
+    // then
+    HttpResponse<String> response = service.getDocument(siteId, documentId);
+    assertEquals("200", String.valueOf(response.statusCode()));
+    Map<String, Object> data = GSON.fromJson(response.body(), Map.class);
+    assertEquals("/somewhere/else/test.pdf", data.get("deepLinkPath"));
   }
 }

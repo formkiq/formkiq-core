@@ -326,7 +326,7 @@ class ApiAuthorizationBuilderTest {
   @Test
   void testApiAuthorizer09() throws Exception {
     // given
-    String s = "[formkiq_finance other]";
+    String s = "[finance other]";
 
     ApiGatewayRequestEvent event = getJwtEvent(s);
     event.setQueryStringParameters(Map.of("siteId", "finance"));
@@ -336,10 +336,11 @@ class ApiAuthorizationBuilderTest {
 
     // then
     assertEquals("finance", api0.siteId());
-    assertEquals("finance", String.join(",", api0.siteIds()));
+    assertEquals("finance,other", String.join(",", api0.siteIds()));
     assertEquals("DELETE,READ,WRITE",
         api0.permissions().stream().map(p -> p.name()).sorted().collect(Collectors.joining(",")));
-    assertEquals("groups: finance (DELETE,READ,WRITE)", api0.accessSummary());
+    assertEquals("groups: finance (DELETE,READ,WRITE), other (DELETE,READ,WRITE)",
+        api0.accessSummary());
   }
 
   /**
@@ -397,5 +398,45 @@ class ApiAuthorizationBuilderTest {
     assertEquals("READ,WRITE",
         api1.permissions().stream().map(p -> p.name()).collect(Collectors.joining(",")));
     assertEquals("groups: finance (READ,WRITE)", api1.accessSummary());
+  }
+
+  /**
+   * Basic 'authentication_only' access.
+   */
+  @Test
+  void testApiAuthorizer12() throws Exception {
+    // given
+    String s0 = "[authentication_only]";
+    ApiGatewayRequestEvent event0 = getJwtEvent(s0);
+
+    // when
+    ApiAuthorization api0 = new ApiAuthorizationBuilder().build(event0);
+
+    // then
+    assertNull(api0.siteId());
+    assertEquals("", String.join(",", api0.siteIds()));
+    assertEquals("",
+        api0.permissions().stream().map(p -> p.name()).collect(Collectors.joining(",")));
+    assertEquals("no groups", api0.accessSummary());
+  }
+
+  /**
+   * Basic 'authentication_only' access.
+   */
+  @Test
+  void testApiAuthorizer13() throws Exception {
+    // given
+    String s0 = "[finance authentication_only]";
+    ApiGatewayRequestEvent event0 = getJwtEvent(s0);
+
+    // when
+    ApiAuthorization api0 = new ApiAuthorizationBuilder().build(event0);
+
+    // then
+    assertEquals("finance", api0.siteId());
+    assertEquals("finance", String.join(",", api0.siteIds()));
+    assertEquals("READ,WRITE,DELETE",
+        api0.permissions().stream().map(p -> p.name()).collect(Collectors.joining(",")));
+    assertEquals("groups: finance (DELETE,READ,WRITE)", api0.accessSummary());
   }
 }

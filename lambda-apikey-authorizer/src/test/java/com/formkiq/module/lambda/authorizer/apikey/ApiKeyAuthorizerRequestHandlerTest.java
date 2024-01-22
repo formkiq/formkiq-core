@@ -27,10 +27,13 @@ import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -38,16 +41,21 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.amazonaws.services.lambda.runtime.Context;
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.stacks.dynamodb.ApiKeyPermission;
 import com.formkiq.stacks.dynamodb.ApiKeysService;
 import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.formkiq.testutils.aws.LambdaContextRecorder;
+import com.formkiq.testutils.aws.TestServices;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
 
 /**
  * 
@@ -63,16 +71,31 @@ class ApiKeyAuthorizerRequestHandlerTest {
   private static final Gson GSON = new GsonBuilder().create();
   /** {@link ApiKeyAuthorizerRequestHandler}. */
   private static ApiKeyAuthorizerRequestHandler processor;
+  /** {@link AwsServiceCache}. */
+  private static AwsServiceCache awsServices;
 
+  /**
+   * Before Class.
+   *
+   * @throws URISyntaxException URISyntaxException
+   * @throws InterruptedException InterruptedException
+   * @throws IOException IOException
+   */
   @BeforeAll
-  public static void beforeAll() throws Exception {
+  public static void beforeClass() throws URISyntaxException, InterruptedException, IOException {
 
-    DynamoDbConnectionBuilder dbConnection = DynamoDbTestServices.getDynamoDbConnection();
+    Map<String, String> env = new HashMap<>();
+    env.put("AWS_REGION", Region.US_EAST_1.id());
+    env.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
 
-    processor = new ApiKeyAuthorizerRequestHandler(Map.of("DOCUMENTS_TABLE", DOCUMENTS_TABLE),
-        dbConnection);
+    AwsCredentials creds = AwsBasicCredentials.create("aaa", "bbb");
+    StaticCredentialsProvider credentialsProvider = StaticCredentialsProvider.create(creds);
 
-    AwsServiceCache awsServices = processor.getAwsServices();
+    awsServices =
+        new AwsServiceCacheBuilder(env, TestServices.getEndpointMap(), credentialsProvider)
+            .addService(new DynamoDbAwsServiceRegistry()).build();
+
+    processor = new ApiKeyAuthorizerRequestHandler(awsServices);
     apiKeysService = awsServices.getExtension(ApiKeysService.class);
   }
 

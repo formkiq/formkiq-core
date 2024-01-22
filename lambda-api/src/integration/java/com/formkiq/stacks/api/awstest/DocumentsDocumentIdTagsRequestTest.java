@@ -23,35 +23,33 @@
  */
 package com.formkiq.stacks.api.awstest;
 
+import static com.formkiq.testutils.aws.FkqDocumentService.addDocument;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContent;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.net.http.HttpResponse;
+import static org.junit.jupiter.api.Assertions.fail;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.api.DocumentTagsApi;
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.model.AddDocumentRequest;
+import com.formkiq.client.model.AddDocumentResponse;
+import com.formkiq.client.model.AddDocumentTag;
+import com.formkiq.client.model.AddDocumentTagsRequest;
+import com.formkiq.client.model.DocumentTag;
 import com.formkiq.client.model.GetDocumentTagResponse;
-import com.formkiq.stacks.client.FormKiqClientV1;
-import com.formkiq.stacks.client.models.AddDocumentTag;
-import com.formkiq.stacks.client.requests.AddDocumentTagRequest;
-import com.formkiq.stacks.client.requests.DeleteDocumentTagRequest;
-import com.formkiq.stacks.client.requests.GetDocumentTagsKeyRequest;
-import com.formkiq.stacks.client.requests.GetDocumentTagsRequest;
-import com.formkiq.stacks.client.requests.OptionsDocumentTagsKeyRequest;
-import com.formkiq.stacks.client.requests.OptionsDocumentTagsRequest;
-import com.formkiq.stacks.client.requests.UpdateDocumentTagKeyRequest;
+import com.formkiq.client.model.GetDocumentTagsResponse;
+import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
 import joptsimple.internal.Strings;
 
 /**
@@ -59,7 +57,7 @@ import joptsimple.internal.Strings;
  *
  */
 @Execution(ExecutionMode.CONCURRENT)
-public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
+public class DocumentsDocumentIdTagsRequestTest extends AbstractAwsIntegrationTest {
 
   /** JUnit Test Timeout. */
   private static final int TEST_TIMEOUT = 30;
@@ -67,27 +65,22 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
   /**
    * Delete Document Tag.
    * 
-   * @param client {@link FormKiqClientV1}
+   * @param client {@link ApiClient}
    * @param documentId {@link String}
-   * @throws IOException IOException
-   * @throws URISyntaxException URISyntaxException
-   * @throws InterruptedException InterruptedException
+   * @param tagKey {@link String}
+   * @throws ApiException ApiException
    */
-  private void deleteDocumentTag(final FormKiqClientV1 client, final String documentId)
-      throws IOException, URISyntaxException, InterruptedException {
-    // given
-    DeleteDocumentTagRequest delRequest =
-        new DeleteDocumentTagRequest().documentId(documentId).tagKey("category");
-    GetDocumentTagsKeyRequest req =
-        new GetDocumentTagsKeyRequest().documentId(documentId).tagKey("category");
+  private void deleteDocumentTag(final ApiClient client, final String documentId,
+      final String tagKey) throws ApiException {
+    DocumentTagsApi api = new DocumentTagsApi(client);
+    api.deleteDocumentTag(documentId, tagKey, null);
 
-    // when
-    HttpResponse<String> response = client.deleteDocumentTagAsHttpResponse(delRequest);
-
-    // then
-    assertEquals("200", String.valueOf(response.statusCode()));
-    HttpResponse<String> response2 = client.getDocumentTagAsHttpResponse(req);
-    assertEquals("404", String.valueOf(response2.statusCode()));
+    try {
+      api.getDocumentTag(documentId, tagKey, null, null);
+      fail();
+    } catch (ApiException e) {
+      assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
+    }
   }
 
   /**
@@ -95,50 +88,37 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
    * 
    * @throws Exception Exception
    */
-  @SuppressWarnings("unchecked")
   @Test
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testDocumentsTags01() throws Exception {
 
-    for (FormKiqClientV1 client : getFormKiqDefaultClients()) {
+    String siteId = null;
+
+    for (ApiClient client : getApiClients(null)) {
       // given
-      String documentId = addDocumentWithoutFile(client, null, null);
-      AddDocumentTagRequest request =
-          new AddDocumentTagRequest().documentId(documentId).tagKey("test").tagValue("somevalue");
-      OptionsDocumentTagsRequest optionReq =
-          new OptionsDocumentTagsRequest().documentId(documentId);
+      String documentId = addDocument(client, siteId, null, new byte[] {}, null, null);
+      DocumentTagsApi api = new DocumentTagsApi(client);
+      AddDocumentTagsRequest req = new AddDocumentTagsRequest()
+          .addTagsItem(new AddDocumentTag().key("test").value("somevalue"));
 
       try {
         // when
-        HttpResponse<String> response = client.addDocumentTagAsHttpResponse(request);
+        api.addDocumentTags(documentId, req, siteId, null);
 
-        // then
-        assertEquals("201", String.valueOf(response.statusCode()));
-        assertRequestCorsHeaders(response.headers());
-
-        HttpResponse<String> options = client.optionsDocumentTags(optionReq);
-        assertPreflightedCorsHeaders(options.headers());
-
-        // given
-        GetDocumentTagsRequest req = new GetDocumentTagsRequest().documentId(documentId);
         // when
-        response = client.getDocumentTagsAsHttpResponse(req);
+        GetDocumentTagsResponse response =
+            api.getDocumentTags(documentId, siteId, null, null, null, null);
 
         // then
-        assertEquals("200", String.valueOf(response.statusCode()));
-        assertRequestCorsHeaders(response.headers());
-
-        Map<String, Object> map = toMap(response);
-        List<Map<String, Object>> list = (List<Map<String, Object>>) map.get("tags");
+        List<DocumentTag> list = response.getTags();
         assertEquals(1, list.size());
-        map = list.get(0);
-        assertEquals("test", map.get("key"));
-        assertEquals("somevalue", map.get("value"));
-        verifyUserId(map);
-        assertNotNull(map.get("insertedDate"));
+        assertEquals("test", list.get(0).getKey());
+        assertEquals("somevalue", list.get(0).getValue());
+        assertNotNull(list.get(0).getUserId());
+        assertNotNull(list.get(0).getInsertedDate());
 
       } finally {
-        deleteDocument(client, documentId);
+        deleteDocumentTag(client, documentId, "test");
       }
     }
   }
@@ -148,52 +128,43 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
    * 
    * @throws Exception Exception
    */
-  @SuppressWarnings("unchecked")
   @Test
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testDocumentsTags02() throws Exception {
 
-    for (FormKiqClientV1 client : getFormKiqDefaultClients()) {
+    // given
+    String siteId = null;
+    for (ApiClient client : getApiClients(null)) {
 
-      // given
-      String documentId = addDocumentWithoutFile(client, null, null);
-      AddDocumentTagRequest request = new AddDocumentTagRequest().documentId(documentId)
-          .tagKey("test").tagValues(Arrays.asList("somevalue0", "somevalue1"));
-      OptionsDocumentTagsRequest optionReq =
-          new OptionsDocumentTagsRequest().documentId(documentId);
+      DocumentTagsApi api = new DocumentTagsApi(client);
+
+      String documentId = addDocument(client, siteId, null, new byte[] {}, null, null);
+
+      AddDocumentTagsRequest req = new AddDocumentTagsRequest().addTagsItem(
+          new AddDocumentTag().key("test").values(Arrays.asList("somevalue0", "somevalue1")));
 
       try {
         // when
-        HttpResponse<String> response = client.addDocumentTagAsHttpResponse(request);
-
-        // then
-        assertEquals("201", String.valueOf(response.statusCode()));
-        assertRequestCorsHeaders(response.headers());
-
-        HttpResponse<String> options = client.optionsDocumentTags(optionReq);
-        assertPreflightedCorsHeaders(options.headers());
+        api.addDocumentTags(documentId, req, siteId, null);
 
         // given
-        GetDocumentTagsRequest req = new GetDocumentTagsRequest().documentId(documentId);
         // when
-        response = client.getDocumentTagsAsHttpResponse(req);
+        GetDocumentTagsResponse response =
+            api.getDocumentTags(documentId, siteId, null, null, null, null);
 
         // then
-        assertEquals("200", String.valueOf(response.statusCode()));
-        assertRequestCorsHeaders(response.headers());
-
-        Map<String, Object> map = toMap(response);
-        List<Map<String, Object>> list = (List<Map<String, Object>>) map.get("tags");
+        List<DocumentTag> list = response.getTags();
         assertEquals(1, list.size());
-        map = list.get(0);
-        assertEquals("test", map.get("key"));
-        assertEquals("[somevalue0, somevalue1]", map.get("values").toString());
-        assertNull(map.get("value"));
-        verifyUserId(map);
-        assertNotNull(map.get("insertedDate"));
+        // map = list.get(0);
+        assertEquals("test", list.get(0).getKey());
+        assertEquals("somevalue0,somevalue1",
+            list.get(0).getValues().stream().collect(Collectors.joining(",")));
+        assertNull(list.get(0).getValue());
+        assertNotNull(list.get(0).getUserId());
+        assertNotNull(list.get(0).getInsertedDate());
 
       } finally {
-        deleteDocument(client, documentId);
+        deleteDocumentTag(client, documentId, "test");
       }
     }
   }
@@ -207,71 +178,48 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testDocumentsTags03() throws Exception {
 
-    for (FormKiqClientV1 client : getFormKiqDefaultClients()) {
+    // given
+    String siteId = null;
+    for (ApiClient client : getApiClients(null)) {
 
-      // given
-      String documentId = addDocumentWithoutFile(client, null, null);
-      GetDocumentTagsKeyRequest req =
-          new GetDocumentTagsKeyRequest().documentId(documentId).tagKey("category");
-      OptionsDocumentTagsKeyRequest oreq =
-          new OptionsDocumentTagsKeyRequest().documentId(documentId).tagKey("category");
+      DocumentTagsApi api = new DocumentTagsApi(client);
+
+      String documentId = addDocument(client, siteId, null, new byte[] {}, null, null);
+      AddDocumentTagsRequest req = new AddDocumentTagsRequest()
+          .addTagsItem(new AddDocumentTag().key("category").value("somevalue"));
 
       try {
         // when
-        HttpResponse<String> response =
-            client.addDocumentTagAsHttpResponse(new AddDocumentTagRequest().documentId(documentId)
-                .tagKey("category").tagValue("somevalue"));
+        api.addDocumentTags(documentId, req, siteId, null);
 
         // then
-        assertEquals("201", String.valueOf(response.statusCode()));
-
-        // then
-        response = client.getDocumentTagAsHttpResponse(req);
-
-        assertEquals("200", String.valueOf(response.statusCode()));
-        assertRequestCorsHeaders(response.headers());
-
-        HttpResponse<String> options = client.optionsDocumentTag(oreq);
-        assertPreflightedCorsHeaders(options.headers());
-
-        Map<String, Object> map = toMap(response);
-        assertEquals("category", map.get("key"));
-        assertEquals("somevalue", map.get("value"));
-        verifyUserId(map);
-        assertEquals("userdefined", map.get("type"));
-        assertEquals(documentId, map.get("documentId"));
-        assertNotNull(map.get("insertedDate"));
+        GetDocumentTagResponse response = api.getDocumentTag(documentId, "category", siteId, null);
+        assertEquals("category", response.getKey());
+        assertEquals("somevalue", response.getValue());
+        assertNotNull(response.getUserId());
+        assertEquals("userdefined", response.getType());
+        assertEquals(documentId, response.getDocumentId());
+        assertNotNull(response.getInsertedDate());
 
         // given
-        GetDocumentTagsKeyRequest getreq =
-            new GetDocumentTagsKeyRequest().documentId(documentId).tagKey("category");
-        UpdateDocumentTagKeyRequest updatereq = new UpdateDocumentTagKeyRequest()
-            .documentId(documentId).tagKey("category").tagValue("This is a sample");
+        AddDocumentTagsRequest tags = new AddDocumentTagsRequest()
+            .addTagsItem(new AddDocumentTag().key("category").value("This is a sample"));
 
         // when
-        response = client.updateDocumentTagAsHttpResponse(updatereq);
+        api.updateDocumentTags(documentId, tags, siteId);
 
         // then
-        assertEquals("200", String.valueOf(response.statusCode()));
+        response = api.getDocumentTag(documentId, "category", siteId, null);
 
-        // when
-        response = client.getDocumentTagAsHttpResponse(getreq);
-
-        // then
-        assertEquals("200", String.valueOf(response.statusCode()));
-
-        map = toMap(response);
-        assertEquals("category", map.get("key"));
-        assertEquals("This is a sample", map.get("value"));
-        verifyUserId(map);
-        assertEquals("userdefined", map.get("type"));
-        assertEquals(documentId, map.get("documentId"));
-        assertNotNull(map.get("insertedDate"));
-
-        deleteDocumentTag(client, documentId);
+        assertEquals("category", response.getKey());
+        assertEquals("This is a sample", response.getValue());
+        assertNotNull(response.getUserId());
+        assertEquals("userdefined", response.getType());
+        assertEquals(documentId, response.getDocumentId());
+        assertNotNull(response.getInsertedDate());
 
       } finally {
-        deleteDocument(client, documentId);
+        deleteDocumentTag(client, documentId, "category");
       }
     }
   }
@@ -285,72 +233,51 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testDocumentsTags04() throws Exception {
 
-    for (FormKiqClientV1 client : getFormKiqDefaultClients()) {
+    String siteId = null;
+    for (ApiClient client : getApiClients(null)) {
 
       // given
-      String documentId = addDocumentWithoutFile(client, null, null);
-      GetDocumentTagsKeyRequest req =
-          new GetDocumentTagsKeyRequest().documentId(documentId).tagKey("category");
-      OptionsDocumentTagsKeyRequest oreq =
-          new OptionsDocumentTagsKeyRequest().documentId(documentId).tagKey("category");
+      DocumentTagsApi api = new DocumentTagsApi(client);
+      String documentId = addDocument(client, siteId, null, new byte[] {}, null, null);
+
+      AddDocumentTagsRequest req = new AddDocumentTagsRequest().addTagsItem(
+          new AddDocumentTag().key("category").values(Arrays.asList("somevalue0", "somevalue1")));
 
       try {
         // when
-        HttpResponse<String> response =
-            client.addDocumentTagAsHttpResponse(new AddDocumentTagRequest().documentId(documentId)
-                .tagKey("category").tagValues(Arrays.asList("somevalue0", "somevalue1")));
+        api.addDocumentTags(documentId, req, siteId, null);
 
         // then
-        assertEquals("201", String.valueOf(response.statusCode()));
+        GetDocumentTagResponse response = api.getDocumentTag(documentId, "category", siteId, null);
 
-        // then
-        response = client.getDocumentTagAsHttpResponse(req);
-
-        assertEquals("200", String.valueOf(response.statusCode()));
-        assertRequestCorsHeaders(response.headers());
-
-        HttpResponse<String> options = client.optionsDocumentTag(oreq);
-        assertPreflightedCorsHeaders(options.headers());
-
-        Map<String, Object> map = toMap(response);
-        assertEquals("category", map.get("key"));
-        assertEquals("[somevalue0, somevalue1]", map.get("values").toString());
-        assertNull(map.get("value"));
-        verifyUserId(map);
-        assertEquals("userdefined", map.get("type"));
-        assertEquals(documentId, map.get("documentId"));
-        assertNotNull(map.get("insertedDate"));
+        assertEquals("category", response.getKey());
+        assertEquals("somevalue0,somevalue1",
+            response.getValues().stream().collect(Collectors.joining(",")));
+        assertNull(response.getValue());
+        assertNotNull(response.getUserId());
+        assertEquals("userdefined", response.getType());
+        assertEquals(documentId, response.getDocumentId());
+        assertNotNull(response.getInsertedDate());
 
         // given
-        GetDocumentTagsKeyRequest getreq =
-            new GetDocumentTagsKeyRequest().documentId(documentId).tagKey("category");
-        UpdateDocumentTagKeyRequest updatereq = new UpdateDocumentTagKeyRequest()
-            .documentId(documentId).tagKey("category").tagValue("This is a sample");
+        AddDocumentTagsRequest updatereq = new AddDocumentTagsRequest()
+            .addTagsItem(new AddDocumentTag().key("category").value("This is a sample"));
 
         // when
-        response = client.updateDocumentTagAsHttpResponse(updatereq);
+        api.updateDocumentTags(documentId, updatereq, siteId);
 
         // then
-        assertEquals("200", String.valueOf(response.statusCode()));
+        response = api.getDocumentTag(documentId, "category", siteId, null);
 
-        // when
-        response = client.getDocumentTagAsHttpResponse(getreq);
-
-        // then
-        assertEquals("200", String.valueOf(response.statusCode()));
-
-        map = toMap(response);
-        assertEquals("category", map.get("key"));
-        assertEquals("This is a sample", map.get("value"));
-        verifyUserId(map);
-        assertEquals("userdefined", map.get("type"));
-        assertEquals(documentId, map.get("documentId"));
-        assertNotNull(map.get("insertedDate"));
-
-        deleteDocumentTag(client, documentId);
+        assertEquals("category", response.getKey());
+        assertEquals("This is a sample", response.getValue());
+        assertNotNull(response.getUserId());
+        assertEquals("userdefined", response.getType());
+        assertEquals(documentId, response.getDocumentId());
+        assertNotNull(response.getInsertedDate());
 
       } finally {
-        deleteDocument(client, documentId);
+        deleteDocumentTag(client, documentId, "category");
       }
     }
   }
@@ -364,54 +291,35 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testDocumentsTags05() throws Exception {
 
-    for (FormKiqClientV1 client : getFormKiqDefaultClients()) {
+    String siteId = null;
+    for (ApiClient client : getApiClients(null)) {
 
       // given
-      String documentId = addDocumentWithoutFile(client, null, null);
-      GetDocumentTagsKeyRequest req =
-          new GetDocumentTagsKeyRequest().documentId(documentId).tagKey("category");
-      OptionsDocumentTagsKeyRequest oreq =
-          new OptionsDocumentTagsKeyRequest().documentId(documentId).tagKey("category");
+      DocumentTagsApi api = new DocumentTagsApi(client);
+      String documentId = addDocument(client, siteId, null, new byte[] {}, null, null);
+
+      AddDocumentTagsRequest req = new AddDocumentTagsRequest().addTagsItem(
+          new AddDocumentTag().key("category").values(Arrays.asList("somevalue0", "somevalue1")));
 
       try {
         // when
-        HttpResponse<String> response =
-            client.addDocumentTagAsHttpResponse(new AddDocumentTagRequest().documentId(documentId)
-                .tagKey("category").tagValues(Arrays.asList("somevalue0", "somevalue1")));
+        api.addDocumentTags(documentId, req, siteId, null);
 
         // then
-        assertEquals("201", String.valueOf(response.statusCode()));
+        GetDocumentTagResponse response = api.getDocumentTag(documentId, "category", siteId, null);
 
-        // then
-        response = client.getDocumentTagAsHttpResponse(req);
-
-        assertEquals("200", String.valueOf(response.statusCode()));
-        assertRequestCorsHeaders(response.headers());
-
-        HttpResponse<String> options = client.optionsDocumentTag(oreq);
-        assertPreflightedCorsHeaders(options.headers());
-
-        Map<String, Object> map = toMap(response);
-        assertEquals("[somevalue0, somevalue1]", map.get("values").toString());
-
-        // given
-        DeleteDocumentTagRequest tagreq = new DeleteDocumentTagRequest().documentId(documentId)
-            .tagKey("category").tagValue("somevalue1");
+        assertEquals("somevalue0,somevalue1",
+            response.getValues().stream().collect(Collectors.joining(",")));
 
         // when
-        response = client.deleteDocumentTagAsHttpResponse(tagreq);
+        api.deleteDocumentTagAndValue(documentId, "category", "somevalue1", siteId, null);
 
         // then
-        assertEquals("200", String.valueOf(response.statusCode()));
-        response = client.getDocumentTagAsHttpResponse(req);
-        map = toMap(response);
-        assertEquals("somevalue0", map.get("value").toString());
-        assertNull(map.get("values"));
-
-        deleteDocumentTag(client, documentId);
+        response = api.getDocumentTag(documentId, "category", siteId, null);
+        assertEquals("somevalue0", response.getValue().toString());
 
       } finally {
-        deleteDocument(client, documentId);
+        deleteDocumentTag(client, documentId, "category");
       }
     }
   }
@@ -421,69 +329,49 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
    * 
    * @throws Exception Exception
    */
-  @SuppressWarnings("unchecked")
   @Test
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testDocumentsTags06() throws Exception {
 
-    for (FormKiqClientV1 client : getFormKiqDefaultClients()) {
+    String siteId = null;
+    for (ApiClient client : getApiClients(null)) {
 
       // given
-      String documentId = addDocumentWithoutFile(client, null, null);
-      AddDocumentTag tag0 = new AddDocumentTag().key("test1").value("somevalue");
-      AddDocumentTag tag1 = new AddDocumentTag().key("test2");
-      AddDocumentTag tag2 = new AddDocumentTag().key("test3").values(Arrays.asList("abc", "xyz"));
+      DocumentTagsApi api = new DocumentTagsApi(client);
+      String documentId = addDocument(client, siteId, null, new byte[] {}, null, null);
 
-      List<AddDocumentTag> tags = Arrays.asList(tag0, tag1, tag2);
-      AddDocumentTagRequest request = new AddDocumentTagRequest().documentId(documentId).tags(tags);
-      OptionsDocumentTagsRequest optionReq =
-          new OptionsDocumentTagsRequest().documentId(documentId);
+      AddDocumentTagsRequest req = new AddDocumentTagsRequest()
+          .addTagsItem(new AddDocumentTag().key("test1").value("somevalue"))
+          .addTagsItem(new AddDocumentTag().key("test2"))
+          .addTagsItem(new AddDocumentTag().key("test3").values(Arrays.asList("abc", "xyz")));
 
-      try {
-        // when
-        HttpResponse<String> response = client.addDocumentTagAsHttpResponse(request);
+      // when
+      api.addDocumentTags(documentId, req, siteId, null);
 
-        // then
-        assertEquals("201", String.valueOf(response.statusCode()));
-        assertRequestCorsHeaders(response.headers());
+      // then
+      GetDocumentTagsResponse response =
+          api.getDocumentTags(documentId, siteId, null, null, null, null);
 
-        HttpResponse<String> options = client.optionsDocumentTags(optionReq);
-        assertPreflightedCorsHeaders(options.headers());
+      List<DocumentTag> list = response.getTags();
+      assertEquals(req.getTags().size(), list.size());
+      // map = list.get(0);
+      assertEquals("test1", list.get(0).getKey());
+      assertEquals("somevalue", list.get(0).getValue());
+      assertNotNull(list.get(0).getUserId());
+      assertNotNull(list.get(0).getInsertedDate());
 
-        // given
-        GetDocumentTagsRequest req = new GetDocumentTagsRequest().documentId(documentId);
-        // when
-        response = client.getDocumentTagsAsHttpResponse(req);
+      // map = list.get(1);
+      assertEquals("test2", list.get(1).getKey());
+      assertEquals("", list.get(1).getValue());
+      assertNotNull(list.get(1).getUserId());
+      assertNotNull(list.get(1).getInsertedDate());
 
-        // then
-        assertEquals("200", String.valueOf(response.statusCode()));
-        assertRequestCorsHeaders(response.headers());
-
-        Map<String, Object> map = toMap(response);
-        List<Map<String, Object>> list = (List<Map<String, Object>>) map.get("tags");
-        assertEquals(tags.size(), list.size());
-        map = list.get(0);
-        assertEquals("test1", map.get("key"));
-        assertEquals("somevalue", map.get("value"));
-        verifyUserId(map);
-        assertNotNull(map.get("insertedDate"));
-
-        map = list.get(1);
-        assertEquals("test2", map.get("key"));
-        assertEquals("", map.get("value"));
-        verifyUserId(map);
-        assertNotNull(map.get("insertedDate"));
-
-        map = list.get(2);
-        assertEquals("test3", map.get("key"));
-        assertNull(map.get("value"));
-        assertEquals("[abc, xyz]", map.get("values").toString());
-        verifyUserId(map);
-        assertNotNull(map.get("insertedDate"));
-
-      } finally {
-        deleteDocument(client, documentId);
-      }
+      // map = list.get(2);
+      assertEquals("test3", list.get(2).getKey());
+      assertNull(list.get(2).getValue());
+      assertEquals("abc,xyz", list.get(2).getValues().stream().collect(Collectors.joining(",")));
+      assertNotNull(list.get(2).getUserId());
+      assertNotNull(list.get(2).getInsertedDate());
     }
   }
 
@@ -504,15 +392,13 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
       DocumentTagsApi tagsApi = new DocumentTagsApi(client);
 
       String content = "this is some data";
-      List<com.formkiq.client.model.AddDocumentTag> tags = Arrays.asList(
-          new com.formkiq.client.model.AddDocumentTag().key("category").value("person"),
-          new com.formkiq.client.model.AddDocumentTag().key("user").value("111"));
+      List<AddDocumentTag> tags =
+          Arrays.asList(new AddDocumentTag().key("category").value("person"),
+              new AddDocumentTag().key("user").value("111"));
 
-      com.formkiq.client.model.AddDocumentRequest addReq =
-          new com.formkiq.client.model.AddDocumentRequest().content(content).tags(tags);
+      AddDocumentRequest addReq = new AddDocumentRequest().content(content).tags(tags);
       // when
-      com.formkiq.client.model.AddDocumentResponse addDocument =
-          documentsApi.addDocument(addReq, siteId, null);
+      AddDocumentResponse addDocument = documentsApi.addDocument(addReq, siteId, null);
 
       // then
       String documentId = addDocument.getDocumentId();
@@ -523,12 +409,9 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
           tagsApi.getDocumentTag(documentId, "category", siteId, null).getValue());
 
       // given
-      com.formkiq.client.model.AddDocumentTagsRequest updateTagReq =
-          new com.formkiq.client.model.AddDocumentTagsRequest()
-              .addTagsItem(
-                  new com.formkiq.client.model.AddDocumentTag().key("playerId").value("555"))
-              .addTagsItem(new com.formkiq.client.model.AddDocumentTag().key("category")
-                  .values(Arrays.asList("c0", "c1")));
+      AddDocumentTagsRequest updateTagReq = new AddDocumentTagsRequest()
+          .addTagsItem(new AddDocumentTag().key("playerId").value("555"))
+          .addTagsItem(new AddDocumentTag().key("category").values(Arrays.asList("c0", "c1")));
 
       // when
       tagsApi.updateDocumentTags(documentId, updateTagReq, siteId);
@@ -537,7 +420,7 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
       int i = 0;
       final int expected = 3;
 
-      List<GetDocumentTagResponse> taglist =
+      List<DocumentTag> taglist =
           tagsApi.getDocumentTags(documentId, siteId, null, null, null, null).getTags();
       assertEquals(expected, taglist.size());
       assertEquals("category", taglist.get(i).getKey());
@@ -549,8 +432,7 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
       assertEquals("111", taglist.get(i++).getValue());
 
       // given
-      com.formkiq.client.model.AddDocumentTagsRequest setTagsReq =
-          new com.formkiq.client.model.AddDocumentTagsRequest().tags(tags);
+      AddDocumentTagsRequest setTagsReq = new AddDocumentTagsRequest().tags(tags);
 
       // when
       tagsApi.setDocumentTags(documentId, setTagsReq, siteId);
@@ -564,21 +446,6 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
 
       assertEquals("user", taglist.get(i).getKey());
       assertEquals("111", taglist.get(i++).getValue());
-    }
-  }
-
-  /**
-   * Verify UserId.
-   * 
-   * @param map {@link Map}
-   */
-  private void verifyUserId(final Map<String, Object> map) {
-    if ("testadminuser@formkiq.com".equals(map.get("userId"))) {
-      assertEquals("testadminuser@formkiq.com", map.get("userId"));
-    } else if (map.get("userId").toString().contains(":user/")) {
-      assertTrue(map.get("userId").toString().contains(":user/"));
-    } else {
-      assertEquals("My API Key", map.get("userId"));
     }
   }
 }

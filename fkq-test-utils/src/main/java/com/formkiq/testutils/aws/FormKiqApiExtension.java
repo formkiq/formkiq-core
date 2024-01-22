@@ -25,11 +25,9 @@ package com.formkiq.testutils.aws;
 
 import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 import static org.mockserver.model.HttpRequest.request;
-import java.util.Random;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.mockserver.integration.ClientAndServer;
-import org.mockserver.mock.action.ExpectationResponseCallback;
 
 /**
  * 
@@ -39,32 +37,37 @@ import org.mockserver.mock.action.ExpectationResponseCallback;
 public class FormKiqApiExtension
     implements BeforeAllCallback, ExtensionContext.Store.CloseableResource {
 
-  /** {@link Random}. */
-  private static final Random NUM_RAND = new Random();
-  /** Port to run Test server. */
-  private int port = -1;
+  /** {@link AbstractFormKiqApiResponseCallback}. */
+  private AbstractFormKiqApiResponseCallback callback;
 
   /** {@link ClientAndServer}. */
   private ClientAndServer formkiqServer;
 
+  /** Port to run Test server. */
+  private int port = -1;
+  /** Is server running. */
+  private boolean running = false;
+
   /**
    * constructor.
+   * 
+   * @param responseCallback {@link AbstractFormKiqApiResponseCallback}
    */
-  public FormKiqApiExtension() {
-    final int topPort = 8000;
-    final int bottomPort = 7000;
-    this.port = NUM_RAND.nextInt(topPort - bottomPort) + bottomPort;
+  public FormKiqApiExtension(final AbstractFormKiqApiResponseCallback responseCallback) {
+    this.callback = responseCallback;
+    this.port = responseCallback.getServerPort();
+    this.callback = responseCallback;
   }
-
-  /** {@link ExpectationResponseCallback}. */
-  private ExpectationResponseCallback responseCallback;
 
   @Override
   public void beforeAll(final ExtensionContext context) throws Exception {
 
-    this.formkiqServer = startClientAndServer(Integer.valueOf(this.port));
+    if (!this.running) {
+      this.formkiqServer = startClientAndServer(Integer.valueOf(this.port));
 
-    this.formkiqServer.when(request()).respond(this.responseCallback);
+      this.formkiqServer.when(request()).respond(this.callback);
+      this.running = true;
+    }
   }
 
   @Override
@@ -74,6 +77,7 @@ public class FormKiqApiExtension
       this.formkiqServer.stop();
     }
     this.formkiqServer = null;
+    this.running = false;
   }
 
   /**
@@ -86,13 +90,11 @@ public class FormKiqApiExtension
   }
 
   /**
-   * Set Callback.
+   * Get callback.
    * 
-   * @param callback {@link ExpectationResponseCallback}
-   * @return {@link FormKiqApiExtension}
+   * @return {@link AbstractFormKiqApiResponseCallback}
    */
-  public FormKiqApiExtension setCallback(final ExpectationResponseCallback callback) {
-    this.responseCallback = callback;
-    return this;
+  public AbstractFormKiqApiResponseCallback getCallback() {
+    return this.callback;
   }
 }

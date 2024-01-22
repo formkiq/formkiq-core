@@ -28,6 +28,9 @@ import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_FOUND;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import static software.amazon.awssdk.utils.StringUtils.isEmpty;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -38,8 +41,9 @@ import java.util.Optional;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
-import com.formkiq.aws.s3.S3Service;
+import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -47,6 +51,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.plugins.useractivity.UserActivityPlugin;
 import com.formkiq.stacks.api.ApiEmptyResponse;
 import com.formkiq.stacks.api.ApiUrlResponse;
 import com.formkiq.stacks.dynamodb.DocumentFormat;
@@ -86,6 +91,13 @@ public class DocumentIdUrlRequestHandler
     String versionId = versionService.getVersionId(connection, siteId, documentId, versionKey);
 
     URL url = getS3Url(logger, authorization, awsservice, event, item, versionId, inline);
+
+    if (url != null) {
+      if (awsservice.containsExtension(UserActivityPlugin.class)) {
+        UserActivityPlugin plugin = awsservice.getExtension(UserActivityPlugin.class);
+        plugin.addViewActivity(siteId, documentId, versionKey, authorization.username());
+      }
+    }
 
     return url != null
         ? new ApiRequestHandlerResponse(SC_OK, new ApiUrlResponse(url.toString(), documentId))
@@ -129,39 +141,33 @@ public class DocumentIdUrlRequestHandler
    * @param versionId {@link String}
    * @param inline boolean
    * @return {@link URL}
+   * @throws URISyntaxException URISyntaxException
+   * @throws DocumentNotFoundException DocumentIdUrlGetRequestHandlerTest
+   * @throws MalformedURLException MalformedURLException
    */
   private URL getS3Url(final LambdaLogger logger, final ApiAuthorization authorization,
       final AwsServiceCache awsservice, final ApiGatewayRequestEvent event, final DocumentItem item,
-      final String versionId, final boolean inline) {
+      final String versionId, final boolean inline)
+      throws URISyntaxException, DocumentNotFoundException, MalformedURLException {
 
     final String documentId = item.getDocumentId();
 
-    URL url = null;
     String contentType = getContentType(event);
     String siteId = authorization.siteId();
-    int hours = getDurationHours(event);
-    Duration duration = Duration.ofHours(hours);
 
     if (awsservice.debug()) {
       logger.log("Finding S3 Url for 'Content-Type' " + contentType);
     }
 
-    S3Service s3Service = awsservice.getExtension(S3Service.class);
+    S3PresignerService s3Service = awsservice.getExtension(S3PresignerService.class);
 
-    PresignGetUrlConfig config =
-        new PresignGetUrlConfig().contentDispositionByPath(item.getPath(), inline);
+    String s3key = null;
+    String s3Bucket = awsservice.environment("DOCUMENTS_S3_BUCKET");
+    String filename = Strings.getFilename(item.getPath());
 
-    if (contentType == null || contentType.equals(item.getContentType())) {
+    PresignGetUrlConfig config = new PresignGetUrlConfig();
 
-      logger.log("Found default format " + contentType + " for siteId: " + siteId + " documentId: "
-          + documentId);
-
-      config.contentType(item.getContentType());
-      String s3key = createS3Key(siteId, documentId);
-      url = s3Service.presignGetUrl(awsservice.environment("DOCUMENTS_S3_BUCKET"), s3key, duration,
-          versionId, config);
-
-    } else {
+    if (contentType != null && !contentType.equals(item.getContentType())) {
 
       config.contentType(item.getContentType());
 
@@ -171,22 +177,43 @@ public class DocumentIdUrlRequestHandler
 
       if (format.isPresent()) {
 
-        if (awsservice.debug()) {
-          logger.log("Found format " + contentType + " for siteId: " + siteId + " documentId: "
-              + documentId);
-        }
-
-        String s3key = createS3Key(siteId, documentId, contentType);
-        url = s3Service.presignGetUrl(awsservice.environment("DOCUMENTS_S3_BUCKET"), s3key,
-            duration, versionId, config);
+        s3key = createS3Key(siteId, documentId, contentType);
 
       } else if (awsservice.debug()) {
 
-        logger.log("Cannot find format " + contentType + " for siteId: " + siteId + " documentId: "
-            + documentId);
+        throw new DocumentNotFoundException("Cannot find format " + contentType + " for siteId: "
+            + siteId + " documentId: " + documentId);
+      }
+
+    } else {
+
+      config.contentType(item.getContentType());
+      s3key = createS3Key(siteId, documentId);
+
+      if (isS3Link(item)) {
+        URI u = new URI(item.getDeepLinkPath());
+        s3Bucket = u.getHost();
+        s3key = u.getPath().startsWith("/") ? u.getPath().substring(1) : u.getPath();
+        filename = Strings.getFilename(item.getDeepLinkPath());
+
+      } else if (!isEmpty(item.getDeepLinkPath())) {
+
+        s3Bucket = null;
+        s3key = item.getDeepLinkPath();
+        filename = Strings.getFilename(item.getDeepLinkPath());
       }
     }
 
-    return url;
+    config.contentDispositionByPath(filename, inline);
+
+    int hours = getDurationHours(event);
+    Duration duration = Duration.ofHours(hours);
+
+    return s3Bucket != null ? s3Service.presignGetUrl(s3Bucket, s3key, duration, versionId, config)
+        : new URL(s3key);
+  }
+
+  private boolean isS3Link(final DocumentItem item) {
+    return !isEmpty(item.getDeepLinkPath()) && item.getDeepLinkPath().startsWith("s3://");
   }
 }

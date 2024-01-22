@@ -26,15 +26,19 @@ package com.formkiq.module.http;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublisher;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpRequest.Builder;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.Executor;
+import java.util.stream.Collectors;
 
 /**
  * 
@@ -53,17 +57,36 @@ public class HttpServiceJdk11 implements HttpService {
     this.client = HttpClient.newHttpClient();
   }
 
+  /**
+   * constructor.
+   * 
+   * @param executor {@link Executor}
+   */
+  public HttpServiceJdk11(final Executor executor) {
+    this.client = HttpClient.newBuilder().executor(executor).build();
+  }
 
   /**
    * Build {@link Builder}.
    * 
    * @param url {@link String}
    * @param headers {@link HttpHeaders}
+   * @param parameters {@link Map}
    * @return {@link Builder}
    * @throws IOException IOException
    */
-  private Builder build(final String url, final Optional<HttpHeaders> headers) throws IOException {
-    Builder builder = HttpRequest.newBuilder().uri(toUri(url));
+  private Builder build(final String url, final Optional<HttpHeaders> headers,
+      final Optional<Map<String, String>> parameters) throws IOException {
+
+    String u = url;
+
+    if (parameters.isPresent() && !parameters.get().isEmpty()) {
+      String q = parameters.get().entrySet().stream()
+          .map(s -> s.getKey() + "=" + encode(s.getValue())).collect(Collectors.joining("&"));
+      u += "?" + q;
+    }
+
+    Builder builder = HttpRequest.newBuilder().uri(toUri(u));
 
     if (headers.isPresent()) {
       for (Map.Entry<String, String> e : headers.get().getAll().entrySet()) {
@@ -74,10 +97,14 @@ public class HttpServiceJdk11 implements HttpService {
     return builder;
   }
 
+  private String encode(final String s) {
+    return URLEncoder.encode(s, StandardCharsets.UTF_8);
+  }
+
   @Override
-  public HttpResponse<String> delete(final String url, final Optional<HttpHeaders> headers)
-      throws IOException {
-    HttpRequest request = build(url, headers).DELETE().build();
+  public HttpResponse<String> delete(final String url, final Optional<HttpHeaders> headers,
+      final Optional<Map<String, String>> parameters) throws IOException {
+    HttpRequest request = build(url, headers, parameters).DELETE().build();
     try {
       return this.client.send(request, HttpResponse.BodyHandlers.ofString());
     } catch (InterruptedException e) {
@@ -86,9 +113,9 @@ public class HttpServiceJdk11 implements HttpService {
   }
 
   @Override
-  public HttpResponse<String> get(final String url, final Optional<HttpHeaders> headers)
-      throws IOException {
-    HttpRequest request = build(url, headers).GET().build();
+  public HttpResponse<String> get(final String url, final Optional<HttpHeaders> headers,
+      final Optional<Map<String, String>> parameters) throws IOException {
+    HttpRequest request = build(url, headers, parameters).GET().build();
     try {
       return this.client.send(request, HttpResponse.BodyHandlers.ofString());
     } catch (InterruptedException e) {
@@ -99,12 +126,12 @@ public class HttpServiceJdk11 implements HttpService {
 
   @Override
   public HttpResponse<String> patch(final String url, final Optional<HttpHeaders> headers,
-      final String payload) throws IOException {
+      final Optional<Map<String, String>> parameters, final String payload) throws IOException {
 
     BodyPublisher body =
         payload != null ? BodyPublishers.ofString(payload) : HttpRequest.BodyPublishers.noBody();
 
-    HttpRequest request = build(url, headers).method("PATCH", body).build();
+    HttpRequest request = build(url, headers, parameters).method("PATCH", body).build();
 
     try {
       return this.client.send(request, HttpResponse.BodyHandlers.ofString());
@@ -116,11 +143,11 @@ public class HttpServiceJdk11 implements HttpService {
 
   @Override
   public HttpResponse<String> post(final String url, final Optional<HttpHeaders> headers,
-      final String payload) throws IOException {
+      final Optional<Map<String, String>> parameters, final String payload) throws IOException {
 
     BodyPublisher body =
         payload != null ? BodyPublishers.ofString(payload) : HttpRequest.BodyPublishers.noBody();
-    HttpRequest request = build(url, headers).POST(body).build();
+    HttpRequest request = build(url, headers, parameters).POST(body).build();
     try {
       return this.client.send(request, HttpResponse.BodyHandlers.ofString());
     } catch (InterruptedException e) {
@@ -131,10 +158,27 @@ public class HttpServiceJdk11 implements HttpService {
 
   @Override
   public HttpResponse<String> put(final String url, final Optional<HttpHeaders> headers,
-      final Path payload) throws IOException {
+      final Optional<Map<String, String>> parameters, final Path payload) throws IOException {
 
     HttpRequest request =
-        build(url, headers).PUT(HttpRequest.BodyPublishers.ofFile(payload)).build();
+        build(url, headers, parameters).PUT(HttpRequest.BodyPublishers.ofFile(payload)).build();
+
+    try {
+      return this.client.send(request, HttpResponse.BodyHandlers.ofString());
+    } catch (InterruptedException e) {
+      throw new IOException(e);
+    }
+  }
+
+
+  @Override
+  public HttpResponse<String> put(final String url, final Optional<HttpHeaders> headers,
+      final Optional<Map<String, String>> parameters, final String payload) throws IOException {
+
+    BodyPublisher body =
+        payload != null ? BodyPublishers.ofString(payload) : HttpRequest.BodyPublishers.noBody();
+
+    HttpRequest request = build(url, headers, parameters).PUT(body).build();
 
     try {
       return this.client.send(request, HttpResponse.BodyHandlers.ofString());

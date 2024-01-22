@@ -32,7 +32,7 @@ import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
 import static com.formkiq.testutils.aws.TestServices.FORMKIQ_APP_ENVIRONMENT;
 import static com.formkiq.testutils.aws.TestServices.OCR_BUCKET_NAME;
 import static com.formkiq.testutils.aws.TestServices.STAGE_BUCKET_NAME;
-import static com.formkiq.testutils.aws.TypeSenseExtension.API_KEY;
+import static com.formkiq.testutils.aws.TypesenseExtension.API_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 import java.io.ByteArrayInputStream;
@@ -40,7 +40,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -62,21 +61,19 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestContext;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.sns.SnsService;
 import com.formkiq.aws.sqs.SqsService;
+import com.formkiq.aws.sqs.SqsServiceImpl;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceCache;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.plugins.tagschema.DocumentTagSchemaPluginEmpty;
+import com.formkiq.stacks.api.handler.TestCoreRequestHandler;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
 import com.formkiq.testutils.aws.LambdaContextRecorder;
 import com.formkiq.testutils.aws.LambdaLoggerRecorder;
 import com.formkiq.testutils.aws.TestServices;
-import com.formkiq.testutils.aws.TypeSenseExtension;
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
-import software.amazon.awssdk.auth.credentials.AwsCredentials;
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import com.formkiq.testutils.aws.TypesenseExtension;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 import software.amazon.awssdk.services.ssm.model.ParameterNotFoundException;
@@ -86,12 +83,12 @@ import software.amazon.awssdk.utils.IoUtils;
 /** Abstract class for testing API Requests. */
 public abstract class AbstractRequestHandler {
 
+  /** {@link TestCoreRequestHandler}. */
+  private static TestCoreRequestHandler handler;
   /** Port to run Test server. */
   private static final int PORT = 8080;
-
   /** 500 Milliseconds. */
   private static final long SLEEP = 500L;
-
   /** SQS Sns Update Queue. */
   private static final String SNS_SQS_CREATE_QUEUE = "sqssnsCreate" + UUID.randomUUID();
   /** SQS Create Url. */
@@ -108,11 +105,12 @@ public abstract class AbstractRequestHandler {
    */
   @BeforeAll
   public static void beforeAll() throws Exception {
+
     SsmConnectionBuilder ssmBuilder = TestServices.getSsmConnection(null);
     SsmService ssmService = new SsmServiceCache(ssmBuilder, 1, TimeUnit.DAYS);
     ssmService.putParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/api/DocumentsIamUrl", URL);
 
-    SqsService sqsService = new SqsService(TestServices.getSqsConnection(null));
+    SqsService sqsService = new SqsServiceImpl(TestServices.getSqsConnection(null));
     if (!sqsService.exists(SNS_SQS_CREATE_QUEUE)) {
       sqsDocumentEventUrl = sqsService.createQueue(SNS_SQS_CREATE_QUEUE).queueUrl();
     }
@@ -211,8 +209,6 @@ public abstract class AbstractRequestHandler {
 
     createApiRequestHandler("cognito");
 
-    this.awsServices = new CoreRequestHandler().getAwsServices();
-
     SqsService sqsservice = this.awsServices.getExtension(SqsService.class);
 
     for (String queue : Arrays.asList(TestServices.getSqsDocumentFormatsQueueUrl(null))) {
@@ -234,13 +230,8 @@ public abstract class AbstractRequestHandler {
    * @throws URISyntaxException URISyntaxException
    */
   public void createApiRequestHandler(final Map<String, String> prop) throws URISyntaxException {
-    AwsCredentials creds = AwsBasicCredentials.create("asd", "asd");
-    StaticCredentialsProvider credentialsProvider = StaticCredentialsProvider.create(creds);
-
-    Map<String, URI> endpoints = TestServices.getEndpointMap();
-
-    AbstractCoreRequestHandler.configureHandler(prop, AWS_REGION, credentialsProvider, endpoints,
-        new DocumentTagSchemaPluginEmpty());
+    handler = new TestCoreRequestHandler(prop);
+    this.awsServices = handler.getAwsServices();
   }
 
   protected void createApiRequestHandler(final String userAuthentication)
@@ -264,7 +255,7 @@ public abstract class AbstractRequestHandler {
     this.map.put("USER_AUTHENTICATION", userAuthentication);
     this.map.put("WEBSOCKET_SQS_URL",
         TestServices.getSqsWebsocketQueueUrl(TestServices.getSqsConnection(null)));
-    this.map.put("TYPESENSE_HOST", "http://localhost:" + TypeSenseExtension.getMappedPort());
+    this.map.put("TYPESENSE_HOST", "http://localhost:" + TypesenseExtension.getMappedPort());
     this.map.put("TYPESENSE_API_KEY", API_KEY);
 
     createApiRequestHandler(this.map);
@@ -330,8 +321,8 @@ public abstract class AbstractRequestHandler {
    *
    * @return {@link CoreRequestHandler}
    */
-  public CoreRequestHandler getHandler() {
-    return new CoreRequestHandler();
+  public TestCoreRequestHandler getHandler() {
+    return handler;
   }
 
   /**
@@ -446,7 +437,7 @@ public abstract class AbstractRequestHandler {
     InputStream is = new ByteArrayInputStream(s.getBytes(StandardCharsets.UTF_8));
     ByteArrayOutputStream outstream = new ByteArrayOutputStream();
 
-    new CoreRequestHandler().handleRequest(is, outstream, getMockContext());
+    handler.handleRequest(is, outstream, getMockContext());
 
     String response = new String(outstream.toByteArray(), "UTF-8");
     return response;
@@ -551,7 +542,7 @@ public abstract class AbstractRequestHandler {
    * @param value {@link String}
    */
   public void setEnvironment(final String key, final String value) {
-    this.map.put(key, value);
+    this.awsServices.environment().put(key, value);
   }
 
   /**

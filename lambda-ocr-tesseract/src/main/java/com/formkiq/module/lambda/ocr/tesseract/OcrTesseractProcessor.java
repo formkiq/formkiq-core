@@ -38,33 +38,40 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
+import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilderExtension;
 import com.formkiq.aws.dynamodb.objects.MimeType;
-import com.formkiq.aws.s3.S3ConnectionBuilder;
+import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.s3.S3ServiceExtension;
-import com.formkiq.aws.sns.SnsConnectionBuilder;
+import com.formkiq.aws.sns.SnsAwsServiceRegistry;
 import com.formkiq.aws.sqs.SqsMessageRecord;
 import com.formkiq.aws.sqs.SqsMessageRecords;
+import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
+import com.formkiq.module.actions.services.ActionStatusPredicate;
+import com.formkiq.module.actions.services.ActionTypePredicate;
 import com.formkiq.module.actions.services.ActionsNotificationService;
 import com.formkiq.module.actions.services.ActionsNotificationServiceExtension;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceExtension;
 import com.formkiq.module.events.EventService;
 import com.formkiq.module.events.EventServiceSnsExtension;
+import com.formkiq.module.lambda.ocr.docx.DocFormatConverter;
+import com.formkiq.module.lambda.ocr.docx.DocxFormatConverter;
+import com.formkiq.module.lambda.ocr.pdf.PdfFormatConverter;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.module.ocr.DocumentOcrService;
 import com.formkiq.module.ocr.DocumentOcrServiceExtension;
 import com.formkiq.module.ocr.FormatConverter;
+import com.formkiq.module.ocr.FormatConverterResult;
 import com.formkiq.module.ocr.OcrScanStatus;
 import com.formkiq.module.ocr.OcrSqsMessage;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
-import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.utils.IoUtils;
 
 /** {@link RequestHandler} for handling DynamoDb to Tesseract OCR Processor. */
@@ -88,40 +95,37 @@ public class OcrTesseractProcessor implements RequestStreamHandler {
    * 
    */
   public OcrTesseractProcessor() {
-    this(System.getenv(),
-        new DynamoDbConnectionBuilder("true".equals(System.getenv("ENABLE_AWS_X_RAY")))
-            .setRegion(Region.of(System.getenv("AWS_REGION"))),
-        new S3ConnectionBuilder("true".equals(System.getenv("ENABLE_AWS_X_RAY")))
-            .setRegion(Region.of(System.getenv("AWS_REGION"))),
-        new SnsConnectionBuilder("true".equals(System.getenv("ENABLE_AWS_X_RAY")))
-            .setCredentials(EnvironmentVariableCredentialsProvider.create())
-            .setRegion(Region.of(System.getenv("AWS_REGION"))),
-        Arrays.asList(new DocxFormatConverter(), new DocFormatConverter(), new PdfFormatConverter(),
-            new TesseractFormatConverter(new TesseractWrapperImpl())));
+    this(new AwsServiceCacheBuilder(System.getenv(), Map.of(),
+        EnvironmentVariableCredentialsProvider.create())
+        .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
+            new SnsAwsServiceRegistry())
+        .build());
   }
 
   /**
    * constructor.
    *
-   * @param map {@link Map}
-   * @param dbConnection {@link DynamoDbConnectionBuilder}
-   * @param s3Connection {@link S3ConnectionBuilder}
-   * @param snsConnection {@link SnsConnectionBuilder}
-   * @param formatConverters {@link List} {@link FormatConverter}
+   * @param services {@link DynamoDbConnectionBuilder}
    */
-  public OcrTesseractProcessor(final Map<String, String> map,
-      final DynamoDbConnectionBuilder dbConnection, final S3ConnectionBuilder s3Connection,
-      final SnsConnectionBuilder snsConnection, final List<FormatConverter> formatConverters) {
+  public OcrTesseractProcessor(final AwsServiceCache services) {
 
-    this.s3Service = new S3Service(s3Connection);
-    this.documentsBucket = map.get("DOCUMENTS_S3_BUCKET");
-    this.ocrDocumentsBucket = map.get("OCR_S3_BUCKET");
-    this.converters = formatConverters;
+    this.documentsBucket = services.environment("DOCUMENTS_S3_BUCKET");
+    this.ocrDocumentsBucket = services.environment("OCR_S3_BUCKET");
 
-    this.awsServices =
-        new AwsServiceCache().environment(map).debug("true".equals(map.get("DEBUG")));
+    register(services);
+    this.awsServices = services;
+  }
 
-    register(dbConnection, s3Connection, snsConnection);
+  /**
+   * constructor.
+   * 
+   * @param services {@link AwsServiceCache}
+   * @param converterList {@link List} {@link FormatConverter}
+   */
+  public OcrTesseractProcessor(final AwsServiceCache services,
+      final List<FormatConverter> converterList) {
+    this(services);
+    this.converters = converterList;
   }
 
   /**
@@ -131,6 +135,30 @@ public class OcrTesseractProcessor implements RequestStreamHandler {
    */
   public AwsServiceCache getAwsServices() {
     return this.awsServices;
+  }
+
+  /**
+   * Get Converters.
+   * 
+   * @return {@link List} {@link FormatConverter}
+   */
+  protected List<FormatConverter> getConverters() {
+
+    if (this.converters == null) {
+      this.converters = getDefaultConverters();
+    }
+
+    return this.converters;
+  }
+
+  /**
+   * Get Default Converters.
+   * 
+   * @return {@link List} {@link FormatConverter}
+   */
+  protected List<FormatConverter> getDefaultConverters() {
+    return Arrays.asList(new DocxFormatConverter(), new DocFormatConverter(),
+        new PdfFormatConverter(), new TesseractFormatConverter(new TesseractWrapperImpl()));
   }
 
   protected OcrSqsMessage getSqsMessage(final SqsMessageRecord record) {
@@ -202,7 +230,7 @@ public class OcrTesseractProcessor implements RequestStreamHandler {
       MimeType mt = MimeType.fromContentType(contentType);
 
       Optional<FormatConverter> fc =
-          this.converters.stream().filter(c -> c.isSupported(sqsMessage, mt)).findFirst();
+          getConverters().stream().filter(c -> c.isSupported(sqsMessage, mt)).findFirst();
 
       if (fc.isEmpty()) {
         throw new IOException("unsupported Content-Type: " + contentType);
@@ -212,18 +240,18 @@ public class OcrTesseractProcessor implements RequestStreamHandler {
 
       try {
 
-        String text = fc.get().convert(this.awsServices, sqsMessage, file);
+        FormatConverterResult result = fc.get().convert(this.awsServices, sqsMessage, file);
 
-        if (text != null) {
+        if (result.text() != null) {
           String ocrS3Key = ocrService.getS3Key(siteId, documentId, jobId);
           this.s3Service.putObject(this.ocrDocumentsBucket, ocrS3Key,
-              text.getBytes(StandardCharsets.UTF_8), "text/plain");
+              result.text().getBytes(StandardCharsets.UTF_8), "text/plain");
         }
 
-        ocrService.updateOcrScanStatus(this.awsServices, siteId, documentId,
-            OcrScanStatus.SUCCESSFUL);
-
-        logger.log(String.format("setting OCR Scan Status: %s", OcrScanStatus.SUCCESSFUL));
+        if (OcrScanStatus.SUCCESSFUL.equals(result.status())) {
+          ocrService.updateOcrScanStatus(this.awsServices, siteId, documentId,
+              OcrScanStatus.SUCCESSFUL);
+        }
 
       } finally {
 
@@ -238,27 +266,31 @@ public class OcrTesseractProcessor implements RequestStreamHandler {
       logger.log(String.format("setting OCR Scan Status: %s", OcrScanStatus.FAILED));
 
       ActionsService actionsService = this.awsServices.getExtension(ActionsService.class);
-      actionsService.updateActionStatus(siteId, documentId, ActionType.OCR, ActionStatus.FAILED);
+      List<Action> actions = actionsService.getActions(siteId, documentId);
+      Optional<Action> o = actions.stream().filter(new ActionStatusPredicate(ActionStatus.RUNNING))
+          .filter(new ActionTypePredicate(ActionType.OCR)).findFirst();
+
+      if (o.isPresent()) {
+        o.get().status(ActionStatus.FAILED);
+        actionsService.updateActionStatus(siteId, documentId, o.get());
+      }
     }
   }
 
   /**
    * Register Compoments.
    * 
-   * @param dbConnection {@link DynamoDbConnectionBuilder}
-   * @param s3Connection {@link S3ConnectionBuilder}
-   * @param snsConnection {@link SnsConnectionBuilder}
+   * @param services {@link AwsServiceCache}
    */
-  protected void register(final DynamoDbConnectionBuilder dbConnection,
-      final S3ConnectionBuilder s3Connection, final SnsConnectionBuilder snsConnection) {
-    AwsServiceCache.register(DynamoDbConnectionBuilder.class,
-        new DynamoDbConnectionBuilderExtension(dbConnection));
-    AwsServiceCache.register(S3Service.class, new S3ServiceExtension(s3Connection));
-    AwsServiceCache.register(DocumentOcrService.class, new DocumentOcrServiceExtension());
-    AwsServiceCache.register(ActionsService.class, new ActionsServiceExtension());
+  protected void register(final AwsServiceCache services) {
 
-    AwsServiceCache.register(EventService.class, new EventServiceSnsExtension(snsConnection));
-    AwsServiceCache.register(ActionsNotificationService.class,
-        new ActionsNotificationServiceExtension());
+    services.register(S3Service.class, new S3ServiceExtension());
+    services.register(DocumentOcrService.class, new DocumentOcrServiceExtension());
+    services.register(ActionsService.class, new ActionsServiceExtension());
+
+    services.register(EventService.class, new EventServiceSnsExtension());
+    services.register(ActionsNotificationService.class, new ActionsNotificationServiceExtension());
+
+    this.s3Service = services.getExtension(S3Service.class);
   }
 }

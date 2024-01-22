@@ -27,7 +27,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
-import java.net.http.HttpResponse;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -35,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.api.SystemManagementApi;
 import com.formkiq.client.invoker.ApiClient;
@@ -42,9 +42,8 @@ import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddApiKeyRequest.PermissionsEnum;
 import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AddDocumentResponse;
-import com.formkiq.stacks.client.FormKiqClientV1;
-import com.formkiq.stacks.client.models.ApiKeys;
-import com.formkiq.stacks.client.requests.AddApiKeyRequest;
+import com.formkiq.client.model.GetApiKeysResponse;
+import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthenticationResultType;
 
 /**
@@ -54,7 +53,7 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.Authenticat
  * </p>
  *
  */
-public class ConfigurationApiKeyRequestTest extends AbstractApiTest {
+public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
 
   /** JUnit Test Timeout. */
   private static final int TEST_TIMEOUT = 20;
@@ -69,15 +68,18 @@ public class ConfigurationApiKeyRequestTest extends AbstractApiTest {
   /** {@link DocumentsApi}. */
   private DocumentsApi keyDocumentsApi = null;
 
+  /** Cognito FINANCE User Email. */
+  private static final String FINANCE_EMAIL = "testfinance912345@formkiq.com";
+
   /**
    * Before Each.
    */
   @BeforeEach
   public void beforeEach() {
-    this.jwtApiClient = new ApiClient().setReadTimeout(0).setBasePath(getRootHttpUrl());
+    this.jwtApiClient = new ApiClient().setReadTimeout(0).setBasePath(getCognito().getRootJwtUrl());
     this.jwtSystemApi = new SystemManagementApi(this.jwtApiClient);
 
-    this.keyApiClient = new ApiClient().setReadTimeout(0).setBasePath(getRootKeyUrl());
+    this.keyApiClient = new ApiClient().setReadTimeout(0).setBasePath(getCognito().getRootKeyUrl());
     this.keyDocumentsApi = new DocumentsApi(this.keyApiClient);
   }
 
@@ -93,31 +95,38 @@ public class ConfigurationApiKeyRequestTest extends AbstractApiTest {
     String name = "My API";
     final int expected = 3;
 
-    List<FormKiqClientV1> clients = getFormKiqClients(null);
-    assertEquals(expected, clients.size());
+    List<ApiClient> apiClients = getApiClients(null);
+    assertEquals(expected, apiClients.size());
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
-      for (FormKiqClientV1 client : Arrays.asList(clients.get(0), clients.get(1))) {
-        AddApiKeyRequest req = new AddApiKeyRequest().siteId(siteId).name(name);
+      for (ApiClient client : Arrays.asList(apiClients.get(0), apiClients.get(1))) {
+        com.formkiq.client.model.AddApiKeyRequest apiReq =
+            new com.formkiq.client.model.AddApiKeyRequest().name(name);
+
+        SystemManagementApi api = new SystemManagementApi(client);
 
         // when
-        client.addApiKey(req);
+        api.addApiKey(apiReq, siteId);
 
         // then
-        ApiKeys apiKeys = client.getApiKeys();
-        assertFalse(apiKeys.apiKeys().isEmpty());
+        GetApiKeysResponse apiKeys = api.getApiKeys(siteId);
+        assertFalse(apiKeys.getApiKeys().isEmpty());
       }
+    }
 
-      // given
-      FormKiqClientV1 c = clients.get(2);
+    // given
+    ApiClient c = apiClients.get(2);
+    SystemManagementApi api = new SystemManagementApi(c);
 
-      // when
-      HttpResponse<String> response = c.getApiKeysAsHttpResponse();
-
+    // when
+    try {
+      api.getApiKeys(null);
       // then
-      assertEquals("401", String.valueOf(response.statusCode()));
-      assertEquals("{\"message\":\"user is unauthorized\"}", response.body());
+      fail();
+    } catch (ApiException e) {
+      assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
+      assertEquals("{\"message\":\"user is unauthorized\"}", e.getResponseBody());
     }
   }
 
@@ -130,25 +139,23 @@ public class ConfigurationApiKeyRequestTest extends AbstractApiTest {
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testApiKey02() throws Exception {
     // given
-    AuthenticationResultType token = login(FINANCE_EMAIL, USER_PASSWORD);
-    FormKiqClientV1 client = createHttpClient(token);
+    addAndLoginCognito(FINANCE_EMAIL, Arrays.asList("finance"));
+
+    AuthenticationResultType token = getCognito().login(FINANCE_EMAIL, USER_PASSWORD);
+
+    this.jwtApiClient.addDefaultHeader("Authorization", token.accessToken());
+    SystemManagementApi api = new SystemManagementApi(this.jwtApiClient);
 
     // when
-    HttpResponse<String> response = client.getApiKeysAsHttpResponse();
+    try {
+      api.getApiKeys(null);
 
-    // then
-    assertEquals("401", String.valueOf(response.statusCode()));
-    assertEquals("{\"message\":\"user is unauthorized\"}", response.body());
-
-    // given
-    AddApiKeyRequest req = new AddApiKeyRequest().name("test");
-
-    // when
-    response = client.addApiKeyAsHttpResponse(req);
-
-    // then
-    assertEquals("401", String.valueOf(response.statusCode()));
-    assertEquals("{\"message\":\"user is unauthorized\"}", response.body());
+      // then
+      fail();
+    } catch (ApiException e) {
+      assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
+      assertEquals("{\"message\":\"user is unauthorized\"}", e.getResponseBody());
+    }
   }
 
   /**

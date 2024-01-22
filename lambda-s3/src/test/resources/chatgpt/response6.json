@@ -1,0 +1,25 @@
+{
+    "id": "chatcmpl-8LwgeVk8glvGvaDqo9ZrMK5Mdd2j4",
+    "object": "chat.completion",
+    "created": 1700241172,
+    "model": "gpt-3.5-turbo-0613",
+    "choices": [
+        {
+            "index": 0,
+            "message": {
+                "role": "assistant",
+                "content": null,
+                "function_call": {
+                    "name": "get_text_data",
+                    "arguments": "{\n  \"organization\": [\"East Repair Inc.\"],\n  \"location\": [\"New York, NY\",\"Cambutdigo, MA\"],\n  \"person\": [\"Job Smith\"],\n  \"subject\":  [\"Receipt\",\"Frontend eaar brake cabies\",\"New set of podal arms\",\"Labor shrs\"],\n  \"sentiment\": []\n,\n  \"document type\": []\n}"
+                }
+            },
+            "finish_reason": "stop"
+        }
+    ],
+    "usage": {
+        "prompt_tokens": 306,
+        "completion_tokens": 47,
+        "total_tokens": 353
+    }
+}

@@ -43,7 +43,7 @@ public class DynamicObjectToAction implements Function<DynamicObject, Action> {
 
     Action action = new Action();
 
-    String userId = obj.containsKey("userId") ? obj.getString("userId") : null;
+    String userId = obj.containsKey("userId") ? obj.getString("userId") : "System";
     action.userId(userId);
 
     String type = obj.containsKey("type") ? obj.getString("type") : null;

@@ -26,7 +26,6 @@ package com.formkiq.module.typesense;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceExtension;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
-import software.amazon.awssdk.regions.Region;
 
 /**
  * 
@@ -37,28 +36,20 @@ public class TypeSenseServiceExtension implements AwsServiceExtension<TypeSenseS
 
   /** {@link TypeSenseService}. */
   private TypeSenseService service;
-  /** {@link Region}. */
-  private Region region;
-  /** {@link AwsCredentials}. */
-  private AwsCredentials credentials;
 
   /**
    * constructor.
    * 
-   * @param awsRegion {@link Region}
-   * @param awsCredentials {@link AwsCredentials}
    */
-  public TypeSenseServiceExtension(final Region awsRegion, final AwsCredentials awsCredentials) {
-    this.region = awsRegion;
-    this.credentials = awsCredentials;
-  }
+  public TypeSenseServiceExtension() {}
 
   @Override
   public TypeSenseService loadService(final AwsServiceCache awsServiceCache) {
 
     if (this.service == null) {
+      AwsCredentials credentials = awsServiceCache.getExtension(AwsCredentials.class);
       this.service = new TypeSenseServiceImpl(awsServiceCache.environment("TYPESENSE_HOST"),
-          awsServiceCache.environment("TYPESENSE_API_KEY"), this.region, this.credentials);
+          awsServiceCache.environment("TYPESENSE_API_KEY"), awsServiceCache.region(), credentials);
     }
 
     return this.service;

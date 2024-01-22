@@ -31,6 +31,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeAll;
+import com.formkiq.aws.s3.S3PresignerService;
+import com.formkiq.aws.s3.S3Service;
+import com.formkiq.aws.sqs.SqsService;
+import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.client.api.SystemManagementApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
@@ -40,7 +44,9 @@ import com.formkiq.stacks.client.FormKiqClientV1;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthenticationResultType;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.UserStatusType;
 
 /**
  * 
@@ -55,16 +61,72 @@ public abstract class AbstractAwsIntegrationTest {
   private static AuthenticationResultType adminToken;
   /** FormKiQ KEY API Client. */
   private static Map<String, String> apiKeys = new HashMap<>();
-  /** FormKiQ IAM Client. */
+  /** Get App Environment. */
+  private static String appenvironment;
+  /** {@link String}. */
+  private static String awsprofile;
+  /** {@link Region}. */
+  private static Region awsregion;
+  /**
+   * FormKiQ IAM Client.
+   * 
+   * @deprecated To be removed
+   */
+  @Deprecated
   private static FormKiqClientV1 clientIam;
-  /** Client Token {@link FormKiqClientV1}. */
+  /**
+   * Client Token {@link FormKiqClientV1}.
+   * 
+   * @deprecated To be removed
+   */
+  @Deprecated
   private static FormKiqClientV1 clientToken;
   /** {@link FkqCognitoService}. */
   private static FkqCognitoService cognito;
+  /** {@link S3Service}. */
+  private static S3Service s3;
+  /** {@link S3PresignerService}. */
+  private static S3PresignerService s3Presigner;
   /** Site Id. */
   public static final String SITE_ID = "8ab6a050-1fc4-11ed-861d-0242ac120002";
+  /** {@link SqsService}. */
+  private static SqsService sqs;
+  /** {@link SsmService}. */
+  private static SsmService ssm;
+  /** Temporary Cognito Password. */
+  private static final String TEMP_USER_PASSWORD = "TEMPORARY_PASSWORd1!";
   /** Cognito User Password. */
   protected static final String USER_PASSWORD = "TEMPORARY_PASSWORd1!";
+
+  /**
+   * Add User and/or Login Cognito.
+   * 
+   * @param username {@link String}
+   * @param groupNames {@link List} {@link String}
+   */
+  public static void addAndLoginCognito(final String username, final List<String> groupNames) {
+
+    if (!getCognito().isUserExists(username)) {
+
+      getCognito().addUser(username, USER_PASSWORD);
+      // getCognito().loginWithNewPassword(username, TEMP_USER_PASSWORD, USER_PASSWORD);
+
+      for (String groupName : groupNames) {
+        if (!groupName.startsWith(DEFAULT_SITE_ID) && !"authentication_only".equals(groupName)) {
+
+          getCognito().addGroup(groupName);
+        }
+        getCognito().addUserToGroup(username, groupName);
+      }
+
+    } else {
+
+      AdminGetUserResponse user = getCognito().getUser(username);
+      if (UserStatusType.FORCE_CHANGE_PASSWORD.equals(user.userStatus())) {
+        getCognito().loginWithNewPassword(username, TEMP_USER_PASSWORD, USER_PASSWORD);
+      }
+    }
+  }
 
   /**
    * beforeclass.
@@ -75,7 +137,6 @@ public abstract class AbstractAwsIntegrationTest {
    */
   @BeforeAll
   public static void beforeClass() throws IOException, InterruptedException, URISyntaxException {
-
     setupServices();
 
     cognito.addUser(ADMIN_EMAIL, USER_PASSWORD);
@@ -87,6 +148,15 @@ public abstract class AbstractAwsIntegrationTest {
   }
 
   /**
+   * Get Admin Token.
+   * 
+   * @return {@link AuthenticationResultType}
+   */
+  public static AuthenticationResultType getAdminToken() {
+    return adminToken;
+  }
+
+  /**
    * Get {@link ApiClient}.
    * 
    * @param siteId {@link String}
@@ -94,8 +164,6 @@ public abstract class AbstractAwsIntegrationTest {
    * @throws ApiException ApiException
    */
   public static List<ApiClient> getApiClients(final String siteId) throws ApiException {
-
-    String awsprofile = System.getProperty("testprofile");
 
     try (ProfileCredentialsProvider p = ProfileCredentialsProvider.create(awsprofile)) {
 
@@ -144,6 +212,33 @@ public abstract class AbstractAwsIntegrationTest {
   }
 
   /**
+   * Get App Environment.
+   * 
+   * @return {@link String}
+   */
+  public static String getAppenvironment() {
+    return appenvironment;
+  }
+
+  /**
+   * Get Aws Profile.
+   * 
+   * @return {@link String}
+   */
+  public static String getAwsprofile() {
+    return awsprofile;
+  }
+
+  /**
+   * Get Aws Region.
+   * 
+   * @return {@link Region}
+   */
+  public static Region getAwsregion() {
+    return awsregion;
+  }
+
+  /**
    * Get {@link FkqCognitoService}.
    * 
    * @return {@link FkqCognitoService}
@@ -152,20 +247,76 @@ public abstract class AbstractAwsIntegrationTest {
     return cognito;
   }
 
+  /**
+   * Get {@link S3Service}.
+   * 
+   * @return {@link S3Service}
+   */
+  public static S3Service getS3() {
+    return s3;
+  }
+
+  /**
+   * Get {@link S3PresignerService}.
+   * 
+   * @return {@link S3PresignerService}
+   */
+  public static S3PresignerService getS3Presigner() {
+    return s3Presigner;
+  }
+
+  /**
+   * Get {@link SqsService}.
+   * 
+   * @return {@link SqsService}
+   */
+  public static SqsService getSqs() {
+    return sqs;
+  }
+
+  /**
+   * Get {@link SsmService}.
+   * 
+   * @return {@link SsmService}
+   */
+  public static SsmService getSsm() {
+    return ssm;
+  }
+
   private static void setupServices() {
 
-    String awsprofile = System.getProperty("testprofile");
-    Region awsregion = Region.of(System.getProperty("testregion"));
-    String appenvironment = System.getProperty("testappenvironment");
+    awsprofile = System.getProperty("testprofile");
+    awsregion = Region.of(System.getProperty("testregion"));
+    appenvironment = System.getProperty("testappenvironment");
 
     cognito = new FkqCognitoService(awsprofile, awsregion, appenvironment);
+    ssm = new FkqSsmService(awsprofile, awsregion);
+    sqs = new FkqSqsService(awsprofile, awsregion);
+    s3 = new FkqS3Service(awsprofile, awsregion);
+    s3Presigner = new FkqS3PresignerService(awsprofile, awsregion);
+  }
+
+  /**
+   * Get Api Client for User.
+   * 
+   * @param email {@link String}
+   * @param password {@link String}
+   * @return {@link ApiClient}
+   */
+  public ApiClient getApiClientForUser(final String email, final String password) {
+    AuthenticationResultType token = getCognito().login(email, password);
+    ApiClient jwtClient = new ApiClient().setReadTimeout(0).setBasePath(cognito.getRootJwtUrl());
+    jwtClient.addDefaultHeader("Authorization", token.accessToken());
+    return jwtClient;
   }
 
   /**
    * Get IAM {@link FormKiqClientV1}.
    * 
    * @return {@link FormKiqClientV1}
+   * @deprecated To be removed
    */
+  @Deprecated
   public FormKiqClientV1 getClientIam() {
     return clientIam;
   }
@@ -174,7 +325,9 @@ public abstract class AbstractAwsIntegrationTest {
    * Get {@link FormKiqClientV1}.
    * 
    * @return {@link FormKiqClientV1}
+   * @deprecated To be removed
    */
+  @Deprecated
   public List<FormKiqClientV1> getClients() {
     return Arrays.asList(clientToken, clientIam);
   }
@@ -183,7 +336,9 @@ public abstract class AbstractAwsIntegrationTest {
    * Get Token {@link FormKiqClientV1}.
    * 
    * @return {@link FormKiqClientV1}
+   * @deprecated To be removed
    */
+  @Deprecated
   public FormKiqClientV1 getClientToken() {
     return clientToken;
   }

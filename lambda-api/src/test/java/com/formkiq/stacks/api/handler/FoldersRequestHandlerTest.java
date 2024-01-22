@@ -35,19 +35,13 @@ import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.extension.RegisterExtension;
-import com.formkiq.client.api.DocumentFoldersApi;
-import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
-import com.formkiq.client.invoker.Configuration;
 import com.formkiq.client.model.AddFolderRequest;
 import com.formkiq.client.model.AddFolderResponse;
 import com.formkiq.client.model.DeleteFolderResponse;
 import com.formkiq.client.model.GetFoldersResponse;
 import com.formkiq.client.model.SearchResultDocument;
 import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.FormKiqApiExtension;
-import com.formkiq.testutils.aws.JwtTokenEncoder;
 import com.formkiq.testutils.aws.LocalStackExtension;
 
 /**
@@ -55,33 +49,12 @@ import com.formkiq.testutils.aws.LocalStackExtension;
  * Test Handlers for: GET/POST /folders, DELETE /folders/{indexKey}.
  *
  */
-@ExtendWith(LocalStackExtension.class)
 @ExtendWith(DynamoDbExtension.class)
-public class FoldersRequestHandlerTest {
+@ExtendWith(LocalStackExtension.class)
+public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
 
   /** Forbidden (403). */
   private static final int STATUS_FORBIDDEN = 403;
-
-  /** FormKiQ Server. */
-  @RegisterExtension
-  static FormKiqApiExtension server =
-      new FormKiqApiExtension().setCallback(new FormKiQResponseCallback());
-  /** {@link ApiClient}. */
-  private ApiClient client =
-      Configuration.getDefaultApiClient().setReadTimeout(0).setBasePath(server.getBasePath());
-  /** {@link FoldersApi}. */
-  private DocumentFoldersApi foldersApi = new DocumentFoldersApi(this.client);
-
-  /**
-   * Set BearerToken.
-   * 
-   * @param siteId {@link String}
-   */
-  private void setBearerToken(final String siteId) {
-    String jwt = JwtTokenEncoder
-        .encodeCognito(new String[] {siteId != null ? siteId : DEFAULT_SITE_ID}, "joesmith");
-    this.client.addDefaultHeader("Authorization", jwt);
-  }
 
   /**
    * Test getting folders.

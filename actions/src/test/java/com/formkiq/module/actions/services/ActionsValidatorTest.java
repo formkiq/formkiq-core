@@ -69,13 +69,13 @@ class ActionsValidatorTest {
     assertEquals(1, errors.size());
     ValidationError error = errors.iterator().next();
     assertEquals("type", error.key());
-    assertEquals("'type' is required", error.error());
+    assertEquals("action 'type' is required", error.error());
   }
 
   @Test
   void testValidation03() {
     // given
-    Action action = new Action().type(ActionType.WEBHOOK);
+    Action action = new Action().type(ActionType.WEBHOOK).userId("joe");
     DynamicObject obj = new DynamicObject(Map.of());
 
     // when
@@ -85,7 +85,7 @@ class ActionsValidatorTest {
     assertEquals(1, errors.size());
     ValidationError error = errors.iterator().next();
     assertEquals("parameters.url", error.key());
-    assertEquals("'url' parameter is required", error.error());
+    assertEquals("action 'url' parameter is required", error.error());
   }
 
   @Test
@@ -104,13 +104,43 @@ class ActionsValidatorTest {
     Collection<ValidationError> errors = errorList.get(0);
     ValidationError error = errors.iterator().next();
     assertEquals("type", error.key());
-    assertEquals("'type' is required", error.error());
+    assertEquals("action 'type' is required", error.error());
   }
 
   @Test
   void testValidation05() {
     // given
-    Action action = new Action().type(ActionType.OCR);
+    Action action = new Action().type(ActionType.OCR).userId("joe");
+    DynamicObject obj = new DynamicObject(Map.of());
+
+    // when
+    Collection<ValidationError> errorList = this.validator.validation(action, obj);
+
+    // then
+    assertEquals(0, errorList.size());
+  }
+
+  @Test
+  void testValidation06() {
+    // given
+    Action action = new Action().type(ActionType.QUEUE).userId("joe");
+    DynamicObject obj = new DynamicObject(Map.of());
+
+    // when
+    Collection<ValidationError> errors = this.validator.validation(action, obj);
+
+    // then
+    assertEquals(1, errors.size());
+
+    ValidationError error = errors.iterator().next();
+    assertEquals("queueId", error.key());
+    assertEquals("'queueId' is required", error.error());
+  }
+
+  @Test
+  void testValidation07() {
+    // given
+    Action action = new Action().type(ActionType.QUEUE).queueId("Testqueue").userId("joe");
     DynamicObject obj = new DynamicObject(Map.of());
 
     // when

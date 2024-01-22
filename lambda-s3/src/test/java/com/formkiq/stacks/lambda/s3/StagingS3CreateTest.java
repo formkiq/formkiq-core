@@ -70,6 +70,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockserver.integration.ClientAndServer;
@@ -79,6 +80,7 @@ import org.mockserver.model.HttpResponse;
 import org.mockserver.model.Parameter;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
@@ -91,30 +93,38 @@ import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
-import com.formkiq.aws.s3.S3ConnectionBuilder;
+import com.formkiq.aws.dynamodb.schema.DocumentSchema;
+import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3Service;
-import com.formkiq.aws.sns.SnsConnectionBuilder;
+import com.formkiq.aws.s3.S3ServiceExtension;
+import com.formkiq.aws.sns.SnsAwsServiceRegistry;
 import com.formkiq.aws.sns.SnsService;
-import com.formkiq.aws.sqs.SqsConnectionBuilder;
+import com.formkiq.aws.sns.SnsServiceExtension;
+import com.formkiq.aws.sqs.SqsAwsServiceRegistry;
 import com.formkiq.aws.sqs.SqsService;
-import com.formkiq.aws.ssm.SsmConnectionBuilder;
+import com.formkiq.aws.sqs.SqsServiceExtension;
+import com.formkiq.aws.ssm.SmsAwsServiceRegistry;
 import com.formkiq.aws.ssm.SsmService;
-import com.formkiq.aws.ssm.SsmServiceCache;
+import com.formkiq.aws.ssm.SsmServiceExtension;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsService;
-import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
+import com.formkiq.module.actions.services.ActionsServiceExtension;
 import com.formkiq.module.events.document.DocumentEvent;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
-import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
+import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentSyncService;
-import com.formkiq.stacks.dynamodb.DocumentSyncServiceDynamoDb;
+import com.formkiq.stacks.dynamodb.DocumentSyncServiceExtension;
+import com.formkiq.stacks.dynamodb.DocumentVersionService;
+import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
 import com.formkiq.stacks.dynamodb.FolderIndexProcessor;
-import com.formkiq.stacks.dynamodb.FolderIndexProcessorImpl;
+import com.formkiq.stacks.dynamodb.FolderIndexProcessorExtension;
 import com.formkiq.stacks.dynamodb.apimodels.AddDocumentTag;
 import com.formkiq.stacks.dynamodb.apimodels.MatchDocumentTag;
 import com.formkiq.stacks.dynamodb.apimodels.UpdateMatchingDocumentTagsRequest;
@@ -124,11 +134,13 @@ import com.formkiq.stacks.lambda.s3.util.LambdaContextRecorder;
 import com.formkiq.stacks.lambda.s3.util.LambdaLoggerRecorder;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbHelper;
-import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.formkiq.testutils.aws.LocalStackExtension;
 import com.formkiq.testutils.aws.TestServices;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -144,14 +156,15 @@ public class StagingS3CreateTest implements DbKeys {
   private static ActionsService actionsService;
   /** App Environment. */
   private static final String APP_ENVIRONMENT = "test";
-  /** {@link DynamoDbConnectionBuilder}. */
-  private static DynamoDbConnectionBuilder dbBuilder;
+  /** {@link AwsServiceCache}. */
+  private static AwsServiceCache awsServices;
   /** {@link DynamoDbHelper}. */
   private static DynamoDbHelper dbHelper;
   /** Documents S3 Bucket. */
   private static final String DOCUMENTS_BUCKET = "documentsbucket";
   /** {@link FolderIndexProcessor}. */
   private static FolderIndexProcessor folderIndexProcesor;
+
   /** {@link Gson}. */
   private static Gson gson =
       new GsonBuilder().disableHtmlEscaping().setDateFormat(DateUtil.DATE_FORMAT).create();
@@ -159,24 +172,18 @@ public class StagingS3CreateTest implements DbKeys {
   /** Register LocalStack extension. */
   @RegisterExtension
   static LocalStackExtension localStack = new LocalStackExtension();
-
   /** {@link ClientAndServer}. */
   private static ClientAndServer mockServer;
-
   /** Port to run Test server. */
   private static final int PORT = 8888;
   /** {@link S3Service}. */
   private static S3Service s3;
-  /** {@link S3ConnectionBuilder}. */
-  private static S3ConnectionBuilder s3Builder;
   /** {@link DocumentService}. */
   private static DocumentService service;
   /** SQS Sns Update Queue. */
   private static final String SNS_SQS_CREATE_QUEUE = "sqssnsCreate";
   /** SQS Sns Queue. */
   private static final String SNS_SQS_DELETE_QUEUE = "sqssnsDelete";
-  /** {@link SnsConnectionBuilder}. */
-  private static SnsConnectionBuilder snsBuilder;
   /** SQS Create Url. */
   private static String snsCreateTopic;
   /** SNS Update Topic Arn. */
@@ -193,15 +200,14 @@ public class StagingS3CreateTest implements DbKeys {
   private static String sqsDocumentEventUrl;
   /** {@link SqsService}. */
   private static SqsService sqsService;
-  /** {@link SsmConnectionBuilder}. */
-  private static SsmConnectionBuilder ssmBuilder;
   /** Document S3 Staging Bucket. */
   private static final String STAGING_BUCKET = "example-bucket";
   /** {@link DocumentSyncService}. */
   private static DocumentSyncService syncService;
+  /** Test TImeout. */
+  private static final long TEST_TIMEOUT = 30;
   /** Test server URL. */
   private static final String URL = "http://localhost:" + PORT;
-
   /** UUID 1. */
   private static final String UUID1 = "b53c92cf-f7b9-4787-9541-76574ec70d71";
 
@@ -224,38 +230,61 @@ public class StagingS3CreateTest implements DbKeys {
   @BeforeAll
   public static void beforeClass() throws URISyntaxException, InterruptedException, IOException {
 
-    s3Builder = TestServices.getS3Connection(null);
-    ssmBuilder = TestServices.getSsmConnection(null);
-    dbBuilder = DynamoDbTestServices.getDynamoDbConnection();
-    dbHelper = DynamoDbTestServices.getDynamoDbHelper(null);
-    snsBuilder = TestServices.getSnsConnection(null);
+    Map<String, String> env = new HashMap<>();
+    env.put("AWS_REGION", Region.US_EAST_1.id());
+    env.put("DOCUMENTS_S3_BUCKET", DOCUMENTS_BUCKET);
+    env.put("SNS_DELETE_TOPIC", snsDeleteTopic);
+    env.put("SNS_CREATE_TOPIC", snsCreateTopic);
+    env.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
+    env.put("DOCUMENT_SYNC_TABLE", DOCUMENT_SYNCS_TABLE);
+    env.put("DOCUMENT_VERSIONS_TABLE", DOCUMENTS_VERSION_TABLE);
+    env.put("APP_ENVIRONMENT", APP_ENVIRONMENT);
+    env.put("SNS_DOCUMENT_EVENT", snsDocumentEvent);
+    env.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
 
-    SsmService ssmService = new SsmServiceCache(ssmBuilder, 1, TimeUnit.DAYS);
+    AwsCredentials creds = AwsBasicCredentials.create("aaa", "bbb");
+    StaticCredentialsProvider credentialsProvider = StaticCredentialsProvider.create(creds);
+
+    awsServices = new AwsServiceCacheBuilder(Collections.unmodifiableMap(env),
+        TestServices.getEndpointMap(), credentialsProvider)
+        .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
+            new SnsAwsServiceRegistry(), new SqsAwsServiceRegistry(), new SmsAwsServiceRegistry())
+        .build();
+
+    awsServices.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
+    awsServices.register(SnsService.class, new SnsServiceExtension());
+    awsServices.register(SsmService.class, new SsmServiceExtension());
+    awsServices.register(S3Service.class, new S3ServiceExtension());
+    awsServices.register(DocumentSyncService.class, new DocumentSyncServiceExtension());
+    awsServices.register(ActionsService.class, new ActionsServiceExtension());
+    awsServices.register(SqsService.class, new SqsServiceExtension());
+    awsServices.register(DocumentService.class, new DocumentServiceExtension());
+    awsServices.register(FolderIndexProcessor.class, new FolderIndexProcessorExtension());
+
+    SsmService ssmService = awsServices.getExtension(SsmService.class);
     ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/api/DocumentsIamUrl", URL);
 
-    s3 = new S3Service(s3Builder);
-    syncService = new DocumentSyncServiceDynamoDb(dbBuilder, DOCUMENT_SYNCS_TABLE);
-
-    SqsConnectionBuilder sqsBuilder = TestServices.getSqsConnection(null);
-    sqsService = new SqsService(sqsBuilder);
-
-    actionsService = new ActionsServiceDynamoDb(dbBuilder, DOCUMENTS_TABLE);
+    s3 = awsServices.getExtension(S3Service.class);
+    syncService = awsServices.getExtension(DocumentSyncService.class);
+    sqsService = awsServices.getExtension(SqsService.class);
+    actionsService = awsServices.getExtension(ActionsService.class);
 
     if (!sqsService.exists(SNS_SQS_CREATE_QUEUE)) {
       sqsDocumentEventUrl = sqsService.createQueue(SNS_SQS_CREATE_QUEUE).queueUrl();
     }
 
-    snsService = new SnsService(snsBuilder);
+    snsService = awsServices.getExtension(SnsService.class);
     snsDocumentEvent = snsService.createTopic("createDocument1").topicArn();
+    awsServices.environment().put("SNS_DOCUMENT_EVENT", snsDocumentEvent);
 
     String sqsQueueArn = sqsService.getQueueArn(sqsDocumentEventUrl);
     snsService.subscribe(snsDocumentEvent, "sqs", sqsQueueArn);
 
-    service = new DocumentServiceImpl(dbBuilder, DOCUMENTS_TABLE,
-        new DocumentVersionServiceNoVersioning());
+    service = awsServices.getExtension(DocumentService.class);
 
-    folderIndexProcesor = new FolderIndexProcessorImpl(dbBuilder, DOCUMENTS_TABLE);
+    folderIndexProcesor = awsServices.getExtension(FolderIndexProcessor.class);
 
+    dbHelper = new DynamoDbHelper(awsServices.getExtension(DynamoDbConnectionBuilder.class));
     createResources();
 
     createMockServer();
@@ -323,22 +352,26 @@ public class StagingS3CreateTest implements DbKeys {
     snsDeleteTopic = snsService.createTopic("deleteDocument").topicArn();
     snsService.subscribe(snsDeleteTopic, "sqs",
         "arn:aws:sqs:us-east-1:000000000000:" + SNS_SQS_DELETE_QUEUE);
+    awsServices.environment().put("SNS_DELETE_TOPIC", snsDeleteTopic);
 
     snsCreateTopic = snsService.createTopic("createDocument").topicArn();
     snsService.subscribe(snsCreateTopic, "sqs",
         "arn:aws:sqs:us-east-1:000000000000:" + SNS_SQS_CREATE_QUEUE);
+    awsServices.environment().put("SNS_CREATE_TOPIC", snsCreateTopic);
 
-    if (!dbHelper.isTableExists(DOCUMENTS_TABLE)) {
-      dbHelper.createDocumentsTable(DOCUMENTS_TABLE);
-      dbHelper.createCacheTable(CACHE_TABLE);
+    DynamoDbConnectionBuilder dbBuilder = awsServices.getExtension(DynamoDbConnectionBuilder.class);
+    try (DynamoDbClient dbClient = dbBuilder.build()) {
+      DocumentSchema schema = new DocumentSchema(dbClient);
+      schema.createDocumentsTable(DOCUMENTS_TABLE);
+      schema.createCacheTable(CACHE_TABLE);
     }
   }
 
   /** {@link LambdaContextRecorder}. */
   private LambdaContextRecorder context;
 
-  /** Environment Map. */
-  private Map<String, String> env = new HashMap<>();
+  // /** Environment Map. */
+  // private Map<String, String> env = new HashMap<>();
 
   /** {@link LambdaLoggerRecorder}. */
   private LambdaLoggerRecorder logger;
@@ -377,18 +410,6 @@ public class StagingS3CreateTest implements DbKeys {
    */
   @BeforeEach
   void before() {
-
-    this.env = new HashMap<>();
-    this.env.put("AWS_REGION", Region.US_EAST_1.id());
-    this.env.put("DOCUMENTS_S3_BUCKET", DOCUMENTS_BUCKET);
-    this.env.put("SNS_DELETE_TOPIC", snsDeleteTopic);
-    this.env.put("SNS_CREATE_TOPIC", snsCreateTopic);
-    this.env.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
-    this.env.put("DOCUMENT_SYNC_TABLE", DOCUMENT_SYNCS_TABLE);
-    this.env.put("DOCUMENT_VERSIONS_TABLE", DOCUMENTS_VERSION_TABLE);
-    this.env.put("APP_ENVIRONMENT", APP_ENVIRONMENT);
-    this.env.put("SNS_DOCUMENT_EVENT", snsDocumentEvent);
-    this.env.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
 
     this.context = new LambdaContextRecorder();
     this.logger = (LambdaLoggerRecorder) this.context.getLogger();
@@ -502,8 +523,7 @@ public class StagingS3CreateTest implements DbKeys {
    * @param map {@link Map}
    */
   private void handleRequest(final Map<String, Object> map) {
-    final StagingS3Create handler =
-        new StagingS3Create(this.env, null, dbBuilder, s3Builder, ssmBuilder, snsBuilder);
+    final StagingS3Create handler = new StagingS3Create(awsServices);
 
     Void result = handler.handleRequest(map, this.context);
     assertNull(result);
@@ -647,6 +667,7 @@ public class StagingS3CreateTest implements DbKeys {
    * @throws Exception Exception
    */
   @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   void testCopyFile01() throws Exception {
     for (String siteId : Arrays.asList(null, DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
       String documentId = UUID.randomUUID().toString();
@@ -660,6 +681,7 @@ public class StagingS3CreateTest implements DbKeys {
    * @throws Exception Exception
    */
   @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   void testCopyFile02() throws Exception {
     int i = 0;
     for (String siteId : Arrays.asList(null, DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
@@ -675,6 +697,7 @@ public class StagingS3CreateTest implements DbKeys {
    * @throws Exception Exception
    */
   @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   void testCopyFile03() throws Exception {
     final String documentId = "something/where/test.pdf";
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
@@ -688,6 +711,7 @@ public class StagingS3CreateTest implements DbKeys {
    * @throws Exception Exception
    */
   @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   void testDocumentsCompress() throws Exception {
     // given
     String fileContent = loadFile(this, "/compression-request-file.json");
@@ -726,6 +750,7 @@ public class StagingS3CreateTest implements DbKeys {
    * @throws IOException IOException
    */
   @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   void testFkB64Extension01() throws IOException {
     DynamicDocumentItem item = createDocumentItem();
 
@@ -745,6 +770,7 @@ public class StagingS3CreateTest implements DbKeys {
    * @throws IOException IOException
    */
   @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   void testFkB64Extension02() throws IOException {
     DynamicDocumentItem item = createDocumentItem();
 
@@ -759,6 +785,7 @@ public class StagingS3CreateTest implements DbKeys {
    * @throws IOException IOException
    */
   @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   void testFkB64Extension03() throws IOException {
     DynamicDocumentItem item = createDocumentItem();
     item.put("content", null);
@@ -776,6 +803,7 @@ public class StagingS3CreateTest implements DbKeys {
    * @throws IOException IOException
    */
   @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   void testFkB64Extension04() throws IOException {
     DynamicDocumentItem item = createDocumentItem();
     item.setDocumentId(null);
@@ -791,6 +819,7 @@ public class StagingS3CreateTest implements DbKeys {
    * @throws IOException IOException
    */
   @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   void testFkB64Extension05() throws IOException {
     String documentId0 = "0d1a788d-9a70-418a-8c33-a9ee9c1a0173";
     String documentId1 = "24af57ca-f61d-4ff8-b8a0-d7666073560e";
@@ -859,6 +888,7 @@ public class StagingS3CreateTest implements DbKeys {
    * @throws IOException IOException
    */
   @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   void testFkB64Extension06() throws IOException {
     String timeToLive = "1612061365";
     DynamicDocumentItem item = createDocumentItem();
@@ -879,6 +909,8 @@ public class StagingS3CreateTest implements DbKeys {
       GetItemRequest r = GetItemRequest.builder().key(keysDocument(siteId, item.getDocumentId()))
           .tableName(DOCUMENTS_TABLE).build();
 
+      DynamoDbConnectionBuilder dbBuilder =
+          awsServices.getExtension(DynamoDbConnectionBuilder.class);
       try (DynamoDbClient dbClient = dbBuilder.build()) {
         Map<String, AttributeValue> result = dbClient.getItem(r).item();
         assertEquals(timeToLive, result.get("TimeToLive").n());
@@ -892,6 +924,7 @@ public class StagingS3CreateTest implements DbKeys {
    * @throws IOException IOException
    */
   @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   void testFkB64Extension07() throws IOException {
     Map<String, Object> data = new HashMap<>();
     data.put("userId", "joesmith");
@@ -954,6 +987,7 @@ public class StagingS3CreateTest implements DbKeys {
    * @throws IOException IOException
    */
   @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   void testFkB64Extension08() throws IOException {
     Map<String, Object> data = new HashMap<>();
     data.put("userId", "joesmith");
@@ -1015,6 +1049,7 @@ public class StagingS3CreateTest implements DbKeys {
    * @throws IOException IOException
    */
   @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   void testFkB64Extension09() throws IOException {
     final String documentId = "12345";
     Map<String, Object> data = new HashMap<>();
@@ -1076,6 +1111,7 @@ public class StagingS3CreateTest implements DbKeys {
    * @throws IOException IOException
    */
   @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   void testFkB64Extension10() throws IOException {
 
     final String documentId = "12345";
@@ -1091,8 +1127,8 @@ public class StagingS3CreateTest implements DbKeys {
       this.logger.reset();
 
       data.put("actions",
-          Arrays.asList(Map.of("type", "ocr", "status", "PENDING", "userId", "joesmith",
-              "parameters", Map.of("test", "1234")),
+          Arrays.asList(
+              Map.of("type", "ocr", "status", "PENDING", "parameters", Map.of("test", "1234")),
               Map.of("type", "webhook", "userId", "joesmith")));
 
       DynamicDocumentItem ditem = new DynamicDocumentItem(data);
@@ -1114,18 +1150,20 @@ public class StagingS3CreateTest implements DbKeys {
       assertEquals(2, actions.size());
       assertEquals("OCR", actions.get(0).type().name());
       assertEquals("PENDING", actions.get(0).status().name());
-      assertEquals("joesmith", actions.get(0).userId());
+      assertEquals("System", actions.get(0).userId());
+      assertNotNull(actions.get(0).insertedDate());
 
       assertEquals("WEBHOOK", actions.get(1).type().name());
       assertEquals("PENDING", actions.get(1).status().name());
       assertEquals("joesmith", actions.get(1).userId());
+      assertNotNull(actions.get(1).insertedDate());
 
       actions.get(0).status(ActionStatus.COMPLETE);
-      actionsService.saveActions(siteId, documentId, actions);
+      actionsService.saveNewActions(siteId, documentId, actions);
 
       // given
-      data.put("actions", Arrays.asList(Map.of("type", "ocr", "status", "PENDING", "userId",
-          "joesmith", "parameters", Map.of("test", "1234"))));
+      data.put("actions", Arrays.asList(
+          Map.of("type", "ocr", "status", "PENDING", "parameters", Map.of("test", "1234"))));
       ditem = new DynamicDocumentItem(data);
       content = gson.toJson(ditem).getBytes(UTF_8);
 
@@ -1139,7 +1177,7 @@ public class StagingS3CreateTest implements DbKeys {
       assertEquals(1, actions.size());
       assertEquals("OCR", actions.get(0).type().name());
       assertEquals("PENDING", actions.get(0).status().name());
-      assertEquals("joesmith", actions.get(0).userId());
+      assertEquals("System", actions.get(0).userId());
     }
   }
 
@@ -1150,6 +1188,7 @@ public class StagingS3CreateTest implements DbKeys {
    * @throws InterruptedException InterruptedException
    */
   @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   void testFkB64Extension11() throws IOException, InterruptedException {
 
     String path = "sample/test.txt";
@@ -1214,6 +1253,7 @@ public class StagingS3CreateTest implements DbKeys {
    * @throws Exception Exception
    */
   @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   void testFkB64Extension12() throws Exception {
     final Date now = new Date();
     final String userId = "joesmith";
@@ -1236,7 +1276,7 @@ public class StagingS3CreateTest implements DbKeys {
               new DocumentTag(documentId, "category", "person", new Date(), userId)));
 
       actionsService.saveAction(siteId, documentId,
-          new Action().type(ActionType.FULLTEXT).status(ActionStatus.COMPLETE), 0);
+          new Action().type(ActionType.FULLTEXT).userId("joe").status(ActionStatus.COMPLETE), 0);
 
       TimeUnit.SECONDS.sleep(1);
 
@@ -1284,6 +1324,7 @@ public class StagingS3CreateTest implements DbKeys {
    * @throws IOException IOException
    */
   @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   void testFkB64Extension13() throws IOException {
     DynamicDocumentItem item = createDocumentItem();
 
@@ -1310,6 +1351,7 @@ public class StagingS3CreateTest implements DbKeys {
    * @throws IOException IOException
    */
   @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   void testFkB64Extension14() throws IOException {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -1343,6 +1385,7 @@ public class StagingS3CreateTest implements DbKeys {
    * @throws IOException IOException
    */
   @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   void testFkB64Extension15() throws IOException {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -1367,9 +1410,59 @@ public class StagingS3CreateTest implements DbKeys {
   }
 
   /**
+   * Test Add .fkb64 file deep link.
+   *
+   * @throws IOException IOException
+   */
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  void testFkB64Extension16() throws IOException {
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      DynamicDocumentItem item = createDocumentItem();
+      item.remove("content");
+      item.put("tags", Arrays.asList(Map.of("key", "category", "value", "document")));
+      item.setDeepLinkPath("http://google.com/sample.pdf");
+      item.setContentType("application/pdf");
+
+      processFkB64File(siteId, item, null);
+      DocumentItem doc = service.findDocument(siteId, item.getDocumentId());
+      assertEquals("http://google.com/sample.pdf", doc.getDeepLinkPath());
+      assertEquals("sample.pdf", doc.getPath());
+      assertEquals("application/pdf", doc.getContentType());
+    }
+  }
+
+  /**
+   * Test Update .fkb64 file deep link with content.
+   *
+   * @throws IOException IOException
+   */
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  void testFkB64Extension17() throws IOException {
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      DynamicDocumentItem item = createDocumentItem();
+      item.put("tags", Arrays.asList(Map.of("key", "category", "value", "document")));
+      item.setDeepLinkPath("http://google.com/sample.pdf");
+      service.saveDocument(siteId, item, null);
+
+      item.put("content", "this is some content");
+
+      processFkB64File(siteId, item, "14");
+      DocumentItem doc = service.findDocument(siteId, item.getDocumentId());
+      assertEquals("", doc.getDeepLinkPath());
+    }
+  }
+
+  /**
    * Test processing S3 file from PATCH /documents/tags.
    */
   @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   void testPatchDocumentsTags01() {
     // given
     final int maxDocuments = 150;
@@ -1422,6 +1515,7 @@ public class StagingS3CreateTest implements DbKeys {
    * Test processing S3 file from PATCH /documents/tags multiple tags.
    */
   @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   void testPatchDocumentsTags02() {
     // given
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -1475,6 +1569,7 @@ public class StagingS3CreateTest implements DbKeys {
    * @throws Exception Exception
    */
   @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   void testTempFilesZipEvent() throws Exception {
     final Map<String, Object> map = loadFileAsMap(this, "/temp-files-zip-created-event.json");
     final String key = "tempfiles/665f0228-4fbc-4511-912b-6cb6f566e1c0.zip";
@@ -1491,12 +1586,12 @@ public class StagingS3CreateTest implements DbKeys {
    * @throws Exception Exception
    */
   @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   void testUnknownEvent01() throws Exception {
     // given
     final Map<String, Object> map = loadFileAsMap(this, "/objectunknown-event1.json");
 
-    final StagingS3Create handler =
-        new StagingS3Create(this.env, null, dbBuilder, s3Builder, ssmBuilder, snsBuilder);
+    final StagingS3Create handler = new StagingS3Create(awsServices);
 
     // when
     Void result = handler.handleRequest(map, this.context);

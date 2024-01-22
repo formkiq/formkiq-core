@@ -63,14 +63,15 @@ import com.formkiq.testutils.aws.JwtTokenEncoder;
 import com.formkiq.testutils.aws.LocalStackExtension;
 
 /** Unit Tests for request /indices/{type}/{key}. */
-@ExtendWith(LocalStackExtension.class)
 @ExtendWith(DynamoDbExtension.class)
+@ExtendWith(LocalStackExtension.class)
 public class IndicesRequestHandlerTest {
 
+  /** {@link FormKiQResponseCallback}. */
+  private static final FormKiQResponseCallback CALLBACK = new FormKiQResponseCallback();
   /** FormKiQ Server. */
   @RegisterExtension
-  static FormKiqApiExtension server =
-      new FormKiqApiExtension().setCallback(new FormKiQResponseCallback());
+  static FormKiqApiExtension server = new FormKiqApiExtension(CALLBACK);
   /** {@link ApiClient}. */
   private ApiClient client =
       Configuration.getDefaultApiClient().setReadTimeout(0).setBasePath(server.getBasePath());
@@ -120,7 +121,7 @@ public class IndicesRequestHandlerTest {
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
       item.setPath("x/z/test.pdf");
       documentService.saveDocument(siteId, item, null);
-      documentService.deleteDocument(siteId, item.getDocumentId());
+      documentService.deleteDocument(siteId, item.getDocumentId(), false);
 
       SearchQuery q = new SearchQuery().meta(new SearchMetaCriteria().folder("x"));
       PaginationResults<DynamicDocumentItem> results = dss.search(siteId, q, null, MAX_RESULTS);
@@ -276,7 +277,7 @@ public class IndicesRequestHandlerTest {
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
       item.setPath("x/z/test.pdf");
       documentService.saveDocument(siteId, item, null);
-      documentService.deleteDocument(siteId, item.getDocumentId());
+      documentService.deleteDocument(siteId, item.getDocumentId(), false);
 
       SearchQuery q = new SearchQuery().meta(new SearchMetaCriteria().folder("x"));
       PaginationResults<DynamicDocumentItem> results = dss.search(siteId, q, null, MAX_RESULTS);

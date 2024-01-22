@@ -37,9 +37,11 @@ import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
+import com.formkiq.aws.dynamodb.PaginationToAttributeValue;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
+import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -49,9 +51,12 @@ import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.services.CacheService;
+import com.formkiq.module.actions.ActionStatus;
+import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentService;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /** {@link ApiGatewayRequestHandler} for "/documents". */
 public class DocumentsRequestHandler
@@ -78,24 +83,100 @@ public class DocumentsRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    DocumentService documentService = awsservice.getExtension(DocumentService.class);
+    ActionStatus actionStatus = getActionStatus(event);
+
+    String siteId = authorization.siteId();
+
+    ApiPagination current = null;
+    Map<String, Object> map = new HashMap<>();
+
+    if (isSoftDelete(event)) {
+
+      current = getSoftDeletedDocument(logger, event, awsservice, siteId, map);
+
+    } else if (actionStatus != null) {
+
+      current = getActionStatus(logger, event, awsservice, siteId, actionStatus, map);
+
+    } else {
+
+      current = getDocuments(logger, event, awsservice, siteId, map);
+    }
+
+    map.put("next", current.hasNext() ? current.getNext() : null);
+    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
+  }
+
+  private ActionStatus getActionStatus(final ApiGatewayRequestEvent event) throws BadException {
+
+    ActionStatus status = null;
+    String actionStatus = getParameter(event, "actionStatus");
+
+    if (!Strings.isEmpty(actionStatus)) {
+      try {
+        status = ActionStatus.valueOf(actionStatus.toUpperCase());
+      } catch (IllegalArgumentException e) {
+        throw new BadException("invalid actionStatus '" + actionStatus + "'");
+      }
+    }
+
+    if (ActionStatus.COMPLETE.equals(status)) {
+      throw new BadException("invalid actionStatus '" + actionStatus + "'");
+    }
+
+    return status;
+  }
+
+  private ApiPagination getActionStatus(final LambdaLogger logger,
+      final ApiGatewayRequestEvent event, final AwsServiceCache awsservice, final String siteId,
+      final ActionStatus actionStatus, final Map<String, Object> map) {
+
     CacheService cacheService = awsservice.getExtension(CacheService.class);
 
     ApiPagination pagination = getPagination(cacheService, event);
 
-    final int limit = pagination != null ? pagination.getLimit() : getLimit(logger, event);
-    final PaginationMapToken ptoken = pagination != null ? pagination.getStartkey() : null;
+    int limit = pagination != null ? pagination.getLimit() : getLimit(logger, event);
+    PaginationMapToken ptoken = pagination != null ? pagination.getStartkey() : null;
+
+    ActionsService actions = awsservice.getExtension(ActionsService.class);
+
+    PaginationToAttributeValue pav = new PaginationToAttributeValue();
+    Map<String, AttributeValue> token = pav.apply(ptoken);
+
+    PaginationResults<String> results =
+        actions.findDocumentsWithStatus(siteId, actionStatus, token, limit);
+
+    List<Map<String, String>> documents = results.getResults().stream()
+        .map(r -> Map.of("documentId", r)).collect(Collectors.toList());
+
+    ApiPagination current =
+        createPagination(cacheService, event, pagination, results.getToken(), limit);
+
+    map.put("documents", documents);
+    return current;
+  }
+
+  private ApiPagination getDocuments(final LambdaLogger logger, final ApiGatewayRequestEvent event,
+      final AwsServiceCache awsservice, final String siteId, final Map<String, Object> map)
+      throws BadException {
+
+    CacheService cacheService = awsservice.getExtension(CacheService.class);
+
+    ApiPagination pagination = getPagination(cacheService, event);
+
+    int limit = pagination != null ? pagination.getLimit() : getLimit(logger, event);
+    PaginationMapToken ptoken = pagination != null ? pagination.getStartkey() : null;
 
     String tz = getParameter(event, "tz");
     String dateString = getParameter(event, "date");
 
+    DocumentService documentService = awsservice.getExtension(DocumentService.class);
     ZonedDateTime date = transformToDate(logger, awsservice, documentService, dateString, tz);
 
     if (awsservice.debug()) {
       logger.log("search for document using date: " + date);
     }
 
-    String siteId = authorization.siteId();
     final PaginationResults<DocumentItem> results =
         documentService.findDocumentsByDate(siteId, date, ptoken, limit);
 
@@ -108,17 +189,43 @@ public class DocumentsRequestHandler
         .map(m -> new DocumentItemToDynamicDocumentItem().apply(m)).collect(Collectors.toList());
     items.forEach(i -> i.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID));
 
-    Map<String, Object> map = new HashMap<>();
     map.put("documents", items);
     map.put("previous", current.getPrevious());
-    map.put("next", current.hasNext() ? current.getNext() : null);
-
-    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
+    return current;
   }
 
   @Override
   public String getRequestUrl() {
     return "/documents";
+  }
+
+  private ApiPagination getSoftDeletedDocument(final LambdaLogger logger,
+      final ApiGatewayRequestEvent event, final AwsServiceCache awsservice, final String siteId,
+      final Map<String, Object> map) {
+
+    CacheService cacheService = awsservice.getExtension(CacheService.class);
+
+    ApiPagination pagination = getPagination(cacheService, event);
+
+    int limit = pagination != null ? pagination.getLimit() : getLimit(logger, event);
+    PaginationMapToken ptoken = pagination != null ? pagination.getStartkey() : null;
+
+    PaginationToAttributeValue pav = new PaginationToAttributeValue();
+    Map<String, AttributeValue> token = pav.apply(ptoken);
+
+    DocumentService service = awsservice.getExtension(DocumentService.class);
+    PaginationResults<DocumentItem> results =
+        service.findSoftDeletedDocuments(siteId, token, limit);
+
+    ApiPagination current =
+        createPagination(cacheService, event, pagination, results.getToken(), limit);
+
+    map.put("documents", results.getResults());
+    return current;
+  }
+
+  private boolean isSoftDelete(final ApiGatewayRequestEvent event) {
+    return "true".equals(event.getQueryStringParameter("deleted"));
   }
 
   @Override

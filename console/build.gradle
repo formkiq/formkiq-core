@@ -1,5 +1,6 @@
-	
 description = "FormKiQ Core - Console"
+
+apply plugin: 'distribution'
 
 sourceSets {
     integration {
@@ -21,40 +22,21 @@ dependencies {
 	implementation project(':aws-ssm')
 	
 	implementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.7'
-	implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.2'
+	implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.3'
 	implementation group: 'org.json', name: 'json', version: '20230227'
 	
-	testImplementation project(':aws-cognito')
+	testImplementation project(':aws-cognito-identity')
+	testImplementation project(':aws-cognito-identityprovider')
 	testImplementation project(':fkq-test-utils')
 	testImplementation group: 'com.google.code.gson', name: 'gson', version: '2.10.1'
 	testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.7'	
 	
-	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.9.1'
-	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.18.3'
+	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.10.0'
+	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.19.0'
 	
-	testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.18.3'
-	testImplementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.12.488'
-	testImplementation group: 'com.microsoft.playwright', name: 'playwright', version: '1.35.0'
-}
-
-task buildZip(type: Zip) {
-	dependsOn check
-	archiveFileName = "console-installer.zip"
-    destinationDirectory = file("${buildDir}")
-    from compileJava
-    from processResources              
-    into('lib') {
-        from configurations.runtimeClasspath
-    }           
-}
-
-task buildUnzip(type: Copy) {
-  dependsOn buildZip
-  def zipFile = file("${buildDir}/console-installer.zip")
-  def outputDir = file("${buildDir}/tmp/console")
-
-  from zipTree(zipFile)
-  into outputDir
+	testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.19.0'
+	testImplementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.12.543'
+	testImplementation group: 'com.microsoft.playwright', name: 'playwright', version: '1.37.0'
 }
 
 test {
@@ -68,22 +50,36 @@ task integrationTest(type: Test) {
     useJUnitPlatform()
 }
 
-task assembleTemplate {
-    dependsOn buildZip
+task buildTemplate {
 	inputs.files("src/main/resources/cloudformation/template.yaml", "src/main/resources/cloudformation/template-install.yaml", "src/main/resources/cloudformation/template-users.yaml")
-	outputs.dir("${buildDir}/distributions")
+	outputs.files("${buildDir}/distributions/console/template.yaml", "${buildDir}/distributions/console/template-install.yaml", "${buildDir}/distributions/console/template-users.yaml")
 	
 	doLast {
 		copy {
 		  from layout.buildDirectory.dir("${buildDir}/../src/main/resources/cloudformation")
 		  include "template*"
-	      into "${buildDir}/distributions/formkiq-core/sam/console"
-	    }
-	    copy {
-		  from layout.projectDirectory.file("${buildDir}/console-installer.zip")
-	      into "${buildDir}/distributions/formkiq-core/sam/console"
+	      into "${buildDir}/distributions/console"
 	    }
 	}
 }
 
-build.dependsOn assembleTemplate
+distZip.dependsOn buildTemplate
+
+tasks.distTar.enabled = false
+
+distZip {
+    archiveFileName = "console/console-installer.zip"
+}
+
+distributions {
+    main {
+        contents {
+            from compileJava
+    		from processResources              
+    		into('lib') {
+        		from configurations.runtimeClasspath
+    		}    
+            into '/'
+        }
+    }
+}

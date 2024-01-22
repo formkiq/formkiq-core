@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.stream.Collectors;
+import com.formkiq.aws.dynamodb.BatchGetConfig;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
@@ -155,13 +156,14 @@ public class GlobalIndexService {
       return values;
     }).collect(Collectors.toList());
 
+    BatchGetConfig config = new BatchGetConfig();
     ReadRequestBuilder readBuilder = new ReadRequestBuilder();
     List<Map<String, AttributeValue>> keys = valueList.stream()
         .map(v -> Map.of(PK, v.get(PK), SK, v.get(SK))).collect(Collectors.toList());
     readBuilder.append(this.documentTableName, keys);
 
     Map<String, List<Map<String, AttributeValue>>> batchReadItems =
-        readBuilder.batchReadItems(this.dbClient);
+        readBuilder.batchReadItems(this.dbClient, config);
 
     List<Map<String, AttributeValue>> batchReads = batchReadItems.get(this.documentTableName);
 

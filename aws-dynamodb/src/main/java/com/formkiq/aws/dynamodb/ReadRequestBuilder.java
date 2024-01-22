@@ -79,10 +79,11 @@ public class ReadRequestBuilder {
    * Batch Read Items.
    * 
    * @param dbClient {@link DynamoDbClient}
+   * @param config {@link BatchGetConfig}
    * @return {@link BatchGetItemResponse}
    */
   public Map<String, List<Map<String, AttributeValue>>> batchReadItems(
-      final DynamoDbClient dbClient) {
+      final DynamoDbClient dbClient, final BatchGetConfig config) {
 
     Map<String, List<Map<String, AttributeValue>>> map = new HashMap<>();
 
@@ -96,7 +97,7 @@ public class ReadRequestBuilder {
         for (List<Map<String, AttributeValue>> list : parition) {
 
           Map<String, List<Map<String, AttributeValue>>> values =
-              batchReadItems(dbClient, e.getKey(), list).responses();
+              batchReadItems(dbClient, e.getKey(), config, list).responses();
 
           for (Map.Entry<String, List<Map<String, AttributeValue>>> ee : values.entrySet()) {
 
@@ -110,7 +111,7 @@ public class ReadRequestBuilder {
 
       } else {
 
-        BatchGetItemResponse response = batchReadItems(dbClient, e.getKey(), e.getValue());
+        BatchGetItemResponse response = batchReadItems(dbClient, e.getKey(), config, e.getValue());
         if (response != null) {
           map = response.responses();
         } else {
@@ -123,13 +124,14 @@ public class ReadRequestBuilder {
   }
 
   private BatchGetItemResponse batchReadItems(final DynamoDbClient dbClient, final String tableName,
-      final Collection<Map<String, AttributeValue>> keys) {
+      final BatchGetConfig config, final Collection<Map<String, AttributeValue>> keys) {
 
     BatchGetItemResponse batchResponse = null;
 
     if (!keys.isEmpty()) {
-      Map<String, KeysAndAttributes> requestedItems =
-          Map.of(tableName, KeysAndAttributes.builder().keys(keys).build());
+      Map<String, KeysAndAttributes> requestedItems = Map.of(tableName,
+          KeysAndAttributes.builder().keys(keys).projectionExpression(config.projectionExpression())
+              .expressionAttributeNames(config.expressionAttributeNames()).build());
 
       BatchGetItemRequest batchReq =
           BatchGetItemRequest.builder().requestItems(requestedItems).build();

@@ -1,21 +1,25 @@
 {
-    "id": "cmpl-7JPQbaNp7fwGfmTv2pSs2q29O5wou",
-    "object": "text_completion",
-    "created": 1684860333,
-    "model": "text-davinci-003",
-    "choices":
-    [
+    "id": "chatcmpl-8LwgeVk8glvGvaDqo9ZrMK5Mdd2j4",
+    "object": "chat.completion",
+    "created": 1700241172,
+    "model": "gpt-3.5-turbo-0613",
+    "choices": [
         {
-            "text": "\n\n{ \n    \"organization\": \"East Repair Inc.\", \n    \"location\": [\"New York, NY 12240\", \"Cambutdigo, MA 12210\"], \n    \"person\": \"Job Smith\", \n    \"subject\": [\"Frontend eaar brake cabies\", \"New set of podal arms\", \"Labor shrs 500\"], \n    \"sentiment\": null, \n    \"document type\": \"Receipt\" \n}",
             "index": 0,
-            "logprobs": null,
+            "message": {
+                "role": "assistant",
+                "content": null,
+                "function_call": {
+                    "name": "get_text_data",
+                    "arguments": "{\n  \"organization\": [\"East Repair Inc.\"],\n  \"location\": [\"New York, NY 12240\", \"Cambutdigo, MA 12210\"],\n  \"person\": [\"Job Smith\"],\n  \"subject\": [\"Frontend eaar brake cabies\", \"New set of podal arms\", \"Labor shrs 500\"],\n  \"sentiment\": null\n,\n  \"document type\": [\"Receipt\"]\n}"
+                }
+            },
             "finish_reason": "stop"
         }
     ],
-    "usage":
-    {
-        "prompt_tokens": 224,
-        "completion_tokens": 104,
-        "total_tokens": 328
+    "usage": {
+        "prompt_tokens": 306,
+        "completion_tokens": 47,
+        "total_tokens": 353
     }
 }

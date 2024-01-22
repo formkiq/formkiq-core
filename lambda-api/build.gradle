@@ -1,5 +1,5 @@
 
-description = "Lambda API to Dynamodb"
+description = "Lambda API"
 
 sourceSets {
     integration {
@@ -19,74 +19,57 @@ tasks.processIntegrationResources {
     duplicatesStrategy = DuplicatesStrategy.INCLUDE
 }
 
-def getCmd() {
-    String os = System.getProperty("os.name").toLowerCase()
-    return os.contains("win") ? "cmd" : "bash"
-}
-
-def getCmdParam() {
-    String os = System.getProperty("os.name").toLowerCase()
-    return os.contains("win") ? "/c" : "-c"
-}
-
 dependencies {
 
-	annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.4.0'
+	annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.4.1'
 	
-	implementation project(':document-events')
-	implementation project(':fkq-lambda-services')
-	implementation project(':fkq-lambda-core')
-	implementation project(':fkq-validation')
-	implementation project(':fkq-plugins')
-	implementation project(':aws-s3')
-	implementation project(':aws-sqs')
-	implementation project(':aws-ssm')
-	implementation project(':aws-sns')
-	implementation project(':aws-dynamodb')
-	implementation project(':dynamodb-documents')
-	implementation project(':actions')
-	implementation project(':typesense')
-	implementation project(':ocr')
-	implementation project(':http-sigv4')
+	api project(':document-events')
+	api project(':fkq-lambda-services')
+	api project(':fkq-lambda-core')
+	api project(':fkq-validation')
+	api project(':fkq-plugins')
+	api project(':aws-s3')
+	api project(':aws-cognito-identityprovider')
+	api project(':aws-sqs')
+	api project(':aws-ssm')
+	api project(':aws-sns')
+	api project(':aws-ses')
+	api project(':aws-dynamodb')
+	api project(':dynamodb-documents')
+	api project(':actions')
+	api project(':typesense')
+	api project(':ocr')
+	api project(':http-sigv4')
 	
-	implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.2'
-    implementation group: 'com.google.code.gson', name: 'gson', version: '2.10.1'
+	api group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.3'
+    api group: 'com.google.code.gson', name: 'gson', version: '2.10.1'
     
-    implementation group: 'com.formkiq', name: 'lambda-runtime-graalvm', version:'2.3.1'
-    implementation group: 'com.formkiq', name: 'graalvm-annotations', version: '1.2.0'
+    api group: 'com.formkiq', name: 'lambda-runtime-graalvm', version:'2.3.1'
+    api group: 'com.formkiq', name: 'graalvm-annotations', version: '1.2.0'
     
-	implementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.7'
+	api group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.7'
 	
     testImplementation group: 'com.formkiq.stacks', name: 'client', version:'1.11.0'
-	testImplementation project(':aws-cognito')
+        testImplementation project(':aws-cognito-identity')
+        testImplementation project(':aws-cognito-identityprovider')
 	testImplementation project(':aws-iam')
 	testImplementation project(':aws-sts')
 	testImplementation project(':fkq-test-utils')
 	testImplementation project(':lambda-typesense')
 	
-	testImplementation group: 'software.amazon.awssdk', name: 'apigateway', version: '2.20.121'
-	testImplementation group: 'software.amazon.awssdk', name: 'sts', version: '2.20.121'
+	testImplementation group: 'software.amazon.awssdk', name: 'apigateway', version: '2.20.140'
+	testImplementation group: 'software.amazon.awssdk', name: 'sts', version: '2.20.140'
 	
-    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.9.1'
-    testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.18.3'
-	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.18.3'
-	testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.18.3'
-	testImplementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.12.488'
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.10.0'
+    testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.19.0'
+	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.19.0'
+	testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.19.0'
+	testImplementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.12.543'
 	testImplementation group: 'org.mock-server', name: 'mockserver-netty', version: '5.15.0'
 }
 
 compileJava {
     options.annotationProcessorPath += configurations.runtimeClasspath
-}
-
-nativeImage {
-	outputFileName = "server"
-	mainClassName = "com.formkiq.lambda.runtime.graalvm.LambdaRuntime"
-	dockerImage = "ghcr.io/graalvm/graalvm-ce:ol9-java17-22.3.1"
-    enableHttp = true
-    enableHttps = true
-    enableStatic = true
-	systemProperty = ["java.net.preferIPv4Stack=true"]
 }
 
 test {
@@ -100,21 +83,6 @@ task integrationTest(type: Test) {
     useJUnitPlatform()
 }
 
-task buildZip(type: Zip) {
-	dependsOn test, graalvmNativeImage
-	inputs.files("${project.projectDir}/runtime/bootstrap", "${buildDir}/graalvm/server")
-  	outputs.file("${buildDir}/lambda-api-graalvm.zip")
-    
-	archiveFileName = "lambda-api-graalvm.zip"
-    destinationDirectory = file("${buildDir}")
-    from("${project.projectDir}/runtime") {
-        include 'bootstrap'
-    }
-    from("${buildDir}/graalvm") {
-        include 'server'
-    }
-}
-
 task buildJava11Zip(type: Zip) {
     from compileJava
     into('lib') {
@@ -122,103 +90,4 @@ task buildJava11Zip(type: Zip) {
     }           
 }
 
-task assembleTemplate {
-	dependsOn buildZip
-	inputs.files("src/main/resources/cloudformation/template.yaml", "src/main/resources/cloudformation/template-ocr.yaml", "src/main/resources/cloudformation/template-apikey.yaml", "src/main/resources/cloudformation/api.yaml", "src/main/resources/cloudformation/api-iam.yaml", "src/main/resources/cloudformation/api-apikey.yaml")
-	outputs.dir("${buildDir}/distributions/formkiq-core")
-	
-	def randomtext = ('0'..'z').shuffled().take(10).join();
-	def sha256 = randomtext.digest('SHA-256')
-
-	doLast {
-	
-		copy {
-		  from layout.buildDirectory.file("${buildDir}/lambda-api-graalvm.zip")
-		  from layout.buildDirectory.file("${buildDir}/layer-tesseract-5.3.1.zip")
-	      into "${buildDir}/distributions/formkiq-core/sam/api"
-	    }
-
-		// build SAM distribution
-		exec {
-			commandLine getCmd(), getCmdParam(), "ytt --data-value hash=${sha256} --data-value version=${project.version} -f src/main/resources/cloudformation/template.yaml -f src/main/resources/cloudformation/template-ocr.yaml -f src/main/resources/cloudformation/template-apikey.yaml -f src/main/resources/cloudformation/api.yaml -f src/main/resources/cloudformation/api-iam.yaml -f src/main/resources/cloudformation/api-apikey.yaml > ${buildDir}/distributions/formkiq-core/sam/api/template.yaml"
-		}
-	}
-}
-
-task downloadOpenApiGenerator(type: Download) {
-	dependsOn check
-    src "https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/6.6.0/openapi-generator-cli-6.6.0.jar"
-    dest buildDir
-    overwrite false
-}
-
-task assembleOpenApiTemplate {
-    dependsOn downloadOpenApiGenerator
-	inputs.files("src/main/resources/cloudformation/resources.yaml", "src/main/resources/cloudformation/api.yaml", "src/main/resources/cloudformation/api-iam.yaml", "src/main/resources/cloudformation/api-variables.yaml", "src/main/resources/cloudformation/api-iam-variables.yaml", "src/main/resources/cloudformation/api-key-variables.yaml")
-	outputs.files("${project.projectDir}/openapi-jwt.yaml", "${project.projectDir}/openapi-iam.yaml")
-	
-	doLast {
-	
-		exec {
-			commandLine getCmd(), getCmdParam(), "ytt --data-value version=${project.version} -f src/main/resources/cloudformation/resources.yaml -f src/main/resources/cloudformation/api.yaml -f src/main/resources/cloudformation/api-variables.yaml > ${buildDir}/openapi-jwt.yaml"
-		}
-		
-		exec {
-			commandLine getCmd(), getCmdParam(), "ytt --data-value version=${project.version} -f src/main/resources/cloudformation/resources.yaml -f src/main/resources/cloudformation/api-iam.yaml -f src/main/resources/cloudformation/api-iam-variables.yaml > ${buildDir}/openapi-iam.yaml"
-		}
-		
-		exec {
-			commandLine getCmd(), getCmdParam(), "ytt --data-value version=${project.version} -f src/main/resources/cloudformation/resources.yaml -f src/main/resources/cloudformation/api-apikey.yaml -f src/main/resources/cloudformation/api-key-variables.yaml > ${buildDir}/openapi-key.yaml"
-		}
-		
-		for (fileName in ["openapi-jwt", "openapi-iam", "openapi-key"]) {
-		
-			def lines = new File("${buildDir}/${fileName}.yaml").readLines()
-			for (int i = 0; i < 6; i++) {
-			  lines.removeAt(0);
-			  lines.removeAt(lines.size - 1);
-			}
-			lines.removeAt(lines.size - 1);
-			
-			def file = new File("${buildDir}/../../docs/openapi/${fileName}.yaml")
-			file.text = lines.join(System.lineSeparator())
-			
-			javaexec { 
-    			main="-jar";
-    			args = [
-            		"${buildDir}/openapi-generator-cli-6.6.0.jar",
-            		"generate",
-            		"-i", "${buildDir}/../../docs/openapi/${fileName}.yaml",
-            		"-g", "asciidoc", 
-            		"-o", "${buildDir}/${fileName}"
-           		]
-  			} 
-		}
-	}
-}
-
-task downloadAwsCognito(type: Download) {
-	dependsOn check
-    src "https://github.com/formkiq/aws-cognito/releases/download/v${awsCognitoVersion}/aws-cognito-v${awsCognitoVersion}.zip"
-    dest buildDir
-    overwrite false
-}
-/*
-task downloadAwsCognito(type: Copy) {
-    from file("$buildDir/../../../aws-cognito/build/aws-cognito-v${awsCognitoVersion}.zip")
-    into file("${buildDir}")
-}*/
-
-task unzipAwsCognito(type: Copy) {
-  dependsOn downloadAwsCognito
-  def zipFile = file("${buildDir}/aws-cognito-v${awsCognitoVersion}.zip")
-  def outputDir = file("${buildDir}/distributions/formkiq-core/sam/cognito")
-
-  from zipTree(zipFile)
-  into outputDir
-}
-
 buildJava11Zip.dependsOn jar
-
-graalvmNativeImage.dependsOn check
-build.dependsOn assembleTemplate, assembleOpenApiTemplate, unzipAwsCognito

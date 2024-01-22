@@ -1,0 +1,73 @@
+description = "FormKiQ Core - Lambda S3 Graalvm"
+
+apply plugin: 'distribution'
+
+def getCmd() {
+    String os = System.getProperty("os.name").toLowerCase()
+    return os.contains("win") ? "cmd" : "bash"
+}
+
+def getCmdParam() {
+    String os = System.getProperty("os.name").toLowerCase()
+    return os.contains("win") ? "/c" : "-c"
+}
+
+dependencies {
+    implementation project(':lambda-s3')
+}
+
+compileJava {
+    options.annotationProcessorPath += configurations.runtimeClasspath
+}
+
+nativeImage { 
+    outputFileName = "server"
+    dockerImage = "ghcr.io/graalvm/graalvm-ce:ol9-java17-22.3.1"
+    mainClassName = "com.formkiq.lambda.runtime.graalvm.LambdaRuntime"
+    enableHttp = true
+    enableHttps = true
+    enableStatic = true
+    systemProperty = ["java.net.preferIPv4Stack=true"]
+}
+
+test {
+  failFast = true
+  useJUnitPlatform()
+}
+
+task buildTemplate {
+	inputs.files("src/main/resources/cloudformation/template-sar.yaml")
+	outputs.files("${buildDir}/distributions/storage/template.yaml")
+
+	def randomtext = ('0'..'z').shuffled().take(10).join();
+	def sha256 = randomtext.digest('SHA-256')
+
+	doLast {
+	    
+		exec {
+			commandLine getCmd(), getCmdParam(), "ytt --data-value hash=${sha256} -f src/main/resources/cloudformation/template-sar.yaml > ${buildDir}/distributions/storage/template.yaml"
+		}
+	}
+}
+
+distZip.dependsOn buildTemplate, graalvmNativeImage
+
+tasks.distTar.enabled = false
+
+distZip {
+    archiveFileName = "storage/lambda-s3-graalvm.zip"
+}
+
+distributions {
+    main {
+        contents {
+            from("runtime/") {
+            	include "bootstrap"
+            }
+            from ("${buildDir}/graalvm") {
+                include("server")
+            }
+            into '/'
+        }
+    }
+}

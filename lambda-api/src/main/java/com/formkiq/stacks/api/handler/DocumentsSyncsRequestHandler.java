@@ -76,6 +76,8 @@ public class DocumentsSyncsRequestHandler
     ApiPagination current =
         createPagination(cacheService, event, pagination, syncs.getToken(), limit);
 
+    syncs.getResults().forEach(s -> s.setDocumentId(null));
+
     Map<String, Object> map = new HashMap<>();
     map.put("syncs", syncs.getResults());
     map.put("previous", current.getPrevious());

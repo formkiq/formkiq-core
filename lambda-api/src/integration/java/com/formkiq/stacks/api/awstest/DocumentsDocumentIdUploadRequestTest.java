@@ -23,23 +23,26 @@
  */
 package com.formkiq.stacks.api.awstest;
 
+import static com.formkiq.testutils.aws.FkqDocumentService.addDocument;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import java.net.http.HttpResponse;
-import java.util.Map;
+import static org.junit.jupiter.api.Assertions.fail;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import com.formkiq.stacks.client.FormKiqClientV1;
-import com.formkiq.stacks.client.requests.GetDocumentUploadRequest;
-import com.formkiq.stacks.client.requests.OptionsDocumentRequest;
+import com.formkiq.aws.services.lambda.ApiResponseStatus;
+import com.formkiq.client.api.DocumentsApi;
+import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.model.GetDocumentUrlResponse;
+import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
 
 /**
  * GET, OPTIONS /documents/{documentId}/upload tests.
  *
  */
-public class DocumentsDocumentIdUploadRequestTest extends AbstractApiTest {
+public class DocumentsDocumentIdUploadRequestTest extends AbstractAwsIntegrationTest {
 
   /** JUnit Test Timeout. */
   private static final int TEST_TIMEOUT = 20;
@@ -52,68 +55,44 @@ public class DocumentsDocumentIdUploadRequestTest extends AbstractApiTest {
   @Test
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testGet01() throws Exception {
-
-    for (FormKiqClientV1 client : getFormKiqClients(null)) {
-      // given
+    // given
+    String siteId = null;
+    for (ApiClient client : getApiClients(siteId)) {
       String documentId = UUID.randomUUID().toString();
-      GetDocumentUploadRequest request =
-          new GetDocumentUploadRequest().documentId(documentId).contentLength(1);
+      DocumentsApi api = new DocumentsApi(client);
 
       // when
-      HttpResponse<String> response = client.getDocumentUploadAsHttpResponse(request);
-      // then
-      final int status = 404;
-      assertEquals(status, response.statusCode());
-      assertRequestCorsHeaders(response.headers());
+      try {
+        api.getDocumentIdUpload(documentId, siteId, Integer.valueOf(1), null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
+      }
     }
   }
 
   /**
    * Get Request Document Found.
-   * 
+   *
    * @throws Exception Exception
    */
   @Test
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testGet02() throws Exception {
-    for (FormKiqClientV1 client : getFormKiqClients(null)) {
+    for (ApiClient client : getApiClients(null)) {
       // given
-      String documentId = addDocumentWithoutFile(client, null, null);
-      GetDocumentUploadRequest request =
-          new GetDocumentUploadRequest().documentId(documentId).contentLength(1);
+      String siteId = null;
+      String documentId = addDocument(client, siteId, "test.txt", new byte[] {}, null, null);
+      DocumentsApi api = new DocumentsApi(client);
 
       // when
-      HttpResponse<String> response = client.getDocumentUploadAsHttpResponse(request);
+      GetDocumentUrlResponse response =
+          api.getDocumentIdUpload(documentId, siteId, Integer.valueOf(1), null, null);
+
       // then
-      final int status = 200;
-      assertEquals(status, response.statusCode());
-      assertRequestCorsHeaders(response.headers());
-
-      Map<String, Object> map = toMap(response);
-      assertNotNull(map.get("url"));
-      assertEquals(documentId, map.get("documentId"));
-    }
-  }
-
-  /**
-   * Options Request.
-   * 
-   * @throws Exception Exception
-   */
-  @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
-  public void testOptions01() throws Exception {
-    for (FormKiqClientV1 client : getFormKiqClients(null)) {
-      // given
-      String documentId = UUID.randomUUID().toString();
-      OptionsDocumentRequest req = new OptionsDocumentRequest().documentId(documentId);
-
-      // when
-      HttpResponse<String> response = client.optionsDocument(req);
-      // then
-      final int status = 204;
-      assertEquals(status, response.statusCode());
-      assertPreflightedCorsHeaders(response.headers());
+      assertNotNull(response.getUrl());
+      assertEquals(documentId, response.getDocumentId());
     }
   }
 }

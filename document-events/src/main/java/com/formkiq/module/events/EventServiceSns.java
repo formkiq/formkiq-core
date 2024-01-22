@@ -57,6 +57,12 @@ public class EventServiceSns implements EventService {
    * @param eventTopicArn {@link String}
    */
   public EventServiceSns(final SnsConnectionBuilder snsBuilder, final String eventTopicArn) {
+    if (snsBuilder == null) {
+      throw new IllegalArgumentException("'snsBuilder' is null");
+    }
+    if (eventTopicArn == null) {
+      throw new IllegalArgumentException("'eventTopicArn' is null");
+    }
     this.snsService = new SnsService(snsBuilder);
     this.topicArn = eventTopicArn;
   }
@@ -87,9 +93,11 @@ public class EventServiceSns implements EventService {
       tags = Map.of("type", typeAttr, "siteId", siteIdAttr, "userId", userIdAttr);
     }
 
-    PublishResponse response = this.snsService.publish(this.topicArn, eventJson, tags);
-    LambdaRuntime.getLogger().log("publishing to: " + this.topicArn + " messageId: "
-        + response.messageId() + " body: " + eventJson);
+    if (this.topicArn.length() > 0) {
+      PublishResponse response = this.snsService.publish(this.topicArn, eventJson, tags);
+      LambdaRuntime.getLogger().log("publishing to: " + this.topicArn + " messageId: "
+          + response.messageId() + " body: " + eventJson);
+    }
 
     return eventJson;
   }

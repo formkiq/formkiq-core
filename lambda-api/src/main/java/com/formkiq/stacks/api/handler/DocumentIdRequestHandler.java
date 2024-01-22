@@ -27,6 +27,7 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_CREATED;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_FOUND;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
@@ -52,6 +53,7 @@ import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.s3.S3ObjectMetadata;
+import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -190,27 +192,31 @@ public class DocumentIdRequestHandler
     String siteId = authorization.siteId();
     String documentId = event.getPathParameters().get("documentId");
 
-    logger.log("deleting object " + documentId + " from bucket '" + documentBucket + "'");
+    if (awsservice.debug()) {
+      logger.log("deleting object " + documentId + " from bucket '" + documentBucket + "'");
+    }
 
     DocumentService service = awsservice.getExtension(DocumentService.class);
     DocumentItem item = service.findDocument(siteId, documentId);
     throwIfNull(item, new DocumentNotFoundException(documentId));
 
+    boolean softDelete = "true".equals(event.getQueryStringParameter("softDelete"));
+
     try {
 
-      S3Service s3Service = awsservice.getExtension(S3Service.class);
+      if (!softDelete) {
+        S3Service s3Service = awsservice.getExtension(S3Service.class);
 
-      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
-      S3ObjectMetadata md = s3Service.getObjectMetadata(documentBucket, s3Key, null);
+        String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
+        S3ObjectMetadata md = s3Service.getObjectMetadata(documentBucket, s3Key, null);
 
-      if (md.isObjectExists()) {
-        s3Service.deleteObject(documentBucket, s3Key, null);
-
-      } else {
-
-        if (!service.deleteDocument(siteId, documentId)) {
-          throw new NotFoundException("Document " + documentId + " not found.");
+        if (md.isObjectExists()) {
+          s3Service.deleteObject(documentBucket, s3Key, null);
         }
+      }
+
+      if (!service.deleteDocument(siteId, documentId, softDelete)) {
+        throw new NotFoundException("Document " + documentId + " not found.");
       }
 
       ApiResponse resp = new ApiMessageResponse("'" + documentId + "' object deleted");
@@ -241,7 +247,7 @@ public class DocumentIdRequestHandler
     if (documentId != null) {
       Duration duration = Duration.ofHours(DEFAULT_DURATION_HOURS);
       String key = createS3Key(siteId, documentId);
-      S3Service s3Service = awsservice.getExtension(S3Service.class);
+      S3PresignerService s3Service = awsservice.getExtension(S3PresignerService.class);
 
       Map<String, String> map = Map.of("checksum", UUID.randomUUID().toString());
       url = s3Service.presignPutUrl(awsservice.environment("DOCUMENTS_S3_BUCKET"), key, duration,
@@ -374,7 +380,7 @@ public class DocumentIdRequestHandler
 
       validateTagSchema(awsservice, siteId, item, item.getUserId(), isUpdate);
       validateTags(item);
-      validateActions(awsservice, siteId, item);
+      validateActions(awsservice, siteId, item, authorization);
 
       putObjectToStaging(logger, awsservice, maxDocumentCount, siteId, item);
 
@@ -434,10 +440,14 @@ public class DocumentIdRequestHandler
   }
 
   private void validateActions(final AwsServiceCache awsservice, final String siteId,
-      final DynamicDocumentItem item) throws ValidationException {
+      final DynamicDocumentItem item, final ApiAuthorization authorization)
+      throws ValidationException {
 
     List<DynamicObject> objs = item.getList("actions");
     if (!objs.isEmpty()) {
+
+      objs.stream().forEach(a -> a.put("userId", authorization.username()));
+      item.put("actions", objs);
 
       ConfigService configsService = awsservice.getExtension(ConfigService.class);
       DynamicObject configs = configsService.get(siteId);
@@ -457,7 +467,7 @@ public class DocumentIdRequestHandler
                 .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue().toString()))
             : Collections.emptyMap();
 
-        return new Action().type(type).parameters(parameters);
+        return new Action().type(type).parameters(parameters).userId(o.getString("userId"));
       }).collect(Collectors.toList());
 
       for (Action action : actions) {
@@ -503,7 +513,8 @@ public class DocumentIdRequestHandler
 
     boolean isFolder = isFolder(item);
 
-    if (!isFolder && !item.hasString("content") && item.getList("documents").isEmpty()) {
+    if (!isFolder && !item.hasString("content") && item.getList("documents").isEmpty()
+        && isEmpty(item.getDeepLinkPath())) {
       throw new BadException("Invalid JSON body.");
     }
 

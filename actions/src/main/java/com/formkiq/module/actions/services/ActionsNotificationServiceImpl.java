@@ -29,6 +29,7 @@ import static software.amazon.awssdk.utils.StringUtils.isEmpty;
 import java.util.List;
 import java.util.Optional;
 import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.events.EventService;
 import com.formkiq.module.events.document.DocumentEvent;
 
@@ -55,15 +56,31 @@ public class ActionsNotificationServiceImpl implements ActionsNotificationServic
   }
 
   @Override
-  public void publishNextActionEvent(final List<Action> actions, final String siteId,
+  public boolean publishNextActionEvent(final List<Action> actions, final String siteId,
       final String documentId) {
 
-    Optional<Action> o = actions.stream().filter(new NextActionPredicate()).findFirst();
+    boolean publishedEvent = false;
 
-    if (o.isPresent()) {
-      String site = !isEmpty(siteId) ? siteId : DEFAULT_SITE_ID;
-      DocumentEvent event = new DocumentEvent().siteId(site).documentId(documentId).type(ACTIONS);
-      this.documentEventService.publish(event);
+    Optional<Action> o =
+        actions.stream().filter(new ActionStatusPredicate(ActionStatus.RUNNING)).findFirst();
+
+    if (o.isEmpty()) {
+
+      o = actions.stream().filter(new ActionStatusPredicate(ActionStatus.PENDING)).findFirst();
+
+      if (o.isPresent()) {
+        publishedEvent = publishNextActionEvent(siteId, documentId);
+      }
     }
+
+    return publishedEvent;
+  }
+
+  @Override
+  public boolean publishNextActionEvent(final String siteId, final String documentId) {
+    String site = !isEmpty(siteId) ? siteId : DEFAULT_SITE_ID;
+    DocumentEvent event = new DocumentEvent().siteId(site).documentId(documentId).type(ACTIONS);
+    this.documentEventService.publish(event);
+    return true;
   }
 }

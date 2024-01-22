@@ -38,6 +38,7 @@ import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
+import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -72,17 +73,17 @@ public class DocumentsOcrRequestHandler
    * @param documentId {@link String}
    * @return {@link Map}
    */
-  private Map<String, Object> buildGetResponse(final DynamicObject obj, final String documentId) {
+  private Map<String, Object> buildGetResponse(final Ocr obj, final String documentId) {
     Map<String, Object> map = new HashMap<>();
     map.put("documentId", documentId);
 
     if (obj != null) {
 
-      map.put("insertedDate", obj.get("insertedDate"));
-      map.put("contentType", obj.get("contentType"));
-      map.put("userId", obj.get("userId"));
-      map.put("ocrEngine", obj.get("ocrEngine"));
-      map.put("ocrStatus", obj.get("ocrStatus"));
+      map.put("insertedDate", obj.insertedDate());
+      map.put("contentType", obj.contentType());
+      map.put("userId", obj.userId());
+      map.put("ocrEngine", obj.engine().name());
+      map.put("ocrStatus", obj.status().name());
     }
 
     return map;
@@ -124,17 +125,17 @@ public class DocumentsOcrRequestHandler
 
     DocumentOcrService ocrService = awsservice.getExtension(DocumentOcrService.class);
 
-    DynamicObject obj = ocrService.get(siteId, documentId);
+    Ocr obj = ocrService.get(siteId, documentId);
 
     Map<String, Object> map = buildGetResponse(obj, documentId);
 
     if (map.containsKey("ocrStatus")) {
 
-      if (map.get("ocrStatus").equals(OcrScanStatus.SUCCESSFUL.name().toLowerCase())) {
+      if (OcrScanStatus.SUCCESSFUL.name().equalsIgnoreCase(map.get("ocrStatus").toString())) {
 
         S3Service s3 = awsservice.getExtension(S3Service.class);
 
-        String jobId = obj.getString("jobId");
+        String jobId = obj.jobId();
 
         List<String> s3Keys = ocrService.getOcrS3Keys(siteId, documentId, jobId);
         if (s3Keys.isEmpty()) {
@@ -176,6 +177,7 @@ public class DocumentsOcrRequestHandler
       final DocumentOcrService ocrService, final S3Service s3, final List<String> s3Keys,
       final boolean textOnly) {
 
+
     String ocrBucket = awsservice.environment("OCR_S3_BUCKET");
     List<String> newS3Keys = new ArrayList<>();
 
@@ -195,9 +197,11 @@ public class DocumentsOcrRequestHandler
       newS3Keys.addAll(s3Keys);
     }
 
+    S3PresignerService s3Presigner = awsservice.getExtension(S3PresignerService.class);
     PresignGetUrlConfig config = new PresignGetUrlConfig();
-    List<String> contentUrls = newS3Keys.stream().map(
-        s3key -> s3.presignGetUrl(ocrBucket, s3key, Duration.ofHours(1), null, config).toString())
+    List<String> contentUrls = newS3Keys
+        .stream().map(s3key -> s3Presigner
+            .presignGetUrl(ocrBucket, s3key, Duration.ofHours(1), null, config).toString())
         .collect(Collectors.toList());
     return contentUrls;
   }
@@ -241,7 +245,6 @@ public class DocumentsOcrRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    ApiMapResponse resp = new ApiMapResponse();
     String siteId = authorization.siteId();
     String documentId = event.getPathParameters().get("documentId");
 
@@ -253,6 +256,7 @@ public class DocumentsOcrRequestHandler
     DocumentOcrService ocrService = awsservice.getExtension(DocumentOcrService.class);
     ocrService.convert(logger, awsservice, request, siteId, documentId, userId);
 
+    ApiMapResponse resp = new ApiMapResponse(Map.of("message", "OCR request submitted"));
     return new ApiRequestHandlerResponse(SC_OK, resp);
   }
 

@@ -59,6 +59,7 @@ import com.formkiq.module.http.HttpResponseStatus;
 import com.formkiq.module.http.HttpService;
 import com.formkiq.module.http.HttpServiceJdk11;
 import com.formkiq.testutils.FileGenerator;
+import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
 
 /**
  * 
@@ -66,7 +67,7 @@ import com.formkiq.testutils.FileGenerator;
  *
  */
 @Execution(ExecutionMode.CONCURRENT)
-public class DocumentsCompressRequestTest extends AbstractApiTest {
+public class DocumentsCompressRequestTest extends AbstractAwsIntegrationTest {
 
   /** 1024 Constant. */
   private static final int MB = 1024;
@@ -118,22 +119,24 @@ public class DocumentsCompressRequestTest extends AbstractApiTest {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
       List<ApiClient> clients = getApiClients(siteId);
+      DocumentsApi documentsApi = new DocumentsApi(clients.get(0));
+
+      Map<String, String> documentIds = new HashMap<>();
+      for (int i = 0; i < fileCount; i++) {
+        String path = UUID.randomUUID() + ".txt";
+        AddDocumentRequest req =
+            new AddDocumentRequest().content(content).contentType("text/plain").path(path);
+        String documentId = documentsApi.addDocument(req, siteId, null).getDocumentId();
+        documentIds.put(path, documentId);
+      }
+
+      for (Map.Entry<String, String> e : documentIds.entrySet()) {
+        waitForDocumentContent(clients.get(0), siteId, e.getValue());
+      }
 
       for (ApiClient apiClient : clients) {
-        DocumentsApi documentsApi = new DocumentsApi(apiClient);
 
-        Map<String, String> documentIds = new HashMap<>();
-
-        for (int i = 0; i < fileCount; i++) {
-          String path = UUID.randomUUID() + ".txt";
-          AddDocumentRequest req = new AddDocumentRequest().content(content).path(path);
-          String documentId = documentsApi.addDocument(req, siteId, null).getDocumentId();
-          documentIds.put(path, documentId);
-        }
-
-        for (Map.Entry<String, String> e : documentIds.entrySet()) {
-          waitForDocumentContent(apiClient, siteId, e.getValue());
-        }
+        documentsApi = new DocumentsApi(apiClient);
 
         // when
         DocumentsCompressRequest compressReq =
@@ -181,10 +184,10 @@ public class DocumentsCompressRequestTest extends AbstractApiTest {
 
     // when
     HttpResponse<String> response1 =
-        this.http.put(upload1.getUrl(), Optional.empty(), file1.toPath());
+        this.http.put(upload1.getUrl(), Optional.empty(), Optional.empty(), file1.toPath());
 
     HttpResponse<String> response2 =
-        this.http.put(upload2.getUrl(), Optional.empty(), file2.toPath());
+        this.http.put(upload2.getUrl(), Optional.empty(), Optional.empty(), file2.toPath());
 
     // then
     assertTrue(HttpResponseStatus.is2XX(response1));

@@ -6,6 +6,11 @@ dependencies {
 	implementation project(':fkq-lambda-services')
 	
 	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.10.0'
-	testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.18.3'
+	testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.19.0'
 	testImplementation project(':fkq-test-utils')
+}
+
+test {
+  failFast = true
+  useJUnitPlatform() 
 }

@@ -28,8 +28,9 @@ import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
 import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFileAsMap;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_VERSION_TABLE;
+import static com.formkiq.testutils.aws.TestServices.AWS_REGION;
 import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
-import static com.formkiq.testutils.aws.TypeSenseExtension.API_KEY;
+import static com.formkiq.testutils.aws.TypesenseExtension.API_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -48,6 +49,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -57,14 +59,19 @@ import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpRequest;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
+import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.s3.S3Service;
+import com.formkiq.aws.ses.SesAwsServiceRegistry;
+import com.formkiq.aws.sns.SnsAwsServiceRegistry;
 import com.formkiq.aws.sns.SnsService;
+import com.formkiq.aws.ssm.SmsAwsServiceRegistry;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceCache;
@@ -73,6 +80,8 @@ import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.module.typesense.TypeSenseService;
 import com.formkiq.module.typesense.TypeSenseServiceImpl;
 import com.formkiq.stacks.dynamodb.ConfigService;
@@ -88,18 +97,20 @@ import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.formkiq.testutils.aws.LocalStackExtension;
 import com.formkiq.testutils.aws.TestServices;
-import com.formkiq.testutils.aws.TypeSenseExtension;
+import com.formkiq.testutils.aws.TypesenseExtension;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import joptsimple.internal.Strings;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 /** Unit Tests for {@link DocumentActionsProcessor}. */
 @ExtendWith(DynamoDbExtension.class)
 @ExtendWith(LocalStackExtension.class)
-@ExtendWith(TypeSenseExtension.class)
+@ExtendWith(TypesenseExtension.class)
 public class DocumentActionsProcessorTest implements DbKeys {
 
   /** {@link ActionsService}. */
@@ -119,7 +130,6 @@ public class DocumentActionsProcessorTest implements DbKeys {
   private static DocumentService documentService;
   /** {@link Gson}. */
   private static Gson gson = new GsonBuilder().disableHtmlEscaping().create();
-
   /** {@link ClientAndServer}. */
   private static ClientAndServer mockServer;
   /** Port to run Test server. */
@@ -172,7 +182,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
     ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/api/DocumentsIamUrl", URL);
 
-    String typeSenseHost = "http://localhost:" + TypeSenseExtension.getMappedPort();
+    String typeSenseHost = "http://localhost:" + TypesenseExtension.getMappedPort();
     ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/api/TypesenseEndpoint",
         typeSenseHost);
     ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/typesense/ApiKey", API_KEY);
@@ -196,7 +206,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
     final int status = 200;
 
-    for (String item : Arrays.asList("1", "2", "3", "4", "5")) {
+    for (String item : Arrays.asList("1", "2", "3", "4", "5", "6")) {
       String text = FileUtils.loadFile(mockServer, "/chatgpt/response" + item + ".json");
       mockServer.when(request().withMethod("POST").withPath("/chatgpt" + item)).respond(
           org.mockserver.model.HttpResponse.response(text).withStatusCode(Integer.valueOf(status)));
@@ -211,9 +221,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
     mockServer.when(request().withMethod("GET")).respond(callback);
   }
 
-  private static void initProcessor(final String module, final String chatgptUrl)
-      throws URISyntaxException {
+  private static void initProcessor(final String module, final String chatgptUrl) {
     Map<String, String> env = new HashMap<>();
+    env.put("AWS_REGION", AWS_REGION.toString());
     env.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
     env.put("DOCUMENT_VERSIONS_TABLE", DOCUMENTS_VERSION_TABLE);
     env.put("APP_ENVIRONMENT", APP_ENVIRONMENT);
@@ -223,9 +233,17 @@ public class DocumentActionsProcessorTest implements DbKeys {
     env.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
     env.put("CHATGPT_API_COMPLETIONS_URL", URL + "/" + chatgptUrl);
 
-    processor = new DocumentActionsProcessor(env, Region.US_EAST_1, credentials, dbBuilder,
-        TestServices.getS3Connection(null), TestServices.getSsmConnection(null),
-        TestServices.getSnsConnection(null));
+    AwsCredentials creds = AwsBasicCredentials.create("aaa", "bbb");
+    StaticCredentialsProvider credentialsProvider = StaticCredentialsProvider.create(creds);
+
+    AwsServiceCache serviceCache =
+        new AwsServiceCacheBuilder(env, TestServices.getEndpointMap(), credentialsProvider)
+            .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
+                new SnsAwsServiceRegistry(), new SmsAwsServiceRegistry(),
+                new SesAwsServiceRegistry())
+            .build();
+
+    processor = new DocumentActionsProcessor(serviceCache);
   }
 
   /** {@link LambdaContextRecorder}. */
@@ -254,10 +272,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String documentId = UUID.randomUUID().toString();
-      List<Action> actions =
-          Arrays.asList(new Action().type(ActionType.DOCUMENTTAGGING).parameters(Map.of("engine",
+      List<Action> actions = Arrays.asList(
+          new Action().type(ActionType.DOCUMENTTAGGING).userId("joe").parameters(Map.of("engine",
               "chatgpt", "tags", "organization,location,person,subject,sentiment,document type")));
-      actionsService.saveActions(siteId, documentId, actions);
+      actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
           loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
@@ -267,7 +285,38 @@ public class DocumentActionsProcessorTest implements DbKeys {
       processor.handleRequest(map, this.context);
 
       // then
-      assertEquals(ActionStatus.FAILED,
+      List<Action> list = actionsService.getActions(siteId, documentId);
+      assertEquals(1, list.size());
+      assertEquals(ActionStatus.FAILED, list.get(0).status());
+      assertEquals("missing config 'ChatGptApiKey'", list.get(0).message());
+    }
+  }
+
+  /**
+   * Handle Queue Action.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  public void testQueueAction01() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String documentId = UUID.randomUUID().toString();
+      String name = "testqueue#" + documentId;
+
+      List<Action> actions =
+          Arrays.asList(new Action().type(ActionType.QUEUE).userId("joe").queueId(name));
+      actionsService.saveNewActions(siteId, documentId, actions);
+
+      Map<String, Object> map =
+          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
+              documentId, "default", siteId != null ? siteId : "default");
+
+      // when
+      processor.handleRequest(map, this.context);
+
+      // then
+      assertEquals(ActionStatus.IN_QUEUE,
           actionsService.getActions(siteId, documentId).get(0).status());
     }
   }
@@ -298,10 +347,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
       documentService.addTags(siteId, documentId, Arrays.asList(new DocumentTag(documentId,
           "untagged", "", new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
 
-      List<Action> actions =
-          Arrays.asList(new Action().type(ActionType.DOCUMENTTAGGING).parameters(Map.of("engine",
+      List<Action> actions = Arrays.asList(
+          new Action().type(ActionType.DOCUMENTTAGGING).userId("joe").parameters(Map.of("engine",
               "chatgpt", "tags", "organization,location,person,subject,sentiment,document type")));
-      actionsService.saveActions(siteId, documentId, actions);
+      actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
           loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
@@ -348,10 +397,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String documentId = UUID.randomUUID().toString();
-      List<Action> actions =
-          Arrays.asList(new Action().type(ActionType.DOCUMENTTAGGING).parameters(Map.of("engine",
+      List<Action> actions = Arrays.asList(
+          new Action().type(ActionType.DOCUMENTTAGGING).userId("joe").parameters(Map.of("engine",
               "unknown", "tags", "organization,location,person,subject,sentiment,document type")));
-      actionsService.saveActions(siteId, documentId, actions);
+      actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
           loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
@@ -361,8 +410,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
       processor.handleRequest(map, this.context);
 
       // then
-      assertEquals(ActionStatus.FAILED,
-          actionsService.getActions(siteId, documentId).get(0).status());
+      List<Action> list = actionsService.getActions(siteId, documentId);
+      assertEquals(1, list.size());
+      assertEquals(ActionStatus.FAILED, list.get(0).status());
+      assertEquals("Unknown engine: unknown", list.get(0).message());
     }
   }
 
@@ -394,10 +445,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
       documentService.addTags(siteId, documentId, Arrays.asList(new DocumentTag(documentId,
           "untagged", "", new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
 
-      List<Action> actions =
-          Arrays.asList(new Action().type(ActionType.DOCUMENTTAGGING).parameters(Map.of("engine",
+      List<Action> actions = Arrays.asList(
+          new Action().type(ActionType.DOCUMENTTAGGING).userId("joe").parameters(Map.of("engine",
               "chatgpt", "tags", "Organization,location,person,subject,sentiment,document type")));
-      actionsService.saveActions(siteId, documentId, actions);
+      actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
           loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
@@ -465,10 +516,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
       documentService.addTags(siteId, documentId, Arrays.asList(new DocumentTag(documentId,
           "untagged", "", new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
 
-      List<Action> actions =
-          Arrays.asList(new Action().type(ActionType.DOCUMENTTAGGING).parameters(Map.of("engine",
+      List<Action> actions = Arrays.asList(
+          new Action().type(ActionType.DOCUMENTTAGGING).userId("joe").parameters(Map.of("engine",
               "chatgpt", "tags", "Organization,location,person,subject,sentiment,document type")));
-      actionsService.saveActions(siteId, documentId, actions);
+      actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
           loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
@@ -488,7 +539,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
       int i = 0;
       assertEquals("Organization", tags.getResults().get(i).getKey());
-      assertEquals("East Repair Inc.", tags.getResults().get(i++).getValue());
+      assertEquals("East Repair Inc", tags.getResults().get(i++).getValue());
 
       assertEquals("document type", tags.getResults().get(i).getKey());
       assertEquals("Receipt", tags.getResults().get(i++).getValue());
@@ -534,10 +585,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
       documentService.addTags(siteId, documentId, Arrays.asList(new DocumentTag(documentId,
           "untagged", "", new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
 
-      List<Action> actions =
-          Arrays.asList(new Action().type(ActionType.DOCUMENTTAGGING).parameters(Map.of("engine",
+      List<Action> actions = Arrays.asList(
+          new Action().type(ActionType.DOCUMENTTAGGING).userId("joe").parameters(Map.of("engine",
               "chatgpt", "tags", "organization,location,person,subject,sentiment,document type")));
-      actionsService.saveActions(siteId, documentId, actions);
+      actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
           loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
@@ -547,7 +598,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       processor.handleRequest(map, this.context);
 
       // then
-      final int expectedSize = 5;
+      final int expectedSize = 4;
       assertEquals(ActionStatus.COMPLETE,
           actionsService.getActions(siteId, documentId).get(0).status());
 
@@ -556,9 +607,6 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertEquals(expectedSize, tags.getResults().size());
 
       int i = 0;
-      assertEquals("document type", tags.getResults().get(i).getKey());
-      assertEquals("Memorandum", tags.getResults().get(i++).getValue());
-
       assertEquals("location", tags.getResults().get(i).getKey());
       assertEquals("YellowBelly Brewery Pub, St. Johns, NL", tags.getResults().get(i++).getValue());
 
@@ -603,9 +651,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
           "untagged", "", new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
 
       List<Action> actions = Arrays.asList(new Action().type(ActionType.DOCUMENTTAGGING)
-          .parameters(Map.of("engine", "chatgpt", "tags",
+          .userId("joe").parameters(Map.of("engine", "chatgpt", "tags",
               "document type,meeting date,chairperson,secretary,board members,resolutions")));
-      actionsService.saveActions(siteId, documentId, actions);
+      actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
           loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
@@ -638,10 +686,76 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertEquals("21st day of April, 2023", tags.getResults().get(i++).getValue());
 
       assertEquals("resolutions", tags.getResults().get(i).getKey());
-      assertEquals("individualAppointed: Thomas Bewick", tags.getResults().get(i++).getValue());
+      assertEquals("Thomas Bewick", tags.getResults().get(i++).getValue());
 
       assertEquals("secretary", tags.getResults().get(i).getKey());
       assertEquals("Aaron Thomas", tags.getResults().get(i++).getValue());
+    }
+  }
+
+  /**
+   * Handle documentTagging ChatApt Action with a gpt-3.5-turbo-instruct model response.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  public void testDocumentTaggingAction08() throws Exception {
+
+    initProcessor("opensearch", "chatgpt6");
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      configService.save(siteId, new DynamicObject(Map.of(CHATGPT_API_KEY, "asd")));
+
+      String documentId = UUID.randomUUID().toString();
+
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      item.setContentType("text/plain");
+
+      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
+      String content = "this is some data";
+      s3Service.putObject(BUCKET_NAME, s3Key, content.getBytes(StandardCharsets.UTF_8),
+          "text/plain");
+
+      documentService.saveDocument(siteId, item, null);
+      documentService.addTags(siteId, documentId, Arrays.asList(new DocumentTag(documentId,
+          "untagged", "", new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
+
+      List<Action> actions = Arrays.asList(
+          new Action().type(ActionType.DOCUMENTTAGGING).userId("joe").parameters(Map.of("engine",
+              "chatgpt", "tags", "Organization,location,person,subject,sentiment,document type")));
+      actionsService.saveNewActions(siteId, documentId, actions);
+
+      Map<String, Object> map =
+          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
+              documentId, "default", siteId != null ? siteId : "default");
+
+      // when
+      processor.handleRequest(map, this.context);
+
+      // then
+      final int expectedSize = 4;
+      assertEquals(ActionStatus.COMPLETE,
+          actionsService.getActions(siteId, documentId).get(0).status());
+
+      PaginationResults<DocumentTag> tags =
+          documentService.findDocumentTags(siteId, documentId, null, MAX_RESULTS);
+      assertEquals(expectedSize, tags.getResults().size());
+
+      int i = 0;
+      assertEquals("Organization", tags.getResults().get(i).getKey());
+      assertEquals("East Repair Inc", tags.getResults().get(i++).getValue());
+
+      assertEquals("location", tags.getResults().get(i).getKey());
+      assertEquals("New York, NY,Cambutdigo, MA",
+          tags.getResults().get(i++).getValues().stream().collect(Collectors.joining(",")));
+
+      assertEquals("person", tags.getResults().get(i).getKey());
+      assertEquals("Job Smith", tags.getResults().get(i++).getValue());
+
+      assertEquals("subject", tags.getResults().get(i).getKey());
+      assertEquals("Receipt,Frontend eaar brake cabies,New set of podal arms,Labor shrs",
+          tags.getResults().get(i++).getValues().stream().collect(Collectors.joining(",")));
     }
   }
 
@@ -654,7 +768,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
     // invalid
     Map<String, String> parameters = Map.of("parseTypes", "ADAD,IUJK");
-    assertEquals("[TEXT]",
+    assertEquals("[ADAD, IUJK]",
         processor.getOcrParseTypes(new Action().parameters(parameters)).toString());
 
     parameters = Map.of("parseTypes", "tEXT, forms, TABLES");
@@ -674,9 +788,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String documentId = UUID.randomUUID().toString();
-      List<Action> actions = Arrays.asList(new Action().type(ActionType.OCR)
+      List<Action> actions = Arrays.asList(new Action().type(ActionType.OCR).userId("joe")
           .parameters(Map.of("addPdfDetectedCharactersAsText", "true")));
-      actionsService.saveActions(siteId, documentId, actions);
+      actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
           loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
@@ -692,8 +806,11 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertEquals("[TEXT]", resultmap.get("parseTypes").toString());
       assertEquals("true", resultmap.get("addPdfDetectedCharactersAsText").toString());
 
-      assertEquals(ActionStatus.RUNNING,
-          actionsService.getActions(siteId, documentId).get(0).status());
+      Action action = actionsService.getActions(siteId, documentId).get(0);
+      assertEquals(ActionStatus.RUNNING, action.status());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertNull(action.completedDate());
     }
   }
 
@@ -714,8 +831,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
       item.setContentType("text/plain");
 
       documentService.saveDocument(siteId, item, null);
-      List<Action> actions = Arrays.asList(new Action().type(ActionType.FULLTEXT));
-      actionsService.saveActions(siteId, documentId, actions);
+      List<Action> actions = Arrays.asList(new Action().type(ActionType.FULLTEXT).userId("joe"));
+      actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
           loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
@@ -730,8 +847,11 @@ public class DocumentActionsProcessorTest implements DbKeys {
       Map<String, Object> resultmap = gson.fromJson(lastRequest.getBodyAsString(), Map.class);
       assertNotNull(resultmap.get("contentUrls").toString());
 
-      assertEquals(ActionStatus.COMPLETE,
-          actionsService.getActions(siteId, documentId).get(0).status());
+      Action action = actionsService.getActions(siteId, documentId).get(0);
+      assertEquals(ActionStatus.COMPLETE, action.status());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertNotNull(action.completedDate());
     }
   }
 
@@ -754,8 +874,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
       item.setContentType("application/pdf");
 
       documentService.saveDocument(siteId, item, null);
-      List<Action> actions = Arrays.asList(new Action().type(ActionType.FULLTEXT));
-      actionsService.saveActions(siteId, documentId, actions);
+      List<Action> actions = Arrays.asList(new Action().type(ActionType.FULLTEXT).userId("joe"));
+      actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
           loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
@@ -770,8 +890,11 @@ public class DocumentActionsProcessorTest implements DbKeys {
       Map<String, Object> resultmap = gson.fromJson(lastRequest.getBodyAsString(), Map.class);
       assertNotNull(resultmap.get("contentUrls").toString());
 
-      assertEquals(ActionStatus.COMPLETE,
-          actionsService.getActions(siteId, documentId).get(0).status());
+      Action action = actionsService.getActions(siteId, documentId).get(0);
+      assertEquals(ActionStatus.COMPLETE, action.status());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertNotNull(action.completedDate());
     }
   }
 
@@ -786,8 +909,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String documentId = UUID.randomUUID().toString();
-      List<Action> actions = Arrays.asList(new Action().type(ActionType.FULLTEXT));
-      actionsService.saveActions(siteId, documentId, actions);
+      List<Action> actions = Arrays.asList(new Action().type(ActionType.FULLTEXT).userId("joe"));
+      actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
           loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
@@ -799,7 +922,13 @@ public class DocumentActionsProcessorTest implements DbKeys {
       // then
       actions = actionsService.getActions(siteId, documentId);
       assertEquals(1, actions.size());
-      assertEquals(ActionStatus.FAILED, actions.get(0).status());
+      Action action = actions.get(0);
+      assertEquals(ActionStatus.FAILED, action.status());
+      assertEquals("Cannot invoke \"com.formkiq.aws.dynamodb.model."
+          + "DocumentItem.getDocumentId()\" because \"item\" is null", action.message());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertNotNull(action.completedDate());
     }
   }
 
@@ -821,9 +950,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
         item.setContentType("application/pdf");
         documentService.saveDocument(siteId, item, null);
 
-        List<Action> actions = Arrays.asList(
-            new Action().type(ActionType.WEBHOOK).parameters(Map.of("url", URL + "/callback")));
-        actionsService.saveActions(siteId, documentId, actions);
+        List<Action> actions = Arrays.asList(new Action().type(ActionType.WEBHOOK).userId("joe")
+            .parameters(Map.of("url", URL + "/callback")));
+        actionsService.saveNewActions(siteId, documentId, actions);
 
         Map<String, Object> map =
             loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
@@ -857,8 +986,11 @@ public class DocumentActionsProcessorTest implements DbKeys {
         assertNotNull(documents.get(0).get("lastModifiedDate"));
         assertNotNull(documents.get(0).get("url"));
 
-        assertEquals(ActionStatus.COMPLETE,
-            actionsService.getActions(siteId, documentId).get(0).status());
+        Action action = actionsService.getActions(siteId, documentId).get(0);
+        assertEquals(ActionStatus.COMPLETE, action.status());
+        assertNotNull(action.startDate());
+        assertNotNull(action.insertedDate());
+        assertNotNull(action.completedDate());
       }
     }
   }
@@ -885,10 +1017,11 @@ public class DocumentActionsProcessorTest implements DbKeys {
                 DocumentTagType.SYSTEMDEFINED));
         documentService.saveDocument(siteId, item, tags);
 
-        List<Action> actions =
-            Arrays.asList(new Action().type(ActionType.ANTIVIRUS).status(ActionStatus.COMPLETE),
-                new Action().type(ActionType.WEBHOOK).parameters(Map.of("url", URL + "/callback")));
-        actionsService.saveActions(siteId, documentId, actions);
+        List<Action> actions = Arrays.asList(
+            new Action().type(ActionType.ANTIVIRUS).userId("joe").status(ActionStatus.COMPLETE),
+            new Action().type(ActionType.WEBHOOK).userId("joe")
+                .parameters(Map.of("url", URL + "/callback")));
+        actionsService.saveNewActions(siteId, documentId, actions);
 
         Map<String, Object> map =
             loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
@@ -920,8 +1053,11 @@ public class DocumentActionsProcessorTest implements DbKeys {
         assertEquals("CLEAN", documents.get(0).get("status"));
         assertEquals("2022-01-01", documents.get(0).get("timestamp"));
 
-        assertEquals(ActionStatus.COMPLETE,
-            actionsService.getActions(siteId, documentId).get(0).status());
+        Action action = actionsService.getActions(siteId, documentId).get(1);
+        assertEquals(ActionStatus.COMPLETE, action.status());
+        assertNotNull(action.startDate());
+        assertNotNull(action.insertedDate());
+        assertNotNull(action.completedDate());
       }
     }
   }
@@ -951,8 +1087,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
           "text/plain");
 
       documentService.saveDocument(siteId, item, null);
-      List<Action> actions = Arrays.asList(new Action().type(ActionType.FULLTEXT));
-      actionsService.saveActions(siteId, documentId, actions);
+      List<Action> actions = Arrays.asList(new Action().type(ActionType.FULLTEXT).userId("joe"));
+      actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
           loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
@@ -995,10 +1131,11 @@ public class DocumentActionsProcessorTest implements DbKeys {
         documentService.saveDocument(siteId, item, null);
 
         List<Action> actions = Arrays.asList(
-            new Action().status(ActionStatus.RUNNING).type(ActionType.WEBHOOK)
+            new Action().status(ActionStatus.RUNNING).type(ActionType.WEBHOOK).userId("joe")
                 .parameters(Map.of("url", URL + "/callback")),
-            new Action().type(ActionType.WEBHOOK).parameters(Map.of("url", URL + "/callback2")));
-        actionsService.saveActions(siteId, documentId, actions);
+            new Action().type(ActionType.WEBHOOK).userId("joe")
+                .parameters(Map.of("url", URL + "/callback2")));
+        actionsService.saveNewActions(siteId, documentId, actions);
 
         Map<String, Object> map =
             loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
@@ -1020,6 +1157,56 @@ public class DocumentActionsProcessorTest implements DbKeys {
   }
 
   /**
+   * Handle FAILED and PENDING action.
+   * 
+   * @throws IOException IOException
+   * @throws URISyntaxException URISyntaxException
+   */
+  @Test
+  public void testHandle09() throws IOException, URISyntaxException {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String documentId = UUID.randomUUID().toString();
+
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      item.setContentType("application/pdf");
+      documentService.saveDocument(siteId, item, null);
+
+      List<Action> actions = Arrays.asList(
+          new Action().status(ActionStatus.FAILED).type(ActionType.WEBHOOK).userId("joe")
+              .parameters(Map.of("url", URL + "/callback")),
+          new Action().type(ActionType.WEBHOOK).userId("joe")
+              .parameters(Map.of("url", URL + "/callback2")));
+      actionsService.saveNewActions(siteId, documentId, actions);
+
+      Map<String, Object> map =
+          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
+              documentId, "default", siteId != null ? siteId : "default");
+
+      // when
+      processor.handleRequest(map, this.context);
+
+      // then
+      actions = actionsService.getActions(siteId, documentId);
+
+      assertEquals(2, actions.size());
+      Action action = actions.get(0);
+      assertEquals(ActionStatus.FAILED, action.status());
+      assertNull(action.startDate());
+      assertNotNull(action.insertedDate());
+
+      action = actions.get(1);
+      assertEquals(ActionStatus.COMPLETE, action.status());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertNotNull(action.completedDate());
+
+      HttpRequest lastRequest = callback.getLastRequest();
+      assertNotNull(lastRequest);
+    }
+  }
+
+  /**
    * Handle Fulltext that needs OCR Action.
    * 
    * @throws IOException IOException
@@ -1035,8 +1222,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
       item.setContentType("application/pdf");
       documentService.saveDocument(siteId, item, null);
 
-      List<Action> actions = Arrays.asList(new Action().type(ActionType.FULLTEXT));
-      actionsService.saveActions(siteId, documentId, actions);
+      List<Action> actions = Arrays.asList(new Action().type(ActionType.FULLTEXT).userId("joe"));
+      actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
           loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
@@ -1073,10 +1260,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
       item.setContentType("application/pdf");
       documentService.saveDocument(siteId, item, null);
 
-      List<Action> actions =
-          Arrays.asList(new Action().type(ActionType.OCR).status(ActionStatus.COMPLETE),
-              new Action().type(ActionType.FULLTEXT));
-      actionsService.saveActions(siteId, documentId, actions);
+      List<Action> actions = Arrays.asList(
+          new Action().type(ActionType.OCR).status(ActionStatus.COMPLETE).userId("joe"),
+          new Action().type(ActionType.FULLTEXT).userId("joe"));
+      actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
           loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
@@ -1091,8 +1278,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertEquals(ActionType.OCR, list.get(0).type());
       assertNull(list.get(0).parameters());
       assertEquals(ActionStatus.COMPLETE, list.get(0).status());
+      assertNull(list.get(0).message());
       assertEquals(ActionType.FULLTEXT, list.get(1).type());
       assertEquals(ActionStatus.FAILED, list.get(1).status());
+      assertEquals("no OCR document found", list.get(1).message());
     }
   }
 }

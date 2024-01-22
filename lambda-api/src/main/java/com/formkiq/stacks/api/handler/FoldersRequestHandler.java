@@ -94,9 +94,10 @@ public class FoldersRequestHandler implements ApiGatewayRequestHandler, ApiGatew
     DocumentSearchService documentSearchService =
         awsservice.getExtension(DocumentSearchService.class);
 
-    String indexKey = event.getQueryStringParameters().containsKey("indexKey")
-        ? event.getQueryStringParameter("indexKey")
-        : "";
+    String indexKey = event.getQueryStringParameter("indexKey");
+    if (indexKey == null) {
+      indexKey = "";
+    }
 
     PaginationResults<DynamicDocumentItem> results =
         documentSearchService.findInFolder(siteId, indexKey, ptoken, limit);

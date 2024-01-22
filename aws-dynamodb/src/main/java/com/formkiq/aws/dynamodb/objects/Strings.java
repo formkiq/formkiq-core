@@ -23,8 +23,15 @@
  */
 package com.formkiq.aws.dynamodb.objects;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.security.SecureRandom;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * 
@@ -32,6 +39,51 @@ import java.util.UUID;
  *
  */
 public class Strings {
+  private static String findMatch(final Collection<String> resourceUrls,
+      final List<String[]> resourceSplits, final String path) {
+
+    Optional<String> o = resourceUrls.stream().filter(r -> r != null && r.equals(path)).findAny();
+
+    if (o.isEmpty()) {
+
+      String[] s = path.split("/");
+      List<String[]> matches =
+          resourceSplits.stream().filter(r -> r.length == s.length).filter(r -> {
+
+            boolean match = false;
+
+            for (int i = 0; i < r.length; i++) {
+              match = r[i].equals(s[i]) || (r[i].startsWith("{") && r[i].endsWith("}"));
+              if (!match) {
+                break;
+              }
+            }
+
+            return match;
+          }).collect(Collectors.toList());
+
+      o = matches.size() == 1
+          ? Optional.of(Arrays.asList(matches.get(0)).stream().collect(Collectors.joining("/")))
+          : Optional.empty();
+    }
+
+    return o.orElse(null);
+  }
+
+  /**
+   * Find Best Match of {@link String}.
+   * 
+   * @param strs {@link Collection} {@link String}
+   * @param s {@link String}
+   * @return {@link String}
+   */
+  public static String findUrlMatch(final Collection<String> strs, final String s) {
+    List<String[]> resourceSplits =
+        strs.stream().filter(r -> r != null).map(r -> r.split("/")).collect(Collectors.toList());
+
+    return findMatch(strs, resourceSplits, s);
+  }
+
   /**
    * Generate Random String.
    * 
@@ -69,8 +121,24 @@ public class Strings {
    * @return {@link String}
    */
   public static String getFilename(final String path) {
-    int pos = path.lastIndexOf("/");
-    String name = pos > -1 ? path.substring(pos + 1) : path;
+
+    String name = getUri(path);
+    int pos = name.lastIndexOf("/");
+    name = pos > -1 ? name.substring(pos + 1) : name;
+    return name;
+  }
+
+  private static String getUri(final String path) {
+
+    String name = null;
+
+    try {
+      URI u = new URI(path);
+      name = u.getPath();
+    } catch (URISyntaxException e) {
+      name = path;
+    }
+
     return name;
   }
 

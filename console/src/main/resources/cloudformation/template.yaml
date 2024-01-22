@@ -17,7 +17,7 @@ Parameters:
   ConsoleVersion:
     Type: String
     Description: Version of FormKiQ console to deploy
-    Default: v3.2.3
+    Default: v3.3.1
     
   FormKiQType:
     Description: The type of FormKiQ installation
@@ -130,6 +130,8 @@ Resources:
 
   ConsoleDomainNameParameter:
     Type: AWS::SSM::Parameter
+    DependsOn:
+    - Console
     Properties:
       Description: "Console S3 Bucket Domain Name"
       Name: 
@@ -171,6 +173,8 @@ Resources:
     Condition: IsNotGovCloud
     Properties:
       DistributionConfig:
+        Comment:
+          Fn::Sub: "FormKiQ Console ${ConsoleVersion}"
         Origins:
         - DomainName: 
             Fn::GetAtt:
@@ -280,6 +284,9 @@ Resources:
   ConsoleBucketPolicy:
     Condition: IsNotGovCloud
     Type: "AWS::S3::BucketPolicy"
+    DependsOn:
+    - CloudFrontOriginAccessIdentity
+    - Console
     Properties: 
       Bucket: 
         Ref: Console

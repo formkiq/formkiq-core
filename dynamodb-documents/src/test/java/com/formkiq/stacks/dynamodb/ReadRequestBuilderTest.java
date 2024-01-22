@@ -32,6 +32,7 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import com.formkiq.aws.dynamodb.BatchGetConfig;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
@@ -75,6 +76,7 @@ public class ReadRequestBuilderTest implements DbKeys {
   void testDocuments01() {
     // given
     final int count = 200;
+    BatchGetConfig config = new BatchGetConfig();
     ReadRequestBuilder builder = new ReadRequestBuilder();
     Collection<Map<String, AttributeValue>> keys = new ArrayList<>();
 
@@ -89,7 +91,7 @@ public class ReadRequestBuilderTest implements DbKeys {
     builder.append(DOCUMENTS_TABLE, keys);
 
     // when
-    Map<String, List<Map<String, AttributeValue>>> items = builder.batchReadItems(dbClient);
+    Map<String, List<Map<String, AttributeValue>>> items = builder.batchReadItems(dbClient, config);
 
     // then
     assertEquals(count, items.get(DOCUMENTS_TABLE).size());
@@ -99,6 +101,7 @@ public class ReadRequestBuilderTest implements DbKeys {
   void testDocuments02() {
     // given
     final int count = 50;
+    BatchGetConfig config = new BatchGetConfig();
     ReadRequestBuilder builder = new ReadRequestBuilder();
     Collection<Map<String, AttributeValue>> keys = new ArrayList<>();
 
@@ -113,7 +116,7 @@ public class ReadRequestBuilderTest implements DbKeys {
     builder.append(DOCUMENTS_TABLE, keys);
 
     // when
-    Map<String, List<Map<String, AttributeValue>>> items = builder.batchReadItems(dbClient);
+    Map<String, List<Map<String, AttributeValue>>> items = builder.batchReadItems(dbClient, config);
 
     // then
     assertEquals(count, items.get(DOCUMENTS_TABLE).size());
@@ -140,8 +143,10 @@ public class ReadRequestBuilderTest implements DbKeys {
 
     builder.append(DOCUMENTS_TABLE, keys);
 
+    BatchGetConfig config = new BatchGetConfig();
+
     // when
-    Map<String, List<Map<String, AttributeValue>>> items = builder.batchReadItems(dbClient);
+    Map<String, List<Map<String, AttributeValue>>> items = builder.batchReadItems(dbClient, config);
 
     // then
     assertEquals(1, items.get(DOCUMENTS_TABLE).size());

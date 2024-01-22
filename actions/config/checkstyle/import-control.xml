@@ -6,15 +6,19 @@
 <import-control pkg="com.formkiq.module">
 	
 	<subpackage name="actions">
+		
 		<allow pkg="com.formkiq.aws.dynamodb" />
+		<allow pkg="com.formkiq.module.actions" />
+		<allow pkg="com.formkiq.graalvm.annotations" />
+		
+		<allow pkg="java.io" />
+		<allow pkg="java.text" />
 		<allow pkg="java.time" />
 		<allow pkg="java.util" />
-	
-		<subpackage name="executors">
-			<allow pkg="com.formkiq.module.actions" />
-		</subpackage>
+		<allow pkg="software.amazon.awssdk.services.dynamodb.model" />
 		
 		<subpackage name="services">
+			<allow pkg="java.text" />
 			<allow pkg="com.formkiq.aws.sns" />
 			<allow pkg="com.formkiq.module.actions" />
 			<allow pkg="com.formkiq.module.events" />
