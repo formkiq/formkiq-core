@@ -83,7 +83,7 @@ public class DocumentTagsRequestHandler
 
     PaginationMapToken ptoken = pagination != null ? pagination.getStartkey() : null;
 
-    String siteId = authorization.siteId();
+    String siteId = authorization.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
     verifyDocument(awsservice, event, siteId, documentId);
 
@@ -153,7 +153,7 @@ public class DocumentTagsRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    final String siteId = authorization.siteId();
+    final String siteId = authorization.getSiteId();
     final String documentId = event.getPathParameters().get("documentId");
 
     DocumentTags tags = fromBodyToObject(event, DocumentTags.class);
@@ -176,7 +176,7 @@ public class DocumentTagsRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    final String siteId = authorization.siteId();
+    final String siteId = authorization.getSiteId();
     final String documentId = event.getPathParameters().get("documentId");
 
     DocumentTag tag = fromBodyToObject(event, DocumentTag.class);
@@ -228,7 +228,7 @@ public class DocumentTagsRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    final String siteId = authorization.siteId();
+    final String siteId = authorization.getSiteId();
     final String documentId = event.getPathParameters().get("documentId");
 
     DocumentTags tags = fromBodyToObject(event, DocumentTags.class);
@@ -287,7 +287,7 @@ public class DocumentTagsRequestHandler
   private String updateTagsMetadata(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final DocumentTags tags) {
 
-    String userId = authorization.username();
+    String userId = authorization.getUsername();
 
     tags.getTags().forEach(t -> {
       t.setType(DocumentTagType.USERDEFINED);

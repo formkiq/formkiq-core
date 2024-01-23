@@ -48,6 +48,16 @@ public interface DynamodbRecord<T> {
   }
 
   /**
+   * Convert {@link String} to {@link AttributeValue}.
+   * 
+   * @param str {@link String}
+   * @return {@link AttributeValue}
+   */
+  default AttributeValue fromS(final String str) {
+    return AttributeValue.fromS(str);
+  }
+
+  /**
    * Get {@link AttributeValue} {@link Map}.
    * 
    * @param siteId {@link String}
@@ -63,6 +73,18 @@ public interface DynamodbRecord<T> {
    * @return {@link Object}
    */
   T getFromAttributes(String siteId, Map<String, AttributeValue> attrs);
+
+  /**
+   * Convert {@link Map} {@link AttributeValue}.
+   * 
+   * @param attrs {@link Map} {@link AttributeValue}
+   * @param key {@link Double}
+   * @return {@link String}
+   */
+  default Double nn(final Map<String, AttributeValue> attrs, final String key) {
+    AttributeValue av = attrs.get(key);
+    return av != null ? Double.valueOf(av.n()) : null;
+  }
 
   /**
    * Get DynamoDb PK.

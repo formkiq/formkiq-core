@@ -65,7 +65,7 @@ public class DocumentIdContentRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    String siteId = authorization.siteId();
+    String siteId = authorization.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
     String versionKey = getParameter(event, "versionKey");
 
@@ -115,7 +115,7 @@ public class DocumentIdContentRequestHandler
 
     if (awsservice.containsExtension(UserActivityPlugin.class)) {
       UserActivityPlugin plugin = awsservice.getExtension(UserActivityPlugin.class);
-      plugin.addViewActivity(siteId, documentId, versionKey, authorization.username());
+      plugin.addViewActivity(siteId, documentId, versionKey, authorization.getUsername());
     }
 
     return new ApiRequestHandlerResponse(SC_OK, response);

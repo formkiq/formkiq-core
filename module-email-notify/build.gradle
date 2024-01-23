@@ -39,7 +39,6 @@ dependencies {
     testImplementation project(':aws-sns')
 	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.10.0'
     testImplementation group: 'com.google.code.gson', name: 'gson', version: '2.10.1'
-    testImplementation group: 'com.formkiq.stacks', name: 'client', version:'1.11.0'
 }
 
 test {

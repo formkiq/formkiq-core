@@ -75,7 +75,7 @@ public class ConfigurationApiKeysRequestHandler
   }
 
   private void checkPermissions(final ApiAuthorization authorization) throws UnauthorizedException {
-    if (!authorization.permissions().contains(ApiPermission.ADMIN)) {
+    if (!authorization.getPermissions().contains(ApiPermission.ADMIN)) {
       throw new UnauthorizedException("user is unauthorized");
     }
   }
@@ -93,7 +93,7 @@ public class ConfigurationApiKeysRequestHandler
     final int limit = pagination != null ? pagination.getLimit() : getLimit(logger, event);
     final PaginationMapToken token = pagination != null ? pagination.getStartkey() : null;
 
-    String siteId = authorization.siteId();
+    String siteId = authorization.getSiteId();
     PaginationResults<ApiKey> list = apiKeysService.list(siteId, token, limit);
 
     Map<String, Object> map = Map.of("apiKeys", list.getResults());
@@ -110,7 +110,7 @@ public class ConfigurationApiKeysRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    String siteId = authorization.siteId();
+    String siteId = authorization.getSiteId();
 
     ApiKeysService apiKeysService = awsservice.getExtension(ApiKeysService.class);
     DynamicObject body = fromBodyToDynamicObject(event);
@@ -127,7 +127,7 @@ public class ConfigurationApiKeysRequestHandler
           Arrays.asList(ApiKeyPermission.READ, ApiKeyPermission.WRITE, ApiKeyPermission.DELETE);
     }
 
-    String userId = authorization.username();
+    String userId = authorization.getUsername();
     String apiKey = apiKeysService.createApiKey(siteId, name, permissions, userId);
 
     return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(Map.of("apiKey", apiKey)));

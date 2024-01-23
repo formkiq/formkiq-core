@@ -73,7 +73,7 @@ public class DocumentsActionsRetryRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    String siteId = authorization.siteId();
+    String siteId = authorization.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
 
     DocumentItem item = getDocument(awsservice, siteId, documentId);
@@ -86,7 +86,7 @@ public class DocumentsActionsRetryRequestHandler
         .map(a -> a.status(ActionStatus.FAILED_RETRY)).collect(Collectors.toList());
 
     int idx = actions.size();
-    String userId = authorization.username();
+    String userId = authorization.getUsername();
 
     List<Action> list = new ArrayList<>(failed);
 

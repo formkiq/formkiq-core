@@ -95,7 +95,7 @@ public class DocumentsOcrRequestHandler
       final AwsServiceCache awsservice) throws Exception {
 
     ApiMapResponse resp = new ApiMapResponse();
-    String siteId = authorization.siteId();
+    String siteId = authorization.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
 
     verifyDocument(awsservice, event, siteId, documentId);
@@ -112,7 +112,7 @@ public class DocumentsOcrRequestHandler
       final AwsServiceCache awsservice) throws Exception {
 
     ApiResponseStatus status = SC_OK;
-    String siteId = authorization.siteId();
+    String siteId = authorization.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
 
     verifyDocument(awsservice, event, siteId, documentId);
@@ -245,13 +245,13 @@ public class DocumentsOcrRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    String siteId = authorization.siteId();
+    String siteId = authorization.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
 
     verifyDocument(awsservice, event, siteId, documentId);
 
     OcrRequest request = fromBodyToObject(event, OcrRequest.class);
-    String userId = authorization.username();
+    String userId = authorization.getUsername();
 
     DocumentOcrService ocrService = awsservice.getExtension(DocumentOcrService.class);
     ocrService.convert(logger, awsservice, request, siteId, documentId, userId);
@@ -265,12 +265,12 @@ public class DocumentsOcrRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    String siteId = authorization.siteId();
+    String siteId = authorization.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
 
     verifyDocument(awsservice, event, siteId, documentId);
 
-    String userId = authorization.username();
+    String userId = authorization.getUsername();
 
     Map<String, Object> map = fromBodyToMap(event);
     String contentType = (String) map.get("contentType");

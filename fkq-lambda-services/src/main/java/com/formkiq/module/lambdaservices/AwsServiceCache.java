@@ -23,7 +23,9 @@
  */
 package com.formkiq.module.lambdaservices;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import software.amazon.awssdk.regions.Region;
 
@@ -40,7 +42,7 @@ public class AwsServiceCache {
   /** Environment {@link Map}. */
   private Map<String, String> environment;
   /** {@link AwsServiceExtension}. */
-  private final Map<Class<?>, AwsServiceExtension<?>> extensions = new HashMap<>();
+  private final Map<Class<?>, List<AwsServiceExtension<?>>> extensions = new HashMap<>();
   /** FormKiQ Type. */
   private String formKiQType;
   /** {@link Region}. */
@@ -159,13 +161,14 @@ public class AwsServiceCache {
    * @param clazz {@link Class}
    * @return Class instance
    */
-  @SuppressWarnings("unchecked")
   public <T> T getExtension(final Class<T> clazz) {
-    if (this.extensions.containsKey(clazz)) {
-      return (T) this.extensions.get(clazz).loadService(this);
+    T result = getExtensionOrNull(clazz);
+
+    if (result == null) {
+      throw new RuntimeException("class " + clazz.getName() + " is not registered");
     }
 
-    throw new RuntimeException("class " + clazz.getName() + " is not registered");
+    return result;
   }
 
   /**
@@ -181,10 +184,38 @@ public class AwsServiceCache {
     T result = null;
 
     if (this.extensions.containsKey(clazz)) {
-      result = (T) this.extensions.get(clazz).loadService(this);
+      List<AwsServiceExtension<?>> list = this.extensions.get(clazz);
+      if (list.size() == 1) {
+        result = (T) list.get(0).loadService(this);
+      } else {
+        throw new RuntimeException("found " + list.size() + " services");
+      }
     }
 
     return result;
+  }
+
+  /**
+   * Load {@link AwsServiceExtension}.
+   * 
+   * @param <T> Type of Class.
+   * @param clazz {@link Class}
+   * @return Class instance
+   */
+  @SuppressWarnings("unchecked")
+  public <T> List<T> getExtensions(final Class<T> clazz) {
+
+    List<T> results = new ArrayList<>();
+
+    if (this.extensions.containsKey(clazz)) {
+      List<AwsServiceExtension<?>> list = this.extensions.get(clazz);
+      list.forEach(l -> {
+        T t = (T) l.loadService(this);
+        results.add(t);
+      });
+    }
+
+    return results;
   }
 
   /**
@@ -225,6 +256,39 @@ public class AwsServiceCache {
    * @param extension {@link AwsServiceExtension}
    */
   public <T> void register(final Class<T> clazz, final AwsServiceExtension<T> extension) {
-    this.extensions.put(clazz, extension);
+    register(clazz, extension, true);
+  }
+
+  /**
+   * Registers an {@link AwsServiceExtension}.
+   * 
+   * @param clazz {@link Class}
+   * @param <T> Type of Class
+   * @param extension {@link AwsServiceExtension}
+   * @param overwrite boolean
+   */
+  private <T> void register(final Class<T> clazz, final AwsServiceExtension<T> extension,
+      final boolean overwrite) {
+
+    List<AwsServiceExtension<?>> list = null;
+    if (this.extensions.containsKey(clazz) && !overwrite) {
+      list = this.extensions.get(clazz);
+    } else {
+      list = new ArrayList<>();
+    }
+
+    list.add(extension);
+    this.extensions.put(clazz, list);
+  }
+
+  /**
+   * Registers an {@link AwsServiceExtension}.
+   * 
+   * @param clazz {@link Class}
+   * @param <T> Type of Class
+   * @param extension {@link AwsServiceExtension}
+   */
+  public <T> void registerAppend(final Class<T> clazz, final AwsServiceExtension<T> extension) {
+    register(clazz, extension, false);
   }
 }

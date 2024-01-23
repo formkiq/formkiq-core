@@ -156,7 +156,7 @@ public class DocumentsIdUploadRequestHandler
 
     Date date = new Date();
     String documentId = UUID.randomUUID().toString();
-    String username = authorization.username();
+    String username = authorization.getUsername();
     DocumentItem item = new DocumentItemDynamoDb(documentId, date, username);
 
     List<DocumentTag> tags = new ArrayList<>();
@@ -164,7 +164,7 @@ public class DocumentsIdUploadRequestHandler
     Map<String, String> map = event.getPathParameters();
     Map<String, String> query = event.getQueryStringParameters();
 
-    String siteId = authorization.siteId();
+    String siteId = authorization.getSiteId();
     DocumentService service = awsservice.getExtension(DocumentService.class);
 
     if (map != null && map.containsKey("documentId")) {
@@ -231,7 +231,7 @@ public class DocumentsIdUploadRequestHandler
   @Override
   public Optional<Boolean> isAuthorized(final AwsServiceCache awsservice, final String method,
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
-    boolean access = authorization.permissions().contains(ApiPermission.WRITE);
+    boolean access = authorization.getPermissions().contains(ApiPermission.WRITE);
     return Optional.of(Boolean.valueOf(access));
   }
 }

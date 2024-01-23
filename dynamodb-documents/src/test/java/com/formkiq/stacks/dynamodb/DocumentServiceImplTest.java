@@ -1183,7 +1183,6 @@ public class DocumentServiceImplTest implements DbKeys {
    * 
    * @deprecated method needs to be updated
    */
-  @SuppressWarnings("deprecation")
   @Test
   @Deprecated
   public void testFindPresets01() {

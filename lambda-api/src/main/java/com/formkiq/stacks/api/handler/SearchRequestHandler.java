@@ -113,7 +113,7 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
   @Override
   public Optional<Boolean> isAuthorized(final AwsServiceCache awsservice, final String method,
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
-    boolean access = authorization.permissions().contains(ApiPermission.READ);
+    boolean access = authorization.getPermissions().contains(ApiPermission.READ);
     return Optional.of(Boolean.valueOf(access));
   }
 
@@ -190,7 +190,7 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
         }
       }
 
-      String siteId = authorization.siteId();
+      String siteId = authorization.getSiteId();
       DocumentSearchService documentSearchService =
           awsservice.getExtension(DocumentSearchService.class);
 

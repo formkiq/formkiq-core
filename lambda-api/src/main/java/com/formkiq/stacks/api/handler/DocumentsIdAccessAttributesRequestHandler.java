@@ -21,21 +21,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.services.lambda;
+package com.formkiq.stacks.api.handler;
 
-/**
- * 
- * Interceptor to allow injecting extra actions into the {@link ApiAuthorization}.
- *
- */
-public interface ApiAuthorizationInterceptor {
+import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
+
+/** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/accessAttributes". */
+public class DocumentsIdAccessAttributesRequestHandler
+    extends AbstractPaymentRequiredRequestHandler {
+
+  /** {@link DocumentsIdAccessAttributesRequestHandler} URL. */
+  public static final String URL = "/documents/{documentId}/accessAttributes";
 
   /**
-   * Update {@link ApiAuthorization} object.
-   * 
-   * @param event {@link ApiGatewayRequestEvent}
-   * @param authorization {@link ApiAuthorization}
-   * @throws Exception Exception
+   * constructor.
+   *
    */
-  void update(ApiGatewayRequestEvent event, ApiAuthorization authorization) throws Exception;
+  public DocumentsIdAccessAttributesRequestHandler() {}
+
+  @Override
+  public String getRequestUrl() {
+    return URL;
+  }
 }

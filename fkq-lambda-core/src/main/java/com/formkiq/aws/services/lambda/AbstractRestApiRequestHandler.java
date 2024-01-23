@@ -44,6 +44,7 @@ import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -198,18 +199,16 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
   /**
    * Execute Before Request Interceptor.
    * 
-   * @param interceptor {@link ApiRequestHandlerInterceptor}
+   * @param requestInterceptors {@link List} {@link ApiRequestHandlerInterceptor}
    * @param event {@link ApiGatewayRequestEvent}
-   * @param awsServices {@link AwsServiceCache}
    * @param authorization {@link ApiAuthorization}
    * @throws Exception Exception
    */
-  private void executeRequestInterceptor(final ApiRequestHandlerInterceptor interceptor,
-      final ApiGatewayRequestEvent event, final AwsServiceCache awsServices,
-      final ApiAuthorization authorization) throws Exception {
+  private void executeRequestInterceptors(
+      final List<ApiRequestHandlerInterceptor> requestInterceptors,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) throws Exception {
 
-    if (interceptor != null) {
-      interceptor.awsServiceCache(awsServices);
+    for (ApiRequestHandlerInterceptor interceptor : requestInterceptors) {
       interceptor.beforeProcessRequest(event, authorization);
     }
   }
@@ -217,20 +216,18 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
   /**
    * Execute {@link ApiRequestHandlerResponseInterceptor}.
    * 
-   * @param interceptor {@link ApiRequestHandlerInterceptor}
+   * @param requestInterceptors {@link ApiRequestHandlerInterceptor}
    * @param event {@link ApiGatewayRequestEvent}
-   * @param awsServices {@link AwsServiceCache}
    * @param authorization {@link ApiAuthorization}
    * @param object {@link ApiRequestHandlerResponse}
    * @throws Exception Exception
    */
-  private void executeResponseInterceptor(final ApiRequestHandlerInterceptor interceptor,
-      final ApiGatewayRequestEvent event, final AwsServiceCache awsServices,
-      final ApiAuthorization authorization, final ApiRequestHandlerResponse object)
-      throws Exception {
+  private void executeResponseInterceptors(
+      final List<ApiRequestHandlerInterceptor> requestInterceptors,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
+      final ApiRequestHandlerResponse object) throws Exception {
 
-    if (interceptor != null) {
-      interceptor.awsServiceCache(awsServices);
+    for (ApiRequestHandlerInterceptor interceptor : requestInterceptors) {
       interceptor.afterProcessRequest(event, authorization, object);
     }
   }
@@ -276,9 +273,9 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
     return event;
   }
 
-  private ApiRequestHandlerInterceptor getApiRequestHandlerInterceptor(
+  private List<ApiRequestHandlerInterceptor> getApiRequestHandlerInterceptors(
       final AwsServiceCache awsServices) {
-    return awsServices.getExtensionOrNull(ApiRequestHandlerInterceptor.class);
+    return awsServices.getExtensions(ApiRequestHandlerInterceptor.class);
   }
 
   /**
@@ -388,7 +385,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
       final ApiAuthorization authorization, final ApiGatewayRequestHandler handler)
       throws Exception {
 
-    Collection<ApiPermission> permissions = authorization.permissions();
+    Collection<ApiPermission> permissions = authorization.getPermissions();
 
     Optional<Boolean> hasAccess =
         handler.isAuthorized(getAwsServices(), method, event, authorization);
@@ -480,7 +477,8 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
   private Optional<Boolean> isHandlerSiteIdRequired(final ApiAuthorization authorization,
       final ApiGatewayRequestHandler handler, final Optional<Boolean> hasAccess) {
     Optional<Boolean> result = hasAccess;
-    if (hasAccess.isEmpty() && authorization.siteIds().size() > 1 && !handler.isSiteIdRequired()) {
+    if (hasAccess.isEmpty() && authorization.getSiteIds().size() > 1
+        && !handler.isSiteIdRequired()) {
       result = Optional.of(Boolean.TRUE);
     }
     return result;
@@ -504,7 +502,8 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
           requestContext.getRequestId(), identity.get("sourceIp"), requestContext.getRequestTime(),
           event.getHttpMethod(), event.getHttpMethod() + " " + event.getResource(),
           "{" + toStringFromMap(event.getPathParameters()) + "}", requestContext.getProtocol(),
-          authorization.username(), "{" + toStringFromMap(event.getQueryStringParameters()) + "}");
+          authorization.getUsername(),
+          "{" + toStringFromMap(event.getQueryStringParameters()) + "}");
 
       logger.log(s);
     } else {
@@ -541,20 +540,21 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
     try {
 
-      ApiAuthorizationInterceptor interceptor = setupApiAuthorizationInterceptor(awsServices);
+      List<ApiAuthorizationInterceptor> interceptors =
+          setupApiAuthorizationInterceptor(awsServices);
 
       ApiAuthorization authorization =
-          new ApiAuthorizationBuilder().interceptors(interceptor).build(event);
+          new ApiAuthorizationBuilder().interceptors(interceptors).build(event);
       log(logger, event, authorization);
 
-      ApiRequestHandlerInterceptor requestInterceptor =
-          getApiRequestHandlerInterceptor(awsServices);
+      List<ApiRequestHandlerInterceptor> requestInterceptors =
+          getApiRequestHandlerInterceptors(awsServices);
 
-      executeRequestInterceptor(requestInterceptor, event, awsServices, authorization);
+      executeRequestInterceptors(requestInterceptors, event, authorization);
 
       ApiRequestHandlerResponse object = processRequest(logger, getUrlMap(), event, authorization);
 
-      executeResponseInterceptor(requestInterceptor, event, awsServices, authorization, object);
+      executeResponseInterceptors(requestInterceptors, event, authorization, object);
 
       sendWebNotify(authorization, event, object);
 
@@ -614,10 +614,10 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
     ApiGatewayRequestHandler handler = findRequestHandler(urlMap, method, resource);
 
     if (!isAuthorized(getAwsServices(), event, authorization, method, handler)) {
-      String s = String.format("fkq access denied (%s)", authorization.accessSummary());
-      if (authorization.siteId() == null && authorization.siteIds().size() > 1) {
+      String s = String.format("fkq access denied (%s)", authorization.getAccessSummary());
+      if (authorization.getSiteId() == null && authorization.getSiteIds().size() > 1) {
         s = String.format("'siteId' parameter required - multiple siteIds found (%s)",
-            authorization.accessSummary());
+            authorization.getAccessSummary());
       }
 
       throw new ForbiddenException(s);
@@ -647,7 +647,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
         case SC_OK:
         case SC_CREATED:
         case SC_ACCEPTED:
-          String siteId = authorization.siteId();
+          String siteId = authorization.getSiteId();
           String body = getBodyAsString(event);
           String documentId = event.getPathParameters().get("documentId");
 
@@ -670,15 +670,9 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
     }
   }
 
-  private ApiAuthorizationInterceptor setupApiAuthorizationInterceptor(
+  private List<ApiAuthorizationInterceptor> setupApiAuthorizationInterceptor(
       final AwsServiceCache awsServices) {
-    ApiAuthorizationInterceptor interceptor =
-        awsServices.getExtensionOrNull(ApiAuthorizationInterceptor.class);
-
-    if (interceptor != null) {
-      interceptor.awsServiceCache(awsServices);
-    }
-    return interceptor;
+    return awsServices.getExtensions(ApiAuthorizationInterceptor.class);
   }
 
   private String toStringFromMap(final Map<String, String> map) {

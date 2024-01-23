@@ -247,11 +247,11 @@ public class DocumentsUploadRequestHandler
     DynamicDocumentItem item = new DynamicDocumentItem(new HashMap<>());
     item.setInsertedDate(new Date());
     item.setDocumentId(UUID.randomUUID().toString());
-    item.setUserId(authorization.username());
+    item.setUserId(authorization.getUsername());
 
     Map<String, String> query = event.getQueryStringParameters();
 
-    String siteId = authorization.siteId();
+    String siteId = authorization.getSiteId();
 
     String path = query != null && query.containsKey("path") ? query.get("path") : null;
     item.setPath(path);
@@ -267,7 +267,7 @@ public class DocumentsUploadRequestHandler
   @Override
   public Optional<Boolean> isAuthorized(final AwsServiceCache awsservice, final String method,
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
-    boolean access = authorization.permissions().contains(ApiPermission.WRITE);
+    boolean access = authorization.getPermissions().contains(ApiPermission.WRITE);
     return Optional.of(Boolean.valueOf(access));
   }
 
@@ -278,13 +278,13 @@ public class DocumentsUploadRequestHandler
 
     DynamicDocumentItem item = new DynamicDocumentItem(fromBodyToMap(event));
     item.setDocumentId(UUID.randomUUID().toString());
-    item.setUserId(authorization.username());
+    item.setUserId(authorization.getUsername());
     item.setInsertedDate(new Date());
 
     List<DynamicObject> tags = item.getList("tags");
     validateTags(tags);
 
-    String siteId = authorization.siteId();
+    String siteId = authorization.getSiteId();
     return buildPresignedResponse(logger, event, awsservice, siteId, item);
   }
 

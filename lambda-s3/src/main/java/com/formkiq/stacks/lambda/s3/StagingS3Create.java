@@ -45,8 +45,11 @@ import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
+import com.formkiq.aws.dynamodb.DocumentAccessAttributesRecord;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.DynamoDbServiceExtension;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
@@ -111,8 +114,44 @@ import software.amazon.awssdk.utils.http.SdkHttpUtils;
 @Reflectable
 public class StagingS3Create implements RequestHandler<Map<String, Object>, Void> {
 
+  /** {@link ActionsService}. */
+  private static ActionsService actionsService;
+
+  /** {@link DynamoDbService}. */
+  private static DynamoDbService db;
+
+  /** {@link String}. */
+  private static String documentsBucket;
+
+  /** {@link FolderIndexProcessor}. */
+  private static FolderIndexProcessor folderIndexProcesor;
+
   /** Extension for FormKiQ config file. */
   public static final String FORMKIQ_B64_EXT = ".fkb64";
+  /** {@link ActionsNotificationService}. */
+  private static ActionsNotificationService notificationService;
+  /** {@link S3Service}. */
+  private static S3Service s3;
+  /** {@link DocumentService}. */
+  private static DocumentService service;
+  /** {@link AwsServiceCache}. */
+  private static AwsServiceCache serviceCache;
+  /** SNS Document Event Arn. */
+  private static String snsDocumentEvent;
+  /** {@link DocumentSyncService}. */
+  private static DocumentSyncService syncService = null;
+  static {
+
+    if (System.getenv().containsKey("AWS_REGION")) {
+      serviceCache = new AwsServiceCacheBuilder(System.getenv(), Map.of(),
+          EnvironmentVariableCredentialsProvider.create())
+          .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
+              new SnsAwsServiceRegistry(), new SmsAwsServiceRegistry())
+          .build();
+
+      initialize(serviceCache);
+    }
+  }
 
   /**
    * Get Bucket Name.
@@ -145,68 +184,6 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   }
 
   /**
-   * Decode the string according to RFC 3986: encoding for URI paths, query strings, etc. *
-   *
-   * @param value The string to decode.
-   * @return The decoded string.
-   */
-  private static String urlDecode(final String value) {
-    return SdkHttpUtils.urlDecode(value);
-  }
-
-  /** {@link ActionsService}. */
-  private static ActionsService actionsService;
-  /** {@link String}. */
-  private static String documentsBucket;
-  /** {@link FolderIndexProcessor}. */
-  private static FolderIndexProcessor folderIndexProcesor;
-  /** {@link Gson}. */
-  private Gson gson = new GsonBuilder().create();
-  /** {@link ActionsNotificationService}. */
-  private static ActionsNotificationService notificationService;
-  /** {@link S3Service}. */
-  private static S3Service s3;
-  /** {@link DocumentService}. */
-  private static DocumentService service;
-  /** SNS Document Event Arn. */
-  private static String snsDocumentEvent;
-  /** {@link DocumentSyncService}. */
-  private static DocumentSyncService syncService = null;
-  /** {@link AwsServiceCache}. */
-  private static AwsServiceCache serviceCache;
-
-  static {
-
-    if (System.getenv().containsKey("AWS_REGION")) {
-      serviceCache = new AwsServiceCacheBuilder(System.getenv(), Map.of(),
-          EnvironmentVariableCredentialsProvider.create())
-          .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
-              new SnsAwsServiceRegistry(), new SmsAwsServiceRegistry())
-          .build();
-
-      initialize(serviceCache);
-    }
-  }
-
-  /**
-   * constructor.
-   *
-   */
-  public StagingS3Create() {
-    // empty
-  }
-
-  /**
-   * constructor.
-   * 
-   * @param awsServiceCache {@link AwsServiceCache}
-   */
-  public StagingS3Create(final AwsServiceCache awsServiceCache) {
-    initialize(awsServiceCache);
-    serviceCache = awsServiceCache;
-  }
-
-  /**
    * Initialize.
    * 
    * @param awsServiceCache {@link AwsServiceCache}
@@ -226,6 +203,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
         new ActionsNotificationServiceExtension());
     awsServiceCache.register(DocumentTagSchemaPlugin.class,
         new DocumentTagSchemaPluginExtension(null));
+    awsServiceCache.register(DynamoDbService.class, new DynamoDbServiceExtension());
 
     documentsBucket = awsServiceCache.environment("DOCUMENTS_S3_BUCKET");
     syncService = awsServiceCache.getExtension(DocumentSyncService.class);
@@ -233,6 +211,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     service = awsServiceCache.getExtension(DocumentService.class);
     actionsService = awsServiceCache.getExtension(ActionsService.class);
     s3 = awsServiceCache.getExtension(S3Service.class);
+    db = awsServiceCache.getExtension(DynamoDbService.class);
 
     snsDocumentEvent = awsServiceCache.environment("SNS_DOCUMENT_EVENT");
     notificationService = awsServiceCache.getExtension(ActionsNotificationService.class);
@@ -250,6 +229,37 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     AwsCredentials awsCredentials = awsServiceCache.getExtension(AwsCredentials.class);
     awsServiceCache.register(HttpService.class, new ClassServiceExtension<HttpService>(
         new HttpServiceSigv4(awsServiceCache.region(), awsCredentials)));
+  }
+
+  /**
+   * Decode the string according to RFC 3986: encoding for URI paths, query strings, etc. *
+   *
+   * @param value The string to decode.
+   * @return The decoded string.
+   */
+  private static String urlDecode(final String value) {
+    return SdkHttpUtils.urlDecode(value);
+  }
+
+  /** {@link Gson}. */
+  private Gson gson = new GsonBuilder().create();
+
+  /**
+   * constructor.
+   *
+   */
+  public StagingS3Create() {
+    // empty
+  }
+
+  /**
+   * constructor.
+   * 
+   * @param awsServiceCache {@link AwsServiceCache}
+   */
+  public StagingS3Create(final AwsServiceCache awsServiceCache) {
+    initialize(awsServiceCache);
+    serviceCache = awsServiceCache;
   }
 
   /**
@@ -332,6 +342,8 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
     saveDocumentActions(siteId, doc);
 
+    saveDocumentAccessAttributes(siteId, loadedDoc);
+
     return doc;
   }
 
@@ -366,10 +378,6 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     return s;
   }
 
-  private boolean isDebug() {
-    return "true".equals(System.getenv("DEBUG"));
-  }
-
   /**
    * Find DocumentId for File Path.
    *
@@ -394,6 +402,30 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     return documentId;
   }
 
+  /**
+   * Handle Document Compression Request.
+   * 
+   * @param logger {@link LambdaLogger}
+   * @param bucket {@link String}
+   * @param key {@link String}
+   * @throws IOException IOException
+   */
+  private void handleCompressionRequest(final LambdaLogger logger, final String bucket,
+      final String key) throws IOException {
+
+    final String contentString = s3.getContentAsString(bucket, key, null);
+    Type mapStringObject = new TypeToken<Map<String, Object>>() {}.getType();
+    final Map<String, Object> content = this.gson.fromJson(contentString, mapStringObject);
+    final String siteId = content.get("siteId").toString();
+    final String archiveKey = key.replace(".json", ".zip");
+    Type jsonStringList = new TypeToken<List<String>>() {}.getType();
+    final List<String> documentIds =
+        this.gson.fromJson(content.get("documentIds").toString(), jsonStringList);
+
+    DocumentCompressor documentCompressor = new DocumentCompressor(serviceCache);
+    documentCompressor.compressDocuments(siteId, documentsBucket, bucket, archiveKey, documentIds);
+  }
+
   @SuppressWarnings("unchecked")
   @Override
   public Void handleRequest(final Map<String, Object> map, final Context context) {
@@ -412,6 +444,10 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     processRecords(logger, date, records);
 
     return null;
+  }
+
+  private boolean isDebug() {
+    return "true".equals(System.getenv("DEBUG"));
   }
 
   /**
@@ -631,6 +667,38 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     s3.deleteObject(bucket, s3Key, null);
   }
 
+  /**
+   * Process Event Records.
+   *
+   * @param logger {@link LambdaLogger}
+   * @param date {@link Date}
+   * @param records {@link List} {@link Map}
+   */
+  @SuppressWarnings("unchecked")
+  private void processRecords(final LambdaLogger logger, final Date date,
+      final List<Map<String, Object>> records) {
+
+    for (Map<String, Object> event : records) {
+
+      if (event.containsKey("body")) {
+
+        String body = event.get("body").toString();
+
+        Map<String, Object> map = this.gson.fromJson(body, Map.class);
+        processRecords(logger, date, (List<Map<String, Object>>) map.get("Records"));
+
+      } else {
+        logger.log("handling " + records.size() + " record(s).");
+
+        try {
+          processEvent(logger, date, event);
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      }
+    }
+  }
+
   private void runPatchDocumentsTags(final LambdaLogger logger, final String siteId,
       final UpdateMatchingDocumentTagsRequest request, final SearchTagCriteria query,
       final Date date, final String user) {
@@ -669,34 +737,42 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     } while (token != null);
   }
 
-  /**
-   * Process Event Records.
-   *
-   * @param logger {@link LambdaLogger}
-   * @param date {@link Date}
-   * @param records {@link List} {@link Map}
-   */
   @SuppressWarnings("unchecked")
-  private void processRecords(final LambdaLogger logger, final Date date,
-      final List<Map<String, Object>> records) {
+  private void saveDocumentAccessAttributes(final String siteId,
+      final DynamicDocumentItem loadedDoc) {
 
-    for (Map<String, Object> event : records) {
+    if (loadedDoc.containsKey("accessAttributes")) {
 
-      if (event.containsKey("body")) {
+      List<Map<String, Object>> attributes =
+          (List<Map<String, Object>>) loadedDoc.get("accessAttributes");
 
-        String body = event.get("body").toString();
+      if (!attributes.isEmpty()) {
 
-        Map<String, Object> map = this.gson.fromJson(body, Map.class);
-        processRecords(logger, date, (List<Map<String, Object>>) map.get("Records"));
+        DocumentAccessAttributesRecord ar =
+            new DocumentAccessAttributesRecord().documentId(loadedDoc.getDocumentId());
 
-      } else {
-        logger.log("handling " + records.size() + " record(s).");
+        attributes.forEach(a -> {
 
-        try {
-          processEvent(logger, date, event);
-        } catch (Exception e) {
-          e.printStackTrace();
-        }
+          String key = a.get("key").toString();
+          String stringValue = a.containsKey("stringValue") ? (String) a.get("stringValue") : null;
+          Double numberValue = a.containsKey("numberValue") ? (Double) a.get("numberValue") : null;
+          Boolean booleanValue =
+              a.containsKey("booleanValue") ? (Boolean) a.get("booleanValue") : null;
+
+          if (stringValue != null && !stringValue.isEmpty()) {
+            ar.addStringValue(key, stringValue);
+          }
+
+          if (numberValue != null) {
+            ar.addNumberValue(key, numberValue);
+          }
+
+          if (booleanValue != null) {
+            ar.addBooleanValue(key, booleanValue);
+          }
+        });
+
+        db.putItem(ar.getAttributes(siteId));
       }
     }
   }
@@ -835,29 +911,5 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
       s3.copyObject(bucket, s3Key, documentsBucket, destKey, metadata.getContentType(), map);
     }
-  }
-
-  /**
-   * Handle Document Compression Request.
-   * 
-   * @param logger {@link LambdaLogger}
-   * @param bucket {@link String}
-   * @param key {@link String}
-   * @throws IOException IOException
-   */
-  private void handleCompressionRequest(final LambdaLogger logger, final String bucket,
-      final String key) throws IOException {
-
-    final String contentString = s3.getContentAsString(bucket, key, null);
-    Type mapStringObject = new TypeToken<Map<String, Object>>() {}.getType();
-    final Map<String, Object> content = this.gson.fromJson(contentString, mapStringObject);
-    final String siteId = content.get("siteId").toString();
-    final String archiveKey = key.replace(".json", ".zip");
-    Type jsonStringList = new TypeToken<List<String>>() {}.getType();
-    final List<String> documentIds =
-        this.gson.fromJson(content.get("documentIds").toString(), jsonStringList);
-
-    DocumentCompressor documentCompressor = new DocumentCompressor(serviceCache);
-    documentCompressor.compressDocuments(siteId, documentsBucket, bucket, archiveKey, documentIds);
   }
 }

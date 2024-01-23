@@ -130,7 +130,7 @@ public class DocumentIdRequestHandler
       final AwsServiceCache awsservice, final ApiAuthorization authorization, final String siteId,
       final String documentId, final DynamicObject item, final List<DynamicObject> documents) {
 
-    String userId = authorization.username();
+    String userId = authorization.getUsername();
 
     item.put("documentId", documentId);
     item.put("userId", userId);
@@ -189,7 +189,7 @@ public class DocumentIdRequestHandler
 
     String documentBucket = awsservice.environment("DOCUMENTS_S3_BUCKET");
 
-    String siteId = authorization.siteId();
+    String siteId = authorization.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
 
     if (awsservice.debug()) {
@@ -292,7 +292,7 @@ public class DocumentIdRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    String siteId = authorization.siteId();
+    String siteId = authorization.getSiteId();
     int limit = getLimit(logger, event);
 
     CacheService cacheService = awsservice.getExtension(CacheService.class);
@@ -337,7 +337,7 @@ public class DocumentIdRequestHandler
     boolean isUpdate = event.getHttpMethod().equalsIgnoreCase("patch")
         && event.getPathParameters().containsKey("documentId");
 
-    String siteId = authorization.siteId();
+    String siteId = authorization.getSiteId();
     String documentId = UUID.randomUUID().toString();
 
     DynamicDocumentItem item = new DynamicDocumentItem(fromBodyToMap(event));
@@ -378,9 +378,15 @@ public class DocumentIdRequestHandler
       logger.log("setting userId: " + item.getString("userId") + " contentType: "
           + item.getString("contentType"));
 
-      validateTagSchema(awsservice, siteId, item, item.getUserId(), isUpdate);
-      validateTags(item);
-      validateActions(awsservice, siteId, item, authorization);
+      Collection<ValidationError> errors = new ArrayList<>();
+      validateTagSchema(awsservice, siteId, item, item.getUserId(), isUpdate, errors);
+      validateTags(item, errors);
+      validateActions(awsservice, siteId, item, authorization, errors);
+      validateAccessAttributes(awsservice, item, errors);
+
+      if (!errors.isEmpty()) {
+        throw new ValidationException(errors);
+      }
 
       putObjectToStaging(logger, awsservice, maxDocumentCount, siteId, item);
 
@@ -391,6 +397,24 @@ public class DocumentIdRequestHandler
 
     ApiResponseStatus status = isUpdate ? SC_OK : SC_CREATED;
     return new ApiRequestHandlerResponse(status, new ApiMapResponse(map));
+  }
+
+  /**
+   * Validate Access Attributes.
+   * 
+   * @param awsservice {@link AwsServiceCache}
+   * @param item {@link DynamicDocumentItem}
+   * @param errors {@link Collection} {@link ValidationError}
+   */
+  private void validateAccessAttributes(final AwsServiceCache awsservice,
+      final DynamicDocumentItem item, final Collection<ValidationError> errors) {
+
+    List<DynamicObject> list = item.getList("accessAttributes");
+
+    if (!awsservice.hasModule("opa") && list != null && !list.isEmpty()) {
+      errors.add(new ValidationErrorImpl().key("accessAttributes")
+          .error("Access attributes are only supported with the 'open policy access' module"));
+    }
   }
 
   /**
@@ -440,13 +464,13 @@ public class DocumentIdRequestHandler
   }
 
   private void validateActions(final AwsServiceCache awsservice, final String siteId,
-      final DynamicDocumentItem item, final ApiAuthorization authorization)
-      throws ValidationException {
+      final DynamicDocumentItem item, final ApiAuthorization authorization,
+      final Collection<ValidationError> errors) {
 
     List<DynamicObject> objs = item.getList("actions");
     if (!objs.isEmpty()) {
 
-      objs.stream().forEach(a -> a.put("userId", authorization.username()));
+      objs.stream().forEach(a -> a.put("userId", authorization.getUsername()));
       item.put("actions", objs);
 
       ConfigService configsService = awsservice.getExtension(ConfigService.class);
@@ -471,10 +495,7 @@ public class DocumentIdRequestHandler
       }).collect(Collectors.toList());
 
       for (Action action : actions) {
-        Collection<ValidationError> errors = this.actionsValidator.validation(action, configs);
-        if (!errors.isEmpty()) {
-          throw new ValidationException(errors);
-        }
+        errors.addAll(this.actionsValidator.validation(action, configs));
       }
     }
   }
@@ -536,19 +557,17 @@ public class DocumentIdRequestHandler
    * Validate Document Tags.
    * 
    * @param item {@link DynamicDocumentItem}
+   * @param errors {@link Collection} {@link ValidationError}
    * @throws ValidationException ValidationException
    */
-  private void validateTags(final DynamicDocumentItem item) throws ValidationException {
+  private void validateTags(final DynamicDocumentItem item,
+      final Collection<ValidationError> errors) throws ValidationException {
 
     List<DynamicObject> tags = item.getList("tags");
     List<String> tagKeys = tags.stream().map(t -> t.getString("key")).collect(Collectors.toList());
 
     DocumentTagValidator validator = new DocumentTagValidatorImpl();
-    Collection<ValidationError> errors = validator.validateKeys(tagKeys);
-
-    if (!errors.isEmpty()) {
-      throw new ValidationException(errors);
-    }
+    errors.addAll(validator.validateKeys(tagKeys));
   }
 
   /**
@@ -559,12 +578,13 @@ public class DocumentIdRequestHandler
    * @param item {@link DynamicDocumentItem}
    * @param userId {@link String}
    * @param isUpdate boolean
+   * @param errors {@link Collection} {@link ValidationError}
    * @throws ValidationException ValidationException
    * @throws BadException BadException
    */
   private void validateTagSchema(final AwsServiceCache cacheService, final String siteId,
-      final DynamicDocumentItem item, final String userId, final boolean isUpdate)
-      throws ValidationException, BadException {
+      final DynamicDocumentItem item, final String userId, final boolean isUpdate,
+      final Collection<ValidationError> errors) throws ValidationException, BadException {
 
     List<DynamicObject> doctags = item.getList("tags");
     DynamicObjectToDocumentTag transform =
@@ -574,8 +594,6 @@ public class DocumentIdRequestHandler
     }).collect(Collectors.toList());
 
     DocumentTagSchemaPlugin plugin = cacheService.getExtension(DocumentTagSchemaPlugin.class);
-
-    Collection<ValidationError> errors = new ArrayList<>();
 
     List<DocumentTag> compositeTags =
         plugin.addCompositeKeys(siteId, item, tags, userId, !isUpdate, errors).stream().map(t -> t)

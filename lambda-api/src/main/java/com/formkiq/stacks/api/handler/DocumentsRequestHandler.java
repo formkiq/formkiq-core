@@ -85,7 +85,7 @@ public class DocumentsRequestHandler
 
     ActionStatus actionStatus = getActionStatus(event);
 
-    String siteId = authorization.siteId();
+    String siteId = authorization.getSiteId();
 
     ApiPagination current = null;
     Map<String, Object> map = new HashMap<>();

@@ -79,7 +79,7 @@ public class ConfigurationRequestHandler
   }
 
   private void checkPermissions(final ApiAuthorization authorization) throws UnauthorizedException {
-    if (!authorization.permissions().contains(ApiPermission.ADMIN)) {
+    if (!authorization.getPermissions().contains(ApiPermission.ADMIN)) {
       throw new UnauthorizedException("user is unauthorized");
     }
   }
@@ -89,7 +89,7 @@ public class ConfigurationRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    String siteId = authorization.siteId();
+    String siteId = authorization.getSiteId();
     ConfigService configService = awsservice.getExtension(ConfigService.class);
 
     DynamicObject obj = configService.get(siteId);
@@ -139,7 +139,7 @@ public class ConfigurationRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    String siteId = authorization.siteId();
+    String siteId = authorization.getSiteId();
     Map<String, String> body = fromBodyToObject(event, Map.class);
 
     Map<String, Object> map = new HashMap<>();

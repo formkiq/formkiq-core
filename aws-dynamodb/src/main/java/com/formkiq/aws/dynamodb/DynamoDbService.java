@@ -29,6 +29,8 @@ import java.util.Map;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
+import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.UpdateItemResponse;
 
 /**
  * 
@@ -91,6 +93,22 @@ public interface DynamoDbService {
    */
   List<Map<String, AttributeValue>> getBatch(BatchGetConfig config,
       List<Map<String, AttributeValue>> keys);
+
+  /**
+   * Get Next Number.
+   * 
+   * @param keys {@link Map}
+   * 
+   * @return {@link String}
+   */
+  String getNextNumber(Map<String, AttributeValue> keys);
+
+  /**
+   * Get Table Name.
+   * 
+   * @return {@link String}
+   */
+  String getTableName();
 
   /**
    * Move Records.
@@ -160,6 +178,14 @@ public interface DynamoDbService {
    */
   Map<String, AttributeValue> updateItem(AttributeValue pk, AttributeValue sk,
       Map<String, AttributeValueUpdate> updateValues);
+
+  /**
+   * Update Item.
+   * 
+   * @param request {@link UpdateItemRequest}
+   * @return {@link UpdateItemResponse}
+   */
+  UpdateItemResponse updateItem(UpdateItemRequest request);
 
   /**
    * Update DynamoDB Record.

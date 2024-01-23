@@ -61,7 +61,7 @@ public class WebhooksTagsRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsServices) throws Exception {
 
-    String siteId = authorization.siteId();
+    String siteId = authorization.getSiteId();
     String id = getPathParameter(event, "webhookId");
 
     WebhooksService webhooksService = awsServices.getExtension(WebhooksService.class);
@@ -100,12 +100,12 @@ public class WebhooksTagsRequestHandler
       throw new BadException("invalid json body");
     }
 
-    String siteId = authorization.siteId();
+    String siteId = authorization.getSiteId();
     String id = getPathParameter(event, "webhookId");
 
     tag.setType(DocumentTagType.USERDEFINED);
     tag.setInsertedDate(new Date());
-    tag.setUserId(authorization.username());
+    tag.setUserId(authorization.getUsername());
 
     WebhooksService webhooksService = awsServices.getExtension(WebhooksService.class);
 

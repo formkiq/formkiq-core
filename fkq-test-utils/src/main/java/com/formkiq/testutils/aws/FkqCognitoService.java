@@ -23,12 +23,8 @@
  */
 package com.formkiq.testutils.aws;
 
-import java.util.Arrays;
 import com.formkiq.aws.cognito.CognitoIdentityProviderConnectionBuilder;
 import com.formkiq.aws.cognito.CognitoIdentityProviderService;
-import com.formkiq.stacks.client.FormKiqClientConnection;
-import com.formkiq.stacks.client.FormKiqClientV1;
-import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthenticationResultType;
@@ -40,8 +36,6 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.UserType;
  *
  */
 public class FkqCognitoService {
-  /** AWS Profile. */
-  private String awsprofile;
   /** {@link Region}. */
   private Region awsregion;
   /** FormKiQ IAM Api Url. */
@@ -65,7 +59,6 @@ public class FkqCognitoService {
   public FkqCognitoService(final String awsProfile, final Region awsRegion,
       final String appEnvironment) {
 
-    this.awsprofile = awsProfile;
     this.awsregion = awsRegion;
     this.ssm = new FkqSsmService(awsProfile, awsRegion);
 
@@ -134,48 +127,6 @@ public class FkqCognitoService {
    */
   public Region getAwsregion() {
     return this.awsregion;
-  }
-
-  /**
-   * Get FormKiQ IAM Url.
-   * 
-   * @return {@link FormKiqClientV1}
-   */
-  public FormKiqClientV1 getFormKiqClient() {
-    try (ProfileCredentialsProvider credentials =
-        ProfileCredentialsProvider.builder().profileName(this.awsprofile).build()) {
-      FormKiqClientConnection connection = new FormKiqClientConnection(this.rootIamUrl)
-          .region(this.awsregion).credentials(credentials.resolveCredentials())
-          .header("Origin", Arrays.asList("http://localhost"))
-          .header("Access-Control-Request-Method", Arrays.asList("GET"));
-      return new FormKiqClientV1(connection);
-    }
-  }
-
-  /**
-   * Get FormKiQ Http Url.
-   * 
-   * @param token {@link AuthenticationResultType}
-   * @return {@link FormKiqClientV1}
-   */
-  public FormKiqClientV1 getFormKiqClient(final AuthenticationResultType token) {
-    FormKiqClientConnection connection = new FormKiqClientConnection(this.rootJwtUrl)
-        .cognitoIdToken(token.idToken()).header("Origin", Arrays.asList("http://localhost"))
-        .header("Access-Control-Request-Method", Arrays.asList("GET"));
-    return new FormKiqClientV1(connection);
-  }
-
-  /**
-   * Get FormKiQ Key API Url.
-   * 
-   * @param apiKey {@link String}
-   * @return {@link FormKiqClientV1}
-   */
-  public FormKiqClientV1 getFormKiqClient(final String apiKey) {
-    FormKiqClientConnection connection = new FormKiqClientConnection(this.rootKeyUrl)
-        .cognitoIdToken(apiKey).header("Origin", Arrays.asList("http://localhost"))
-        .header("Access-Control-Request-Method", Arrays.asList("GET"));
-    return new FormKiqClientV1(connection);
   }
 
   /**

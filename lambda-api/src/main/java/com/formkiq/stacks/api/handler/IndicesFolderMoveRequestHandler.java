@@ -105,8 +105,8 @@ public class IndicesFolderMoveRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsServices) throws Exception {
 
-    String siteId = authorization.siteId();
-    String userId = authorization.username();
+    String siteId = authorization.getSiteId();
+    String userId = authorization.getUsername();
     String type = event.getPathParameters().get("indexType");
 
     if ("folder".equals(type)) {

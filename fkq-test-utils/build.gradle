@@ -13,8 +13,7 @@ dependencies {
     
 	implementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.12.543'
 	implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.3'
-	api group: 'com.formkiq.stacks', name: 'client', version:'1.11.0'
-	api group: 'com.formkiq', name: 'client', version:'1.13.1'
+	api group: 'com.formkiq', name: 'client', version:'1.14.0-SNAPSHOT'
 	implementation group: 'com.google.code.gson', name: 'gson', version: '2.10.1'
 	implementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.10.0'
 	implementation group: 'org.testcontainers', name: 'testcontainers', version: '1.19.0'

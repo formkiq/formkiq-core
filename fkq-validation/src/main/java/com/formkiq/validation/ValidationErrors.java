@@ -21,21 +21,42 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.services.lambda;
+package com.formkiq.validation;
+
+import java.util.List;
 
 /**
- * 
- * Interceptor to allow injecting extra actions into the {@link ApiAuthorization}.
- *
+ * Validation Errors.
  */
-public interface ApiAuthorizationInterceptor {
+public class ValidationErrors {
+
+  /** {@link List} {@link ValidationError}. */
+  private List<ValidationErrorImpl> errors;
 
   /**
-   * Update {@link ApiAuthorization} object.
-   * 
-   * @param event {@link ApiGatewayRequestEvent}
-   * @param authorization {@link ApiAuthorization}
-   * @throws Exception Exception
+   * constructor.
    */
-  void update(ApiGatewayRequestEvent event, ApiAuthorization authorization) throws Exception;
+  public ValidationErrors() {
+
+  }
+
+  /**
+   * Set {@link List} {@link ValidationError}.
+   * 
+   * @param validationErrors {@link List} {@link ValidationError}
+   * @return {@link ValidationErrors}
+   */
+  public ValidationErrors errors(final List<ValidationErrorImpl> validationErrors) {
+    this.errors = validationErrors;
+    return this;
+  }
+
+  /**
+   * Get {@link List} of {@link ValidationError}.
+   * 
+   * @return {@link List} {@link ValidationError}
+   */
+  public List<? extends ValidationError> getErrors() {
+    return this.errors;
+  }
 }

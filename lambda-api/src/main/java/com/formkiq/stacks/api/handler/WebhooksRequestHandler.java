@@ -62,7 +62,7 @@ public class WebhooksRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsServices) throws Exception {
 
-    String siteId = authorization.siteId();
+    String siteId = authorization.getSiteId();
     SsmService ssmService = awsServices.getExtension(SsmService.class);
 
     String url = ssmService.getParameterValue(
@@ -162,7 +162,7 @@ public class WebhooksRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    String siteId = authorization.siteId();
+    String siteId = authorization.getSiteId();
     DynamicObject o = fromBodyToDynamicObject(event);
 
     validatePost(logger, awsservice, siteId, o);
@@ -183,7 +183,7 @@ public class WebhooksRequestHandler
     Date ttlDate = getTtlDate(awsservice, siteId, o);
 
     String name = o.getString("name");
-    String userId = authorization.username();
+    String userId = authorization.getUsername();
     String enabled = o.containsKey("enabled") ? o.getString("enabled") : "true";
     String id = webhooksService.saveWebhook(siteId, name, userId, ttlDate, enabled);
 

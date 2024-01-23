@@ -36,6 +36,7 @@ import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.GsonUtil;
 import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.model.AddAccessAttribute;
 import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AddDocumentResponse;
 import com.formkiq.client.model.AddDocumentUploadRequest;
@@ -150,7 +151,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * GET /documents/{documentId} request, deeplink.
+   * POST /documents/{documentId} request, deeplink.
    *
    * @throws Exception an error has occurred
    */
@@ -183,6 +184,34 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       assertNull(document.getPath());
       assertEquals("http://google.com/test/sample.pdf", document.getDeepLinkPath());
       assertEquals("application/pdf", document.getContentType());
+    }
+  }
+
+  /**
+   * POST /documents/{documentId} request, access attributes.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleAddDocument02() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      setBearerToken(siteId);
+
+      AddDocumentRequest req = new AddDocumentRequest().content("SKADJASKDSA")
+          .contentType("text/plain").addAccessAttributesItem(
+              new AddAccessAttribute().key("department").stringValue("marketing"));
+
+      // when
+      try {
+        this.documentsApi.addDocument(req, siteId, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals("{\"errors\":[{\"key\":\"accessAttributes\","
+            + "\"error\":\"Access attributes are only supported with "
+            + "the 'open policy access' module\"}]}", e.getResponseBody());
+      }
     }
   }
 }
