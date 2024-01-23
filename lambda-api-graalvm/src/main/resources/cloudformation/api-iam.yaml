@@ -4049,8 +4049,8 @@ Resources:
             get:
               operationId: GetRulesets
               tags:
-              - RuleSets
-              description: Returns a list of rule sets
+              - Rulesets
+              description: Returns a list of rule sets; ONLY available with FormKiQ Enterprise
               summary: Get Rulesets
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
@@ -4059,6 +4059,7 @@ Resources:
                 description: "Next page of results token"
                 schema:
                   type: "string"
+              - $ref: '#/components/parameters/limitParam'
               responses:
                 '200':
                   description: "200 OK"
@@ -4083,10 +4084,10 @@ Resources:
             post:
               operationId: AddRuleset            
               description: |-
-                Creates a new ruleset
+                Creates a new ruleset; ONLY available with FormKiQ Enterprise
               summary: Add new ruleset
               tags:
-              - RuleSets
+              - Rulesets
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               requestBody:
@@ -4123,13 +4124,14 @@ Resources:
             get:
               operationId: GetRules
               tags:
-              - RuleSets
-              description: Returns a list of rules in a ruleset
+              - Rulesets
+              description: Returns a list of rules in a ruleset; ONLY available with FormKiQ Enterprise
               summary: Get Rules
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/rulesetIdParam'
               - $ref: '#/components/parameters/nextParam'
+              - $ref: '#/components/parameters/limitParam'
               responses:
                 '200':
                   description: "200 OK"
@@ -4154,10 +4156,10 @@ Resources:
             post:
               operationId: AddRule            
               description: |-
-                Creates a new rule
+                Creates a new rule; ONLY available with FormKiQ Enterprise
               summary: Add new rule
               tags:
-              - RuleSets
+              - Rulesets
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/rulesetIdParam'
@@ -6329,9 +6331,17 @@ Resources:
             RuleConditionMust:
               type: "object"
               properties:
-                key:
+                attribute:
                   type: "string"
-                  description: "Rule condition key"
+                  description: "Rule attribute"
+                  enum:
+                    - TEXT
+                    - CONTENT_TYPE
+                    - BARCODE
+                    - PROPERTY
+                propertyName:
+                  type: "string"
+                  description: "Rule property name"
                 value:
                   type: "string"
                   description: "Rule condition value"
@@ -6339,11 +6349,8 @@ Resources:
                   type: "string"
                   description: "Rule condition operation"
                   enum:
-                    - EQ_TEXT
-                    - EQ_TAG
-                    - CONTAINS_TEXT
-                    - CONTAINS_TAG
-                    - REGEX_MATCH
+                    - EQ
+                    - CONTAINS
 
             GetDocumentsResponse:
               type: "object"
