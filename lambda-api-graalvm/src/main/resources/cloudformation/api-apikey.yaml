@@ -5138,6 +5138,11 @@ Resources:
             GetDocumentOcrResponse:
               type: object
               properties:
+                contentUrls:
+                  type: "array"
+                  description: "Presigned S3 Urls for the OCR content"
+                  items:
+                    type: "string"
                 data:
                   type: string
                   description: OCR text result
