@@ -4120,6 +4120,104 @@ Resources:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
+          /rulesets/{rulesetId}:
+            get:
+              operationId: GetRuleset
+              tags:
+              - Rulesets
+              description: Get a rule sets; ONLY available with FormKiQ Enterprise
+              summary: Get Ruleset
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/rulesetIdParam'
+              responses:
+                '200':
+                  description: "200 OK"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: "string"
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: "string"
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: "string"
+                  content:
+                    application/json:
+                      schema:
+                        "$ref": "#/components/schemas/GetRulesetResponse"
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+            patch:
+              operationId: UpdateRuleset            
+              description: |-
+                Updates an existing ruleset; ONLY available with FormKiQ Enterprise
+              summary: Update ruleset
+              tags:
+              - Rulesets
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/rulesetIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/UpdateRulesetRequest'
+              responses:
+                '201':
+                  description: 201 CREATED
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/UpdateRulesetResponse'
+                '400':
+                  description: 400 OK
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/ValidationErrorsResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
+            delete:
+              operationId: DeleteRuleset
+              description: Delete Ruleset; ONLY available with FormKiQ Enterprise
+              summary: Delete Ruleset
+              tags:
+              - Rulesets
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/rulesetIdParam'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DeleteRulesetResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /rulesets/{rulesetId}/rules:
             get:
               operationId: GetRules
@@ -4193,6 +4291,107 @@ Resources:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
+          /rulesets/{rulesetId}/rules/{ruleId}:
+            get:
+              operationId: GetRule
+              tags:
+              - Rulesets
+              description: Returns a rule in a ruleset; ONLY available with FormKiQ Enterprise
+              summary: Get Rule
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/rulesetIdParam'
+              - $ref: '#/components/parameters/ruleIdParam'
+              responses:
+                '200':
+                  description: "200 OK"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: "string"
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: "string"
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: "string"
+                  content:
+                    application/json:
+                      schema:
+                        "$ref": "#/components/schemas/GetRuleResponse"
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+            patch:
+              operationId: UpdateRule            
+              description: |-
+                Update Rule; ONLY available with FormKiQ Enterprise
+              summary: Update Rule
+              tags:
+              - Rulesets
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/rulesetIdParam'
+              - $ref: '#/components/parameters/ruleIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/UpdateRuleRequest'
+              responses:
+                '201':
+                  description: 201 CREATED
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/UpdateRuleResponse'
+                '400':
+                  description: 400 OK
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/ValidationErrorsResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
+            delete:
+              operationId: DeleteRule
+              description: Delete Rule; ONLY available with FormKiQ Enterprise
+              summary: Delete Rule
+              tags:
+              - Rulesets
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/rulesetIdParam'
+              - $ref: '#/components/parameters/ruleIdParam'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DeleteRuleResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
         components:
           headers:
             AccessControlAllowOrigin:
@@ -4269,13 +4468,6 @@ Resources:
               in: query
               description: Site Identifier
               required: false
-              schema:
-                type: string
-            rulesetIdParam:
-              name: rulesetId
-              in: path
-              description: Ruleset Identifier
-              required: true
               schema:
                 type: string
             caseIdParam:
@@ -4369,6 +4561,20 @@ Resources:
               name: documentId
               in: path
               description: Document Identifier
+              required: true
+              schema:
+                type: string
+            rulesetIdParam:
+              name: rulesetId
+              in: path
+              description: Ruleset Identifier
+              required: true
+              schema:
+                type: string
+            ruleIdParam:
+              name: ruleId
+              in: path
+              description: Rule Identifier
               required: true
               schema:
                 type: string
@@ -5910,7 +6116,6 @@ Resources:
                   description: "Case Name"
                 status:
                   $ref: "#/components/schemas/CaseStatus"
-                  description: Status of the Case
                 documentNumberFormat:
                   type: "array"
                   description: "Format of Document Number"
@@ -6218,7 +6423,6 @@ Resources:
                     type: object
                 status:
                   $ref: "#/components/schemas/CaseStatus"
-                  description: Status of the Case
 
             AddRulesetResponse:
               type: "object"
@@ -6226,6 +6430,20 @@ Resources:
                 rulesetId:
                   type: "string"
                   description: "Ruleset Identifier"
+
+            UpdateRulesetResponse:
+              type: "object"
+              properties:
+                rulesetId:
+                  type: "string"
+                  description: "Ruleset Identifier"
+
+            UpdateRuleResponse:
+              type: "object"
+              properties:
+                ruleId:
+                  type: "string"
+                  description: "Rule Identifier"
 
             AddRuleResponse:
               type: "object"
@@ -6242,6 +6460,14 @@ Resources:
                 ruleset:
                   $ref: "#/components/schemas/AddRule"
 
+            UpdateRuleRequest:
+              required:
+              - "case"
+              type: "object"
+              properties:
+                ruleset:
+                  $ref: "#/components/schemas/AddRule"
+                  
             AddRule:
               type: "object"
               properties:
@@ -6255,6 +6481,14 @@ Resources:
                   $ref: "#/components/schemas/RuleCondition"
                   
             AddRulesetRequest:
+              required:
+              - "ruleset"
+              type: "object"
+              properties:
+                ruleset:
+                  $ref: "#/components/schemas/AddRuleset"
+
+            UpdateRulesetRequest:
               required:
               - "ruleset"
               type: "object"
@@ -6286,6 +6520,12 @@ Resources:
                   description: "List of rules"
                   items:
                     $ref: "#/components/schemas/Rule"
+
+            GetRuleResponse:
+              type: "object"
+              properties:
+                rule:
+                  $ref: "#/components/schemas/Rule"
             
             GetRulesetsResponse:
               type: "object"
@@ -6293,9 +6533,17 @@ Resources:
                 next:
                   type: "string"
                   description: "Next page of results token"
+                rulesets:
+                  type: "array"
+                  description: "List of rulesets"
+                  items:
+                    $ref: "#/components/schemas/Ruleset"
+
+            GetRulesetResponse:
+              type: "object"
+              properties:
                 ruleset:
                   $ref: "#/components/schemas/Ruleset"
-                  description: "Ruleset"
 
             Ruleset:
               type: "object"
@@ -6832,6 +7080,18 @@ Resources:
                   type: "string"
                   description: "Result message"
             DeleteFulltextResponse:
+              type: object
+              properties:
+                message:
+                  type: "string"
+                  description: "Result message"
+            DeleteRulesetResponse:
+              type: object
+              properties:
+                message:
+                  type: "string"
+                  description: "Result message"
+            DeleteRuleResponse:
               type: object
               properties:
                 message:
