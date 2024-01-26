@@ -80,6 +80,8 @@ Resources:
             Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"
           DOCUMENTS_S3_BUCKET: 
             Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket}}"
+          STAGE_DOCUMENTS_S3_BUCKET:
+            Fn::Sub: '{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsStageS3Bucket}}'
           OCR_S3_BUCKET:
             Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/OcrBucket}}"
           SNS_DOCUMENT_EVENT: 

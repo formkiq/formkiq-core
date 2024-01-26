@@ -9,6 +9,20 @@
 	
 		<subpackage name="ocr">
 		
+			<subpackage name="handlers">
+				<allow pkg="com.formkiq.aws.dynamodb" />
+				<allow pkg="com.formkiq.aws.services.lambda" />
+				<allow pkg="java.io" />
+				<allow pkg="java.net" />
+				<allow pkg="java.util" />
+				<allow pkg="java.time" />
+				<allow pkg="com.amazonaws.services.lambda.runtime" />
+				<allow pkg="com.formkiq.aws.s3" />
+				<allow pkg="org.apache.pdfbox.pdmodel" />
+				<allow pkg="com.formkiq.module.lambda.ocr.pdf" />
+				<allow pkg="com.formkiq.module.lambdaservices" />
+			</subpackage>
+				
 			<subpackage name="docx">
 				<allow pkg="java.io" />
 				<allow pkg="com.formkiq.aws.dynamodb.objects" />
@@ -40,6 +54,9 @@
 			</subpackage>
 			
 			<subpackage name="tesseract">
+				
+				<allow pkg="com.formkiq.aws.services.lambda" />
+				<allow pkg="com.formkiq.module.lambda.ocr.handlers" />
 								
 				<allow pkg="com.formkiq.module.events" />
 				<allow pkg="java.io" />

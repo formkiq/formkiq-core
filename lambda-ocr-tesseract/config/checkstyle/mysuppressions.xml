@@ -6,5 +6,6 @@
     <suppress files="\.*Test\.java" checks="ImportControl"/>
     <suppress files="\.*DynamoDbExtension\.java" checks="ImportControl"/>
     <suppress files="\.*DynamoDbTestServices\.java" checks="ImportControl"/>
+    <suppress files="\.*FormKiQResponseCallback\.java" checks="ImportControl"/>
 </suppressions>
 

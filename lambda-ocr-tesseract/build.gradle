@@ -15,6 +15,7 @@ dependencies {
 	implementation project(':aws-dynamodb')
 	implementation project(':ocr')
 	implementation project(':fkq-lambda-services')
+	implementation project(':fkq-lambda-core')
 	implementation("net.sourceforge.tess4j:tess4j:5.8.0")
 	implementation("org.slf4j:slf4j-simple:2.0.7")
 	implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.3'
@@ -31,18 +32,6 @@ dependencies {
 	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.19.0'
     testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.19.0'
 }
-
-/*
-task buildZip(type: Zip) {
-	dependsOn check
-	archiveFileName = "${moduleName}.zip"
-    destinationDirectory = file("${buildDir}")
-    from compileJava
-    from processResources              
-    into('lib') {
-        from configurations.runtimeClasspath
-    }           
-}*/
 
 test {
   failFast = true
@@ -84,8 +73,6 @@ task buildTesseractLayer(type: Zip) {
 task buildTemplate {
 	inputs.files("src/main/resources/cloudformation/template.yaml")
 	outputs.files("${buildDir}/distributions/ocr/template.yaml")
-  //dependsOn buildZip, buildTesseractLayer  
-  //outputs.upToDateWhen { false }
   
 	doLast {
 		copy {
@@ -93,14 +80,6 @@ task buildTemplate {
 		  include "template*"
 	      into "${buildDir}/distributions/ocr"
 	    }
-	    //copy {
-		  //from layout.projectDirectory.file("${buildDir}/${moduleName}.zip")
-	      //into "${buildDir}/distributions/formkiq-core/sam/ocr-tesseract"
-	    //}
-	    //copy {
-		  //from layout.projectDirectory.file("${buildDir}/layer-tesseract-${tesseract_version}.zip")
-	      //into "${buildDir}/distributions/formkiq-core/sam/ocr-tesseract"
-	    //}
 	}
 }
 
@@ -124,5 +103,3 @@ distributions {
         }
     }
 }
-
-//build.dependsOn assembleTemplate

@@ -18,7 +18,7 @@ dependencies {
 	implementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.10.0'
 	implementation group: 'org.testcontainers', name: 'testcontainers', version: '1.19.0'
 	implementation group: 'org.testcontainers', name: 'localstack', version: '1.19.0'
-	implementation group: 'org.mock-server', name: 'mockserver-netty', version: '5.15.0'
+	api group: 'org.mock-server', name: 'mockserver-netty', version: '5.15.0'
 	implementation group: 'io.jsonwebtoken', name: 'jjwt-api', version: '0.11.5'
 	implementation group: 'io.jsonwebtoken', name: 'jjwt-impl', version: '0.11.5'
 	implementation group: 'io.jsonwebtoken', name: 'jjwt-gson', version: '0.11.5'

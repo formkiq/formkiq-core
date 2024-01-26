@@ -79,6 +79,9 @@
         - name: antivirus
           description: Antivirus API
           x-displayName: Antivirus
+        - name: examineObjects
+          description: Examine Objects API
+          x-displayName: ExamineObjects
         - name: public
           description: Public API Endpoints
           x-displayName: Public Endpoints
@@ -4069,7 +4072,7 @@
             post:
               operationId: AddRuleset
               description: Creates a new ruleset; ONLY available with FormKiQ Enterprise
-              summary: Add new ruleset
+              summary: Add New Ruleset
               tags:
               - Rulesets
               parameters:
@@ -4138,7 +4141,7 @@
             patch:
               operationId: UpdateRuleset
               description: Updates an existing ruleset; ONLY available with FormKiQ Enterprise
-              summary: Update ruleset
+              summary: Update Ruleset
               tags:
               - Rulesets
               parameters:
@@ -4151,7 +4154,7 @@
                     schema:
                       $ref: '#/components/schemas/UpdateRulesetRequest'
               responses:
-                "201":
+                "200":
                   description: 201 CREATED
                   headers:
                     Access-Control-Allow-Origin:
@@ -4237,7 +4240,7 @@
             post:
               operationId: AddRule
               description: Creates a new rule; ONLY available with FormKiQ Enterprise
-              summary: Add new rule
+              summary: Add New Rule
               tags:
               - Rulesets
               parameters:
@@ -4322,8 +4325,8 @@
                     schema:
                       $ref: '#/components/schemas/UpdateRuleRequest'
               responses:
-                "201":
-                  description: 201 CREATED
+                "200":
+                  description: 200 CREATED
                   headers:
                     Access-Control-Allow-Origin:
                       $ref: '#/components/headers/AccessControlAllowOrigin'
@@ -4369,6 +4372,70 @@
                     application/json:
                       schema:
                         $ref: '#/components/schemas/DeleteRuleResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+          /objects/examine/pdf:
+            get:
+              operationId: GetExaminePdf
+              description: Gets a URL for temporary upload of a document to be examined by calling POST /objects/examine/{id}/pdf
+              summary: Add Examine Pdf
+              tags:
+              - Examine Objects
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: string
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetExaminePdfResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+          /objects/examine/{id}/pdf:
+            post:
+              operationId: AddExaminePdf
+              description: |-
+                Examines a PDF file and returns information about it.
+
+                File must have been uploaded previously using the GET /objects/examine/pdf API.
+              summary: Add Examine Pdf
+              tags:
+              - Examine Objects
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/idParam'
+              responses:
+                "201":
+                  description: 201 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: string
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/AddExaminePdfResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -4449,6 +4516,13 @@
               in: query
               description: Site Identifier
               required: false
+              schema:
+                type: string
+            idParam:
+              name: id
+              in: path
+              description: Identifier
+              required: true
               schema:
                 type: string
             caseIdParam:
@@ -6560,6 +6634,37 @@
                   enum:
                   - EQ
                   - CONTAINS
+            GetExaminePdfResponse:
+              type: object
+              properties:
+                id:
+                  type: string
+                  description: Uploaded document identifier
+                uploadUrl:
+                  type: string
+                  description: Url to upload document to
+            AddExaminePdfResponse:
+              type: object
+              properties:
+                fileinfo:
+                  $ref: '#/components/schemas/PdfDocument'
+            PdfDocument:
+              type: object
+              properties:
+                fields:
+                  type: array
+                  description: List of document fields
+                  items:
+                    $ref: '#/components/schemas/PdfDocumentField'
+            PdfDocumentField:
+              type: object
+              properties:
+                field:
+                  type: string
+                  description: Name of Field
+                value:
+                  type: string
+                  description: Value of Field
             GetDocumentsResponse:
               type: object
               properties:
