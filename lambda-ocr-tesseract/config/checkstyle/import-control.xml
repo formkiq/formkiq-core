@@ -21,6 +21,7 @@
 				<allow pkg="org.apache.pdfbox.pdmodel" />
 				<allow pkg="com.formkiq.module.lambda.ocr.pdf" />
 				<allow pkg="com.formkiq.module.lambdaservices" />
+				<allow pkg="software.amazon.awssdk.services.s3.model" />
 			</subpackage>
 				
 			<subpackage name="docx">
