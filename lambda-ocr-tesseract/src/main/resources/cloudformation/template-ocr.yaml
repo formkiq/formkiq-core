@@ -50,6 +50,16 @@ Resources:
       LayerName: 
         Fn::Sub: "${AWS::StackName}-${AppEnvironment}-tesseract-layer"
       ContentUri: ./layer-tesseract-5.3.1.zip
+
+  OcrProcessorApiInvokePermission:
+    Type: "AWS::Lambda::Permission"
+    DependsOn:
+    - OcrProcessor
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: 
+        Ref: OcrProcessor
+      Principal: apigateway.amazonaws.com
       
   OcrProcessor:
     Type: AWS::Serverless::Function
