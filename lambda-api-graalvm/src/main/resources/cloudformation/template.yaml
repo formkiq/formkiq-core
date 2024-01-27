@@ -181,7 +181,7 @@ Resources:
         OcrApiRequestsArn:
           Fn::GetAtt: 
           - Ocr
-          - Outputs.OcrProcessor
+          - Outputs.OcrProcessorArn
         DocumentsApiRequestsArn:
           Fn::GetAtt: 
           - ApiLambda
@@ -210,7 +210,7 @@ Resources:
         OcrApiRequestsArn:
           Fn::GetAtt: 
           - Ocr
-          - Outputs.OcrProcessor
+          - Outputs.OcrProcessorArn
       Tags:
         Application: 
           Fn::Sub: "FormKiQ ${FormKiQType}"
@@ -237,7 +237,7 @@ Resources:
         OcrApiRequestsArn:
           Fn::GetAtt: 
           - Ocr
-          - Outputs.OcrProcessor
+          - Outputs.OcrProcessorArn
       Tags:
         Application: 
           Fn::Sub: "FormKiQ ${FormKiQType}"
