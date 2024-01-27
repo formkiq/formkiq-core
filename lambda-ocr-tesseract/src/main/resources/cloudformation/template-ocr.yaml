@@ -110,7 +110,7 @@ Resources:
     Properties:
       Description: "Lambda for processing records for OCR"
       Name: 
-        Fn::Sub: "/formkiq/${AppEnvironment}/lambda/OcrProcessor"
+        Fn::Sub: "/formkiq/${AppEnvironment}/lambda/OcrTesseractProcessor"
       Type: String
       Value:
         Ref: OcrProcessor
@@ -213,3 +213,9 @@ Resources:
       Path: /
       ManagedPolicyArns:
       - Fn::Sub: "arn:${Partition}:iam::aws:policy/AWSXRayDaemonWriteAccess"
+
+Outputs:
+  #@overlay/match missing_ok=True
+  OcrProcessor:
+    Value:
+      Ref: OcrProcessor

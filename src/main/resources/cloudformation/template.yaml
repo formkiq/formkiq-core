@@ -618,21 +618,6 @@ Resources:
       Parameters:
         AppEnvironment: 
           Ref: AppEnvironment
-
-  Ocr:
-    Type: AWS::Serverless::Application
-    DependsOn:
-      - CoreApi
-    Properties:
-      Location: ocr/template.yaml
-      Parameters:
-        AppEnvironment: 
-          Ref: AppEnvironment
-        Partition:
-          Fn::FindInMap:
-          - RegionMap
-          - Ref: "AWS::Region"
-          - PARTITION
                     
 Outputs:
   AppEnvironment:

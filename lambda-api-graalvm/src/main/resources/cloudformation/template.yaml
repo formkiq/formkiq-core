@@ -121,105 +121,42 @@ Conditions:
       - Fn::Equals: 
         - Ref: CertificateStackName
         - ''
-        
-  HasVpcStackName:
-    Fn::Not:
-      - Fn::Equals: 
-        - Ref: VpcStackName
-        - ''
 
-  HasTypesenseApiKey:
-    Fn::Not:
-      - Fn::Equals: 
-        - Ref: TypesenseApiKey
-        - ''
-        
-  CreateTypesenseResources: 
-    Fn::And:
-      - Condition: HasVpcStackName
-      - Condition: HasTypesenseApiKey
-      
 Resources:        
 
-  DocumentsApiRequestsLogGroup:
-    Type: AWS::Logs::LogGroup
+  ApiLambda:
+    Type: AWS::Serverless::Application
     Properties:
-      LogGroupName: 
-        Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/${DocumentsApiRequests}"
-      RetentionInDays: 90
-      Tags:
-        - Key: "Application"
-          Value: 
-            Fn::Sub: "FormKiQ ${FormKiQType}"
-        - Key: "AppEnvironment"
-          Value: 
-            Fn::Sub: "${AppEnvironment}"
-      
-  DocumentsApiRequests:
-    Type: AWS::Serverless::Function
-    DependsOn:
-    - DocumentsApiRequestsRole
-    Properties:
-      Handler: com.formkiq.stacks.api.CoreRequestHandler
-      Description: Lambda function that processes API requests
-      Runtime: provided.al2
-      Timeout: 
-        Fn::Sub: "${LambdaTimeout}"
-      MemorySize: 
-        Fn::Sub: "${LambdaMemory}"
-      CodeUri: ./lambda-api-graalvm.zip
-      Tracing: Active
-      AutoPublishCodeSha256: #@ data.values.hash or assert.fail("missing version")
-      Environment:
-        Variables:
-          APP_ENVIRONMENT: 
-            Fn::Sub: "${AppEnvironment}"
-          DEBUG: false
-          ENABLE_AWS_X_RAY: true
-          COGNITO_USER_POOL_CLIENT_ID:
-            Ref: CognitoUserPoolClient
-          COGNITO_USER_POOL_ID:
-            Ref: CognitoUserPool
-          DOCUMENTS_TABLE: 
-            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"
-          CACHE_TABLE: 
-            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/CacheTableName}}"
-          DOCUMENTS_S3_BUCKET: 
-            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket}}"
-          STAGE_DOCUMENTS_S3_BUCKET: 
-            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsStageS3Bucket}}"
-          SNS_DOCUMENT_EVENT: 
-            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/sns/DocumentEventArn}}"
-          ENABLE_PUBLIC_URLS: 
-            Fn::Sub: "${EnablePublicUrls}"
-          FORMKIQ_TYPE: 
-            Ref: FormKiQType
-          WEBSOCKET_SQS_URL: 
-            Ref: WebsocketSqsQueueUrl
-          USER_AUTHENTICATION:
-            Ref: UserAuthentication
-          DOCUMENT_VERSIONS_PLUGIN: "com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning"
-          DOCUMENT_SYNC_TABLE: 
-            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentSyncsTableName}}"
-          TYPESENSE_HOST:
-            Ref: TypesenseApiEndpoint
-          TYPESENSE_API_KEY:
-            Ref: TypesenseApiKey
-          OCR_S3_BUCKET:
-            Ref: OcrBucket
-          OCR_SQS_QUEUE_URL:
-            Fn::GetAtt: 
+      Location: ./api-lambda.yaml
+      Parameters:
+        AppEnvironment: 
+          Ref: AppEnvironment
+        FormKiQType: 
+          Ref: FormKiQType
+        CognitoUserPool:
+          Ref: CognitoUserPool
+        CognitoUserPoolClient:
+          Ref: CognitoUserPoolClient
+        WebsocketSqsQueueUrl:
+          Ref: WebsocketSqsQueueUrl
+        UserAuthentication:
+          Ref: UserAuthentication
+        TypesenseApiKey:
+          Ref: TypesenseApiKey
+        TypesenseApiEndpoint:
+          Ref: TypesenseApiEndpoint
+        OcrBucket:
+          Ref: OcrBucket
+        OcrQueueUrl:
+          Fn::GetAtt: 
             - OcrQueue
             - QueueUrl
-          MODULE_typesense:
-            Fn::If:
-            - CreateTypesenseResources
-            - "true"
-            - "false"
-      Role: 
-        Fn::GetAtt:
-        - DocumentsApiRequestsRole
-        - Arn
+        VpcStackName:
+          Ref: VpcStackName
+        Partition:
+          Ref: Partition
+        EnablePublicUrls:
+          Ref: EnablePublicUrls
       Tags:
         Application: 
           Fn::Sub: "FormKiQ ${FormKiQType}"
@@ -227,17 +164,98 @@ Resources:
           Fn::Sub: "${AppEnvironment}"
         StackName: 
           Fn::Sub: "${AWS::StackName}"
-        
+
+  HttpApi:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: ./api.yaml
+      Parameters:
+        AppEnvironment: 
+          Ref: AppEnvironment
+        Partition:
+          Ref: Partition
+        CognitoUserPool:
+          Ref: CognitoUserPool
+        CognitoUserPoolClient:
+          Ref: CognitoUserPoolClient
+        OcrApiRequestsArn:
+          Fn::GetAtt: 
+          - Ocr
+          - Outputs.OcrProcessor
+        DocumentsApiRequestsArn:
+          Fn::GetAtt: 
+          - ApiLambda
+          - Outputs.DocumentsApiRequestsArn
+      Tags:
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+          
+  IamApi:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: ./api-iam.yaml
+      Parameters:
+        AppEnvironment: 
+          Ref: AppEnvironment
+        Partition:
+          Ref: Partition
+        DocumentsApiRequestsArn:
+          Fn::GetAtt: 
+          - ApiLambda
+          - Outputs.DocumentsApiRequestsArn
+        OcrApiRequestsArn:
+          Fn::GetAtt: 
+          - Ocr
+          - Outputs.OcrProcessor
+      Tags:
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+          
+  KeyApi:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: ./api-apikey.yaml
+      Parameters:
+        AppEnvironment: 
+          Ref: AppEnvironment
+        Partition:
+          Ref: Partition
+        FormKiQType:
+          Ref: FormKiQType
+        DocumentsApiRequestsArn:
+          Fn::GetAtt: 
+          - ApiLambda
+          - Outputs.DocumentsApiRequestsArn
+        OcrApiRequestsArn:
+          Fn::GetAtt: 
+          - Ocr
+          - Outputs.OcrProcessor
+      Tags:
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+          
   DocumentsApiInvokePermission:
     Type: "AWS::Lambda::Permission"
     DependsOn:
-    - DocumentsIamApi
-    - DocumentsKeyApi
-    - DocumentsApiRequests
+    - ApiLambda
     Properties:
       Action: lambda:InvokeFunction
       FunctionName: 
-        Ref: DocumentsApiRequests
+        Fn::GetAtt: 
+        - ApiLambda
+        - Outputs.DocumentsApiRequests
       Principal: apigateway.amazonaws.com
       
   DocumentsStageAccessLogs:
@@ -264,10 +282,12 @@ Resources:
   DocumentsStage:
     Type: AWS::ApiGatewayV2::Stage
     DependsOn:
-      - DocumentsHttpApi
+      - HttpApi
     Properties:
       ApiId: 
-        Ref: DocumentsHttpApi
+        Fn::GetAtt:
+          - HttpApi
+          - Outputs.DocumentsHttpApi
       AutoDeploy: true
       Description: 
         Fn::Sub: "Documents API ${AppEnvironment}"
@@ -287,17 +307,21 @@ Resources:
         Fn::ImportValue:
           Fn::Sub: '${CertificateStackName}-HttpApiDomain'
       ApiId: 
-        Ref: DocumentsHttpApi
+        Fn::GetAtt:
+          - HttpApi
+          - Outputs.DocumentsHttpApi
       Stage: 
         Ref: DocumentsStage
 
   IamDocumentsStage:
     Type: AWS::ApiGatewayV2::Stage
     DependsOn:
-      - DocumentsIamApi
+      - IamApi
     Properties:
       ApiId: 
-        Ref: DocumentsIamApi
+        Fn::GetAtt:
+          - IamApi
+          - Outputs.DocumentsIamApi
       AutoDeploy: true
       Description: 
         Fn::Sub: "Documents IAM API ${AppEnvironment}"
@@ -317,17 +341,21 @@ Resources:
         Fn::ImportValue:
           Fn::Sub: '${CertificateStackName}-IamApiDomain'
       ApiId: 
-        Ref: DocumentsIamApi
+        Fn::GetAtt:
+          - IamApi
+          - Outputs.DocumentsIamApi
       Stage: 
         Ref: IamDocumentsStage
 
   KeyDocumentsStage:
     Type: AWS::ApiGatewayV2::Stage
     DependsOn:
-      - DocumentsKeyApi
+      - KeyApi
     Properties:
       ApiId: 
-        Ref: DocumentsKeyApi
+        Fn::GetAtt:
+          - KeyApi
+          - Outputs.DocumentsKeyApi
       AutoDeploy: true
       Description: 
         Fn::Sub: "Documents API Key ${AppEnvironment}"
@@ -347,7 +375,9 @@ Resources:
         Fn::ImportValue:
           Fn::Sub: '${CertificateStackName}-KeyApiDomain'
       ApiId: 
-        Ref: DocumentsKeyApi
+        Fn::GetAtt:
+          - KeyApi
+          - Outputs.DocumentsKeyAp
       Stage: 
         Ref: KeyDocumentsStage
 
@@ -359,7 +389,9 @@ Resources:
         Fn::Sub: "/formkiq/${AppEnvironment}/api/DocumentsHttpId"
       Type: String
       Value: 
-        Ref: DocumentsHttpApi
+        Fn::GetAtt:
+          - HttpApi
+          - Outputs.DocumentsHttpApi
       Tags:
         Application: 
           Fn::Sub: "FormKiQ ${FormKiQType}"
@@ -383,7 +415,9 @@ Resources:
             - - 'https://'
               - Fn::ImportValue:
                   Fn::Sub: '${CertificateStackName}-HttpApiDomain'
-          - Fn::Sub: "https://${DocumentsHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+          - Fn::GetAtt:
+            - HttpApi
+            - Outputs.DocumentsHttpApiUrl
       Tags:
         Application: 
           Fn::Sub: "FormKiQ ${FormKiQType}"
@@ -407,7 +441,9 @@ Resources:
             - - 'https://'
               - Fn::ImportValue:
                   Fn::Sub: '${CertificateStackName}-HttpApiDomain'
-          - Fn::Sub: "https://${DocumentsHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+          - Fn::GetAtt:
+            - HttpApi
+            - Outputs.DocumentsHttpApiUrl
       Tags:
         Application: 
           Fn::Sub: "FormKiQ ${FormKiQType}"
@@ -415,151 +451,6 @@ Resources:
           Fn::Sub: "${AppEnvironment}"
         StackName: 
           Fn::Sub: "${AWS::StackName}"
-        
-  DocumentsApiRequestsRole:
-    Type: AWS::IAM::Role
-    Properties:
-      Tags:
-        - Key: "Application"
-          Value: 
-            Fn::Sub: "FormKiQ ${FormKiQType}"
-        - Key: "AppEnvironment"
-          Value: 
-            Fn::Sub: "${AppEnvironment}"
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-        - Effect: Allow
-          Principal:
-            Service:
-            - lambda.amazonaws.com
-          Action:
-          - sts:AssumeRole
-      Path: /
-      ManagedPolicyArns:
-      - Fn::Sub: "arn:${Partition}:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess"
-      - Fn::Sub: "arn:${Partition}:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
-      - Fn::Sub: "arn:${Partition}:iam::aws:policy/AmazonElasticFileSystemClientReadWriteAccess"
-      - Fn::Sub: "arn:${Partition}:iam::aws:policy/AWSXRayDaemonWriteAccess"
-      Policies:
-        -
-          PolicyName: apigatewaylambdarole
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-            - Effect: Allow
-              Action:
-              - logs:CreateLogGroup
-              - logs:CreateLogStream
-              - logs:PutLogEvents
-              Resource: "*"
-            - Effect: Allow
-              Action:
-              - ses:ListIdentities
-              Resource: "*"
-            - Effect: Allow
-              Action:
-              - s3:GetObject
-              - s3:GetObjectVersion
-              - s3:PutObject
-              - s3:DeleteObject
-              - s3:DeleteObjectVersion
-              - s3:ListBucket
-              - s3:ListBucketVersions
-              - s3:PutObjectTagging
-              Resource:
-              - Fn::Join:
-                - ''
-                - - Fn::Sub: "arn:${Partition}:s3:::"
-                  - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket}}"
-              - Fn::Join:
-                - ''
-                - - Fn::Sub: "arn:${Partition}:s3:::"
-                  - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket}}"
-                  - '/*'
-              - Fn::Join:
-                - ''
-                - - Fn::Sub: "arn:${Partition}:s3:::"
-                  - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsStageS3Bucket}}"
-              - Fn::Join:
-                - ''
-                - - Fn::Sub: "arn:${Partition}:s3:::"
-                  - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsStageS3Bucket}}"
-                  - '/*'
-            - Effect: Allow
-              Action:
-              - dynamodb:BatchGetItem
-              - dynamodb:BatchWriteItem
-              - dynamodb:Get*
-              - dynamodb:Query
-              - dynamodb:Scan
-              - dynamodb:PutItem
-              - dynamodb:DeleteItem
-              - dynamodb:UpdateItem
-              Resource: 
-              - Fn::Sub: "arn:${Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"
-            - Effect: Allow
-              Action:
-              - dynamodb:Query
-              - dynamodb:Scan
-              Resource:
-              - Fn::Sub: "arn:${Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}/index/*"
-            - Effect: Allow
-              Action:
-              - dynamodb:Get*
-              - dynamodb:Put*
-              Resource: 
-              - Fn::Sub: "arn:${Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/CacheTableName}}"
-            - Effect: Allow
-              Action:
-              - ssm:GetParameter
-              - ssm:PutParameter
-              Resource: 
-              - Fn::Sub: "arn:${Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/formkiq/*"
-            - Effect: Allow
-              Action:
-              - sqs:SendMessage
-              Resource:
-              - Fn::Sub: "arn:${Partition}:sqs:${AWS::Region}:${AWS::AccountId}:formkiq*"
-              - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/sqs/WebsocketArn}}"
-            - Effect: Allow
-              Action:
-              - dynamodb:BatchGetItem
-              - dynamodb:Get*
-              - dynamodb:Query
-              Resource:
-              - Fn::Sub: "arn:${Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentSyncsTableName}}"
-            - Effect: Allow
-              Action:
-              - sns:Publish
-              Resource:
-              - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/sns/DocumentEventArn}}"
-            - Effect: Allow
-              Action:
-              - cognito-idp:ListGroups
-              - cognito-idp:ListUsersInGroup
-              Resource:
-              - Fn::Sub: "arn:${Partition}:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${CognitoUserPool}"
-            - Effect: Allow
-              Action:
-              - s3:GetObject
-              - s3:DeleteObject
-              - s3:ListBucket
-              - s3:PutObject              
-              Resource:
-                Fn::Join:
-                - ''
-                - - Fn::Sub: "arn:${Partition}:s3:::"
-                  - Ref: OcrBucket
-                  - "/*"
-            - Effect: Allow
-              Action:
-              - s3:ListBucket
-              Resource:
-                Fn::Join:
-                - ''
-                - - Fn::Sub: "arn:${Partition}:s3:::"
-                  - Ref: OcrBucket
 
   DocumentsIamApiUrlParameter:
     Type: AWS::SSM::Parameter
@@ -576,7 +467,9 @@ Resources:
             - - 'https://'
               - Fn::ImportValue:
                   Fn::Sub: '${CertificateStackName}-IamApiDomain'
-          - Fn::Sub: "https://${DocumentsIamApi}.execute-api.${AWS::Region}.amazonaws.com"
+          - Fn::GetAtt:
+            - IamApi
+            - Outputs.DocumentsIamApiUrl
       Tags:
         Application: 
           Fn::Sub: "FormKiQ ${FormKiQType}"
@@ -593,7 +486,9 @@ Resources:
         Fn::Sub: "/formkiq/${AppEnvironment}/api/DocumentsIamId"
       Type: String
       Value: 
-        Ref: DocumentsIamApi
+        Fn::GetAtt:
+          - IamApi
+          - Outputs.DocumentsIamApi
       Tags:
         Application: 
           Fn::Sub: "FormKiQ ${FormKiQType}"
@@ -617,7 +512,9 @@ Resources:
             - - 'https://'
               - Fn::ImportValue:
                   Fn::Sub: '${CertificateStackName}-IamApiDomain'
-          - Fn::Sub: "https://${DocumentsKeyApi}.execute-api.${AWS::Region}.amazonaws.com"
+          - Fn::GetAtt:
+            - KeyApi
+            - Outputs.DocumentsKeyApiUrl
       Tags:
         Application: 
           Fn::Sub: "FormKiQ ${FormKiQType}"
@@ -634,7 +531,9 @@ Resources:
         Fn::Sub: "/formkiq/${AppEnvironment}/api/DocumentsKeyId"
       Type: String
       Value: 
-        Ref: DocumentsKeyApi
+        Fn::GetAtt:
+          - KeyApi
+          - Outputs.DocumentsKeyApi
       Tags:
         Application: 
           Fn::Sub: "FormKiQ ${FormKiQType}"
@@ -651,7 +550,9 @@ Resources:
         Fn::Sub: "/formkiq/${AppEnvironment}/lambda/DocumentsApiRequests"
       Type: String
       Value: 
-        Ref: DocumentsApiRequests
+        Fn::GetAtt: 
+        - ApiLambda
+        - Outputs.DocumentsApiRequests
       Tags:
         Application: 
           Fn::Sub: "FormKiQ ${FormKiQType}"
@@ -793,7 +694,20 @@ Resources:
           Fn::Sub: "${AppEnvironment}"
         StackName: 
           Fn::Sub: "${AWS::StackName}"
-      
+
+  Ocr:
+    Type: AWS::Serverless::Application
+    DependsOn:
+      - OcrBucket
+      - OcrQueue
+    Properties:
+      Location: template-ocr.yaml
+      Parameters:
+        AppEnvironment: 
+          Ref: AppEnvironment
+        Partition:
+          Ref: Partition
+          
 Outputs:
   ApiGatewayInvokeRole:
     Description: "API Gateway Role that allows invoking of endpoints"
@@ -817,8 +731,10 @@ Outputs:
       - Arn    
   DocumentsApiRequests:
     Description: "FormKiQ Api Request Handler"
-    Value: 
-      Ref: DocumentsApiRequests
+    Value:
+      Fn::GetAtt: 
+      - ApiLambda
+      - Outputs.DocumentsApiRequests
   DocumentsIamApiUrl:
     Description: "The endpoint url for the IAM API"
     Value: 
@@ -829,7 +745,9 @@ Outputs:
           - - 'https://'
             - Fn::ImportValue:
                 Fn::Sub: '${CertificateStackName}-IamApiDomain'
-        - Fn::Sub: "https://${DocumentsIamApi}.execute-api.${AWS::Region}.amazonaws.com"
+        - Fn::GetAtt:
+          - IamApi
+          - Outputs.DocumentsIamApiUrl
   DocumentsKeyApiUrl:
     Description: "The endpoint url for the Key API"
     Value: 
@@ -840,7 +758,9 @@ Outputs:
           - - 'https://'
             - Fn::ImportValue:
                 Fn::Sub: '${CertificateStackName}-KeyApiDomain'
-        - Fn::Sub: "https://${DocumentsKeyApi}.execute-api.${AWS::Region}.amazonaws.com"    
+        - Fn::GetAtt:
+          - KeyApi
+          - Outputs.DocumentsKeyApiUrl    
   DocumentsHttpApiUrl:
     Description: "The endpoint url for the Http API"
     Value:
@@ -851,4 +771,6 @@ Outputs:
           - - 'https://'
             - Fn::ImportValue:
                 Fn::Sub: '${CertificateStackName}-HttpApiDomain'
-        - Fn::Sub: "https://${DocumentsHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+        - Fn::GetAtt:
+          - HttpApi
+          - Outputs.DocumentsHttpApiUrl

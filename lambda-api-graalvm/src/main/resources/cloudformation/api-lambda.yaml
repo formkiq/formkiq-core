@@ -1,0 +1,341 @@
+#@ load("@ytt:data", "data")
+#@ load("@ytt:assert", "assert")
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: FormKiQ Core - API
+    
+Parameters:
+              
+  AppEnvironment:
+    Type: String
+    AllowedPattern: ".+"
+    Description: The FormKiQ Environment
+
+  FormKiQType:
+    Type: String
+    Description: The type of FormKiQ installation
+    AllowedPattern: ".+"
+
+  LambdaMemory:
+    Type: Number
+    Description: The amount of memory used by lambda function (MB)
+    Default: 1024
+    MinValue: 128
+    MaxValue: 3008
+  
+  LambdaTimeout:
+    Type: String
+    Description: The maximum amount of seconds lambda function will run for (seconds)
+    Default: 60
+
+  CognitoUserPool:
+    Type: String
+    Description: The Cognito User Pool Id
+    AllowedPattern: ".+"
+
+  CognitoUserPoolClient:
+    Type: String
+    Description: The Cognito User Pool Client Id
+    AllowedPattern: ".+"
+
+  WebsocketSqsQueueUrl:
+    Type: String
+    Description: "SQS URL for processing Websocket Messages"
+    AllowedPattern: ".+"
+   
+  UserAuthentication:
+    Description: How are the users authenticating
+    AllowedPattern: ".+"
+    Type: String
+    Default: "cognito"
+
+  TypesenseApiKey:
+    Type: String
+    Description: TypeSense API Key
+
+  TypesenseApiEndpoint:
+    Type: String
+    Description: TypeSense API Endpoint
+    
+  OcrBucket:
+    Type: String
+    Description: Name of OCR Bucket
+    
+  OcrQueueUrl:
+    Type: String
+    Description: Name of OCR Queue Url
+
+  VpcStackName:
+    Type: String
+    Description: FormKiQ VPC Stack Name 
+
+  Partition:
+    Description: The partition in which the resource is located. A partition is a group of AWS Regions
+    Type: String
+    
+  EnablePublicUrls:
+    Description: Whether to enable public urls
+    Type: String
+    
+Conditions:
+        
+  HasVpcStackName:
+    Fn::Not:
+      - Fn::Equals: 
+        - Ref: VpcStackName
+        - ''
+
+  HasTypesenseApiKey:
+    Fn::Not:
+      - Fn::Equals: 
+        - Ref: TypesenseApiKey
+        - ''
+        
+  CreateTypesenseResources: 
+    Fn::And:
+      - Condition: HasVpcStackName
+      - Condition: HasTypesenseApiKey
+      
+Resources:        
+
+  DocumentsApiRequestsLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: 
+        Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/${DocumentsApiRequests}"
+      RetentionInDays: 90
+      Tags:
+        - Key: "Application"
+          Value: 
+            Fn::Sub: "FormKiQ ${FormKiQType}"
+        - Key: "AppEnvironment"
+          Value: 
+            Fn::Sub: "${AppEnvironment}"
+      
+  DocumentsApiRequests:
+    Type: AWS::Serverless::Function
+    DependsOn:
+    - DocumentsApiRequestsRole
+    Properties:
+      Handler: com.formkiq.stacks.api.CoreRequestHandler
+      Description: Lambda function that processes API requests
+      Runtime: provided.al2
+      Timeout: 
+        Fn::Sub: "${LambdaTimeout}"
+      MemorySize: 
+        Fn::Sub: "${LambdaMemory}"
+      CodeUri: ./lambda-api-graalvm.zip
+      Tracing: Active
+      AutoPublishCodeSha256: #@ data.values.hash or assert.fail("missing version")
+      Environment:
+        Variables:
+          APP_ENVIRONMENT: 
+            Fn::Sub: "${AppEnvironment}"
+          DEBUG: false
+          ENABLE_AWS_X_RAY: true
+          COGNITO_USER_POOL_CLIENT_ID:
+            Ref: CognitoUserPoolClient
+          COGNITO_USER_POOL_ID:
+            Ref: CognitoUserPool
+          DOCUMENTS_TABLE: 
+            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"
+          CACHE_TABLE: 
+            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/CacheTableName}}"
+          DOCUMENTS_S3_BUCKET: 
+            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket}}"
+          STAGE_DOCUMENTS_S3_BUCKET: 
+            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsStageS3Bucket}}"
+          SNS_DOCUMENT_EVENT: 
+            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/sns/DocumentEventArn}}"
+          ENABLE_PUBLIC_URLS: 
+            Ref: EnablePublicUrls
+          FORMKIQ_TYPE: 
+            Ref: FormKiQType
+          WEBSOCKET_SQS_URL: 
+            Ref: WebsocketSqsQueueUrl
+          USER_AUTHENTICATION:
+            Ref: UserAuthentication
+          DOCUMENT_VERSIONS_PLUGIN: "com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning"
+          DOCUMENT_SYNC_TABLE: 
+            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentSyncsTableName}}"
+          TYPESENSE_HOST:
+            Ref: TypesenseApiEndpoint
+          TYPESENSE_API_KEY:
+            Ref: TypesenseApiKey
+          OCR_S3_BUCKET:
+            Ref: OcrBucket
+          OCR_SQS_QUEUE_URL:
+            Ref: OcrQueueUrl
+          MODULE_typesense:
+            Fn::If:
+            - CreateTypesenseResources
+            - "true"
+            - "false"
+      Role: 
+        Fn::GetAtt:
+        - DocumentsApiRequestsRole
+        - Arn
+      Tags:
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+          
+  DocumentsApiRequestsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Tags:
+        - Key: "Application"
+          Value: 
+            Fn::Sub: "FormKiQ ${FormKiQType}"
+        - Key: "AppEnvironment"
+          Value: 
+            Fn::Sub: "${AppEnvironment}"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+      - Fn::Sub: "arn:${Partition}:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess"
+      - Fn::Sub: "arn:${Partition}:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+      - Fn::Sub: "arn:${Partition}:iam::aws:policy/AmazonElasticFileSystemClientReadWriteAccess"
+      - Fn::Sub: "arn:${Partition}:iam::aws:policy/AWSXRayDaemonWriteAccess"
+      Policies:
+        -
+          PolicyName: apigatewaylambdarole
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              Resource: "*"
+            - Effect: Allow
+              Action:
+              - ses:ListIdentities
+              Resource: "*"
+            - Effect: Allow
+              Action:
+              - s3:GetObject
+              - s3:GetObjectVersion
+              - s3:PutObject
+              - s3:DeleteObject
+              - s3:DeleteObjectVersion
+              - s3:ListBucket
+              - s3:ListBucketVersions
+              - s3:PutObjectTagging
+              Resource:
+              - Fn::Join:
+                - ''
+                - - Fn::Sub: "arn:${Partition}:s3:::"
+                  - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket}}"
+              - Fn::Join:
+                - ''
+                - - Fn::Sub: "arn:${Partition}:s3:::"
+                  - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket}}"
+                  - '/*'
+              - Fn::Join:
+                - ''
+                - - Fn::Sub: "arn:${Partition}:s3:::"
+                  - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsStageS3Bucket}}"
+              - Fn::Join:
+                - ''
+                - - Fn::Sub: "arn:${Partition}:s3:::"
+                  - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsStageS3Bucket}}"
+                  - '/*'
+            - Effect: Allow
+              Action:
+              - dynamodb:BatchGetItem
+              - dynamodb:BatchWriteItem
+              - dynamodb:Get*
+              - dynamodb:Query
+              - dynamodb:Scan
+              - dynamodb:PutItem
+              - dynamodb:DeleteItem
+              - dynamodb:UpdateItem
+              Resource: 
+              - Fn::Sub: "arn:${Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"
+            - Effect: Allow
+              Action:
+              - dynamodb:Query
+              - dynamodb:Scan
+              Resource:
+              - Fn::Sub: "arn:${Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}/index/*"
+            - Effect: Allow
+              Action:
+              - dynamodb:Get*
+              - dynamodb:Put*
+              Resource: 
+              - Fn::Sub: "arn:${Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/CacheTableName}}"
+            - Effect: Allow
+              Action:
+              - ssm:GetParameter
+              - ssm:PutParameter
+              Resource: 
+              - Fn::Sub: "arn:${Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/formkiq/*"
+            - Effect: Allow
+              Action:
+              - sqs:SendMessage
+              Resource:
+              - Fn::Sub: "arn:${Partition}:sqs:${AWS::Region}:${AWS::AccountId}:formkiq*"
+              - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/sqs/WebsocketArn}}"
+            - Effect: Allow
+              Action:
+              - dynamodb:BatchGetItem
+              - dynamodb:Get*
+              - dynamodb:Query
+              Resource:
+              - Fn::Sub: "arn:${Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentSyncsTableName}}"
+            - Effect: Allow
+              Action:
+              - sns:Publish
+              Resource:
+              - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/sns/DocumentEventArn}}"
+            - Effect: Allow
+              Action:
+              - cognito-idp:ListGroups
+              - cognito-idp:ListUsersInGroup
+              Resource:
+              - Fn::Sub: "arn:${Partition}:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${CognitoUserPool}"
+            - Effect: Allow
+              Action:
+              - s3:GetObject
+              - s3:DeleteObject
+              - s3:ListBucket
+              - s3:PutObject              
+              Resource:
+                Fn::Join:
+                - ''
+                - - Fn::Sub: "arn:${Partition}:s3:::"
+                  - Ref: OcrBucket
+                  - "/*"
+            - Effect: Allow
+              Action:
+              - s3:ListBucket
+              Resource:
+                Fn::Join:
+                - ''
+                - - Fn::Sub: "arn:${Partition}:s3:::"
+                  - Ref: OcrBucket
+Outputs:
+  DocumentsApiRequests:
+    Description: "FormKiQ Api Request Handler"
+    Value: 
+      Ref: DocumentsApiRequests
+  DocumentsApiRequestsArn:
+    Description: "FormKiQ Api Request Handler Arn"
+    Value: 
+      Fn::GetAtt:
+        - DocumentsApiRequests
+        - Arn

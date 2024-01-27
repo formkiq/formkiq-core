@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.module.lambda.ocr.handlers;
 
@@ -40,9 +37,11 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.module.lambda.ocr.pdf.PdfService;
 import com.formkiq.module.lambda.ocr.pdf.PdfServicePdfBox;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 
 /** {@link ApiGatewayRequestHandler} for "/objects/examine/{id}/pdf". */
 public class ObjectExaminePdfIdHandler
@@ -62,14 +61,18 @@ public class ObjectExaminePdfIdHandler
 
     S3Service s3 = awsservice.getExtension(S3Service.class);
 
-    try (InputStream is = s3.getContentAsInputStream(bucket, s3key)) {
-      try (PDDocument document = PDDocument.load(is)) {
-        Map<String, String> documentFields = this.service.getFields(document);
-        List<Map<String, String>> fieldList = documentFields.entrySet().stream()
-            .map(e -> Map.of("field", e.getKey(), "value", e.getValue()))
-            .collect(Collectors.toList());
-        fields.put("fields", fieldList);
+    try {
+      try (InputStream is = s3.getContentAsInputStream(bucket, s3key)) {
+        try (PDDocument document = PDDocument.load(is)) {
+          Map<String, String> documentFields = this.service.getFields(document);
+          List<Map<String, String>> fieldList = documentFields.entrySet().stream()
+              .map(e -> Map.of("field", e.getKey(), "value", e.getValue()))
+              .collect(Collectors.toList());
+          fields.put("fields", fieldList);
+        }
       }
+    } catch (NoSuchKeyException e) {
+      fields = null;
     }
 
     return fields;
@@ -89,6 +92,10 @@ public class ObjectExaminePdfIdHandler
     String id = event.getPathParameters().get("id");
 
     Map<String, Object> fileinfo = getFileInfo(awsservice, siteId, id);
+
+    if (fileinfo == null) {
+      throw new DocumentNotFoundException(id);
+    }
 
     Map<String, Object> map = Map.of("fileinfo", fileinfo);
     ApiMapResponse resp = new ApiMapResponse(map);
