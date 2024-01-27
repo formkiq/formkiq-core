@@ -51,24 +51,11 @@ task buildTemplate {
 	      into "${buildDir}/distributions/formkiq-core/sam/api"
 	    }*/
 
-		// build OpenAPI definitions
-		//exec {
-		//	commandLine getCmd(), getCmdParam(), "ytt --data-value hash=${sha256} --data-value version=${project.version} -f src/main/resources/cloudformation/openapi-jwt.yaml > ${buildDir}/openapi-jwt.yaml"
-		//}
-
-		//exec {
-		//	commandLine getCmd(), getCmdParam(), "ytt --data-value hash=${sha256} --data-value version=${project.version} -f src/main/resources/cloudformation/openapi-iam.yaml > ${buildDir}/openapi-iam.yaml"
-		//}
-
-		//exec {
-		//	commandLine getCmd(), getCmdParam(), "ytt --data-value hash=${sha256} --data-value version=${project.version} -f src/main/resources/cloudformation/openapi-key.yaml > ${buildDir}/openapi-key.yaml"
-		//}
-
 		// build API Lambda
 		exec {
 			commandLine getCmd(), getCmdParam(), "ytt --data-value hash=${sha256} -f src/main/resources/cloudformation/api-lambda.yaml > ${buildDir}/distributions/api/api-lambda.yaml"
 		}
-		
+				
 		// build APIs
 		exec {
 			commandLine getCmd(), getCmdParam(), "ytt --data-value hash=${sha256} --data-value version=${project.version} -f src/main/resources/cloudformation/api.yaml -f src/main/resources/cloudformation/openapi-jwt.yaml > ${buildDir}/distributions/api/api.yaml"
@@ -101,10 +88,27 @@ task assembleOpenApiTemplate {
 	inputs.files("src/main/resources/cloudformation/api.yaml", "src/main/resources/cloudformation/api-iam.yaml", "src/main/resources/cloudformation/api-key.yaml")
 	
 	doLast {
-	
+
+		def fileSpec = new File("${buildDir}/openapi-spec.yaml")
+		fileSpec.text = ["Resources:"].join(System.lineSeparator())
+		
+		for (fileName in ["openapi-jwt", "openapi-iam", "openapi-key"]) {
+			exec {
+				commandLine getCmd(), getCmdParam(), "ytt --data-value version=${project.version} -f ${buildDir}/openapi-spec.yaml -f ${buildDir}/../src/main/resources/cloudformation/${fileName}.yaml > ${buildDir}/temp-${fileName}.yaml"
+			}
+		}
+
 		for (fileName in ["openapi-jwt", "openapi-iam", "openapi-key"]) {
 		
-			def file = new File("${buildDir}/${fileName}")
+			def lines = new File("${buildDir}/temp-${fileName}.yaml").readLines()
+			for (int i = 0; i < 4; i++) {
+			  lines.removeAt(0)
+			}
+			
+			def file = new File("${buildDir}/../../docs/openapi/${fileName}.yaml")
+			file.text = lines
+				.findAll { line -> !line.contains("API - ") }
+				.collect { e -> e.startsWith("          title:") ? "          title: FormKiQ API" : e}.join(System.lineSeparator())
 			
 			javaexec { 
     			main="-jar";

@@ -1,6 +1,6 @@
         openapi: 3.0.1
         info:
-          title: FormKiQ KEY API
+          title: FormKiQ API
           contact:
             name: FormKiQ
             url: https://formkiq.com
@@ -4405,7 +4405,7 @@
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
-                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+                $ref: '#/components/x-amazon-apigateway-integrations/ocrObjectsLambdaApi200'
           /objects/examine/{id}/pdf:
             post:
               operationId: AddExaminePdf
@@ -4439,7 +4439,7 @@
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
-                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+                $ref: '#/components/x-amazon-apigateway-integrations/ocrObjectsLambdaApi200'
         components:
           headers:
             AccessControlAllowOrigin:
@@ -7866,7 +7866,7 @@
           x-amazon-apigateway-integrations:
             lambdaApi200:
               uri:
-                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations
+                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
               responses:
                 default:
                   statusCode: "200"
@@ -7880,7 +7880,7 @@
               payloadFormatVersion: "1.0"
             ocrLambdaApi200:
               uri:
-                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations
+                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
               responses:
                 default:
                   statusCode: "200"
@@ -7894,7 +7894,7 @@
               payloadFormatVersion: "1.0"
             antivirusLambdaApi200:
               uri:
-                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations
+                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
               responses:
                 default:
                   statusCode: "200"
@@ -7908,7 +7908,7 @@
               payloadFormatVersion: "1.0"
             searchLambdaApi200:
               uri:
-                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations
+                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
               responses:
                 default:
                   statusCode: "200"
@@ -7922,7 +7922,21 @@
               payloadFormatVersion: "1.0"
             fulltextLambdaApi200:
               uri:
-                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations
+                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
+              responses:
+                default:
+                  statusCode: "200"
+                  responseParameters:
+                    method.response.header.Access-Control-Allow-Methods: '''*'''
+                    method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key'''
+                    method.response.header.Access-Control-Allow-Origin: '''*'''
+              passthroughBehavior: when_no_templates
+              httpMethod: POST
+              type: aws_proxy
+              payloadFormatVersion: "1.0"
+            ocrObjectsLambdaApi200:
+              uri:
+                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${OcrApiRequestsArn}/invocations
               responses:
                 default:
                   statusCode: "200"
@@ -7936,7 +7950,7 @@
               payloadFormatVersion: "1.0"
             onlyOfficeLambdaApi200:
               uri:
-                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations
+                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
               responses:
                 default:
                   statusCode: "200"
@@ -7950,7 +7964,7 @@
               payloadFormatVersion: "1.0"
             esignatureLambdaApi200:
               uri:
-                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations
+                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
               responses:
                 default:
                   statusCode: "200"
@@ -7964,7 +7978,7 @@
               payloadFormatVersion: "1.0"
             caseManagementLambdaApi200:
               uri:
-                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations
+                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
               responses:
                 default:
                   statusCode: "200"
@@ -7978,7 +7992,7 @@
               payloadFormatVersion: "1.0"
             lambdaApi201:
               uri:
-                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations
+                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
               responses:
                 default:
                   statusCode: "201"
@@ -7998,3 +8012,10 @@
               gatewayresponse.header.Access-Control-Allow-Origin: '''*'''
               gatewayresponse.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key'''
         x-amazon-apigateway-cors:
+          allowOrigins:
+          - '*'
+          maxAge: 3600
+          allowMethods:
+          - '*'
+          allowHeaders:
+          - '*'

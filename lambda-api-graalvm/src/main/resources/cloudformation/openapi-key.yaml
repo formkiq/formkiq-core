@@ -12,7 +12,7 @@ Resources:
         openapi: "3.0.1"
         info:
           title:
-            Fn::Sub: "${AWS::StackName} API Key - ${AppEnvironment}"
+            Fn::Sub: "${AWS::StackName} Key API - ${AppEnvironment}"
           contact:
             name: FormKiQ
             url: https://formkiq.com
