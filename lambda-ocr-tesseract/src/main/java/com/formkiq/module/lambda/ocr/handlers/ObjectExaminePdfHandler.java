@@ -55,7 +55,7 @@ public class ObjectExaminePdfHandler
 
     S3PresignerService service = awsservice.getExtension(S3PresignerService.class);
 
-    PresignGetUrlConfig config = new PresignGetUrlConfig();
+    PresignGetUrlConfig config = new PresignGetUrlConfig().contentType("application/pdf");
 
     String siteId = authorization.getSiteId();
     String id = UUID.randomUUID().toString();
