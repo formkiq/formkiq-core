@@ -29,9 +29,9 @@ import java.net.URL;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -55,15 +55,13 @@ public class ObjectExaminePdfHandler
 
     S3PresignerService service = awsservice.getExtension(S3PresignerService.class);
 
-    PresignGetUrlConfig config = new PresignGetUrlConfig().contentType("application/pdf");
-
     String siteId = authorization.getSiteId();
     String id = UUID.randomUUID().toString();
 
     String bucket = awsservice.environment("STAGE_DOCUMENTS_S3_BUCKET");
     String s3key = String.format("tempfiles/%s", createS3Key(siteId, id));
 
-    URL url = service.presignGetUrl(bucket, s3key, Duration.ofDays(1), null, config);
+    URL url = service.presignPutUrl(bucket, s3key, Duration.ofDays(1), Optional.empty(), null);
 
     Map<String, Object> map = new HashMap<>();
     map.put("id", id);
