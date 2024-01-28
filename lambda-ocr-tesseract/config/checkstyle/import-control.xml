@@ -16,6 +16,7 @@
 				<allow pkg="java.net" />
 				<allow pkg="java.util" />
 				<allow pkg="java.time" />
+				<allow pkg="org.apache.pdfbox" />
 				<allow pkg="com.amazonaws.services.lambda.runtime" />
 				<allow pkg="com.formkiq.aws.s3" />
 				<allow pkg="org.apache.pdfbox.pdmodel" />
@@ -46,6 +47,7 @@
 				
 				<allow pkg="com.formkiq.aws.dynamodb.objects" />
 				
+				<allow pkg="org.apache.pdfbox" />
 				<allow pkg="org.apache.pdfbox.cos" />
 				<allow pkg="org.apache.pdfbox.pdmodel" />
 				<allow pkg="org.apache.pdfbox.text" />

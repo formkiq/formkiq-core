@@ -28,8 +28,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.junit.jupiter.api.Test;
+import software.amazon.awssdk.utils.IoUtils;
 
 class PdfPortfolioTest {
 
@@ -44,7 +46,9 @@ class PdfPortfolioTest {
     // given
     try (InputStream is = getClass().getResourceAsStream("/portfolio.pdf")) {
 
-      try (PDDocument doc = PDDocument.load(is)) {
+      byte[] bytes = IoUtils.toByteArray(is);
+
+      try (PDDocument doc = Loader.loadPDF(bytes)) {
 
         // when
         List<Map<String, Object>> pdfEmbeddedFiles = this.pdf.getPdfEmbeddedFiles(doc);

@@ -2,8 +2,8 @@
 description = "AWS Cognito Identity Provider"
 
 dependencies {
-	api group: 'software.amazon.awssdk', name: 'cognitoidentityprovider', version: '2.20.140'
-	implementation group: 'software.amazon.awssdk', name: 'url-connection-client', version: '2.20.140'
+	api group: 'software.amazon.awssdk', name: 'cognitoidentityprovider', version: '2.23.12'
+	implementation group: 'software.amazon.awssdk', name: 'url-connection-client', version: '2.23.12'
 	implementation project(':fkq-lambda-services')
 	
 	configurations.all {

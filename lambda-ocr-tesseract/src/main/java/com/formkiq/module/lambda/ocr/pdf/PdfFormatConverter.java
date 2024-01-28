@@ -27,6 +27,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import com.formkiq.aws.dynamodb.objects.MimeType;
@@ -53,7 +54,7 @@ public class PdfFormatConverter implements FormatConverter {
 
     PDFTextStripper pdfTextStripper = new PDFTextStripper();
 
-    try (PDDocument document = PDDocument.load(file)) {
+    try (PDDocument document = Loader.loadPDF(file)) {
 
       sb.append(pdfTextStripper.getText(document));
 
@@ -68,7 +69,7 @@ public class PdfFormatConverter implements FormatConverter {
           if (filename.endsWith(".pdf")) {
             byte[] data = (byte[]) map.get("data");
 
-            try (PDDocument embeddedDocument = PDDocument.load(data)) {
+            try (PDDocument embeddedDocument = Loader.loadPDF(data)) {
               sb.append(pdfTextStripper.getText(embeddedDocument));
             }
           }

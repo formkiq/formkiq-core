@@ -11,17 +11,17 @@ dependencies {
     implementation project(':aws-dynamodb')
     implementation project(':fkq-lambda-services')
     
-	implementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.12.543'
+	implementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.12.646'
 	implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.3'
 	api group: 'com.formkiq', name: 'client', version:'1.14.0-SNAPSHOT'
 	implementation group: 'com.google.code.gson', name: 'gson', version: '2.10.1'
-	implementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.10.0'
-	implementation group: 'org.testcontainers', name: 'testcontainers', version: '1.19.0'
-	implementation group: 'org.testcontainers', name: 'localstack', version: '1.19.0'
+	implementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.10.1'
+	implementation group: 'org.testcontainers', name: 'testcontainers', version: '1.19.4'
+	implementation group: 'org.testcontainers', name: 'localstack', version: '1.19.4'
 	api group: 'org.mock-server', name: 'mockserver-netty', version: '5.15.0'
-	implementation group: 'io.jsonwebtoken', name: 'jjwt-api', version: '0.11.5'
-	implementation group: 'io.jsonwebtoken', name: 'jjwt-impl', version: '0.11.5'
-	implementation group: 'io.jsonwebtoken', name: 'jjwt-gson', version: '0.11.5'
+	implementation group: 'io.jsonwebtoken', name: 'jjwt-api', version: '0.12.3'
+	implementation group: 'io.jsonwebtoken', name: 'jjwt-impl', version: '0.12.3'
+	implementation group: 'io.jsonwebtoken', name: 'jjwt-gson', version: '0.12.3'
 }
 
 test {

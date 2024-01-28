@@ -15,12 +15,12 @@ dependencies {
     implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.3'
 	implementation group: 'com.google.code.gson', name: 'gson', version: '2.10.1'
 	implementation group: 'com.formkiq', name: 'graalvm-annotations', version: '1.2.0'
-	implementation group: 'software.amazon.awssdk', name: 'utils', version: '2.20.140'
+	implementation group: 'software.amazon.awssdk', name: 'utils', version: '2.23.12'
 	
 	testImplementation project(':fkq-test-utils')
-	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.10.0'
-	testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.19.0'
-	testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.19.0'
+	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.10.1'
+	testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.19.4'
+	testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.19.4'
 }
 
 test {

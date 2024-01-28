@@ -40,7 +40,7 @@ public class JwtTokenEncoder {
    * @return {@link String}
    */
   public static String encodeCognito(final String[] groups, final String username) {
-    String jws = Jwts.builder().setSubject("FormKiQ").claim("cognito:groups", groups)
+    String jws = Jwts.builder().subject("FormKiQ").claim("cognito:groups", groups)
         .claim("cognito:username", username).compact();
     return jws;
   }

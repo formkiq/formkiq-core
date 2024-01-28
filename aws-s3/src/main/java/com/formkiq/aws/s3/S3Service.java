@@ -240,6 +240,19 @@ public class S3Service {
   }
 
   /**
+   * Get File Content as byte[].
+   * 
+   * @param distributionBucket {@link String}
+   * @param key {@link String}
+   * @return byte[]
+   */
+  public byte[] getContentAsBytes(final String distributionBucket, final String key) {
+    GetObjectRequest get = GetObjectRequest.builder().bucket(distributionBucket).key(key).build();
+    ResponseBytes<GetObjectResponse> response = this.s3Client.getObjectAsBytes(get);
+    return response.asByteArray();
+  }
+
+  /**
    * Get File Content as {@link InputStream}.
    * 
    * @param distributionBucket {@link String}
@@ -249,7 +262,6 @@ public class S3Service {
   public InputStream getContentAsInputStream(final String distributionBucket, final String key) {
     GetObjectRequest get = GetObjectRequest.builder().bucket(distributionBucket).key(key).build();
     ResponseBytes<GetObjectResponse> response = this.s3Client.getObjectAsBytes(get);
-
     return response.asInputStream();
   }
 

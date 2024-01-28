@@ -33,10 +33,10 @@ dependencies {
 	testImplementation group: 'com.google.guava', name: 'guava', version: '31.1-jre'
 	testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.7'
 	
-	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.10.0'
-    testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.19.0'
-	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.19.0'
-	testImplementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.12.543'
+	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.10.1'
+    testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.19.4'
+	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.19.4'
+	testImplementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.12.646'
 	
 	configurations.all {
    		exclude group: 'software.amazon.awssdk', module: 'apache-client'

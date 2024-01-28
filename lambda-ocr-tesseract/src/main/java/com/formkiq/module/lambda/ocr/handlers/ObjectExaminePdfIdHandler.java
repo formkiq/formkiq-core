@@ -26,11 +26,11 @@ package com.formkiq.module.lambda.ocr.handlers;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.s3.S3Service;
@@ -65,14 +65,13 @@ public class ObjectExaminePdfIdHandler
     S3Service s3 = awsservice.getExtension(S3Service.class);
 
     try {
-      try (InputStream is = s3.getContentAsInputStream(bucket, s3key)) {
-        try (PDDocument document = PDDocument.load(is)) {
-          Map<String, String> documentFields = this.service.getFields(document);
-          List<Map<String, String>> fieldList = documentFields.entrySet().stream()
-              .map(e -> Map.of("field", e.getKey(), "value", e.getValue()))
-              .collect(Collectors.toList());
-          fields.put("fields", fieldList);
-        }
+      byte[] bytes = s3.getContentAsBytes(bucket, s3key);
+      try (PDDocument document = Loader.loadPDF(bytes)) {
+        Map<String, String> documentFields = this.service.getFields(document);
+        List<Map<String, String>> fieldList = documentFields.entrySet().stream()
+            .map(e -> Map.of("field", e.getKey(), "value", e.getValue()))
+            .collect(Collectors.toList());
+        fields.put("fields", fieldList);
       }
     } catch (NoSuchKeyException e) {
       fields = null;

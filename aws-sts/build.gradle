@@ -2,11 +2,11 @@
 description = "AWS STS"
 
 dependencies {
-    api group: 'software.amazon.awssdk', name: 'sts', version: '2.20.140'
-    implementation group: 'software.amazon.awssdk', name: 'url-connection-client', version: '2.20.140'
+    api group: 'software.amazon.awssdk', name: 'sts', version: '2.23.12'
+    implementation group: 'software.amazon.awssdk', name: 'url-connection-client', version: '2.23.12'
 	implementation group: 'commons-codec', name: 'commons-codec', version: '1.16.0'
     
-	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.10.0'
+	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.10.1'
     
     configurations.all {
    		exclude group: 'software.amazon.awssdk', module: 'apache-client'

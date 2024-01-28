@@ -5,13 +5,13 @@ dependencies {
 
 	annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.4.1'
 	
-	api group: 'software.amazon.awssdk', name: 'dynamodb', version: '2.20.140'
+	api group: 'software.amazon.awssdk', name: 'dynamodb', version: '2.23.12'
 	implementation project(':fkq-lambda-services')
 	//implementation project(':aws-xray')
-	implementation group: 'software.amazon.awssdk', name: 'url-connection-client', version: '2.20.140'
+	implementation group: 'software.amazon.awssdk', name: 'url-connection-client', version: '2.23.12'
     implementation group: 'com.formkiq', name: 'graalvm-annotations', version: '1.2.0'
     
-    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.10.0'
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.10.1'
     
     configurations.all {
    		exclude group: 'software.amazon.awssdk', module: 'apache-client'

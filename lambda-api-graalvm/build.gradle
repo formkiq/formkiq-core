@@ -23,7 +23,7 @@ compileJava {
 nativeImage {
 	outputFileName = "server"
 	mainClassName = "com.formkiq.lambda.runtime.graalvm.LambdaRuntime"
-	dockerImage = "ghcr.io/graalvm/graalvm-ce:ol9-java17-22.3.1"
+	dockerImage = "ghcr.io/graalvm/graalvm-ce:ol9-java17-22.3.3"
     enableHttp = true
     enableHttps = true
     enableStatic = true
