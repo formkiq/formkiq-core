@@ -160,6 +160,15 @@ Resources:
                 - "/*"
           - Effect: Allow
             Action:
+            - s3:PutObject
+            Resource:
+              Fn::Join:
+              - ''
+              - - Fn::Sub: "arn:${Partition}:s3:::"
+                - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsStageS3Bucket}}"
+                - "/*"
+          - Effect: Allow
+            Action:
             - s3:ListBucket
             Resource:
               Fn::Join:
