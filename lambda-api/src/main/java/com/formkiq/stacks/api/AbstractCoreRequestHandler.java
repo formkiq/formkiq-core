@@ -103,6 +103,10 @@ import com.formkiq.stacks.api.handler.PublicWebhooksRequestHandler;
 import com.formkiq.stacks.api.handler.QueueDocumentsRequestHandler;
 import com.formkiq.stacks.api.handler.QueueIdRequestHandler;
 import com.formkiq.stacks.api.handler.QueuesRequestHandler;
+import com.formkiq.stacks.api.handler.RulesetsIdRequestHandler;
+import com.formkiq.stacks.api.handler.RulesetsRequestHandler;
+import com.formkiq.stacks.api.handler.RulesetsRuleIdRequestHandler;
+import com.formkiq.stacks.api.handler.RulesetsRuleRequestHandler;
 import com.formkiq.stacks.api.handler.SearchFulltextRequestHandler;
 import com.formkiq.stacks.api.handler.SearchRequestHandler;
 import com.formkiq.stacks.api.handler.SitesRequestHandler;
@@ -154,6 +158,11 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new DocumentsIdAccessAttributesRequestHandler());
   }
 
+  private static void addEsignatureEndpoints() {
+    addRequestHandler(new EsignatureDocusignDocumentIdRequestHandler());
+    addRequestHandler(new EsignatureDocusignConfigRequestHandler());
+  }
+
   private static void addGroupUsersEndpoints() {
     addRequestHandler(new GroupsRequestHandler());
     addRequestHandler(new GroupsUsersRequestHandler());
@@ -172,6 +181,13 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
    */
   public static void addRequestHandler(final ApiGatewayRequestHandler handler) {
     URL_MAP.put(handler.getRequestUrl(), handler);
+  }
+
+  private static void addRulesetsEndpoints() {
+    addRequestHandler(new RulesetsRequestHandler());
+    addRequestHandler(new RulesetsIdRequestHandler());
+    addRequestHandler(new RulesetsRuleRequestHandler());
+    addRequestHandler(new RulesetsRuleIdRequestHandler());
   }
 
   private static void addUserActivitiesEndpoints() {
@@ -234,13 +250,13 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new IndicesFolderMoveRequestHandler());
     addRequestHandler(new IndicesRequestHandler());
     addRequestHandler(new IndicesSearchRequestHandler());
-    addRequestHandler(new EsignatureDocusignDocumentIdRequestHandler());
-    addRequestHandler(new EsignatureDocusignConfigRequestHandler());
+    addEsignatureEndpoints();
     addRequestHandler(new UpdateDocumentMatchingRequestHandler());
     addOnlyOfficeEndpoints();
     addGroupUsersEndpoints();
     addWorkflowEndpoints();
     addUserActivitiesEndpoints();
+    addRulesetsEndpoints();
   }
 
   /**
