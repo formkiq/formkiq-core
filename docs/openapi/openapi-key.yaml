@@ -336,13 +336,11 @@
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /configuration/opa:
             get:
-              operationId: GetOpaConfiguration
-              description: Returns OPA Configuration, can only be requested with ADMIN privileges
-              summary: Get OPA Configuration
+              operationId: GetOpaConfigurations
+              description: Returns a list of OPA Configuration, can only be requested with ADMIN privileges
+              summary: Get OPAs Configuration
               tags:
               - Access Control
-              parameters:
-              - $ref: '#/components/parameters/siteIdParam'
               responses:
                 "200":
                   description: 200 OK
@@ -359,7 +357,7 @@
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/GetOpaConfigurationResponse'
+                        $ref: '#/components/schemas/GetOpaConfigurationsResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -394,6 +392,37 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+          /configuration/opa/{opaId}:
+            get:
+              operationId: GetOpaConfiguration
+              description: Returns OPA Configuration, can only be requested with ADMIN privileges
+              summary: Get OPA Configuration
+              tags:
+              - Access Control
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/opaIdParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: string
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetOpaConfigurationResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
             delete:
               operationId: DeleteOpaConfiguration
               summary: Delete OPA Configuration
@@ -402,6 +431,7 @@
               - Access Control
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/opaIdParam'
               responses:
                 "200":
                   description: 200 OK
@@ -4525,6 +4555,13 @@
               required: true
               schema:
                 type: string
+            opaIdParam:
+              name: opaId
+              in: path
+              description: Identifier
+              required: true
+              schema:
+                type: string
             caseIdParam:
               name: caseId
               in: path
@@ -7186,12 +7223,28 @@
                 message:
                   type: string
                   description: Result message
-            GetOpaConfigurationResponse:
+            GetOpaConfigurationsResponse:
               type: object
               properties:
+                opaPolicies:
+                  type: array
+                  description: List of OPA policies
+                  items:
+                    $ref: '#/components/schemas/OpaPolicy'
+            OpaPolicy:
+              type: object
+              properties:
+                siteId:
+                  type: string
+                  description: SiteId to apply OPA Policy to
                 policy:
                   type: string
                   description: OPA Policy in YAML format
+            GetOpaConfigurationResponse:
+              type: object
+              properties:
+                opaPolicy:
+                  $ref: '#/components/schemas/OpaPolicy'
             SetOpaConfigurationRequest:
               type: object
               properties:
@@ -7204,9 +7257,9 @@
             SetOpaConfigurationResponse:
               type: object
               properties:
-                message:
+                opaId:
                   type: string
-                  description: Result message
+                  description: OPA policy identifier
             DeleteOpaConfigurationResponse:
               type: object
               properties:

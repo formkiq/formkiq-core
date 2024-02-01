@@ -97,7 +97,7 @@ public class DocumentAccessAttributesRequestTest extends AbstractApiClientReques
   }
 
   /**
-   * DELETE /configuration/opa.
+   * DELETE /configuration/opa/{opaId}.
    *
    * @throws Exception an error has occurred
    */
@@ -108,9 +108,11 @@ public class DocumentAccessAttributesRequestTest extends AbstractApiClientReques
 
       setBearerToken(siteId);
 
+      String opaId = UUID.randomUUID().toString();
+
       try {
         // when
-        this.api.deleteOpaConfiguration(siteId);
+        this.api.deleteOpaConfiguration(opaId, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -143,7 +145,7 @@ public class DocumentAccessAttributesRequestTest extends AbstractApiClientReques
   }
 
   /**
-   * GET /configuration/opa.
+   * GET /configuration/opa/{opaId}.
    *
    * @throws Exception an error has occurred
    */
@@ -154,14 +156,37 @@ public class DocumentAccessAttributesRequestTest extends AbstractApiClientReques
 
       setBearerToken(siteId);
 
+      String opaId = UUID.randomUUID().toString();
+
       try {
         // when
-        this.api.getOpaConfiguration(siteId);
+        this.api.getOpaConfiguration(opaId, siteId);
         fail();
       } catch (ApiException e) {
         // then
         assertEquals(SC_PAYMENT.getStatusCode(), e.getCode());
       }
+    }
+  }
+
+  /**
+   * GET /configuration/opa/{opaId}.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testGetOpaConfigurations() throws Exception {
+    // given
+    String siteId = null;
+    setBearerToken(siteId);
+
+    try {
+      // when
+      this.api.getOpaConfigurations();
+      fail();
+    } catch (ApiException e) {
+      // then
+      assertEquals(SC_PAYMENT.getStatusCode(), e.getCode());
     }
   }
 

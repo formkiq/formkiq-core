@@ -97,6 +97,7 @@ import com.formkiq.stacks.api.handler.OnlyOfficeEditRequestHandler;
 import com.formkiq.stacks.api.handler.OnlyOfficeNewRequestHandler;
 import com.formkiq.stacks.api.handler.OnlyOfficeSaveRequestHandler;
 import com.formkiq.stacks.api.handler.OpaConfigurationRequestHandler;
+import com.formkiq.stacks.api.handler.OpaIdConfigurationRequestHandler;
 import com.formkiq.stacks.api.handler.PrivateWebhooksRequestHandler;
 import com.formkiq.stacks.api.handler.PublicDocumentsRequestHandler;
 import com.formkiq.stacks.api.handler.PublicWebhooksRequestHandler;
@@ -155,6 +156,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
 
   private static void addAccessControlEndpoints() {
     addRequestHandler(new OpaConfigurationRequestHandler());
+    addRequestHandler(new OpaIdConfigurationRequestHandler());
     addRequestHandler(new DocumentsIdAccessAttributesRequestHandler());
   }
 
