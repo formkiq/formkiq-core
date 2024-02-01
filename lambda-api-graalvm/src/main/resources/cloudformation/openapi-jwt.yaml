@@ -6496,7 +6496,14 @@ Resources:
                     type: object
                 status:
                   $ref: "#/components/schemas/CaseStatus"
-        
+                  
+            RulesetStatus:
+              type: string
+              description: Status of the Ruleset
+              enum:
+                - ENABLED
+                - DISABLED
+
             AddRulesetResponse:
               type: "object"
               properties:
@@ -6581,6 +6588,8 @@ Resources:
                 version:
                   type: "number"
                   description: "Ruleset version"
+                status:
+                  $ref: "#/components/schemas/RulesetStatus"
         
             GetRulesResponse:
               type: "object"
@@ -6621,6 +6630,9 @@ Resources:
             Ruleset:
               type: "object"
               properties:
+                rulesetId:
+                  type: "string"
+                  description: "Ruleset identifier"
                 description:
                   type: "string"
                   description: "Ruleset description"
@@ -6630,13 +6642,21 @@ Resources:
                 version:
                   type: "number"
                   description: "Ruleset version"
-                    
+                insertedDate:
+                  type: "string"
+                  description: "Inserted Timestamp"
+                status:
+                  $ref: "#/components/schemas/RulesetStatus"
+                
             Rule:
               type: "object"
               properties:
                 description:
                   type: "string"
                   description: "Ruleset description"
+                insertedDate:
+                  type: "string"
+                  description: "Inserted Timestamp"
                 workflowId:
                   type: "string"
                   description: "Workflow to start on matching of conditions"
