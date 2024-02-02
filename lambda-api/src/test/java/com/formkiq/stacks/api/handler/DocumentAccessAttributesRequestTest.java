@@ -112,7 +112,7 @@ public class DocumentAccessAttributesRequestTest extends AbstractApiClientReques
 
       try {
         // when
-        this.api.deleteOpaConfiguration(opaId, siteId);
+        this.api.deleteOpaConfiguration(opaId);
         fail();
       } catch (ApiException e) {
         // then
@@ -160,7 +160,7 @@ public class DocumentAccessAttributesRequestTest extends AbstractApiClientReques
 
       try {
         // when
-        this.api.getOpaConfiguration(opaId, siteId);
+        this.api.getOpaConfiguration(opaId);
         fail();
       } catch (ApiException e) {
         // then
