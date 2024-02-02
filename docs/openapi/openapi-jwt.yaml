@@ -400,7 +400,6 @@
               tags:
               - Access Control
               parameters:
-              - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/opaIdParam'
               responses:
                 "200":
@@ -430,7 +429,6 @@
               tags:
               - Access Control
               parameters:
-              - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/opaIdParam'
               responses:
                 "200":
