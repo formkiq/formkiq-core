@@ -49,6 +49,14 @@ public interface DynamoDbService {
   boolean deleteItem(AttributeValue pk, AttributeValue sk);
 
   /**
+   * Delete DynamoDb Record.
+   * 
+   * @param key {@link Map}
+   * @return boolean
+   */
+  boolean deleteItem(Map<String, AttributeValue> key);
+
+  /**
    * Delete Items.
    * 
    * @param attrs {@link Collection} {@link Map} {@link AttributeValue}

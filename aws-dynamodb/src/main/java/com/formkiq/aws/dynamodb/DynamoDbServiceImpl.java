@@ -97,8 +97,13 @@ public class DynamoDbServiceImpl implements DynamoDbService {
   @Override
   public boolean deleteItem(final AttributeValue pk, final AttributeValue sk) {
     Map<String, AttributeValue> sourceKey = Map.of(PK, pk, SK, sk);
+    return deleteItem(sourceKey);
+  }
+
+  @Override
+  public boolean deleteItem(final Map<String, AttributeValue> key) {
     DeleteItemResponse response = this.dbClient.deleteItem(DeleteItemRequest.builder()
-        .tableName(this.tableName).key(sourceKey).returnValues(ReturnValue.ALL_OLD).build());
+        .tableName(this.tableName).key(key).returnValues(ReturnValue.ALL_OLD).build());
     return !response.attributes().isEmpty();
   }
 

@@ -6666,14 +6666,14 @@
                 description:
                   type: string
                   description: Ruleset description
-                insertedDate:
-                  type: string
-                  description: Inserted Timestamp
                 workflowId:
                   type: string
                   description: Workflow to start on matching of conditions
                 conditions:
-                  $ref: '#/components/schemas/RuleCondition'
+                  type: array
+                  description: List of rule conditions
+                  items:
+                    $ref: '#/components/schemas/RuleCondition'
             RuleCondition:
               type: object
               properties:

@@ -35,6 +35,21 @@ import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest;
 public class DynamodbRecordRequests implements DbKeys {
 
   /**
+   * Get {@link DynamodbRecord} Key.
+   * 
+   * @param siteId {@link String}
+   * @param record {@link DynamodbRecord}
+   * @return {@link Map}
+   */
+  public Map<String, AttributeValue> getKey(final String siteId, final DynamodbRecord<?> record) {
+    AttributeValue pk = AttributeValue.fromS(record.pk(siteId));
+    AttributeValue sk = AttributeValue.fromS(record.sk());
+
+    final Map<String, AttributeValue> key = Map.of(PK, pk, SK, sk);
+    return key;
+  }
+
+  /**
    * Get {@link DynamodbRecord} {@link UpdateItemRequest}.
    * 
    * @param siteId {@link String}
@@ -47,10 +62,7 @@ public class DynamodbRecordRequests implements DbKeys {
 
     Map<String, AttributeValue> attributes = record.getDataAttributes();
 
-    AttributeValue pk = AttributeValue.fromS(record.pk(siteId));
-    AttributeValue sk = AttributeValue.fromS(record.sk());
-
-    final Map<String, AttributeValue> key = Map.of(PK, pk, SK, sk);
+    final Map<String, AttributeValue> key = getKey(siteId, record);
 
     attributes.remove(PK);
     attributes.remove(SK);
