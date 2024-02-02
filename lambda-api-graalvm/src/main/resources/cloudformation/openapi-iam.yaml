@@ -405,7 +405,7 @@ Resources:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
-          /configuration/opa/{opaId}:
+          /configuration/opa/{siteId}:
             get:
               operationId: GetOpaConfiguration
               description: Returns OPA Configuration, can only be requested with ADMIN privileges
@@ -413,7 +413,7 @@ Resources:
               tags:
               - Access Control
               parameters:
-              - $ref: '#/components/parameters/opaIdParam'
+              - $ref: '#/components/parameters/siteIdPathParam'
               responses:
                 '200':
                   description: "200 OK"
@@ -442,7 +442,7 @@ Resources:
               tags:
               - Access Control
               parameters:
-              - $ref: '#/components/parameters/opaIdParam'
+              - $ref: '#/components/parameters/siteIdPathParam'
               responses:
                 '200':
                   description: 200 OK
@@ -4564,15 +4564,15 @@ Resources:
               required: false
               schema:
                 type: string
-            idParam:
-              name: id
+            siteIdPathParam:
+              name: siteId
               in: path
-              description: Identifier
+              description: Site Identifier
               required: true
               schema:
                 type: string
-            opaIdParam:
-              name: opaId
+            idParam:
+              name: id
               in: path
               description: Identifier
               required: true
@@ -7269,6 +7269,9 @@ Resources:
             GetOpaConfigurationsResponse:
               type: object
               properties:
+                next:
+                  type: "string"
+                  description: "Next page of results token"
                 opaPolicies:
                   type: "array"
                   description: "List of OPA policies"
@@ -7282,7 +7285,10 @@ Resources:
                   description: "SiteId to apply OPA Policy to"
                 policy:
                   type: "string"
-                  description: "OPA Policy in YAML format"
+                  description: "OPA Policy in REGO format"
+                insertedDate:
+                  type: "string"
+                  description: "Inserted Timestamp"
             GetOpaConfigurationResponse:
               type: object
               properties:

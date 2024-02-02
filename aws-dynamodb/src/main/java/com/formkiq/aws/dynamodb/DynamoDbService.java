@@ -140,8 +140,22 @@ public interface DynamoDbService {
    * @param exclusiveStartKey {@link Map}
    * @param limit int
    * @return {@link QueryResponse}
+   * @deprecated Use other 'query' with {@link QueryConfig}
    */
+  @Deprecated
   QueryResponse query(AttributeValue pk, Map<String, AttributeValue> exclusiveStartKey, int limit);
+
+  /**
+   * Query DynamoDB Records.
+   * 
+   * @param config {@link QueryConfig}
+   * @param pk {@link AttributeValue}
+   * @param exclusiveStartKey {@link Map}
+   * @param limit int
+   * @return {@link QueryResponse}
+   */
+  QueryResponse query(QueryConfig config, AttributeValue pk,
+      Map<String, AttributeValue> exclusiveStartKey, int limit);
 
   /**
    * Query DynamoDB Records.
