@@ -6549,9 +6549,9 @@ Resources:
             UpdateRulesetResponse:
               type: "object"
               properties:
-                rulesetId:
-                  type: "string"
-                  description: "Ruleset Identifier"
+                message:
+                  type: string
+                  description: Ruleset update message
         
             UpdateRuleResponse:
               type: "object"
@@ -6609,9 +6609,24 @@ Resources:
               type: "object"
               properties:
                 ruleset:
-                  $ref: "#/components/schemas/AddRuleset"
+                  $ref: "#/components/schemas/UpdateRuleset"
         
             AddRuleset:
+              type: "object"
+              properties:
+                description:
+                  type: "string"
+                  description: "Ruleset description"
+                priority:
+                  type: "number"
+                  description: "Ruleset priority"
+                version:
+                  type: "number"
+                  description: "Ruleset version"
+                status:
+                  $ref: "#/components/schemas/RulesetStatus"
+
+            UpdateRuleset:
               type: "object"
               properties:
                 description:
