@@ -7261,9 +7261,9 @@
             SetOpaConfigurationResponse:
               type: object
               properties:
-                opaId:
+                message:
                   type: string
-                  description: OPA policy identifier
+                  description: Result message
             DeleteOpaConfigurationResponse:
               type: object
               properties:

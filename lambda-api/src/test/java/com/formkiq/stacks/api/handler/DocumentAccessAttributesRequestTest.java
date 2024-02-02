@@ -97,7 +97,7 @@ public class DocumentAccessAttributesRequestTest extends AbstractApiClientReques
   }
 
   /**
-   * DELETE /configuration/opa/{opaId}.
+   * DELETE /configuration/opa/{siteId}.
    *
    * @throws Exception an error has occurred
    */
@@ -145,7 +145,7 @@ public class DocumentAccessAttributesRequestTest extends AbstractApiClientReques
   }
 
   /**
-   * GET /configuration/opa/{opaId}.
+   * GET /configuration/opa/{siteId}.
    *
    * @throws Exception an error has occurred
    */
@@ -170,7 +170,7 @@ public class DocumentAccessAttributesRequestTest extends AbstractApiClientReques
   }
 
   /**
-   * GET /configuration/opa/{opaId}.
+   * GET /configuration/opa/{siteId}.
    *
    * @throws Exception an error has occurred
    */
