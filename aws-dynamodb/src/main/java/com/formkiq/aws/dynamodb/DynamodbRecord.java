@@ -66,6 +66,13 @@ public interface DynamodbRecord<T> {
   Map<String, AttributeValue> getAttributes(String siteId);
 
   /**
+   * Get {@link AttributeValue} {@link Map} for record attributes.
+   * 
+   * @return {@link AttributeValue} {@link Map}
+   */
+  Map<String, AttributeValue> getDataAttributes();
+
+  /**
    * Transform {@link Map} {@link AttributeValue} to {@link Object}.
    * 
    * @param siteId {@link String}

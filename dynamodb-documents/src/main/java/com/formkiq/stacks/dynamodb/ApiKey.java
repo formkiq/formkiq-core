@@ -122,6 +122,11 @@ public class ApiKey implements DynamodbRecord<ApiKey>, DbKeys {
   }
 
   @Override
+  public Map<String, AttributeValue> getDataAttributes() {
+    return null;
+  }
+
+  @Override
   public ApiKey getFromAttributes(final String siteIdParam,
       final Map<String, AttributeValue> attrs) {
 

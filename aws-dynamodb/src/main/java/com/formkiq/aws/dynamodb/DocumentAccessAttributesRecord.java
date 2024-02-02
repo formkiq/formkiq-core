@@ -142,6 +142,11 @@ public class DocumentAccessAttributesRecord
     return attrs;
   }
 
+  @Override
+  public Map<String, AttributeValue> getDataAttributes() {
+    return null;
+  }
+
   /**
    * Get DocumentId.
    * 

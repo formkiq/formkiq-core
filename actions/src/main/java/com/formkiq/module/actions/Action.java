@@ -185,6 +185,11 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
     return attrs;
   }
 
+  @Override
+  public Map<String, AttributeValue> getDataAttributes() {
+    return null;
+  }
+
   private Date getDate(final SimpleDateFormat df, final Map<String, AttributeValue> attrs,
       final String key) {
 

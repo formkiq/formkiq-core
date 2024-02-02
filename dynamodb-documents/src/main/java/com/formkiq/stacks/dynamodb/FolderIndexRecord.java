@@ -143,6 +143,11 @@ public class FolderIndexRecord implements DynamodbRecord<FolderIndexRecord>, DbK
   }
 
   @Override
+  public Map<String, AttributeValue> getDataAttributes() {
+    return null;
+  }
+
+  @Override
   public FolderIndexRecord getFromAttributes(final String siteId,
       final Map<String, AttributeValue> attrs) {
 

@@ -171,6 +171,11 @@ public class DocumentWorkflowRecord implements DynamodbRecord<DocumentWorkflowRe
   }
 
   @Override
+  public Map<String, AttributeValue> getDataAttributes() {
+    return null;
+  }
+
+  @Override
   public DocumentWorkflowRecord getFromAttributes(final String siteIdParam,
       final Map<String, AttributeValue> attrs) {
 
