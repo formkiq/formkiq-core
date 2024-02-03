@@ -6556,9 +6556,9 @@ Resources:
             UpdateRuleResponse:
               type: "object"
               properties:
-                ruleId:
-                  type: "string"
-                  description: "Rule Identifier"
+                message:
+                  type: string
+                  description: Rule update message
         
             AddRuleResponse:
               type: "object"
@@ -6572,7 +6572,7 @@ Resources:
               - "case"
               type: "object"
               properties:
-                ruleset:
+                rule:
                   $ref: "#/components/schemas/AddRule"
         
             UpdateRuleRequest:
@@ -6580,12 +6580,15 @@ Resources:
               - "case"
               type: "object"
               properties:
-                ruleset:
-                  $ref: "#/components/schemas/AddRule"
+                rule:
+                  $ref: "#/components/schemas/UpdateRule"
                   
             AddRule:
               type: "object"
               properties:
+                priority:
+                  type: "number"
+                  description: "Rule priority"
                 description:
                   type: "string"
                   description: "Rule description"
@@ -6593,6 +6596,23 @@ Resources:
                   type: "string"
                   description: "Workflow to start on matching of conditions"
                 conditions:
+                  description: "Rule conditions"
+                  $ref: "#/components/schemas/RuleCondition"
+
+            UpdateRule:
+              type: "object"
+              properties:
+                priority:
+                  type: "number"
+                  description: "Rule priority"
+                description:
+                  type: "string"
+                  description: "Rule description"
+                workflowId:
+                  type: "string"
+                  description: "Workflow to start on matching of conditions"
+                conditions:
+                  description: "Rule conditions"
                   $ref: "#/components/schemas/RuleCondition"
                   
             AddRulesetRequest:
@@ -6701,6 +6721,9 @@ Resources:
             Rule:
               type: "object"
               properties:
+                priority:
+                  type: "number"
+                  description: "Rule priority"
                 description:
                   type: "string"
                   description: "Ruleset description"
@@ -6708,40 +6731,47 @@ Resources:
                   type: "string"
                   description: "Workflow to start on matching of conditions"
                 conditions:
-                  type: "array"
                   description: "List of rule conditions"
-                  items:
-                    $ref: "#/components/schemas/RuleCondition"
+                  $ref: "#/components/schemas/RuleCondition"
                   
             RuleCondition:
               type: "object"
               properties:
                 must:
-                  $ref: "#/components/schemas/RuleConditionMust"
+                  type: "array"
+                  description: "List of rule conditions"
+                  items:
+                    $ref: "#/components/schemas/RuleConditionMust"
         
+            RuleConditionAttribute:
+              type: string
+              description: Rule condition attribute
+              enum:
+                - TEXT
+                - CONTENT_TYPE
+                - BARCODE
+                - PROPERTY
+
+            RuleConditionOperation:
+              type: string
+              description: Rule condition attribute
+              enum:
+                - EQ
+                - CONTAINS
+
             RuleConditionMust:
               type: "object"
               properties:
                 attribute:
-                  type: "string"
-                  description: "Rule attribute"
-                  enum:
-                    - TEXT
-                    - CONTENT_TYPE
-                    - BARCODE
-                    - PROPERTY
+                  $ref: "#/components/schemas/RuleConditionAttribute"
                 propertyName:
                   type: "string"
-                  description: "Rule property name"
+                  description: "Rule property name (only required for PROPERTY attribute"
                 value:
                   type: "string"
                   description: "Rule condition value"
                 operation:
-                  type: "string"
-                  description: "Rule condition operation"
-                  enum:
-                    - EQ
-                    - CONTAINS
+                  $ref: "#/components/schemas/RuleConditionOperation"
         
             GetExaminePdfResponse:
               type: "object"
