@@ -6709,7 +6709,7 @@
               - TEXT
               - CONTENT_TYPE
               - BARCODE
-              - PROPERTY
+              - FIELD
             RuleConditionOperation:
               type: string
               description: Rule condition attribute
@@ -6721,9 +6721,9 @@
               properties:
                 attribute:
                   $ref: '#/components/schemas/RuleConditionAttribute'
-                propertyName:
+                fieldName:
                   type: string
-                  description: Rule property name (only required for PROPERTY attribute
+                  description: Rule field name (only required for FIELD attribute)
                 value:
                   type: string
                   description: Rule condition value
