@@ -6536,9 +6536,16 @@ Resources:
               type: string
               description: Status of the Ruleset
               enum:
-                - ENABLED
-                - DISABLED
+                - ACTIVE
+                - INACTIVE
 
+            RuleStatus:
+              type: string
+              description: Status of the Rule
+              enum:
+                - ACTIVE
+                - INACTIVE
+                
             AddRulesetResponse:
               type: "object"
               properties:
@@ -6595,6 +6602,8 @@ Resources:
                 workflowId:
                   type: "string"
                   description: "Workflow to start on matching of conditions"
+                status:
+                  $ref: "#/components/schemas/RulesetStatus"
                 conditions:
                   description: "Rule conditions"
                   $ref: "#/components/schemas/RuleCondition"
@@ -6608,6 +6617,8 @@ Resources:
                 description:
                   type: "string"
                   description: "Rule description"
+                status:
+                  $ref: "#/components/schemas/RulesetStatus"
                 workflowId:
                   type: "string"
                   description: "Workflow to start on matching of conditions"
@@ -6730,6 +6741,8 @@ Resources:
                 workflowId:
                   type: "string"
                   description: "Workflow to start on matching of conditions"
+                status:
+                  $ref: "#/components/schemas/RulesetStatus"
                 conditions:
                   description: "List of rule conditions"
                   $ref: "#/components/schemas/RuleCondition"

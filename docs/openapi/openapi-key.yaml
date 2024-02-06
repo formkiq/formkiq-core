@@ -6515,8 +6515,14 @@
               type: string
               description: Status of the Ruleset
               enum:
-              - ENABLED
-              - DISABLED
+              - ACTIVE
+              - INACTIVE
+            RuleStatus:
+              type: string
+              description: Status of the Rule
+              enum:
+              - ACTIVE
+              - INACTIVE
             AddRulesetResponse:
               type: object
               properties:
@@ -6567,6 +6573,8 @@
                 workflowId:
                   type: string
                   description: Workflow to start on matching of conditions
+                status:
+                  $ref: '#/components/schemas/RulesetStatus'
                 conditions:
                   description: Rule conditions
                   $ref: '#/components/schemas/RuleCondition'
@@ -6579,6 +6587,8 @@
                 description:
                   type: string
                   description: Rule description
+                status:
+                  $ref: '#/components/schemas/RulesetStatus'
                 workflowId:
                   type: string
                   description: Workflow to start on matching of conditions
@@ -6691,6 +6701,8 @@
                 workflowId:
                   type: string
                   description: Workflow to start on matching of conditions
+                status:
+                  $ref: '#/components/schemas/RulesetStatus'
                 conditions:
                   description: List of rule conditions
                   $ref: '#/components/schemas/RuleCondition'
@@ -7968,18 +7980,16 @@
                   description: Message response
           securitySchemes:
             ApiAuthorization:
-              type: apiKey
-              name: Authorization
-              in: header
-              x-amazon-apigateway-authtype: Custom API Key
+              type: oauth2
+              flows: {}
               x-amazon-apigateway-authorizer:
+                type: jwt
+                jwtConfiguration:
+                  issuer:
+                    Fn::Sub: https://cognito-idp.${AWS::Region}.amazonaws.com/${CognitoUserPool}
+                  audience:
+                  - Fn::Sub: ${CognitoUserPoolClient}
                 identitySource: $request.header.Authorization
-                authorizerUri:
-                  Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ApiKeyAuthorizer.Arn}/invocations
-                authorizerResultTtlInSeconds: 300
-                authorizerPayloadFormatVersion: "2.0"
-                enableSimpleResponses: true
-                type: request
           x-amazon-apigateway-integrations:
             lambdaApi200:
               uri:
