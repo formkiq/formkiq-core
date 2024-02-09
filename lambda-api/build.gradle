@@ -76,7 +76,8 @@ compileJava {
 
 test {
   failFast = true
-  useJUnitPlatform()  
+  useJUnitPlatform()
+  maxHeapSize = '1G'
 }
 
 task integrationTest(type: Test) {

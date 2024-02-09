@@ -62,9 +62,11 @@ public abstract class AbstractFormKiqApiResponseCallback implements ExpectationR
 
   /**
    * constructor.
+   * 
+   * @param serverPort int
    */
-  public AbstractFormKiqApiResponseCallback() {
-    this.port = generatePort();
+  public AbstractFormKiqApiResponseCallback(final int serverPort) {
+    this.port = serverPort;
   }
 
   /**
@@ -86,9 +88,14 @@ public abstract class AbstractFormKiqApiResponseCallback implements ExpectationR
         .withStatusCode(Integer.valueOf(statusCode)).withBody(map.get("body").toString());
   }
 
-  private int generatePort() {
+  /**
+   * Generate Random Port.
+   * 
+   * @return int
+   */
+  public static int generatePort() {
     final int topPort = 8000;
-    final int bottomPort = 7000;
+    final int bottomPort = 5000;
     return NUM_RAND.nextInt(topPort - bottomPort) + bottomPort;
   }
 

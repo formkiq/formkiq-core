@@ -86,7 +86,8 @@ public abstract class AbstractApiClientRequestTest {
    * @return {@link AbstractFormKiqApiResponseCallback}
    */
   private static AbstractFormKiqApiResponseCallback generateCallback() {
-    return new FormKiQResponseCallback();
+    int port = AbstractFormKiqApiResponseCallback.generatePort();
+    return new FormKiQResponseCallback(port);
   }
 
   /**

@@ -44,6 +44,7 @@ import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.invoker.Configuration;
 import com.formkiq.client.model.AddExaminePdfResponse;
 import com.formkiq.client.model.GetExaminePdfResponse;
+import com.formkiq.testutils.aws.AbstractFormKiqApiResponseCallback;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.FormKiqApiExtension;
 import com.formkiq.testutils.aws.JwtTokenEncoder;
@@ -58,7 +59,8 @@ class RequestHandlerTest {
   private static HttpClient http = HttpClient.newHttpClient();
   /** FormKiQ Server. */
   @RegisterExtension
-  static FormKiqApiExtension server = new FormKiqApiExtension(new FormKiQResponseCallback());
+  static FormKiqApiExtension server = new FormKiqApiExtension(
+      new FormKiQResponseCallback(AbstractFormKiqApiResponseCallback.generatePort()));
 
   /** {@link ApiClient}. */
   private ApiClient apiClient =

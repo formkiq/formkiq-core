@@ -59,8 +59,13 @@ public class FormKiQResponseCallback extends AbstractFormKiqApiResponseCallback 
 
   /**
    * constructor.
+   * 
+   * @param serverPort int
    */
-  public FormKiQResponseCallback() {}
+  public FormKiQResponseCallback(final int serverPort) {
+    super(serverPort);
+  }
+
 
   @Override
   public RequestStreamHandler getHandler() {

@@ -56,6 +56,7 @@ import com.formkiq.stacks.dynamodb.DocumentSearchServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
+import com.formkiq.testutils.aws.AbstractFormKiqApiResponseCallback;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.formkiq.testutils.aws.FormKiqApiExtension;
@@ -68,7 +69,8 @@ import com.formkiq.testutils.aws.LocalStackExtension;
 public class IndicesRequestHandlerTest {
 
   /** {@link FormKiQResponseCallback}. */
-  private static final FormKiQResponseCallback CALLBACK = new FormKiQResponseCallback();
+  private static final FormKiQResponseCallback CALLBACK =
+      new FormKiQResponseCallback(AbstractFormKiqApiResponseCallback.generatePort());
   /** FormKiQ Server. */
   @RegisterExtension
   static FormKiqApiExtension server = new FormKiqApiExtension(CALLBACK);

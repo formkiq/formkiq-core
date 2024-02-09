@@ -45,6 +45,7 @@ import com.formkiq.client.model.SetDocumentFulltextRequest;
 import com.formkiq.client.model.SetDocumentFulltextResponse;
 import com.formkiq.client.model.UpdateDocumentFulltextRequest;
 import com.formkiq.stacks.api.handler.FormKiQResponseCallback;
+import com.formkiq.testutils.aws.AbstractFormKiqApiResponseCallback;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.FormKiqApiExtension;
 import com.formkiq.testutils.aws.JwtTokenEncoder;
@@ -57,7 +58,8 @@ import com.formkiq.testutils.aws.TypesenseExtension;
 @ExtendWith(TypesenseExtension.class)
 public class ApiDocumentsFulltextRequestTest {
   /** {@link FormKiQResponseCallback}. */
-  private static final FormKiQResponseCallback CALLBACK = new FormKiQResponseCallback();
+  private static final FormKiQResponseCallback CALLBACK =
+      new FormKiQResponseCallback(AbstractFormKiqApiResponseCallback.generatePort());
   /** FormKiQ Server. */
   @RegisterExtension
   static FormKiqApiExtension server = new FormKiqApiExtension(CALLBACK);
