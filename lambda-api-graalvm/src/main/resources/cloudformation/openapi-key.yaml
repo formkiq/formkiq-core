@@ -5,14 +5,14 @@
 ---
 Resources:
 
-  DocumentsHttpApi:
+  DocumentsKeyApi:
     Properties:
       #@overlay/match missing_ok=True
       Body:
         openapi: "3.0.1"
         info:
           title:
-            Fn::Sub: "${AWS::StackName} OAuth API - ${AppEnvironment}"
+            Fn::Sub: "${AWS::StackName} Key API - ${AppEnvironment}"
           contact:
             name: FormKiQ
             url: https://formkiq.com
