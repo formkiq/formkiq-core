@@ -44,10 +44,10 @@ import com.formkiq.client.api.SystemManagementApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAction;
-import com.formkiq.client.model.AddAction.TypeEnum;
 import com.formkiq.client.model.AddActionParameters;
 import com.formkiq.client.model.AddActionParameters.EngineEnum;
 import com.formkiq.client.model.AddDocumentActionsRequest;
+import com.formkiq.client.model.DocumentActionType;
 import com.formkiq.client.model.GetDocumentTagsResponse;
 import com.formkiq.client.model.UpdateConfigurationRequest;
 import com.formkiq.module.actions.ActionStatus;
@@ -108,9 +108,10 @@ public class ChatGptRequestTest extends AbstractAwsIntegrationTest {
 
       // when
       api.addDocumentActions(documentId, siteId,
-          new AddDocumentActionsRequest().actions(Arrays.asList(new AddAction().type(TypeEnum.OCR),
-              new AddAction().type(TypeEnum.DOCUMENTTAGGING).parameters(
-                  new AddActionParameters().engine(EngineEnum.CHATGPT).tags(actionTags)))));
+          new AddDocumentActionsRequest()
+              .actions(Arrays.asList(new AddAction().type(DocumentActionType.OCR),
+                  new AddAction().type(DocumentActionType.DOCUMENTTAGGING).parameters(
+                      new AddActionParameters().engine(EngineEnum.CHATGPT).tags(actionTags)))));
 
       // then
       waitForActions(client, siteId, documentId, ActionStatus.COMPLETE.name());

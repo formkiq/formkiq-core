@@ -45,12 +45,12 @@ import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.api.SystemManagementApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.model.AddAction;
-import com.formkiq.client.model.AddAction.TypeEnum;
 import com.formkiq.client.model.AddActionParameters;
 import com.formkiq.client.model.AddActionParameters.NotificationTypeEnum;
 import com.formkiq.client.model.AddDocumentActionsRetryResponse;
 import com.formkiq.client.model.AddDocumentTag;
 import com.formkiq.client.model.Document;
+import com.formkiq.client.model.DocumentActionType;
 import com.formkiq.client.model.GetDocumentActionsResponse;
 import com.formkiq.client.model.GetDocumentsResponse;
 import com.formkiq.client.model.UpdateConfigurationRequest;
@@ -91,7 +91,7 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
     String content = "this is a test";
     String subject = "Test email";
     String text = "This is a text email";
-    List<AddAction> actions = Arrays.asList(new AddAction().type(TypeEnum.NOTIFICATION)
+    List<AddAction> actions = Arrays.asList(new AddAction().type(DocumentActionType.NOTIFICATION)
         .parameters(new AddActionParameters().notificationType(NotificationTypeEnum.EMAIL)
             .notificationSubject(subject).notificationToCc("mfriesen@gmail.com")
             .notificationText(text)));
@@ -124,7 +124,7 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
     File file = this.fileGenerator.generateZipFile(targetSize);
     byte[] data = Files.readAllBytes(file.toPath());
 
-    List<AddAction> actions = Arrays.asList(new AddAction().type(TypeEnum.OCR));
+    List<AddAction> actions = Arrays.asList(new AddAction().type(DocumentActionType.OCR));
     List<AddDocumentTag> tags = Collections.emptyList();
 
     // when

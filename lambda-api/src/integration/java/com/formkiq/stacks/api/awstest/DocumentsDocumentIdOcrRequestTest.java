@@ -42,11 +42,11 @@ import com.formkiq.client.api.DocumentOcrApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAction;
-import com.formkiq.client.model.AddAction.TypeEnum;
 import com.formkiq.client.model.AddDocumentActionsRequest;
 import com.formkiq.client.model.AddDocumentActionsResponse;
 import com.formkiq.client.model.AddDocumentOcrRequest;
 import com.formkiq.client.model.AddDocumentOcrResponse;
+import com.formkiq.client.model.DocumentActionType;
 import com.formkiq.client.model.GetDocumentActionsResponse;
 import com.formkiq.client.model.GetDocumentOcrResponse;
 import com.formkiq.module.actions.ActionStatus;
@@ -144,8 +144,8 @@ public class DocumentsDocumentIdOcrRequestTest extends AbstractAwsIntegrationTes
     waitForDocumentContent(client, siteId, documentId);
 
     DocumentActionsApi actionsApi = new DocumentActionsApi(client);
-    AddDocumentActionsRequest req =
-        new AddDocumentActionsRequest().actions(Arrays.asList(new AddAction().type(TypeEnum.OCR)));
+    AddDocumentActionsRequest req = new AddDocumentActionsRequest()
+        .actions(Arrays.asList(new AddAction().type(DocumentActionType.OCR)));
 
     // when
     AddDocumentActionsResponse response = actionsApi.addDocumentActions(documentId, siteId, req);

@@ -40,8 +40,8 @@ import com.formkiq.client.api.DocumentActionsApi;
 import com.formkiq.client.api.DocumentOcrApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.model.AddAction;
-import com.formkiq.client.model.AddAction.TypeEnum;
 import com.formkiq.client.model.AddDocumentActionsRequest;
+import com.formkiq.client.model.DocumentActionType;
 import com.formkiq.client.model.GetDocumentActionsResponse;
 import com.formkiq.client.model.GetDocumentFulltextResponse;
 import com.formkiq.client.model.GetDocumentOcrResponse;
@@ -75,8 +75,8 @@ public class DocumentsFulltextRequestTest extends AbstractAwsIntegrationTest {
       waitForDocumentContent(client, siteId, documentId);
 
       DocumentActionsApi api = new DocumentActionsApi(client);
-      AddDocumentActionsRequest req =
-          new AddDocumentActionsRequest().addActionsItem(new AddAction().type(TypeEnum.FULLTEXT));
+      AddDocumentActionsRequest req = new AddDocumentActionsRequest()
+          .addActionsItem(new AddAction().type(DocumentActionType.FULLTEXT));
 
       // when
       api.addDocumentActions(documentId, siteId, req);

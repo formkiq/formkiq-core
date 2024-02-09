@@ -43,7 +43,6 @@ import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.services.lambda.GsonUtil;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAction;
-import com.formkiq.client.model.AddAction.TypeEnum;
 import com.formkiq.client.model.AddActionParameters;
 import com.formkiq.client.model.AddActionParameters.EngineEnum;
 import com.formkiq.client.model.AddActionParameters.NotificationTypeEnum;
@@ -51,6 +50,7 @@ import com.formkiq.client.model.AddDocumentActionsRequest;
 import com.formkiq.client.model.AddDocumentActionsResponse;
 import com.formkiq.client.model.AddDocumentActionsRetryResponse;
 import com.formkiq.client.model.DocumentAction;
+import com.formkiq.client.model.DocumentActionType;
 import com.formkiq.client.model.GetDocumentActionsResponse;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
@@ -149,9 +149,9 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
               .parameters(Map.of("test", "this")).type(ActionType.FULLTEXT)));
 
       AddDocumentActionsRequest req = new AddDocumentActionsRequest().actions(Arrays.asList(
-          new AddAction().type(TypeEnum.OCR)
+          new AddAction().type(DocumentActionType.OCR)
               .parameters(new AddActionParameters().ocrParseTypes("text")),
-          new AddAction().type(TypeEnum.WEBHOOK)
+          new AddAction().type(DocumentActionType.WEBHOOK)
               .parameters(new AddActionParameters().url("https://localhost"))));
 
       // when
@@ -240,7 +240,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       String documentId = saveDocument(siteId);
 
       AddDocumentActionsRequest req = new AddDocumentActionsRequest()
-          .actions(Arrays.asList(new AddAction().type(TypeEnum.DOCUMENTTAGGING)));
+          .actions(Arrays.asList(new AddAction().type(DocumentActionType.DOCUMENTTAGGING)));
 
       // when
       try {
@@ -270,7 +270,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       this.configService.save(siteId, new DynamicObject(Map.of(CHATGPT_API_KEY, "asd")));
 
       req = new AddDocumentActionsRequest()
-          .actions(Arrays.asList(new AddAction().type(TypeEnum.DOCUMENTTAGGING)
+          .actions(Arrays.asList(new AddAction().type(DocumentActionType.DOCUMENTTAGGING)
               .parameters(new AddActionParameters().engine(EngineEnum.CHATGPT).tags("something"))));
 
       // when - correct parameters
@@ -299,8 +299,8 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       setBearerToken(siteId);
       String documentId = saveDocument(siteId);
 
-      AddDocumentActionsRequest req = new AddDocumentActionsRequest().actions(Arrays
-          .asList(new AddAction().type(TypeEnum.NOTIFICATION).parameters(new AddActionParameters()
+      AddDocumentActionsRequest req = new AddDocumentActionsRequest().actions(Arrays.asList(
+          new AddAction().type(DocumentActionType.NOTIFICATION).parameters(new AddActionParameters()
               .notificationType(NotificationTypeEnum.EMAIL).notificationToCc("test@formkiq.com"))));
 
       // when
@@ -339,7 +339,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
           new DynamicObject(Map.of("NotificationEmail", "test@formkiq.com")));
 
       AddDocumentActionsRequest req = new AddDocumentActionsRequest()
-          .actions(Arrays.asList(new AddAction().type(TypeEnum.NOTIFICATION)
+          .actions(Arrays.asList(new AddAction().type(DocumentActionType.NOTIFICATION)
               .parameters(new AddActionParameters().notificationType(NotificationTypeEnum.EMAIL)
                   .notificationToCc("test@formkiq.com").notificationSubject("test subject")
                   .notificationText("some text"))));

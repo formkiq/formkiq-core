@@ -4918,6 +4918,12 @@
                 name:
                   description: Queue name
                   type: string
+            WorkflowStatus:
+              type: string
+              description: Status of the Workflow
+              enum:
+              - ACTIVE
+              - INACTIVE
             GetWorkflowResponse:
               type: object
               properties:
@@ -4931,10 +4937,7 @@
                   type: boolean
                   description: Whether the Workflow is in use
                 status:
-                  type: string
-                  enum:
-                  - ACTIVE
-                  - INACTIVE
+                  $ref: '#/components/schemas/WorkflowStatus'
                 steps:
                   description: Workflow steps
                   items:
@@ -4985,11 +4988,7 @@
                   type: boolean
                   description: Whether the Workflow is in use
                 status:
-                  type: string
-                  enum:
-                  - ACTIVE
-                  - INACTIVE
-                  description: Type of Document
+                  $ref: '#/components/schemas/WorkflowStatus'
             GetUserSharesResponse:
               type: object
               properties:
@@ -5001,6 +5000,18 @@
                   description: List of user's shares
                   items:
                     $ref: '#/components/schemas/UserShare'
+            UserSharePermission:
+              type: string
+              description: User Share Permission
+              enum:
+              - READ
+              - WRITE
+              - DELETE
+            UserSharePermissionType:
+              type: string
+              description: User Share Permission Type
+              enum:
+              - GROUP
             UserShare:
               type: object
               properties:
@@ -5019,11 +5030,7 @@
                   type: array
                   description: List of share permissions
                   items:
-                    type: string
-                    enum:
-                    - READ
-                    - WRITE
-                    - DELETE
+                    $ref: '#/components/schemas/UserSharePermission'
                 siteId:
                   type: string
                   description: Site Identifier
@@ -5036,8 +5043,7 @@
                 permissionType:
                   type: string
                   description: Type of share
-                  enum:
-                  - GROUP
+                  $ref: '#/components/schemas/UserSharePermissionType'
             GetDocumentTagsResponse:
               type: object
               properties:
@@ -5496,11 +5502,7 @@
                   type: array
                   description: List of share permissions
                   items:
-                    type: string
-                    enum:
-                    - READ
-                    - WRITE
-                    - DELETE
+                    $ref: '#/components/schemas/UserSharePermission'
             SetDocumentRestoreResponse:
               type: object
               properties:
@@ -6864,31 +6866,35 @@
                   description: List of document actions
                   items:
                     $ref: '#/components/schemas/DocumentAction'
+            DocumentActionStatus:
+              type: string
+              description: Status of the Document Action
+              enum:
+              - COMPLETE
+              - FAILED
+              - IN_QUEUE
+              - PENDING
+              - RUNNING
+              - SKIPPED
+              - FAILED_RETRY
+            DocumentActionType:
+              type: string
+              description: Type of the Document Action
+              enum:
+              - ANTIVIRUS
+              - DOCUMENTTAGGING
+              - FULLTEXT
+              - NOTIFICATION
+              - OCR
+              - QUEUE
+              - WEBHOOK
             DocumentAction:
               type: object
               properties:
                 status:
-                  type: string
-                  description: Status of the Document Action
-                  enum:
-                  - COMPLETE
-                  - FAILED
-                  - IN_QUEUE
-                  - PENDING
-                  - RUNNING
-                  - SKIPPED
-                  - FAILED_RETRY
+                  $ref: '#/components/schemas/DocumentActionStatus'
                 type:
-                  type: string
-                  description: Type of Document Action
-                  enum:
-                  - ANTIVIRUS
-                  - DOCUMENTTAGGING
-                  - FULLTEXT
-                  - NOTIFICATION
-                  - OCR
-                  - QUEUE
-                  - WEBHOOK
+                  $ref: '#/components/schemas/DocumentActionType'
                 queueId:
                   type: string
                   description: Queue Id
@@ -7079,16 +7085,7 @@
               - type
               properties:
                 type:
-                  type: string
-                  description: Type of Document Action
-                  enum:
-                  - OCR
-                  - FULLTEXT
-                  - ANTIVIRUS
-                  - WEBHOOK
-                  - DOCUMENTTAGGING
-                  - NOTIFICATION
-                  - QUEUE
+                  $ref: '#/components/schemas/DocumentActionType'
                 parameters:
                   $ref: '#/components/schemas/AddActionParameters'
             AddActionParameters:
@@ -7645,6 +7642,13 @@
               properties:
                 workflow:
                   $ref: '#/components/schemas/DocumentWorkflow'
+            DocumentWorkflowStatus:
+              type: string
+              description: Status of the Workflow Document
+              enum:
+              - COMPLETE
+              - IN_PROGRESS
+              - FAILED
             DocumentWorkflow:
               type: object
               properties:
@@ -7661,12 +7665,7 @@
                   type: string
                   description: The current step workflow is on
                 status:
-                  type: string
-                  description: Workflow status
-                  enum:
-                  - COMPLETE
-                  - IN_PROGRESS
-                  - FAILED
+                  $ref: '#/components/schemas/DocumentWorkflowStatus'
             AddDocumentWorkflowResponse:
               type: object
               properties:
