@@ -7613,6 +7613,12 @@ Resources:
                   description: "Workflow Decisions"
                   items:
                     $ref: "#/components/schemas/AddWorkflowStepDecision"
+            WorkflowStepDecisionType:
+              type: string
+              description: Type of Workflow Step Decision
+              enum:
+                - APPROVE
+                - REJECT
             AddWorkflowStepDecision:
               required:
                 - type
@@ -7620,11 +7626,7 @@ Resources:
               type: object
               properties:
                 type:
-                  type: "string"
-                  description: "Type of Workflow Step Decision"
-                  enum:
-                    - APPROVE
-                    - REJECT
+                  $ref: "#/components/schemas/WorkflowStepDecisionType"
                 nextStepId:
                   type: "string"
                   description: "Workflow Step to move to"
@@ -7632,11 +7634,7 @@ Resources:
               type: object
               properties:
                 type:
-                  type: "string"
-                  description: "Type of Workflow Step Decision"
-                  enum:
-                    - APPROVE
-                    - REJECT
+                  $ref: "#/components/schemas/WorkflowStepDecisionType"
                 nextStepId:
                   type: "string"
                   description: "Workflow Step to move to"
