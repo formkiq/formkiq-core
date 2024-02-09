@@ -7589,10 +7589,7 @@ Resources:
                   description: "Workflow description"
                   type: "string"
                 status:
-                  type: "string"
-                  enum:
-                    - ACTIVE
-                    - INACTIVE
+                  $ref: "#/components/schemas/WorkflowStatus"
                 steps:
                   type: "array"
                   description: "Workflow Steps"
