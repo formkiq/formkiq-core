@@ -45,6 +45,7 @@ import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthenticationResultType;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.GroupExistsException;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UserStatusType;
 
 /**
@@ -99,7 +100,11 @@ public abstract class AbstractAwsIntegrationTest {
       for (String groupName : groupNames) {
         if (!groupName.startsWith(DEFAULT_SITE_ID) && !"authentication_only".equals(groupName)) {
 
-          getCognito().addGroup(groupName);
+          try {
+            getCognito().addGroup(groupName);
+          } catch (GroupExistsException e) {
+            // ignore group already exists
+          }
         }
         getCognito().addUserToGroup(username, groupName);
       }

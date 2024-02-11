@@ -141,8 +141,9 @@ class OcrTesseractProcessorTest {
           .status(OcrScanStatus.REQUESTED);
       ocrService.save(siteId, ocr);
 
-      SqsMessageRecord record = new SqsMessageRecord().body(GSON.toJson(Map.of("siteId", siteId,
-          "documentId", documentId, "jobId", jobId, "contentType", MimeType.MIME_JPEG)));
+      SqsMessageRecord record =
+          new SqsMessageRecord().eventSource("aws:sqs").body(GSON.toJson(Map.of("siteId", siteId,
+              "documentId", documentId, "jobId", jobId, "contentType", MimeType.MIME_JPEG)));
       SqsMessageRecords records = new SqsMessageRecords().records(Arrays.asList(record));
 
       String json = GSON.toJson(records);
@@ -185,9 +186,9 @@ class OcrTesseractProcessorTest {
           .status(OcrScanStatus.REQUESTED);
       ocrService.save(siteId, ocr);
 
-      SqsMessageRecord record =
-          new SqsMessageRecord().body(GSON.toJson(Map.of("siteId", siteId, "documentId", documentId,
-              "jobId", jobId, "contentType", MimeType.MIME_JPEG.getContentType())));
+      SqsMessageRecord record = new SqsMessageRecord().eventSource("aws:sqs")
+          .body(GSON.toJson(Map.of("siteId", siteId, "documentId", documentId, "jobId", jobId,
+              "contentType", MimeType.MIME_JPEG.getContentType())));
       SqsMessageRecords records = new SqsMessageRecords().records(Arrays.asList(record));
 
       String json = GSON.toJson(records);
@@ -229,8 +230,9 @@ class OcrTesseractProcessorTest {
           .status(OcrScanStatus.REQUESTED);
       ocrService.save(siteId, ocr);
 
-      SqsMessageRecord record = new SqsMessageRecord().body(GSON.toJson(Map.of("siteId", siteId,
-          "documentId", documentId, "jobId", jobId, "contentType", MimeType.MIME_DOCX)));
+      SqsMessageRecord record =
+          new SqsMessageRecord().eventSource("aws:sqs").body(GSON.toJson(Map.of("siteId", siteId,
+              "documentId", documentId, "jobId", jobId, "contentType", MimeType.MIME_DOCX)));
       SqsMessageRecords records = new SqsMessageRecords().records(Arrays.asList(record));
 
       String json = GSON.toJson(records);
@@ -275,9 +277,9 @@ class OcrTesseractProcessorTest {
           .status(OcrScanStatus.REQUESTED);
       ocrService.save(siteId, ocr);
 
-      SqsMessageRecord record =
-          new SqsMessageRecord().body(GSON.toJson(Map.of("siteId", siteId, "documentId", documentId,
-              "jobId", jobId, "contentType", MimeType.MIME_DOCX.getContentType())));
+      SqsMessageRecord record = new SqsMessageRecord().eventSource("aws:sqs")
+          .body(GSON.toJson(Map.of("siteId", siteId, "documentId", documentId, "jobId", jobId,
+              "contentType", MimeType.MIME_DOCX.getContentType())));
       SqsMessageRecords records = new SqsMessageRecords().records(Arrays.asList(record));
 
       String json = GSON.toJson(records);
@@ -326,9 +328,9 @@ class OcrTesseractProcessorTest {
           .status(OcrScanStatus.REQUESTED);
       ocrService.save(siteId, ocr);
 
-      SqsMessageRecord record =
-          new SqsMessageRecord().body(GSON.toJson(Map.of("siteId", siteId, "documentId", documentId,
-              "jobId", jobId, "contentType", MimeType.MIME_DOC.getContentType())));
+      SqsMessageRecord record = new SqsMessageRecord().eventSource("aws:sqs")
+          .body(GSON.toJson(Map.of("siteId", siteId, "documentId", documentId, "jobId", jobId,
+              "contentType", MimeType.MIME_DOC.getContentType())));
       SqsMessageRecords records = new SqsMessageRecords().records(Arrays.asList(record));
 
       String json = GSON.toJson(records);
@@ -376,9 +378,9 @@ class OcrTesseractProcessorTest {
           .status(OcrScanStatus.REQUESTED);
       ocrService.save(siteId, ocr);
 
-      SqsMessageRecord record =
-          new SqsMessageRecord().body(GSON.toJson(Map.of("siteId", siteId, "documentId", documentId,
-              "jobId", jobId, "contentType", MimeType.MIME_PDF.getContentType())));
+      SqsMessageRecord record = new SqsMessageRecord().eventSource("aws:sqs")
+          .body(GSON.toJson(Map.of("siteId", siteId, "documentId", documentId, "jobId", jobId,
+              "contentType", MimeType.MIME_PDF.getContentType())));
       SqsMessageRecords records = new SqsMessageRecords().records(Arrays.asList(record));
 
       String json = GSON.toJson(records);
@@ -425,9 +427,9 @@ class OcrTesseractProcessorTest {
           .status(OcrScanStatus.REQUESTED);
       ocrService.save(siteId, ocr);
 
-      SqsMessageRecord record =
-          new SqsMessageRecord().body(GSON.toJson(Map.of("siteId", siteId, "documentId", documentId,
-              "jobId", jobId, "contentType", MimeType.MIME_PDF.getContentType())));
+      SqsMessageRecord record = new SqsMessageRecord().eventSource("aws:sqs")
+          .body(GSON.toJson(Map.of("siteId", siteId, "documentId", documentId, "jobId", jobId,
+              "contentType", MimeType.MIME_PDF.getContentType())));
       SqsMessageRecords records = new SqsMessageRecords().records(Arrays.asList(record));
 
       String json = GSON.toJson(records);

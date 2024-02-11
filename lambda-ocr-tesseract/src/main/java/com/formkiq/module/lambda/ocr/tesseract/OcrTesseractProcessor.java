@@ -35,7 +35,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
@@ -50,8 +49,6 @@ import com.formkiq.aws.services.lambda.AbstractRestApiRequestHandler;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.LambdaInputRecord;
 import com.formkiq.aws.sns.SnsAwsServiceRegistry;
-import com.formkiq.aws.sqs.SqsMessageRecord;
-import com.formkiq.aws.sqs.SqsMessageRecords;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
@@ -83,12 +80,14 @@ import software.amazon.awssdk.utils.IoUtils;
 public class OcrTesseractProcessor extends AbstractRestApiRequestHandler {
 
   /** {@link AwsServiceCache}. */
-  private static AwsServiceCache serviceCache;
+  protected static AwsServiceCache serviceCache;
   /** Url Class Map. */
   private static final Map<String, ApiGatewayRequestHandler> URL_MAP = new HashMap<>();
+
   static {
 
-    if (System.getenv().containsKey("AWS_REGION")) {
+    if (System.getenv().containsKey("AWS_REGION")
+        && !System.getenv().containsKey("TEXTRACT_ROLE")) {
       serviceCache = new AwsServiceCacheBuilder(System.getenv(), Map.of(),
           EnvironmentVariableCredentialsProvider.create())
           .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
@@ -104,7 +103,7 @@ public class OcrTesseractProcessor extends AbstractRestApiRequestHandler {
    * 
    * @param awsServiceCache {@link AwsServiceCache}
    */
-  static void initialize(final AwsServiceCache awsServiceCache) {
+  protected static void initialize(final AwsServiceCache awsServiceCache) {
     awsServiceCache.register(S3Service.class, new S3ServiceExtension());
     awsServiceCache.register(DocumentOcrService.class, new DocumentOcrServiceExtension());
     awsServiceCache.register(ActionsService.class, new ActionsServiceExtension());
@@ -196,8 +195,8 @@ public class OcrTesseractProcessor extends AbstractRestApiRequestHandler {
         new PdfFormatConverter(), new TesseractFormatConverter(new TesseractWrapperImpl()));
   }
 
-  protected OcrSqsMessage getSqsMessage(final SqsMessageRecord record) {
-    OcrSqsMessage sqsMessage = this.gson.fromJson(record.body(), OcrSqsMessage.class);
+  protected OcrSqsMessage getSqsMessage(final String body) {
+    OcrSqsMessage sqsMessage = this.gson.fromJson(body, OcrSqsMessage.class);
     return sqsMessage;
   }
 
@@ -207,24 +206,12 @@ public class OcrTesseractProcessor extends AbstractRestApiRequestHandler {
   }
 
   @Override
-  public void handleOtherRequest(final Context context, final String json) {
-
-    SqsMessageRecords records = this.gson.fromJson(json, SqsMessageRecords.class);
-
-    DocumentOcrService ocrService = serviceCache.getExtension(DocumentOcrService.class);
-
-    records.records().forEach(record -> {
-
-      OcrSqsMessage sqsMessage = getSqsMessage(record);
-      processRecord(context.getLogger(), ocrService, sqsMessage);
-    });
-
-  }
-
-  @Override
   public void handleSqsRequest(final LambdaLogger logger, final AwsServiceCache awsServices,
       final LambdaInputRecord record) throws IOException {
-    // empty
+
+    DocumentOcrService ocrService = serviceCache.getExtension(DocumentOcrService.class);
+    OcrSqsMessage sqsMessage = getSqsMessage(record.getBody());
+    processRecord(logger, ocrService, sqsMessage);
   }
 
   protected File loadFile(final OcrSqsMessage sqsMessage, final MimeType mt) throws IOException {
