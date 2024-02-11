@@ -36,7 +36,7 @@ test {
 }
 
 task buildTemplate {
-	inputs.files("src/main/resources/cloudformation/template.yaml", "src/main/resources/cloudformation/template-ocr.yaml", "src/main/resources/cloudformation/api.yaml", "src/main/resources/cloudformation/api-iam.yaml", "src/main/resources/cloudformation/api-apikey.yaml", "src/main/resources/cloudformation/api-lambda.yaml")
+	inputs.files("src/main/resources/cloudformation/template.yaml", "src/main/resources/cloudformation/module-extra-core-ocr.yaml", "src/main/resources/cloudformation/api.yaml", "src/main/resources/cloudformation/api-iam.yaml", "src/main/resources/cloudformation/api-apikey.yaml", "src/main/resources/cloudformation/api-lambda.yaml")
 	outputs.files("${buildDir}/distributions/api/template.yaml")
 	
 	def randomtext = ('0'..'z').shuffled().take(10).join();
@@ -71,7 +71,7 @@ task buildTemplate {
 		
 		// build template
 		exec {
-			commandLine getCmd(), getCmdParam(), "ytt --data-value hash=${sha256} -f src/main/resources/cloudformation/template.yaml -f src/main/resources/cloudformation/template-ocr.yaml  > ${buildDir}/distributions/api/template.yaml"
+			commandLine getCmd(), getCmdParam(), "ytt --data-value hash=${sha256} -f src/main/resources/cloudformation/template.yaml -f src/main/resources/cloudformation/module-extra-core-ocr.yaml  > ${buildDir}/distributions/api/template.yaml"
 		}
 	}
 }
