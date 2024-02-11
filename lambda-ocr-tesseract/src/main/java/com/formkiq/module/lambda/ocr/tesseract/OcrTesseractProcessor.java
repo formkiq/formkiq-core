@@ -80,7 +80,7 @@ import software.amazon.awssdk.utils.IoUtils;
 public class OcrTesseractProcessor extends AbstractRestApiRequestHandler {
 
   /** {@link AwsServiceCache}. */
-  protected static AwsServiceCache serviceCache;
+  private static AwsServiceCache serviceCache;
   /** Url Class Map. */
   private static final Map<String, ApiGatewayRequestHandler> URL_MAP = new HashMap<>();
 
