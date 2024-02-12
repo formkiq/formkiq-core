@@ -130,10 +130,6 @@ public class OcrTesseractProcessor extends AbstractRestApiRequestHandler {
 
   /** {@link List} {@link FormatConverter}. */
   private List<FormatConverter> converters;
-  /** Documents S3 Bucket. */
-  private String documentsBucket;
-  /** {@link String}. */
-  private String ocrDocumentsBucket;
 
   /**
    * constructor.
@@ -147,10 +143,6 @@ public class OcrTesseractProcessor extends AbstractRestApiRequestHandler {
    * @param services {@link DynamoDbConnectionBuilder}
    */
   public OcrTesseractProcessor(final AwsServiceCache services) {
-
-    this.documentsBucket = services.environment("DOCUMENTS_S3_BUCKET");
-    this.ocrDocumentsBucket = services.environment("OCR_S3_BUCKET");
-
     initialize(services);
   }
 
@@ -211,10 +203,11 @@ public class OcrTesseractProcessor extends AbstractRestApiRequestHandler {
 
     DocumentOcrService ocrService = serviceCache.getExtension(DocumentOcrService.class);
     OcrSqsMessage sqsMessage = getSqsMessage(record.getBody());
-    processRecord(logger, ocrService, sqsMessage);
+    processRecord(logger, awsServices, ocrService, sqsMessage);
   }
 
-  protected File loadFile(final OcrSqsMessage sqsMessage, final MimeType mt) throws IOException {
+  protected File loadFile(final AwsServiceCache awsServices, final OcrSqsMessage sqsMessage,
+      final MimeType mt) throws IOException {
 
     S3Service s3Service = serviceCache.getExtension(S3Service.class);
 
@@ -227,7 +220,9 @@ public class OcrTesseractProcessor extends AbstractRestApiRequestHandler {
     File file =
         new File(tmpDirectory + documentS3Key.replaceAll("/", "_") + "." + mt.getExtension());
 
-    try (InputStream is = s3Service.getContentAsInputStream(this.documentsBucket, documentS3Key)) {
+    String documentsBucket = awsServices.environment("DOCUMENTS_S3_BUCKET");
+
+    try (InputStream is = s3Service.getContentAsInputStream(documentsBucket, documentS3Key)) {
 
       try (OutputStream fileOs = new FileOutputStream(file)) {
         IoUtils.copy(is, fileOs);
@@ -237,8 +232,8 @@ public class OcrTesseractProcessor extends AbstractRestApiRequestHandler {
     return file;
   }
 
-  private void processRecord(final LambdaLogger logger, final DocumentOcrService ocrService,
-      final OcrSqsMessage sqsMessage) {
+  private void processRecord(final LambdaLogger logger, final AwsServiceCache awsServices,
+      final DocumentOcrService ocrService, final OcrSqsMessage sqsMessage) {
 
     String siteId = sqsMessage.siteId();
     String documentId = sqsMessage.documentId();
@@ -261,7 +256,7 @@ public class OcrTesseractProcessor extends AbstractRestApiRequestHandler {
         throw new IOException("unsupported Content-Type: " + contentType);
       }
 
-      File file = loadFile(sqsMessage, mt);
+      File file = loadFile(awsServices, sqsMessage, mt);
 
       try {
 
@@ -271,7 +266,10 @@ public class OcrTesseractProcessor extends AbstractRestApiRequestHandler {
 
           S3Service s3Service = serviceCache.getExtension(S3Service.class);
           String ocrS3Key = ocrService.getS3Key(siteId, documentId, jobId);
-          s3Service.putObject(this.ocrDocumentsBucket, ocrS3Key,
+
+          String ocrDocumentsBucket = awsServices.environment("OCR_S3_BUCKET");
+
+          s3Service.putObject(ocrDocumentsBucket, ocrS3Key,
               result.text().getBytes(StandardCharsets.UTF_8), "text/plain");
         }
 
