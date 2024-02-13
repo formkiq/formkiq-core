@@ -52,6 +52,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.parallel.Isolated;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
@@ -79,6 +80,7 @@ import software.amazon.awssdk.services.sqs.model.SetQueueAttributesRequest;
 /**
  * Test CloudFormation.
  */
+@Isolated
 public class AwsResourceTest extends AbstractAwsTest {
   /** Sleep Timeout. */
   private static final long SLEEP = 500L;

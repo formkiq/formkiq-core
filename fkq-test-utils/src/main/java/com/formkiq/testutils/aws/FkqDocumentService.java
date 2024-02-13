@@ -46,6 +46,8 @@ import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAction;
 import com.formkiq.client.model.AddDocumentResponse;
 import com.formkiq.client.model.AddDocumentTagsRequest;
+import com.formkiq.client.model.DocumentAction;
+import com.formkiq.client.model.DocumentActionStatus;
 import com.formkiq.client.model.GetDocumentActionsResponse;
 import com.formkiq.client.model.GetDocumentContentResponse;
 import com.formkiq.client.model.GetDocumentFulltextResponse;
@@ -271,12 +273,17 @@ public class FkqDocumentService {
       try {
         response = api.getDocumentActions(documentId, siteId, null);
 
-        o = response.getActions().stream()
-            .filter(a -> a.getStatus().name().equalsIgnoreCase(actionStatus))
+        List<DocumentAction> actions = response.getActions();
+        o = actions.stream().filter(a -> a.getStatus().name().equalsIgnoreCase(actionStatus))
             .collect(Collectors.toList());
 
-        if (response.getActions().size() != o.size()) {
+        if (actions.size() != o.size()) {
           o = Collections.emptyList();
+
+          if (actions.stream().filter(a -> a.getStatus().equals(DocumentActionStatus.FAILED))
+              .findAny().isPresent()) {
+            throw new InterruptedException("Found FAILED action");
+          }
         }
 
       } catch (ApiException e) {
