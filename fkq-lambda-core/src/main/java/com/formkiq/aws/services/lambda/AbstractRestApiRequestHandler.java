@@ -28,6 +28,7 @@ import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_BAD_REQUEST;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_ERROR;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_FORBIDDEN;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_FOUND;
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_METHOD_CONFLICT;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_FOUND;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_IMPLEMENTED;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_TOO_MANY_REQUESTS;
@@ -52,6 +53,7 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
+import com.formkiq.aws.services.lambda.exceptions.ConflictException;
 import com.formkiq.aws.services.lambda.exceptions.ForbiddenException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.aws.services.lambda.exceptions.NotImplementedException;
@@ -563,6 +565,9 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
     } catch (NotFoundException e) {
       buildResponse(logger, awsServices, output, SC_NOT_FOUND, Collections.emptyMap(),
+          new ApiResponseError(e.getMessage()));
+    } catch (ConflictException e) {
+      buildResponse(logger, awsServices, output, SC_METHOD_CONFLICT, Collections.emptyMap(),
           new ApiResponseError(e.getMessage()));
     } catch (TooManyRequestsException e) {
       buildResponse(logger, awsServices, output, SC_TOO_MANY_REQUESTS, Collections.emptyMap(),

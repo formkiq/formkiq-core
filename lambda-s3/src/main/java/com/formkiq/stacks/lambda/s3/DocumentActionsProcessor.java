@@ -749,8 +749,31 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
       throws IOException, InterruptedException {
 
     Map<String, Object> payload = Map.of("contentUrls", contentUrls);
-    sendRequest(siteId, "patch", "/documents/" + documentId + "/fulltext",
-        this.gson.toJson(payload));
+
+    try {
+      sendRequest(siteId, "patch", "/documents/" + documentId + "/fulltext",
+          this.gson.toJson(payload));
+    } catch (IOException e) {
+
+      if (e.getMessage().contains(" 404")) {
+
+        try {
+          sendRequest(siteId, "post", "/documents/" + documentId + "/fulltext",
+              this.gson.toJson(payload));
+        } catch (IOException ee) {
+
+          if (e.getMessage().contains(" 409")) {
+            sendRequest(siteId, "patch", "/documents/" + documentId + "/fulltext",
+                this.gson.toJson(payload));
+          } else {
+            throw e;
+          }
+        }
+
+      } else {
+        throw e;
+      }
+    }
   }
 
   /**

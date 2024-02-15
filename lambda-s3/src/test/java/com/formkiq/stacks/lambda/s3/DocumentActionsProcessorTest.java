@@ -126,6 +126,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
   private static AwsBasicCredentials credentials = AwsBasicCredentials.create("asd", "asd");
   /** {@link DynamoDbConnectionBuilder}. */
   private static DynamoDbConnectionBuilder dbBuilder;
+  /** Full text 404 document. */
+  private static final String DOCUMENT_ID_404 = UUID.randomUUID().toString();
+  /** Document Id with OCR. */
+  private static final String DOCUMENT_ID_OCR = UUID.randomUUID().toString();
   /** {@link DocumentService}. */
   private static DocumentService documentService;
   /** {@link Gson}. */
@@ -148,8 +152,6 @@ public class DocumentActionsProcessorTest implements DbKeys {
   private static TypeSenseService typesense;
   /** Test server URL. */
   private static final String URL = "http://localhost:" + PORT;
-  /** Document Id with OCR. */
-  private static final String DOCUMENT_ID_OCR = UUID.randomUUID().toString();
 
   /**
    * After Class.
@@ -211,6 +213,16 @@ public class DocumentActionsProcessorTest implements DbKeys {
       mockServer.when(request().withMethod("POST").withPath("/chatgpt" + item)).respond(
           org.mockserver.model.HttpResponse.response(text).withStatusCode(Integer.valueOf(status)));
     }
+
+    final int notFound = 404;
+    mockServer
+        .when(request().withMethod("PATCH").withPath("/documents/" + DOCUMENT_ID_404 + "/fulltext"))
+        .respond(org.mockserver.model.HttpResponse.response("")
+            .withStatusCode(Integer.valueOf(notFound)));
+
+    mockServer
+        .when(request().withMethod("POST").withPath("/documents/" + DOCUMENT_ID_404 + "/fulltext"))
+        .respond(callback);
 
     mockServer.when(request().withMethod("GET").withPath("/documents/" + DOCUMENT_ID_OCR + "/ocr*"))
         .respond(org.mockserver.model.HttpResponse
@@ -289,35 +301,6 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertEquals(1, list.size());
       assertEquals(ActionStatus.FAILED, list.get(0).status());
       assertEquals("missing config 'ChatGptApiKey'", list.get(0).message());
-    }
-  }
-
-  /**
-   * Handle Queue Action.
-   * 
-   * @throws Exception Exception
-   */
-  @Test
-  public void testQueueAction01() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      // given
-      String documentId = UUID.randomUUID().toString();
-      String name = "testqueue#" + documentId;
-
-      List<Action> actions =
-          Arrays.asList(new Action().type(ActionType.QUEUE).userId("joe").queueId(name));
-      actionsService.saveNewActions(siteId, documentId, actions);
-
-      Map<String, Object> map =
-          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
-              documentId, "default", siteId != null ? siteId : "default");
-
-      // when
-      processor.handleRequest(map, this.context);
-
-      // then
-      assertEquals(ActionStatus.IN_QUEUE,
-          actionsService.getActions(siteId, documentId).get(0).status());
     }
   }
 
@@ -1243,7 +1226,6 @@ public class DocumentActionsProcessorTest implements DbKeys {
     }
   }
 
-
   /**
    * Handle Fulltext that needs OCR Action.
    * 
@@ -1282,6 +1264,77 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertEquals(ActionType.FULLTEXT, list.get(1).type());
       assertEquals(ActionStatus.FAILED, list.get(1).status());
       assertEquals("no OCR document found", list.get(1).message());
+    }
+  }
+
+
+  /**
+   * Handle Fulltext(Opensearch) plain/text PATCH document not found 404, POST works.
+   * 
+   * @throws IOException IOException
+   * @throws URISyntaxException URISyntaxException
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandleFulltext03() throws IOException, URISyntaxException {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String documentId = DOCUMENT_ID_404;
+
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      item.setContentType("text/plain");
+
+      documentService.saveDocument(siteId, item, null);
+      List<Action> actions = Arrays.asList(new Action().type(ActionType.FULLTEXT).userId("joe"));
+      actionsService.saveNewActions(siteId, documentId, actions);
+
+      Map<String, Object> map =
+          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
+              documentId, "default", siteId != null ? siteId : "default");
+
+      // when
+      processor.handleRequest(map, this.context);
+
+      // then
+      HttpRequest lastRequest = callback.getLastRequest();
+      assertTrue(lastRequest.getPath().toString().endsWith("/fulltext"));
+      Map<String, Object> resultmap = gson.fromJson(lastRequest.getBodyAsString(), Map.class);
+      assertNotNull(resultmap.get("contentUrls").toString());
+
+      Action action = actionsService.getActions(siteId, documentId).get(0);
+      assertEquals(ActionStatus.COMPLETE, action.status());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertNotNull(action.completedDate());
+    }
+  }
+
+  /**
+   * Handle Queue Action.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  public void testQueueAction01() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String documentId = UUID.randomUUID().toString();
+      String name = "testqueue#" + documentId;
+
+      List<Action> actions =
+          Arrays.asList(new Action().type(ActionType.QUEUE).userId("joe").queueId(name));
+      actionsService.saveNewActions(siteId, documentId, actions);
+
+      Map<String, Object> map =
+          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
+              documentId, "default", siteId != null ? siteId : "default");
+
+      // when
+      processor.handleRequest(map, this.context);
+
+      // then
+      assertEquals(ActionStatus.IN_QUEUE,
+          actionsService.getActions(siteId, documentId).get(0).status());
     }
   }
 }
