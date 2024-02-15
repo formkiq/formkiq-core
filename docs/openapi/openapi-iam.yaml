@@ -2812,6 +2812,39 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
+            post:
+              operationId: AddDocumentFulltext
+              summary: Add document's full-text
+              description: Adde a document to OpenSearch; ONLY available with FormKiQ Enterprise
+              tags:
+              - Advanced Document Search
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              requestBody:
+                required: false
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/AddDocumentFulltextRequest'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/AddDocumentFulltextResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
             patch:
               operationId: UpdateDocumentFulltext
               summary: Update document's full-text
@@ -2840,7 +2873,7 @@
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/SetDocumentFulltextResponse'
+                        $ref: '#/components/schemas/UpdateDocumentFulltextResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -6997,6 +7030,18 @@
                 message:
                   type: string
                   description: OCR processing message
+            AddDocumentFulltextResponse:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: Full text processing message
+            UpdateDocumentFulltextResponse:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: Full text processing message
             SetDocumentFulltextResponse:
               type: object
               properties:
@@ -7004,6 +7049,36 @@
                   type: string
                   description: Full text processing message
             SetDocumentFulltextRequest:
+              type: object
+              properties:
+                contentType:
+                  type: string
+                  description: Document Content-Type
+                content:
+                  type: string
+                  description: Document content
+                contentUrls:
+                  type: array
+                  items:
+                    type: string
+                  description: URL(s) which contain document content
+                path:
+                  type: string
+                  description: Path or Name of document
+                deepLinkPath:
+                  type: string
+                  description: Path or Name of deep link
+                tags:
+                  type: array
+                  description: List of document tags
+                  items:
+                    $ref: '#/components/schemas/AddDocumentTag'
+                metadata:
+                  type: array
+                  description: List of document Metadata
+                  items:
+                    $ref: '#/components/schemas/AddDocumentMetadata'
+            AddDocumentFulltextRequest:
               type: object
               properties:
                 contentType:
