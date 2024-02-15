@@ -32,6 +32,7 @@ import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.util.Base64;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -213,13 +214,14 @@ public class FkqDocumentService {
    * @param client {@link ApiClient}
    * @param siteId {@link String}
    * @param documentId {@link String}
-   * @param actionStatus {@link String}
+   * @param actionStatus {@link Collection} {@link DocumentActionStatus}
    * @return {@link GetDocumentActionsResponse}
    * @throws ApiException ApiException
    * @throws InterruptedException InterruptedException
    */
   public static GetDocumentActionsResponse waitForAction(final ApiClient client,
-      final String siteId, final String documentId, final String actionStatus)
+      final String siteId, final String documentId,
+      final Collection<DocumentActionStatus> actionStatus)
       throws ApiException, InterruptedException {
 
     GetDocumentActionsResponse response = null;
@@ -232,8 +234,7 @@ public class FkqDocumentService {
       try {
         response = api.getDocumentActions(documentId, siteId, null);
 
-        o = response.getActions().stream()
-            .filter(a -> a.getStatus().name().equalsIgnoreCase(actionStatus))
+        o = response.getActions().stream().filter(a -> actionStatus.contains(a.getStatus()))
             .collect(Collectors.toList());
 
       } catch (ApiException e) {
