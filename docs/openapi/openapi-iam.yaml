@@ -6727,6 +6727,9 @@
             Rule:
               type: object
               properties:
+                ruleId:
+                  type: string
+                  description: Workflow to start on matching of conditions
                 priority:
                   type: number
                   description: Rule priority
