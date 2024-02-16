@@ -31,6 +31,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
@@ -261,7 +262,8 @@ public class FkqDocumentService {
    * @throws InterruptedException InterruptedException
    */
   public static GetDocumentActionsResponse waitForActions(final ApiClient client,
-      final String siteId, final String documentId, final String actionStatus)
+      final String siteId, final String documentId,
+      final Collection<DocumentActionStatus> actionStatus)
       throws ApiException, InterruptedException {
 
     GetDocumentActionsResponse response = null;
@@ -275,7 +277,7 @@ public class FkqDocumentService {
         response = api.getDocumentActions(documentId, siteId, null);
 
         List<DocumentAction> actions = response.getActions();
-        o = actions.stream().filter(a -> a.getStatus().name().equalsIgnoreCase(actionStatus))
+        o = actions.stream().filter(a -> actionStatus.contains(a.getStatus()))
             .collect(Collectors.toList());
 
         if (actions.size() != o.size()) {
@@ -283,7 +285,8 @@ public class FkqDocumentService {
 
           if (actions.stream().filter(a -> a.getStatus().equals(DocumentActionStatus.FAILED))
               .findAny().isPresent()) {
-            throw new InterruptedException("Found FAILED action");
+            throw new InterruptedException(
+                "Found " + DocumentActionStatus.FAILED.name() + " action");
           }
         }
 
@@ -302,6 +305,26 @@ public class FkqDocumentService {
   /**
    * Wait for Actions to Complete.
    * 
+   * @param client {@link ApiClient}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param actionStatus {@link String}
+   * @return {@link GetDocumentActionsResponse}
+   * @throws ApiException ApiException
+   * @throws InterruptedException InterruptedException
+   * @deprecated use with {@link DocumentActionStatus}
+   */
+  @Deprecated
+  public static GetDocumentActionsResponse waitForActions(final ApiClient client,
+      final String siteId, final String documentId, final String actionStatus)
+      throws ApiException, InterruptedException {
+    return waitForActions(client, siteId, documentId,
+        Arrays.asList(DocumentActionStatus.valueOf(actionStatus.toUpperCase())));
+  }
+
+  /**
+   * Wait for Actions to Complete.
+   * 
    * 
    * @param client {@link ApiClient}
    * @param siteId {@link String}
@@ -313,6 +336,42 @@ public class FkqDocumentService {
   public static GetDocumentActionsResponse waitForActionsComplete(final ApiClient client,
       final String siteId, final String documentId) throws ApiException, InterruptedException {
     return waitForActions(client, siteId, documentId, "COMPLETE");
+  }
+
+  /**
+   * Wait for Actions to Complete.
+   * 
+   * @param client {@link ApiClient}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param actionStatus {@link String}
+   * @return {@link GetDocumentActionsResponse}
+   * @throws ApiException ApiException
+   * @throws InterruptedException InterruptedException
+   */
+  public static GetDocumentActionsResponse waitForActionsWithRetry(final ApiClient client,
+      final String siteId, final String documentId,
+      final Collection<DocumentActionStatus> actionStatus)
+      throws ApiException, InterruptedException {
+    GetDocumentActionsResponse response = null;
+
+    try {
+      response = waitForActions(client, siteId, documentId, actionStatus);
+    } catch (InterruptedException e) {
+
+      if (e.getMessage().contains(DocumentActionStatus.FAILED.name())) {
+
+        DocumentActionsApi api = new DocumentActionsApi(client);
+        api.addDocumentRetryAction(documentId, siteId);
+        TimeUnit.SECONDS.sleep(1);
+        response = waitForActions(client, siteId, documentId, actionStatus);
+
+      } else {
+        throw e;
+      }
+    }
+
+    return response;
   }
 
   /**

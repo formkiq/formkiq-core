@@ -50,6 +50,7 @@ import com.formkiq.client.model.AddActionParameters.NotificationTypeEnum;
 import com.formkiq.client.model.AddDocumentActionsRetryResponse;
 import com.formkiq.client.model.AddDocumentTag;
 import com.formkiq.client.model.Document;
+import com.formkiq.client.model.DocumentActionStatus;
 import com.formkiq.client.model.DocumentActionType;
 import com.formkiq.client.model.GetDocumentActionsResponse;
 import com.formkiq.client.model.GetDocumentsResponse;
@@ -132,7 +133,8 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
         MimeType.MIME_DOCX.getContentType(), actions, tags);
 
     // then
-    GetDocumentActionsResponse response = waitForActions(client, siteId, documentId, "FAILED");
+    GetDocumentActionsResponse response =
+        waitForActions(client, siteId, documentId, Arrays.asList(DocumentActionStatus.FAILED));
     assertEquals(1, response.getActions().size());
     assertEquals("FAILED", response.getActions().get(0).getStatus().name());
 
@@ -146,7 +148,8 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
     // then
     assertEquals("Actions retrying", retryResponse.getMessage());
 
-    response = waitForAction(client, siteId, documentId, "FAILED");
+    response =
+        waitForAction(client, siteId, documentId, Arrays.asList(DocumentActionStatus.FAILED));
     assertEquals(2, response.getActions().size());
     assertEquals("FAILED_RETRY", response.getActions().get(0).getStatus().name());
     assertEquals("FAILED", response.getActions().get(1).getStatus().name());
