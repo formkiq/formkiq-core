@@ -35,11 +35,11 @@ public class DocumentAccessAttributesRecord
     implements DynamodbRecord<DocumentAccessAttributesRecord>, DbKeys {
 
   /** Boolean Access Attributes. */
-  private static final String PREFIX_BOOLEAN = "aab#";
+  public static final String PREFIX_BOOLEAN = "aab#";
   /** Number Access Attributes. */
-  private static final String PREFIX_NUMBER = "aan#";
+  public static final String PREFIX_NUMBER = "aan#";
   /** String Access Attributes. */
-  private static final String PREFIX_STRING = "aas#";
+  public static final String PREFIX_STRING = "aas#";
   /** Access Attributes. */
   private Map<String, Object> attributes;
   /** DocumentId. */
