@@ -5983,6 +5983,8 @@ Resources:
                   type: "object"
                 metadata:
                   type: "object"
+                accessAttributes:
+                  type: "object"
             GetDocumentSyncResponse:
               type: "object"
               properties:
