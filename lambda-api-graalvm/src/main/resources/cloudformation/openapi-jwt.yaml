@@ -5981,10 +5981,16 @@ Resources:
                   description: "Document size"
                 tags:
                   type: "object"
+                  additionalProperties:
+                    type: object
                 metadata:
                   type: "object"
+                  additionalProperties:
+                    type: object
                 accessAttributes:
                   type: "object"
+                  additionalProperties:
+                    type: object
             GetDocumentSyncResponse:
               type: "object"
               properties:
