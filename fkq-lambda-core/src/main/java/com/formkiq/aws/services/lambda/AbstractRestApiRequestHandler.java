@@ -76,6 +76,16 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
   /** {@link Gson}. */
   protected Gson gson = GsonUtil.getInstance();
 
+  private void buildForbiddenException(final LambdaLogger logger, final AwsServiceCache awsServices,
+      final OutputStream output, final ForbiddenException e) throws IOException {
+    if (awsServices.debug() && e.getDebug() != null) {
+      logger.log(e.getDebug());
+    }
+
+    buildResponse(logger, awsServices, output, SC_FORBIDDEN, Collections.emptyMap(),
+        new ApiResponseError(e.getMessage()));
+  }
+
   /**
    * Handle Exception.
    *
@@ -576,8 +586,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
       buildResponse(logger, awsServices, output, SC_BAD_REQUEST, Collections.emptyMap(),
           new ApiResponseError(e.getMessage()));
     } catch (ForbiddenException e) {
-      buildResponse(logger, awsServices, output, SC_FORBIDDEN, Collections.emptyMap(),
-          new ApiResponseError(e.getMessage()));
+      buildForbiddenException(logger, awsServices, output, e);
     } catch (UnauthorizedException e) {
       buildResponse(logger, awsServices, output, SC_UNAUTHORIZED, Collections.emptyMap(),
           new ApiResponseError(e.getMessage()));

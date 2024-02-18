@@ -29,6 +29,9 @@ public class ForbiddenException extends Exception {
   /** serialVersionUID. */
   private static final long serialVersionUID = -3307625920614270509L;
 
+  /** Debug trace info. */
+  private String debug;
+
   /**
    * constructor.
    *
@@ -36,5 +39,25 @@ public class ForbiddenException extends Exception {
    */
   public ForbiddenException(final String msg) {
     super(msg);
+  }
+
+  /**
+   * constructor.
+   *
+   * @param msg {@link String}
+   * @param debugTrace {@link String}
+   */
+  public ForbiddenException(final String msg, final String debugTrace) {
+    this(msg);
+    this.debug = debugTrace;
+  }
+
+  /**
+   * Get Debug.
+   * 
+   * @return {@link String}
+   */
+  public String getDebug() {
+    return this.debug;
   }
 }
