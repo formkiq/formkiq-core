@@ -527,6 +527,25 @@ Resources:
             Value: 
               Fn::Sub: "${AWS::StackName}"
 
+  DocumentsDeadLetterQueueParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Dead letter queue"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/sqs/DocumentsDeadLetterQueueArn"
+      Type: String
+      Value:
+        Fn::GetAtt:
+          - DocumentsDeadLetterQueue
+          - Arn
+      Tags:
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+
   DocumentsUpdateQueue:
     Type: "AWS::SQS::Queue"
     Properties:

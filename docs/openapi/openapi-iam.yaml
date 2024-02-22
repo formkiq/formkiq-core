@@ -1471,7 +1471,10 @@
             post:
               operationId: QueryFulltext
               summary: Direct opensearch search API
-              description: Endpoint for allowing custom, complex queries using the OpenSearch search API (https://opensearch.org/docs/latest/opensearch/rest-api/search/); ONLY available with FormKiQ Enterprise
+              description: |-
+                Endpoint for allowing custom, complex queries using the OpenSearch search API (https://opensearch.org/docs/latest/opensearch/rest-api/search/); ONLY available with FormKiQ Enterprise
+
+                Example Request Body: { "query": { "match_all": {} }}
               tags:
               - Advanced Document Search
               parameters:
