@@ -1,0 +1,120 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: FormKiQ OpenSearch Bastion SSH Tunnel Host
+
+Parameters:
+
+  KeyPairName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Name of an existing public/private key pair, which allows you
+      to securely connect to your instance after it launches.
+
+  LatestAmiId:
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
+
+  VpcStackName:
+    Type: String
+    Description: The name of the FormKiQ VPC Stack Name
+    AllowedPattern: ".+"
+
+  VpcSubnets:
+    Description: "SubnetId in VPC"
+    Type: "List<AWS::EC2::Subnet::Id>"
+
+Resources:
+
+  BastionHost:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      InstanceType: t3.micro
+      ImageId:
+        Ref: LatestAmiId
+      IamInstanceProfile: 
+        Ref: BastionHostInstanceProfile
+      KeyName: 
+        Ref: KeyPairName
+      SecurityGroupIds:
+        - Ref: BastionSecurityGroup
+      SubnetId:
+        Fn::Join:
+          - ","
+          - Ref: VpcSubnets
+      UserData:
+        Fn::Base64:
+          Fn::Sub: |
+            #!/bin/bash
+            sudo yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
+      Tags:
+        - Key: Name
+          Value: 
+            Fn::Sub: "Bastion Host"
+        - Key: StackName
+          Value: 
+            Fn::Sub: "${AWS::StackName}"
+
+  BastionSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow SSH/OpenSearch Tunnel traffic
+      VpcId:
+        Fn::ImportValue:
+          Fn::Sub: '${VpcStackName}-Vpc'
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 50.71.0.58/32
+          Description: SSH Port
+        - IpProtocol: tcp
+          FromPort: '8157'
+          ToPort: '8157'
+          CidrIp: 50.71.0.58/32
+          Description: OpenSearch Tunnel Port
+      Tags:
+        - Key: StackName
+          Value: 
+            Fn::Sub: "${AWS::StackName}"
+
+  BastionHostInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: '/'
+      Roles: 
+        - Ref: BastionHostRole
+
+  BastionHostRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Path: "/"
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore'
+        - 'arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy'
+      Tags:
+        - Key: StackName
+          Value: 
+            Fn::Sub: "${AWS::StackName}"
+
+Outputs:
+  BastionHostId:
+    Description: Bastion Host Id
+    Value:
+      Ref: BastionHost
+  BastionPublicDnsName:
+    Description: Bastion Public Dns
+    Value:
+      Fn::GetAtt: 
+        - BastionHost
+        - PublicDnsName
+  BastionPublicIp:
+    Description: Bastion Public Ip
+    Value:
+      Fn::GetAtt: 
+        - BastionHost
+        - PublicIp
