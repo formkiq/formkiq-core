@@ -1763,6 +1763,7 @@ Resources:
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/limitParam'
               - $ref: '#/components/parameters/shareKeyParam'
               - $ref: '#/components/parameters/nextParam'
               responses:
