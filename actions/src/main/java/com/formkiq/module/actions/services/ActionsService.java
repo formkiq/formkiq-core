@@ -89,6 +89,18 @@ public interface ActionsService {
   List<Action> getActions(String siteId, String documentId);
 
   /**
+   * Get {@link List} {@link Action} for a document.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param exclusiveStartKey {@link Map}
+   * @param limit int
+   * @return {@link PaginationResults} {@link Action}
+   */
+  PaginationResults<Action> getActions(String siteId, String documentId,
+      Map<String, AttributeValue> exclusiveStartKey, int limit);
+
+  /**
    * Whether SiteId / DocumentId combination has any actions.
    * 
    * @param siteId {@link String}

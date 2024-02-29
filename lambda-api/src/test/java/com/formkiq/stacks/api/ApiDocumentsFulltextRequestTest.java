@@ -109,7 +109,6 @@ public class ApiDocumentsFulltextRequestTest {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocumentFulltext02() throws Exception {
     String content = "some content";
@@ -136,7 +135,7 @@ public class ApiDocumentsFulltextRequestTest {
           this.searchApi.getDocumentFulltext(documentId, siteId, null);
       assertEquals("text/plain", response.getContentType());
       assertEquals(content, response.getContent());
-      Map<String, Object> metadata = (Map<String, Object>) response.getMetadata();
+      Map<String, Object> metadata = response.getMetadata();
       assertEquals(2, metadata.size());
       assertEquals("myvalue", metadata.get("mykey"));
       assertEquals("", metadata.get("mykey2"));

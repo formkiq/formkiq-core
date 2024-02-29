@@ -89,7 +89,8 @@ public class DocumentsFulltextRequestTest extends AbstractAwsIntegrationTest {
 
       assertTrue(response.getData().contains("This is a small demonstration"));
 
-      GetDocumentActionsResponse actions = api.getDocumentActions(documentId, siteId, null);
+      GetDocumentActionsResponse actions =
+          api.getDocumentActions(documentId, siteId, null, null, null);
       assertEquals(2, actions.getActions().size());
       assertEquals("OCR", actions.getActions().get(0).getType().name());
       assertEquals("COMPLETE", actions.getActions().get(0).getStatus().name());

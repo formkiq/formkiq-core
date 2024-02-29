@@ -158,7 +158,8 @@ public class DocumentsDocumentIdOcrRequestTest extends AbstractAwsIntegrationTes
     GetDocumentOcrResponse documentOcr = api.getDocumentOcr(documentId, siteId, null, null, null);
     assertTrue(documentOcr.getData().contains("East Repair"));
 
-    GetDocumentActionsResponse actions = actionsApi.getDocumentActions(documentId, siteId, null);
+    GetDocumentActionsResponse actions =
+        actionsApi.getDocumentActions(documentId, siteId, null, null, null);
     assertEquals(1, actions.getActions().size());
     assertEquals("COMPLETE", actions.getActions().get(0).getStatus().name());
   }

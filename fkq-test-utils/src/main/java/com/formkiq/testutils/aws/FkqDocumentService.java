@@ -260,7 +260,7 @@ public class FkqDocumentService {
     while (o.isEmpty()) {
 
       try {
-        response = api.getDocumentActions(documentId, siteId, null);
+        response = api.getDocumentActions(documentId, siteId, null, null, null);
 
         o = response.getActions().stream().filter(a -> actionStatus.contains(a.getStatus()))
             .collect(Collectors.toList());
@@ -301,7 +301,7 @@ public class FkqDocumentService {
     while (o.isEmpty()) {
 
       try {
-        response = api.getDocumentActions(documentId, siteId, null);
+        response = api.getDocumentActions(documentId, siteId, null, null, null);
 
         List<DocumentAction> actions = response.getActions();
         o = actions.stream().filter(a -> actionStatus.contains(a.getStatus()))

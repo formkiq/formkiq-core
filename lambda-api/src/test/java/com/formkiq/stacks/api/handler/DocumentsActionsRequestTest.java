@@ -50,6 +50,7 @@ import com.formkiq.client.model.AddDocumentActionsRequest;
 import com.formkiq.client.model.AddDocumentActionsResponse;
 import com.formkiq.client.model.AddDocumentActionsRetryResponse;
 import com.formkiq.client.model.DocumentAction;
+import com.formkiq.client.model.DocumentActionStatus;
 import com.formkiq.client.model.DocumentActionType;
 import com.formkiq.client.model.GetDocumentActionsResponse;
 import com.formkiq.module.actions.Action;
@@ -119,13 +120,13 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
 
       // when
       GetDocumentActionsResponse response =
-          this.documentActionsApi.getDocumentActions(documentId, siteId, null);
+          this.documentActionsApi.getDocumentActions(documentId, siteId, null, null, null);
 
       // then
       List<DocumentAction> actions = response.getActions();
       assertEquals(1, actions.size());
-      assertEquals("OCR", actions.get(0).getType().name());
-      assertEquals("COMPLETE", actions.get(0).getStatus().name());
+      assertEquals(DocumentActionType.OCR, actions.get(0).getType());
+      assertEquals(DocumentActionStatus.COMPLETE, actions.get(0).getStatus());
       assertEquals("{test=this}", actions.get(0).getParameters().toString());
     }
   }
@@ -382,12 +383,12 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       assertEquals("Actions retrying", retry.getMessage());
 
       GetDocumentActionsResponse response =
-          this.documentActionsApi.getDocumentActions(documentId, siteId, null);
+          this.documentActionsApi.getDocumentActions(documentId, siteId, null, null, null);
 
       List<DocumentAction> actions = response.getActions();
       assertEquals(1, actions.size());
-      assertEquals("OCR", actions.get(0).getType().name());
-      assertEquals("COMPLETE", actions.get(0).getStatus().name());
+      assertEquals(DocumentActionType.OCR, actions.get(0).getType());
+      assertEquals(DocumentActionStatus.COMPLETE, actions.get(0).getStatus());
       assertEquals("{test=this}", actions.get(0).getParameters().toString());
     }
   }
@@ -417,23 +418,23 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       assertEquals("Actions retrying", retry.getMessage());
 
       GetDocumentActionsResponse response =
-          this.documentActionsApi.getDocumentActions(documentId, siteId, null);
+          this.documentActionsApi.getDocumentActions(documentId, siteId, null, null, null);
 
       List<DocumentAction> actions = response.getActions();
       assertEquals(2, actions.size());
-      assertEquals("OCR", actions.get(0).getType().name());
-      assertEquals("FAILED_RETRY", actions.get(0).getStatus().name());
+      assertEquals(DocumentActionType.OCR, actions.get(0).getType());
+      assertEquals(DocumentActionStatus.FAILED_RETRY, actions.get(0).getStatus());
       assertEquals("some message", actions.get(0).getMessage());
 
-      assertEquals("OCR", actions.get(1).getType().name());
-      assertEquals("PENDING", actions.get(1).getStatus().name());
+      assertEquals(DocumentActionType.OCR, actions.get(1).getType());
+      assertEquals(DocumentActionStatus.PENDING, actions.get(1).getStatus());
       assertNull(actions.get(1).getMessage());
 
       // when - 2nd time
       this.documentActionsApi.addDocumentRetryAction(documentId, siteId);
 
       // then
-      response = this.documentActionsApi.getDocumentActions(documentId, siteId, null);
+      response = this.documentActionsApi.getDocumentActions(documentId, siteId, null, null, null);
       actions = response.getActions();
       assertEquals(2, actions.size());
     }
@@ -464,31 +465,41 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       assertEquals("Actions retrying", retry.getMessage());
 
       GetDocumentActionsResponse response =
-          this.documentActionsApi.getDocumentActions(documentId, siteId, null);
+          this.documentActionsApi.getDocumentActions(documentId, siteId, null, null, null);
 
       int i = 0;
       final int expected = 4;
       List<DocumentAction> actions = response.getActions();
       assertEquals(expected, actions.size());
-      assertEquals("OCR", actions.get(i).getType().name());
-      assertEquals("FAILED_RETRY", actions.get(i++).getStatus().name());
+      assertEquals(DocumentActionType.OCR, actions.get(i).getType());
+      assertEquals(DocumentActionStatus.FAILED_RETRY, actions.get(i++).getStatus());
 
-      assertEquals("FULLTEXT", actions.get(i).getType().name());
-      assertEquals("FAILED_RETRY", actions.get(i++).getStatus().name());
+      assertEquals(DocumentActionType.FULLTEXT, actions.get(i).getType());
+      assertEquals(DocumentActionStatus.FAILED_RETRY, actions.get(i++).getStatus());
 
-      assertEquals("OCR", actions.get(i).getType().name());
-      assertEquals("PENDING", actions.get(i++).getStatus().name());
+      assertEquals(DocumentActionType.OCR, actions.get(i).getType());
+      assertEquals(DocumentActionStatus.PENDING, actions.get(i++).getStatus());
 
-      assertEquals("FULLTEXT", actions.get(i).getType().name());
-      assertEquals("PENDING", actions.get(i++).getStatus().name());
+      assertEquals(DocumentActionType.FULLTEXT, actions.get(i).getType());
+      assertEquals(DocumentActionStatus.PENDING, actions.get(i++).getStatus());
 
       // when - 2nd time
       this.documentActionsApi.addDocumentRetryAction(documentId, siteId);
 
       // then
-      response = this.documentActionsApi.getDocumentActions(documentId, siteId, null);
+      response = this.documentActionsApi.getDocumentActions(documentId, siteId, null, null, null);
       actions = response.getActions();
       assertEquals(expected, actions.size());
+
+      // then - limits
+      response = this.documentActionsApi.getDocumentActions(documentId, siteId, "1", null, null);
+      assertEquals(1, response.getActions().size());
+      assertEquals(DocumentActionType.OCR, response.getActions().get(0).getType());
+
+      response = this.documentActionsApi.getDocumentActions(documentId, siteId, null, null,
+          response.getNext());
+      assertEquals(1, response.getActions().size());
+      assertEquals(DocumentActionType.FULLTEXT, response.getActions().get(0).getType());
     }
   }
 }
