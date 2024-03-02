@@ -1571,7 +1571,7 @@ Resources:
                 | NOTIFICATION    | notificationSubject    | Notification Subject | Email Subject |
                 | NOTIFICATION    | notificationText    | Notification as Text | Email Text |
                 | NOTIFICATION    | notificationHtml    | Notification as Html | Email HTML Text |
-                | QUEUE    | queueName    | Name of Queue | |
+                | QUEUE    | queueId    | Id of Queue | |
               tags:
               - Document Actions
               parameters:
@@ -7232,6 +7232,9 @@ Resources:
                   $ref: "#/components/schemas/DocumentActionType"
                 parameters:
                   $ref: "#/components/schemas/AddActionParameters"
+                queueId:
+                  description: "Id of Queue"
+                  type: "string"
             AddActionParameters:
               type: "object"
               properties:
@@ -7280,9 +7283,6 @@ Resources:
                   type: "string"
                 tags:
                   description: "DocumentTagging: Comma-deliminted list of keywords to generate tags for"
-                  type: "string"
-                queueName:
-                  description: "Name of Queue action"
                   type: "string"
             AddDocumentOcrRequest:
               type: object

@@ -45,6 +45,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.PaginationResult;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
@@ -102,7 +103,7 @@ public class DocumentIdRequestHandler
   public static final String FORMKIQ_DOC_EXT = ".fkb64";
 
   /** {@link ActionsValidator}. */
-  private ActionsValidator actionsValidator = new ActionsValidatorImpl();
+  private ActionsValidator actionsValidator = null;
   /** {@link DocumentValidator}. */
   private DocumentValidator documentValidator = new DocumentValidatorImpl();
   /** {@link DocumentsRestrictionsMaxDocuments}. */
@@ -324,6 +325,13 @@ public class DocumentIdRequestHandler
     return "/documents/{documentId}";
   }
 
+  private void initActionsValidator(final AwsServiceCache awsservice) {
+    if (this.actionsValidator == null) {
+      DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
+      this.actionsValidator = new ActionsValidatorImpl(db);
+    }
+  }
+
   private boolean isFolder(final DynamicDocumentItem item) {
     boolean isFolder = item.hasString("path") && item.getString("path").endsWith("/");
     return isFolder;
@@ -400,24 +408,6 @@ public class DocumentIdRequestHandler
   }
 
   /**
-   * Validate Access Attributes.
-   * 
-   * @param awsservice {@link AwsServiceCache}
-   * @param item {@link DynamicDocumentItem}
-   * @param errors {@link Collection} {@link ValidationError}
-   */
-  private void validateAccessAttributes(final AwsServiceCache awsservice,
-      final DynamicDocumentItem item, final Collection<ValidationError> errors) {
-
-    List<DynamicObject> list = item.getList("accessAttributes");
-
-    if (!awsservice.hasModule("opa") && list != null && !list.isEmpty()) {
-      errors.add(new ValidationErrorImpl().key("accessAttributes")
-          .error("Access attributes are only supported with the 'open policy access' module"));
-    }
-  }
-
-  /**
    * Put Object to Staging Bucket.
    * 
    * @param logger {@link LambdaLogger}
@@ -463,9 +453,29 @@ public class DocumentIdRequestHandler
     }
   }
 
+  /**
+   * Validate Access Attributes.
+   * 
+   * @param awsservice {@link AwsServiceCache}
+   * @param item {@link DynamicDocumentItem}
+   * @param errors {@link Collection} {@link ValidationError}
+   */
+  private void validateAccessAttributes(final AwsServiceCache awsservice,
+      final DynamicDocumentItem item, final Collection<ValidationError> errors) {
+
+    List<DynamicObject> list = item.getList("accessAttributes");
+
+    if (!awsservice.hasModule("opa") && list != null && !list.isEmpty()) {
+      errors.add(new ValidationErrorImpl().key("accessAttributes")
+          .error("Access attributes are only supported with the 'open policy access' module"));
+    }
+  }
+
   private void validateActions(final AwsServiceCache awsservice, final String siteId,
       final DynamicDocumentItem item, final ApiAuthorization authorization,
       final Collection<ValidationError> errors) {
+
+    initActionsValidator(awsservice);
 
     List<DynamicObject> objs = item.getList("actions");
     if (!objs.isEmpty()) {
@@ -495,7 +505,7 @@ public class DocumentIdRequestHandler
       }).collect(Collectors.toList());
 
       for (Action action : actions) {
-        errors.addAll(this.actionsValidator.validation(action, configs));
+        errors.addAll(this.actionsValidator.validation(siteId, action, configs));
       }
     }
   }

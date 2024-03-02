@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Optional;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.PaginationToAttributeValue;
@@ -179,6 +180,7 @@ public class DocumentsActionsRequestHandler
 
       ActionType type = null;
       Object stype = a.get("type");
+      String queueId = (String) a.get("queueId");
 
       try {
         type = stype != null ? ActionType.valueOf(stype.toString().toUpperCase()) : null;
@@ -187,7 +189,8 @@ public class DocumentsActionsRequestHandler
       }
 
       Map<String, String> parameters = (Map<String, String>) a.get("parameters");
-      Action action = new Action().type(type).parameters(parameters).userId(userId);
+      Action action =
+          new Action().queueId(queueId).type(type).parameters(parameters).userId(userId);
 
       actions.add(action);
     });
@@ -197,11 +200,13 @@ public class DocumentsActionsRequestHandler
 
   private void validate(final AwsServiceCache awsservice, final String siteId,
       final List<Action> actions) throws ValidationException {
-    ActionsValidator validator = new ActionsValidatorImpl();
+
+    DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
+    ActionsValidator validator = new ActionsValidatorImpl(db);
 
     ConfigService configsService = awsservice.getExtension(ConfigService.class);
     DynamicObject configs = configsService.get(siteId);
-    List<Collection<ValidationError>> errors = validator.validation(actions, configs);
+    List<Collection<ValidationError>> errors = validator.validation(siteId, actions, configs);
 
     Optional<Collection<ValidationError>> firstError =
         errors.stream().filter(e -> !e.isEmpty()).findFirst();

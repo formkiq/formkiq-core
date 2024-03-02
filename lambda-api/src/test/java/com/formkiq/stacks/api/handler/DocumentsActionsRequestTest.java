@@ -39,6 +39,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.services.lambda.GsonUtil;
 import com.formkiq.client.invoker.ApiException;
@@ -56,6 +57,7 @@ import com.formkiq.client.model.GetDocumentActionsResponse;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
+import com.formkiq.module.actions.Queue;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.stacks.dynamodb.ConfigService;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
@@ -73,6 +75,8 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
   private ConfigService configService;
   /** {@link DocumentService}. */
   private DocumentService documentService;
+  /** {@link DynamoDbService}. */
+  private DynamoDbService db;
   /** {@link ActionsService}. */
   private ActionsService service;
 
@@ -83,6 +87,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
    */
   @BeforeEach
   public void before() throws Exception {
+    this.db = getAwsServices().getExtension(DynamoDbService.class);
     this.service = getAwsServices().getExtension(ActionsService.class);
     this.documentService = getAwsServices().getExtension(DocumentService.class);
     this.configService = getAwsServices().getExtension(ConfigService.class);
@@ -356,6 +361,103 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       List<Action> actions = this.service.getActions(siteId, documentId);
       assertEquals(1, actions.size());
       assertEquals(ActionType.NOTIFICATION, actions.get(0).type());
+    }
+  }
+
+  /**
+   * POST /documents/{documentId}/actions for Queues missing queueId.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePostDocumentActions06() throws Exception {
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      setBearerToken("Admins");
+      String documentId = saveDocument(siteId);
+
+      AddDocumentActionsRequest req = new AddDocumentActionsRequest()
+          .actions(Arrays.asList(new AddAction().type(DocumentActionType.QUEUE)));
+
+      setBearerToken(siteId);
+
+      // when
+      try {
+        this.documentActionsApi.addDocumentActions(documentId, siteId, req);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals("{\"errors\":[{\"key\":\"queueId\",\"error\":\"'queueId' is required\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * POST /documents/{documentId}/actions for Queues invalid queueId.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePostDocumentActions07() throws Exception {
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      setBearerToken("Admins");
+      String documentId = saveDocument(siteId);
+
+      AddDocumentActionsRequest req = new AddDocumentActionsRequest()
+          .actions(Arrays.asList(new AddAction().type(DocumentActionType.QUEUE).queueId("terst")));
+
+      setBearerToken(siteId);
+
+      // when
+      try {
+        this.documentActionsApi.addDocumentActions(documentId, siteId, req);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals("{\"errors\":[{\"key\":\"queueId\",\"error\":\"'queueId' does not exist\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * POST /documents/{documentId}/actions for Queues queueId.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePostDocumentActions08() throws Exception {
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      setBearerToken("Admins");
+
+      String queueId = UUID.randomUUID().toString();
+      this.db.putItem(new Queue().documentId(queueId).name("test").getAttributes(siteId));
+
+      String documentId = saveDocument(siteId);
+
+      this.configService.save(siteId,
+          new DynamicObject(Map.of("NotificationEmail", "test@formkiq.com")));
+
+      AddDocumentActionsRequest req = new AddDocumentActionsRequest()
+          .actions(Arrays.asList(new AddAction().type(DocumentActionType.QUEUE).queueId(queueId)));
+
+      setBearerToken(siteId);
+
+      // when
+      AddDocumentActionsResponse response =
+          this.documentActionsApi.addDocumentActions(documentId, siteId, req);
+
+      // then
+      assertEquals("Actions saved", response.getMessage());
+      List<Action> actions = this.service.getActions(siteId, documentId);
+      assertEquals(1, actions.size());
+      assertEquals(ActionType.QUEUE, actions.get(0).type());
     }
   }
 

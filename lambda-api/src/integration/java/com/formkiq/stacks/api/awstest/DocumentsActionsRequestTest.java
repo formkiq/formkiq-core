@@ -57,6 +57,7 @@ import com.formkiq.client.model.GetDocumentsResponse;
 import com.formkiq.client.model.UpdateConfigurationRequest;
 import com.formkiq.testutils.FileGenerator;
 import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
+import com.nimbusds.jose.util.StandardCharset;
 
 /**
  * GET, POST /documents/{documentId}/actions tests.
@@ -166,5 +167,36 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
     o = documents.getDocuments().stream().filter(d -> d.getDocumentId().equals(documentId))
         .findAny();
     assertFalse(o.isEmpty());
+  }
+
+  /**
+   * GET /documents/{documentId}/actions.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  public void testGetDocumentActions() throws Exception {
+    // given
+    String siteId = null;
+    List<ApiClient> clients = getApiClients(siteId);
+    ApiClient client = clients.get(0);
+    byte[] data = "somedata".getBytes(StandardCharset.UTF_8);
+
+    List<AddAction> actions =
+        Arrays.asList(new AddAction().type(DocumentActionType.QUEUE).queueId("test"));
+    List<AddDocumentTag> tags = Collections.emptyList();
+
+    // when
+    String documentId = addDocument(client, siteId, "data.txt", data,
+        MimeType.MIME_PLAIN_TEXT.getContentType(), actions, tags);
+
+    // then
+    GetDocumentActionsResponse response =
+        waitForActions(client, siteId, documentId, Arrays.asList(DocumentActionStatus.FAILED));
+    assertEquals(1, response.getActions().size());
+    assertEquals("FAILED", response.getActions().get(0).getStatus().name());
+
+
   }
 }

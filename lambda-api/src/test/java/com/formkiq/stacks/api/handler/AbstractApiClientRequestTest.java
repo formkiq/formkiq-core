@@ -31,6 +31,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.DynamoDbServiceExtension;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.aws.sqs.SqsServiceExtension;
 import com.formkiq.client.api.DocumentActionsApi;
@@ -104,6 +106,7 @@ public abstract class AbstractApiClientRequestTest {
 
     awsServiceCache.register(SqsService.class, new SqsServiceExtension());
     awsServiceCache.register(ActionsService.class, new ActionsServiceExtension());
+    awsServiceCache.register(DynamoDbService.class, new DynamoDbServiceExtension());
     awsServiceCache.register(ConfigService.class, new ConfigServiceExtension());
     awsServiceCache.register(DocumentService.class, new DocumentServiceExtension());
     awsServiceCache.register(DocumentSearchService.class, new DocumentSearchServiceExtension());
