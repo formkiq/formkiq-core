@@ -551,10 +551,11 @@ Resources:
     Properties:
       Description: "Dead letter queue"
       Name: 
-        Fn::Sub: "/formkiq/${AppEnvironment}/sqs/DocumentsDeadLetterQueue"
+        Fn::Sub: "/formkiq/${AppEnvironment}/sqs/DocumentsDeadLetterQueueName"
       Type: String
-      Value:
-        Ref: DocumentsDeadLetterQueue
+        Fn::GetAtt:
+          - DocumentsDeadLetterQueue
+          - QueueName
       Tags:
         Application: 
           Fn::Sub: "FormKiQ ${FormKiQType}"
