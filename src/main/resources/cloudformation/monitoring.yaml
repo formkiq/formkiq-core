@@ -22,8 +22,10 @@ Resources:
   DlqAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
-      AlarmName: My-DLQ
-      AlarmDescription: 'There are failed messages in the dead letter queue.'
+      AlarmName: 
+        Fn::Sub: "FormKiQ-DLQ-${AppEnvironment}"
+      AlarmDescription: 
+        Fn::Sub: "There are failed messages in the FormKiQ ${AppEnvironment} dead letter queue."
       Namespace: AWS/SQS
       MetricName: ApproximateNumberOfMessagesVisible
       Dimensions:
