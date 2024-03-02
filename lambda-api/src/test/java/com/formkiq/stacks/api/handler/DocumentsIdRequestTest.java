@@ -37,10 +37,12 @@ import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.GsonUtil;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAccessAttribute;
+import com.formkiq.client.model.AddAction;
 import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AddDocumentResponse;
 import com.formkiq.client.model.AddDocumentUploadRequest;
 import com.formkiq.client.model.Document;
+import com.formkiq.client.model.DocumentActionType;
 import com.formkiq.client.model.GetDocumentResponse;
 import com.formkiq.client.model.GetDocumentUrlResponse;
 import com.formkiq.client.model.SetDocumentRestoreResponse;
@@ -211,6 +213,33 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
         assertEquals("{\"errors\":[{\"key\":\"accessAttributes\","
             + "\"error\":\"Access attributes are only supported with "
             + "the 'open policy access' module\"}]}", e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * POST /documents/{documentId} request, with action queue.
+   * 
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleAddDocument03() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      setBearerToken(siteId);
+
+      AddDocumentRequest req =
+          new AddDocumentRequest().content("SKADJASKDSA").contentType("text/plain")
+              .addActionsItem(new AddAction().type(DocumentActionType.QUEUE).queueId("test"));
+
+      // when
+      try {
+        this.documentsApi.addDocument(req, siteId, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals("{\"errors\":[{\"key\":\"queueId\",\"error\":\"'queueId' does not exist\"}]}",
+            e.getResponseBody());
       }
     }
   }

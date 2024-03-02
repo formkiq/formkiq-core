@@ -495,13 +495,15 @@ public class DocumentIdRequestHandler
           type = null;
         }
 
+        String queueId = o.getString("queueId");
         DynamicObject map = o.containsKey("parameters") ? o.getMap("parameters") : null;
         Map<String, String> parameters = map != null
             ? map.entrySet().stream()
                 .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue().toString()))
             : Collections.emptyMap();
 
-        return new Action().type(type).parameters(parameters).userId(o.getString("userId"));
+        return new Action().type(type).queueId(queueId).parameters(parameters)
+            .userId(o.getString("userId"));
       }).collect(Collectors.toList());
 
       for (Action action : actions) {
