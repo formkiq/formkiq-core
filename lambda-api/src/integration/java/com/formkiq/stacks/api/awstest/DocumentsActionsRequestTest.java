@@ -44,6 +44,7 @@ import com.formkiq.client.api.DocumentActionsApi;
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.api.SystemManagementApi;
 import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAction;
 import com.formkiq.client.model.AddActionParameters;
 import com.formkiq.client.model.AddActionParameters.NotificationTypeEnum;
@@ -71,43 +72,32 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
   private FileGenerator fileGenerator = new FileGenerator();
 
   /**
-   * POST Document Notifications.
+   * POST /documents/{documentId}.
    * 
    * @throws Exception Exception
    */
   @Test
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
-  public void testAddNotifications01() throws Exception {
+  public void testaddDocumentActions01() throws Exception {
     // given
     String siteId = null;
     List<ApiClient> clients = getApiClients(siteId);
     ApiClient client = clients.get(0);
+    byte[] data = "somedata".getBytes(StandardCharset.UTF_8);
 
-    String adminEmail =
-        getSsm().getParameterValue("/formkiq/" + getAppenvironment() + "/console/AdminEmail");
-    UpdateConfigurationRequest req = new UpdateConfigurationRequest().notificationEmail(adminEmail);
-
-    SystemManagementApi api = new SystemManagementApi(client);
-    api.updateConfiguration(req, siteId);
-
-    String content = "this is a test";
-    String subject = "Test email";
-    String text = "This is a text email";
-    List<AddAction> actions = Arrays.asList(new AddAction().type(DocumentActionType.NOTIFICATION)
-        .parameters(new AddActionParameters().notificationType(NotificationTypeEnum.EMAIL)
-            .notificationSubject(subject).notificationToCc("mfriesen@gmail.com")
-            .notificationText(text)));
+    List<AddAction> actions =
+        Arrays.asList(new AddAction().type(DocumentActionType.QUEUE).queueId("test"));
+    List<AddDocumentTag> tags = Collections.emptyList();
 
     // when
-    String documentId = addDocument(client, siteId, "test.txt", content, "text/plain", actions);
-
-    // then
-    GetDocumentActionsResponse response = waitForActionsComplete(client, siteId, documentId);
-    assertEquals(1, response.getActions().size());
-    assertEquals("COMPLETE", response.getActions().get(0).getStatus().name());
-    assertNotNull(response.getActions().get(0).getStartDate());
-    assertNotNull(response.getActions().get(0).getInsertedDate());
-    assertNotNull(response.getActions().get(0).getCompletedDate());
+    try {
+      addDocument(client, siteId, "data.txt", data, MimeType.MIME_PLAIN_TEXT.getContentType(),
+          actions, tags);
+    } catch (ApiException e) {
+      // then
+      assertEquals("{\"errors\":[{\"key\":\"queueId\",\"error\":\"'queueId' does not exist\"}]}",
+          e.getResponseBody());
+    }
   }
 
   /**
@@ -170,33 +160,42 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
   }
 
   /**
-   * GET /documents/{documentId}/actions.
+   * POST Document Notifications.
    * 
    * @throws Exception Exception
    */
   @Test
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
-  public void testGetDocumentActions() throws Exception {
+  public void testAddNotifications01() throws Exception {
     // given
     String siteId = null;
     List<ApiClient> clients = getApiClients(siteId);
     ApiClient client = clients.get(0);
-    byte[] data = "somedata".getBytes(StandardCharset.UTF_8);
 
-    List<AddAction> actions =
-        Arrays.asList(new AddAction().type(DocumentActionType.QUEUE).queueId("test"));
-    List<AddDocumentTag> tags = Collections.emptyList();
+    String adminEmail =
+        getSsm().getParameterValue("/formkiq/" + getAppenvironment() + "/console/AdminEmail");
+    UpdateConfigurationRequest req = new UpdateConfigurationRequest().notificationEmail(adminEmail);
+
+    SystemManagementApi api = new SystemManagementApi(client);
+    api.updateConfiguration(req, siteId);
+
+    String content = "this is a test";
+    String subject = "Test email";
+    String text = "This is a text email";
+    List<AddAction> actions = Arrays.asList(new AddAction().type(DocumentActionType.NOTIFICATION)
+        .parameters(new AddActionParameters().notificationType(NotificationTypeEnum.EMAIL)
+            .notificationSubject(subject).notificationToCc("mfriesen@gmail.com")
+            .notificationText(text)));
 
     // when
-    String documentId = addDocument(client, siteId, "data.txt", data,
-        MimeType.MIME_PLAIN_TEXT.getContentType(), actions, tags);
+    String documentId = addDocument(client, siteId, "test.txt", content, "text/plain", actions);
 
     // then
-    GetDocumentActionsResponse response =
-        waitForActions(client, siteId, documentId, Arrays.asList(DocumentActionStatus.FAILED));
+    GetDocumentActionsResponse response = waitForActionsComplete(client, siteId, documentId);
     assertEquals(1, response.getActions().size());
-    assertEquals("FAILED", response.getActions().get(0).getStatus().name());
-
-
+    assertEquals("COMPLETE", response.getActions().get(0).getStatus().name());
+    assertNotNull(response.getActions().get(0).getStartDate());
+    assertNotNull(response.getActions().get(0).getInsertedDate());
+    assertNotNull(response.getActions().get(0).getCompletedDate());
   }
 }
