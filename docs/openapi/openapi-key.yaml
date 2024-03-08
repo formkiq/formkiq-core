@@ -2155,7 +2155,7 @@
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
             put:
               operationId: SetWorkflow
-              summary: Add workflow
+              summary: Set workflow
               description: Set a Workflow details; ONLY available with FormKiQ Pro and Enterprise
               tags:
               - Document Workflows
@@ -2182,6 +2182,52 @@
                     application/json:
                       schema:
                         $ref: '#/components/schemas/SetWorkflowResponse'
+                "400":
+                  description: 400 BAD REQUEST
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/ErrorsResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+            patch:
+              operationId: UpdateWorkflow
+              summary: Update workflow
+              description: Update a Workflow details; ONLY available with FormKiQ Pro and Enterprise
+              tags:
+              - Document Workflows
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/workflowIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/UpdateWorkflowRequest'
+              responses:
+                "200":
+                  description: 20) OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/UpdateWorkflowResponse'
                 "400":
                   description: 400 BAD REQUEST
                   headers:
@@ -7597,6 +7643,17 @@
                 name:
                   description: Queue name
                   type: string
+            UpdateWorkflowRequest:
+              type: object
+              properties:
+                name:
+                  description: Workflow name
+                  type: string
+                description:
+                  description: Workflow description
+                  type: string
+                status:
+                  $ref: '#/components/schemas/WorkflowStatus'
             SetWorkflowRequest:
               type: object
               required:
@@ -7611,10 +7668,7 @@
                   description: Workflow description
                   type: string
                 status:
-                  type: string
-                  enum:
-                  - ACTIVE
-                  - INACTIVE
+                  $ref: '#/components/schemas/WorkflowStatus'
                 steps:
                   type: array
                   description: Workflow Steps
@@ -7697,6 +7751,12 @@
                 queueId:
                   type: string
                   description: Queue Identifier
+            UpdateWorkflowResponse:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: Result message
             SetWorkflowResponse:
               type: object
               properties:
