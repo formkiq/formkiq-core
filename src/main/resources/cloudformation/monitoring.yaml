@@ -59,8 +59,6 @@ Resources:
       Value: 
         Ref: DlqAlarmEmail
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
         StackName: 
