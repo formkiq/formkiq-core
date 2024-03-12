@@ -110,6 +110,7 @@ import com.formkiq.stacks.api.handler.RulesetsRuleIdRequestHandler;
 import com.formkiq.stacks.api.handler.RulesetsRuleRequestHandler;
 import com.formkiq.stacks.api.handler.SearchFulltextRequestHandler;
 import com.formkiq.stacks.api.handler.SearchRequestHandler;
+import com.formkiq.stacks.api.handler.SitesOpenSearchIndexRequestHandler;
 import com.formkiq.stacks.api.handler.SitesRequestHandler;
 import com.formkiq.stacks.api.handler.TagSchemasIdRequestHandler;
 import com.formkiq.stacks.api.handler.TagSchemasRequestHandler;
@@ -192,6 +193,15 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new RulesetsRuleIdRequestHandler());
   }
 
+  private static void addSystemEndpoints() {
+    addRequestHandler(new VersionRequestHandler());
+    addRequestHandler(new SitesRequestHandler());
+    addRequestHandler(new ConfigurationRequestHandler());
+    addRequestHandler(new ConfigurationApiKeysRequestHandler());
+    addRequestHandler(new ConfigurationApiKeyRequestHandler());
+    addRequestHandler(new SitesOpenSearchIndexRequestHandler());
+  }
+
   private static void addUserActivitiesEndpoints() {
     addRequestHandler(new UserActivitiesRequestHandler());
     addRequestHandler(new UserActivitiesDocumentIdRequestHandler());
@@ -211,11 +221,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
    */
   private static void buildUrlMap() {
     URL_MAP.put("options", new DocumentsOptionsRequestHandler());
-    addRequestHandler(new VersionRequestHandler());
-    addRequestHandler(new SitesRequestHandler());
-    addRequestHandler(new ConfigurationRequestHandler());
-    addRequestHandler(new ConfigurationApiKeysRequestHandler());
-    addRequestHandler(new ConfigurationApiKeyRequestHandler());
+    addSystemEndpoints();
     addAccessControlEndpoints();
 
     addRequestHandler(new DocumentVersionsRequestHandler());
