@@ -177,6 +177,71 @@ Resources:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /sites/{siteId}/opensearch/index:
+            get:
+              operationId: GetOpensearchIndex
+              description: Returns the OpenSearch index settings
+              summary: Get site(s) OpenSearch index settings
+              tags:
+              - System Management
+              parameters:
+              - $ref: '#/components/parameters/siteIdPathParam'
+              responses:
+                '200':
+                  description: "200 OK"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: "string"
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: "string"
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: "string"
+                  content:
+                    application/json:
+                      schema:
+                        "$ref": "#/components/schemas/GetOpenSearchIndexResponse"
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
+            put:
+              operationId: SetOpensearchIndex
+              description: Sets the OpenSearch index settings
+              summary: Set site(s) OpenSearch index settings
+              tags:
+              - System Management
+              parameters:
+              - $ref: '#/components/parameters/siteIdPathParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/SetOpenSearchIndexRequest'
+              responses:
+                '200':
+                  description: "200 OK"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: "string"
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: "string"
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: "string"
+                  content:
+                    application/json:
+                      schema:
+                        "$ref": "#/components/schemas/SetOpenSearchIndexResponse"
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
           /configuration:
             get:
               operationId: GetConfiguration
@@ -7613,6 +7678,31 @@ Resources:
                 lastModifiedDate:
                   type: "string"
                   description: "Last nodified timestamp of group"
+            SetOpenSearchIndexRequest:
+              type: object
+              properties:
+                indexSettings:
+                  $ref: "#/components/schemas/OpenSearchIndex"
+            SetOpenSearchIndexResponse:
+              type: "object"
+              properties:
+                message:
+                  type: "string"
+                  description: "Result message"
+            GetOpenSearchIndexResponse:
+              type: object
+              properties:
+                indexSettings:
+                  $ref: "#/components/schemas/OpenSearchIndex"
+            OpenSearchIndex:
+              type: object
+              properties:
+                numberOfReplicas:
+                  type: "string"
+                  description: "The number of replicas per shard"
+                numberOfShards:
+                  type: "string"
+                  description: "The number of shards in index"
             GetSitesResponse:
               type: object
               properties:
