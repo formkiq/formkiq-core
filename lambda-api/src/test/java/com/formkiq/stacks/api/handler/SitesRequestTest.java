@@ -75,6 +75,28 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * DELETE /sites/{siteId}/opensearch/index.
+   */
+  @Test
+  public void testDeleteOpensearchIndex() {
+    // given
+    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+
+      setBearerToken(new String[] {siteId});
+
+      try {
+        // when
+        this.systemApi.deleteOpensearchIndex(siteId);
+        fail();
+
+        // then
+      } catch (ApiException e) {
+        assertEquals(SC_PAYMENT.getStatusCode(), e.getCode());
+      }
+    }
+  }
+  
+  /**
    * GET /sites/{siteId}/opensearch/index.
    */
   @Test
