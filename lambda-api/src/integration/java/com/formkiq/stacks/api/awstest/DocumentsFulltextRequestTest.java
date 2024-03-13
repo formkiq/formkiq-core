@@ -98,9 +98,19 @@ public class DocumentsFulltextRequestTest extends AbstractAwsIntegrationTest {
       assertEquals("COMPLETE", actions.getActions().get(1).getStatus().name());
 
       AdvancedDocumentSearchApi searchApi = new AdvancedDocumentSearchApi(client);
-      GetDocumentFulltextResponse fullText =
-          searchApi.getDocumentFulltext(documentId, siteId, null);
-      assertTrue(fullText.getContent().contains("This is a small demonstration"));
+
+      String text = null;
+
+      do {
+        GetDocumentFulltextResponse fullText =
+            searchApi.getDocumentFulltext(documentId, siteId, null);
+        text = fullText.getContent();
+        if (text == null) {
+          TimeUnit.SECONDS.sleep(1);
+        }
+      } while (text == null);
+
+      assertTrue(text.contains("This is a small demonstration"));
     }
   }
 

@@ -39,13 +39,16 @@ import org.junit.jupiter.api.Timeout;
 import com.formkiq.client.api.DocumentSearchApi;
 import com.formkiq.client.api.DocumentTagsApi;
 import com.formkiq.client.api.DocumentsApi;
+import com.formkiq.client.api.SystemManagementApi;
 import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddDocumentTag;
 import com.formkiq.client.model.AddDocumentTagsRequest;
 import com.formkiq.client.model.DocumentSearch;
 import com.formkiq.client.model.DocumentSearchRequest;
 import com.formkiq.client.model.DocumentSearchResponse;
 import com.formkiq.client.model.DocumentSearchTag;
+import com.formkiq.client.model.GetVersionResponse;
 import com.formkiq.client.model.SearchResponseFields;
 import com.formkiq.client.model.SearchResultDocument;
 import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
@@ -58,6 +61,12 @@ public class DocumentsSearchRequestTest extends AbstractAwsIntegrationTest {
 
   /** JUnit Test Timeout. */
   private static final int TEST_TIMEOUT = 20;
+
+  private boolean isOpensearch() throws ApiException {
+    SystemManagementApi smapi = new SystemManagementApi(getApiClients(null).get(0));
+    GetVersionResponse versions = smapi.getVersion();
+    return versions.getModules().contains("opensearch");
+  }
 
   /**
    * Test /search.
@@ -303,7 +312,7 @@ public class DocumentsSearchRequestTest extends AbstractAwsIntegrationTest {
   }
 
   /**
-   * Test /search.
+   * Test /search typesense.
    * 
    * @throws Exception Exception
    */
@@ -315,48 +324,52 @@ public class DocumentsSearchRequestTest extends AbstractAwsIntegrationTest {
     String path = "some/thing/else/intelligent Documents.pdf";
     String text = "intelligent Documents";
     final String limit = "100";
-    for (ApiClient client : getApiClients(null)) {
 
-      DocumentSearchApi api = new DocumentSearchApi(client);
+    if (!isOpensearch()) {
 
-      String documentId = addDocument(client, siteId, path, new byte[] {}, null, null);
+      for (ApiClient client : getApiClients(null)) {
 
-      DocumentSearchRequest req =
-          new DocumentSearchRequest().query(new DocumentSearch().text(text));
+        DocumentSearchApi api = new DocumentSearchApi(client);
 
-      DocumentSearchResponse results = null;
-      Optional<SearchResultDocument> o = Optional.empty();
+        String documentId = addDocument(client, siteId, path, new byte[] {}, null, null);
 
-      // when
-      while (o.isEmpty()) {
-        results = api.documentSearch(req, siteId, limit, null, null);
-        o = results.getDocuments().stream().filter(d -> documentId.equals(d.getDocumentId()))
-            .findAny();
+        DocumentSearchRequest req =
+            new DocumentSearchRequest().query(new DocumentSearch().text(text));
 
-        TimeUnit.SECONDS.sleep(1);
+        DocumentSearchResponse results = null;
+        Optional<SearchResultDocument> o = Optional.empty();
+
+        // when
+        while (o.isEmpty()) {
+          results = api.documentSearch(req, siteId, limit, null, null);
+          o = results.getDocuments().stream().filter(d -> documentId.equals(d.getDocumentId()))
+              .findAny();
+
+          TimeUnit.SECONDS.sleep(1);
+        }
+
+        // then
+        assertNotNull(results);
+        assertFalse(results.getDocuments().isEmpty());
+        assertTrue(results.getDocuments().get(0).getPath()
+            .contains("some/thing/else/intelligent Documents"));
+
+        // given
+        DocumentsApi docApi = new DocumentsApi(client);
+
+        // when
+        docApi.deleteDocument(documentId, siteId, Boolean.FALSE);
+
+        // then
+        while (o.isPresent()) {
+          results = api.documentSearch(req, siteId, limit, null, null);
+          o = results.getDocuments().stream().filter(d -> documentId.equals(d.getDocumentId()))
+              .findAny();
+          TimeUnit.SECONDS.sleep(1);
+        }
+
+        assertFalse(o.isPresent());
       }
-
-      // then
-      assertNotNull(results);
-      assertFalse(results.getDocuments().isEmpty());
-      assertTrue(results.getDocuments().get(0).getPath()
-          .contains("some/thing/else/intelligent Documents"));
-
-      // given
-      DocumentsApi docApi = new DocumentsApi(client);
-
-      // when
-      docApi.deleteDocument(documentId, siteId, Boolean.FALSE);
-
-      // then
-      while (o.isPresent()) {
-        results = api.documentSearch(req, siteId, limit, null, null);
-        o = results.getDocuments().stream().filter(d -> documentId.equals(d.getDocumentId()))
-            .findAny();
-        TimeUnit.SECONDS.sleep(1);
-      }
-
-      assertFalse(o.isPresent());
     }
   }
 }

@@ -17,10 +17,6 @@ Parameters:
     Description: The name of the FormKiQ VPC Stack Name
     AllowedPattern: ".+"
 
-  VpcSubnets:
-    Description: "SubnetId in VPC"
-    Type: "List<AWS::EC2::Subnet::Id>"
-
 Resources:
 
   BastionHost:
@@ -36,9 +32,8 @@ Resources:
       SecurityGroupIds:
         - Ref: BastionSecurityGroup
       SubnetId:
-        Fn::Join:
-          - ","
-          - Ref: VpcSubnets
+        Fn::ImportValue:
+          Fn::Sub: '${VpcStackName}-PublicSubnet1'
       UserData:
         Fn::Base64:
           Fn::Sub: |

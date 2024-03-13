@@ -8056,6 +8056,9 @@ Resources:
                   type: "string"
                 userId:
                   type: "string"
+                inUse:
+                  type: "boolean"
+                  description: "Whether the TagSchema is in use"
                 insertedDate:
                   type: "string"
                   description: "Inserted Timestamp"
@@ -8073,6 +8076,9 @@ Resources:
                   type: "string"
                 userId:
                   type: "string"
+                inUse:
+                  type: "boolean"
+                  description: "Whether the TagSchema is in use"
                 insertedDate:
                   type: "string"
                   description: "Inserted Timestamp"

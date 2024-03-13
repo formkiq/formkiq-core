@@ -95,7 +95,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
       }
     }
   }
-  
+
   /**
    * GET /sites/{siteId}/opensearch/index.
    */
