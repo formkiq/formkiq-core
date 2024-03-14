@@ -500,6 +500,7 @@ Resources:
     Type: AWS::Serverless::Application
     DependsOn:
       - Cognito
+      - CoreStorage
     Properties:
       Location: websocket-api/template.yaml
       Parameters:
