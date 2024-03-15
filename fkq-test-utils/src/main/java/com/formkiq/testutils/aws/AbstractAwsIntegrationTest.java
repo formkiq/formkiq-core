@@ -191,7 +191,7 @@ public abstract class AbstractAwsIntegrationTest {
       List<PermissionsEnum> permissions =
           Arrays.asList(PermissionsEnum.READ, PermissionsEnum.DELETE, PermissionsEnum.WRITE);
       AddApiKeyRequest req = new AddApiKeyRequest().name("My Api Key").permissions(permissions);
-      String apiKey = api.addApiKey(siteId, req).getApiKey();
+      String apiKey = api.addApiKey(site, req).getApiKey();
 
       apiKeys.put(site, apiKey);
     }
