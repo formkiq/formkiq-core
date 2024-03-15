@@ -52,7 +52,7 @@ import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
 
-/** {@link ApiGatewayRequestHandler} for "/configuration/apiKeys". */
+/** {@link ApiGatewayRequestHandler} for "/sites/{siteId}/apiKeys". */
 public class ConfigurationApiKeysRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
@@ -93,7 +93,7 @@ public class ConfigurationApiKeysRequestHandler
     final int limit = pagination != null ? pagination.getLimit() : getLimit(logger, event);
     final PaginationMapToken token = pagination != null ? pagination.getStartkey() : null;
 
-    String siteId = authorization.getSiteId();
+    String siteId = event.getPathParameters().get("siteId");
     PaginationResults<ApiKey> list = apiKeysService.list(siteId, token, limit);
 
     Map<String, Object> map = Map.of("apiKeys", list.getResults());
@@ -102,7 +102,7 @@ public class ConfigurationApiKeysRequestHandler
 
   @Override
   public String getRequestUrl() {
-    return "/configuration/apiKeys";
+    return "/sites/{siteId}/apiKeys";
   }
 
   @Override
@@ -110,7 +110,7 @@ public class ConfigurationApiKeysRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    String siteId = authorization.getSiteId();
+    String siteId = event.getPathParameters().get("siteId");
 
     ApiKeysService apiKeysService = awsservice.getExtension(ApiKeysService.class);
     DynamicObject body = fromBodyToDynamicObject(event);

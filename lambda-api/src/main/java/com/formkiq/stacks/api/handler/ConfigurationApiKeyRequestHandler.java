@@ -38,7 +38,7 @@ import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.ApiKeysService;
 
-/** {@link ApiGatewayRequestHandler} for "/configuration/apiKeys". */
+/** {@link ApiGatewayRequestHandler} for "/sites/{siteId}/apiKeys/{apiKey}". */
 public class ConfigurationApiKeyRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
@@ -65,7 +65,7 @@ public class ConfigurationApiKeyRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    String siteId = authorization.getSiteId();
+    String siteId = event.getPathParameters().get("siteId");
     String apiKey = event.getPathParameters().get("apiKey");
 
     ApiKeysService apiKeysService = awsservice.getExtension(ApiKeysService.class);
@@ -81,6 +81,6 @@ public class ConfigurationApiKeyRequestHandler
 
   @Override
   public String getRequestUrl() {
-    return "/configuration/apiKeys/{apiKey}";
+    return "/sites/{siteId}/apiKeys/{apiKey}";
   }
 }

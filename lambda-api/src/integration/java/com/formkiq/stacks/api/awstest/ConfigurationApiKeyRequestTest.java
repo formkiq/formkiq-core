@@ -107,7 +107,7 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
         SystemManagementApi api = new SystemManagementApi(client);
 
         // when
-        api.addApiKey(apiReq, siteId);
+        api.addApiKey(siteId, apiReq);
 
         // then
         GetApiKeysResponse apiKeys = api.getApiKeys(siteId);
@@ -178,7 +178,7 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
 
       // when
       this.jwtApiClient.addDefaultHeader("Authorization", token.accessToken());
-      String apiKey = this.jwtSystemApi.addApiKey(req, siteId).getApiKey();
+      String apiKey = this.jwtSystemApi.addApiKey(siteId, req).getApiKey();
 
       // then
       this.keyApiClient.addDefaultHeader("Authorization", apiKey);
@@ -195,7 +195,7 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
       // given
       req = new com.formkiq.client.model.AddApiKeyRequest().name(name)
           .addPermissionsItem(PermissionsEnum.WRITE);
-      apiKey = this.jwtSystemApi.addApiKey(req, siteId).getApiKey();
+      apiKey = this.jwtSystemApi.addApiKey(siteId, req).getApiKey();
 
       // when
       this.keyApiClient.addDefaultHeader("Authorization", apiKey);

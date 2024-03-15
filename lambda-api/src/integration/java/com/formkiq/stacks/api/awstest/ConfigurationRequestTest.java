@@ -107,7 +107,7 @@ public class ConfigurationRequestTest extends AbstractAwsIntegrationTest {
     List<ApiClient> apiClients = getApiClients(siteId);
     SystemManagementApi api = new SystemManagementApi(apiClients.get(0));
     UpdateConfigurationRequest req = new UpdateConfigurationRequest().chatGptApiKey(chatGptApiKey);
-    api.updateConfiguration(req, siteId);
+    api.updateConfiguration(siteId, req);
 
     assertEquals("1239*******3123", api.getConfiguration(siteId).getChatGptApiKey());
 
@@ -122,7 +122,7 @@ public class ConfigurationRequestTest extends AbstractAwsIntegrationTest {
 
     // when - update config
     try {
-      api.updateConfiguration(req, siteId);
+      api.updateConfiguration(siteId, req);
       fail();
     } catch (ApiException e) {
       assertEquals(ApiResponseStatus.SC_FORBIDDEN.getStatusCode(), e.getCode());
@@ -151,7 +151,7 @@ public class ConfigurationRequestTest extends AbstractAwsIntegrationTest {
       SystemManagementApi api = new SystemManagementApi(client);
 
       // when
-      UpdateConfigurationResponse response = api.updateConfiguration(req, siteId);
+      UpdateConfigurationResponse response = api.updateConfiguration(siteId, req);
 
       // then
       assertEquals("Config saved", response.getMessage());
@@ -166,7 +166,7 @@ public class ConfigurationRequestTest extends AbstractAwsIntegrationTest {
 
     // when
     try {
-      api.updateConfiguration(req, siteId);
+      api.updateConfiguration(siteId, req);
       fail();
     } catch (ApiException e) {
       // then
@@ -193,7 +193,7 @@ public class ConfigurationRequestTest extends AbstractAwsIntegrationTest {
       SystemManagementApi api = new SystemManagementApi(client);
 
       // when
-      UpdateConfigurationResponse updateConfiguration = api.updateConfiguration(req, siteId);
+      UpdateConfigurationResponse updateConfiguration = api.updateConfiguration(siteId, req);
 
       // then
       assertEquals("Config saved", updateConfiguration.getMessage());
@@ -219,7 +219,7 @@ public class ConfigurationRequestTest extends AbstractAwsIntegrationTest {
 
       // when
       try {
-        api.updateConfiguration(req, siteId);
+        api.updateConfiguration(siteId, req);
         fail();
       } catch (ApiException e) {
         // then

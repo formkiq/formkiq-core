@@ -59,7 +59,7 @@ import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 
-/** {@link ApiGatewayRequestHandler} for "/configuration". */
+/** {@link ApiGatewayRequestHandler} for "/sites/{siteId}/configuration". */
 public class ConfigurationRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
@@ -89,7 +89,7 @@ public class ConfigurationRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    String siteId = authorization.getSiteId();
+    String siteId = event.getPathParameters().get("siteId");
     ConfigService configService = awsservice.getExtension(ConfigService.class);
 
     DynamicObject obj = configService.get(siteId);
@@ -106,7 +106,7 @@ public class ConfigurationRequestHandler
 
   @Override
   public String getRequestUrl() {
-    return "/configuration";
+    return "/sites/{siteId}/configuration";
   }
 
   private void initSes(final AwsServiceCache awsservice) {
@@ -139,7 +139,7 @@ public class ConfigurationRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    String siteId = authorization.getSiteId();
+    String siteId = event.getPathParameters().get("siteId");
     Map<String, String> body = fromBodyToObject(event, Map.class);
 
     Map<String, Object> map = new HashMap<>();

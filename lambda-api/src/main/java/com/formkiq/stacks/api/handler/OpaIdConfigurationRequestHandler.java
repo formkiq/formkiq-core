@@ -25,11 +25,11 @@ package com.formkiq.stacks.api.handler;
 
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 
-/** {@link ApiGatewayRequestHandler} for "/configuration/opa/{siteId}". */
+/** {@link ApiGatewayRequestHandler} for "/sites/{siteId}/opa/accessPolicy". */
 public class OpaIdConfigurationRequestHandler extends AbstractPaymentRequiredRequestHandler {
 
   /** {@link OpaIdConfigurationRequestHandler} URL. */
-  public static final String URL = "/configuration/opa/{siteId}";
+  public static final String URL = "/sites/{siteId}/opa/accessPolicy";
 
   /**
    * constructor.

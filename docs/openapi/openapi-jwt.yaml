@@ -258,7 +258,7 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
-          /configuration:
+          /sites/{siteId}/configuration:
             get:
               operationId: GetConfiguration
               description: Returns the list of sites that the user has access to
@@ -266,7 +266,7 @@
               tags:
               - System Management
               parameters:
-              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/siteIdPathParam'
               responses:
                 "200":
                   description: 200 OK
@@ -295,7 +295,7 @@
               tags:
               - System Management
               parameters:
-              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/siteIdPathParam'
               requestBody:
                 required: true
                 content:
@@ -334,7 +334,7 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
-          /configuration/apiKeys:
+          /sites/{siteId}/apiKeys:
             get:
               operationId: GetApiKeys
               description: Returns the list of ApiKeys
@@ -342,7 +342,7 @@
               tags:
               - System Management
               parameters:
-              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/siteIdPathParam'
               responses:
                 "200":
                   description: 200 OK
@@ -371,7 +371,7 @@
               tags:
               - System Management
               parameters:
-              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/siteIdPathParam'
               requestBody:
                 required: true
                 content:
@@ -400,7 +400,7 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
-          /configuration/apiKeys/{apiKey}:
+          /sites/{siteId}/apiKeys/{apiKey}:
             delete:
               operationId: DeleteApiKey
               description: Adds a new API Key
@@ -408,7 +408,7 @@
               tags:
               - System Management
               parameters:
-              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/siteIdPathParam'
               - $ref: '#/components/parameters/apiKeyParam'
               responses:
                 "200":
@@ -428,7 +428,7 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
-          /configuration/opa:
+          /sites/opa/accessPolicies:
             get:
               operationId: GetOpaConfigurations
               description: Returns a list of OPA Configuration, can only be requested with ADMIN privileges
@@ -486,7 +486,7 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
-          /configuration/opa/{siteId}:
+          /sites/{siteId}/opa/accessPolicy:
             get:
               operationId: GetOpaConfiguration
               description: Returns OPA Configuration, can only be requested with ADMIN privileges

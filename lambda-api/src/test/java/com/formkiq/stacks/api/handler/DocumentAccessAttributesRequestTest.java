@@ -30,6 +30,7 @@ import java.util.Arrays;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.client.api.AccessControlApi;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddDocumentAccessAttributesRequest;
@@ -97,7 +98,7 @@ public class DocumentAccessAttributesRequestTest extends AbstractApiClientReques
   }
 
   /**
-   * DELETE /configuration/opa/{siteId}.
+   * DELETE /sites/{siteId}/opa/accessPolicy.
    *
    * @throws Exception an error has occurred
    */
@@ -145,22 +146,21 @@ public class DocumentAccessAttributesRequestTest extends AbstractApiClientReques
   }
 
   /**
-   * GET /configuration/opa/{siteId}.
+   * GET /sites/{siteId}/opa/accessPolicy.
    *
    * @throws Exception an error has occurred
    */
   @Test
   public void testGetOpaConfiguration() throws Exception {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(SiteIdKeyGenerator.DEFAULT_SITE_ID,
+        UUID.randomUUID().toString())) {
 
       setBearerToken(siteId);
 
-      String opaId = UUID.randomUUID().toString();
-
       try {
         // when
-        this.api.getOpaConfiguration(opaId);
+        this.api.getOpaConfiguration(siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -170,7 +170,7 @@ public class DocumentAccessAttributesRequestTest extends AbstractApiClientReques
   }
 
   /**
-   * GET /configuration/opa/{siteId}.
+   * GET /sites/{siteId}/opa/accessPolicy.
    *
    * @throws Exception an error has occurred
    */

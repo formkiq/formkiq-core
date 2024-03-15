@@ -177,7 +177,7 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
     UpdateConfigurationRequest req = new UpdateConfigurationRequest().notificationEmail(adminEmail);
 
     SystemManagementApi api = new SystemManagementApi(client);
-    api.updateConfiguration(req, siteId);
+    api.updateConfiguration(siteId, req);
 
     String content = "this is a test";
     String subject = "Test email";

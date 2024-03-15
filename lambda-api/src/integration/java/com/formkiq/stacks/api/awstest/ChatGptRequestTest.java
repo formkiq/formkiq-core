@@ -76,9 +76,8 @@ public class ChatGptRequestTest extends AbstractAwsIntegrationTest {
       ApiClient apiClient = getApiClients(null).get(0);
       SystemManagementApi api = new SystemManagementApi(apiClient);
 
-      api.updateConfiguration(
-          new UpdateConfigurationRequest().chatGptApiKey(System.getProperty("testchatgptapikey")),
-          null);
+      api.updateConfiguration(null,
+          new UpdateConfigurationRequest().chatGptApiKey(System.getProperty("testchatgptapikey")));
     } catch (ApiException e) {
       throw new IOException(e);
     }
