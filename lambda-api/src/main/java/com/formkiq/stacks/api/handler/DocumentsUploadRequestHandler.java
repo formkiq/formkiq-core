@@ -329,9 +329,9 @@ public class DocumentsUploadRequestHandler
       TagSchemaInterface tagSchema = plugin.getTagSchema(siteId, item.getTagSchemaId());
 
       Collection<ValidationError> errors = new ArrayList<>();
-      List<DocumentTag> compositeTags =
-          plugin.addCompositeKeys(tagSchema, item.getDocumentId(), tags, userId, true, errors)
-              .stream().map(t -> t).collect(Collectors.toList());
+      List<DocumentTag> compositeTags = plugin
+          .addCompositeKeys(tagSchema, siteId, item.getDocumentId(), tags, userId, true, errors)
+          .stream().map(t -> t).collect(Collectors.toList());
 
       if (!errors.isEmpty()) {
         throw new ValidationException(errors);

@@ -614,8 +614,8 @@ public class DocumentIdRequestHandler
       TagSchemaInterface tagSchema = plugin.getTagSchema(siteId, item.getTagSchemaId());
 
       List<DocumentTag> compositeTags =
-          plugin.addCompositeKeys(tagSchema, item.getDocumentId(), tags, userId, !isUpdate, errors)
-              .stream().map(t -> t).collect(Collectors.toList());
+          plugin.addCompositeKeys(tagSchema, siteId, item.getDocumentId(), tags, userId, !isUpdate,
+              errors).stream().map(t -> t).collect(Collectors.toList());
 
       newCompositeTags = !compositeTags.isEmpty();
 

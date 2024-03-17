@@ -211,8 +211,8 @@ public class DocumentTagRequestHandler
       DocumentTagSchemaPlugin plugin = awsservice.getExtension(DocumentTagSchemaPlugin.class);
       TagSchemaInterface tagSchema = plugin.getTagSchema(siteId, document.getTagSchemaId());
 
-      Collection<DocumentTag> newTags =
-          plugin.addCompositeKeys(tagSchema, document.getDocumentId(), tags, userId, false, errors);
+      Collection<DocumentTag> newTags = plugin.addCompositeKeys(tagSchema, siteId,
+          document.getDocumentId(), tags, userId, false, errors);
 
       if (!errors.isEmpty()) {
         throw new ValidationException(errors);

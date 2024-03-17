@@ -274,8 +274,8 @@ public class DocumentTagsRequestHandler
 
       TagSchemaInterface tagSchema = plugin.getTagSchema(siteId, item.getTagSchemaId());
 
-      newTags = plugin.addCompositeKeys(tagSchema, item.getDocumentId(), tags.getTags(), userId,
-          false, errors);
+      newTags = plugin.addCompositeKeys(tagSchema, siteId, item.getDocumentId(), tags.getTags(),
+          userId, false, errors);
 
       if (!errors.isEmpty()) {
         throw new ValidationException(errors);

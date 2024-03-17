@@ -41,6 +41,7 @@ public interface DocumentTagSchemaPlugin {
    * 
    * @param <T> {@link TagSchemaInterface}
    * @param tagSchema {@link TagSchemaInterface}
+   * @param siteId {@link String}
    * @param documentId {@link String}
    * @param tags {@link Collection} {@link DocumentTag}
    * @param userId {@link String}
@@ -49,8 +50,8 @@ public interface DocumentTagSchemaPlugin {
    * @return {@link Collection} {@link DocumentTag}
    */
   <T extends TagSchemaInterface> Collection<DocumentTag> addCompositeKeys(T tagSchema,
-      String documentId, Collection<DocumentTag> tags, String userId, boolean validateRequiredTags,
-      Collection<ValidationError> errors);
+      String siteId, String documentId, Collection<DocumentTag> tags, String userId,
+      boolean validateRequiredTags, Collection<ValidationError> errors);
 
   /**
    * Create Multi-Value {@link SearchTagCriteria}.
