@@ -41,6 +41,7 @@ import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
+import com.formkiq.plugins.tagschema.TagSchemaInterface;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
@@ -71,11 +72,17 @@ public class DocumentTagValueRequestHandler
     DocumentItem item = documentService.findDocument(siteId, documentId);
     throwIfNull(item, new DocumentNotFoundException(documentId));
 
-    DocumentTagSchemaPlugin plugin = awsservice.getExtension(DocumentTagSchemaPlugin.class);
-    Collection<ValidationError> errors =
-        plugin.validateRemoveTags(siteId, item, Arrays.asList(tagKey));
-    if (!errors.isEmpty()) {
-      throw new ValidationException(errors);
+    if (item.getTagSchemaId() != null) {
+      DocumentTagSchemaPlugin plugin = awsservice.getExtension(DocumentTagSchemaPlugin.class);
+
+      TagSchemaInterface tagSchema = plugin.getTagSchema(siteId, item.getTagSchemaId());
+
+      Collection<ValidationError> errors =
+          plugin.validateRemoveTags(tagSchema, Arrays.asList(tagKey));
+
+      if (!errors.isEmpty()) {
+        throw new ValidationException(errors);
+      }
     }
 
     boolean removed = documentService.removeTag(siteId, documentId, tagKey, tagValue);

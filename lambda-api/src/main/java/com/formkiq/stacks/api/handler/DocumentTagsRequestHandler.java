@@ -52,6 +52,7 @@ import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.services.lambda.services.CacheService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
+import com.formkiq.plugins.tagschema.TagSchemaInterface;
 import com.formkiq.stacks.api.ApiDocumentTagItemResponse;
 import com.formkiq.stacks.api.ApiDocumentTagsItemResponse;
 import com.formkiq.stacks.dynamodb.DocumentService;
@@ -263,16 +264,24 @@ public class DocumentTagsRequestHandler
       final String siteId, final DocumentTags tags, final DocumentItem item, final String userId)
       throws ValidationException {
 
+    Collection<DocumentTag> newTags = Collections.emptyList();
+
     DocumentTagSchemaPlugin plugin = coreServices.getExtension(DocumentTagSchemaPlugin.class);
 
-    Collection<ValidationError> errors = new ArrayList<>();
+    if (item.getTagSchemaId() != null) {
 
-    Collection<DocumentTag> newTags =
-        plugin.addCompositeKeys(siteId, item, tags.getTags(), userId, false, errors);
+      Collection<ValidationError> errors = new ArrayList<>();
 
-    if (!errors.isEmpty()) {
-      throw new ValidationException(errors);
+      TagSchemaInterface tagSchema = plugin.getTagSchema(siteId, item.getTagSchemaId());
+
+      newTags = plugin.addCompositeKeys(tagSchema, item.getDocumentId(), tags.getTags(), userId,
+          false, errors);
+
+      if (!errors.isEmpty()) {
+        throw new ValidationException(errors);
+      }
     }
+
     return newTags;
   }
 

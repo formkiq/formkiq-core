@@ -55,6 +55,7 @@ import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.DynamicObjectToAction;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
+import com.formkiq.plugins.tagschema.TagSchemaInterface;
 import com.formkiq.stacks.api.ApiUrlResponse;
 import com.formkiq.stacks.dynamodb.DocumentCountService;
 import com.formkiq.stacks.dynamodb.DocumentService;
@@ -323,16 +324,20 @@ public class DocumentsUploadRequestHandler
 
     DocumentTagSchemaPlugin plugin = cacheService.getExtension(DocumentTagSchemaPlugin.class);
 
-    Collection<ValidationError> errors = new ArrayList<>();
+    if (item.getTagSchemaId() != null) {
 
-    List<DocumentTag> compositeTags =
-        plugin.addCompositeKeys(siteId, item, tags, userId, true, errors).stream().map(t -> t)
-            .collect(Collectors.toList());
+      TagSchemaInterface tagSchema = plugin.getTagSchema(siteId, item.getTagSchemaId());
 
-    if (!errors.isEmpty()) {
-      throw new ValidationException(errors);
+      Collection<ValidationError> errors = new ArrayList<>();
+      List<DocumentTag> compositeTags =
+          plugin.addCompositeKeys(tagSchema, item.getDocumentId(), tags, userId, true, errors)
+              .stream().map(t -> t).collect(Collectors.toList());
+
+      if (!errors.isEmpty()) {
+        throw new ValidationException(errors);
+      }
+
+      tags.addAll(compositeTags);
     }
-
-    tags.addAll(compositeTags);
   }
 }

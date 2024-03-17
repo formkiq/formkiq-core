@@ -76,6 +76,7 @@ import com.formkiq.module.actions.services.ActionsValidator;
 import com.formkiq.module.actions.services.ActionsValidatorImpl;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
+import com.formkiq.plugins.tagschema.TagSchemaInterface;
 import com.formkiq.stacks.dynamodb.ConfigService;
 import com.formkiq.stacks.dynamodb.DocumentCountService;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
@@ -605,19 +606,25 @@ public class DocumentIdRequestHandler
       return transform.apply(t);
     }).collect(Collectors.toList());
 
-    DocumentTagSchemaPlugin plugin = cacheService.getExtension(DocumentTagSchemaPlugin.class);
+    boolean newCompositeTags = false;
 
-    List<DocumentTag> compositeTags =
-        plugin.addCompositeKeys(siteId, item, tags, userId, !isUpdate, errors).stream().map(t -> t)
-            .collect(Collectors.toList());
+    if (item.getTagSchemaId() != null) {
 
-    final boolean newCompositeTags = !compositeTags.isEmpty();
+      DocumentTagSchemaPlugin plugin = cacheService.getExtension(DocumentTagSchemaPlugin.class);
+      TagSchemaInterface tagSchema = plugin.getTagSchema(siteId, item.getTagSchemaId());
 
-    if (!errors.isEmpty()) {
-      throw new ValidationException(errors);
+      List<DocumentTag> compositeTags =
+          plugin.addCompositeKeys(tagSchema, item.getDocumentId(), tags, userId, !isUpdate, errors)
+              .stream().map(t -> t).collect(Collectors.toList());
+
+      newCompositeTags = !compositeTags.isEmpty();
+
+      if (!errors.isEmpty()) {
+        throw new ValidationException(errors);
+      }
+
+      tags.addAll(compositeTags);
     }
-
-    tags.addAll(compositeTags);
 
     DocumentTagToDynamicDocumentTag tf = new DocumentTagToDynamicDocumentTag();
     List<DynamicDocumentTag> objs = tags.stream().map(tf).collect(Collectors.toList());

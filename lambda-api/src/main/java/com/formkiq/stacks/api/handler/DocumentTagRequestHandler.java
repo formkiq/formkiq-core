@@ -46,6 +46,7 @@ import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
+import com.formkiq.plugins.tagschema.TagSchemaInterface;
 import com.formkiq.stacks.api.ApiDocumentTagItemResponse;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentTagValidator;
@@ -85,10 +86,15 @@ public class DocumentTagRequestHandler
 
     List<String> tags = Arrays.asList(tagKey);
 
-    DocumentTagSchemaPlugin plugin = awsservice.getExtension(DocumentTagSchemaPlugin.class);
-    Collection<ValidationError> errors = plugin.validateRemoveTags(siteId, document, tags);
-    if (!errors.isEmpty()) {
-      throw new ValidationException(errors);
+    if (document.getTagSchemaId() != null) {
+
+      DocumentTagSchemaPlugin plugin = awsservice.getExtension(DocumentTagSchemaPlugin.class);
+      TagSchemaInterface tagSchema = plugin.getTagSchema(siteId, document.getTagSchemaId());
+
+      Collection<ValidationError> errors = plugin.validateRemoveTags(tagSchema, tags);
+      if (!errors.isEmpty()) {
+        throw new ValidationException(errors);
+      }
     }
 
     documentService.removeTags(siteId, documentId, tags);
@@ -198,17 +204,23 @@ public class DocumentTagRequestHandler
     }
 
     List<DocumentTag> tags = new ArrayList<>(Arrays.asList(tag));
-    Collection<ValidationError> errors = new ArrayList<>();
 
-    DocumentTagSchemaPlugin plugin = awsservice.getExtension(DocumentTagSchemaPlugin.class);
-    Collection<DocumentTag> newTags =
-        plugin.addCompositeKeys(siteId, document, tags, userId, false, errors);
+    if (document.getTagSchemaId() != null) {
+      Collection<ValidationError> errors = new ArrayList<>();
 
-    if (!errors.isEmpty()) {
-      throw new ValidationException(errors);
+      DocumentTagSchemaPlugin plugin = awsservice.getExtension(DocumentTagSchemaPlugin.class);
+      TagSchemaInterface tagSchema = plugin.getTagSchema(siteId, document.getTagSchemaId());
+
+      Collection<DocumentTag> newTags =
+          plugin.addCompositeKeys(tagSchema, document.getDocumentId(), tags, userId, false, errors);
+
+      if (!errors.isEmpty()) {
+        throw new ValidationException(errors);
+      }
+
+      tags.addAll(newTags);
     }
 
-    tags.addAll(newTags);
 
     validateTags(tags);
 
