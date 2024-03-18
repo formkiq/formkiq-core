@@ -56,10 +56,11 @@ public class DocumentTagSchemaReturnNewTags implements DocumentTagSchemaPlugin {
     return query.tag();
   }
 
+  @SuppressWarnings("unchecked")
   @Override
   public <T extends TagSchemaInterface> T getTagSchema(final String siteId,
       final String tagSchemaId) {
-    return null;
+    return (T) new TagSchemaInterface() {};
   }
 
   @Override

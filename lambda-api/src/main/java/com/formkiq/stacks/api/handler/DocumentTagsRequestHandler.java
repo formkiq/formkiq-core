@@ -259,10 +259,11 @@ public class DocumentTagsRequestHandler
    * @param userId {@link String}
    * @return {@link Collection} {@link DocumentTag}
    * @throws ValidationException ValidationException
+   * @throws BadException BadException
    */
   private Collection<DocumentTag> tagSchemaValidation(final AwsServiceCache coreServices,
       final String siteId, final DocumentTags tags, final DocumentItem item, final String userId)
-      throws ValidationException {
+      throws ValidationException, BadException {
 
     Collection<DocumentTag> newTags = Collections.emptyList();
 
@@ -273,6 +274,10 @@ public class DocumentTagsRequestHandler
       Collection<ValidationError> errors = new ArrayList<>();
 
       TagSchemaInterface tagSchema = plugin.getTagSchema(siteId, item.getTagSchemaId());
+
+      if (tagSchema == null) {
+        throw new BadException("TagschemaId " + item.getTagSchemaId() + " not found");
+      }
 
       newTags = plugin.addCompositeKeys(tagSchema, siteId, item.getDocumentId(), tags.getTags(),
           userId, false, errors);

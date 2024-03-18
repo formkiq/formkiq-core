@@ -75,10 +75,11 @@ public class DocumentTagSchemaReturnErrors implements DocumentTagSchemaPlugin {
     return Collections.emptyList();
   }
 
+  @SuppressWarnings("unchecked")
   @Override
   public <T extends TagSchemaInterface> T getTagSchema(final String siteId,
       final String tagSchemaId) {
-    return null;
+    return (T) new TagSchemaInterface() {};
   }
 
   @Override

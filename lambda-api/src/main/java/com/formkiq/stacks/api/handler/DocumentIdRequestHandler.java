@@ -613,6 +613,10 @@ public class DocumentIdRequestHandler
       DocumentTagSchemaPlugin plugin = cacheService.getExtension(DocumentTagSchemaPlugin.class);
       TagSchemaInterface tagSchema = plugin.getTagSchema(siteId, item.getTagSchemaId());
 
+      if (tagSchema == null) {
+        throw new BadException("TagschemaId " + item.getTagSchemaId() + " not found");
+      }
+
       List<DocumentTag> compositeTags =
           plugin.addCompositeKeys(tagSchema, siteId, item.getDocumentId(), tags, userId, !isUpdate,
               errors).stream().map(t -> t).collect(Collectors.toList());

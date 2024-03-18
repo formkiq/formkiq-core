@@ -185,9 +185,7 @@ public class DocumentTagRequestHandler
     throwIfNull(document, new DocumentNotFoundException(documentId));
 
     DocumentTag tag = documentService.findDocumentTag(siteId, documentId, tagKey);
-    if (tag == null) {
-      throw new NotFoundException("Tag " + tagKey + " not found.");
-    }
+    throwIfNull(document, new NotFoundException("Tag " + tagKey + " not found."));
 
     // if trying to change from tag VALUE to VALUES or VALUES to VALUE
     if (isTagValueTypeChanged(tag, value, values)) {
@@ -210,6 +208,9 @@ public class DocumentTagRequestHandler
 
       DocumentTagSchemaPlugin plugin = awsservice.getExtension(DocumentTagSchemaPlugin.class);
       TagSchemaInterface tagSchema = plugin.getTagSchema(siteId, document.getTagSchemaId());
+
+      throwIfNull(tagSchema,
+          new BadException("TagschemaId " + document.getTagSchemaId() + " not found"));
 
       Collection<DocumentTag> newTags = plugin.addCompositeKeys(tagSchema, siteId,
           document.getDocumentId(), tags, userId, false, errors);
