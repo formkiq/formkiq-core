@@ -212,6 +212,8 @@ public class DocumentTagRequestHandler
       throwIfNull(tagSchema,
           new BadException("TagschemaId " + document.getTagSchemaId() + " not found"));
 
+      plugin.updateInUse(siteId, tagSchema);
+
       Collection<DocumentTag> newTags = plugin.addCompositeKeys(tagSchema, siteId,
           document.getDocumentId(), tags, userId, false, errors);
 

@@ -82,9 +82,10 @@ public interface DocumentTagSchemaPlugin {
    * Update In Use.
    * 
    * @param siteId {@link String}
-   * @param tagSchemaId {@link String}
+   * @param tagSchema {@link TagSchemaInterface}
+   * @param <T> {@link TagSchemaInterface}
    */
-  void updateInUse(String siteId, String tagSchemaId);
+  <T extends TagSchemaInterface> void updateInUse(String siteId, T tagSchema);
 
   /**
    * Delete {@link DocumentTag} Event.

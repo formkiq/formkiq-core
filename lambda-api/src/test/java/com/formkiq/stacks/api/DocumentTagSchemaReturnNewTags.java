@@ -69,7 +69,7 @@ public class DocumentTagSchemaReturnNewTags implements DocumentTagSchemaPlugin {
   }
 
   @Override
-  public void updateInUse(final String siteId, final String tagSchemaId) {
+  public <T extends TagSchemaInterface> void updateInUse(final String siteId, final T tagSchema) {
     // empty
   }
 

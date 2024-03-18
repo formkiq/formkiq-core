@@ -279,6 +279,7 @@ public class DocumentTagsRequestHandler
         throw new BadException("TagschemaId " + item.getTagSchemaId() + " not found");
       }
 
+      plugin.updateInUse(siteId, tagSchema);
       newTags = plugin.addCompositeKeys(tagSchema, siteId, item.getDocumentId(), tags.getTags(),
           userId, false, errors);
 

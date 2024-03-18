@@ -332,6 +332,8 @@ public class DocumentsUploadRequestHandler
         throw new BadException("TagschemaId " + item.getTagSchemaId() + " not found");
       }
 
+      plugin.updateInUse(siteId, tagSchema);
+
       Collection<ValidationError> errors = new ArrayList<>();
       List<DocumentTag> compositeTags = plugin
           .addCompositeKeys(tagSchema, siteId, item.getDocumentId(), tags, userId, true, errors)
