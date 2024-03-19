@@ -4604,7 +4604,7 @@ Resources:
             get:
               operationId: GetExaminePdf            
               description: |-
-                Gets a URL for temporary upload of a document to be examined by calling POST /objects/examine/{id}/pdf
+                Get Signed URL for PDF Object Upload of a document to be examined by calling GET /objects/examine/{id}/pdf
               summary: Add Examine Pdf
               tags:
               - Examine Objects
@@ -4632,10 +4632,10 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/ocrObjectsLambdaApi200"
           /objects/examine/{id}/pdf:
-            post:
+            get:
               operationId: AddExaminePdf            
               description: |-
-                Examines a PDF file and returns information about it.
+                Get PDF details
                 
                 File must have been uploaded previously using the GET /objects/examine/pdf API.
               summary: Add Examine Pdf

@@ -47,6 +47,7 @@ import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.GetSitesResponse;
+import com.formkiq.client.model.GetVersionResponse;
 import com.formkiq.client.model.SetOpenSearchIndexRequest;
 import com.formkiq.client.model.Site;
 import com.formkiq.stacks.dynamodb.ConfigService;
@@ -281,6 +282,23 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
       // then
       assertEquals(SC_FORBIDDEN.getStatusCode(), e.getCode());
     }
+  }
+
+  /**
+   * Get /version.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleVersion01() throws Exception {
+    // given
+    setBearerToken(new String[] {"default", "Admins", "finance"});
+
+    // when
+    GetVersionResponse response = this.systemApi.getVersion();
+
+    // then
+    assertNotNull(response.getVersion());
   }
 
   /**

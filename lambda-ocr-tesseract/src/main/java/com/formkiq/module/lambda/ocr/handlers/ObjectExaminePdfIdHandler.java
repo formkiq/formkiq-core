@@ -86,7 +86,7 @@ public class ObjectExaminePdfIdHandler
   }
 
   @Override
-  public ApiRequestHandlerResponse post(final LambdaLogger logger,
+  public ApiRequestHandlerResponse get(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
