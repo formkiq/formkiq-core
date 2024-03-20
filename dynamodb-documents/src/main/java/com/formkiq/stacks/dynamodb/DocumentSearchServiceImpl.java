@@ -622,8 +622,8 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
     String projectionExpression = q.projectionExpression();
     QueryResponse result = this.dbClient.query(q);
 
-    List<String> documentIds =
-        result.items().stream().map(i -> i.get("documentId").s()).collect(Collectors.toList());
+    List<String> documentIds = result.items().stream().map(i -> i.get("documentId").s()).distinct()
+        .collect(Collectors.toList());
 
     Map<String, DocumentTag> tags = transformToDocumentTagMap(result);
 

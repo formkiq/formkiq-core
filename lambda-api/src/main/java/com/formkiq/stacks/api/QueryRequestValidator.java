@@ -82,7 +82,9 @@ public class QueryRequestValidator {
       }
     }
 
-    validateRange(q.query().tag(), errors);
+    if (errors.isEmpty()) {
+      validateRange(q.query().tag(), errors);
+    }
 
     return errors;
   }
