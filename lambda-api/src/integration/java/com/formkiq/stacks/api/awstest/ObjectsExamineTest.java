@@ -40,8 +40,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import com.formkiq.client.api.ExamineObjectsApi;
 import com.formkiq.client.invoker.ApiClient;
-import com.formkiq.client.model.AddExaminePdfResponse;
 import com.formkiq.client.model.GetExaminePdfResponse;
+import com.formkiq.client.model.GetExaminePdfUrlResponse;
 import com.formkiq.module.http.HttpResponseStatus;
 import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
 import com.formkiq.testutils.aws.LambdaContextRecorder;
@@ -71,7 +71,7 @@ class ObjectsExamineTest extends AbstractAwsIntegrationTest {
         ExamineObjectsApi examineApi = new ExamineObjectsApi(client);
 
         // when
-        GetExaminePdfResponse response = examineApi.getExaminePdf(siteId);
+        GetExaminePdfUrlResponse response = examineApi.getExaminePdfUrl(siteId);
 
         // then
         assertNotNull(response.getId());
@@ -96,7 +96,7 @@ class ObjectsExamineTest extends AbstractAwsIntegrationTest {
         // given
 
         // when
-        AddExaminePdfResponse examine = examineApi.addExaminePdf(response.getId(), siteId);
+        GetExaminePdfResponse examine = examineApi.getExaminePdf(response.getId(), siteId);
 
         // then
         final int expected = 17;

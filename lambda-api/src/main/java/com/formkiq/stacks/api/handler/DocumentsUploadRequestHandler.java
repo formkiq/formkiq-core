@@ -282,8 +282,10 @@ public class DocumentsUploadRequestHandler
     item.setUserId(authorization.getUsername());
     item.setInsertedDate(new Date());
 
-    List<DynamicObject> tags = item.getList("tags");
-    validateTags(tags);
+    if (item.containsKey("tags")) {
+      List<DynamicObject> tags = item.getList("tags");
+      validateTags(tags);
+    }
 
     String siteId = authorization.getSiteId();
     return buildPresignedResponse(logger, event, awsservice, siteId, item);

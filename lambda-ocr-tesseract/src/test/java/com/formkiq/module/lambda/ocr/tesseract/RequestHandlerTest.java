@@ -42,8 +42,8 @@ import com.formkiq.client.api.ExamineObjectsApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.invoker.Configuration;
-import com.formkiq.client.model.AddExaminePdfResponse;
 import com.formkiq.client.model.GetExaminePdfResponse;
+import com.formkiq.client.model.GetExaminePdfUrlResponse;
 import com.formkiq.testutils.aws.AbstractFormKiqApiResponseCallback;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.FormKiqApiExtension;
@@ -103,7 +103,7 @@ class RequestHandlerTest {
       setBearerToken(siteId);
 
       // when
-      GetExaminePdfResponse response = this.examineApi.getExaminePdf(siteId);
+      GetExaminePdfUrlResponse response = this.examineApi.getExaminePdfUrl(siteId);
 
       // then
       assertNotNull(response.getId());
@@ -126,7 +126,7 @@ class RequestHandlerTest {
       // given
 
       // when
-      AddExaminePdfResponse examine = this.examineApi.addExaminePdf(response.getId(), siteId);
+      GetExaminePdfResponse examine = this.examineApi.getExaminePdf(response.getId(), siteId);
 
       // then
       final int expected = 17;
@@ -151,7 +151,7 @@ class RequestHandlerTest {
 
       // when
       try {
-        this.examineApi.addExaminePdf(id, siteId);
+        this.examineApi.getExaminePdf(id, siteId);
       } catch (ApiException e) {
         // then
         assertEquals("{\"message\":\"Document " + id + " not found.\"}", e.getResponseBody());

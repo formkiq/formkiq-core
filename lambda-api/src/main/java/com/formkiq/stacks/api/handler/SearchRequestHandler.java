@@ -276,5 +276,9 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }
+
+    if (q.query() != null && q.query().tags() != null && q.query().tags().size() == 1) {
+      q.query().tag(q.query().tags().get(0));
+    }
   }
 }

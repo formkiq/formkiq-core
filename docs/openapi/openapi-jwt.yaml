@@ -4585,7 +4585,7 @@
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /objects/examine/pdf:
             get:
-              operationId: GetExaminePdf
+              operationId: GetExaminePdfUrl
               description: Get Signed URL for PDF Object Upload of a document to be examined by calling GET /objects/examine/{id}/pdf
               summary: Add Examine Pdf
               tags:
@@ -4608,14 +4608,14 @@
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/GetExaminePdfResponse'
+                        $ref: '#/components/schemas/GetExaminePdfUrlResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/ocrObjectsLambdaApi200'
           /objects/examine/{id}/pdf:
             get:
-              operationId: AddExaminePdf
+              operationId: GetExaminePdf
               description: |-
                 Get PDF details
 
@@ -4642,7 +4642,7 @@
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/AddExaminePdfResponse'
+                        $ref: '#/components/schemas/GetExaminePdfResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -5264,7 +5264,7 @@
                   type: array
                   description: List of Composite Key tags to filter search results on
                   items:
-                    $ref: '#/components/schemas/DocumentCompositeSearchTag'
+                    $ref: '#/components/schemas/DocumentSearchTags'
                 documentIds:
                   type: array
                   description: List of DocumentIds to filter search results on
@@ -5495,6 +5495,9 @@
                 path:
                   type: string
                   description: Searches for a Path of document
+                eq:
+                  type: string
+                  description: Searches for strings that eq
                 indexType:
                   type: string
                   description: Searches in an index
@@ -5519,10 +5522,24 @@
                   description: Searches for ANY strings that eq
                   items:
                     type: string
+                range:
+                  $ref: '#/components/schemas/DocumentSearchRange'
                 key:
                   type: string
                   description: Tag key to search
-            DocumentCompositeSearchTag:
+            DocumentSearchRange:
+              required:
+              - start
+              - end
+              type: object
+              properties:
+                start:
+                  type: string
+                  description: Start of range query
+                end:
+                  type: string
+                  description: End of range query
+            DocumentSearchTags:
               required:
               - key
               type: object
@@ -5530,6 +5547,8 @@
                 eq:
                   type: string
                   description: Searches for strings that eq
+                range:
+                  $ref: '#/components/schemas/DocumentSearchRange'
                 key:
                   type: string
                   description: Tag key to search
@@ -6933,7 +6952,7 @@
                   description: Rule condition value
                 operation:
                   $ref: '#/components/schemas/RuleConditionOperation'
-            GetExaminePdfResponse:
+            GetExaminePdfUrlResponse:
               type: object
               properties:
                 id:
@@ -6942,7 +6961,7 @@
                 uploadUrl:
                   type: string
                   description: Url to upload document to
-            AddExaminePdfResponse:
+            GetExaminePdfResponse:
               type: object
               properties:
                 fileinfo:

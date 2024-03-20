@@ -73,12 +73,32 @@ public class QueryRequestValidator {
     } else {
 
       for (SearchTagCriteria tag : Objects.notNull(q.query().tags())) {
+
         if (StringUtils.isEmpty(tag.key())) {
           errors.add(new ValidationErrorImpl().key("tag/key").error("attribute is required"));
         }
+
+        validateRange(tag, errors);
       }
     }
 
+    validateRange(q.query().tag(), errors);
+
     return errors;
+  }
+
+  private void validateRange(final SearchTagCriteria tag,
+      final Collection<ValidationError> errors) {
+
+    if (tag != null && tag.range() != null) {
+
+      if (StringUtils.isEmpty(tag.range().getStart())) {
+        errors.add(new ValidationErrorImpl().key("range/start").error("range start is required"));
+      }
+
+      if (StringUtils.isEmpty(tag.range().getEnd())) {
+        errors.add(new ValidationErrorImpl().key("range/end").error("range end is required"));
+      }
+    }
   }
 }
