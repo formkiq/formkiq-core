@@ -44,7 +44,7 @@ import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.module.lambda.ocr.pdf.PdfService;
 import com.formkiq.module.lambda.ocr.pdf.PdfServicePdfBox;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
+import software.amazon.awssdk.services.s3.model.S3Exception;
 
 /** {@link ApiGatewayRequestHandler} for "/objects/examine/{id}/pdf". */
 public class ObjectExaminePdfIdHandler
@@ -73,7 +73,7 @@ public class ObjectExaminePdfIdHandler
             .collect(Collectors.toList());
         fields.put("fields", fieldList);
       }
-    } catch (NoSuchKeyException e) {
+    } catch (S3Exception e) {
       fields = null;
     }
 
