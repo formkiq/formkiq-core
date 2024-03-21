@@ -26,6 +26,7 @@ package com.formkiq.stacks.api.awstest;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -38,8 +39,10 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.api.ExamineObjectsApi;
 import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.GetExaminePdfResponse;
 import com.formkiq.client.model.GetExaminePdfUrlResponse;
 import com.formkiq.module.http.HttpResponseStatus;
@@ -103,6 +106,36 @@ class ObjectsExamineTest extends AbstractAwsIntegrationTest {
         assertEquals(expected, examine.getFileinfo().getFields().size());
         assertEquals("Height Formatted Field", examine.getFileinfo().getFields().get(0).getField());
         assertEquals("150", examine.getFileinfo().getFields().get(0).getValue());
+      }
+    }
+  }
+
+  /**
+   * Test Examine non existing PDF.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  void testExaminePdf02() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      for (ApiClient client : getApiClients(siteId)) {
+
+        // given
+        String id = UUID.randomUUID().toString();
+        ExamineObjectsApi examineApi = new ExamineObjectsApi(client);
+
+        // when
+        try {
+          examineApi.getExaminePdf(id, siteId);
+          fail();
+        } catch (ApiException e) {
+          // then
+          assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
+          assertEquals("{\"message\":\"Document " + id + " not found.\"}", e.getResponseBody());
+        }
       }
     }
   }
