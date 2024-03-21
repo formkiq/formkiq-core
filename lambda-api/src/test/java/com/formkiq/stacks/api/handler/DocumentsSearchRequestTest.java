@@ -732,11 +732,42 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
       // when
       try {
         this.searchApi.documentSearch(dsq, siteId, null, null, null);
+        fail();
       } catch (ApiException e) {
         // then
         assertEquals(SC_BAD_REQUEST.getStatusCode(), e.getCode());
         assertEquals("{\"errors\":[{\"key\":\"range/end\",\"error\":\"range end is required\"}]}",
             e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * Invalid POST search by beginsWith / range query.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleSearchRequest20() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      setBearerToken(siteId);
+
+      DocumentSearchTags range = new DocumentSearchTags().key("date")
+          .range(new DocumentSearchRange().start("2024-03-10").end("2024-03-20"));
+
+      DocumentSearchRequest dsq = new DocumentSearchRequest()
+          .query(new DocumentSearch().addTagsItem(range).addTagsItem(range));
+
+      // when
+      try {
+        this.searchApi.documentSearch(dsq, siteId, null, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"errors\":[{\"key\":\"tag/eq\",\"error\":\"'beginsWith','range' "
+            + "is only supported on the last tag\"}]}", e.getResponseBody());
       }
     }
   }

@@ -5547,6 +5547,9 @@
                 eq:
                   type: string
                   description: Searches for strings that eq
+                beginsWith:
+                  type: string
+                  description: Searches for strings that begin with
                 range:
                   $ref: '#/components/schemas/DocumentSearchRange'
                 key:
