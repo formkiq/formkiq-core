@@ -38,6 +38,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.s3.S3Service;
+import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddDocumentUploadRequest;
 import com.formkiq.client.model.DocumentsCompressRequest;
@@ -104,6 +105,7 @@ public class DocumentsCompressRequestTest extends AbstractApiClientRequestTest {
           this.documentsApi.compressDocuments(req, siteId);
           fail();
         } catch (ApiException e) {
+          assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
           assertEquals("{\"errors\":[{\"key\":\"documentId\",\"error\":\"Document '" + doc1
               + "' does not exist\"}]}", e.getResponseBody());
         }

@@ -164,6 +164,7 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
       // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-invalid-resource.json");
       addParameter(event, "siteId", siteId);
+      setCognitoGroup(event, siteId);
 
       String expected = "{" + getHeaders()
           + ",\"body\":\"{\\\"message\\\":\\\"/unknown not found\\\"}\"," + "\"statusCode\":404}";

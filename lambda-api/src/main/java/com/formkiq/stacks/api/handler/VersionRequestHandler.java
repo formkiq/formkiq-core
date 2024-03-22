@@ -75,9 +75,4 @@ public class VersionRequestHandler implements ApiGatewayRequestHandler, ApiGatew
 
     return version;
   }
-
-  @Override
-  public boolean isSiteIdRequired() {
-    return false;
-  }
 }

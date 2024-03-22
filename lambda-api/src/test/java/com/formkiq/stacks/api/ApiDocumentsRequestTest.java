@@ -579,7 +579,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
     assertEquals("403.0", String.valueOf(m.get("statusCode")));
     assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
     ApiResponseError resp = fromJson(m.get("body"), ApiResponseError.class);
-    assertEquals("fkq access denied (no groups)", resp.getMessage());
+    assertEquals("fkq access denied to siteId (" + siteId + ")", resp.getMessage());
   }
 
   /**
@@ -607,7 +607,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
     assertEquals("403.0", String.valueOf(m.get("statusCode")));
     assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
     ApiResponseError resp = fromJson(m.get("body"), ApiResponseError.class);
-    assertEquals("fkq access denied (groups: default (DELETE,READ,WRITE))", resp.getMessage());
+    assertEquals("fkq access denied to siteId (" + siteId + ")", resp.getMessage());
   }
 
   /**
@@ -666,8 +666,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
     assertEquals(mapsize, m.size());
     assertEquals("403.0", String.valueOf(m.get("statusCode")));
     assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-    assertEquals("{\"message\":\"fkq access denied "
-        + "(groups: Bleh (DELETE,READ,WRITE), Finance (DELETE,READ,WRITE))\"}", m.get("body"));
+    assertEquals("{\"message\":\"fkq access denied to siteId (default)\"}", m.get("body"));
   }
 
   /**
@@ -871,6 +870,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-options-documents.json");
       addParameter(event, "siteId", siteId);
+      setCognitoGroup(event, siteId);
 
       getDocumentService().saveDocument(siteId, item, new ArrayList<>());
 
@@ -1203,7 +1203,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
 
     // then
     String expected = "{" + getHeaders() + ",\"body\":\""
-        + "{\\\"message\\\":\\\"fkq access denied (no groups)\\\"}\",\"statusCode\":403}";
+        + "{\\\"message\\\":\\\"fkq access denied to siteId (demo)\\\"}\",\"statusCode\":403}";
 
     assertEquals(expected, response);
   }

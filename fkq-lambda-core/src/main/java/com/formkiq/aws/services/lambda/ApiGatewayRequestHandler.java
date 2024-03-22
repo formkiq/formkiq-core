@@ -197,15 +197,6 @@ public interface ApiGatewayRequestHandler {
   }
 
   /**
-   * Whether this handler requires a siteId.
-   * 
-   * @return boolean
-   */
-  default boolean isSiteIdRequired() {
-    return true;
-  }
-
-  /**
    * OPTIONS Request Handler.
    *
    * @param logger {@link LambdaLogger}

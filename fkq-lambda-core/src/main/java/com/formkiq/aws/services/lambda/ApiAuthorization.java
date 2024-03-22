@@ -24,6 +24,7 @@
 package com.formkiq.aws.services.lambda;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -137,8 +138,22 @@ public class ApiAuthorization {
    * @return {@link Collection} {@link ApiPermission}
    */
   public Collection<ApiPermission> getPermissions(final String siteId) {
-    return this.permissionsBySiteId.containsKey(siteId) ? this.permissionsBySiteId.get(siteId)
-        : Collections.emptyList();
+    Collection<ApiPermission> permissions = this.permissionsBySiteId.get(siteId);
+
+    if (permissions == null) {
+
+      permissions = Collections.emptyList();
+
+      if (!this.permissionsBySiteId.isEmpty()) {
+        long count = this.permissionsBySiteId.values().stream()
+            .filter(t -> t.contains(ApiPermission.READ)).count();
+        if (count == this.permissionsBySiteId.size()) {
+          permissions = Arrays.asList(ApiPermission.READ);
+        }
+      }
+    }
+
+    return permissions;
   }
 
   /**

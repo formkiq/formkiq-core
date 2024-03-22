@@ -404,8 +404,6 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
     hasAccess = isAuthorizedHandler(event, authorization, hasAccess);
 
-    hasAccess = isHandlerSiteIdRequired(authorization, handler, hasAccess);
-
     if (hasAccess.isEmpty()) {
       switch (method) {
         case "head":
@@ -476,24 +474,6 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
    */
   private boolean isEmpty(final ApiGatewayRequestEvent event) {
     return event != null && event.getHeaders() == null && event.getPath() == null;
-  }
-
-  /**
-   * Does {@link ApiGatewayRequestHandler} requires a SiteId parameter.
-   * 
-   * @param authorization {@link ApiAuthorization}
-   * @param handler {@link ApiGatewayRequestHandler}
-   * @param hasAccess {@link Boolean}
-   * @return {@link Optional}
-   */
-  private Optional<Boolean> isHandlerSiteIdRequired(final ApiAuthorization authorization,
-      final ApiGatewayRequestHandler handler, final Optional<Boolean> hasAccess) {
-    Optional<Boolean> result = hasAccess;
-    if (hasAccess.isEmpty() && authorization.getSiteIds().size() > 1
-        && !handler.isSiteIdRequired()) {
-      result = Optional.of(Boolean.TRUE);
-    }
-    return result;
   }
 
   private void log(final LambdaLogger logger, final ApiGatewayRequestEvent event,
@@ -629,11 +609,6 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
     if (!isAuthorized(getAwsServices(), event, authorization, method, handler)) {
       String s = String.format("fkq access denied (%s)", authorization.getAccessSummary());
-      if (authorization.getSiteId() == null && authorization.getSiteIds().size() > 1) {
-        s = String.format("'siteId' parameter required - multiple siteIds found (%s)",
-            authorization.getAccessSummary());
-      }
-
       throw new ForbiddenException(s);
     }
 

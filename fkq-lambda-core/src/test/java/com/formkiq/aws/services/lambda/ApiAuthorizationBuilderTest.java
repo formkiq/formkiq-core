@@ -260,7 +260,7 @@ class ApiAuthorizationBuilderTest {
     // then
     assertNull(api.getSiteId());
     assertEquals("default,other", String.join(",", api.getSiteIds()));
-    assertEquals("",
+    assertEquals("READ",
         api.getPermissions().stream().map(p -> p.name()).collect(Collectors.joining(",")));
     assertEquals("DELETE,READ,WRITE", api.getPermissions("default").stream().map(p -> p.name())
         .sorted().collect(Collectors.joining(",")));
@@ -481,5 +481,26 @@ class ApiAuthorizationBuilderTest {
         api0.getPermissions().stream().map(p -> p.name()).collect(Collectors.joining(",")));
     assertEquals("groups: default (ADMIN,DELETE,READ,WRITE)", api0.getAccessSummary());
     assertEquals("Admins", api0.getRoles().stream().collect(Collectors.joining(",")));
+  }
+
+  /**
+   * Empty groups access.
+   */
+  @Test
+  void testApiAuthorizer15() throws Exception {
+    // given
+    String s0 = "[]";
+    ApiGatewayRequestEvent event0 = getJwtEvent(s0);
+
+    // when
+    ApiAuthorization api0 = new ApiAuthorizationBuilder().build(event0);
+
+    // then
+    assertNull(api0.getSiteId());
+    assertEquals("", String.join(",", api0.getSiteIds()));
+    assertEquals("",
+        api0.getPermissions().stream().map(p -> p.name()).collect(Collectors.joining(",")));
+    assertEquals("no groups", api0.getAccessSummary());
+    assertEquals("", api0.getRoles().stream().collect(Collectors.joining(",")));
   }
 }

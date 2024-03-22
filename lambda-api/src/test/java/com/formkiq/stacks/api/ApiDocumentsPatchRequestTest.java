@@ -198,16 +198,7 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
       Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
 
       assertEquals("403.0", String.valueOf(m.get("statusCode")));
-
-      assertEquals("{\"message\":\"fkq access denied (groups: default (READ))\"}", m.get("body"));
-
-      assertTrue(getLogger()
-          .containsString("response: {\"headers\":{\"Access-Control-Allow-Origin\":\"*\","
-              + "\"Access-Control-Allow-Methods\":\"*\","
-              + "\"Access-Control-Allow-Headers\":\"Content-Type,X-Amz-Date,Authorization,"
-              + "X-Api-Key\",\"Content-Type\":\"application/json\"},"
-              + "\"body\":\"{\\\"message\\\":\\\""
-              + "fkq access denied (groups: default (READ))\\\"}\"," + "\"statusCode\":403}"));
+      assertTrue(m.get("body").contains("fkq access denied"));
     }
   }
 

@@ -32,6 +32,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import com.formkiq.aws.services.lambda.exceptions.ForbiddenException;
 
 /**
  * 
@@ -170,9 +171,15 @@ public class ApiAuthorizationBuilder {
   }
 
   private String getDefaultSiteId(final ApiGatewayRequestEvent event,
-      final Collection<String> groups, final boolean admin) {
+      final Collection<String> groups, final boolean admin) throws ForbiddenException {
 
     String siteId = getQueryStringParameter(event, "siteId");
+
+    if (siteId != null && !isValidSiteId(siteId, groups)
+        && !event.getPath().startsWith("/public/")) {
+      String s = String.format("fkq access denied to siteId (%s)", siteId);
+      throw new ForbiddenException(s);
+    }
 
     if (siteId == null) {
       Collection<String> filteredGroups =
@@ -184,6 +191,10 @@ public class ApiAuthorizationBuilder {
     }
 
     return siteId;
+  }
+
+  private boolean isValidSiteId(final String siteId, final Collection<String> groups) {
+    return groups.contains(siteId) || groups.contains(siteId + "_read");
   }
 
   /**
