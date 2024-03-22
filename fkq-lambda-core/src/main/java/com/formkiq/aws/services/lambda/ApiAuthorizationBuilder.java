@@ -119,6 +119,12 @@ public class ApiAuthorizationBuilder {
       }
     }
 
+    if (defaultSiteId != null && !isValidSiteId(defaultSiteId, groups)
+        && !event.getPath().startsWith("/public/")) {
+      String s = String.format("fkq access denied to siteId (%s)", defaultSiteId);
+      throw new ForbiddenException(s);
+    }
+
     return authorization;
   }
 
@@ -171,15 +177,9 @@ public class ApiAuthorizationBuilder {
   }
 
   private String getDefaultSiteId(final ApiGatewayRequestEvent event,
-      final Collection<String> groups, final boolean admin) throws ForbiddenException {
+      final Collection<String> groups, final boolean admin) {
 
     String siteId = getQueryStringParameter(event, "siteId");
-
-    if (siteId != null && !isValidSiteId(siteId, groups)
-        && !event.getPath().startsWith("/public/")) {
-      String s = String.format("fkq access denied to siteId (%s)", siteId);
-      throw new ForbiddenException(s);
-    }
 
     if (siteId == null) {
       Collection<String> filteredGroups =
