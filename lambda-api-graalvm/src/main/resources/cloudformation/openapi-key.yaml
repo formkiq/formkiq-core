@@ -3996,6 +3996,33 @@ Resources:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
+            delete:
+              operationId: DeleteCase
+              summary: Delete Case
+              description: Delete Case
+              tags:
+              - Case Management
+              parameters:
+              - $ref: '#/components/parameters/siteIdPathParam'
+              - $ref: '#/components/parameters/caseIdParam'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DeleteCaseResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
           /cases/{caseId}/documents:
             get:
               operationId: GetCaseDocuments
@@ -4034,6 +4061,37 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
           /cases/{caseId}/tasks/{taskId}:
+            get:
+              operationId: GetCaseTask
+              tags:
+              - Case Management
+              description: Returns a Task in Case; ONLY available with FormKiQ Enterprise
+              summary: Get task in a case
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/caseIdParam'
+              - $ref: '#/components/parameters/taskIdParam'
+              responses:
+                '200':
+                  description: "200 OK"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: "string"
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: "string"
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: "string"
+                  content:
+                    application/json:
+                      schema:
+                        "$ref": "#/components/schemas/GetCaseTaskResponse"
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
             patch:
               operationId: UpdateTask
               summary: Update existing Task
@@ -4064,6 +4122,34 @@ Resources:
                     application/json:
                       schema:
                         $ref: '#/components/schemas/UpdateTaskResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
+            delete:
+              operationId: DeleteTask
+              summary: Delete Task
+              description: Delete Task
+              tags:
+              - Case Management
+              parameters:
+              - $ref: '#/components/parameters/siteIdPathParam'
+              - $ref: '#/components/parameters/caseIdParam'
+              - $ref: '#/components/parameters/taskIdParam'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DeleteCaseTaskResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -4106,7 +4192,68 @@ Resources:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
+          /cases/{caseId}/tasks/{taskId}/documents/{documentId}:
+            delete:
+              operationId: DeleteTaskDocument
+              summary: Delete Document from Task
+              description: Delete Document from Task
+              tags:
+              - Case Management
+              parameters:
+              - $ref: '#/components/parameters/siteIdPathParam'
+              - $ref: '#/components/parameters/caseIdParam'
+              - $ref: '#/components/parameters/taskIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DeleteCaseTaskResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
           /cases/{caseId}/nigos/{nigoId}:
+            get:
+              operationId: GetCaseNigo
+              tags:
+              - Case Management
+              description: Returns a Nigo in Case; ONLY available with FormKiQ Enterprise
+              summary: Get nigo in a case
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/caseIdParam'
+              - $ref: '#/components/parameters/nigoIdParam'
+              responses:
+                '200':
+                  description: "200 OK"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: "string"
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: "string"
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: "string"
+                  content:
+                    application/json:
+                      schema:
+                        "$ref": "#/components/schemas/GetCaseNigoResponse"
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
             patch:
               operationId: UpdateNigo
               summary: Update existing Nigo
@@ -4137,6 +4284,34 @@ Resources:
                     application/json:
                       schema:
                         $ref: '#/components/schemas/UpdateNigoResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
+            delete:
+              operationId: DeleteNigo
+              summary: Delete Nigo
+              description: Delete Nigo
+              tags:
+              - Case Management
+              parameters:
+              - $ref: '#/components/parameters/siteIdPathParam'
+              - $ref: '#/components/parameters/caseIdParam'
+              - $ref: '#/components/parameters/nigoIdParam'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DeleteCaseNigoResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -4175,6 +4350,36 @@ Resources:
                     application/json:
                       schema:
                         "$ref": "#/components/schemas/GetCaseDocumentsResponse"
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
+          /cases/{caseId}/nigos/{nigoId}/documents/{documentId}:
+            delete:
+              operationId: DeleteNigoDocument
+              summary: Delete Document from Nigo
+              description: Delete Document from Nigo
+              tags:
+              - Case Management
+              parameters:
+              - $ref: '#/components/parameters/siteIdPathParam'
+              - $ref: '#/components/parameters/caseIdParam'
+              - $ref: '#/components/parameters/nigoIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DeleteCaseNigoDocumentResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -6579,9 +6784,18 @@ Resources:
             UpdateTask:
               type: "object"
               properties:
+                name:
+                  type: "string"
+                  description: "Name of Task"
                 description:
                   type: "string"
                   description: "Description of Task"
+                startDate:
+                  type: "string"
+                  description: "Start Date"
+                endDate:
+                  type: "string"
+                  description: "End Date"
                 status:
                   $ref: "#/components/schemas/TaskStatus"
                 metadata:
@@ -6624,9 +6838,18 @@ Resources:
             UpdateNigo:
               type: "object"
               properties:
+                name:
+                  type: "string"
+                  description: "Name of Nigo"
                 description:
                   type: "string"
                   description: "Description of Nigo"
+                startDate:
+                  type: "string"
+                  description: "Start Date"
+                endDate:
+                  type: "string"
+                  description: "End Date"
                 status:
                   $ref: "#/components/schemas/NigoStatus"
                 metadata:
@@ -6664,9 +6887,21 @@ Resources:
                 insertedDate:
                   type: "string"
                   description: "Inserted Timestamp"
+                name:
+                  type: "string"
+                  description: "Name of Task"
                 description:
                   type: "string"
                   description: "Description of Task"
+                startDate:
+                  type: "string"
+                  description: "Start Date of Task"
+                endDate:
+                  type: "string"
+                  description: "End Date of Task"
+                userId:
+                  type: "string"
+                  description: "User who added Task"
                 status:
                   $ref: "#/components/schemas/TaskStatus"
                 metadata:
@@ -6682,9 +6917,21 @@ Resources:
                 insertedDate:
                   type: "string"
                   description: "Inserted Timestamp"
+                name:
+                  type: "string"
+                  description: "Name of Nigo"
                 description:
                   type: "string"
-                  description: "Description of Task"
+                  description: "Description of Nigo"
+                startDate:
+                  type: "string"
+                  description: "Start Date"
+                endDate:
+                  type: "string"
+                  description: "End Date"
+                userId:
+                  type: "string"
+                  description: "User who added Nigo"
                 status:
                   $ref: "#/components/schemas/NigoStatus"
                 metadata:
@@ -6713,6 +6960,16 @@ Resources:
                   description: "List of Nigos"
                   items:
                     $ref: "#/components/schemas/Nigo"
+            GetCaseNigoResponse:
+              type: "object"
+              properties:
+                task:
+                  $ref: "#/components/schemas/Nigo"
+            GetCaseTaskResponse:
+              type: "object"
+              properties:
+                task:
+                  $ref: "#/components/schemas/Task"
             GetCaseTasksResponse:
               type: "object"
               properties:
@@ -7649,6 +7906,30 @@ Resources:
                   type: "string"
                   description: "Site Id to apply policy to, leave empty for global policy"
             SetOpaConfigurationResponse:
+              type: object
+              properties:
+                message:
+                  type: "string"
+                  description: "Result message"
+            DeleteCaseResponse:
+              type: object
+              properties:
+                message:
+                  type: "string"
+                  description: "Result message"
+            DeleteCaseNigoDocumentResponse:
+              type: object
+              properties:
+                message:
+                  type: "string"
+                  description: "Result message"
+            DeleteCaseNigoResponse:
+              type: object
+              properties:
+                message:
+                  type: "string"
+                  description: "Result message"
+            DeleteCaseTaskResponse:
               type: object
               properties:
                 message:
