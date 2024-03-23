@@ -6435,6 +6435,15 @@ Resources:
                   description: "Case Name"
                 status:
                   $ref: "#/components/schemas/CaseStatus"
+                startDate:
+                  type: "string"
+                  description: "Start Date"
+                endDate:
+                  type: "string"
+                  description: "End Date"
+                description:
+                  type: "string"
+                  description: "Case Description"
                 documentNumberFormat:
                   type: "array"
                   description: "Format of Document Number"
@@ -6493,6 +6502,19 @@ Resources:
                   description: "Case Name"
                 status:
                   $ref: "#/components/schemas/CaseStatus"
+                description:
+                  type: "string"
+                  description: "Case Description"
+                metadata:
+                  type: "object"
+                  additionalProperties:
+                    type: object
+                startDate:
+                  type: "string"
+                  description: "Start Date"
+                endDate:
+                  type: "string"
+                  description: "End Date"
                 documentIds:
                   type: "array"
                   items:
@@ -6730,18 +6752,30 @@ Resources:
                 documentNumber:
                   type: "string"
                   description: "Document Number"
+                startDate:
+                  type: "string"
+                  description: "Start Date"
+                endDate:
+                  type: "string"
+                  description: "End Date"
                 insertedDate:
                   type: "string"
                   description: "Inserted Timestamp"
                 name:
                   type: "string"
                   description: "Case Name"
+                description:
+                  type: "string"
+                  description: "Case Description"
                 metadata:
                   type: "object"
                   additionalProperties:
                     type: object
                 status:
                   $ref: "#/components/schemas/CaseStatus"
+                userId:
+                  type: "string"
+                  description: "User who added document"
                   
             RulesetStatus:
               type: string
