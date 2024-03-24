@@ -4003,7 +4003,7 @@ Resources:
               tags:
               - Case Management
               parameters:
-              - $ref: '#/components/parameters/siteIdPathParam'
+              - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/caseIdParam'
               responses:
                 '200':
@@ -4056,6 +4056,35 @@ Resources:
                     application/json:
                       schema:
                         "$ref": "#/components/schemas/GetCaseDocumentsResponse"
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
+          /cases/{caseId}/documents/{documentId}:
+            delete:
+              operationId: DeleteCaseDocument
+              summary: Delete Document from Case
+              description: Delete Document from Case
+              tags:
+              - Case Management
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/caseIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DeleteCaseDocumentResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -4133,7 +4162,7 @@ Resources:
               tags:
               - Case Management
               parameters:
-              - $ref: '#/components/parameters/siteIdPathParam'
+              - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/caseIdParam'
               - $ref: '#/components/parameters/taskIdParam'
               responses:
@@ -4200,7 +4229,7 @@ Resources:
               tags:
               - Case Management
               parameters:
-              - $ref: '#/components/parameters/siteIdPathParam'
+              - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/caseIdParam'
               - $ref: '#/components/parameters/taskIdParam'
               - $ref: '#/components/parameters/documentIdParam'
@@ -4217,7 +4246,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/DeleteCaseTaskResponse'
+                        $ref: '#/components/schemas/DeleteCaseTaskDocumentResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -4295,7 +4324,7 @@ Resources:
               tags:
               - Case Management
               parameters:
-              - $ref: '#/components/parameters/siteIdPathParam'
+              - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/caseIdParam'
               - $ref: '#/components/parameters/nigoIdParam'
               responses:
@@ -4362,7 +4391,7 @@ Resources:
               tags:
               - Case Management
               parameters:
-              - $ref: '#/components/parameters/siteIdPathParam'
+              - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/caseIdParam'
               - $ref: '#/components/parameters/nigoIdParam'
               - $ref: '#/components/parameters/documentIdParam'
@@ -6963,7 +6992,7 @@ Resources:
             GetCaseNigoResponse:
               type: "object"
               properties:
-                task:
+                nigo:
                   $ref: "#/components/schemas/Nigo"
             GetCaseTaskResponse:
               type: "object"
@@ -7924,6 +7953,18 @@ Resources:
                   type: "string"
                   description: "Result message"
             DeleteCaseNigoResponse:
+              type: object
+              properties:
+                message:
+                  type: "string"
+                  description: "Result message"
+            DeleteCaseDocumentResponse:
+              type: object
+              properties:
+                message:
+                  type: "string"
+                  description: "Result message"
+            DeleteCaseTaskDocumentResponse:
               type: object
               properties:
                 message:
