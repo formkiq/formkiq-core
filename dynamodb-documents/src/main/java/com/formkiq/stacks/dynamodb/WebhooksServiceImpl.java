@@ -34,9 +34,12 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.AttributeValueToDynamicObject;
+import com.formkiq.aws.dynamodb.BatchGetConfig;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.PaginationToAttributeValue;
@@ -46,12 +49,9 @@ import com.formkiq.aws.dynamodb.objects.DateUtil;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
-import software.amazon.awssdk.services.dynamodb.model.BatchGetItemRequest;
-import software.amazon.awssdk.services.dynamodb.model.BatchGetItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.GetItemResponse;
-import software.amazon.awssdk.services.dynamodb.model.KeysAndAttributes;
 import software.amazon.awssdk.services.dynamodb.model.Put;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
@@ -65,13 +65,14 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
 
   /** MilliSeconds per Second. */
   private static final int MILLISECONDS = 1000;
-  /** Documents Table Name. */
-  private String documentTableName;
-
-  /** {@link SimpleDateFormat} in ISO Standard format. */
-  private SimpleDateFormat df;
+  /** {@link DynamoDbService}. */
+  private DynamoDbService db;
   /** {@link DynamoDbClient}. */
   private DynamoDbClient dbClient;
+  /** {@link SimpleDateFormat} in ISO Standard format. */
+  private SimpleDateFormat df;
+  /** Documents Table Name. */
+  private String documentTableName;
 
   /**
    * constructor.
@@ -88,6 +89,7 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
     this.dbClient = connection.build();
     this.documentTableName = documentsTable;
     this.df = DateUtil.getIsoDateFormatter();
+    this.db = new DynamoDbServiceImpl(connection, documentsTable);
   }
 
   @Override
@@ -226,22 +228,15 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
 
     QueryResponse result = this.dbClient.query(q);
 
-    Collection<? extends Map<String, AttributeValue>> keys = result.items().stream()
+    List<Map<String, AttributeValue>> keys = result.items().stream()
         .map(i -> Map.of(PK, i.get(PK), SK, i.get(SK))).collect(Collectors.toList());
 
     List<DynamicObject> retlist = Collections.emptyList();
 
     if (!keys.isEmpty()) {
 
-      Map<String, KeysAndAttributes> items =
-          Map.of(this.documentTableName, KeysAndAttributes.builder().keys(keys).build());
-
-      BatchGetItemResponse batch =
-          this.dbClient.batchGetItem(BatchGetItemRequest.builder().requestItems(items).build());
-
-      Map<String, List<Map<String, AttributeValue>>> responses = batch.responses();
-
-      List<Map<String, AttributeValue>> list = responses.get(this.documentTableName);
+      BatchGetConfig config = new BatchGetConfig();
+      List<Map<String, AttributeValue>> list = this.db.getBatch(config, keys);
 
       AttributeValueToDynamicObject transform = new AttributeValueToDynamicObject();
 
