@@ -39,6 +39,7 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.client.api.DocumentActionsApi;
 import com.formkiq.client.api.DocumentsApi;
@@ -168,7 +169,7 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testAddNotifications01() throws Exception {
     // given
-    String siteId = null;
+    String siteId = SiteIdKeyGenerator.DEFAULT_SITE_ID;
     List<ApiClient> clients = getApiClients(siteId);
     ApiClient client = clients.get(0);
 

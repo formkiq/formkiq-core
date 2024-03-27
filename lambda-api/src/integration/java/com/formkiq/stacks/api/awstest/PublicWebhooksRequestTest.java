@@ -114,9 +114,6 @@ public class PublicWebhooksRequestTest extends AbstractAwsIntegrationTest {
       GetDocumentResponse document =
           docApi.getDocument(map.get("documentId").toString(), siteId, null);
       assertNotNull(document);
-      // DocumentWithChildren document = getDocument(client, map.get("documentId").toString(),
-      // false);
-      // assertNotNull(document);
 
       GetWebhooksResponse webhooks = api.getWebhooks(siteId);
       List<GetWebhookResponse> list = webhooks.getWebhooks();

@@ -267,8 +267,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
     } catch (ApiException e) {
       // then
       assertEquals(STATUS_FORBIDDEN, e.getCode());
-      assertEquals("{\"message\":\"fkq access denied (groups: default (READ))\"}",
-          e.getResponseBody());
+      assertEquals("{\"message\":\"fkq access denied to siteId (finance)\"}", e.getResponseBody());
     }
   }
 
@@ -300,8 +299,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
       api.getDocuments(siteId, null, null, date, null, null, null, null);
     } catch (ApiException e) {
       assertEquals(STATUS_FORBIDDEN, e.getCode());
-      assertEquals("{\"message\":\"fkq access denied (groups: default (DELETE,READ,WRITE))\"}",
-          e.getResponseBody());
+      assertEquals("{\"message\":\"fkq access denied to siteId (finance)\"}", e.getResponseBody());
     }
   }
 
@@ -543,8 +541,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
       api.addDocument(req, siteId, null);
     } catch (ApiException e) {
       // then
-      assertEquals("{\"message\":\"fkq access denied (groups: default (READ))\"}",
-          e.getResponseBody());
+      assertEquals("{\"message\":\"fkq access denied to siteId (finance)\"}", e.getResponseBody());
     }
   }
 
@@ -576,8 +573,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
     } catch (ApiException e) {
       // then
       assertEquals(STATUS_FORBIDDEN, e.getCode());
-      assertEquals("{\"message\":\"fkq access denied (groups: default (DELETE,READ,WRITE))\"}",
-          e.getResponseBody());
+      assertEquals("{\"message\":\"fkq access denied to siteId (finance)\"}", e.getResponseBody());
     }
   }
 

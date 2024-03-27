@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.api.SystemManagementApi;
@@ -98,7 +99,8 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
     List<ApiClient> apiClients = getApiClients(null);
     assertEquals(expected, apiClients.size());
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(SiteIdKeyGenerator.DEFAULT_SITE_ID,
+        UUID.randomUUID().toString())) {
 
       for (ApiClient client : Arrays.asList(apiClients.get(0), apiClients.get(1))) {
         com.formkiq.client.model.AddApiKeyRequest apiReq =
@@ -121,7 +123,7 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
 
     // when
     try {
-      api.getApiKeys(null);
+      api.getApiKeys(SiteIdKeyGenerator.DEFAULT_SITE_ID);
       // then
       fail();
     } catch (ApiException e) {
@@ -148,7 +150,7 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
 
     // when
     try {
-      api.getApiKeys(null);
+      api.getApiKeys(SiteIdKeyGenerator.DEFAULT_SITE_ID);
 
       // then
       fail();

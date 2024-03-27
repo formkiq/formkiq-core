@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.api.SystemManagementApi;
 import com.formkiq.client.invoker.ApiClient;
@@ -64,7 +65,7 @@ public class ConfigurationRequestTest extends AbstractAwsIntegrationTest {
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testGetConfiguration01() throws Exception {
     // given
-    String siteId = null;
+    String siteId = SiteIdKeyGenerator.DEFAULT_SITE_ID;
     final int expected = 3;
     List<ApiClient> clients = getApiClients(siteId);
     assertEquals(expected, clients.size());
@@ -100,7 +101,7 @@ public class ConfigurationRequestTest extends AbstractAwsIntegrationTest {
   @Test
   public void testGetConfiguration02() throws Exception {
     // given
-    String siteId = null;
+    String siteId = SiteIdKeyGenerator.DEFAULT_SITE_ID;
     String chatGptApiKey = "1239123123";
     addAndLoginCognito(FINANCE_EMAIL, Arrays.asList("default_read"));
 
@@ -140,7 +141,7 @@ public class ConfigurationRequestTest extends AbstractAwsIntegrationTest {
   public void testPatchConfiguration02() throws Exception {
     // given
     final int expected = 3;
-    String siteId = null;
+    String siteId = SiteIdKeyGenerator.DEFAULT_SITE_ID;
     List<ApiClient> clients = getApiClients(null);
     assertEquals(expected, clients.size());
 
@@ -182,7 +183,7 @@ public class ConfigurationRequestTest extends AbstractAwsIntegrationTest {
   @Test
   public void testPatchConfiguration03() throws Exception {
     // given
-    String siteId = null;
+    String siteId = SiteIdKeyGenerator.DEFAULT_SITE_ID;
     List<ApiClient> clients = getApiClients(null);
 
     String adminEmail =
@@ -208,7 +209,7 @@ public class ConfigurationRequestTest extends AbstractAwsIntegrationTest {
   @Test
   public void testPatchConfiguration04() throws Exception {
     // given
-    String siteId = null;
+    String siteId = SiteIdKeyGenerator.DEFAULT_SITE_ID;
     List<ApiClient> clients = getApiClients(null);
 
     String email = "test@formkiq.com";
