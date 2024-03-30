@@ -144,7 +144,12 @@ public class ApiAuthorization {
 
       permissions = Collections.emptyList();
 
-      if (!this.permissionsBySiteId.isEmpty()) {
+      if (hasAdminPermission()) {
+
+        permissions =
+            Arrays.asList(ApiPermission.values()).stream().sorted().collect(Collectors.toList());
+
+      } else if (!this.permissionsBySiteId.isEmpty()) {
         long count = this.permissionsBySiteId.values().stream()
             .filter(t -> t.contains(ApiPermission.READ)).count();
         if (count == this.permissionsBySiteId.size()) {
@@ -192,6 +197,11 @@ public class ApiAuthorization {
    */
   public String getUsername() {
     return this.username;
+  }
+
+  private boolean hasAdminPermission() {
+    return this.permissionsBySiteId.values().stream()
+        .anyMatch(p -> p.contains(ApiPermission.ADMIN));
   }
 
   /**

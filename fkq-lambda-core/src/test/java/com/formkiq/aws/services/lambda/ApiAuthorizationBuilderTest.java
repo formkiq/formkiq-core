@@ -503,4 +503,32 @@ class ApiAuthorizationBuilderTest {
     assertEquals("no groups", api0.getAccessSummary());
     assertEquals("", api0.getRoles().stream().collect(Collectors.joining(",")));
   }
+
+  /**
+   * 'Admin' access across multiple sites.
+   */
+  @Test
+  void testApiAuthorizer16() throws Exception {
+    // given
+    String s0 = "[Admins default sample]";
+    ApiGatewayRequestEvent event0 = getJwtEvent(s0);
+
+    // when
+    final ApiAuthorization api = new ApiAuthorizationBuilder().build(event0);
+
+    // then
+    assertNull(api.getSiteId());
+    assertEquals("default,sample", String.join(",", api.getSiteIds()));
+    assertEquals("ADMIN,DELETE,READ,WRITE", api.getPermissions("default").stream()
+        .map(p -> p.name()).sorted().collect(Collectors.joining(",")));
+    assertEquals("ADMIN,DELETE,READ,WRITE", api.getPermissions("sample").stream().map(p -> p.name())
+        .sorted().collect(Collectors.joining(",")));
+    assertEquals("ADMIN,DELETE,READ,WRITE", api.getPermissions("another").stream()
+        .map(p -> p.name()).sorted().collect(Collectors.joining(",")));
+    assertEquals("ADMIN,DELETE,READ,WRITE",
+        api.getPermissions().stream().map(p -> p.name()).sorted().collect(Collectors.joining(",")));
+    assertEquals("groups: default (ADMIN,DELETE,READ,WRITE), sample (ADMIN,DELETE,READ,WRITE)",
+        api.getAccessSummary());
+    assertEquals("default,Admins,sample", api.getRoles().stream().collect(Collectors.joining(",")));
+  }
 }

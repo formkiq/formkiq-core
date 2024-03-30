@@ -65,17 +65,19 @@ public class ConfigurationApiKeysRequestHandler
   @Override
   public void beforeGet(final LambdaLogger logger, final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
-    checkPermissions(authorization);
+    checkPermissions(event, authorization);
   }
 
   @Override
   public void beforePost(final LambdaLogger logger, final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
-    checkPermissions(authorization);
+    checkPermissions(event, authorization);
   }
 
-  private void checkPermissions(final ApiAuthorization authorization) throws UnauthorizedException {
-    if (!authorization.getPermissions().contains(ApiPermission.ADMIN)) {
+  private void checkPermissions(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization) throws UnauthorizedException {
+    String siteId = event.getPathParameters().get("siteId");
+    if (!authorization.getPermissions(siteId).contains(ApiPermission.ADMIN)) {
       throw new UnauthorizedException("user is unauthorized");
     }
   }

@@ -170,4 +170,24 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
       assertEquals("{\"message\":\"user is unauthorized\"}", e.getResponseBody());
     }
   }
+
+  /**
+   * Get /sites/{siteId}/apiKeys default as User.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetApiKeys03() throws Exception {
+    // given
+    String siteId = SiteIdKeyGenerator.DEFAULT_SITE_ID;
+    String group = "default";
+
+    setBearerToken("Admins opa " + group);
+
+    // when
+    GetApiKeysResponse response = this.systemApi.getApiKeys(siteId);
+
+    // then
+    assertEquals(0, response.getApiKeys().size());
+  }
 }
