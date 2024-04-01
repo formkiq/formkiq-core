@@ -126,7 +126,8 @@ public abstract class AbstractAwsIntegrationTest {
    * @throws URISyntaxException URISyntaxException
    */
   @BeforeAll
-  public static void beforeClass() throws IOException, InterruptedException, URISyntaxException {
+  public static synchronized void beforeClass()
+      throws IOException, InterruptedException, URISyntaxException {
     setupServices();
 
     cognito.addUser(ADMIN_EMAIL, USER_PASSWORD);

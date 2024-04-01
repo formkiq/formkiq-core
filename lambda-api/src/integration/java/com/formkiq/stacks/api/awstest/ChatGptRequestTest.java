@@ -38,6 +38,7 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.client.api.DocumentActionsApi;
 import com.formkiq.client.api.DocumentTagsApi;
 import com.formkiq.client.api.SystemManagementApi;
@@ -73,10 +74,11 @@ public class ChatGptRequestTest extends AbstractAwsIntegrationTest {
     }
 
     try {
-      ApiClient apiClient = getApiClients(null).get(0);
+      String siteId = SiteIdKeyGenerator.DEFAULT_SITE_ID;
+      ApiClient apiClient = getApiClients(siteId).get(0);
       SystemManagementApi api = new SystemManagementApi(apiClient);
 
-      api.updateConfiguration(null,
+      api.updateConfiguration(siteId,
           new UpdateConfigurationRequest().chatGptApiKey(System.getProperty("testchatgptapikey")));
     } catch (ApiException e) {
       throw new IOException(e);
