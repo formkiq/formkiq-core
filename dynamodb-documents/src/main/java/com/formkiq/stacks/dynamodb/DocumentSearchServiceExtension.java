@@ -48,7 +48,7 @@ public class DocumentSearchServiceExtension implements AwsServiceExtension<Docum
     if (this.service == null) {
 
       DocumentTagSchemaPlugin documentTagSchemaPlugin =
-          awsServiceCache.getExtension(DocumentTagSchemaPlugin.class);
+          awsServiceCache.getExtensionOrNull(DocumentTagSchemaPlugin.class);
 
       DynamoDbConnectionBuilder connection =
           awsServiceCache.getExtension(DynamoDbConnectionBuilder.class);

@@ -48,6 +48,7 @@ import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 import software.amazon.awssdk.services.dynamodb.model.ReturnValue;
 import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.UpdateItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 
 /**
@@ -96,8 +97,13 @@ public class DynamoDbServiceImpl implements DynamoDbService {
   @Override
   public boolean deleteItem(final AttributeValue pk, final AttributeValue sk) {
     Map<String, AttributeValue> sourceKey = Map.of(PK, pk, SK, sk);
+    return deleteItem(sourceKey);
+  }
+
+  @Override
+  public boolean deleteItem(final Map<String, AttributeValue> key) {
     DeleteItemResponse response = this.dbClient.deleteItem(DeleteItemRequest.builder()
-        .tableName(this.tableName).key(sourceKey).returnValues(ReturnValue.ALL_OLD).build());
+        .tableName(this.tableName).key(key).returnValues(ReturnValue.ALL_OLD).build());
     return !response.attributes().isEmpty();
   }
 
@@ -173,6 +179,26 @@ public class DynamoDbServiceImpl implements DynamoDbService {
   }
 
   @Override
+  public String getNextNumber(final Map<String, AttributeValue> keys) {
+
+    UpdateItemRequest updateItemRequest = UpdateItemRequest.builder().tableName(this.tableName)
+        .key(keys).updateExpression("ADD #autoIncrement :val")
+        .expressionAttributeNames(Map.of("#autoIncrement", "Number"))
+        .expressionAttributeValues(Map.of(":val", AttributeValue.builder().n("1").build()))
+        .returnValues(ReturnValue.UPDATED_NEW).build();
+
+    UpdateItemResponse response = updateItem(updateItemRequest);
+
+    AttributeValue val = response.attributes().get("Number");
+    return val.n();
+  }
+
+  @Override
+  public String getTableName() {
+    return this.tableName;
+  }
+
+  @Override
   public boolean moveItems(final Collection<Map<String, AttributeValue>> attrs,
       final MoveAttributeFunction func) {
 
@@ -227,12 +253,22 @@ public class DynamoDbServiceImpl implements DynamoDbService {
   @Override
   public QueryResponse query(final AttributeValue pk,
       final Map<String, AttributeValue> exclusiveStartKey, final int limit) {
+    QueryConfig config = new QueryConfig().scanIndexForward(Boolean.FALSE);
+    return query(config, pk, exclusiveStartKey, limit);
+  }
+
+  @Override
+  public QueryResponse query(final QueryConfig config, final AttributeValue pk,
+      final Map<String, AttributeValue> exclusiveStartKey, final int limit) {
+
     String expression = PK + " = :pk";
     Map<String, AttributeValue> values = Map.of(":pk", pk);
-    QueryRequest q =
-        QueryRequest.builder().tableName(this.tableName).keyConditionExpression(expression)
-            .expressionAttributeValues(values).scanIndexForward(Boolean.FALSE)
-            .exclusiveStartKey(exclusiveStartKey).limit(Integer.valueOf(limit)).build();
+
+    QueryRequest q = QueryRequest.builder().tableName(this.tableName).indexName(config.indexName())
+        .expressionAttributeNames(config.expressionAttributeNames())
+        .keyConditionExpression(expression).projectionExpression(config.projectionExpression())
+        .expressionAttributeValues(values).scanIndexForward(config.isScanIndexForward())
+        .exclusiveStartKey(exclusiveStartKey).limit(Integer.valueOf(limit)).build();
 
     return this.dbClient.query(q);
   }
@@ -283,6 +319,11 @@ public class DynamoDbServiceImpl implements DynamoDbService {
     Map<String, AttributeValue> dbKey = Map.of(PK, pk, SK, sk);
     return this.dbClient.updateItem(UpdateItemRequest.builder().tableName(this.tableName).key(dbKey)
         .attributeUpdates(updateValues).build()).attributes();
+  }
+
+  @Override
+  public UpdateItemResponse updateItem(final UpdateItemRequest request) {
+    return this.dbClient.updateItem(request);
   }
 
   @Override

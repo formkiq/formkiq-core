@@ -32,6 +32,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddApiKeyRequest;
 import com.formkiq.client.model.AddApiKeyResponse;
@@ -40,7 +41,7 @@ import com.formkiq.client.model.GetApiKeysResponse;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 
-/** Unit Tests for request /configuration/apiKeys. */
+/** Unit Tests for request /sites/{siteId}/apiKeys. */
 @ExtendWith(DynamoDbExtension.class)
 @ExtendWith(LocalStackExtension.class)
 public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTest {
@@ -49,7 +50,7 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
   private static final int STATUS_UNAUTHORIZED = 401;
 
   /**
-   * Delete /configuration/apiKeys default as User.
+   * Delete /sites/{siteId}/apiKeys default as User.
    *
    * @throws Exception an error has occurred
    */
@@ -73,7 +74,7 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
   }
 
   /**
-   * POST /configuration/apiKeys default as User.
+   * POST /sites/{siteId}/apiKeys default as User.
    *
    * @throws Exception an error has occurred
    */
@@ -88,7 +89,7 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
       setBearerToken(siteId);
 
       try {
-        this.systemApi.addApiKey(req, siteId);
+        this.systemApi.addApiKey(siteId, req);
         fail();
       } catch (ApiException e) {
         // then
@@ -99,7 +100,7 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
   }
 
   /**
-   * Get/POST/DELETE /configuration/apiKeys default as Admin without permissions.
+   * Get/POST/DELETE /sites/{siteId}/apiKeys default as Admin without permissions.
    *
    * @throws Exception an error has occurred
    */
@@ -109,14 +110,15 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
     // given
     String group = "Admins";
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(SiteIdKeyGenerator.DEFAULT_SITE_ID,
+        UUID.randomUUID().toString())) {
 
       String apiKeyName = "test key";
       AddApiKeyRequest req = new AddApiKeyRequest().name(apiKeyName);
 
       // when
       setBearerToken(group);
-      AddApiKeyResponse response = this.systemApi.addApiKey(req, siteId);
+      AddApiKeyResponse response = this.systemApi.addApiKey(siteId, req);
 
       // then
       assertNotNull(response.getApiKey());
@@ -132,13 +134,13 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
       assertEquals("DELETE,READ,WRITE", apiKeys.getApiKeys().get(0).getPermissions().stream()
           .map(p -> p.name()).sorted().collect(Collectors.joining(",")));
       assertEquals("joesmith", apiKeys.getApiKeys().get(0).getUserId());
-      assertEquals(siteId != null ? siteId : "default", apiKeys.getApiKeys().get(0).getSiteId());
+      assertEquals(siteId, apiKeys.getApiKeys().get(0).getSiteId());
 
       // given
       String apiKey = apiKeys.getApiKeys().get(0).getApiKey();
 
       // when
-      DeleteApiKeyResponse delResponse = this.systemApi.deleteApiKey(apiKey, siteId);
+      DeleteApiKeyResponse delResponse = this.systemApi.deleteApiKey(siteId, apiKey);
 
       // then
       assertEquals("ApiKey deleted", delResponse.getMessage());
@@ -148,14 +150,14 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
   }
 
   /**
-   * Get /configuration/apiKeys default as User.
+   * Get /sites/{siteId}/apiKeys default as User.
    *
    * @throws Exception an error has occurred
    */
   @Test
   public void testHandleGetApiKeys02() throws Exception {
     // given
-    String siteId = null;
+    String siteId = SiteIdKeyGenerator.DEFAULT_SITE_ID;
     String group = "default";
 
     // when
@@ -167,5 +169,25 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
     } catch (ApiException e) {
       assertEquals("{\"message\":\"user is unauthorized\"}", e.getResponseBody());
     }
+  }
+
+  /**
+   * Get /sites/{siteId}/apiKeys default as User.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetApiKeys03() throws Exception {
+    // given
+    String siteId = SiteIdKeyGenerator.DEFAULT_SITE_ID;
+    String group = "default";
+
+    setBearerToken("Admins opa " + group);
+
+    // when
+    GetApiKeysResponse response = this.systemApi.getApiKeys(siteId);
+
+    // then
+    assertEquals(0, response.getApiKeys().size());
   }
 }

@@ -42,6 +42,8 @@ public final class DateUtil {
 
   /** Date Format. */
   public static final String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ssZ";
+  /** Date Form yyyy-mm-dd. */
+  public static final String DATE_FORMAT_YYYY_MM_DD = "yyyy-MM-dd";
 
   /**
    * Formats TZ String to start with '+' or '-'.
@@ -77,6 +79,18 @@ public final class DateUtil {
    */
   public static SimpleDateFormat getIsoDateFormatter() {
     SimpleDateFormat df = new SimpleDateFormat(DATE_FORMAT);
+    TimeZone tz = TimeZone.getTimeZone("UTC");
+    df.setTimeZone(tz);
+    return df;
+  }
+
+  /**
+   * String to ISO Standard format.
+   * 
+   * @return {@link SimpleDateFormat}
+   */
+  public static SimpleDateFormat getYyyyMmDdFormatter() {
+    SimpleDateFormat df = new SimpleDateFormat(DATE_FORMAT_YYYY_MM_DD);
     TimeZone tz = TimeZone.getTimeZone("UTC");
     df.setTimeZone(tz);
     return df;

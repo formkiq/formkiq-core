@@ -24,7 +24,6 @@
 package com.formkiq.plugins.tagschema;
 
 import java.util.Collection;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
@@ -40,17 +39,19 @@ public interface DocumentTagSchemaPlugin {
   /**
    * Add Composite Keys.
    * 
+   * @param <T> {@link TagSchemaInterface}
+   * @param tagSchema {@link TagSchemaInterface}
    * @param siteId {@link String}
-   * @param item {@link DocumentItem}
+   * @param documentId {@link String}
    * @param tags {@link Collection} {@link DocumentTag}
    * @param userId {@link String}
    * @param validateRequiredTags boolean
    * @param errors {@link Collection} {@link ValidationError}
    * @return {@link Collection} {@link DocumentTag}
    */
-  Collection<DocumentTag> addCompositeKeys(String siteId, DocumentItem item,
-      Collection<DocumentTag> tags, String userId, boolean validateRequiredTags,
-      Collection<ValidationError> errors);
+  <T extends TagSchemaInterface> Collection<DocumentTag> addCompositeKeys(T tagSchema,
+      String siteId, String documentId, Collection<DocumentTag> tags, String userId,
+      boolean validateRequiredTags, Collection<ValidationError> errors);
 
   /**
    * Create Multi-Value {@link SearchTagCriteria}.
@@ -61,6 +62,16 @@ public interface DocumentTagSchemaPlugin {
   SearchTagCriteria createMultiTagSearch(SearchQuery query);
 
   /**
+   * Get Tag Schema.
+   * 
+   * @param <T> {@link TagSchemaInterface}
+   * @param siteId {@link String}
+   * @param tagSchemaId {@link String}
+   * @return {@link TagSchemaInterface}
+   */
+  <T extends TagSchemaInterface> T getTagSchema(String siteId, String tagSchemaId);
+
+  /**
    * Is TagSchema Active.
    * 
    * @return boolean
@@ -68,24 +79,33 @@ public interface DocumentTagSchemaPlugin {
   boolean isActive();
 
   /**
-   * Delete {@link DocumentTag} Event.
+   * Update In Use.
    * 
    * @param siteId {@link String}
-   * @param item {@link DocumentItem}
+   * @param tagSchema {@link TagSchemaInterface}
+   * @param <T> {@link TagSchemaInterface}
+   */
+  <T extends TagSchemaInterface> void updateInUse(String siteId, T tagSchema);
+
+  /**
+   * Delete {@link DocumentTag} Event.
+   * 
+   * @param tagSchema {@link TagSchemaInterface}
+   * @param <T> {@link TagSchemaInterface}
    * @param tags {@link Collection} {@link String}
    * @return {@link Collection} {@link ValidationError}
    */
-  Collection<ValidationError> validateRemoveTags(String siteId, DocumentItem item,
+  <T extends TagSchemaInterface> Collection<ValidationError> validateRemoveTags(T tagSchema,
       Collection<String> tags);
 
   /**
    * Replace {@link DocumentTag} Event.
    * 
-   * @param siteId {@link String}
-   * @param item {@link DocumentItem}
+   * @param tagSchema {@link TagSchemaInterface}
+   * @param <T> {@link TagSchemaInterface}
    * @param tags {@link Collection} {@link DocumentTag}
    * @return {@link Collection} {@link ValidationError}
    */
-  Collection<ValidationError> validateReplaceTags(String siteId, DocumentItem item,
+  <T extends TagSchemaInterface> Collection<ValidationError> validateReplaceTags(T tagSchema,
       Collection<DocumentTag> tags);
 }

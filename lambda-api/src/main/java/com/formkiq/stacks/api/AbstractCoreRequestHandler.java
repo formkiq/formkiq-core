@@ -78,6 +78,7 @@ import com.formkiq.stacks.api.handler.DocumentsCompressRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsFulltextRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsFulltextRequestTagsKeyHandler;
 import com.formkiq.stacks.api.handler.DocumentsFulltextRequestTagsKeyValueHandler;
+import com.formkiq.stacks.api.handler.DocumentsIdAccessAttributesRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsIdUploadRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsOptionsRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsRequestHandler;
@@ -95,14 +96,21 @@ import com.formkiq.stacks.api.handler.IndicesSearchRequestHandler;
 import com.formkiq.stacks.api.handler.OnlyOfficeEditRequestHandler;
 import com.formkiq.stacks.api.handler.OnlyOfficeNewRequestHandler;
 import com.formkiq.stacks.api.handler.OnlyOfficeSaveRequestHandler;
+import com.formkiq.stacks.api.handler.OpaConfigurationRequestHandler;
+import com.formkiq.stacks.api.handler.OpaIdConfigurationRequestHandler;
 import com.formkiq.stacks.api.handler.PrivateWebhooksRequestHandler;
 import com.formkiq.stacks.api.handler.PublicDocumentsRequestHandler;
 import com.formkiq.stacks.api.handler.PublicWebhooksRequestHandler;
 import com.formkiq.stacks.api.handler.QueueDocumentsRequestHandler;
 import com.formkiq.stacks.api.handler.QueueIdRequestHandler;
 import com.formkiq.stacks.api.handler.QueuesRequestHandler;
+import com.formkiq.stacks.api.handler.RulesetsIdRequestHandler;
+import com.formkiq.stacks.api.handler.RulesetsRequestHandler;
+import com.formkiq.stacks.api.handler.RulesetsRuleIdRequestHandler;
+import com.formkiq.stacks.api.handler.RulesetsRuleRequestHandler;
 import com.formkiq.stacks.api.handler.SearchFulltextRequestHandler;
 import com.formkiq.stacks.api.handler.SearchRequestHandler;
+import com.formkiq.stacks.api.handler.SitesOpenSearchIndexRequestHandler;
 import com.formkiq.stacks.api.handler.SitesRequestHandler;
 import com.formkiq.stacks.api.handler.TagSchemasIdRequestHandler;
 import com.formkiq.stacks.api.handler.TagSchemasRequestHandler;
@@ -147,6 +155,17 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
   /** Url Class Map. */
   private static final Map<String, ApiGatewayRequestHandler> URL_MAP = new HashMap<>();
 
+  private static void addAccessControlEndpoints() {
+    addRequestHandler(new OpaConfigurationRequestHandler());
+    addRequestHandler(new OpaIdConfigurationRequestHandler());
+    addRequestHandler(new DocumentsIdAccessAttributesRequestHandler());
+  }
+
+  private static void addEsignatureEndpoints() {
+    addRequestHandler(new EsignatureDocusignDocumentIdRequestHandler());
+    addRequestHandler(new EsignatureDocusignConfigRequestHandler());
+  }
+
   private static void addGroupUsersEndpoints() {
     addRequestHandler(new GroupsRequestHandler());
     addRequestHandler(new GroupsUsersRequestHandler());
@@ -165,6 +184,22 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
    */
   public static void addRequestHandler(final ApiGatewayRequestHandler handler) {
     URL_MAP.put(handler.getRequestUrl(), handler);
+  }
+
+  private static void addRulesetsEndpoints() {
+    addRequestHandler(new RulesetsRequestHandler());
+    addRequestHandler(new RulesetsIdRequestHandler());
+    addRequestHandler(new RulesetsRuleRequestHandler());
+    addRequestHandler(new RulesetsRuleIdRequestHandler());
+  }
+
+  private static void addSystemEndpoints() {
+    addRequestHandler(new VersionRequestHandler());
+    addRequestHandler(new SitesRequestHandler());
+    addRequestHandler(new ConfigurationRequestHandler());
+    addRequestHandler(new ConfigurationApiKeysRequestHandler());
+    addRequestHandler(new ConfigurationApiKeyRequestHandler());
+    addRequestHandler(new SitesOpenSearchIndexRequestHandler());
   }
 
   private static void addUserActivitiesEndpoints() {
@@ -186,11 +221,9 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
    */
   private static void buildUrlMap() {
     URL_MAP.put("options", new DocumentsOptionsRequestHandler());
-    addRequestHandler(new VersionRequestHandler());
-    addRequestHandler(new SitesRequestHandler());
-    addRequestHandler(new ConfigurationRequestHandler());
-    addRequestHandler(new ConfigurationApiKeysRequestHandler());
-    addRequestHandler(new ConfigurationApiKeyRequestHandler());
+    addSystemEndpoints();
+    addAccessControlEndpoints();
+
     addRequestHandler(new DocumentVersionsRequestHandler());
     addRequestHandler(new DocumentVersionsKeyRequestHandler());
     addRequestHandler(new DocumentPermissionsRequestHandler());
@@ -225,13 +258,13 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new IndicesFolderMoveRequestHandler());
     addRequestHandler(new IndicesRequestHandler());
     addRequestHandler(new IndicesSearchRequestHandler());
-    addRequestHandler(new EsignatureDocusignDocumentIdRequestHandler());
-    addRequestHandler(new EsignatureDocusignConfigRequestHandler());
+    addEsignatureEndpoints();
     addRequestHandler(new UpdateDocumentMatchingRequestHandler());
     addOnlyOfficeEndpoints();
     addGroupUsersEndpoints();
     addWorkflowEndpoints();
     addUserActivitiesEndpoints();
+    addRulesetsEndpoints();
   }
 
   /**

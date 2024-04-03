@@ -38,19 +38,20 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.client.api.DocumentActionsApi;
 import com.formkiq.client.api.DocumentTagsApi;
 import com.formkiq.client.api.SystemManagementApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAction;
-import com.formkiq.client.model.AddAction.TypeEnum;
 import com.formkiq.client.model.AddActionParameters;
 import com.formkiq.client.model.AddActionParameters.EngineEnum;
 import com.formkiq.client.model.AddDocumentActionsRequest;
+import com.formkiq.client.model.DocumentActionStatus;
+import com.formkiq.client.model.DocumentActionType;
 import com.formkiq.client.model.GetDocumentTagsResponse;
 import com.formkiq.client.model.UpdateConfigurationRequest;
-import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
 import software.amazon.awssdk.utils.IoUtils;
 
@@ -73,12 +74,12 @@ public class ChatGptRequestTest extends AbstractAwsIntegrationTest {
     }
 
     try {
-      ApiClient apiClient = getApiClients(null).get(0);
+      String siteId = SiteIdKeyGenerator.DEFAULT_SITE_ID;
+      ApiClient apiClient = getApiClients(siteId).get(0);
       SystemManagementApi api = new SystemManagementApi(apiClient);
 
-      api.updateConfiguration(
-          new UpdateConfigurationRequest().chatGptApiKey(System.getProperty("testchatgptapikey")),
-          null);
+      api.updateConfiguration(siteId,
+          new UpdateConfigurationRequest().chatGptApiKey(System.getProperty("testchatgptapikey")));
     } catch (ApiException e) {
       throw new IOException(e);
     }
@@ -108,12 +109,13 @@ public class ChatGptRequestTest extends AbstractAwsIntegrationTest {
 
       // when
       api.addDocumentActions(documentId, siteId,
-          new AddDocumentActionsRequest().actions(Arrays.asList(new AddAction().type(TypeEnum.OCR),
-              new AddAction().type(TypeEnum.DOCUMENTTAGGING).parameters(
-                  new AddActionParameters().engine(EngineEnum.CHATGPT).tags(actionTags)))));
+          new AddDocumentActionsRequest()
+              .actions(Arrays.asList(new AddAction().type(DocumentActionType.OCR),
+                  new AddAction().type(DocumentActionType.DOCUMENTTAGGING).parameters(
+                      new AddActionParameters().engine(EngineEnum.CHATGPT).tags(actionTags)))));
 
       // then
-      waitForActions(client, siteId, documentId, ActionStatus.COMPLETE.name());
+      waitForActions(client, siteId, documentId, Arrays.asList(DocumentActionStatus.COMPLETE));
 
       DocumentTagsApi tagsApi = new DocumentTagsApi(client);
 

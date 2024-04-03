@@ -39,18 +39,21 @@ public interface ActionsValidator {
   /**
    * Validates {@link Action}.
    * 
+   * @param siteId {@link String}
    * @param action {@link Action}
    * @param configs {@link DynamicObject}
    * @return {@link Collection} {@link ValidationError}
    */
-  Collection<ValidationError> validation(Action action, DynamicObject configs);
+  Collection<ValidationError> validation(String siteId, Action action, DynamicObject configs);
 
   /**
    * Validates {@link List} {@link Action}.
    * 
+   * @param siteId {@link String}
    * @param action {@link Action}
    * @param configs {@link DynamicObject}
    * @return {@link List} {@link Collection} {@link ValidationError}
    */
-  List<Collection<ValidationError>> validation(List<Action> action, DynamicObject configs);
+  List<Collection<ValidationError>> validation(String siteId, List<Action> action,
+      DynamicObject configs);
 }

@@ -70,10 +70,10 @@ public class FoldersRequestHandler implements ApiGatewayRequestHandler, ApiGatew
       path += "/";
     }
 
-    String siteId = authorization.siteId();
+    String siteId = authorization.getSiteId();
     FolderIndexProcessor indexProcessor = awsservice.getExtension(FolderIndexProcessor.class);
     List<Map<String, String>> list =
-        indexProcessor.createFolders(siteId, path, authorization.username());
+        indexProcessor.createFolders(siteId, path, authorization.getUsername());
 
     ApiMapResponse resp = new ApiMapResponse(
         Map.of("message", "created folder", "indexKey", list.get(list.size() - 1).get("indexKey")));
@@ -90,7 +90,7 @@ public class FoldersRequestHandler implements ApiGatewayRequestHandler, ApiGatew
     int limit = pagination != null ? pagination.getLimit() : getLimit(logger, event);
     PaginationMapToken ptoken = pagination != null ? pagination.getStartkey() : null;
 
-    String siteId = authorization.siteId();
+    String siteId = authorization.getSiteId();
     DocumentSearchService documentSearchService =
         awsservice.getExtension(DocumentSearchService.class);
 

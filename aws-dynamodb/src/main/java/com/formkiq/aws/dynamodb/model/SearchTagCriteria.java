@@ -30,18 +30,21 @@ import com.formkiq.graalvm.annotations.Reflectable;
 @Reflectable
 public class SearchTagCriteria {
 
-  /** Search Tag Key. */
+  /** Search Tag Value Begins With. */
   @Reflectable
-  private String key;
+  private String beginsWith;
   /** Search Tag Value Equals. */
   @Reflectable
   private String eq;
   /** Search Tag Values May Equal. */
   @Reflectable
   private Collection<String> eqOr;
-  /** Search Tag Value Begins With. */
+  /** Search Tag Key. */
   @Reflectable
-  private String beginsWith;
+  private String key;
+  /** Range Values. */
+  @Reflectable
+  private SearchTagCriteriaRange range;
 
   /** constructor. */
   public SearchTagCriteria() {}
@@ -132,6 +135,26 @@ public class SearchTagCriteria {
    */
   public SearchTagCriteria key(final String s) {
     this.key = s;
+    return this;
+  }
+
+  /**
+   * Get Between values.
+   * 
+   * @return {@link SearchTagCriteriaRange}
+   */
+  public SearchTagCriteriaRange range() {
+    return this.range;
+  }
+
+  /**
+   * Set Range Values.
+   * 
+   * @param rangeCriteria {@link SearchTagCriteriaRange}
+   * @return {@link SearchTagCriteria}
+   */
+  public SearchTagCriteria range(final SearchTagCriteriaRange rangeCriteria) {
+    this.range = rangeCriteria;
     return this;
   }
 }

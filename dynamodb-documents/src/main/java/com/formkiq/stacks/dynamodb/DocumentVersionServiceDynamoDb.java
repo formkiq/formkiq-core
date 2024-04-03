@@ -36,6 +36,7 @@ import java.util.Map;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
+import com.formkiq.aws.dynamodb.QueryConfig;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.graalvm.annotations.Reflectable;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -87,7 +88,8 @@ public class DocumentVersionServiceDynamoDb implements DocumentVersionService {
 
     do {
 
-      QueryResponse response = db.query(AttributeValue.fromS(pk), startkey, MAX_RESULTS);
+      QueryResponse response =
+          db.query(new QueryConfig(), AttributeValue.fromS(pk), startkey, MAX_RESULTS);
 
       List<Map<String, AttributeValue>> results = response.items();
 

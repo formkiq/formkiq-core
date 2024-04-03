@@ -52,6 +52,7 @@ import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.services.lambda.services.CacheService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
+import com.formkiq.plugins.tagschema.TagSchemaInterface;
 import com.formkiq.stacks.api.ApiDocumentTagItemResponse;
 import com.formkiq.stacks.api.ApiDocumentTagsItemResponse;
 import com.formkiq.stacks.dynamodb.DocumentService;
@@ -83,7 +84,7 @@ public class DocumentTagsRequestHandler
 
     PaginationMapToken ptoken = pagination != null ? pagination.getStartkey() : null;
 
-    String siteId = authorization.siteId();
+    String siteId = authorization.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
     verifyDocument(awsservice, event, siteId, documentId);
 
@@ -153,7 +154,7 @@ public class DocumentTagsRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    final String siteId = authorization.siteId();
+    final String siteId = authorization.getSiteId();
     final String documentId = event.getPathParameters().get("documentId");
 
     DocumentTags tags = fromBodyToObject(event, DocumentTags.class);
@@ -176,7 +177,7 @@ public class DocumentTagsRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    final String siteId = authorization.siteId();
+    final String siteId = authorization.getSiteId();
     final String documentId = event.getPathParameters().get("documentId");
 
     DocumentTag tag = fromBodyToObject(event, DocumentTag.class);
@@ -228,7 +229,7 @@ public class DocumentTagsRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    final String siteId = authorization.siteId();
+    final String siteId = authorization.getSiteId();
     final String documentId = event.getPathParameters().get("documentId");
 
     DocumentTags tags = fromBodyToObject(event, DocumentTags.class);
@@ -258,21 +259,35 @@ public class DocumentTagsRequestHandler
    * @param userId {@link String}
    * @return {@link Collection} {@link DocumentTag}
    * @throws ValidationException ValidationException
+   * @throws BadException BadException
    */
   private Collection<DocumentTag> tagSchemaValidation(final AwsServiceCache coreServices,
       final String siteId, final DocumentTags tags, final DocumentItem item, final String userId)
-      throws ValidationException {
+      throws ValidationException, BadException {
+
+    Collection<DocumentTag> newTags = Collections.emptyList();
 
     DocumentTagSchemaPlugin plugin = coreServices.getExtension(DocumentTagSchemaPlugin.class);
 
-    Collection<ValidationError> errors = new ArrayList<>();
+    if (item.getTagSchemaId() != null) {
 
-    Collection<DocumentTag> newTags =
-        plugin.addCompositeKeys(siteId, item, tags.getTags(), userId, false, errors);
+      Collection<ValidationError> errors = new ArrayList<>();
 
-    if (!errors.isEmpty()) {
-      throw new ValidationException(errors);
+      TagSchemaInterface tagSchema = plugin.getTagSchema(siteId, item.getTagSchemaId());
+
+      if (tagSchema == null) {
+        throw new BadException("TagschemaId " + item.getTagSchemaId() + " not found");
+      }
+
+      plugin.updateInUse(siteId, tagSchema);
+      newTags = plugin.addCompositeKeys(tagSchema, siteId, item.getDocumentId(), tags.getTags(),
+          userId, false, errors);
+
+      if (!errors.isEmpty()) {
+        throw new ValidationException(errors);
+      }
     }
+
     return newTags;
   }
 
@@ -287,7 +302,7 @@ public class DocumentTagsRequestHandler
   private String updateTagsMetadata(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final DocumentTags tags) {
 
-    String userId = authorization.username();
+    String userId = authorization.getUsername();
 
     tags.getTags().forEach(t -> {
       t.setType(DocumentTagType.USERDEFINED);

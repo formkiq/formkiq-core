@@ -39,9 +39,9 @@ dependencies {
 	testImplementation project(':dynamodb-documents')
 	testImplementation project(':fkq-test-utils')
 	
-	testImplementation group: 'software.amazon.awssdk', name: 'dynamodb', version: '2.20.140'
+	testImplementation group: 'software.amazon.awssdk', name: 'dynamodb', version: '2.23.12'
 	
-	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.10.0'
+	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.10.1'
     testImplementation group: 'com.google.code.gson', name: 'gson', version: '2.10.1'
 	testImplementation group: 'org.java-websocket', name: 'Java-WebSocket', version: '1.5.3'
 	testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.7'

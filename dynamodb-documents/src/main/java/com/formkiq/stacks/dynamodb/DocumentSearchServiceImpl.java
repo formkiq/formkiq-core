@@ -62,6 +62,7 @@ import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
+import com.formkiq.aws.dynamodb.model.SearchTagCriteriaRange;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -262,11 +263,38 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
     String expression = GSI2_PK + " = :pk and begins_with(" + GSI2_SK + ", :sk)";
 
     Map<String, AttributeValue> values = new HashMap<String, AttributeValue>();
-    values.put(":pk",
-        AttributeValue.builder().s(createDatabaseKey(siteId, PREFIX_TAG + key)).build());
-    values.put(":sk", AttributeValue.builder().s(value).build());
+    values.put(":pk", AttributeValue.fromS(createDatabaseKey(siteId, PREFIX_TAG + key)));
+    values.put(":sk", AttributeValue.fromS(value));
 
     QueryRequest q = createQueryRequest(GSI2, expression, values, token, maxresults, Boolean.FALSE,
+        projectionExpression);
+
+    return searchForDocuments(q, siteId, query);
+  }
+
+  /**
+   * Find Document that match tagKey & tagValue.
+   *
+   * @param siteId DynamoDB siteId.
+   * @param query {@link SearchQuery}
+   * @param key {@link String}
+   * @param range {@link List} {@link String}
+   * @param token {@link PaginationMapToken}
+   * @param maxresults int
+   * @param projectionExpression {@link String}
+   * @return {@link PaginationResults}
+   */
+  private PaginationResults<DynamicDocumentItem> findDocumentsTagRange(final String siteId,
+      final SearchQuery query, final String key, final SearchTagCriteriaRange range,
+      final PaginationMapToken token, final int maxresults, final String projectionExpression) {
+
+    String expression = GSI2_PK + " = :pk and " + GSI2_SK + " between :start and :end";
+    Map<String, AttributeValue> values = new HashMap<String, AttributeValue>();
+    values.put(":pk", AttributeValue.fromS(createDatabaseKey(siteId, PREFIX_TAG + key)));
+    values.put(":start", AttributeValue.fromS(range.getStart()));
+    values.put(":end", AttributeValue.fromS(range.getEnd()));
+
+    QueryRequest q = createQueryRequest(GSI2, expression, values, token, maxresults, Boolean.TRUE,
         projectionExpression);
 
     return searchForDocuments(q, siteId, query);
@@ -553,6 +581,9 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
       } else if (search.beginsWith() != null) {
         result = findDocumentsTagStartWith(siteId, query, key, search.beginsWith(), token,
             maxresults, projectionExpression);
+      } else if (search.range() != null) {
+        result = findDocumentsTagRange(siteId, query, key, search.range(), token, maxresults,
+            projectionExpression);
       } else {
         result =
             findDocumentsWithTag(siteId, query, key, null, token, maxresults, projectionExpression);
@@ -591,11 +622,12 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
     String projectionExpression = q.projectionExpression();
     QueryResponse result = this.dbClient.query(q);
 
+    List<String> documentIds = result.items().stream().map(i -> i.get("documentId").s()).distinct()
+        .collect(Collectors.toList());
+
     Map<String, DocumentTag> tags = transformToDocumentTagMap(result);
 
     PaginationResults<DynamicDocumentItem> ret = null;
-
-    List<String> documentIds = new ArrayList<>(tags.keySet());
 
     if (projectionExpression == null || !"documentId".equals(projectionExpression)) {
 

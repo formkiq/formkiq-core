@@ -38,7 +38,7 @@ import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.ApiKeysService;
 
-/** {@link ApiGatewayRequestHandler} for "/configuration/apiKeys". */
+/** {@link ApiGatewayRequestHandler} for "/sites/{siteId}/apiKeys/{apiKey}". */
 public class ConfigurationApiKeyRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
@@ -51,11 +51,13 @@ public class ConfigurationApiKeyRequestHandler
   @Override
   public void beforeDelete(final LambdaLogger logger, final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
-    checkPermissions(authorization);
+    checkPermissions(event, authorization);
   }
 
-  private void checkPermissions(final ApiAuthorization authorization) throws UnauthorizedException {
-    if (!authorization.permissions().contains(ApiPermission.ADMIN)) {
+  private void checkPermissions(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization) throws UnauthorizedException {
+    String siteId = event.getPathParameters().get("siteId");
+    if (!authorization.getPermissions(siteId).contains(ApiPermission.ADMIN)) {
       throw new UnauthorizedException("user is unauthorized");
     }
   }
@@ -65,7 +67,7 @@ public class ConfigurationApiKeyRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    String siteId = authorization.siteId();
+    String siteId = event.getPathParameters().get("siteId");
     String apiKey = event.getPathParameters().get("apiKey");
 
     ApiKeysService apiKeysService = awsservice.getExtension(ApiKeysService.class);
@@ -81,6 +83,6 @@ public class ConfigurationApiKeyRequestHandler
 
   @Override
   public String getRequestUrl() {
-    return "/configuration/apiKeys/{apiKey}";
+    return "/sites/{siteId}/apiKeys/{apiKey}";
   }
 }

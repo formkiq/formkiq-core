@@ -24,6 +24,7 @@
 package com.formkiq.aws.services.lambda;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -45,37 +46,21 @@ public class ApiAuthorization {
   private String defaultSiteId;
   /** {@link ApiPermission} by SiteId. */
   private Map<String, Collection<ApiPermission>> permissionsBySiteId = new HashMap<>();
-
+  /** Authorization Roles. */
+  private Collection<String> roles;
   /** {@link String}. */
   private String username;
-
-  /**
-   * Return Access Summary.
-   * 
-   * @return {@link String}
-   */
-  public String accessSummary() {
-    List<String> sites = siteIds();
-
-    String s =
-        this.permissionsBySiteId.keySet().stream().sorted()
-            .map(e -> e + " ("
-                + this.permissionsBySiteId.get(e).stream().map(p -> p.name())
-                    .sorted(String::compareTo).collect(Collectors.joining(","))
-                + ")")
-            .collect(Collectors.joining(", "));
-
-    return !sites.isEmpty() ? "groups: " + s : "no groups";
-  }
 
   /**
    * Add Object to Cache.
    * 
    * @param key {@link String}
    * @param o {@link Object}
+   * @return {@link ApiAuthorization}
    */
-  public void addCacheObject(final String key, final Object o) {
+  public ApiAuthorization addCacheObject(final String key, final Object o) {
     this.cache.put(key, o);
+    return this;
   }
 
   /**
@@ -107,6 +92,25 @@ public class ApiAuthorization {
   }
 
   /**
+   * Return Access Summary.
+   * 
+   * @return {@link String}
+   */
+  public String getAccessSummary() {
+    List<String> sites = getSiteIds();
+
+    String s =
+        this.permissionsBySiteId.keySet().stream().sorted()
+            .map(e -> e + " ("
+                + this.permissionsBySiteId.get(e).stream().map(p -> p.name())
+                    .sorted(String::compareTo).collect(Collectors.joining(","))
+                + ")")
+            .collect(Collectors.joining(", "));
+
+    return !sites.isEmpty() ? "groups: " + s : "no groups";
+  }
+
+  /**
    * Get Object from Cache.
    * 
    * @param <T> Type of Object.
@@ -123,8 +127,8 @@ public class ApiAuthorization {
    * 
    * @return {@link Collection} {@link ApiPermission}
    */
-  public Collection<ApiPermission> permissions() {
-    return permissions(this.defaultSiteId);
+  public Collection<ApiPermission> getPermissions() {
+    return getPermissions(this.defaultSiteId);
   }
 
   /**
@@ -133,9 +137,37 @@ public class ApiAuthorization {
    * @param siteId {@link String}
    * @return {@link Collection} {@link ApiPermission}
    */
-  public Collection<ApiPermission> permissions(final String siteId) {
-    return this.permissionsBySiteId.containsKey(siteId) ? this.permissionsBySiteId.get(siteId)
-        : Collections.emptyList();
+  public Collection<ApiPermission> getPermissions(final String siteId) {
+    Collection<ApiPermission> permissions = this.permissionsBySiteId.get(siteId);
+
+    if (permissions == null) {
+
+      permissions = Collections.emptyList();
+
+      if (hasAdminPermission()) {
+
+        permissions =
+            Arrays.asList(ApiPermission.values()).stream().sorted().collect(Collectors.toList());
+
+      } else if (!this.permissionsBySiteId.isEmpty()) {
+        long count = this.permissionsBySiteId.values().stream()
+            .filter(t -> t.contains(ApiPermission.READ)).count();
+        if (count == this.permissionsBySiteId.size()) {
+          permissions = Arrays.asList(ApiPermission.READ);
+        }
+      }
+    }
+
+    return permissions;
+  }
+
+  /**
+   * Get Roles.
+   * 
+   * @return {@link Collection} {@link String}
+   */
+  public Collection<String> getRoles() {
+    return this.roles;
   }
 
   /**
@@ -143,8 +175,44 @@ public class ApiAuthorization {
    * 
    * @return {@link String}
    */
-  public String siteId() {
+  public String getSiteId() {
     return this.defaultSiteId;
+  }
+
+  /**
+   * Get SiteIds with Permissions.
+   * 
+   * @return {@link List} {@link String}
+   */
+  public List<String> getSiteIds() {
+    List<String> siteIds = new ArrayList<>(this.permissionsBySiteId.keySet());
+    Collections.sort(siteIds);
+    return siteIds;
+  }
+
+  /**
+   * Get Calling Username.
+   * 
+   * @return {@link String}
+   */
+  public String getUsername() {
+    return this.username;
+  }
+
+  private boolean hasAdminPermission() {
+    return this.permissionsBySiteId.values().stream()
+        .anyMatch(p -> p.contains(ApiPermission.ADMIN));
+  }
+
+  /**
+   * Set Roles.
+   * 
+   * @param apiRoles {@link Collection} {@link String}
+   * @return {@link ApiAuthorization}
+   */
+  public ApiAuthorization roles(final Collection<String> apiRoles) {
+    this.roles = apiRoles;
+    return this;
   }
 
   /**
@@ -156,26 +224,6 @@ public class ApiAuthorization {
   public ApiAuthorization siteId(final String siteId) {
     this.defaultSiteId = siteId;
     return this;
-  }
-
-  /**
-   * Get SiteIds with Permissions.
-   * 
-   * @return {@link List} {@link String}
-   */
-  public List<String> siteIds() {
-    List<String> siteIds = new ArrayList<>(this.permissionsBySiteId.keySet());
-    Collections.sort(siteIds);
-    return siteIds;
-  }
-
-  /**
-   * Get Calling Username.
-   * 
-   * @return {@link String}
-   */
-  public String username() {
-    return this.username;
   }
 
   /**

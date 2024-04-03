@@ -50,6 +50,16 @@ Resources:
       LayerName: 
         Fn::Sub: "${AWS::StackName}-${AppEnvironment}-tesseract-layer"
       ContentUri: ./layer-tesseract-5.3.1.zip
+
+  OcrProcessorApiInvokePermission:
+    Type: "AWS::Lambda::Permission"
+    DependsOn:
+    - OcrProcessor
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: 
+        Ref: OcrProcessor
+      Principal: apigateway.amazonaws.com
       
   OcrProcessor:
     Type: AWS::Serverless::Function
@@ -80,6 +90,8 @@ Resources:
             Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"
           DOCUMENTS_S3_BUCKET: 
             Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket}}"
+          STAGE_DOCUMENTS_S3_BUCKET:
+            Fn::Sub: '{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsStageS3Bucket}}'
           OCR_S3_BUCKET:
             Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/OcrBucket}}"
           SNS_DOCUMENT_EVENT: 
@@ -108,7 +120,7 @@ Resources:
     Properties:
       Description: "Lambda for processing records for OCR"
       Name: 
-        Fn::Sub: "/formkiq/${AppEnvironment}/lambda/OcrProcessor"
+        Fn::Sub: "/formkiq/${AppEnvironment}/lambda/OcrTesseractProcessor"
       Type: String
       Value:
         Ref: OcrProcessor
@@ -145,6 +157,16 @@ Resources:
               - ''
               - - Fn::Sub: "arn:${Partition}:s3:::"
                 - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket}}"
+                - "/*"
+          - Effect: Allow
+            Action:
+            - s3:GetObject
+            - s3:PutObject
+            Resource:
+              Fn::Join:
+              - ''
+              - - Fn::Sub: "arn:${Partition}:s3:::"
+                - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsStageS3Bucket}}"
                 - "/*"
           - Effect: Allow
             Action:
@@ -211,3 +233,13 @@ Resources:
       Path: /
       ManagedPolicyArns:
       - Fn::Sub: "arn:${Partition}:iam::aws:policy/AWSXRayDaemonWriteAccess"
+
+Outputs:
+  OcrProcessor:
+    Value:
+      Ref: OcrProcessor
+  OcrProcessorArn:
+    Value:
+      Fn::GetAtt:
+        - OcrProcessor
+        - Arn

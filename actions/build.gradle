@@ -16,8 +16,8 @@ dependencies {
 	testImplementation project(':dynamodb-documents')
 	testImplementation project(':fkq-test-utils')
 	testImplementation project(':fkq-plugins')
-	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.10.0'
-	testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.19.0'	
+	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.10.1'
+	testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.19.4'	
 }
 
 test {

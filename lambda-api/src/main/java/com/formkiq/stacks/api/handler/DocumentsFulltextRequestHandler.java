@@ -89,7 +89,7 @@ public class DocumentsFulltextRequestHandler
 
     TypeSenseService typeSenseService = checkTypesenseInstalled(awsservice);
 
-    String siteId = authorization.siteId();
+    String siteId = authorization.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
 
     typeSenseService.deleteDocument(siteId, documentId);
@@ -104,7 +104,7 @@ public class DocumentsFulltextRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    String siteId = authorization.siteId();
+    String siteId = authorization.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
 
     TypeSenseService typeSenseService = checkTypesenseInstalled(awsservice);
@@ -155,7 +155,7 @@ public class DocumentsFulltextRequestHandler
 
     TypeSenseService typeSenseService = checkTypesenseInstalled(awsservice);
 
-    String siteId = authorization.siteId();
+    String siteId = authorization.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
 
     Map<String, Object> body = fromBodyToMap(event);
@@ -179,7 +179,7 @@ public class DocumentsFulltextRequestHandler
 
     TypeSenseService typeSenseService = checkTypesenseInstalled(awsservice);
 
-    String siteId = authorization.siteId();
+    String siteId = authorization.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
 
     Map<String, Object> body = fromBodyToMap(event);

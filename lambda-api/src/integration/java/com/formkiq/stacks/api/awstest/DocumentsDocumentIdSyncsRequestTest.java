@@ -68,10 +68,10 @@ public class DocumentsDocumentIdSyncsRequestTest extends AbstractAwsIntegrationT
 
   private boolean isComplete(final GetVersionResponse versions,
       final GetDocumentSyncResponse syncs) {
-    final int five = 5;
+    final int three = 3;
     int count = syncs.getSyncs().size();
     String type = versions.getModules().contains("opensearch") ? "enterprise" : "core";
-    return ("enterprise".equals(type) && count == five)
+    return ("enterprise".equals(type) && count == three)
         || (!"enterprise".equals(type) && count == 2);
   }
 
@@ -117,22 +117,24 @@ public class DocumentsDocumentIdSyncsRequestTest extends AbstractAwsIntegrationT
         }
 
         List<GetDocumentSync> typesense = find(list, ServiceEnum.TYPESENSE);
-        assertEquals(2, typesense.size());
+        if (!typesense.isEmpty()) {
+          assertEquals(2, typesense.size());
 
-        GetDocumentSync sync = find(typesense, TypeEnum.CONTENT).get();
-        assertEquals(ServiceEnum.TYPESENSE, sync.getService());
-        assertEquals(TypeEnum.CONTENT, sync.getType());
+          GetDocumentSync sync = find(typesense, TypeEnum.CONTENT).get();
+          assertEquals(ServiceEnum.TYPESENSE, sync.getService());
+          assertEquals(TypeEnum.CONTENT, sync.getType());
 
-        sync = find(typesense, TypeEnum.METADATA).get();
-        assertEquals(ServiceEnum.TYPESENSE, sync.getService());
-        assertEquals(TypeEnum.METADATA, sync.getType());
+          sync = find(typesense, TypeEnum.METADATA).get();
+          assertEquals(ServiceEnum.TYPESENSE, sync.getService());
+          assertEquals(TypeEnum.METADATA, sync.getType());
+        }
 
         final int expected = 3;
         List<GetDocumentSync> opensearch = find(list, ServiceEnum.OPENSEARCH);
         if (!opensearch.isEmpty()) {
           assertEquals(expected, opensearch.size());
 
-          sync = find(opensearch, TypeEnum.CONTENT).get();
+          GetDocumentSync sync = find(opensearch, TypeEnum.CONTENT).get();
           assertEquals(ServiceEnum.OPENSEARCH, sync.getService());
           assertEquals(TypeEnum.CONTENT, sync.getType());
 

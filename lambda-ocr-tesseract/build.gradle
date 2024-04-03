@@ -15,38 +15,28 @@ dependencies {
 	implementation project(':aws-dynamodb')
 	implementation project(':ocr')
 	implementation project(':fkq-lambda-services')
-	implementation("net.sourceforge.tess4j:tess4j:5.8.0")
+	implementation project(':fkq-lambda-core')
+	implementation("net.sourceforge.tess4j:tess4j:5.10.0")
 	implementation("org.slf4j:slf4j-simple:2.0.7")
 	implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.3'
 	implementation group: 'com.google.code.gson', name: 'gson', version: '2.10.1'
-	implementation group: 'net.java.dev.jna', name: 'jna', version: '5.13.0'
+	implementation group: 'net.java.dev.jna', name: 'jna', version: '5.14.0'
 	
-	implementation group: 'org.apache.poi', name: 'poi-ooxml', version: '5.2.4'
-	implementation group: 'org.apache.poi', name: 'poi-scratchpad', version: '5.2.4'
+	implementation group: 'org.apache.poi', name: 'poi-ooxml', version: '5.2.5'
+	implementation group: 'org.apache.poi', name: 'poi-scratchpad', version: '5.2.5'
 	
 	testImplementation project(':fkq-test-utils')
 
-	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.10.0'
-    testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.19.0'
-	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.19.0'
-    testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.19.0'
+	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.10.1'
+    testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.19.4'
+	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.19.4'
+    testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.19.4'
 }
-
-/*
-task buildZip(type: Zip) {
-	dependsOn check
-	archiveFileName = "${moduleName}.zip"
-    destinationDirectory = file("${buildDir}")
-    from compileJava
-    from processResources              
-    into('lib') {
-        from configurations.runtimeClasspath
-    }           
-}*/
 
 test {
   failFast = true
   useJUnitPlatform()
+  maxHeapSize = '2G'
 }
 
 task downloadZipFile(type: Download) {
@@ -78,29 +68,19 @@ task buildTesseractLayer(type: Zip) {
 	dependsOn updateTesseractFiles
     from "${buildDir}/tesseract"
     archiveFileName.set("layer-tesseract-5.3.1.zip")
-    destinationDirectory = file("${buildDir}/distributions/ocr")
+    destinationDirectory = file("${buildDir}/distributions/api")
 }
 
 task buildTemplate {
-	inputs.files("src/main/resources/cloudformation/template.yaml")
-	outputs.files("${buildDir}/distributions/ocr/template.yaml")
-  //dependsOn buildZip, buildTesseractLayer  
-  //outputs.upToDateWhen { false }
+	inputs.files("src/main/resources/cloudformation/template-ocr.yaml")
+	outputs.files("${buildDir}/distributions/api/template-ocr.yaml")
   
 	doLast {
 		copy {
 		  from layout.buildDirectory.dir("${buildDir}/../src/main/resources/cloudformation")
 		  include "template*"
-	      into "${buildDir}/distributions/ocr"
+	      into "${buildDir}/distributions/api"
 	    }
-	    //copy {
-		  //from layout.projectDirectory.file("${buildDir}/${moduleName}.zip")
-	      //into "${buildDir}/distributions/formkiq-core/sam/ocr-tesseract"
-	    //}
-	    //copy {
-		  //from layout.projectDirectory.file("${buildDir}/layer-tesseract-${tesseract_version}.zip")
-	      //into "${buildDir}/distributions/formkiq-core/sam/ocr-tesseract"
-	    //}
 	}
 }
 
@@ -109,7 +89,7 @@ distZip.dependsOn buildTemplate, buildTesseractLayer
 tasks.distTar.enabled = false
 
 distZip {
-    archiveFileName = "ocr/${moduleName}.zip"
+    archiveFileName = "api/${moduleName}.zip"
 }
 
 distributions {
@@ -124,5 +104,3 @@ distributions {
         }
     }
 }
-
-//build.dependsOn assembleTemplate

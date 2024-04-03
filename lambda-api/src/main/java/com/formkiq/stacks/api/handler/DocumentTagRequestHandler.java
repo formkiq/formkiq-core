@@ -46,6 +46,7 @@ import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
+import com.formkiq.plugins.tagschema.TagSchemaInterface;
 import com.formkiq.stacks.api.ApiDocumentTagItemResponse;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentTagValidator;
@@ -68,7 +69,7 @@ public class DocumentTagRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    String siteId = authorization.siteId();
+    String siteId = authorization.getSiteId();
     Map<String, String> map = event.getPathParameters();
     String documentId = map.get("documentId");
     String tagKey = map.get("tagKey");
@@ -85,10 +86,15 @@ public class DocumentTagRequestHandler
 
     List<String> tags = Arrays.asList(tagKey);
 
-    DocumentTagSchemaPlugin plugin = awsservice.getExtension(DocumentTagSchemaPlugin.class);
-    Collection<ValidationError> errors = plugin.validateRemoveTags(siteId, document, tags);
-    if (!errors.isEmpty()) {
-      throw new ValidationException(errors);
+    if (document.getTagSchemaId() != null) {
+
+      DocumentTagSchemaPlugin plugin = awsservice.getExtension(DocumentTagSchemaPlugin.class);
+      TagSchemaInterface tagSchema = plugin.getTagSchema(siteId, document.getTagSchemaId());
+
+      Collection<ValidationError> errors = plugin.validateRemoveTags(tagSchema, tags);
+      if (!errors.isEmpty()) {
+        throw new ValidationException(errors);
+      }
     }
 
     documentService.removeTags(siteId, documentId, tags);
@@ -106,7 +112,7 @@ public class DocumentTagRequestHandler
 
     String documentId = event.getPathParameters().get("documentId");
     String tagKey = event.getPathParameters().get("tagKey");
-    String siteId = authorization.siteId();
+    String siteId = authorization.getSiteId();
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
     DocumentItem item = documentService.findDocument(siteId, documentId);
@@ -171,7 +177,7 @@ public class DocumentTagRequestHandler
       throw new BadException("request body is invalid");
     }
 
-    String siteId = authorization.siteId();
+    String siteId = authorization.getSiteId();
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
@@ -179,9 +185,7 @@ public class DocumentTagRequestHandler
     throwIfNull(document, new DocumentNotFoundException(documentId));
 
     DocumentTag tag = documentService.findDocumentTag(siteId, documentId, tagKey);
-    if (tag == null) {
-      throw new NotFoundException("Tag " + tagKey + " not found.");
-    }
+    throwIfNull(document, new NotFoundException("Tag " + tagKey + " not found."));
 
     // if trying to change from tag VALUE to VALUES or VALUES to VALUE
     if (isTagValueTypeChanged(tag, value, values)) {
@@ -189,7 +193,7 @@ public class DocumentTagRequestHandler
     }
 
     Date now = new Date();
-    String userId = authorization.username();
+    String userId = authorization.getUsername();
 
     tag = new DocumentTag(null, tagKey, value, now, userId);
     if (values != null) {
@@ -198,17 +202,28 @@ public class DocumentTagRequestHandler
     }
 
     List<DocumentTag> tags = new ArrayList<>(Arrays.asList(tag));
-    Collection<ValidationError> errors = new ArrayList<>();
 
-    DocumentTagSchemaPlugin plugin = awsservice.getExtension(DocumentTagSchemaPlugin.class);
-    Collection<DocumentTag> newTags =
-        plugin.addCompositeKeys(siteId, document, tags, userId, false, errors);
+    if (document.getTagSchemaId() != null) {
+      Collection<ValidationError> errors = new ArrayList<>();
 
-    if (!errors.isEmpty()) {
-      throw new ValidationException(errors);
+      DocumentTagSchemaPlugin plugin = awsservice.getExtension(DocumentTagSchemaPlugin.class);
+      TagSchemaInterface tagSchema = plugin.getTagSchema(siteId, document.getTagSchemaId());
+
+      throwIfNull(tagSchema,
+          new BadException("TagschemaId " + document.getTagSchemaId() + " not found"));
+
+      plugin.updateInUse(siteId, tagSchema);
+
+      Collection<DocumentTag> newTags = plugin.addCompositeKeys(tagSchema, siteId,
+          document.getDocumentId(), tags, userId, false, errors);
+
+      if (!errors.isEmpty()) {
+        throw new ValidationException(errors);
+      }
+
+      tags.addAll(newTags);
     }
 
-    tags.addAll(newTags);
 
     validateTags(tags);
 

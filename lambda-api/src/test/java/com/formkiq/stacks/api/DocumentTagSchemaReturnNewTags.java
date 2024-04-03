@@ -27,11 +27,11 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
+import com.formkiq.plugins.tagschema.TagSchemaInterface;
 import com.formkiq.validation.ValidationError;
 
 /**
@@ -42,11 +42,12 @@ import com.formkiq.validation.ValidationError;
 public class DocumentTagSchemaReturnNewTags implements DocumentTagSchemaPlugin {
 
   @Override
-  public Collection<DocumentTag> addCompositeKeys(final String siteId, final DocumentItem item,
-      final Collection<DocumentTag> tags, final String userId, final boolean validateRequiredTags,
+  public <T extends TagSchemaInterface> Collection<DocumentTag> addCompositeKeys(final T tagSchema,
+      final String siteId, final String documentId, final Collection<DocumentTag> tags,
+      final String userId, final boolean validateRequiredTags,
       final Collection<ValidationError> errors) {
-    Collection<DocumentTag> list = Arrays
-        .asList(new DocumentTag(item.getDocumentId(), "testtag", "testvalue", new Date(), "joe"));
+    Collection<DocumentTag> list =
+        Arrays.asList(new DocumentTag(documentId, "testtag", "testvalue", new Date(), "joe"));
     return list;
   }
 
@@ -55,20 +56,32 @@ public class DocumentTagSchemaReturnNewTags implements DocumentTagSchemaPlugin {
     return query.tag();
   }
 
+  @SuppressWarnings("unchecked")
+  @Override
+  public <T extends TagSchemaInterface> T getTagSchema(final String siteId,
+      final String tagSchemaId) {
+    return (T) new TagSchemaInterface() {};
+  }
+
   @Override
   public boolean isActive() {
     return false;
   }
 
   @Override
-  public Collection<ValidationError> validateRemoveTags(final String siteId,
-      final DocumentItem item, final Collection<String> tags) {
+  public <T extends TagSchemaInterface> void updateInUse(final String siteId, final T tagSchema) {
+    // empty
+  }
+
+  @Override
+  public <T extends TagSchemaInterface> Collection<ValidationError> validateRemoveTags(
+      final T tagSchema, final Collection<String> tags) {
     return Collections.emptyList();
   }
 
   @Override
-  public Collection<ValidationError> validateReplaceTags(final String siteId,
-      final DocumentItem item, final Collection<DocumentTag> tags) {
+  public <T extends TagSchemaInterface> Collection<ValidationError> validateReplaceTags(
+      final T tagSchema, final Collection<DocumentTag> tags) {
     return Collections.emptyList();
   }
 }

@@ -171,6 +171,11 @@ public class Ocr implements DynamodbRecord<Ocr>, DbKeys {
   }
 
   @Override
+  public Map<String, AttributeValue> getDataAttributes() {
+    return null;
+  }
+
+  @Override
   public Ocr getFromAttributes(final String siteId, final Map<String, AttributeValue> attrs) {
 
     Ocr ocr = new Ocr().documentId(ss(attrs, "documentId")).userId(ss(attrs, "userId"))

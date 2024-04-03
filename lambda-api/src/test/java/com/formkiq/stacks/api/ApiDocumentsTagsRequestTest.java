@@ -365,6 +365,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       setPathParameter(event, "documentId", documentId);
 
       DocumentItem item = new DocumentItemDynamoDb(documentId, now, "joe");
+      item.setTagSchemaId("123");
       getDocumentService().saveDocument(siteId, item, null);
 
       DocumentTag tag = new DocumentTag(documentId, tagKey, tagKey, now, userId);
@@ -1331,6 +1332,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       final String documentId = UUID.randomUUID().toString();
 
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      item.setTagSchemaId("123");
       getDocumentService().saveDocument(siteId, item, null);
 
       ApiGatewayRequestEvent event =

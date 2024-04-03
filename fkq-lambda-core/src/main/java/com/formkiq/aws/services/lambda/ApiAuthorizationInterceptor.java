@@ -23,21 +23,12 @@
  */
 package com.formkiq.aws.services.lambda;
 
-import com.formkiq.module.lambdaservices.AwsServiceCache;
-
 /**
  * 
  * Interceptor to allow injecting extra actions into the {@link ApiAuthorization}.
  *
  */
 public interface ApiAuthorizationInterceptor {
-
-  /**
-   * Sets {@link AwsServiceCache}.
-   * 
-   * @param awsServices {@link AwsServiceCache}
-   */
-  void awsServiceCache(AwsServiceCache awsServices);
 
   /**
    * Update {@link ApiAuthorization} object.

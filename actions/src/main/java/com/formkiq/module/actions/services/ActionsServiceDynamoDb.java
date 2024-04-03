@@ -110,7 +110,8 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
   @Override
   public void deleteActions(final String siteId, final String documentId) {
 
-    List<Action> actions = queryActions(siteId, documentId, Arrays.asList(PK, SK, "type"), null);
+    List<Action> actions =
+        queryActions(siteId, documentId, Arrays.asList(PK, SK, "type"), null, null).getResults();
 
     for (Action action : actions) {
 
@@ -189,12 +190,19 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
 
   @Override
   public List<Action> getActions(final String siteId, final String documentId) {
-    return queryActions(siteId, documentId, null, null);
+    return queryActions(siteId, documentId, null, null, null).getResults();
+  }
+
+  @Override
+  public PaginationResults<Action> getActions(final String siteId, final String documentId,
+      final Map<String, AttributeValue> exclusiveStartKey, final int limit) {
+    return queryActions(siteId, documentId, null, exclusiveStartKey, Integer.valueOf(limit));
   }
 
   @Override
   public boolean hasActions(final String siteId, final String documentId) {
-    List<Action> actions = queryActions(siteId, documentId, Arrays.asList(PK), null);
+    List<Action> actions =
+        queryActions(siteId, documentId, Arrays.asList(PK), null, null).getResults();
     return !actions.isEmpty();
   }
 
@@ -223,10 +231,12 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
    * @param documentId {@link String}
    * @param projectionExpression {@link List} {@link String}
    * @param limit {@link Integer}
-   * @return {@link List} {@link Action}
+   * @param startKey {@link Map}
+   * @return {@link PaginationResults} {@link Action}
    */
-  private List<Action> queryActions(final String siteId, final String documentId,
-      final List<String> projectionExpression, final Integer limit) {
+  private PaginationResults<Action> queryActions(final String siteId, final String documentId,
+      final List<String> projectionExpression, final Map<String, AttributeValue> startKey,
+      final Integer limit) {
 
     String pk = new Action().documentId(documentId).pk(siteId);
     String sk = "action" + TAG_DELIMINATOR;
@@ -235,7 +245,7 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
     Map<String, AttributeValue> values = Map.of(":pk", AttributeValue.builder().s(pk).build(),
         ":sk", AttributeValue.builder().s(sk).build());
 
-    Builder q = QueryRequest.builder().tableName(this.documentTableName)
+    Builder q = QueryRequest.builder().tableName(this.documentTableName).exclusiveStartKey(startKey)
         .keyConditionExpression(expression).expressionAttributeValues(values).limit(limit);
 
     if (!Objects.notNull(projectionExpression).isEmpty()) {
@@ -250,10 +260,14 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
       q = q.projectionExpression(String.join(",", names.keySet())).expressionAttributeNames(names);
     }
 
-    QueryResponse result = this.dbClient.query(q.build());
+    QueryResponse response = this.dbClient.query(q.build());
 
-    return result.items().stream().map(a -> new Action().getFromAttributes(siteId, a))
-        .sorted(new ActionIndexComparator()).collect(Collectors.toList());
+    List<Action> actions =
+        response.items().stream().map(a -> new Action().getFromAttributes(siteId, a))
+            .sorted(new ActionIndexComparator()).collect(Collectors.toList());
+
+    PaginationMapToken pagination = new QueryResponseToPagination().apply(response);
+    return new PaginationResults<>(actions, pagination);
   }
 
   @Override

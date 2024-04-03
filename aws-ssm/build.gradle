@@ -2,8 +2,8 @@
 description = "AWS SSM"
 
 dependencies {
-	api group: 'software.amazon.awssdk', name: 'ssm', version: '2.20.140'
-    implementation group: 'software.amazon.awssdk', name: 'url-connection-client', version: '2.20.140'
+	api group: 'software.amazon.awssdk', name: 'ssm', version: '2.23.12'
+    implementation group: 'software.amazon.awssdk', name: 'url-connection-client', version: '2.23.12'
     //implementation project(':aws-xray')
 	implementation project(':fkq-lambda-services')
 		
@@ -13,9 +13,9 @@ dependencies {
 	}
 	
 	testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.7'
-	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.10.0'
-	testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.19.0'
-	testImplementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.12.543'
+	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.10.1'
+	testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.19.4'
+	testImplementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.12.646'
 }
 
 test {

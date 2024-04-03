@@ -70,7 +70,7 @@ public class IndicesSearchRequestHandler
   @Override
   public Optional<Boolean> isAuthorized(final AwsServiceCache awsservice, final String method,
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
-    boolean access = authorization.permissions().contains(ApiPermission.READ);
+    boolean access = authorization.getPermissions().contains(ApiPermission.READ);
     return Optional.of(Boolean.valueOf(access));
   }
 
@@ -92,7 +92,7 @@ public class IndicesSearchRequestHandler
     DocumentSearchService documentSearchService =
         awsservice.getExtension(DocumentSearchService.class);
 
-    String siteId = authorization.siteId();
+    String siteId = authorization.getSiteId();
     SearchQuery q = new SearchQuery()
         .meta(new SearchMetaCriteria().indexType(body.get("indexType").toString()));
 

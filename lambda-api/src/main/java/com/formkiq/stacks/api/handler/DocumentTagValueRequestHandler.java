@@ -41,6 +41,7 @@ import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
+import com.formkiq.plugins.tagschema.TagSchemaInterface;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
@@ -60,7 +61,7 @@ public class DocumentTagValueRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    String siteId = authorization.siteId();
+    String siteId = authorization.getSiteId();
     Map<String, String> map = event.getPathParameters();
     String documentId = map.get("documentId");
     String tagKey = map.get("tagKey");
@@ -71,11 +72,17 @@ public class DocumentTagValueRequestHandler
     DocumentItem item = documentService.findDocument(siteId, documentId);
     throwIfNull(item, new DocumentNotFoundException(documentId));
 
-    DocumentTagSchemaPlugin plugin = awsservice.getExtension(DocumentTagSchemaPlugin.class);
-    Collection<ValidationError> errors =
-        plugin.validateRemoveTags(siteId, item, Arrays.asList(tagKey));
-    if (!errors.isEmpty()) {
-      throw new ValidationException(errors);
+    if (item.getTagSchemaId() != null) {
+      DocumentTagSchemaPlugin plugin = awsservice.getExtension(DocumentTagSchemaPlugin.class);
+
+      TagSchemaInterface tagSchema = plugin.getTagSchema(siteId, item.getTagSchemaId());
+
+      Collection<ValidationError> errors =
+          plugin.validateRemoveTags(tagSchema, Arrays.asList(tagKey));
+
+      if (!errors.isEmpty()) {
+        throw new ValidationException(errors);
+      }
     }
 
     boolean removed = documentService.removeTag(siteId, documentId, tagKey, tagValue);

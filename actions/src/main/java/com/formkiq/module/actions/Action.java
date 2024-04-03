@@ -25,7 +25,6 @@ package com.formkiq.module.actions;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
-import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.fromS;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -184,6 +183,11 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
     addS(attrs, "workflowStepId", this.workflowStepId);
 
     return attrs;
+  }
+
+  @Override
+  public Map<String, AttributeValue> getDataAttributes() {
+    return null;
   }
 
   private Date getDate(final SimpleDateFormat df, final Map<String, AttributeValue> attrs,

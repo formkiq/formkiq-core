@@ -11,7 +11,7 @@ dependencies {
   implementation group: 'com.google.code.gson', name: 'gson', version: '2.10.1'
   
   testImplementation project(':fkq-test-utils')
-  testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.10.0'
+  testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.10.1'
 }
 
 test {

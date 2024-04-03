@@ -137,7 +137,7 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
 
     // when
     try {
-      api.getDocuments(null, null, null, null, null, null, null, null);
+      api.getDocuments("default", null, null, null, null, null, null, null);
       fail();
     } catch (ApiException e) {
       // then

@@ -1,6 +1,6 @@
         openapi: 3.0.1
         info:
-          title: FormKiQ KEY API
+          title: FormKiQ API
           contact:
             name: FormKiQ
             url: https://formkiq.com
@@ -32,7 +32,7 @@
               - OAuth(JWT)
               - AWS IAM
               - API Key
-          version: 1.13.0
+          version: 1.14.0
         tags:
         - name: documents
           description: API for the add, updating and fetching of documents
@@ -61,6 +61,9 @@
         - name: documentFolders
           description: Document Folders API
           x-displayName: Document Folders
+        - name: accessControl
+          description: Access Control API
+          x-displayName: Access Control
         - name: documentShares
           description: Document Shares API
           x-displayName: Document Shares
@@ -76,6 +79,9 @@
         - name: antivirus
           description: Antivirus API
           x-displayName: Antivirus
+        - name: examineObjects
+          description: Examine Objects API
+          x-displayName: ExamineObjects
         - name: public
           description: Public API Endpoints
           x-displayName: Public Endpoints
@@ -88,6 +94,11 @@
         - name: e-signature
           description: E-Signature API
           x-displayName: E-Signature
+        - name: caseManagement
+          description: Case Management API
+          x-displayName: Case Management
+        - name: ruleSets
+          description: Rulesets API
         - name: Application
           x-amazon-apigateway-tag-value: FormKiQ
         - name: AppEnvironment
@@ -153,7 +164,101 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
-          /configuration:
+          /sites/{siteId}/opensearch/index:
+            get:
+              operationId: GetOpensearchIndex
+              description: Returns the OpenSearch index settings
+              summary: Get site(s) OpenSearch index settings
+              tags:
+              - System Management
+              parameters:
+              - $ref: '#/components/parameters/siteIdPathParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: string
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetOpenSearchIndexResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
+            put:
+              operationId: SetOpensearchIndex
+              description: Sets the OpenSearch index settings
+              summary: Set site(s) OpenSearch index settings
+              tags:
+              - System Management
+              parameters:
+              - $ref: '#/components/parameters/siteIdPathParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/SetOpenSearchIndexRequest'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: string
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/SetOpenSearchIndexResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
+            delete:
+              operationId: DeleteOpensearchIndex
+              description: Deletes the OpenSearch index
+              summary: Deletst site(s) OpenSearch index
+              tags:
+              - System Management
+              parameters:
+              - $ref: '#/components/parameters/siteIdPathParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: string
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DeleteOpenSearchIndexResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
+          /sites/{siteId}/configuration:
             get:
               operationId: GetConfiguration
               description: Returns the list of sites that the user has access to
@@ -161,7 +266,7 @@
               tags:
               - System Management
               parameters:
-              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/siteIdPathParam'
               responses:
                 "200":
                   description: 200 OK
@@ -190,7 +295,7 @@
               tags:
               - System Management
               parameters:
-              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/siteIdPathParam'
               requestBody:
                 required: true
                 content:
@@ -229,7 +334,7 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
-          /configuration/apiKeys:
+          /sites/{siteId}/apiKeys:
             get:
               operationId: GetApiKeys
               description: Returns the list of ApiKeys
@@ -237,7 +342,7 @@
               tags:
               - System Management
               parameters:
-              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/siteIdPathParam'
               responses:
                 "200":
                   description: 200 OK
@@ -266,7 +371,7 @@
               tags:
               - System Management
               parameters:
-              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/siteIdPathParam'
               requestBody:
                 required: true
                 content:
@@ -295,7 +400,7 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
-          /configuration/apiKeys/{apiKey}:
+          /sites/{siteId}/apiKeys/{apiKey}:
             delete:
               operationId: DeleteApiKey
               description: Adds a new API Key
@@ -303,7 +408,7 @@
               tags:
               - System Management
               parameters:
-              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/siteIdPathParam'
               - $ref: '#/components/parameters/apiKeyParam'
               responses:
                 "200":
@@ -319,6 +424,120 @@
                     application/json:
                       schema:
                         $ref: '#/components/schemas/DeleteApiKeyResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+          /sites/opa/accessPolicies:
+            get:
+              operationId: GetOpaConfigurations
+              description: Returns a list of OPA Configuration, can only be requested with ADMIN privileges
+              summary: Get OPAs Configuration
+              tags:
+              - Access Control
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: string
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetOpaConfigurationsResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+            put:
+              operationId: SetOpaConfiguration
+              description: Set OPA Configuration, can only be requested with ADMIN privileges
+              summary: Set OPA Configuration
+              tags:
+              - Access Control
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/SetOpaConfigurationRequest'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/SetOpaConfigurationResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+          /sites/{siteId}/opa/accessPolicy:
+            get:
+              operationId: GetOpaConfiguration
+              description: Returns OPA Configuration, can only be requested with ADMIN privileges
+              summary: Get OPA Configuration
+              tags:
+              - Access Control
+              parameters:
+              - $ref: '#/components/parameters/siteIdPathParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: string
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetOpaConfigurationResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+            delete:
+              operationId: DeleteOpaConfiguration
+              summary: Delete OPA Configuration
+              description: Delete OPA Configuration
+              tags:
+              - Access Control
+              parameters:
+              - $ref: '#/components/parameters/siteIdPathParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DeleteOpaConfigurationResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -516,7 +735,7 @@
                 content:
                   application/json:
                     schema:
-                      $ref: '#/components/schemas/AddDocumentRequest'
+                      $ref: '#/components/schemas/UpdateDocumentRequest'
                     examples:
                       Simple_File:
                         value:
@@ -607,6 +826,139 @@
                     application/json:
                       schema:
                         $ref: '#/components/schemas/GetDocumentContentResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+          /documents/{documentId}/accessAttributes:
+            get:
+              operationId: GetDocumentAccessAttributes
+              summary: Get document access attributes
+              description: Retrieves a document's access attributes (only "admin" role can call API)
+              tags:
+              - Access Control
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetDocumentAccessAttributesResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+            post:
+              operationId: AddDocumentAccessAttributes
+              summary: Add document access attributes
+              description: Add a document's access attributes (only "admin" role can call API)
+              tags:
+              - Access Control
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/AddDocumentAccessAttributesRequest'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/AddDocumentAccessAttributesResponse'
+                "400":
+                  description: 400 OK
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/ValidationErrorsResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+            put:
+              operationId: SetDocumentAccessAttributes
+              summary: Set document access attributes
+              description: Set a document's access attributes (only "admin" role can call API)
+              tags:
+              - Access Control
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/SetDocumentAccessAttributesRequest'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/SetDocumentAccessAttributesResponse'
+                "400":
+                  description: 400 OK
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/ValidationErrorsResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+            delete:
+              operationId: DeleteDocumentAccessAttributes
+              summary: Delete document's access attributes
+              description: Delete a document's access attributes
+              tags:
+              - Access Control
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DeleteDocumentAccessAttributesResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -1177,7 +1529,7 @@
                 $ref: '#/components/x-amazon-apigateway-integrations/searchLambdaApi200'
           /searchFulltext:
             post:
-              operationId: DocumentFulltext
+              operationId: SearchFulltext
               summary: Document full-text search
               description: Document full-text search (and more robust multi-tag search queries, powered by OpenSearch); ONLY available with FormKiQ Enterprise
               tags:
@@ -1213,7 +1565,10 @@
             post:
               operationId: QueryFulltext
               summary: Direct opensearch search API
-              description: Endpoint for allowing custom, complex queries using the OpenSearch search API (https://opensearch.org/docs/latest/opensearch/rest-api/search/); ONLY available with FormKiQ Enterprise
+              description: |-
+                Endpoint for allowing custom, complex queries using the OpenSearch search API (https://opensearch.org/docs/latest/opensearch/rest-api/search/); ONLY available with FormKiQ Enterprise
+
+                Example Request Body: { "query": { "match_all": {} }}
               tags:
               - Advanced Document Search
               parameters:
@@ -1252,7 +1607,9 @@
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/limitParam'
               - $ref: '#/components/parameters/shareKeyParam'
+              - $ref: '#/components/parameters/nextParam'
               responses:
                 "200":
                   description: 200 OK
@@ -1296,7 +1653,7 @@
                 | NOTIFICATION    | notificationSubject    | Notification Subject | Email Subject |
                 | NOTIFICATION    | notificationText    | Notification as Text | Email Text |
                 | NOTIFICATION    | notificationHtml    | Notification as Html | Email HTML Text |
-                | QUEUE    | queueName    | Name of Queue | |
+                | QUEUE    | queueId    | Id of Queue | |
               tags:
               - Document Actions
               parameters:
@@ -1489,6 +1846,7 @@
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/limitParam'
               - $ref: '#/components/parameters/shareKeyParam'
               - $ref: '#/components/parameters/nextParam'
               responses:
@@ -1891,7 +2249,7 @@
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
             put:
               operationId: SetWorkflow
-              summary: Add workflow
+              summary: Set workflow
               description: Set a Workflow details; ONLY available with FormKiQ Pro and Enterprise
               tags:
               - Document Workflows
@@ -1918,6 +2276,52 @@
                     application/json:
                       schema:
                         $ref: '#/components/schemas/SetWorkflowResponse'
+                "400":
+                  description: 400 BAD REQUEST
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/ErrorsResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+            patch:
+              operationId: UpdateWorkflow
+              summary: Update workflow
+              description: Update a Workflow details; ONLY available with FormKiQ Pro and Enterprise
+              tags:
+              - Document Workflows
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/workflowIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/UpdateWorkflowRequest'
+              responses:
+                "200":
+                  description: 20) OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/UpdateWorkflowResponse'
                 "400":
                   description: 400 BAD REQUEST
                   headers:
@@ -2554,6 +2958,39 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
+            post:
+              operationId: AddDocumentFulltext
+              summary: Add document's full-text
+              description: Adde a document to OpenSearch; ONLY available with FormKiQ Enterprise
+              tags:
+              - Advanced Document Search
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              requestBody:
+                required: false
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/AddDocumentFulltextRequest'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/AddDocumentFulltextResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
             patch:
               operationId: UpdateDocumentFulltext
               summary: Update document's full-text
@@ -2582,7 +3019,7 @@
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/SetDocumentFulltextResponse'
+                        $ref: '#/components/schemas/UpdateDocumentFulltextResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -3414,6 +3851,1036 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+          /cases:
+            get:
+              operationId: GetCases
+              tags:
+              - Case Management
+              description: Returns a list of the Cases; ONLY available with FormKiQ Enterprise
+              summary: Get Case listing
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - name: next
+                in: query
+                description: Next page of results token
+                schema:
+                  type: string
+              - $ref: '#/components/parameters/limitParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: string
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetCasesResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200'
+            post:
+              operationId: AddCase
+              summary: Add New Case
+              description: Adds new case; ONLY available with FormKiQ Enterprise
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              tags:
+              - Case Management
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/AddCaseRequest'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/AddCaseResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200'
+          /cases/{caseId}:
+            get:
+              operationId: GetCase
+              tags:
+              - Case Management
+              description: Returns a Case; ONLY available with FormKiQ Enterprise
+              summary: Get Case details
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/caseIdParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: string
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetCaseResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200'
+            patch:
+              operationId: UpdateCase
+              summary: Update existing Case
+              description: Updates existing case; ONLY available with FormKiQ Enterprise
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/caseIdParam'
+              tags:
+              - Case Management
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/UpdateCaseRequest'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/UpdateCaseResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200'
+            delete:
+              operationId: DeleteCase
+              summary: Delete Case
+              description: Delete Case
+              tags:
+              - Case Management
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/caseIdParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DeleteCaseResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200'
+          /cases/{caseId}/documents:
+            get:
+              operationId: GetCaseDocuments
+              tags:
+              - Case Management
+              description: Returns documents in a Case; ONLY available with FormKiQ Enterprise
+              summary: Get list of document in a case
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/caseIdParam'
+              - name: next
+                in: query
+                description: Next page of results token
+                schema:
+                  type: string
+              - $ref: '#/components/parameters/limitParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: string
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetCaseDocumentsResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200'
+          /cases/{caseId}/documents/{documentId}:
+            delete:
+              operationId: DeleteCaseDocument
+              summary: Delete Document from Case
+              description: Delete Document from Case
+              tags:
+              - Case Management
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/caseIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DeleteCaseDocumentResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200'
+          /cases/{caseId}/tasks/{taskId}:
+            get:
+              operationId: GetCaseTask
+              tags:
+              - Case Management
+              description: Returns a Task in Case; ONLY available with FormKiQ Enterprise
+              summary: Get task in a case
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/caseIdParam'
+              - $ref: '#/components/parameters/taskIdParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: string
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetCaseTaskResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200'
+            patch:
+              operationId: UpdateTask
+              summary: Update existing Task
+              description: Updates existing task; ONLY available with FormKiQ Enterprise
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/caseIdParam'
+              - $ref: '#/components/parameters/taskIdParam'
+              tags:
+              - Case Management
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/UpdateTaskRequest'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/UpdateTaskResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200'
+            delete:
+              operationId: DeleteTask
+              summary: Delete Task
+              description: Delete Task
+              tags:
+              - Case Management
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/caseIdParam'
+              - $ref: '#/components/parameters/taskIdParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DeleteCaseTaskResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200'
+          /cases/{caseId}/tasks/{taskId}/documents:
+            get:
+              operationId: GetTaskDocuments
+              tags:
+              - Case Management
+              description: Returns a list documents in a Case; ONLY available with FormKiQ Enterprise
+              summary: Get list of document in a task
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/caseIdParam'
+              - $ref: '#/components/parameters/taskIdParam'
+              - name: next
+                in: query
+                description: Next page of results token
+                schema:
+                  type: string
+              - $ref: '#/components/parameters/limitParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: string
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetCaseDocumentsResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200'
+          /cases/{caseId}/tasks/{taskId}/documents/{documentId}:
+            delete:
+              operationId: DeleteTaskDocument
+              summary: Delete Document from Task
+              description: Delete Document from Task
+              tags:
+              - Case Management
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/caseIdParam'
+              - $ref: '#/components/parameters/taskIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DeleteCaseTaskDocumentResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200'
+          /cases/{caseId}/nigos/{nigoId}:
+            get:
+              operationId: GetCaseNigo
+              tags:
+              - Case Management
+              description: Returns a Nigo in Case; ONLY available with FormKiQ Enterprise
+              summary: Get nigo in a case
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/caseIdParam'
+              - $ref: '#/components/parameters/nigoIdParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: string
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetCaseNigoResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200'
+            patch:
+              operationId: UpdateNigo
+              summary: Update existing Nigo
+              description: Updates existing nigo; ONLY available with FormKiQ Enterprise
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/caseIdParam'
+              - $ref: '#/components/parameters/nigoIdParam'
+              tags:
+              - Case Management
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/UpdateNigoRequest'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/UpdateNigoResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200'
+            delete:
+              operationId: DeleteNigo
+              summary: Delete Nigo
+              description: Delete Nigo
+              tags:
+              - Case Management
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/caseIdParam'
+              - $ref: '#/components/parameters/nigoIdParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DeleteCaseNigoResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200'
+          /cases/{caseId}/nigos/{nigoId}/documents:
+            get:
+              operationId: GetNigoDocuments
+              tags:
+              - Case Management
+              description: Returns a list documents in a Case; ONLY available with FormKiQ Enterprise
+              summary: Get list of document in a task
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/caseIdParam'
+              - $ref: '#/components/parameters/nigoIdParam'
+              - name: next
+                in: query
+                description: Next page of results token
+                schema:
+                  type: string
+              - $ref: '#/components/parameters/limitParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: string
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetCaseDocumentsResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200'
+          /cases/{caseId}/nigos/{nigoId}/documents/{documentId}:
+            delete:
+              operationId: DeleteNigoDocument
+              summary: Delete Document from Nigo
+              description: Delete Document from Nigo
+              tags:
+              - Case Management
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/caseIdParam'
+              - $ref: '#/components/parameters/nigoIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DeleteCaseNigoDocumentResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200'
+          /cases/{caseId}/tasks:
+            get:
+              operationId: GetCaseTasks
+              tags:
+              - Case Management
+              description: Returns a Case; ONLY available with FormKiQ Enterprise
+              summary: Get list of tasks in a case
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/caseIdParam'
+              - name: next
+                in: query
+                description: Next page of results token
+                schema:
+                  type: string
+              - $ref: '#/components/parameters/limitParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: string
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetCaseTasksResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200'
+          /cases/{caseId}/nigos:
+            get:
+              operationId: GetCaseNigos
+              tags:
+              - Case Management
+              description: Returns a Nigos of Case; ONLY available with FormKiQ Enterprise
+              summary: Get list of Nigos in a case
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/caseIdParam'
+              - name: next
+                in: query
+                description: Next page of results token
+                schema:
+                  type: string
+              - $ref: '#/components/parameters/limitParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: string
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetCaseNigosResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200'
+          /rulesets:
+            get:
+              operationId: GetRulesets
+              tags:
+              - Rulesets
+              description: Returns a list of rule sets; ONLY available with FormKiQ Enterprise
+              summary: Get Rulesets
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - name: next
+                in: query
+                description: Next page of results token
+                schema:
+                  type: string
+              - $ref: '#/components/parameters/limitParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: string
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetRulesetsResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+            post:
+              operationId: AddRuleset
+              description: Creates a new ruleset; ONLY available with FormKiQ Enterprise
+              summary: Add New Ruleset
+              tags:
+              - Rulesets
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/AddRulesetRequest'
+              responses:
+                "201":
+                  description: 201 CREATED
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/AddRulesetResponse'
+                "400":
+                  description: 400 OK
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/ValidationErrorsResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
+          /rulesets/{rulesetId}:
+            get:
+              operationId: GetRuleset
+              tags:
+              - Rulesets
+              description: Get a rule sets; ONLY available with FormKiQ Enterprise
+              summary: Get Ruleset
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/rulesetIdParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: string
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetRulesetResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+            patch:
+              operationId: UpdateRuleset
+              description: Updates an existing ruleset; ONLY available with FormKiQ Enterprise
+              summary: Update Ruleset
+              tags:
+              - Rulesets
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/rulesetIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/UpdateRulesetRequest'
+              responses:
+                "200":
+                  description: 201 CREATED
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/UpdateRulesetResponse'
+                "400":
+                  description: 400 OK
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/ValidationErrorsResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
+            delete:
+              operationId: DeleteRuleset
+              description: Delete Ruleset; ONLY available with FormKiQ Enterprise
+              summary: Delete Ruleset
+              tags:
+              - Rulesets
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/rulesetIdParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DeleteRulesetResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+          /rulesets/{rulesetId}/rules:
+            get:
+              operationId: GetRules
+              tags:
+              - Rulesets
+              description: Returns a list of rules in a ruleset; ONLY available with FormKiQ Enterprise
+              summary: Get Rules
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/rulesetIdParam'
+              - $ref: '#/components/parameters/nextParam'
+              - $ref: '#/components/parameters/limitParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: string
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetRulesResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+            post:
+              operationId: AddRule
+              description: Creates a new rule; ONLY available with FormKiQ Enterprise
+              summary: Add New Rule
+              tags:
+              - Rulesets
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/rulesetIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/AddRuleRequest'
+              responses:
+                "201":
+                  description: 201 CREATED
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/AddRuleResponse'
+                "400":
+                  description: 400 OK
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/ValidationErrorsResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
+          /rulesets/{rulesetId}/rules/{ruleId}:
+            get:
+              operationId: GetRule
+              tags:
+              - Rulesets
+              description: Returns a rule in a ruleset; ONLY available with FormKiQ Enterprise
+              summary: Get Rule
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/rulesetIdParam'
+              - $ref: '#/components/parameters/ruleIdParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: string
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetRuleResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+            patch:
+              operationId: UpdateRule
+              description: Update Rule; ONLY available with FormKiQ Enterprise
+              summary: Update Rule
+              tags:
+              - Rulesets
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/rulesetIdParam'
+              - $ref: '#/components/parameters/ruleIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/UpdateRuleRequest'
+              responses:
+                "200":
+                  description: 200 CREATED
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/UpdateRuleResponse'
+                "400":
+                  description: 400 OK
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/ValidationErrorsResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
+            delete:
+              operationId: DeleteRule
+              description: Delete Rule; ONLY available with FormKiQ Enterprise
+              summary: Delete Rule
+              tags:
+              - Rulesets
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/rulesetIdParam'
+              - $ref: '#/components/parameters/ruleIdParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DeleteRuleResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+          /objects/examine/pdf:
+            get:
+              operationId: GetExaminePdfUrl
+              description: Get Signed URL for PDF Object Upload of a document to be examined by calling GET /objects/examine/{id}/pdf
+              summary: Add Examine Pdf
+              tags:
+              - Examine Objects
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: string
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetExaminePdfUrlResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/ocrObjectsLambdaApi200'
+          /objects/examine/{id}/pdf:
+            get:
+              operationId: GetExaminePdf
+              description: |-
+                Get PDF details
+
+                File must have been uploaded previously using the GET /objects/examine/pdf API.
+              summary: Add Examine Pdf
+              tags:
+              - Examine Objects
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/idParam'
+              responses:
+                "201":
+                  description: 201 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: string
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetExaminePdfResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/ocrObjectsLambdaApi200'
         components:
           headers:
             AccessControlAllowOrigin:
@@ -3492,6 +4959,41 @@
               required: false
               schema:
                 type: string
+            siteIdPathParam:
+              name: siteId
+              in: path
+              description: Site Identifier
+              required: true
+              schema:
+                type: string
+            idParam:
+              name: id
+              in: path
+              description: Identifier
+              required: true
+              schema:
+                type: string
+            caseIdParam:
+              name: caseId
+              in: path
+              description: Case Identifier
+              required: true
+              schema:
+                type: string
+            taskIdParam:
+              name: taskId
+              in: path
+              description: Task Identifier
+              required: true
+              schema:
+                type: string
+            nigoIdParam:
+              name: nigoId
+              in: path
+              description: Nigo Identifier
+              required: true
+              schema:
+                type: string
             documentSearchDeleted:
               name: deleted
               in: query
@@ -3562,6 +5064,20 @@
               name: documentId
               in: path
               description: Document Identifier
+              required: true
+              schema:
+                type: string
+            rulesetIdParam:
+              name: rulesetId
+              in: path
+              description: Ruleset Identifier
+              required: true
+              schema:
+                type: string
+            ruleIdParam:
+              name: ruleId
+              in: path
+              description: Rule Identifier
               required: true
               schema:
                 type: string
@@ -3815,6 +5331,12 @@
                 name:
                   description: Queue name
                   type: string
+            WorkflowStatus:
+              type: string
+              description: Status of the Workflow
+              enum:
+              - ACTIVE
+              - INACTIVE
             GetWorkflowResponse:
               type: object
               properties:
@@ -3828,10 +5350,7 @@
                   type: boolean
                   description: Whether the Workflow is in use
                 status:
-                  type: string
-                  enum:
-                  - ACTIVE
-                  - INACTIVE
+                  $ref: '#/components/schemas/WorkflowStatus'
                 steps:
                   description: Workflow steps
                   items:
@@ -3882,11 +5401,7 @@
                   type: boolean
                   description: Whether the Workflow is in use
                 status:
-                  type: string
-                  enum:
-                  - ACTIVE
-                  - INACTIVE
-                  description: Type of Document
+                  $ref: '#/components/schemas/WorkflowStatus'
             GetUserSharesResponse:
               type: object
               properties:
@@ -3898,6 +5413,18 @@
                   description: List of user's shares
                   items:
                     $ref: '#/components/schemas/UserShare'
+            UserSharePermission:
+              type: string
+              description: User Share Permission
+              enum:
+              - READ
+              - WRITE
+              - DELETE
+            UserSharePermissionType:
+              type: string
+              description: User Share Permission Type
+              enum:
+              - GROUP
             UserShare:
               type: object
               properties:
@@ -3916,11 +5443,7 @@
                   type: array
                   description: List of share permissions
                   items:
-                    type: string
-                    enum:
-                    - READ
-                    - WRITE
-                    - DELETE
+                    $ref: '#/components/schemas/UserSharePermission'
                 siteId:
                   type: string
                   description: Site Identifier
@@ -3933,8 +5456,7 @@
                 permissionType:
                   type: string
                   description: Type of share
-                  enum:
-                  - GROUP
+                  $ref: '#/components/schemas/UserSharePermissionType'
             GetDocumentTagsResponse:
               type: object
               properties:
@@ -3976,7 +5498,7 @@
                   type: array
                   description: List of Composite Key tags to filter search results on
                   items:
-                    $ref: '#/components/schemas/DocumentCompositeSearchTag'
+                    $ref: '#/components/schemas/DocumentSearchTags'
                 documentIds:
                   type: array
                   description: List of DocumentIds to filter search results on
@@ -4207,6 +5729,9 @@
                 path:
                   type: string
                   description: Searches for a Path of document
+                eq:
+                  type: string
+                  description: Searches for strings that eq
                 indexType:
                   type: string
                   description: Searches in an index
@@ -4231,10 +5756,24 @@
                   description: Searches for ANY strings that eq
                   items:
                     type: string
+                range:
+                  $ref: '#/components/schemas/DocumentSearchRange'
                 key:
                   type: string
                   description: Tag key to search
-            DocumentCompositeSearchTag:
+            DocumentSearchRange:
+              required:
+              - start
+              - end
+              type: object
+              properties:
+                start:
+                  type: string
+                  description: Start of range query
+                end:
+                  type: string
+                  description: End of range query
+            DocumentSearchTags:
               required:
               - key
               type: object
@@ -4242,6 +5781,11 @@
                 eq:
                   type: string
                   description: Searches for strings that eq
+                beginsWith:
+                  type: string
+                  description: Searches for strings that begin with
+                range:
+                  $ref: '#/components/schemas/DocumentSearchRange'
                 key:
                   type: string
                   description: Tag key to search
@@ -4327,6 +5871,52 @@
                   description: List of Actions
                   items:
                     $ref: '#/components/schemas/AddAction'
+                accessAttributes:
+                  type: array
+                  description: List of Access Attributes (only available in pro/enterprise)
+                  items:
+                    $ref: '#/components/schemas/AddAccessAttribute'
+                documents:
+                  type: array
+                  description: List of child documents
+                  items:
+                    $ref: '#/components/schemas/AddChildDocument'
+            UpdateDocumentRequest:
+              type: object
+              properties:
+                tagSchemaId:
+                  type: string
+                  description: Tag Schema Id
+                path:
+                  type: string
+                  description: Path or Name of document
+                deepLinkPath:
+                  type: string
+                  description: Path or Name of deep link
+                contentType:
+                  type: string
+                  description: Document media type
+                isBase64:
+                  type: boolean
+                  description: Is the content Base64-encoded?
+                content:
+                  type: string
+                  description: Document content
+                tags:
+                  type: array
+                  description: List of document tags
+                  items:
+                    $ref: '#/components/schemas/AddDocumentTag'
+                metadata:
+                  type: array
+                  description: List of document Metadata
+                  items:
+                    $ref: '#/components/schemas/AddDocumentMetadata'
+                actions:
+                  type: array
+                  description: List of Actions
+                  items:
+                    $ref: '#/components/schemas/AddAction'
                 documents:
                   type: array
                   description: List of child documents
@@ -4347,11 +5937,7 @@
                   type: array
                   description: List of share permissions
                   items:
-                    type: string
-                    enum:
-                    - READ
-                    - WRITE
-                    - DELETE
+                    $ref: '#/components/schemas/UserSharePermission'
             SetDocumentRestoreResponse:
               type: object
               properties:
@@ -4458,6 +6044,67 @@
                   items:
                     type: string
                     description: Metadata value
+            AddDocumentAccessAttributesRequest:
+              type: object
+              description: List of document access attributes to add
+              properties:
+                accessAttributes:
+                  type: array
+                  description: List of document access attributes
+                  items:
+                    $ref: '#/components/schemas/AddAccessAttribute'
+            SetDocumentAccessAttributesRequest:
+              type: object
+              description: List of document access attributes to set
+              properties:
+                accessAttributes:
+                  type: array
+                  description: List of document access attributes
+                  items:
+                    $ref: '#/components/schemas/AddAccessAttribute'
+            GetDocumentAccessAttributesResponse:
+              type: object
+              description: List of document access attributes
+              properties:
+                accessAttributes:
+                  type: array
+                  description: List of document access attributes
+                  items:
+                    $ref: '#/components/schemas/AccessAttribute'
+            AccessAttribute:
+              type: object
+              description: 'Document Access Attribute (requires either: stringValue, numberValue, booleanValue)'
+              properties:
+                key:
+                  type: string
+                  description: Attribute key
+                stringValue:
+                  type: string
+                  description: Attribute with string value
+                numberValue:
+                  type: number
+                  description: Attribute with number value
+                booleanValue:
+                  type: boolean
+                  description: Attribute with boolean value
+            AddAccessAttribute:
+              required:
+              - key
+              type: object
+              description: 'Document Access Attribute (requires either: stringValue, numberValue, booleanValue)'
+              properties:
+                key:
+                  type: string
+                  description: Attribute key
+                stringValue:
+                  type: string
+                  description: Attribute with string value
+                numberValue:
+                  type: number
+                  description: Attribute with number value
+                booleanValue:
+                  type: boolean
+                  description: Attribute with boolean value
             AddDocumentTag:
               required:
               - key
@@ -4679,6 +6326,10 @@
                   type: object
                   additionalProperties:
                     type: object
+                accessAttributes:
+                  type: object
+                  additionalProperties:
+                    type: object
             GetDocumentFulltextResponse:
               type: object
               properties:
@@ -4714,8 +6365,16 @@
                   description: Document size
                 tags:
                   type: object
+                  additionalProperties:
+                    type: object
                 metadata:
                   type: object
+                  additionalProperties:
+                    type: object
+                accessAttributes:
+                  type: object
+                  additionalProperties:
+                    type: object
             GetDocumentSyncResponse:
               type: object
               properties:
@@ -4969,6 +6628,684 @@
                 type:
                   type: string
                   description: Tag type
+            AddCaseResponse:
+              type: object
+              properties:
+                caseId:
+                  type: string
+                  description: Case Identifier
+            AddCaseRequest:
+              required:
+              - case
+              type: object
+              properties:
+                case:
+                  $ref: '#/components/schemas/AddCase'
+            AddCase:
+              required:
+              - name
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Case Name
+                status:
+                  $ref: '#/components/schemas/CaseStatus'
+                startDate:
+                  type: string
+                  description: Start Date
+                endDate:
+                  type: string
+                  description: End Date
+                description:
+                  type: string
+                  description: Case Description
+                documentNumberFormat:
+                  type: array
+                  description: Format of Document Number
+                  items:
+                    $ref: '#/components/schemas/StringFormat'
+                caseNumberFormat:
+                  type: array
+                  description: Format of Case Number
+                  items:
+                    $ref: '#/components/schemas/StringFormat'
+                metadata:
+                  type: object
+                  additionalProperties:
+                    type: object
+                documentIds:
+                  type: array
+                  items:
+                    type: string
+                tasks:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/AddTask'
+                nigos:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/AddNigo'
+            StringFormat:
+              type: object
+              properties:
+                type:
+                  $ref: '#/components/schemas/StringGeneratorType'
+                staticValue:
+                  type: string
+                  description: Static Value
+                padding:
+                  type: integer
+                  description: Optional padding for AUTO_INCREMENT number
+            UpdateCaseResponse:
+              type: object
+              properties:
+                caseId:
+                  type: string
+                  description: Case Identifier
+            UpdateCaseRequest:
+              type: object
+              properties:
+                case:
+                  $ref: '#/components/schemas/UpdateCase'
+            UpdateCase:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Case Name
+                status:
+                  $ref: '#/components/schemas/CaseStatus'
+                description:
+                  type: string
+                  description: Case Description
+                metadata:
+                  type: object
+                  additionalProperties:
+                    type: object
+                startDate:
+                  type: string
+                  description: Start Date
+                endDate:
+                  type: string
+                  description: End Date
+                documentIds:
+                  type: array
+                  items:
+                    type: string
+            StringGeneratorType:
+              type: string
+              description: Generate Strings of Type
+              enum:
+              - AUTO_INCREMENT
+              - STATIC
+              - DATE_YYYYMMDD
+            CaseStatus:
+              type: string
+              description: Status of the Case
+              enum:
+              - NEW
+              - ASSIGNED
+              - IN_PROGRESS
+              - ON_HOLD
+              - ESCALATED
+              - RESOLVED
+              - CLOSED
+              - UNDER_REVIEW
+              - AWAITING_CLIENT_RESPONSE
+            TaskStatus:
+              type: string
+              description: Status of the Task
+              enum:
+              - NEW
+              - ASSIGNED
+              - IN_PROGRESS
+              - ON_HOLD
+              - ESCALATED
+              - RESOLVED
+              - CLOSED
+              - UNDER_REVIEW
+              - AWAITING_CLIENT_RESPONSE
+            NigoStatus:
+              type: string
+              description: Status of the Nigo
+              enum:
+              - NEW
+              - ASSIGNED
+              - IN_PROGRESS
+              - ON_HOLD
+              - ESCALATED
+              - RESOLVED
+              - CLOSED
+              - UNDER_REVIEW
+              - AWAITING_CLIENT_RESPONSE
+            UpdateTaskResponse:
+              type: object
+              properties:
+                taskId:
+                  type: string
+                  description: Task Identifier
+            UpdateTaskRequest:
+              type: object
+              properties:
+                task:
+                  $ref: '#/components/schemas/UpdateTask'
+            UpdateTask:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Name of Task
+                description:
+                  type: string
+                  description: Description of Task
+                startDate:
+                  type: string
+                  description: Start Date
+                endDate:
+                  type: string
+                  description: End Date
+                status:
+                  $ref: '#/components/schemas/TaskStatus'
+                metadata:
+                  type: object
+                  additionalProperties:
+                    type: object
+                documentIds:
+                  type: array
+                  items:
+                    type: string
+            AddTask:
+              required:
+              - description
+              type: object
+              properties:
+                description:
+                  type: string
+                  description: Description of Task
+                status:
+                  $ref: '#/components/schemas/TaskStatus'
+                metadata:
+                  type: object
+                  additionalProperties:
+                    type: object
+                documentIds:
+                  type: array
+                  items:
+                    type: string
+            UpdateNigoResponse:
+              type: object
+              properties:
+                nigoId:
+                  type: string
+                  description: Nigo Identifier
+            UpdateNigoRequest:
+              type: object
+              properties:
+                nigo:
+                  $ref: '#/components/schemas/UpdateNigo'
+            UpdateNigo:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Name of Nigo
+                description:
+                  type: string
+                  description: Description of Nigo
+                startDate:
+                  type: string
+                  description: Start Date
+                endDate:
+                  type: string
+                  description: End Date
+                status:
+                  $ref: '#/components/schemas/NigoStatus'
+                metadata:
+                  type: object
+                  additionalProperties:
+                    type: object
+                documentIds:
+                  type: array
+                  items:
+                    type: string
+            AddNigo:
+              required:
+              - name
+              type: object
+              properties:
+                description:
+                  type: string
+                  description: Description of Task
+                status:
+                  $ref: '#/components/schemas/NigoStatus'
+                metadata:
+                  type: object
+                  additionalProperties:
+                    type: object
+                documentIds:
+                  type: array
+                  items:
+                    type: string
+            Task:
+              type: object
+              properties:
+                taskId:
+                  type: string
+                  description: Task Identifier
+                insertedDate:
+                  type: string
+                  description: Inserted Timestamp
+                name:
+                  type: string
+                  description: Name of Task
+                description:
+                  type: string
+                  description: Description of Task
+                startDate:
+                  type: string
+                  description: Start Date of Task
+                endDate:
+                  type: string
+                  description: End Date of Task
+                userId:
+                  type: string
+                  description: User who added Task
+                status:
+                  $ref: '#/components/schemas/TaskStatus'
+                metadata:
+                  type: object
+                  additionalProperties:
+                    type: object
+            Nigo:
+              type: object
+              properties:
+                nigoId:
+                  type: string
+                  description: Nigo Identifier
+                insertedDate:
+                  type: string
+                  description: Inserted Timestamp
+                name:
+                  type: string
+                  description: Name of Nigo
+                description:
+                  type: string
+                  description: Description of Nigo
+                startDate:
+                  type: string
+                  description: Start Date
+                endDate:
+                  type: string
+                  description: End Date
+                userId:
+                  type: string
+                  description: User who added Nigo
+                status:
+                  $ref: '#/components/schemas/NigoStatus'
+                metadata:
+                  type: object
+                  additionalProperties:
+                    type: object
+            GetCasesResponse:
+              type: object
+              properties:
+                next:
+                  type: string
+                  description: Next page of results token
+                cases:
+                  type: array
+                  description: List of cases
+                  items:
+                    $ref: '#/components/schemas/Case'
+            GetCaseNigosResponse:
+              type: object
+              properties:
+                next:
+                  type: string
+                  description: Next page of results token
+                nigos:
+                  type: array
+                  description: List of Nigos
+                  items:
+                    $ref: '#/components/schemas/Nigo'
+            GetCaseNigoResponse:
+              type: object
+              properties:
+                nigo:
+                  $ref: '#/components/schemas/Nigo'
+            GetCaseTaskResponse:
+              type: object
+              properties:
+                task:
+                  $ref: '#/components/schemas/Task'
+            GetCaseTasksResponse:
+              type: object
+              properties:
+                next:
+                  type: string
+                  description: Next page of results token
+                tasks:
+                  type: array
+                  description: List of tasks
+                  items:
+                    $ref: '#/components/schemas/Task'
+            GetCaseDocumentsResponse:
+              type: object
+              properties:
+                next:
+                  type: string
+                  description: Next page of results token
+                documents:
+                  type: array
+                  description: List of documents
+                  items:
+                    $ref: '#/components/schemas/Document'
+            GetCaseResponse:
+              type: object
+              properties:
+                case:
+                  $ref: '#/components/schemas/Case'
+            Case:
+              type: object
+              properties:
+                caseId:
+                  type: string
+                  description: Case Identifier
+                caseNumber:
+                  type: string
+                  description: Case Number
+                documentNumber:
+                  type: string
+                  description: Document Number
+                startDate:
+                  type: string
+                  description: Start Date
+                endDate:
+                  type: string
+                  description: End Date
+                insertedDate:
+                  type: string
+                  description: Inserted Timestamp
+                name:
+                  type: string
+                  description: Case Name
+                description:
+                  type: string
+                  description: Case Description
+                metadata:
+                  type: object
+                  additionalProperties:
+                    type: object
+                status:
+                  $ref: '#/components/schemas/CaseStatus'
+                userId:
+                  type: string
+                  description: User who added document
+            RulesetStatus:
+              type: string
+              description: Status of the Ruleset
+              enum:
+              - ACTIVE
+              - INACTIVE
+            RuleStatus:
+              type: string
+              description: Status of the Rule
+              enum:
+              - ACTIVE
+              - INACTIVE
+            AddRulesetResponse:
+              type: object
+              properties:
+                rulesetId:
+                  type: string
+                  description: Ruleset Identifier
+            UpdateRulesetResponse:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: Ruleset update message
+            UpdateRuleResponse:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: Rule update message
+            AddRuleResponse:
+              type: object
+              properties:
+                ruleId:
+                  type: string
+                  description: Rule Identifier
+            AddRuleRequest:
+              required:
+              - case
+              type: object
+              properties:
+                rule:
+                  $ref: '#/components/schemas/AddRule'
+            UpdateRuleRequest:
+              required:
+              - case
+              type: object
+              properties:
+                rule:
+                  $ref: '#/components/schemas/UpdateRule'
+            AddRule:
+              type: object
+              properties:
+                priority:
+                  type: number
+                  description: Rule priority
+                description:
+                  type: string
+                  description: Rule description
+                workflowId:
+                  type: string
+                  description: Workflow to start on matching of conditions
+                status:
+                  $ref: '#/components/schemas/RulesetStatus'
+                conditions:
+                  description: Rule conditions
+                  $ref: '#/components/schemas/RuleCondition'
+            UpdateRule:
+              type: object
+              properties:
+                priority:
+                  type: number
+                  description: Rule priority
+                description:
+                  type: string
+                  description: Rule description
+                status:
+                  $ref: '#/components/schemas/RulesetStatus'
+                workflowId:
+                  type: string
+                  description: Workflow to start on matching of conditions
+                conditions:
+                  description: Rule conditions
+                  $ref: '#/components/schemas/RuleCondition'
+            AddRulesetRequest:
+              required:
+              - ruleset
+              type: object
+              properties:
+                ruleset:
+                  $ref: '#/components/schemas/AddRuleset'
+            UpdateRulesetRequest:
+              required:
+              - ruleset
+              type: object
+              properties:
+                ruleset:
+                  $ref: '#/components/schemas/UpdateRuleset'
+            AddRuleset:
+              type: object
+              properties:
+                description:
+                  type: string
+                  description: Ruleset description
+                priority:
+                  type: number
+                  description: Ruleset priority
+                version:
+                  type: number
+                  description: Ruleset version
+                status:
+                  $ref: '#/components/schemas/RulesetStatus'
+            UpdateRuleset:
+              type: object
+              properties:
+                description:
+                  type: string
+                  description: Ruleset description
+                priority:
+                  type: number
+                  description: Ruleset priority
+                version:
+                  type: number
+                  description: Ruleset version
+                status:
+                  $ref: '#/components/schemas/RulesetStatus'
+            GetRulesResponse:
+              type: object
+              properties:
+                next:
+                  type: string
+                  description: Next page of results token
+                rules:
+                  type: array
+                  description: List of rules
+                  items:
+                    $ref: '#/components/schemas/Rule'
+            GetRuleResponse:
+              type: object
+              properties:
+                rule:
+                  $ref: '#/components/schemas/Rule'
+            GetRulesetsResponse:
+              type: object
+              properties:
+                next:
+                  type: string
+                  description: Next page of results token
+                rulesets:
+                  type: array
+                  description: List of rulesets
+                  items:
+                    $ref: '#/components/schemas/Ruleset'
+            GetRulesetResponse:
+              type: object
+              properties:
+                ruleset:
+                  $ref: '#/components/schemas/Ruleset'
+            Ruleset:
+              type: object
+              properties:
+                rulesetId:
+                  type: string
+                  description: Ruleset identifier
+                description:
+                  type: string
+                  description: Ruleset description
+                priority:
+                  type: number
+                  description: Ruleset priority
+                version:
+                  type: number
+                  description: Ruleset version
+                insertedDate:
+                  type: string
+                  description: Inserted Timestamp
+                status:
+                  $ref: '#/components/schemas/RulesetStatus'
+            Rule:
+              type: object
+              properties:
+                ruleId:
+                  type: string
+                  description: Workflow to start on matching of conditions
+                priority:
+                  type: number
+                  description: Rule priority
+                description:
+                  type: string
+                  description: Ruleset description
+                workflowId:
+                  type: string
+                  description: Workflow to start on matching of conditions
+                status:
+                  $ref: '#/components/schemas/RulesetStatus'
+                conditions:
+                  description: List of rule conditions
+                  $ref: '#/components/schemas/RuleCondition'
+            RuleCondition:
+              type: object
+              properties:
+                must:
+                  type: array
+                  description: List of rule conditions
+                  items:
+                    $ref: '#/components/schemas/RuleConditionMust'
+            RuleConditionAttribute:
+              type: string
+              description: Rule condition attribute
+              enum:
+              - TEXT
+              - CONTENT_TYPE
+              - BARCODE
+              - FIELD
+            RuleConditionOperation:
+              type: string
+              description: Rule condition attribute
+              enum:
+              - EQ
+              - CONTAINS
+            RuleConditionMust:
+              type: object
+              properties:
+                attribute:
+                  $ref: '#/components/schemas/RuleConditionAttribute'
+                fieldName:
+                  type: string
+                  description: Rule field name (only required for FIELD attribute)
+                value:
+                  type: string
+                  description: Rule condition value
+                operation:
+                  $ref: '#/components/schemas/RuleConditionOperation'
+            GetExaminePdfUrlResponse:
+              type: object
+              properties:
+                id:
+                  type: string
+                  description: Uploaded document identifier
+                uploadUrl:
+                  type: string
+                  description: Url to upload document to
+            GetExaminePdfResponse:
+              type: object
+              properties:
+                fileinfo:
+                  $ref: '#/components/schemas/PdfDocument'
+            PdfDocument:
+              type: object
+              properties:
+                fields:
+                  type: array
+                  description: List of document fields
+                  items:
+                    $ref: '#/components/schemas/PdfDocumentField'
+            PdfDocumentField:
+              type: object
+              properties:
+                field:
+                  type: string
+                  description: Name of Field
+                value:
+                  type: string
+                  description: Value of Field
             GetDocumentsResponse:
               type: object
               properties:
@@ -5056,36 +7393,43 @@
             GetDocumentActionsResponse:
               type: object
               properties:
+                next:
+                  type: string
+                  description: Next page of results token
                 actions:
                   type: array
                   description: List of document actions
                   items:
                     $ref: '#/components/schemas/DocumentAction'
+            DocumentActionStatus:
+              type: string
+              description: Status of the Document Action
+              enum:
+              - COMPLETE
+              - FAILED
+              - IN_QUEUE
+              - PENDING
+              - RUNNING
+              - SKIPPED
+              - FAILED_RETRY
+            DocumentActionType:
+              type: string
+              description: Type of the Document Action
+              enum:
+              - ANTIVIRUS
+              - DOCUMENTTAGGING
+              - FULLTEXT
+              - NOTIFICATION
+              - OCR
+              - QUEUE
+              - WEBHOOK
             DocumentAction:
               type: object
               properties:
                 status:
-                  type: string
-                  description: Status of the Document Action
-                  enum:
-                  - COMPLETE
-                  - FAILED
-                  - IN_QUEUE
-                  - PENDING
-                  - RUNNING
-                  - SKIPPED
-                  - FAILED_RETRY
+                  $ref: '#/components/schemas/DocumentActionStatus'
                 type:
-                  type: string
-                  description: Type of Document Action
-                  enum:
-                  - ANTIVIRUS
-                  - DOCUMENTTAGGING
-                  - FULLTEXT
-                  - NOTIFICATION
-                  - OCR
-                  - QUEUE
-                  - WEBHOOK
+                  $ref: '#/components/schemas/DocumentActionType'
                 queueId:
                   type: string
                   description: Queue Id
@@ -5152,6 +7496,24 @@
                 insertedDate:
                   type: string
                   description: Inserted Timestamp
+            AddDocumentAccessAttributesResponse:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: Document Action message
+            SetDocumentAccessAttributesResponse:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: Document Action message
+            DeleteDocumentAccessAttributesResponse:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: Document Action message
             AddDocumentActionsResponse:
               type: object
               properties:
@@ -5170,6 +7532,18 @@
                 message:
                   type: string
                   description: OCR processing message
+            AddDocumentFulltextResponse:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: Full text processing message
+            UpdateDocumentFulltextResponse:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: Full text processing message
             SetDocumentFulltextResponse:
               type: object
               properties:
@@ -5177,6 +7551,36 @@
                   type: string
                   description: Full text processing message
             SetDocumentFulltextRequest:
+              type: object
+              properties:
+                contentType:
+                  type: string
+                  description: Document Content-Type
+                content:
+                  type: string
+                  description: Document content
+                contentUrls:
+                  type: array
+                  items:
+                    type: string
+                  description: URL(s) which contain document content
+                path:
+                  type: string
+                  description: Path or Name of document
+                deepLinkPath:
+                  type: string
+                  description: Path or Name of deep link
+                tags:
+                  type: array
+                  description: List of document tags
+                  items:
+                    $ref: '#/components/schemas/AddDocumentTag'
+                metadata:
+                  type: array
+                  description: List of document Metadata
+                  items:
+                    $ref: '#/components/schemas/AddDocumentMetadata'
+            AddDocumentFulltextRequest:
               type: object
               properties:
                 contentType:
@@ -5258,18 +7662,12 @@
               - type
               properties:
                 type:
-                  type: string
-                  description: Type of Document Action
-                  enum:
-                  - OCR
-                  - FULLTEXT
-                  - ANTIVIRUS
-                  - WEBHOOK
-                  - DOCUMENTTAGGING
-                  - NOTIFICATION
-                  - QUEUE
+                  $ref: '#/components/schemas/DocumentActionType'
                 parameters:
                   $ref: '#/components/schemas/AddActionParameters'
+                queueId:
+                  description: Id of Queue
+                  type: string
             AddActionParameters:
               type: object
               properties:
@@ -5318,9 +7716,6 @@
                   type: string
                 tags:
                   description: 'DocumentTagging: Comma-deliminted list of keywords to generate tags for'
-                  type: string
-                queueName:
-                  description: Name of Queue action
                   type: string
             AddDocumentOcrRequest:
               type: object
@@ -5435,7 +7830,104 @@
                 message:
                   type: string
                   description: Result message
+            DeleteRulesetResponse:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: Result message
+            DeleteRuleResponse:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: Result message
             DeleteApiKeyResponse:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: Result message
+            GetOpaConfigurationsResponse:
+              type: object
+              properties:
+                next:
+                  type: string
+                  description: Next page of results token
+                opaPolicies:
+                  type: array
+                  description: List of OPA policies
+                  items:
+                    $ref: '#/components/schemas/OpaPolicy'
+            OpaPolicy:
+              type: object
+              properties:
+                siteId:
+                  type: string
+                  description: SiteId to apply OPA Policy to
+                policy:
+                  type: string
+                  description: OPA Policy in REGO format
+                insertedDate:
+                  type: string
+                  description: Inserted Timestamp
+            GetOpaConfigurationResponse:
+              type: object
+              properties:
+                opaPolicy:
+                  $ref: '#/components/schemas/OpaPolicy'
+            SetOpaConfigurationRequest:
+              type: object
+              properties:
+                policy:
+                  type: string
+                  description: OPA Policy in YAML format
+                siteId:
+                  type: string
+                  description: Site Id to apply policy to, leave empty for global policy
+            SetOpaConfigurationResponse:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: Result message
+            DeleteCaseResponse:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: Result message
+            DeleteCaseNigoDocumentResponse:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: Result message
+            DeleteCaseNigoResponse:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: Result message
+            DeleteCaseDocumentResponse:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: Result message
+            DeleteCaseTaskDocumentResponse:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: Result message
+            DeleteCaseTaskResponse:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: Result message
+            DeleteOpaConfigurationResponse:
               type: object
               properties:
                 message:
@@ -5544,6 +8036,37 @@
                 lastModifiedDate:
                   type: string
                   description: Last nodified timestamp of group
+            SetOpenSearchIndexRequest:
+              type: object
+              properties:
+                indexSettings:
+                  $ref: '#/components/schemas/OpenSearchIndex'
+            SetOpenSearchIndexResponse:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: Result message
+            DeleteOpenSearchIndexResponse:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: Result message
+            GetOpenSearchIndexResponse:
+              type: object
+              properties:
+                indexSettings:
+                  $ref: '#/components/schemas/OpenSearchIndex'
+            OpenSearchIndex:
+              type: object
+              properties:
+                numberOfReplicas:
+                  type: string
+                  description: The number of replicas per shard
+                numberOfShards:
+                  type: string
+                  description: The number of shards in index
             GetSitesResponse:
               type: object
               properties:
@@ -5623,6 +8146,17 @@
                 name:
                   description: Queue name
                   type: string
+            UpdateWorkflowRequest:
+              type: object
+              properties:
+                name:
+                  description: Workflow name
+                  type: string
+                description:
+                  description: Workflow description
+                  type: string
+                status:
+                  $ref: '#/components/schemas/WorkflowStatus'
             SetWorkflowRequest:
               type: object
               required:
@@ -5637,10 +8171,7 @@
                   description: Workflow description
                   type: string
                 status:
-                  type: string
-                  enum:
-                  - ACTIVE
-                  - INACTIVE
+                  $ref: '#/components/schemas/WorkflowStatus'
                 steps:
                   type: array
                   description: Workflow Steps
@@ -5660,10 +8191,7 @@
                   description: Workflow description
                   type: string
                 status:
-                  type: string
-                  enum:
-                  - ACTIVE
-                  - INACTIVE
+                  $ref: '#/components/schemas/WorkflowStatus'
                 steps:
                   type: array
                   description: Workflow Steps
@@ -5684,6 +8212,12 @@
                   description: Workflow Decisions
                   items:
                     $ref: '#/components/schemas/AddWorkflowStepDecision'
+            WorkflowStepDecisionType:
+              type: string
+              description: Type of Workflow Step Decision
+              enum:
+              - APPROVE
+              - REJECT
             AddWorkflowStepDecision:
               required:
               - type
@@ -5691,11 +8225,7 @@
               type: object
               properties:
                 type:
-                  type: string
-                  description: Type of Workflow Step Decision
-                  enum:
-                  - APPROVE
-                  - REJECT
+                  $ref: '#/components/schemas/WorkflowStepDecisionType'
                 nextStepId:
                   type: string
                   description: Workflow Step to move to
@@ -5703,11 +8233,7 @@
               type: object
               properties:
                 type:
-                  type: string
-                  description: Type of Workflow Step Decision
-                  enum:
-                  - APPROVE
-                  - REJECT
+                  $ref: '#/components/schemas/WorkflowStepDecisionType'
                 nextStepId:
                   type: string
                   description: Workflow Step to move to
@@ -5728,6 +8254,12 @@
                 queueId:
                   type: string
                   description: Queue Identifier
+            UpdateWorkflowResponse:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: Result message
             SetWorkflowResponse:
               type: object
               properties:
@@ -5763,6 +8295,13 @@
               properties:
                 workflow:
                   $ref: '#/components/schemas/DocumentWorkflow'
+            DocumentWorkflowStatus:
+              type: string
+              description: Status of the Workflow Document
+              enum:
+              - COMPLETE
+              - IN_PROGRESS
+              - FAILED
             DocumentWorkflow:
               type: object
               properties:
@@ -5779,12 +8318,7 @@
                   type: string
                   description: The current step workflow is on
                 status:
-                  type: string
-                  description: Workflow status
-                  enum:
-                  - COMPLETE
-                  - IN_PROGRESS
-                  - FAILED
+                  $ref: '#/components/schemas/DocumentWorkflowStatus'
             AddDocumentWorkflowResponse:
               type: object
               properties:
@@ -5851,6 +8385,9 @@
                   type: string
                 userId:
                   type: string
+                inUse:
+                  type: boolean
+                  description: Whether the TagSchema is in use
                 insertedDate:
                   type: string
                   description: Inserted Timestamp
@@ -5868,6 +8405,9 @@
                   type: string
                 userId:
                   type: string
+                inUse:
+                  type: boolean
+                  description: Whether the TagSchema is in use
                 insertedDate:
                   type: string
                   description: Inserted Timestamp
@@ -6113,7 +8653,7 @@
           x-amazon-apigateway-integrations:
             lambdaApi200:
               uri:
-                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations
+                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
               responses:
                 default:
                   statusCode: "200"
@@ -6127,7 +8667,7 @@
               payloadFormatVersion: "1.0"
             ocrLambdaApi200:
               uri:
-                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations
+                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
               responses:
                 default:
                   statusCode: "200"
@@ -6141,7 +8681,7 @@
               payloadFormatVersion: "1.0"
             antivirusLambdaApi200:
               uri:
-                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations
+                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
               responses:
                 default:
                   statusCode: "200"
@@ -6155,7 +8695,7 @@
               payloadFormatVersion: "1.0"
             searchLambdaApi200:
               uri:
-                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations
+                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
               responses:
                 default:
                   statusCode: "200"
@@ -6169,7 +8709,21 @@
               payloadFormatVersion: "1.0"
             fulltextLambdaApi200:
               uri:
-                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations
+                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
+              responses:
+                default:
+                  statusCode: "200"
+                  responseParameters:
+                    method.response.header.Access-Control-Allow-Methods: '''*'''
+                    method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key'''
+                    method.response.header.Access-Control-Allow-Origin: '''*'''
+              passthroughBehavior: when_no_templates
+              httpMethod: POST
+              type: aws_proxy
+              payloadFormatVersion: "1.0"
+            ocrObjectsLambdaApi200:
+              uri:
+                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${OcrApiRequestsArn}/invocations
               responses:
                 default:
                   statusCode: "200"
@@ -6183,7 +8737,7 @@
               payloadFormatVersion: "1.0"
             onlyOfficeLambdaApi200:
               uri:
-                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations
+                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
               responses:
                 default:
                   statusCode: "200"
@@ -6197,7 +8751,21 @@
               payloadFormatVersion: "1.0"
             esignatureLambdaApi200:
               uri:
-                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations
+                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
+              responses:
+                default:
+                  statusCode: "200"
+                  responseParameters:
+                    method.response.header.Access-Control-Allow-Methods: '''*'''
+                    method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key'''
+                    method.response.header.Access-Control-Allow-Origin: '''*'''
+              passthroughBehavior: when_no_templates
+              httpMethod: POST
+              type: aws_proxy
+              payloadFormatVersion: "1.0"
+            caseManagementLambdaApi200:
+              uri:
+                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
               responses:
                 default:
                   statusCode: "200"
@@ -6211,7 +8779,7 @@
               payloadFormatVersion: "1.0"
             lambdaApi201:
               uri:
-                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations
+                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
               responses:
                 default:
                   statusCode: "201"
@@ -6231,3 +8799,10 @@
               gatewayresponse.header.Access-Control-Allow-Origin: '''*'''
               gatewayresponse.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key'''
         x-amazon-apigateway-cors:
+          allowOrigins:
+          - '*'
+          maxAge: 3600
+          allowMethods:
+          - '*'
+          allowHeaders:
+          - '*'

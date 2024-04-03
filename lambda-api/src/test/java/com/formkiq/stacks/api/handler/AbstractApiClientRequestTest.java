@@ -31,13 +31,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.DynamoDbServiceExtension;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.aws.sqs.SqsServiceExtension;
 import com.formkiq.client.api.DocumentActionsApi;
 import com.formkiq.client.api.DocumentFoldersApi;
+import com.formkiq.client.api.DocumentSearchApi;
 import com.formkiq.client.api.DocumentTagsApi;
 import com.formkiq.client.api.DocumentWorkflowsApi;
 import com.formkiq.client.api.DocumentsApi;
+import com.formkiq.client.api.RulesetsApi;
 import com.formkiq.client.api.SystemManagementApi;
 import com.formkiq.client.api.UserActivitiesApi;
 import com.formkiq.client.invoker.ApiClient;
@@ -85,7 +89,8 @@ public abstract class AbstractApiClientRequestTest {
    * @return {@link AbstractFormKiqApiResponseCallback}
    */
   private static AbstractFormKiqApiResponseCallback generateCallback() {
-    return new FormKiQResponseCallback();
+    int port = AbstractFormKiqApiResponseCallback.generatePort();
+    return new FormKiQResponseCallback(port);
   }
 
   /**
@@ -102,6 +107,7 @@ public abstract class AbstractApiClientRequestTest {
 
     awsServiceCache.register(SqsService.class, new SqsServiceExtension());
     awsServiceCache.register(ActionsService.class, new ActionsServiceExtension());
+    awsServiceCache.register(DynamoDbService.class, new DynamoDbServiceExtension());
     awsServiceCache.register(ConfigService.class, new ConfigServiceExtension());
     awsServiceCache.register(DocumentService.class, new DocumentServiceExtension());
     awsServiceCache.register(DocumentSearchService.class, new DocumentSearchServiceExtension());
@@ -119,14 +125,18 @@ public abstract class AbstractApiClientRequestTest {
   protected DocumentsApi documentsApi = new DocumentsApi(this.client);
   /** {@link DocumentFoldersApi}. */
   protected DocumentFoldersApi foldersApi = new DocumentFoldersApi(this.client);
+  /** {@link RulesetsApi}. */
+  protected RulesetsApi rulesetApi = new RulesetsApi(this.client);
   /** {@link SystemManagementApi}. */
   protected SystemManagementApi systemApi = new SystemManagementApi(this.client);
   /** {@link DocumentTagsApi}. */
   protected DocumentTagsApi tagsApi = new DocumentTagsApi(this.client);
-  /** {@link DocumentWorkflowsApi}. */
-  protected DocumentWorkflowsApi workflowApi = new DocumentWorkflowsApi(this.client);
   /** {@link UserActivitiesApi}. */
   protected UserActivitiesApi userActivitiesApi = new UserActivitiesApi(this.client);
+  /** {@link DocumentWorkflowsApi}. */
+  protected DocumentWorkflowsApi workflowApi = new DocumentWorkflowsApi(this.client);
+  /** {@link DocumentSearchApi}. */
+  protected DocumentSearchApi searchApi = new DocumentSearchApi(this.client);
 
   /**
    * Convert JSON to Object.

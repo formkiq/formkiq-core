@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.api.SystemManagementApi;
 import com.formkiq.client.invoker.ApiClient;
@@ -64,7 +65,7 @@ public class ConfigurationRequestTest extends AbstractAwsIntegrationTest {
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testGetConfiguration01() throws Exception {
     // given
-    String siteId = null;
+    String siteId = SiteIdKeyGenerator.DEFAULT_SITE_ID;
     final int expected = 3;
     List<ApiClient> clients = getApiClients(siteId);
     assertEquals(expected, clients.size());
@@ -100,14 +101,14 @@ public class ConfigurationRequestTest extends AbstractAwsIntegrationTest {
   @Test
   public void testGetConfiguration02() throws Exception {
     // given
-    String siteId = null;
+    String siteId = SiteIdKeyGenerator.DEFAULT_SITE_ID;
     String chatGptApiKey = "1239123123";
     addAndLoginCognito(FINANCE_EMAIL, Arrays.asList("default_read"));
 
     List<ApiClient> apiClients = getApiClients(siteId);
     SystemManagementApi api = new SystemManagementApi(apiClients.get(0));
     UpdateConfigurationRequest req = new UpdateConfigurationRequest().chatGptApiKey(chatGptApiKey);
-    api.updateConfiguration(req, siteId);
+    api.updateConfiguration(siteId, req);
 
     assertEquals("1239*******3123", api.getConfiguration(siteId).getChatGptApiKey());
 
@@ -122,7 +123,7 @@ public class ConfigurationRequestTest extends AbstractAwsIntegrationTest {
 
     // when - update config
     try {
-      api.updateConfiguration(req, siteId);
+      api.updateConfiguration(siteId, req);
       fail();
     } catch (ApiException e) {
       assertEquals(ApiResponseStatus.SC_FORBIDDEN.getStatusCode(), e.getCode());
@@ -140,7 +141,7 @@ public class ConfigurationRequestTest extends AbstractAwsIntegrationTest {
   public void testPatchConfiguration02() throws Exception {
     // given
     final int expected = 3;
-    String siteId = null;
+    String siteId = SiteIdKeyGenerator.DEFAULT_SITE_ID;
     List<ApiClient> clients = getApiClients(null);
     assertEquals(expected, clients.size());
 
@@ -151,7 +152,7 @@ public class ConfigurationRequestTest extends AbstractAwsIntegrationTest {
       SystemManagementApi api = new SystemManagementApi(client);
 
       // when
-      UpdateConfigurationResponse response = api.updateConfiguration(req, siteId);
+      UpdateConfigurationResponse response = api.updateConfiguration(siteId, req);
 
       // then
       assertEquals("Config saved", response.getMessage());
@@ -166,7 +167,7 @@ public class ConfigurationRequestTest extends AbstractAwsIntegrationTest {
 
     // when
     try {
-      api.updateConfiguration(req, siteId);
+      api.updateConfiguration(siteId, req);
       fail();
     } catch (ApiException e) {
       // then
@@ -182,7 +183,7 @@ public class ConfigurationRequestTest extends AbstractAwsIntegrationTest {
   @Test
   public void testPatchConfiguration03() throws Exception {
     // given
-    String siteId = null;
+    String siteId = SiteIdKeyGenerator.DEFAULT_SITE_ID;
     List<ApiClient> clients = getApiClients(null);
 
     String adminEmail =
@@ -193,7 +194,7 @@ public class ConfigurationRequestTest extends AbstractAwsIntegrationTest {
       SystemManagementApi api = new SystemManagementApi(client);
 
       // when
-      UpdateConfigurationResponse updateConfiguration = api.updateConfiguration(req, siteId);
+      UpdateConfigurationResponse updateConfiguration = api.updateConfiguration(siteId, req);
 
       // then
       assertEquals("Config saved", updateConfiguration.getMessage());
@@ -208,7 +209,7 @@ public class ConfigurationRequestTest extends AbstractAwsIntegrationTest {
   @Test
   public void testPatchConfiguration04() throws Exception {
     // given
-    String siteId = null;
+    String siteId = SiteIdKeyGenerator.DEFAULT_SITE_ID;
     List<ApiClient> clients = getApiClients(null);
 
     String email = "test@formkiq.com";
@@ -219,7 +220,7 @@ public class ConfigurationRequestTest extends AbstractAwsIntegrationTest {
 
       // when
       try {
-        api.updateConfiguration(req, siteId);
+        api.updateConfiguration(siteId, req);
         fail();
       } catch (ApiException e) {
         // then

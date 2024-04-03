@@ -480,7 +480,6 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
         HttpService http = serviceCache.getExtension(HttpService.class);
 
-        // FormKiqClientV1 fkClient = this.services.getExtension(FormKiqClientV1.class);
         Optional<Map<String, String>> parameters =
             siteId != null ? Optional.of(Map.of("siteId", siteId)) : Optional.empty();
 

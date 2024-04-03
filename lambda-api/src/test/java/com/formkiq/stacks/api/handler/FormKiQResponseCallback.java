@@ -70,12 +70,22 @@ public class FormKiQResponseCallback extends AbstractFormKiqApiResponseCallback 
 
   /** SQS Sns Update Queue. */
   private static final String SNS_SQS_CREATE_QUEUE = "sqssnsCreate" + UUID.randomUUID();
+
   /** SQS Create Url. */
   private static String snsDocumentEvent;
   /** SQS Sns Create QueueUrl. */
   private static String sqsDocumentEventUrl;
   /** {@link TestCoreRequestHandler}. */
   private TestCoreRequestHandler handler;
+
+  /**
+   * constructor.
+   * 
+   * @param serverPort int
+   */
+  public FormKiQResponseCallback(final int serverPort) {
+    super(serverPort);
+  }
 
   private AwsServiceCache createAwsServices() {
     Map<String, String> env = Map.of("AWS_REGION", AWS_REGION.toString());

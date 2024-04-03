@@ -45,6 +45,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.PaginationResult;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
@@ -75,6 +76,7 @@ import com.formkiq.module.actions.services.ActionsValidator;
 import com.formkiq.module.actions.services.ActionsValidatorImpl;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
+import com.formkiq.plugins.tagschema.TagSchemaInterface;
 import com.formkiq.stacks.dynamodb.ConfigService;
 import com.formkiq.stacks.dynamodb.DocumentCountService;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
@@ -102,7 +104,7 @@ public class DocumentIdRequestHandler
   public static final String FORMKIQ_DOC_EXT = ".fkb64";
 
   /** {@link ActionsValidator}. */
-  private ActionsValidator actionsValidator = new ActionsValidatorImpl();
+  private ActionsValidator actionsValidator = null;
   /** {@link DocumentValidator}. */
   private DocumentValidator documentValidator = new DocumentValidatorImpl();
   /** {@link DocumentsRestrictionsMaxDocuments}. */
@@ -130,7 +132,7 @@ public class DocumentIdRequestHandler
       final AwsServiceCache awsservice, final ApiAuthorization authorization, final String siteId,
       final String documentId, final DynamicObject item, final List<DynamicObject> documents) {
 
-    String userId = authorization.username();
+    String userId = authorization.getUsername();
 
     item.put("documentId", documentId);
     item.put("userId", userId);
@@ -189,7 +191,7 @@ public class DocumentIdRequestHandler
 
     String documentBucket = awsservice.environment("DOCUMENTS_S3_BUCKET");
 
-    String siteId = authorization.siteId();
+    String siteId = authorization.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
 
     if (awsservice.debug()) {
@@ -292,7 +294,7 @@ public class DocumentIdRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    String siteId = authorization.siteId();
+    String siteId = authorization.getSiteId();
     int limit = getLimit(logger, event);
 
     CacheService cacheService = awsservice.getExtension(CacheService.class);
@@ -324,6 +326,13 @@ public class DocumentIdRequestHandler
     return "/documents/{documentId}";
   }
 
+  private void initActionsValidator(final AwsServiceCache awsservice) {
+    if (this.actionsValidator == null) {
+      DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
+      this.actionsValidator = new ActionsValidatorImpl(db);
+    }
+  }
+
   private boolean isFolder(final DynamicDocumentItem item) {
     boolean isFolder = item.hasString("path") && item.getString("path").endsWith("/");
     return isFolder;
@@ -337,7 +346,7 @@ public class DocumentIdRequestHandler
     boolean isUpdate = event.getHttpMethod().equalsIgnoreCase("patch")
         && event.getPathParameters().containsKey("documentId");
 
-    String siteId = authorization.siteId();
+    String siteId = authorization.getSiteId();
     String documentId = UUID.randomUUID().toString();
 
     DynamicDocumentItem item = new DynamicDocumentItem(fromBodyToMap(event));
@@ -378,9 +387,15 @@ public class DocumentIdRequestHandler
       logger.log("setting userId: " + item.getString("userId") + " contentType: "
           + item.getString("contentType"));
 
-      validateTagSchema(awsservice, siteId, item, item.getUserId(), isUpdate);
-      validateTags(item);
-      validateActions(awsservice, siteId, item, authorization);
+      Collection<ValidationError> errors = new ArrayList<>();
+      validateTagSchema(awsservice, siteId, item, item.getUserId(), isUpdate, errors);
+      validateTags(item, errors);
+      validateActions(awsservice, siteId, item, authorization, errors);
+      validateAccessAttributes(awsservice, item, errors);
+
+      if (!errors.isEmpty()) {
+        throw new ValidationException(errors);
+      }
 
       putObjectToStaging(logger, awsservice, maxDocumentCount, siteId, item);
 
@@ -439,14 +454,34 @@ public class DocumentIdRequestHandler
     }
   }
 
+  /**
+   * Validate Access Attributes.
+   * 
+   * @param awsservice {@link AwsServiceCache}
+   * @param item {@link DynamicDocumentItem}
+   * @param errors {@link Collection} {@link ValidationError}
+   */
+  private void validateAccessAttributes(final AwsServiceCache awsservice,
+      final DynamicDocumentItem item, final Collection<ValidationError> errors) {
+
+    List<DynamicObject> list = item.getList("accessAttributes");
+
+    if (!awsservice.hasModule("opa") && list != null && !list.isEmpty()) {
+      errors.add(new ValidationErrorImpl().key("accessAttributes")
+          .error("Access attributes are only supported with the 'open policy access' module"));
+    }
+  }
+
   private void validateActions(final AwsServiceCache awsservice, final String siteId,
-      final DynamicDocumentItem item, final ApiAuthorization authorization)
-      throws ValidationException {
+      final DynamicDocumentItem item, final ApiAuthorization authorization,
+      final Collection<ValidationError> errors) {
+
+    initActionsValidator(awsservice);
 
     List<DynamicObject> objs = item.getList("actions");
     if (!objs.isEmpty()) {
 
-      objs.stream().forEach(a -> a.put("userId", authorization.username()));
+      objs.stream().forEach(a -> a.put("userId", authorization.getUsername()));
       item.put("actions", objs);
 
       ConfigService configsService = awsservice.getExtension(ConfigService.class);
@@ -461,20 +496,19 @@ public class DocumentIdRequestHandler
           type = null;
         }
 
+        String queueId = o.getString("queueId");
         DynamicObject map = o.containsKey("parameters") ? o.getMap("parameters") : null;
         Map<String, String> parameters = map != null
             ? map.entrySet().stream()
                 .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue().toString()))
             : Collections.emptyMap();
 
-        return new Action().type(type).parameters(parameters).userId(o.getString("userId"));
+        return new Action().type(type).queueId(queueId).parameters(parameters)
+            .userId(o.getString("userId"));
       }).collect(Collectors.toList());
 
       for (Action action : actions) {
-        Collection<ValidationError> errors = this.actionsValidator.validation(action, configs);
-        if (!errors.isEmpty()) {
-          throw new ValidationException(errors);
-        }
+        errors.addAll(this.actionsValidator.validation(siteId, action, configs));
       }
     }
   }
@@ -536,19 +570,17 @@ public class DocumentIdRequestHandler
    * Validate Document Tags.
    * 
    * @param item {@link DynamicDocumentItem}
+   * @param errors {@link Collection} {@link ValidationError}
    * @throws ValidationException ValidationException
    */
-  private void validateTags(final DynamicDocumentItem item) throws ValidationException {
+  private void validateTags(final DynamicDocumentItem item,
+      final Collection<ValidationError> errors) throws ValidationException {
 
     List<DynamicObject> tags = item.getList("tags");
     List<String> tagKeys = tags.stream().map(t -> t.getString("key")).collect(Collectors.toList());
 
     DocumentTagValidator validator = new DocumentTagValidatorImpl();
-    Collection<ValidationError> errors = validator.validateKeys(tagKeys);
-
-    if (!errors.isEmpty()) {
-      throw new ValidationException(errors);
-    }
+    errors.addAll(validator.validateKeys(tagKeys));
   }
 
   /**
@@ -559,12 +591,13 @@ public class DocumentIdRequestHandler
    * @param item {@link DynamicDocumentItem}
    * @param userId {@link String}
    * @param isUpdate boolean
+   * @param errors {@link Collection} {@link ValidationError}
    * @throws ValidationException ValidationException
    * @throws BadException BadException
    */
   private void validateTagSchema(final AwsServiceCache cacheService, final String siteId,
-      final DynamicDocumentItem item, final String userId, final boolean isUpdate)
-      throws ValidationException, BadException {
+      final DynamicDocumentItem item, final String userId, final boolean isUpdate,
+      final Collection<ValidationError> errors) throws ValidationException, BadException {
 
     List<DynamicObject> doctags = item.getList("tags");
     DynamicObjectToDocumentTag transform =
@@ -573,21 +606,30 @@ public class DocumentIdRequestHandler
       return transform.apply(t);
     }).collect(Collectors.toList());
 
-    DocumentTagSchemaPlugin plugin = cacheService.getExtension(DocumentTagSchemaPlugin.class);
+    boolean newCompositeTags = false;
 
-    Collection<ValidationError> errors = new ArrayList<>();
+    if (item.getTagSchemaId() != null) {
 
-    List<DocumentTag> compositeTags =
-        plugin.addCompositeKeys(siteId, item, tags, userId, !isUpdate, errors).stream().map(t -> t)
-            .collect(Collectors.toList());
+      DocumentTagSchemaPlugin plugin = cacheService.getExtension(DocumentTagSchemaPlugin.class);
+      TagSchemaInterface tagSchema = plugin.getTagSchema(siteId, item.getTagSchemaId());
 
-    final boolean newCompositeTags = !compositeTags.isEmpty();
+      if (tagSchema == null) {
+        throw new BadException("TagschemaId " + item.getTagSchemaId() + " not found");
+      }
 
-    if (!errors.isEmpty()) {
-      throw new ValidationException(errors);
+      plugin.updateInUse(siteId, tagSchema);
+      List<DocumentTag> compositeTags =
+          plugin.addCompositeKeys(tagSchema, siteId, item.getDocumentId(), tags, userId, !isUpdate,
+              errors).stream().map(t -> t).collect(Collectors.toList());
+
+      newCompositeTags = !compositeTags.isEmpty();
+
+      if (!errors.isEmpty()) {
+        throw new ValidationException(errors);
+      }
+
+      tags.addAll(compositeTags);
     }
-
-    tags.addAll(compositeTags);
 
     DocumentTagToDynamicDocumentTag tf = new DocumentTagToDynamicDocumentTag();
     List<DynamicDocumentTag> objs = tags.stream().map(tf).collect(Collectors.toList());

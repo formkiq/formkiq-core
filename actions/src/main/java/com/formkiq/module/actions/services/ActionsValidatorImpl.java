@@ -37,9 +37,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionType;
+import com.formkiq.module.actions.Queue;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
 
@@ -54,6 +56,17 @@ public class ActionsValidatorImpl implements ActionsValidator {
   private static final String CHATGPT_API_KEY = "ChatGptApiKey";
   /** Notification Email. */
   private static final String NOTIFICATION_EMAIL = "NotificationEmail";
+  /** {@link DynamoDbService}. */
+  private DynamoDbService db;
+
+  /**
+   * constructor.
+   * 
+   * @param dbService {@link DynamoDbService}
+   */
+  public ActionsValidatorImpl(final DynamoDbService dbService) {
+    this.db = dbService;
+  }
 
   private Map<String, String> getParameters(final Action action) {
     Map<String, String> parameters =
@@ -136,15 +149,22 @@ public class ActionsValidatorImpl implements ActionsValidator {
     }
   }
 
-  private void validateWait(final Action action, final Collection<ValidationError> errors) {
+  private void validateQueue(final String siteId, final Action action,
+      final Collection<ValidationError> errors) {
 
     if (isEmpty(action.queueId())) {
       errors.add(new ValidationErrorImpl().key("queueId").error("'queueId' is required"));
+    } else {
+      Queue q = new Queue().documentId(action.queueId());
+      if (!this.db.exists(q.fromS(q.pk(siteId)), q.fromS(q.sk()))) {
+        errors.add(new ValidationErrorImpl().key("queueId").error("'queueId' does not exist"));
+      }
     }
   }
 
   @Override
-  public Collection<ValidationError> validation(final Action action, final DynamicObject configs) {
+  public Collection<ValidationError> validation(final String siteId, final Action action,
+      final DynamicObject configs) {
     Collection<ValidationError> errors = new ArrayList<>();
 
     if (action == null) {
@@ -172,7 +192,7 @@ public class ActionsValidatorImpl implements ActionsValidator {
         } else if (ActionType.NOTIFICATION.equals(action.type())) {
           validateNotificationEmail(configs, action, errors);
         } else if (ActionType.QUEUE.equals(action.type())) {
-          validateWait(action, errors);
+          validateQueue(siteId, action, errors);
         }
       }
     }
@@ -181,10 +201,10 @@ public class ActionsValidatorImpl implements ActionsValidator {
   }
 
   @Override
-  public List<Collection<ValidationError>> validation(final List<Action> actions,
-      final DynamicObject configs) {
+  public List<Collection<ValidationError>> validation(final String siteId,
+      final List<Action> actions, final DynamicObject configs) {
     List<Collection<ValidationError>> errors = new ArrayList<>();
-    actions.forEach(a -> errors.add(validation(a, configs)));
+    actions.forEach(a -> errors.add(validation(siteId, a, configs)));
     return errors;
   }
 

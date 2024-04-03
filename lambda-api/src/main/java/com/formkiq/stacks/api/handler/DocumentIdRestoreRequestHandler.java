@@ -57,7 +57,7 @@ public class DocumentIdRestoreRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    String siteId = authorization.siteId();
+    String siteId = authorization.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);

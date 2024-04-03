@@ -73,7 +73,7 @@ public final class TestServices {
   private static LocalStackContainer localstack = null;
   /** LocalStack {@link DockerImageName}. */
   private static final DockerImageName LOCALSTACK_IMAGE =
-      DockerImageName.parse("localstack/localstack:2.1");
+      DockerImageName.parse("localstack/localstack:3.1.0");
   /** {@link String}. */
   public static final String OCR_BUCKET_NAME = "ocrbucket";
   /** {@link S3ConnectionBuilder}. */

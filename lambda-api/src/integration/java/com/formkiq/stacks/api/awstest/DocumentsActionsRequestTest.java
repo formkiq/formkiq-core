@@ -39,23 +39,27 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.client.api.DocumentActionsApi;
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.api.SystemManagementApi;
 import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAction;
-import com.formkiq.client.model.AddAction.TypeEnum;
 import com.formkiq.client.model.AddActionParameters;
 import com.formkiq.client.model.AddActionParameters.NotificationTypeEnum;
 import com.formkiq.client.model.AddDocumentActionsRetryResponse;
 import com.formkiq.client.model.AddDocumentTag;
 import com.formkiq.client.model.Document;
+import com.formkiq.client.model.DocumentActionStatus;
+import com.formkiq.client.model.DocumentActionType;
 import com.formkiq.client.model.GetDocumentActionsResponse;
 import com.formkiq.client.model.GetDocumentsResponse;
 import com.formkiq.client.model.UpdateConfigurationRequest;
 import com.formkiq.testutils.FileGenerator;
 import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
+import com.nimbusds.jose.util.StandardCharset;
 
 /**
  * GET, POST /documents/{documentId}/actions tests.
@@ -69,43 +73,32 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
   private FileGenerator fileGenerator = new FileGenerator();
 
   /**
-   * POST Document Notifications.
+   * POST /documents/{documentId}.
    * 
    * @throws Exception Exception
    */
   @Test
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
-  public void testAddNotifications01() throws Exception {
+  public void testaddDocumentActions01() throws Exception {
     // given
     String siteId = null;
     List<ApiClient> clients = getApiClients(siteId);
     ApiClient client = clients.get(0);
+    byte[] data = "somedata".getBytes(StandardCharset.UTF_8);
 
-    String adminEmail =
-        getSsm().getParameterValue("/formkiq/" + getAppenvironment() + "/console/AdminEmail");
-    UpdateConfigurationRequest req = new UpdateConfigurationRequest().notificationEmail(adminEmail);
-
-    SystemManagementApi api = new SystemManagementApi(client);
-    api.updateConfiguration(req, siteId);
-
-    String content = "this is a test";
-    String subject = "Test email";
-    String text = "This is a text email";
-    List<AddAction> actions = Arrays.asList(new AddAction().type(TypeEnum.NOTIFICATION)
-        .parameters(new AddActionParameters().notificationType(NotificationTypeEnum.EMAIL)
-            .notificationSubject(subject).notificationToCc("mfriesen@gmail.com")
-            .notificationText(text)));
+    List<AddAction> actions =
+        Arrays.asList(new AddAction().type(DocumentActionType.QUEUE).queueId("test"));
+    List<AddDocumentTag> tags = Collections.emptyList();
 
     // when
-    String documentId = addDocument(client, siteId, "test.txt", content, "text/plain", actions);
-
-    // then
-    GetDocumentActionsResponse response = waitForActionsComplete(client, siteId, documentId);
-    assertEquals(1, response.getActions().size());
-    assertEquals("COMPLETE", response.getActions().get(0).getStatus().name());
-    assertNotNull(response.getActions().get(0).getStartDate());
-    assertNotNull(response.getActions().get(0).getInsertedDate());
-    assertNotNull(response.getActions().get(0).getCompletedDate());
+    try {
+      addDocument(client, siteId, "data.txt", data, MimeType.MIME_PLAIN_TEXT.getContentType(),
+          actions, tags);
+    } catch (ApiException e) {
+      // then
+      assertEquals("{\"errors\":[{\"key\":\"queueId\",\"error\":\"'queueId' does not exist\"}]}",
+          e.getResponseBody());
+    }
   }
 
   /**
@@ -124,7 +117,7 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
     File file = this.fileGenerator.generateZipFile(targetSize);
     byte[] data = Files.readAllBytes(file.toPath());
 
-    List<AddAction> actions = Arrays.asList(new AddAction().type(TypeEnum.OCR));
+    List<AddAction> actions = Arrays.asList(new AddAction().type(DocumentActionType.OCR));
     List<AddDocumentTag> tags = Collections.emptyList();
 
     // when
@@ -132,7 +125,8 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
         MimeType.MIME_DOCX.getContentType(), actions, tags);
 
     // then
-    GetDocumentActionsResponse response = waitForActions(client, siteId, documentId, "FAILED");
+    GetDocumentActionsResponse response =
+        waitForActions(client, siteId, documentId, Arrays.asList(DocumentActionStatus.FAILED));
     assertEquals(1, response.getActions().size());
     assertEquals("FAILED", response.getActions().get(0).getStatus().name());
 
@@ -146,7 +140,8 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
     // then
     assertEquals("Actions retrying", retryResponse.getMessage());
 
-    response = waitForAction(client, siteId, documentId, "FAILED");
+    response =
+        waitForAction(client, siteId, documentId, Arrays.asList(DocumentActionStatus.FAILED));
     assertEquals(2, response.getActions().size());
     assertEquals("FAILED_RETRY", response.getActions().get(0).getStatus().name());
     assertEquals("FAILED", response.getActions().get(1).getStatus().name());
@@ -163,5 +158,45 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
     o = documents.getDocuments().stream().filter(d -> d.getDocumentId().equals(documentId))
         .findAny();
     assertFalse(o.isEmpty());
+  }
+
+  /**
+   * POST Document Notifications.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  public void testAddNotifications01() throws Exception {
+    // given
+    String siteId = SiteIdKeyGenerator.DEFAULT_SITE_ID;
+    List<ApiClient> clients = getApiClients(siteId);
+    ApiClient client = clients.get(0);
+
+    String adminEmail =
+        getSsm().getParameterValue("/formkiq/" + getAppenvironment() + "/console/AdminEmail");
+    UpdateConfigurationRequest req = new UpdateConfigurationRequest().notificationEmail(adminEmail);
+
+    SystemManagementApi api = new SystemManagementApi(client);
+    api.updateConfiguration(siteId, req);
+
+    String content = "this is a test";
+    String subject = "Test email";
+    String text = "This is a text email";
+    List<AddAction> actions = Arrays.asList(new AddAction().type(DocumentActionType.NOTIFICATION)
+        .parameters(new AddActionParameters().notificationType(NotificationTypeEnum.EMAIL)
+            .notificationSubject(subject).notificationToCc("mfriesen@gmail.com")
+            .notificationText(text)));
+
+    // when
+    String documentId = addDocument(client, siteId, "test.txt", content, "text/plain", actions);
+
+    // then
+    GetDocumentActionsResponse response = waitForActionsComplete(client, siteId, documentId);
+    assertEquals(1, response.getActions().size());
+    assertEquals("COMPLETE", response.getActions().get(0).getStatus().name());
+    assertNotNull(response.getActions().get(0).getStartDate());
+    assertNotNull(response.getActions().get(0).getInsertedDate());
+    assertNotNull(response.getActions().get(0).getCompletedDate());
   }
 }

@@ -81,15 +81,15 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    List<DynamicObject> sites = authorization.siteIds().stream().map(siteId -> {
+    List<DynamicObject> sites = authorization.getSiteIds().stream().map(siteId -> {
 
       DynamicObject config = new DynamicObject(new HashMap<>());
       config.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
 
-      boolean write = authorization.permissions(siteId).contains(ApiPermission.WRITE);
+      boolean write = authorization.getPermissions(siteId).contains(ApiPermission.WRITE);
       config.put("permission", write ? "READ_WRITE" : "READ_ONLY");
 
-      List<String> permissions = authorization.permissions(siteId).stream().map(p -> p.name())
+      List<String> permissions = authorization.getPermissions(siteId).stream().map(p -> p.name())
           .collect(Collectors.toList());
       Collections.sort(permissions);
 
@@ -100,7 +100,7 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
 
     updateUploadEmail(logger, awsservice, authorization, sites);
 
-    String userId = authorization.username();
+    String userId = authorization.getUsername();
 
     return new ApiRequestHandlerResponse(SC_OK,
         new ApiMapResponse(Map.of("username", userId, "sites", sites)));
@@ -152,7 +152,7 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
   @Override
   public Optional<Boolean> isAuthorized(final AwsServiceCache awsServiceCache, final String method,
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
-    return !authorization.siteIds().isEmpty() ? Optional.of(Boolean.TRUE) : Optional.empty();
+    return !authorization.getSiteIds().isEmpty() ? Optional.of(Boolean.TRUE) : Optional.empty();
   }
 
   /**
@@ -186,8 +186,8 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
 
     if (mailDomain != null && ssmService != null) {
 
-      List<String> writeSiteIds = authorization.siteIds().stream()
-          .filter(s -> authorization.permissions(s).contains(ApiPermission.WRITE))
+      List<String> writeSiteIds = authorization.getSiteIds().stream()
+          .filter(s -> authorization.getPermissions(s).contains(ApiPermission.WRITE))
           .collect(Collectors.toList());
 
       sites.forEach(site -> {

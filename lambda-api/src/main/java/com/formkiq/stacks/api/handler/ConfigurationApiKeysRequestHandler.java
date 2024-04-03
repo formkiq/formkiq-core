@@ -52,7 +52,7 @@ import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
 
-/** {@link ApiGatewayRequestHandler} for "/configuration/apiKeys". */
+/** {@link ApiGatewayRequestHandler} for "/sites/{siteId}/apiKeys". */
 public class ConfigurationApiKeysRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
@@ -65,17 +65,19 @@ public class ConfigurationApiKeysRequestHandler
   @Override
   public void beforeGet(final LambdaLogger logger, final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
-    checkPermissions(authorization);
+    checkPermissions(event, authorization);
   }
 
   @Override
   public void beforePost(final LambdaLogger logger, final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
-    checkPermissions(authorization);
+    checkPermissions(event, authorization);
   }
 
-  private void checkPermissions(final ApiAuthorization authorization) throws UnauthorizedException {
-    if (!authorization.permissions().contains(ApiPermission.ADMIN)) {
+  private void checkPermissions(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization) throws UnauthorizedException {
+    String siteId = event.getPathParameters().get("siteId");
+    if (!authorization.getPermissions(siteId).contains(ApiPermission.ADMIN)) {
       throw new UnauthorizedException("user is unauthorized");
     }
   }
@@ -93,7 +95,7 @@ public class ConfigurationApiKeysRequestHandler
     final int limit = pagination != null ? pagination.getLimit() : getLimit(logger, event);
     final PaginationMapToken token = pagination != null ? pagination.getStartkey() : null;
 
-    String siteId = authorization.siteId();
+    String siteId = event.getPathParameters().get("siteId");
     PaginationResults<ApiKey> list = apiKeysService.list(siteId, token, limit);
 
     Map<String, Object> map = Map.of("apiKeys", list.getResults());
@@ -102,7 +104,7 @@ public class ConfigurationApiKeysRequestHandler
 
   @Override
   public String getRequestUrl() {
-    return "/configuration/apiKeys";
+    return "/sites/{siteId}/apiKeys";
   }
 
   @Override
@@ -110,7 +112,7 @@ public class ConfigurationApiKeysRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    String siteId = authorization.siteId();
+    String siteId = event.getPathParameters().get("siteId");
 
     ApiKeysService apiKeysService = awsservice.getExtension(ApiKeysService.class);
     DynamicObject body = fromBodyToDynamicObject(event);
@@ -127,7 +129,7 @@ public class ConfigurationApiKeysRequestHandler
           Arrays.asList(ApiKeyPermission.READ, ApiKeyPermission.WRITE, ApiKeyPermission.DELETE);
     }
 
-    String userId = authorization.username();
+    String userId = authorization.getUsername();
     String apiKey = apiKeysService.createApiKey(siteId, name, permissions, userId);
 
     return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(Map.of("apiKey", apiKey)));

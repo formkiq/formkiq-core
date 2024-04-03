@@ -136,6 +136,10 @@ Resources:
     Properties:
       VisibilityTimeout: 600
       ReceiveMessageWaitTimeSeconds: 20
+      RedrivePolicy:
+        maxReceiveCount: 3
+        deadLetterTargetArn:
+          Fn::Sub: '{{resolve:ssm:/formkiq/${AppEnvironment}/sqs/DocumentsDeadLetterQueueArn}}'
       Tags:
         - Key: "Application"
           Value: 

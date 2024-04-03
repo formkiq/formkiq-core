@@ -47,6 +47,8 @@ public enum MimeType {
   MIME_JSON("application/json"),
   /** application/pdf. */
   MIME_PDF("application/pdf"),
+  /** text/plain. */
+  MIME_PLAIN_TEXT("text/plain"),
   /** image/png. */
   MIME_PNG("image/png"),
   /** image/tif. */
@@ -57,6 +59,28 @@ public enum MimeType {
   MIME_UNKNOWN("UNKNOWN"),
   /** image/webp. */
   MIME_WEBP("image/webp");
+
+  /**
+   * Find {@link MimeType} from Content-Type.
+   * 
+   * @param ct {@link String}
+   * @return {@link MimeType}
+   */
+  public static MimeType fromContentType(final String ct) {
+
+    MimeType type = MimeType.MIME_UNKNOWN;
+
+    if (ct != null) {
+      for (MimeType mt : MimeType.values()) {
+        if (ct.equals(mt.getContentType())) {
+          type = mt;
+          break;
+        }
+      }
+    }
+
+    return type;
+  }
 
   /**
    * Is Content Type plain text.
@@ -99,27 +123,5 @@ public enum MimeType {
   public String getExtension() {
     int pos = this.contentType.lastIndexOf("/");
     return pos > -1 ? this.contentType.substring(pos + 1).toLowerCase() : null;
-  }
-
-  /**
-   * Find {@link MimeType} from Content-Type.
-   * 
-   * @param ct {@link String}
-   * @return {@link MimeType}
-   */
-  public static MimeType fromContentType(final String ct) {
-
-    MimeType type = MimeType.MIME_UNKNOWN;
-
-    if (ct != null) {
-      for (MimeType mt : MimeType.values()) {
-        if (ct.equals(mt.getContentType())) {
-          type = mt;
-          break;
-        }
-      }
-    }
-
-    return type;
   }
 }

@@ -61,7 +61,7 @@ public class IndicesRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsServices) throws Exception {
 
-    String siteId = authorization.siteId();
+    String siteId = authorization.getSiteId();
     String type = event.getPathParameters().get("indexType");
     String indexKey = event.getPathParameters().get("indexKey");
 

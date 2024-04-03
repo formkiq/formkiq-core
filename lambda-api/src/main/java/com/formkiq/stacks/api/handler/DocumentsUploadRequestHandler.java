@@ -55,6 +55,7 @@ import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.DynamicObjectToAction;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
+import com.formkiq.plugins.tagschema.TagSchemaInterface;
 import com.formkiq.stacks.api.ApiUrlResponse;
 import com.formkiq.stacks.dynamodb.DocumentCountService;
 import com.formkiq.stacks.dynamodb.DocumentService;
@@ -247,11 +248,11 @@ public class DocumentsUploadRequestHandler
     DynamicDocumentItem item = new DynamicDocumentItem(new HashMap<>());
     item.setInsertedDate(new Date());
     item.setDocumentId(UUID.randomUUID().toString());
-    item.setUserId(authorization.username());
+    item.setUserId(authorization.getUsername());
 
     Map<String, String> query = event.getQueryStringParameters();
 
-    String siteId = authorization.siteId();
+    String siteId = authorization.getSiteId();
 
     String path = query != null && query.containsKey("path") ? query.get("path") : null;
     item.setPath(path);
@@ -267,7 +268,7 @@ public class DocumentsUploadRequestHandler
   @Override
   public Optional<Boolean> isAuthorized(final AwsServiceCache awsservice, final String method,
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
-    boolean access = authorization.permissions().contains(ApiPermission.WRITE);
+    boolean access = authorization.getPermissions().contains(ApiPermission.WRITE);
     return Optional.of(Boolean.valueOf(access));
   }
 
@@ -278,13 +279,15 @@ public class DocumentsUploadRequestHandler
 
     DynamicDocumentItem item = new DynamicDocumentItem(fromBodyToMap(event));
     item.setDocumentId(UUID.randomUUID().toString());
-    item.setUserId(authorization.username());
+    item.setUserId(authorization.getUsername());
     item.setInsertedDate(new Date());
 
-    List<DynamicObject> tags = item.getList("tags");
-    validateTags(tags);
+    if (item.containsKey("tags")) {
+      List<DynamicObject> tags = item.getList("tags");
+      validateTags(tags);
+    }
 
-    String siteId = authorization.siteId();
+    String siteId = authorization.getSiteId();
     return buildPresignedResponse(logger, event, awsservice, siteId, item);
   }
 
@@ -323,16 +326,26 @@ public class DocumentsUploadRequestHandler
 
     DocumentTagSchemaPlugin plugin = cacheService.getExtension(DocumentTagSchemaPlugin.class);
 
-    Collection<ValidationError> errors = new ArrayList<>();
+    if (item.getTagSchemaId() != null) {
 
-    List<DocumentTag> compositeTags =
-        plugin.addCompositeKeys(siteId, item, tags, userId, true, errors).stream().map(t -> t)
-            .collect(Collectors.toList());
+      TagSchemaInterface tagSchema = plugin.getTagSchema(siteId, item.getTagSchemaId());
 
-    if (!errors.isEmpty()) {
-      throw new ValidationException(errors);
+      if (tagSchema == null) {
+        throw new BadException("TagschemaId " + item.getTagSchemaId() + " not found");
+      }
+
+      plugin.updateInUse(siteId, tagSchema);
+
+      Collection<ValidationError> errors = new ArrayList<>();
+      List<DocumentTag> compositeTags = plugin
+          .addCompositeKeys(tagSchema, siteId, item.getDocumentId(), tags, userId, true, errors)
+          .stream().map(t -> t).collect(Collectors.toList());
+
+      if (!errors.isEmpty()) {
+        throw new ValidationException(errors);
+      }
+
+      tags.addAll(compositeTags);
     }
-
-    tags.addAll(compositeTags);
   }
 }

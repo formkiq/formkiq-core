@@ -103,7 +103,7 @@ public class DocumentsCompressRequestHandler
   @Override
   public Optional<Boolean> isAuthorized(final AwsServiceCache awsservice, final String method,
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
-    boolean access = authorization.permissions().contains(ApiPermission.READ);
+    boolean access = authorization.getPermissions().contains(ApiPermission.READ);
     return Optional.of(Boolean.valueOf(access));
   }
 
@@ -112,7 +112,7 @@ public class DocumentsCompressRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsServices) throws Exception {
 
-    String siteId = authorization.siteId();
+    String siteId = authorization.getSiteId();
     String documentId = UUID.randomUUID().toString();
     String compressionTaskS3Key = getS3Key(siteId, documentId, false);
 

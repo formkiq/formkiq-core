@@ -44,6 +44,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
@@ -748,9 +749,36 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
       final String documentId, final Action action, final List<String> contentUrls)
       throws IOException, InterruptedException {
 
+    final int sleep = 500;
     Map<String, Object> payload = Map.of("contentUrls", contentUrls);
-    sendRequest(siteId, "patch", "/documents/" + documentId + "/fulltext",
-        this.gson.toJson(payload));
+
+    try {
+      sendRequest(siteId, "patch", "/documents/" + documentId + "/fulltext",
+          this.gson.toJson(payload));
+    } catch (IOException ex1) {
+
+      if (ex1.getMessage().contains(" 404")) {
+
+        TimeUnit.MILLISECONDS.sleep(sleep);
+
+        try {
+          sendRequest(siteId, "post", "/documents/" + documentId + "/fulltext",
+              this.gson.toJson(payload));
+        } catch (IOException ex2) {
+
+          if (ex2.getMessage().contains(" 409")) {
+            TimeUnit.MILLISECONDS.sleep(sleep);
+            sendRequest(siteId, "patch", "/documents/" + documentId + "/fulltext",
+                this.gson.toJson(payload));
+          } else {
+            throw ex2;
+          }
+        }
+
+      } else {
+        throw ex1;
+      }
+    }
   }
 
   /**

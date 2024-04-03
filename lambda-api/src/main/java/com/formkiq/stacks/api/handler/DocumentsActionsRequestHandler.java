@@ -33,14 +33,20 @@ import java.util.Map;
 import java.util.Optional;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.PaginationMapToken;
+import com.formkiq.aws.dynamodb.PaginationResults;
+import com.formkiq.aws.dynamodb.PaginationToAttributeValue;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
+import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
+import com.formkiq.aws.services.lambda.services.CacheService;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsNotificationService;
@@ -52,6 +58,7 @@ import com.formkiq.stacks.dynamodb.ConfigService;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/actions". */
 public class DocumentsActionsRequestHandler
@@ -68,17 +75,27 @@ public class DocumentsActionsRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    String siteId = authorization.siteId();
+    String siteId = authorization.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
 
     DocumentItem item = getDocument(awsservice, siteId, documentId);
     throwIfNull(item, new DocumentNotFoundException(documentId));
 
+    CacheService cacheService = awsservice.getExtension(CacheService.class);
+
+    ApiPagination pagination = getPagination(cacheService, event);
+
+    int limit = pagination != null ? pagination.getLimit() : getLimit(logger, event);
+    PaginationMapToken ptoken = pagination != null ? pagination.getStartkey() : null;
+
+    PaginationToAttributeValue pav = new PaginationToAttributeValue();
+    Map<String, AttributeValue> startKey = pav.apply(ptoken);
+
     ActionsService service = awsservice.getExtension(ActionsService.class);
-    List<Action> actions = service.getActions(siteId, documentId);
+    PaginationResults<Action> results = service.getActions(siteId, documentId, startKey, limit);
 
     List<Map<String, Object>> list = new ArrayList<>();
-    for (Action action : actions) {
+    for (Action action : results.getResults()) {
       Map<String, Object> map = new HashMap<>();
       map.put("userId", action.userId());
       map.put("status", action.status().name());
@@ -96,9 +113,13 @@ public class DocumentsActionsRequestHandler
       list.add(map);
     }
 
-    ApiMapResponse resp = new ApiMapResponse();
-    resp.setMap(Map.of("actions", list));
-    return new ApiRequestHandlerResponse(SC_OK, resp);
+    ApiPagination current =
+        createPagination(cacheService, event, pagination, results.getToken(), limit);
+
+    Map<String, Object> map = new HashMap<>();
+    map.put("actions", list);
+    map.put("next", current.hasNext() ? current.getNext() : null);
+    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
   }
 
   private DocumentItem getDocument(final AwsServiceCache awsservice, final String siteId,
@@ -120,9 +141,9 @@ public class DocumentsActionsRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    String siteId = authorization.siteId();
+    String siteId = authorization.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
-    String userId = authorization.username();
+    String userId = authorization.getUsername();
 
     DocumentItem item = getDocument(awsservice, siteId, documentId);
     throwIfNull(item, new DocumentNotFoundException(documentId));
@@ -159,6 +180,7 @@ public class DocumentsActionsRequestHandler
 
       ActionType type = null;
       Object stype = a.get("type");
+      String queueId = (String) a.get("queueId");
 
       try {
         type = stype != null ? ActionType.valueOf(stype.toString().toUpperCase()) : null;
@@ -167,7 +189,8 @@ public class DocumentsActionsRequestHandler
       }
 
       Map<String, String> parameters = (Map<String, String>) a.get("parameters");
-      Action action = new Action().type(type).parameters(parameters).userId(userId);
+      Action action =
+          new Action().queueId(queueId).type(type).parameters(parameters).userId(userId);
 
       actions.add(action);
     });
@@ -177,11 +200,13 @@ public class DocumentsActionsRequestHandler
 
   private void validate(final AwsServiceCache awsservice, final String siteId,
       final List<Action> actions) throws ValidationException {
-    ActionsValidator validator = new ActionsValidatorImpl();
+
+    DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
+    ActionsValidator validator = new ActionsValidatorImpl(db);
 
     ConfigService configsService = awsservice.getExtension(ConfigService.class);
     DynamicObject configs = configsService.get(siteId);
-    List<Collection<ValidationError>> errors = validator.validation(actions, configs);
+    List<Collection<ValidationError>> errors = validator.validation(siteId, actions, configs);
 
     Optional<Collection<ValidationError>> firstError =
         errors.stream().filter(e -> !e.isEmpty()).findFirst();

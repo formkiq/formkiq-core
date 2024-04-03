@@ -25,13 +25,13 @@ dependencies {
 	implementation project(':lambda-api')
 	implementation project(':lambda-typesense')
 	implementation group: 'io.netty', name: 'netty-all', version: '4.1.96.Final'	
-	implementation group: 'commons-cli', name: 'commons-cli', version: '1.5.0'
-	implementation group: 'io.minio', name: 'minio', version: '8.5.5'
-	implementation group: 'software.amazon.awssdk', name: 'dynamodb', version: '2.20.140'
+	implementation group: 'commons-cli', name: 'commons-cli', version: '1.6.0'
+	implementation group: 'io.minio', name: 'minio', version: '8.5.7'
+	implementation group: 'software.amazon.awssdk', name: 'dynamodb', version: '2.23.12'
 	
 	testImplementation project(':fkq-test-utils')
-	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.10.0'
-	testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.19.0'
+	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.10.1'
+	testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.19.4'
 }
 
 test {

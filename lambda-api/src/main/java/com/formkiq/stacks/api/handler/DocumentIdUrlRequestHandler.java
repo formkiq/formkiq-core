@@ -74,7 +74,7 @@ public class DocumentIdUrlRequestHandler
       final AwsServiceCache awsservice) throws Exception {
 
     String documentId = event.getPathParameters().get("documentId");
-    String siteId = authorization.siteId();
+    String siteId = authorization.getSiteId();
     boolean inline = "true".equals(getParameter(event, "inline"));
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
@@ -95,7 +95,7 @@ public class DocumentIdUrlRequestHandler
     if (url != null) {
       if (awsservice.containsExtension(UserActivityPlugin.class)) {
         UserActivityPlugin plugin = awsservice.getExtension(UserActivityPlugin.class);
-        plugin.addViewActivity(siteId, documentId, versionKey, authorization.username());
+        plugin.addViewActivity(siteId, documentId, versionKey, authorization.getUsername());
       }
     }
 
@@ -153,7 +153,7 @@ public class DocumentIdUrlRequestHandler
     final String documentId = item.getDocumentId();
 
     String contentType = getContentType(event);
-    String siteId = authorization.siteId();
+    String siteId = authorization.getSiteId();
 
     if (awsservice.debug()) {
       logger.log("Finding S3 Url for 'Content-Type' " + contentType);

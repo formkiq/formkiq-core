@@ -55,6 +55,7 @@ import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
+import com.formkiq.aws.dynamodb.model.SearchTagCriteriaRange;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
@@ -952,6 +953,30 @@ public class DocumentSearchServiceImplTest {
       assertEquals(2, results.getResults().size());
       assertTrue(results.getResults().contains(documentId0));
       assertTrue(results.getResults().contains(documentId1));
+    }
+  }
+
+  /** Search by 'between' Tag Key & Value. */
+  @Test
+  public void testSearch19() {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      final String documentId0 = createDocument(siteId, "date", "2024-03-19T02:45:04+0000");
+      final String documentId1 = createDocument(siteId, "date", "2024-03-20T02:45:04+0000");
+      createDocument(siteId, "date", "2024-03-21T02:45:04+0000");
+
+      SearchTagCriteria c = new SearchTagCriteria("date")
+          .range(new SearchTagCriteriaRange().start("2024-03-10").end("2024-03-21"));
+      SearchQuery q = new SearchQuery().tag(c);
+
+      // when
+      PaginationResults<DynamicDocumentItem> results =
+          this.searchService.search(siteId, q, null, MAX_RESULTS);
+
+      // then
+      assertEquals(2, results.getResults().size());
+      assertEquals(documentId0, results.getResults().get(0).getDocumentId());
+      assertEquals(documentId1, results.getResults().get(1).getDocumentId());
     }
   }
 }

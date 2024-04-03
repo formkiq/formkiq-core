@@ -40,12 +40,12 @@ import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddApiKeyRequest;
 import com.formkiq.client.model.AddApiKeyRequest.PermissionsEnum;
-import com.formkiq.stacks.client.FormKiqClientV1;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthenticationResultType;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.GroupExistsException;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UserStatusType;
 
 /**
@@ -67,20 +67,6 @@ public abstract class AbstractAwsIntegrationTest {
   private static String awsprofile;
   /** {@link Region}. */
   private static Region awsregion;
-  /**
-   * FormKiQ IAM Client.
-   * 
-   * @deprecated To be removed
-   */
-  @Deprecated
-  private static FormKiqClientV1 clientIam;
-  /**
-   * Client Token {@link FormKiqClientV1}.
-   * 
-   * @deprecated To be removed
-   */
-  @Deprecated
-  private static FormKiqClientV1 clientToken;
   /** {@link FkqCognitoService}. */
   private static FkqCognitoService cognito;
   /** {@link S3Service}. */
@@ -114,7 +100,11 @@ public abstract class AbstractAwsIntegrationTest {
       for (String groupName : groupNames) {
         if (!groupName.startsWith(DEFAULT_SITE_ID) && !"authentication_only".equals(groupName)) {
 
-          getCognito().addGroup(groupName);
+          try {
+            getCognito().addGroup(groupName);
+          } catch (GroupExistsException e) {
+            // ignore group already exists
+          }
         }
         getCognito().addUserToGroup(username, groupName);
       }
@@ -136,15 +126,14 @@ public abstract class AbstractAwsIntegrationTest {
    * @throws URISyntaxException URISyntaxException
    */
   @BeforeAll
-  public static void beforeClass() throws IOException, InterruptedException, URISyntaxException {
+  public static synchronized void beforeClass()
+      throws IOException, InterruptedException, URISyntaxException {
     setupServices();
 
     cognito.addUser(ADMIN_EMAIL, USER_PASSWORD);
     cognito.addUserToGroup(ADMIN_EMAIL, "Admins");
 
     adminToken = cognito.login(ADMIN_EMAIL, USER_PASSWORD);
-    clientToken = cognito.getFormKiqClient(adminToken);
-    clientIam = cognito.getFormKiqClient();
   }
 
   /**
@@ -203,7 +192,7 @@ public abstract class AbstractAwsIntegrationTest {
       List<PermissionsEnum> permissions =
           Arrays.asList(PermissionsEnum.READ, PermissionsEnum.DELETE, PermissionsEnum.WRITE);
       AddApiKeyRequest req = new AddApiKeyRequest().name("My Api Key").permissions(permissions);
-      String apiKey = api.addApiKey(req, siteId).getApiKey();
+      String apiKey = api.addApiKey(site, req).getApiKey();
 
       apiKeys.put(site, apiKey);
     }
@@ -308,38 +297,5 @@ public abstract class AbstractAwsIntegrationTest {
     ApiClient jwtClient = new ApiClient().setReadTimeout(0).setBasePath(cognito.getRootJwtUrl());
     jwtClient.addDefaultHeader("Authorization", token.accessToken());
     return jwtClient;
-  }
-
-  /**
-   * Get IAM {@link FormKiqClientV1}.
-   * 
-   * @return {@link FormKiqClientV1}
-   * @deprecated To be removed
-   */
-  @Deprecated
-  public FormKiqClientV1 getClientIam() {
-    return clientIam;
-  }
-
-  /**
-   * Get {@link FormKiqClientV1}.
-   * 
-   * @return {@link FormKiqClientV1}
-   * @deprecated To be removed
-   */
-  @Deprecated
-  public List<FormKiqClientV1> getClients() {
-    return Arrays.asList(clientToken, clientIam);
-  }
-
-  /**
-   * Get Token {@link FormKiqClientV1}.
-   * 
-   * @return {@link FormKiqClientV1}
-   * @deprecated To be removed
-   */
-  @Deprecated
-  public FormKiqClientV1 getClientToken() {
-    return clientToken;
   }
 }

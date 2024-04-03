@@ -29,6 +29,8 @@ import java.util.Map;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
+import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.UpdateItemResponse;
 
 /**
  * 
@@ -45,6 +47,14 @@ public interface DynamoDbService {
    * @return boolean
    */
   boolean deleteItem(AttributeValue pk, AttributeValue sk);
+
+  /**
+   * Delete DynamoDb Record.
+   * 
+   * @param key {@link Map}
+   * @return boolean
+   */
+  boolean deleteItem(Map<String, AttributeValue> key);
 
   /**
    * Delete Items.
@@ -93,6 +103,22 @@ public interface DynamoDbService {
       List<Map<String, AttributeValue>> keys);
 
   /**
+   * Get Next Number.
+   * 
+   * @param keys {@link Map}
+   * 
+   * @return {@link String}
+   */
+  String getNextNumber(Map<String, AttributeValue> keys);
+
+  /**
+   * Get Table Name.
+   * 
+   * @return {@link String}
+   */
+  String getTableName();
+
+  /**
    * Move Records.
    * 
    * @param attrs {@link Collection} {@link Map}
@@ -122,8 +148,22 @@ public interface DynamoDbService {
    * @param exclusiveStartKey {@link Map}
    * @param limit int
    * @return {@link QueryResponse}
+   * @deprecated Use other 'query' with {@link QueryConfig}
    */
+  @Deprecated
   QueryResponse query(AttributeValue pk, Map<String, AttributeValue> exclusiveStartKey, int limit);
+
+  /**
+   * Query DynamoDB Records.
+   * 
+   * @param config {@link QueryConfig}
+   * @param pk {@link AttributeValue}
+   * @param exclusiveStartKey {@link Map}
+   * @param limit int
+   * @return {@link QueryResponse}
+   */
+  QueryResponse query(QueryConfig config, AttributeValue pk,
+      Map<String, AttributeValue> exclusiveStartKey, int limit);
 
   /**
    * Query DynamoDB Records.
@@ -160,6 +200,14 @@ public interface DynamoDbService {
    */
   Map<String, AttributeValue> updateItem(AttributeValue pk, AttributeValue sk,
       Map<String, AttributeValueUpdate> updateValues);
+
+  /**
+   * Update Item.
+   * 
+   * @param request {@link UpdateItemRequest}
+   * @return {@link UpdateItemResponse}
+   */
+  UpdateItemResponse updateItem(UpdateItemRequest request);
 
   /**
    * Update DynamoDB Record.

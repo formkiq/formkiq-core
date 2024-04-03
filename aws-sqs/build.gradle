@@ -8,8 +8,8 @@ dependencies {
 	implementation group: 'com.formkiq', name: 'graalvm-annotations', version: '1.2.0'
 	implementation group: 'com.google.code.gson', name: 'gson', version: '2.10.1'
 
-    api 'software.amazon.awssdk:sqs:2.20.140'
-    implementation group: 'software.amazon.awssdk', name: 'url-connection-client', version: '2.20.140'
+    api 'software.amazon.awssdk:sqs:2.23.12'
+    implementation group: 'software.amazon.awssdk', name: 'url-connection-client', version: '2.23.12'
 	//implementation project(':aws-xray')
 	implementation project(':fkq-lambda-services')
 	
@@ -18,7 +18,7 @@ dependencies {
    		exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
 	}
 	
-	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.10.0'
+	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.10.1'
 }
 
 test {

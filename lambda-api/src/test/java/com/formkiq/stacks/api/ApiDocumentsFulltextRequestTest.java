@@ -45,6 +45,7 @@ import com.formkiq.client.model.SetDocumentFulltextRequest;
 import com.formkiq.client.model.SetDocumentFulltextResponse;
 import com.formkiq.client.model.UpdateDocumentFulltextRequest;
 import com.formkiq.stacks.api.handler.FormKiQResponseCallback;
+import com.formkiq.testutils.aws.AbstractFormKiqApiResponseCallback;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.FormKiqApiExtension;
 import com.formkiq.testutils.aws.JwtTokenEncoder;
@@ -57,7 +58,8 @@ import com.formkiq.testutils.aws.TypesenseExtension;
 @ExtendWith(TypesenseExtension.class)
 public class ApiDocumentsFulltextRequestTest {
   /** {@link FormKiQResponseCallback}. */
-  private static final FormKiQResponseCallback CALLBACK = new FormKiQResponseCallback();
+  private static final FormKiQResponseCallback CALLBACK =
+      new FormKiQResponseCallback(AbstractFormKiqApiResponseCallback.generatePort());
   /** FormKiQ Server. */
   @RegisterExtension
   static FormKiqApiExtension server = new FormKiqApiExtension(CALLBACK);
@@ -107,7 +109,6 @@ public class ApiDocumentsFulltextRequestTest {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocumentFulltext02() throws Exception {
     String content = "some content";
@@ -134,7 +135,7 @@ public class ApiDocumentsFulltextRequestTest {
           this.searchApi.getDocumentFulltext(documentId, siteId, null);
       assertEquals("text/plain", response.getContentType());
       assertEquals(content, response.getContent());
-      Map<String, Object> metadata = (Map<String, Object>) response.getMetadata();
+      Map<String, Object> metadata = response.getMetadata();
       assertEquals(2, metadata.size());
       assertEquals("myvalue", metadata.get("mykey"));
       assertEquals("", metadata.get("mykey2"));

@@ -80,6 +80,7 @@ import com.formkiq.client.model.DocumentSearchResponse;
 import com.formkiq.client.model.GetDocumentResponse;
 import com.formkiq.client.model.GetDocumentTagsResponse;
 import com.formkiq.client.model.GetDocumentsResponse;
+import com.formkiq.client.model.UpdateDocumentRequest;
 import com.formkiq.stacks.client.HttpService;
 import com.formkiq.stacks.client.HttpServiceJava;
 import com.formkiq.stacks.client.models.AddDocument;
@@ -266,8 +267,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
     } catch (ApiException e) {
       // then
       assertEquals(STATUS_FORBIDDEN, e.getCode());
-      assertEquals("{\"message\":\"fkq access denied (groups: default (READ))\"}",
-          e.getResponseBody());
+      assertEquals("{\"message\":\"fkq access denied to siteId (finance)\"}", e.getResponseBody());
     }
   }
 
@@ -299,8 +299,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
       api.getDocuments(siteId, null, null, date, null, null, null, null);
     } catch (ApiException e) {
       assertEquals(STATUS_FORBIDDEN, e.getCode());
-      assertEquals("{\"message\":\"fkq access denied (groups: default (DELETE,READ,WRITE))\"}",
-          e.getResponseBody());
+      assertEquals("{\"message\":\"fkq access denied to siteId (finance)\"}", e.getResponseBody());
     }
   }
 
@@ -381,8 +380,8 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
 
     // given
     String tagKey = "mykey";
-    AddDocumentRequest updateReq =
-        new AddDocumentRequest().addTagsItem(new AddDocumentTag().key(tagKey).value("myvalue"));
+    UpdateDocumentRequest updateReq =
+        new UpdateDocumentRequest().addTagsItem(new AddDocumentTag().key(tagKey).value("myvalue"));
 
     // when - patch document
     api.updateDocument(documentId, updateReq, siteId, null);
@@ -475,8 +474,8 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
       assertEquals("9", document.getContentLength().toString());
 
       // given
-      AddDocumentRequest updateReq =
-          new AddDocumentRequest().content("dummy data").contentType("application/pdf");
+      UpdateDocumentRequest updateReq =
+          new UpdateDocumentRequest().content("dummy data").contentType("application/pdf");
 
       // when - patch document
       api.updateDocument(documentId, updateReq, siteId, null);
@@ -542,8 +541,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
       api.addDocument(req, siteId, null);
     } catch (ApiException e) {
       // then
-      assertEquals("{\"message\":\"fkq access denied (groups: default (READ))\"}",
-          e.getResponseBody());
+      assertEquals("{\"message\":\"fkq access denied to siteId (finance)\"}", e.getResponseBody());
     }
   }
 
@@ -575,8 +573,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
     } catch (ApiException e) {
       // then
       assertEquals(STATUS_FORBIDDEN, e.getCode());
-      assertEquals("{\"message\":\"fkq access denied (groups: default (DELETE,READ,WRITE))\"}",
-          e.getResponseBody());
+      assertEquals("{\"message\":\"fkq access denied to siteId (finance)\"}", e.getResponseBody());
     }
   }
 
@@ -861,7 +858,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
       // given
       String newpath = "newpath_" + UUID.randomUUID().toString() + ".txt";
 
-      AddDocumentRequest updateDoc = new AddDocumentRequest().path(newpath)
+      UpdateDocumentRequest updateDoc = new UpdateDocumentRequest().path(newpath)
           .addTagsItem(new AddDocumentTag().key("some").value("thing"))
           .addTagsItem(new AddDocumentTag().key("person").value("555"));
 

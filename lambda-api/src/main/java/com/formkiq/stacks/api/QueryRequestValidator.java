@@ -26,6 +26,7 @@ package com.formkiq.stacks.api;
 import static software.amazon.awssdk.utils.StringUtils.isEmpty;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.validation.ValidationError;
@@ -46,6 +47,34 @@ public class QueryRequestValidator {
   private boolean isQueryEmpty(final QueryRequest q) {
     return q.query().tag() == null && q.query().tags() == null && q.query().meta() == null
         && StringUtils.isEmpty(q.query().text());
+  }
+
+  private void validateMultiTags(final List<SearchTagCriteria> tags,
+      final Collection<ValidationError> errors) {
+    if (tags.size() > 1) {
+      // every tag must use "eq" except last one
+      for (int i = 0; i < tags.size() - 1; i++) {
+        if (tags.get(i).beginsWith() != null || tags.get(i).range() != null) {
+          errors.add(new ValidationErrorImpl().key("tag/eq")
+              .error("'beginsWith','range' is only supported on the last tag"));
+        }
+      }
+    }
+  }
+
+  private void validateRange(final SearchTagCriteria tag,
+      final Collection<ValidationError> errors) {
+
+    if (tag != null && tag.range() != null) {
+
+      if (StringUtils.isEmpty(tag.range().getStart())) {
+        errors.add(new ValidationErrorImpl().key("range/start").error("range start is required"));
+      }
+
+      if (StringUtils.isEmpty(tag.range().getEnd())) {
+        errors.add(new ValidationErrorImpl().key("range/end").error("range end is required"));
+      }
+    }
   }
 
   /**
@@ -72,11 +101,22 @@ public class QueryRequestValidator {
 
     } else {
 
-      for (SearchTagCriteria tag : Objects.notNull(q.query().tags())) {
+      List<SearchTagCriteria> tags = Objects.notNull(q.query().tags());
+
+      validateMultiTags(tags, errors);
+
+      for (SearchTagCriteria tag : tags) {
+
         if (StringUtils.isEmpty(tag.key())) {
           errors.add(new ValidationErrorImpl().key("tag/key").error("attribute is required"));
         }
+
+        validateRange(tag, errors);
       }
+    }
+
+    if (errors.isEmpty()) {
+      validateRange(q.query().tag(), errors);
     }
 
     return errors;

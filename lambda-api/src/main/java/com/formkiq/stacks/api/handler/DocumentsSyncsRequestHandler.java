@@ -66,7 +66,7 @@ public class DocumentsSyncsRequestHandler
     final int limit = pagination != null ? pagination.getLimit() : getLimit(logger, event);
     final PaginationMapToken token = pagination != null ? pagination.getStartkey() : null;
 
-    String siteId = authorization.siteId();
+    String siteId = authorization.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
     verifyDocument(awsservice, event, siteId, documentId);
 
