@@ -772,7 +772,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       // given
       String documentId = UUID.randomUUID().toString();
       List<Action> actions = Arrays.asList(new Action().type(ActionType.OCR).userId("joe")
-          .parameters(Map.of("addPdfDetectedCharactersAsText", "true")));
+          .parameters(Map.of("addPdfDetectedCharactersAsText", "true", "ocrNumberOfPages", "2")));
       actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
@@ -788,6 +788,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       Map<String, Object> resultmap = gson.fromJson(lastRequest.getBodyAsString(), Map.class);
       assertEquals("[TEXT]", resultmap.get("parseTypes").toString());
       assertEquals("true", resultmap.get("addPdfDetectedCharactersAsText").toString());
+      assertEquals("2", resultmap.get("ocrNumberOfPages").toString());
 
       Action action = actionsService.getActions(siteId, documentId).get(0);
       assertEquals(ActionStatus.RUNNING, action.status());

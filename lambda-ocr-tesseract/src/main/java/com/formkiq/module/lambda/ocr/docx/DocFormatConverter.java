@@ -47,7 +47,7 @@ public class DocFormatConverter implements FormatConverter {
 
   @Override
   public FormatConverterResult convert(final AwsServiceCache awsServices,
-      final OcrSqsMessage sqsMessage, final File file) throws IOException {
+      final OcrSqsMessage sqsMessage, final MimeType mineType, final File file) throws IOException {
 
     HWPFDocument document = new HWPFDocument(new FileInputStream(file));
     try (WordExtractor extractor = new WordExtractor(document)) {
@@ -55,5 +55,4 @@ public class DocFormatConverter implements FormatConverter {
       return new FormatConverterResult().text(text).status(OcrScanStatus.SUCCESSFUL);
     }
   }
-
 }

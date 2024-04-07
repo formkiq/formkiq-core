@@ -23,6 +23,7 @@
  */
 package com.formkiq.module.lambda.ocr.tesseract;
 
+import java.awt.image.BufferedImage;
 import java.io.File;
 import net.sourceforge.tess4j.TesseractException;
 
@@ -32,6 +33,15 @@ import net.sourceforge.tess4j.TesseractException;
  *
  */
 public interface TesseractWrapper {
+
+  /**
+   * Performs OCR operation.
+   *
+   * @param image buffered image
+   * @return the recognized text
+   * @throws TesseractException TesseractException
+   */
+  String doOcr(BufferedImage image) throws TesseractException;
 
   /**
    * Performs OCR operation.

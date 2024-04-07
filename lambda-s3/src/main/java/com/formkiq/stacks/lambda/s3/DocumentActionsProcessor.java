@@ -199,7 +199,6 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
     String addPdfDetectedCharactersAsText =
         parameters.getOrDefault("addPdfDetectedCharactersAsText", "false");
-    String ocrEngine = parameters.get("ocrEngine");
 
     Map<String, Object> payload = new HashMap<String, Object>();
 
@@ -207,6 +206,12 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     payload.put("parseTypes", parseTypes);
     payload.put("addPdfDetectedCharactersAsText",
         Boolean.valueOf("true".equals(addPdfDetectedCharactersAsText)));
+
+    if (parameters.containsKey("ocrNumberOfPages")) {
+      payload.put("ocrNumberOfPages", parameters.get("ocrNumberOfPages"));
+    }
+
+    String ocrEngine = parameters.get("ocrEngine");
 
     if (!isEmpty(ocrEngine)) {
       payload.put("ocrEngine", ocrEngine);
