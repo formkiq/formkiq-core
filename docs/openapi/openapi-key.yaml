@@ -32,7 +32,7 @@
               - OAuth(JWT)
               - AWS IAM
               - API Key
-          version: 1.14.1
+          version: 1.15.0
         tags:
         - name: documents
           description: API for the add, updating and fetching of documents
@@ -1642,6 +1642,7 @@
                 | -------- | ------- | ------- | ------- |
                 | OCR  | ocrParseTypes | Ocr Parsing strategy to use | TEXT, FORMS, TABLES |
                 | OCR | ocrEngine     | Ocr Engine to use | tesseract or textract |
+                | OCR | ocrNumberOfPages  | Number of pages to OCR (from start) | -1 |
                 | OCR    | addPdfDetectedCharactersAsText | PDF Documents convert images to text | true or false |
                 | FULLTEXT    | characterMax    | Maximum number of characters to add to Fulltext destination | -1 |
                 | DOCUMENTTAGGING    | engine    | Tagging Engine to use | chatgpt |
@@ -7678,6 +7679,12 @@
                 queueId:
                   description: Id of Queue
                   type: string
+            OcrEngine:
+              type: string
+              description: Type of OCR Engine to use
+              enum:
+              - TESSERACT
+              - TEXTRACT
             AddActionParameters:
               type: object
               properties:
@@ -7685,11 +7692,10 @@
                   type: string
                   description: 'OCR: Parse types - TEXT, FORMS, TABLES'
                 ocrEngine:
+                  $ref: '#/components/schemas/OcrEngine'
+                ocrNumberOfPages:
                   type: string
-                  description: 'OCR: Engine to use for Optical character recognition'
-                  enum:
-                  - TESSERACT
-                  - TEXTRACT
+                  description: Number of pages to OCR (from start) (-1 all)
                 addPdfDetectedCharactersAsText:
                   type: boolean
                   description: 'OCR: For the rewriting of the PDF document, converting any image text to searchable text'
@@ -7744,11 +7750,10 @@
                   type: boolean
                   description: Rewrite PDF document, converting any Image text to searchable text
                 ocrEngine:
+                  $ref: '#/components/schemas/OcrEngine'
+                ocrNumberOfPages:
                   type: string
-                  description: 'OCR: Engine to use for Optical character recognition'
-                  enum:
-                  - TESSERACT
-                  - TEXTRACT
+                  description: Number of pages to OCR (from start) (-1 all)
             SetDocumentOcrRequest:
               required:
               - content

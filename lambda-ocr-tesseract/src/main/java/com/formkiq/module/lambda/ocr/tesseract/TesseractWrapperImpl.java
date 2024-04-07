@@ -23,6 +23,7 @@
  */
 package com.formkiq.module.lambda.ocr.tesseract;
 
+import java.awt.image.BufferedImage;
 import java.io.File;
 import net.sourceforge.tess4j.Tesseract;
 import net.sourceforge.tess4j.TesseractException;
@@ -35,16 +36,24 @@ import net.sourceforge.tess4j.TesseractException;
 public class TesseractWrapperImpl implements TesseractWrapper {
 
   @Override
-  public String doOcr(final File imageFile) throws TesseractException {
+  public String doOcr(final BufferedImage image) throws TesseractException {
+    Tesseract tesseract = setupTesseract();
+    return tesseract.doOCR(image);
+  }
 
+  @Override
+  public String doOcr(final File imageFile) throws TesseractException {
+    Tesseract tesseract = setupTesseract();
+    return tesseract.doOCR(imageFile);
+  }
+
+  private Tesseract setupTesseract() {
     Tesseract tesseract = new Tesseract();
     tesseract.setDatapath("/opt/tesseract/share/tessdata/");
     tesseract.setLanguage("eng");
     tesseract.setPageSegMode(1);
     tesseract.setOcrEngineMode(1);
-
-    String text = tesseract.doOCR(imageFile);
-    return text;
+    return tesseract;
   }
 
 }

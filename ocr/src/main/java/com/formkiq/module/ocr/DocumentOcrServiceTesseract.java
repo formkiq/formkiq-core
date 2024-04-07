@@ -127,7 +127,6 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
     } else {
 
       String documentS3toConvert = null;
-      // String documentS3toConvert = updateS3ObjectIfNecessary(s3key, contentType);
 
       if (awsservice.debug()) {
         String msg = String.format("converting document %s in bucket by user %s", s3key,

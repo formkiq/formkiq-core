@@ -29,6 +29,7 @@ import static com.formkiq.testutils.aws.TestServices.AWS_REGION;
 import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
 import static com.formkiq.testutils.aws.TestServices.OCR_BUCKET_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -444,6 +445,118 @@ class OcrTesseractProcessorTest {
 
       String ocrS3Key = ocrService.getS3Key(siteId, documentId, jobId);
       assertTrue(s3.getContentAsString(OCR_BUCKET_NAME, ocrS3Key, null).contains("And more text"));
+
+      actions = actionsService.getActions(siteId, documentId);
+      assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
+    }
+  }
+
+  /**
+   * Test Successful multiple page TIFF.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  void testHandleRequest08() throws Exception {
+    // given
+    final int ocrNumberOfPages = 2;
+
+    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+
+      String documentId = UUID.randomUUID().toString();
+      String jobId = UUID.randomUUID().toString();
+
+      List<Action> actions = Arrays
+          .asList(new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
+      actionsService.saveNewActions(siteId, documentId, actions);
+
+      String documentS3Key = createS3Key(siteId, documentId);
+      try (InputStream is =
+          LambdaContextRecorder.class.getResourceAsStream("/multipage_example.tif")) {
+        s3.putObject(BUCKET_NAME, documentS3Key, is, MimeType.MIME_TIF.getContentType());
+      }
+
+      Ocr ocr = new Ocr().documentId(documentId).jobId(jobId).engine(OcrEngine.TESSERACT)
+          .status(OcrScanStatus.REQUESTED);
+      ocrService.save(siteId, ocr);
+
+      SqsMessageRecord record = new SqsMessageRecord().eventSource("aws:sqs")
+          .body(GSON.toJson(Map.of("siteId", siteId, "documentId", documentId, "jobId", jobId,
+              "request", Map.of("ocrNumberOfPages", Integer.valueOf(ocrNumberOfPages)),
+              "contentType", MimeType.MIME_TIF.getContentType())));
+      SqsMessageRecords records = new SqsMessageRecords().records(Arrays.asList(record));
+
+      String json = GSON.toJson(records);
+      InputStream is = new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8));
+
+      // when
+      processor.handleRequest(is, null, this.context);
+
+      // then
+      Ocr obj = ocrService.get(siteId, documentId);
+      assertEquals("SUCCESSFUL", obj.status().name());
+
+      String ocrS3Key = ocrService.getS3Key(siteId, documentId, jobId);
+      assertEquals("BufferedImage: this is test data\nBufferedImage: this is test data",
+          s3.getContentAsString(OCR_BUCKET_NAME, ocrS3Key, null));
+
+      actions = actionsService.getActions(siteId, documentId);
+      assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
+    }
+  }
+
+  /**
+   * Test Successful multiple page PDF.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  void testHandleRequest09() throws Exception {
+    // given
+    final int ocrNumberOfPages = 2;
+
+    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+
+      String documentId = UUID.randomUUID().toString();
+      String jobId = UUID.randomUUID().toString();
+
+      List<Action> actions = Arrays
+          .asList(new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
+      actionsService.saveNewActions(siteId, documentId, actions);
+
+      String documentS3Key = createS3Key(siteId, documentId);
+      try (InputStream is =
+          LambdaContextRecorder.class.getResourceAsStream("/multipage_example.pdf")) {
+        s3.putObject(BUCKET_NAME, documentS3Key, is, MimeType.MIME_PDF.getContentType());
+      }
+
+      Ocr ocr = new Ocr().documentId(documentId).jobId(jobId).engine(OcrEngine.TESSERACT)
+          .status(OcrScanStatus.REQUESTED);
+      ocrService.save(siteId, ocr);
+
+      SqsMessageRecord record = new SqsMessageRecord().eventSource("aws:sqs")
+          .body(GSON.toJson(Map.of("siteId", siteId, "documentId", documentId, "jobId", jobId,
+              "request", Map.of("ocrNumberOfPages", Integer.valueOf(ocrNumberOfPages)),
+              "contentType", MimeType.MIME_PDF.getContentType())));
+      SqsMessageRecords records = new SqsMessageRecords().records(Arrays.asList(record));
+
+      String json = GSON.toJson(records);
+      InputStream is = new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8));
+
+      // when
+      processor.handleRequest(is, null, this.context);
+
+      // then
+      Ocr obj = ocrService.get(siteId, documentId);
+      assertEquals("SUCCESSFUL", obj.status().name());
+
+      String ocrS3Key = ocrService.getS3Key(siteId, documentId, jobId);
+      String text = s3.getContentAsString(OCR_BUCKET_NAME, ocrS3Key, null);
+
+      assertTrue(text.contains("Your Company"));
+      assertTrue(text.contains("2/9"));
+      assertFalse(text.contains("3/9"));
+      assertFalse(text.contains("Current process"));
 
       actions = actionsService.getActions(siteId, documentId);
       assertEquals(ActionStatus.COMPLETE, actions.get(0).status());

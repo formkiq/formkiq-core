@@ -58,6 +58,11 @@
 			
 			<subpackage name="tesseract">
 				
+				<allow pkg="java.awt.image" />
+				<allow pkg="javax.imageio" />
+				<allow pkg="javax.imageio.stream" />
+				<allow pkg="org.apache.pdfbox.text" />
+
 				<allow pkg="com.formkiq.aws.services.lambda" />
 				<allow pkg="com.formkiq.module.lambda.ocr.handlers" />
 								

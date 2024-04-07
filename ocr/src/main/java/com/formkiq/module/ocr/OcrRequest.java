@@ -39,6 +39,8 @@ public class OcrRequest {
   private boolean addPdfDetectedCharactersAsText = false;
   /** {@link String}. */
   private String ocrEngine;
+  /** Number of OCR Pages. */
+  private String ocrNumberOfPages;
   /** Parse Types. */
   private List<String> parseTypes;
 
@@ -56,6 +58,15 @@ public class OcrRequest {
    */
   public String getOcrEngine() {
     return this.ocrEngine;
+  }
+
+  /**
+   * Get Ocr Number of Pages.
+   * 
+   * @return {@link String}
+   */
+  public String getOcrNumberOfPages() {
+    return this.ocrNumberOfPages;
   }
 
   /**
@@ -93,6 +104,17 @@ public class OcrRequest {
    */
   public OcrRequest setOcrEngine(final String engine) {
     this.ocrEngine = engine;
+    return this;
+  }
+
+  /**
+   * Set Number of OCR Pages.
+   * 
+   * @param numberOfPages {@link String}
+   * @return {@link OcrRequest}
+   */
+  public OcrRequest setOcrNumberOfPages(final String numberOfPages) {
+    this.ocrNumberOfPages = numberOfPages;
     return this;
   }
 
