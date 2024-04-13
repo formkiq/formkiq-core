@@ -4438,6 +4438,39 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200'
+            post:
+              operationId: AddTask
+              summary: Add New Task
+              description: Adds new task; ONLY available with FormKiQ Enterprise
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/caseIdParam'
+              tags:
+              - Case Management
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/AddTaskRequest'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/AddTaskResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200'
           /cases/{caseId}/nigos:
             get:
               operationId: GetCaseNigos
@@ -4471,6 +4504,39 @@
                     application/json:
                       schema:
                         $ref: '#/components/schemas/GetCaseNigosResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200'
+            post:
+              operationId: AddNigo
+              summary: Add New Nigo
+              description: Adds new nigo; ONLY available with FormKiQ Enterprise
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/caseIdParam'
+              tags:
+              - Case Management
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/AddNigoRequest'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/AddNigoResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -6635,6 +6701,18 @@
                 caseId:
                   type: string
                   description: Case Identifier
+            AddTaskResponse:
+              type: object
+              properties:
+                taskId:
+                  type: string
+                  description: Task Identifier
+            AddNigoResponse:
+              type: object
+              properties:
+                nigoId:
+                  type: string
+                  description: Nigo Identifier
             AddCaseRequest:
               required:
               - case
@@ -6679,14 +6757,6 @@
                   type: array
                   items:
                     type: string
-                tasks:
-                  type: array
-                  items:
-                    $ref: '#/components/schemas/AddTask'
-                nigos:
-                  type: array
-                  items:
-                    $ref: '#/components/schemas/AddNigo'
             StringFormat:
               type: object
               properties:
@@ -6816,6 +6886,13 @@
                   type: array
                   items:
                     type: string
+            AddTaskRequest:
+              required:
+              - task
+              type: object
+              properties:
+                task:
+                  $ref: '#/components/schemas/AddTask'
             AddTask:
               required:
               - description
@@ -6826,6 +6903,12 @@
                   description: Description of Task
                 status:
                   $ref: '#/components/schemas/TaskStatus'
+                startDate:
+                  type: string
+                  description: Start Date
+                endDate:
+                  type: string
+                  description: End Date
                 metadata:
                   type: object
                   additionalProperties:
@@ -6870,6 +6953,13 @@
                   type: array
                   items:
                     type: string
+            AddNigoRequest:
+              required:
+              - nigo
+              type: object
+              properties:
+                nigo:
+                  $ref: '#/components/schemas/AddNigo'
             AddNigo:
               required:
               - name
@@ -6880,6 +6970,12 @@
                   description: Description of Task
                 status:
                   $ref: '#/components/schemas/NigoStatus'
+                startDate:
+                  type: string
+                  description: Start Date
+                endDate:
+                  type: string
+                  description: End Date
                 metadata:
                   type: object
                   additionalProperties:
