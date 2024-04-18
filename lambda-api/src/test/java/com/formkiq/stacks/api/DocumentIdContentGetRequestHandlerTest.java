@@ -157,6 +157,42 @@ public class DocumentIdContentGetRequestHandlerTest extends AbstractRequestHandl
   }
 
   /**
+   * /documents/{documentId}/content text/plain missing s3 file.
+   * 
+   * Tests S3 URL is returned.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandleGetDocumentContent05() throws Exception {
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String documentId = UUID.randomUUID().toString();
+      String userId = "jsmith";
+
+      ApiGatewayRequestEvent event =
+          toRequestEvent("/request-get-documents-documentid-content01.json");
+      addParameter(event, "siteId", siteId);
+      setPathParameter(event, "documentId", documentId);
+
+      DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, new Date(), userId);
+      item.setContentType("text/plain");
+      getDocumentService().saveDocument(siteId, item, new ArrayList<>());
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, Object> m = fromJson(response, Map.class);
+      assertEquals("404.0", String.valueOf(m.get("statusCode")));
+      assertEquals("{\"message\":\"Document " + documentId + " not found.\"}",
+          String.valueOf(m.get("body")));
+    }
+  }
+
+  /**
    * Test Content is returned.
    * 
    * @param contentType {@link String}

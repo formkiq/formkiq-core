@@ -49,6 +49,7 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.useractivity.UserActivityPlugin;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/content". */
 public class DocumentIdContentRequestHandler
@@ -89,11 +90,16 @@ public class DocumentIdContentRequestHandler
     if (MimeType.isPlainText(item.getContentType())) {
 
       S3Service s3Service = awsservice.getExtension(S3Service.class);
-      String content = s3Service.getContentAsString(awsservice.environment("DOCUMENTS_S3_BUCKET"),
-          s3key, versionId);
 
-      response = new ApiMapResponse(Map.of("content", content, "contentType", item.getContentType(),
-          "isBase64", Boolean.FALSE));
+      try {
+        String content = s3Service.getContentAsString(awsservice.environment("DOCUMENTS_S3_BUCKET"),
+            s3key, versionId);
+
+        response = new ApiMapResponse(Map.of("content", content, "contentType",
+            item.getContentType(), "isBase64", Boolean.FALSE));
+      } catch (NoSuchKeyException e) {
+        throw new DocumentNotFoundException(documentId);
+      }
 
     } else {
 
