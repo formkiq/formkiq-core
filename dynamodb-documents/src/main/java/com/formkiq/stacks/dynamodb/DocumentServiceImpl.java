@@ -1501,6 +1501,8 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   @Override
   public void saveDocument(final String siteId, final DocumentItem document,
       final Collection<DocumentTag> tags, final SaveDocumentOptions options) {
+
+    updatePathFromDeepLink(document);
     Map<String, AttributeValue> keys = keysDocument(siteId, document.getDocumentId());
     saveDocument(keys, siteId, document, tags, options);
   }
@@ -1749,9 +1751,14 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
   private void updatePathFromDeepLink(final DocumentItem item) {
     if (!isEmpty(item.getDeepLinkPath())) {
-      String filename = Strings.getFilename(item.getDeepLinkPath());
-      if (!isEmpty(filename)) {
-        item.setPath(filename);
+
+      if (isEmpty(item.getPath()) || item.getPath().equals(item.getDocumentId())) {
+
+        String filename = Strings.getFilename(item.getDeepLinkPath());
+
+        if (!isEmpty(filename)) {
+          item.setPath(filename);
+        }
       }
     }
   }

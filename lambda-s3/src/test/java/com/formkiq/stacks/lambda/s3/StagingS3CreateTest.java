@@ -1421,6 +1421,7 @@ public class StagingS3CreateTest implements DbKeys {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
       DynamicDocumentItem item = createDocumentItem();
+      item.setPath(null);
       item.remove("content");
       item.put("tags", Arrays.asList(Map.of("key", "category", "value", "document")));
       item.setDeepLinkPath("http://google.com/sample.pdf");
@@ -1435,13 +1436,38 @@ public class StagingS3CreateTest implements DbKeys {
   }
 
   /**
-   * Test Update .fkb64 file deep link with content.
+   * Test Add .fkb64 file deep link with path.
    *
    * @throws IOException IOException
    */
   @Test
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   void testFkB64Extension17() throws IOException {
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      DynamicDocumentItem item = createDocumentItem();
+      item.remove("content");
+      item.put("tags", Arrays.asList(Map.of("key", "category", "value", "document")));
+      item.setDeepLinkPath("http://google.com/sample.pdf");
+      item.setContentType("application/pdf");
+
+      processFkB64File(siteId, item, null);
+      DocumentItem doc = service.findDocument(siteId, item.getDocumentId());
+      assertEquals("http://google.com/sample.pdf", doc.getDeepLinkPath());
+      assertEquals("test.txt", doc.getPath());
+      assertEquals("application/pdf", doc.getContentType());
+    }
+  }
+
+  /**
+   * Test Update .fkb64 file deep link with content.
+   *
+   * @throws IOException IOException
+   */
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  void testFkB64Extension18() throws IOException {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
