@@ -149,6 +149,61 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       // then
       assertEquals("test.txt", document.getDeepLinkPath());
+      assertEquals("test.txt", document.getPath());
+    }
+  }
+
+  /**
+   * GET /documents/{documentId} request, deeplink url.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetDocument02() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      setBearerToken(siteId);
+
+      String deepLink = "https://docs.google.com/document/d/sdflhsdfjeiwrwr";
+      AddDocumentUploadRequest req = new AddDocumentUploadRequest().deepLinkPath(deepLink);
+      GetDocumentUrlResponse response =
+          this.documentsApi.addDocumentUpload(req, siteId, null, null, null);
+      String documentId = response.getDocumentId();
+
+      // when
+      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
+
+      // then
+      assertEquals(deepLink, document.getDeepLinkPath());
+      assertEquals("sdflhsdfjeiwrwr", document.getPath());
+    }
+  }
+
+
+  /**
+   * GET /documents/{documentId} request, deeplink url and path.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetDocument03() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      setBearerToken(siteId);
+
+      String deepLink = "https://docs.google.com/document/d/sdflhsdfjeiwrwr";
+      AddDocumentUploadRequest req =
+          new AddDocumentUploadRequest().deepLinkPath(deepLink).path("apath.txt");
+      GetDocumentUrlResponse response =
+          this.documentsApi.addDocumentUpload(req, siteId, null, null, null);
+      String documentId = response.getDocumentId();
+
+      // when
+      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
+
+      // then
+      assertEquals(deepLink, document.getDeepLinkPath());
+      assertEquals("apath.txt", document.getPath());
     }
   }
 
