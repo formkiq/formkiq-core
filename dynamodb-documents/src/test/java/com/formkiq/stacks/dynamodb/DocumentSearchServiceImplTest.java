@@ -373,8 +373,8 @@ public class DocumentSearchServiceImplTest {
       this.service.saveDocumentItemWithTag(siteId, doc1);
       this.service.saveDocumentItemWithTag(siteId, doc2);
 
-      SearchTagCriteria c = new SearchTagCriteria("category").eq("thing");
-      SearchQuery q = new SearchQuery().tag(c);
+      SearchTagCriteria c0 = new SearchTagCriteria("category").eq("thing");
+      SearchQuery q = new SearchQuery().tag(c0);
       q.documentsIds(
           Arrays.asList(doc0.getDocumentId(), doc1.getDocumentId(), doc2.getDocumentId()));
 
@@ -398,6 +398,16 @@ public class DocumentSearchServiceImplTest {
         DocumentItem i = this.service.findDocument(siteId, s.getDocumentId());
         assertNotNull(i);
       });
+
+      // given
+      q = new SearchQuery().tag(new SearchTagCriteria("nocategory"));
+
+      // when
+      results = this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+
+      // then
+      assertEquals(1, results.getResults().size());
+      assertEquals(doc2.getDocumentId(), results.getResults().get(0).getDocumentId());
 
       // given
       q.documentsIds(Arrays.asList("123"));
