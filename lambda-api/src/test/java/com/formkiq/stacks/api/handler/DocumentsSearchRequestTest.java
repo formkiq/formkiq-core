@@ -700,7 +700,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
 
       DocumentSearchRequest dsq =
           new DocumentSearchRequest().query(new DocumentSearch().tag(new DocumentSearchTag()
-              .key("date").range(new DocumentSearchRange().start("2024-03-10").end("2024-03-13"))));
+              .key("date").range(new DocumentSearchRange().start("2024-03-10").end("2024-03-12"))));
 
       // when
       DocumentSearchResponse response =
