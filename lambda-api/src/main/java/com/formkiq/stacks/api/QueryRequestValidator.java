@@ -45,8 +45,8 @@ public class QueryRequestValidator {
   }
 
   private boolean isQueryEmpty(final QueryRequest q) {
-    return q.query().tag() == null && q.query().tags() == null && q.query().meta() == null
-        && StringUtils.isEmpty(q.query().text());
+    return q.query().getTag() == null && q.query().getTags() == null && q.query().getMeta() == null
+        && StringUtils.isEmpty(q.query().getText());
   }
 
   private void validateMultiTags(final List<SearchTagCriteria> tags,
@@ -95,13 +95,13 @@ public class QueryRequestValidator {
 
       errors.add(new ValidationErrorImpl().error("invalid body"));
 
-    } else if (q.query().tag() != null && isEmpty(q.query().tag().key())) {
+    } else if (q.query().getTag() != null && isEmpty(q.query().getTag().key())) {
 
       errors.add(new ValidationErrorImpl().key("tag/key").error("attribute is required"));
 
     } else {
 
-      List<SearchTagCriteria> tags = Objects.notNull(q.query().tags());
+      List<SearchTagCriteria> tags = Objects.notNull(q.query().getTags());
 
       validateMultiTags(tags, errors);
 
@@ -116,7 +116,7 @@ public class QueryRequestValidator {
     }
 
     if (errors.isEmpty()) {
-      validateRange(q.query().tag(), errors);
+      validateRange(q.query().getTag(), errors);
     }
 
     return errors;

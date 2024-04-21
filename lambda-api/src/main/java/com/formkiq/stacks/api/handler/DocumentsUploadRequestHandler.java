@@ -63,6 +63,8 @@ import com.formkiq.stacks.dynamodb.DocumentTagValidator;
 import com.formkiq.stacks.dynamodb.DocumentTagValidatorImpl;
 import com.formkiq.stacks.dynamodb.DynamicObjectToDocumentTag;
 import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
+import com.formkiq.stacks.dynamodb.attributes.AttributeSearchRecord;
+import com.formkiq.stacks.dynamodb.attributes.DynamicObjectToAttributeRecord;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
 
@@ -93,6 +95,7 @@ public class DocumentsUploadRequestHandler
    * @param awsservice {@link AwsServiceCache}
    * @param siteId {@link String}
    * @param item {@link DynamicDocumentItem}
+   * @param searchAttributes {@link Collection} {@link AttributeSearchRecord}
    * @return {@link ApiRequestHandlerResponse}
    * @throws UnsupportedEncodingException UnsupportedEncodingException
    * @throws BadException BadException
@@ -100,7 +103,7 @@ public class DocumentsUploadRequestHandler
    */
   private ApiRequestHandlerResponse buildPresignedResponse(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final AwsServiceCache awsservice, final String siteId,
-      final DynamicDocumentItem item)
+      final DynamicDocumentItem item, final Collection<AttributeSearchRecord> searchAttributes)
       throws UnsupportedEncodingException, BadException, ValidationException {
 
     Date date = item.getInsertedDate();
@@ -137,7 +140,7 @@ public class DocumentsUploadRequestHandler
       }
 
       SaveDocumentOptions options = new SaveDocumentOptions().saveDocumentDate(true);
-      service.saveDocument(siteId, item, tags, options);
+      service.saveDocument(siteId, item, tags, searchAttributes, options);
 
       if (item.containsKey("actions")) {
         ActionsService actionsService = awsservice.getExtension(ActionsService.class);
@@ -257,7 +260,7 @@ public class DocumentsUploadRequestHandler
     String path = query != null && query.containsKey("path") ? query.get("path") : null;
     item.setPath(path);
 
-    return buildPresignedResponse(logger, event, awsservice, siteId, item);
+    return buildPresignedResponse(logger, event, awsservice, siteId, item, null);
   }
 
   @Override
@@ -287,8 +290,14 @@ public class DocumentsUploadRequestHandler
       validateTags(tags);
     }
 
+    List<DynamicObject> list = item.getList("attributes");
+    Collection<AttributeSearchRecord> searchAttributes =
+        new DynamicObjectToAttributeRecord(item.getDocumentId()).apply(list);
+
+    // TODO validate attributes
+
     String siteId = authorization.getSiteId();
-    return buildPresignedResponse(logger, event, awsservice, siteId, item);
+    return buildPresignedResponse(logger, event, awsservice, siteId, item, searchAttributes);
   }
 
   /**

@@ -58,6 +58,8 @@ import com.formkiq.module.typesense.TypeSenseService;
 import com.formkiq.module.typesense.TypeSenseServiceExtension;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPluginExtension;
+import com.formkiq.stacks.api.handler.AttributesIdRequestHandler;
+import com.formkiq.stacks.api.handler.AttributesRequestHandler;
 import com.formkiq.stacks.api.handler.ConfigurationApiKeyRequestHandler;
 import com.formkiq.stacks.api.handler.ConfigurationApiKeysRequestHandler;
 import com.formkiq.stacks.api.handler.ConfigurationRequestHandler;
@@ -142,6 +144,8 @@ import com.formkiq.stacks.dynamodb.FolderIndexProcessor;
 import com.formkiq.stacks.dynamodb.FolderIndexProcessorExtension;
 import com.formkiq.stacks.dynamodb.WebhooksService;
 import com.formkiq.stacks.dynamodb.WebhooksServiceExtension;
+import com.formkiq.stacks.dynamodb.attributes.AttributeService;
+import com.formkiq.stacks.dynamodb.attributes.AttributeServiceExtension;
 
 /**
  * 
@@ -223,6 +227,9 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     URL_MAP.put("options", new DocumentsOptionsRequestHandler());
     addSystemEndpoints();
     addAccessControlEndpoints();
+
+    addRequestHandler(new AttributesRequestHandler());
+    addRequestHandler(new AttributesIdRequestHandler());
 
     addRequestHandler(new DocumentVersionsRequestHandler());
     addRequestHandler(new DocumentVersionsKeyRequestHandler());
@@ -330,6 +337,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     serviceCache.register(DocumentOcrService.class, new DocumentOcrServiceExtension());
     serviceCache.register(DynamoDbService.class, new DynamoDbServiceExtension());
     serviceCache.register(WebhooksService.class, new WebhooksServiceExtension());
+    serviceCache.register(AttributeService.class, new AttributeServiceExtension());
   }
 
   /** constructor. */

@@ -53,7 +53,7 @@ public class DocumentTagSchemaReturnNewTags implements DocumentTagSchemaPlugin {
 
   @Override
   public SearchTagCriteria createMultiTagSearch(final SearchQuery query) {
-    return query.tag();
+    return query.getTag();
   }
 
   @SuppressWarnings("unchecked")

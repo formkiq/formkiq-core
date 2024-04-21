@@ -95,6 +95,16 @@ public class Objects {
   }
 
   /**
+   * Is {@link Collection} empty.
+   * 
+   * @param c {@link Collection}
+   * @return boolean
+   */
+  public static boolean isEmpty(final Collection<?> c) {
+    return notNull(c).isEmpty();
+  }
+
+  /**
    * Get Last Element of {@link List}.
    *
    * @param <T> Type of Object.

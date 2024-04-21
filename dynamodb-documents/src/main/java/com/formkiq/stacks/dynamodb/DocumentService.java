@@ -37,6 +37,7 @@ import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.plugins.tagschema.DocumentTagLoader;
+import com.formkiq.stacks.dynamodb.attributes.AttributeSearchRecord;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /** Services for Querying, Updating Documents. */
@@ -400,10 +401,11 @@ public interface DocumentService extends DocumentTagLoader {
    * @param siteId Optional Grouping siteId
    * @param document {@link DocumentItem}
    * @param tags {@link Collection} {@link DocumentTag}
+   * @param searchAttributes {@link Collection} {@link AttributeSearchRecord}
    * @param options {@link SaveDocumentOptions}
    */
   void saveDocument(String siteId, DocumentItem document, Collection<DocumentTag> tags,
-      SaveDocumentOptions options);
+      Collection<AttributeSearchRecord> searchAttributes, SaveDocumentOptions options);
 
   /**
    * Save Document Format.

@@ -119,8 +119,12 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
 
   private boolean isEnterpriseFeature(final AwsServiceCache serviceCache, final QueryRequest q) {
 
-    return q.query().tag() == null && q.query().meta() == null && isEmpty(q.query().text())
+    return isTagOrAttribute(q) && q.query().getMeta() == null && isEmpty(q.query().getText())
         && !serviceCache.getExtension(DocumentTagSchemaPlugin.class).isActive();
+  }
+
+  private boolean isTagOrAttribute(final QueryRequest q) {
+    return q.query().getAttribute() == null && q.query().getTag() == null;
   }
 
   /**
@@ -179,7 +183,8 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
       int limit = pagination != null ? pagination.getLimit() : getLimit(logger, event);
       PaginationMapToken ptoken = pagination != null ? pagination.getStartkey() : null;
 
-      Collection<String> documentIds = q.query().documentIds();
+      Collection<String> documentIds = q.query().getDocumentIds();
+
       if (!Objects.isEmpty(documentIds)) {
         if (documentIds.size() > MAX_DOCUMENT_IDS) {
           throw new BadException("Maximum number of DocumentIds is " + MAX_DOCUMENT_IDS);
@@ -235,7 +240,7 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
       final DocumentSearchService documentSearchService, final String siteId, final QueryRequest q,
       final PaginationMapToken ptoken, final int limit) throws IOException, BadException {
 
-    String text = q.query().text();
+    String text = q.query().getText();
     PaginationResults<DynamicDocumentItem> results = null;
 
     if (!isEmpty(text)) {
@@ -277,8 +282,8 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
       throw new ValidationException(errors);
     }
 
-    if (q.query() != null && q.query().tags() != null && q.query().tags().size() == 1) {
-      q.query().tag(q.query().tags().get(0));
+    if (q.query() != null && q.query().getTags() != null && q.query().getTags().size() == 1) {
+      q.query().tag(q.query().getTags().get(0));
     }
   }
 }
