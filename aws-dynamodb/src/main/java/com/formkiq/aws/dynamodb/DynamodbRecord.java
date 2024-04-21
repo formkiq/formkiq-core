@@ -149,4 +149,16 @@ public interface DynamodbRecord<T> {
     AttributeValue av = attrs.get(key);
     return av != null ? av.s() : null;
   }
+
+  /**
+   * Convert {@link Map} {@link AttributeValue}.
+   * 
+   * @param attrs {@link Map} {@link AttributeValue}
+   * @param key {@link Double}
+   * @return {@link String}
+   */
+  default int toInt(final Map<String, AttributeValue> attrs, final String key) {
+    AttributeValue av = attrs.get(key);
+    return av != null ? Integer.parseInt(av.n()) : -1;
+  }
 }

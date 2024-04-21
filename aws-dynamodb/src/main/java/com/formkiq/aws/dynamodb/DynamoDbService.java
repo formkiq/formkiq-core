@@ -158,6 +158,19 @@ public interface DynamoDbService {
    * 
    * @param config {@link QueryConfig}
    * @param pk {@link AttributeValue}
+   * @param sk {@link AttributeValue}
+   * @param exclusiveStartKey {@link Map}
+   * @param limit int
+   * @return {@link QueryResponse}
+   */
+  QueryResponse query(QueryConfig config, AttributeValue pk, AttributeValue sk,
+      Map<String, AttributeValue> exclusiveStartKey, int limit);
+
+  /**
+   * Query DynamoDB Records.
+   * 
+   * @param config {@link QueryConfig}
+   * @param pk {@link AttributeValue}
    * @param exclusiveStartKey {@link Map}
    * @param limit int
    * @return {@link QueryResponse}

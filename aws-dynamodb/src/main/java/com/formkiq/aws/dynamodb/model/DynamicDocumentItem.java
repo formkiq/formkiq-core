@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.objects.Objects;
 
 /**
  * 
@@ -199,7 +200,8 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
   public void setMetadata(final Collection<DocumentMetadata> metadata) {
 
     List<Map<String, ? extends Object>> list = metadata.stream()
-        .map(m -> m.getValues() != null ? Map.of("key", m.getKey(), "values", m.getValues())
+        .map(m -> !Objects.isEmpty(m.getValues())
+            ? Map.of("key", m.getKey(), "values", m.getValues())
             : Map.of("key", m.getKey(), "value", m.getValue()))
         .collect(Collectors.toList());
 

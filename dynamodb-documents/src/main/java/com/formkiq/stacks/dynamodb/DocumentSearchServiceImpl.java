@@ -51,20 +51,26 @@ import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.PaginationToAttributeValue;
+import com.formkiq.aws.dynamodb.QueryConfig;
 import com.formkiq.aws.dynamodb.QueryResponseToPagination;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.dynamodb.model.SearchAttributeCriteria;
 import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteriaRange;
 import com.formkiq.aws.dynamodb.objects.Objects;
+import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
+import com.formkiq.stacks.dynamodb.attributes.AttributeSearchRecord;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.BatchGetItemRequest;
@@ -81,6 +87,8 @@ import software.amazon.awssdk.utils.StringUtils;
  */
 public class DocumentSearchServiceImpl implements DocumentSearchService {
 
+  /** {@link DynamoDbService}. */
+  private DynamoDbService db;
   /** {@link DynamoDbClient}. */
   private DynamoDbClient dbClient;
   /** {@link DocumentService}. */
@@ -108,11 +116,13 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
     this.docService = documentService;
     this.tagSchemaPlugin = plugin;
 
+
     if (documentsTable == null) {
       throw new IllegalArgumentException("Table name is null");
     }
 
     this.documentTableName = documentsTable;
+    this.db = new DynamoDbServiceImpl(connection, documentsTable);
     this.folderIndexProcesor = new FolderIndexProcessorImpl(connection, documentsTable);
   }
 
@@ -345,11 +355,12 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
 
     String expression = GSI1_PK + " = :pk";
 
-    Map<String, AttributeValue> values = new HashMap<String, AttributeValue>();
+    Map<String, AttributeValue> values = new HashMap<>();
     values.put(":pk", AttributeValue.builder()
         .s(createDatabaseKey(siteId, PREFIX_TAG + key + TAG_DELIMINATOR + value)).build());
     QueryRequest q = createQueryRequest(GSI1, expression, values, token, maxresults, Boolean.FALSE,
         projectionExpression);
+
     return searchForDocuments(q, siteId, query);
   }
 
@@ -452,7 +463,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
   public PaginationResults<DynamicDocumentItem> search(final String siteId, final SearchQuery query,
       final PaginationMapToken token, final int maxresults) {
 
-    SearchMetaCriteria meta = query.meta();
+    SearchMetaCriteria meta = query.getMeta();
     PaginationResults<DynamicDocumentItem> results = null;
 
     if (meta != null) {
@@ -477,12 +488,63 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
         results = searchByMeta(siteId, query, meta, token, maxresults);
       }
 
+    } else if (query.getAttribute() != null) {
+
+      SearchAttributeCriteria search = query.getAttribute();
+      results = searchByAttribute(siteId, query, search, token, maxresults);
+
     } else {
-      SearchTagCriteria search = query.tag();
+
+      SearchTagCriteria search = query.getTag();
       results = searchByTag(siteId, query, search, token, maxresults, null);
     }
 
     return results;
+  }
+
+  private PaginationResults<DynamicDocumentItem> searchByAttribute(final String siteId,
+      final SearchQuery query, final SearchAttributeCriteria search, final PaginationMapToken token,
+      final int maxresults) {
+
+    AttributeSearchRecord r = new AttributeSearchRecord().key(search.getKey());
+    Map<String, AttributeValue> startkey = new PaginationToAttributeValue().apply(token);
+
+    QueryConfig config = new QueryConfig().scanIndexForward(Boolean.TRUE);
+
+    QueryResponse response = null;
+
+    if (!Strings.isEmpty(search.getEq())) {
+
+      r.stringValue(search.getEq());
+
+      config.indexName(GSI1);
+      AttributeValue pk = AttributeValue.fromS(r.pkGsi1(siteId));
+      AttributeValue sk = AttributeValue.fromS(r.skGsi1());
+      response = this.db.query(config, pk, sk, startkey, maxresults);
+
+    } else {
+
+      config.indexName(GSI1);
+      AttributeValue pk = AttributeValue.fromS(r.pkGsi1(siteId));
+      response = this.db.query(config, pk, startkey, maxresults);
+    }
+
+    List<String> documentIds = response.items().stream().map(i -> i.get("documentId").s())
+        .distinct().collect(Collectors.toList());
+
+    List<DocumentItem> list = this.docService.findDocuments(siteId, documentIds);
+
+    List<DynamicDocumentItem> results =
+        list != null ? list.stream().map(l -> new DocumentItemToDynamicDocumentItem().apply(l))
+            .collect(Collectors.toList()) : Collections.emptyList();
+
+    // results.forEach(r -> {
+    // Map<String, AttributeValue> tagMap = filteredDocs.get(r.getDocumentId());
+    // DocumentTag tag = new AttributeValueToDocumentTag(siteId).apply(tagMap);
+    // r.put("matchedTag", new DocumentTagToDynamicDocumentTag().apply(tag));
+    // });
+
+    return new PaginationResults<>(results, new QueryResponseToPagination().apply(response));
   }
 
   /**
@@ -546,9 +608,9 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
 
     PaginationResults<DynamicDocumentItem> result = null;
 
-    Collection<String> documentIds = query.documentIds();
+    Collection<String> documentIds = query.getDocumentIds();
 
-    if (!Objects.notNull(documentIds).isEmpty()) {
+    if (!Objects.isEmpty(documentIds)) {
 
       Map<String, Map<String, AttributeValue>> docs = findDocumentsTags(siteId, documentIds, key);
 
@@ -572,7 +634,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
 
     } else {
 
-      if (!Objects.notNull(search.eqOr()).isEmpty()) {
+      if (!Objects.isEmpty(search.eqOr())) {
         result = findDocumentsWithTagAndValues(siteId, query, key, search.eqOr(), maxresults,
             projectionExpression);
       } else if (search.eq() != null) {
@@ -642,7 +704,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
         DocumentTag tag = tags.get(r.getDocumentId());
         r.put("matchedTag", new DocumentTagToDynamicDocumentTag().apply(tag));
 
-        if (!notNull(query.tags()).isEmpty()) {
+        if (!notNull(query.getTags()).isEmpty()) {
           updateToMatchedTags(query, r);
         }
       });
@@ -763,7 +825,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
 
     List<DynamicDocumentItem> matchedTags = new ArrayList<>();
 
-    List<SearchTagCriteria> tags = query.tags();
+    List<SearchTagCriteria> tags = query.getTags();
     for (SearchTagCriteria c : tags) {
       DynamicDocumentItem tag = new DynamicDocumentItem(new HashMap<>());
       tag.put("key", c.key());

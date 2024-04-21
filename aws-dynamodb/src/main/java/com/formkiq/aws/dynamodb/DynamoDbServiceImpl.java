@@ -259,9 +259,28 @@ public class DynamoDbServiceImpl implements DynamoDbService {
 
   @Override
   public QueryResponse query(final QueryConfig config, final AttributeValue pk,
+      final AttributeValue sk, final Map<String, AttributeValue> exclusiveStartKey,
+      final int limit) {
+
+    String gsi = Strings.isEmpty(config.indexName()) ? "" : config.indexName();
+    String expression = gsi + PK + " = :pk and " + gsi + SK + " = :sk";
+    Map<String, AttributeValue> values = Map.of(":pk", pk, ":sk", sk);
+
+    QueryRequest q = QueryRequest.builder().tableName(this.tableName).indexName(config.indexName())
+        .expressionAttributeNames(config.expressionAttributeNames())
+        .keyConditionExpression(expression).projectionExpression(config.projectionExpression())
+        .expressionAttributeValues(values).scanIndexForward(config.isScanIndexForward())
+        .exclusiveStartKey(exclusiveStartKey).limit(Integer.valueOf(limit)).build();
+
+    return this.dbClient.query(q);
+  }
+
+  @Override
+  public QueryResponse query(final QueryConfig config, final AttributeValue pk,
       final Map<String, AttributeValue> exclusiveStartKey, final int limit) {
 
-    String expression = PK + " = :pk";
+    String gsi = Strings.isEmpty(config.indexName()) ? "" : config.indexName();
+    String expression = gsi + PK + " = :pk";
     Map<String, AttributeValue> values = Map.of(":pk", pk);
 
     QueryRequest q = QueryRequest.builder().tableName(this.tableName).indexName(config.indexName())

@@ -35,6 +35,7 @@ import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceExtension;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.aws.sqs.SqsServiceExtension;
+import com.formkiq.client.api.AttributesApi;
 import com.formkiq.client.api.DocumentActionsApi;
 import com.formkiq.client.api.DocumentFoldersApi;
 import com.formkiq.client.api.DocumentSearchApi;
@@ -137,6 +138,8 @@ public abstract class AbstractApiClientRequestTest {
   protected DocumentWorkflowsApi workflowApi = new DocumentWorkflowsApi(this.client);
   /** {@link DocumentSearchApi}. */
   protected DocumentSearchApi searchApi = new DocumentSearchApi(this.client);
+  /** {@link AttributeApi}. */
+  protected AttributesApi attributesApi = new AttributesApi(this.client);
 
   /**
    * Convert JSON to Object.

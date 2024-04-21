@@ -73,6 +73,7 @@ import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.objects.Strings;
+import com.formkiq.stacks.dynamodb.attributes.AttributeSearchRecord;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.BatchGetItemRequest;
@@ -199,6 +200,21 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   public void addTags(final String siteId, final String documentId,
       final Collection<DocumentTag> tags, final String timeToLive) {
     addTags(siteId, Map.of(documentId, tags), timeToLive);
+  }
+
+  /**
+   * Append Search Attributes.
+   * 
+   * @param writeBuilder {@link WriteRequestBuilder}
+   * @param siteId {@link String}
+   * @param searchAttributes {@link Collection} {@link AttributeSearchRecord}
+   */
+  private void appendSearchAttributes(final WriteRequestBuilder writeBuilder, final String siteId,
+      final Collection<AttributeSearchRecord> searchAttributes) {
+    if (searchAttributes != null) {
+      writeBuilder.appends(this.documentTableName,
+          searchAttributes.stream().map(a -> a.getAttributes(siteId)).toList());
+    }
   }
 
   /**
@@ -1406,7 +1422,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
       SaveDocumentOptions childOptions =
           new SaveDocumentOptions().saveDocumentDate(false).timeToLive(doc.getString("TimeToLive"));
-      saveDocument(keys, siteId, dockey, null, childOptions);
+      saveDocument(keys, siteId, dockey, null, null, childOptions);
 
       List<DynamicObject> doctags = subdoc.getList("tags");
       tags = doctags.stream().map(t -> {
@@ -1418,7 +1434,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
       childOptions =
           new SaveDocumentOptions().saveDocumentDate(false).timeToLive(doc.getString("TimeToLive"));
-      saveDocument(keys, siteId, document, tags, childOptions);
+      saveDocument(keys, siteId, document, tags, null, childOptions);
     }
   }
 
@@ -1429,11 +1445,12 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
    * @param siteId {@link String}
    * @param document {@link DocumentItem}
    * @param tags {@link Collection} {@link DocumentTag}
+   * @param searchAttributes {@link Collection} {@link AttributeSearchRecord}
    * @param options {@link SaveDocumentOptions}
    */
   private void saveDocument(final Map<String, AttributeValue> keys, final String siteId,
       final DocumentItem document, final Collection<DocumentTag> tags,
-      final SaveDocumentOptions options) {
+      final Collection<AttributeSearchRecord> searchAttributes, final SaveDocumentOptions options) {
 
     boolean documentExists = exists(siteId, document.getDocumentId());
 
@@ -1474,6 +1491,8 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
         .append(this.documentTableName, documentValues).appends(this.documentTableName, tagValues)
         .appends(this.documentTableName, folderIndex);
 
+    appendSearchAttributes(writeBuilder, siteId, searchAttributes);
+
     if (hasDocumentChanged) {
       writeBuilder = writeBuilder.appends(documentVersionsTableName, Arrays.asList(previous));
     }
@@ -1495,16 +1514,17 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       final Collection<DocumentTag> tags) {
     SaveDocumentOptions options = new SaveDocumentOptions().saveDocumentDate(true).timeToLive(null);
     Map<String, AttributeValue> keys = keysDocument(siteId, document.getDocumentId());
-    saveDocument(keys, siteId, document, tags, options);
+    saveDocument(keys, siteId, document, tags, null, options);
   }
 
   @Override
   public void saveDocument(final String siteId, final DocumentItem document,
-      final Collection<DocumentTag> tags, final SaveDocumentOptions options) {
+      final Collection<DocumentTag> tags, final Collection<AttributeSearchRecord> searchAttributes,
+      final SaveDocumentOptions options) {
 
     updatePathFromDeepLink(document);
     Map<String, AttributeValue> keys = keysDocument(siteId, document.getDocumentId());
-    saveDocument(keys, siteId, document, tags, options);
+    saveDocument(keys, siteId, document, tags, searchAttributes, options);
   }
 
   /**
@@ -1622,7 +1642,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
         .timeToLive(doc.getString("TimeToLive"));
 
     Map<String, AttributeValue> keys = keysDocument(siteId, item.getDocumentId());
-    saveDocument(keys, siteId, item, tags, options);
+    saveDocument(keys, siteId, item, tags, null, options);
 
     saveChildDocuments(siteId, doc, item, date);
 
