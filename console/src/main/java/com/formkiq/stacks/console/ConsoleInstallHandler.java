@@ -109,6 +109,11 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
 
     String documentApi = this.environmentMap.get("API_URL");
 
+    String cognitoHostedUiUrl = this.environmentMap.get("COGNITO_HOSTED_UI_URL");
+    if (cognitoHostedUiUrl != null && !cognitoHostedUiUrl.isEmpty()) {
+      cognitoHostedUi = cognitoHostedUiUrl;
+    }
+
     String json = String.format(
         "{%n" + "  \"documentApi\": \"%s\",%n" + "  \"userPoolId\": \"%s\",%n"
             + "  \"clientId\": \"%s\",%n" + "  \"consoleVersion\": \"%s\",%n"
