@@ -196,7 +196,7 @@ public class ConsoleInstallHandlerTest {
 
     // then
     verifySendResponse(contentlength);
-    verifyConfigWritten(null);
+    verifyConfigWritten("");
     verifyCognitoConfig();
 
     assertTrue(connection.contains("\"Status\":\"SUCCESS\""));
@@ -256,7 +256,7 @@ public class ConsoleInstallHandlerTest {
 
     // then
     verifySendResponse(contentlength);
-    verifyConfigWritten(null);
+    verifyConfigWritten("");
     verifyCognitoConfig();
 
     assertTrue(this.logger.containsString(
@@ -372,10 +372,10 @@ public class ConsoleInstallHandlerTest {
   @Test
   public void testHandleRequest05() throws Exception {
     // given
-    String cognitoHostedUiUrl =
+    String cognitoSingleSignOnUrl =
         "https://something.auth.us-east-2.amazoncognito.com/oauth2/authorize";
     Map<String, String> map = createEnvironment();
-    map.put("COGNITO_HOSTED_UI_URL", cognitoHostedUiUrl);
+    map.put("COGNITO_SINGLE_SIGN_ON_URL", cognitoSingleSignOnUrl);
     createHandler(map);
 
     final int contentlength = 105;
@@ -394,7 +394,7 @@ public class ConsoleInstallHandlerTest {
 
     // then
     verifySendResponse(contentlength);
-    verifyConfigWritten(cognitoHostedUiUrl);
+    verifyConfigWritten(cognitoSingleSignOnUrl);
     verifyCognitoConfig();
 
     assertTrue(connection.contains("\"Status\":\"SUCCESS\""));
@@ -441,11 +441,9 @@ public class ConsoleInstallHandlerTest {
   /**
    * Verify Config File is written.
    * 
-   * @param cognitoHostedUiUrl {@link String}
+   * @param cognitoSingleSignOnUrl {@link String}
    */
-  private void verifyConfigWritten(final String cognitoHostedUiUrl) {
-    String uiUrl = cognitoHostedUiUrl != null ? cognitoHostedUiUrl
-        : "https://test2111111111111111.auth.us-east-2.amazoncognito.com";
+  private void verifyConfigWritten(final String cognitoSingleSignOnUrl) {
 
     String config = String.format("{%n"
         + "  \"documentApi\": \"https://chartapi.24hourcharts.com.execute-api.us-east-1.amazonaws.com/prod/\",%n"
@@ -453,7 +451,8 @@ public class ConsoleInstallHandlerTest {
         + "  \"clientId\": \"7223423m2pfgf34qnfokb2po2l\",%n" + "  \"consoleVersion\": \"0.1\",%n"
         + "  \"brand\": \"24hourcharts\",%n" + "  \"userAuthentication\": \"cognito\",%n"
         + "  \"authApi\": \"https://auth.execute-api.us-east-1.amazonaws.com/prod/\",%n"
-        + "  \"cognitoHostedUi\": \"" + uiUrl + "\"%n" + "}");
+        + "  \"cognitoHostedUi\": \"https://test2111111111111111.auth.us-east-2.amazoncognito.com\",%n"
+        + "  \"cognitoSingleSignOnUrl\": \"" + cognitoSingleSignOnUrl + "\"%n" + "}");
 
     assertTrue(this.logger.containsString("writing Cognito config: " + config));
   }
