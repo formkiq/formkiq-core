@@ -47,8 +47,6 @@ Resources:
     Type: AWS::Serverless::LayerVersion
     Properties:
       Description: Lambda Layer containing Tesseract binary
-      LayerName: 
-        Fn::Sub: "${AWS::StackName}-${AppEnvironment}-tesseract-layer"
       ContentUri: ./layer-tesseract-5.3.1.zip
 
   OcrProcessorApiInvokePermission:

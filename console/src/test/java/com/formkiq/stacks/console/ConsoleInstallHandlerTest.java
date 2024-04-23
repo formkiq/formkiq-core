@@ -114,7 +114,11 @@ public class ConsoleInstallHandlerTest {
   /** before. */
   @BeforeEach
   public void before() {
+    Map<String, String> map = createEnvironment();
+    createHandler(map);
+  }
 
+  private Map<String, String> createEnvironment() {
     Map<String, String> map = new HashMap<>();
     map.put("CONSOLE_VERSION", "0.1");
     map.put("REGION", "us-east-1");
@@ -132,7 +136,10 @@ public class ConsoleInstallHandlerTest {
     map.put("DOMAIN", "dev");
     map.put("COGNITO_USER_POOL_ID", "us-east-2_blGeBpyLg");
     map.put("COGNITO_USER_POOL_CLIENT_ID", "7223423m2pfgf34qnfokb2po2l");
+    return map;
+  }
 
+  private void createHandler(final Map<String, String> map) {
     this.handler = new ConsoleInstallHandler(map, s3Connection, s3Connection) {
 
       @Override
@@ -185,18 +192,15 @@ public class ConsoleInstallHandlerTest {
     this.logger.log("sending SUCCESS to https://cloudformation-custom-resource");
     this.logger.log("Request Create was successful!");
 
-
-    // replayAll();
     this.handler.handleRequest(input, this.context);
 
     // then
     verifySendResponse(contentlength);
-    verifyConfigWritten();
+    verifyConfigWritten("");
     verifyCognitoConfig();
 
     assertTrue(connection.contains("\"Status\":\"SUCCESS\""));
     assertTrue(connection.contains("\"Data\":{\"Message\":\"Request Create was successful!\""));
-
 
     assertEquals("font/woff2",
         s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/font.woff2", null).getContentType());
@@ -252,7 +256,7 @@ public class ConsoleInstallHandlerTest {
 
     // then
     verifySendResponse(contentlength);
-    verifyConfigWritten();
+    verifyConfigWritten("");
     verifyCognitoConfig();
 
     assertTrue(this.logger.containsString(
@@ -361,17 +365,94 @@ public class ConsoleInstallHandlerTest {
   }
 
   /**
-   * Verify Config File is written.
+   * Test Handle Request 'CREATE'.
+   *
+   * @throws Exception Exception
    */
-  private void verifyConfigWritten() {
+  @Test
+  public void testHandleRequest05() throws Exception {
+    // given
+    String cognitoSingleSignOnUrl =
+        "https://something.auth.us-east-2.amazoncognito.com/oauth2/authorize";
+    Map<String, String> map = createEnvironment();
+    map.put("COGNITO_SINGLE_SIGN_ON_URL", cognitoSingleSignOnUrl);
+    createHandler(map);
+
+    final int contentlength = 105;
+    Map<String, Object> input = createInput("Create");
+    input.put("CONSOLE_BUCKET", CONSOLE_BUCKET);
+
+    // when
+    this.logger.log(
+        "received input: {ResponseURL=https://cloudformation-custom-resource, RequestType=Create}");
+    this.logger.log("unpacking formkiq-console/0.1/formkiq-console.zip "
+        + "from bucket distrobucket to bucket destbucket");
+    this.logger.log("sending SUCCESS to https://cloudformation-custom-resource");
+    this.logger.log("Request Create was successful!");
+
+    this.handler.handleRequest(input, this.context);
+
+    // then
+    verifySendResponse(contentlength);
+    verifyConfigWritten(cognitoSingleSignOnUrl);
+    verifyCognitoConfig();
+
+    assertTrue(connection.contains("\"Status\":\"SUCCESS\""));
+    assertTrue(connection.contains("\"Data\":{\"Message\":\"Request Create was successful!\""));
+
+    assertEquals("font/woff2",
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/font.woff2", null).getContentType());
+
+    assertEquals("text/css",
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.css", null).getContentType());
+
+    assertEquals("application/vnd.ms-fontobject",
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.eot", null).getContentType());
+
+    assertEquals("image/x-icon",
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.ico", null).getContentType());
+
+    assertTrue(s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.js", null).getContentType()
+        .endsWith("/javascript"));
+
+    assertEquals("image/svg+xml",
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.svg", null).getContentType());
+
+    assertEquals("font/ttf",
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.ttf", null).getContentType());
+
+    assertEquals("text/plain",
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.txt", null).getContentType());
+
+    assertEquals("font/woff",
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.woff", null).getContentType());
+
+    // given
+    input = createInput("Delete");
+    input.put("CONSOLE_BUCKET", CONSOLE_BUCKET);
+
+    // when
+    this.handler.handleRequest(input, this.context);
+
+    // then
+    assertTrue(s3.listObjects(CONSOLE_BUCKET, null).contents().isEmpty());
+  }
+
+  /**
+   * Verify Config File is written.
+   * 
+   * @param cognitoSingleSignOnUrl {@link String}
+   */
+  private void verifyConfigWritten(final String cognitoSingleSignOnUrl) {
+
     String config = String.format("{%n"
         + "  \"documentApi\": \"https://chartapi.24hourcharts.com.execute-api.us-east-1.amazonaws.com/prod/\",%n"
         + "  \"userPoolId\": \"us-east-2_blGeBpyLg\",%n"
         + "  \"clientId\": \"7223423m2pfgf34qnfokb2po2l\",%n" + "  \"consoleVersion\": \"0.1\",%n"
         + "  \"brand\": \"24hourcharts\",%n" + "  \"userAuthentication\": \"cognito\",%n"
         + "  \"authApi\": \"https://auth.execute-api.us-east-1.amazonaws.com/prod/\",%n"
-        + "  \"cognitoHostedUi\": \"https://test2111111111111111.auth.us-east-2.amazoncognito.com\"%n"
-        + "}");
+        + "  \"cognitoHostedUi\": \"https://test2111111111111111.auth.us-east-2.amazoncognito.com\",%n"
+        + "  \"cognitoSingleSignOnUrl\": \"" + cognitoSingleSignOnUrl + "\"%n" + "}");
 
     assertTrue(this.logger.containsString("writing Cognito config: " + config));
   }

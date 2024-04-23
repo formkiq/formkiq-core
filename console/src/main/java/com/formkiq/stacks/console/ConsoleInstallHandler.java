@@ -108,14 +108,19 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
     String congitoClientId = this.environmentMap.get("COGNITO_USER_POOL_CLIENT_ID");
 
     String documentApi = this.environmentMap.get("API_URL");
+    String cognitoSingleSignOnUrl = this.environmentMap.get("COGNITO_SINGLE_SIGN_ON_URL");
+    if (cognitoSingleSignOnUrl == null) {
+      cognitoSingleSignOnUrl = "";
+    }
 
     String json = String.format(
         "{%n" + "  \"documentApi\": \"%s\",%n" + "  \"userPoolId\": \"%s\",%n"
             + "  \"clientId\": \"%s\",%n" + "  \"consoleVersion\": \"%s\",%n"
             + "  \"brand\": \"%s\",%n" + "  \"userAuthentication\": \"%s\",%n"
-            + "  \"authApi\": \"%s\",%n" + "  \"cognitoHostedUi\": \"%s\"%n" + "}",
+            + "  \"authApi\": \"%s\",%n" + "  \"cognitoHostedUi\": \"%s\",%n"
+            + "  \"cognitoSingleSignOnUrl\": \"%s\"%n" + "}",
         documentApi, cognitoUserPoolId, congitoClientId, consoleVersion, brand, userAuthentication,
-        authApi, cognitoHostedUi);
+        authApi, cognitoHostedUi, cognitoSingleSignOnUrl);
 
     String fileName = consoleVersion + "/assets/config.json";
 
