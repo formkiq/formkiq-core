@@ -80,6 +80,7 @@ import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
+import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
@@ -210,9 +211,13 @@ public class DocumentServiceImplTest implements DbKeys {
     return items;
   }
 
-  /** Add Tag Name with TAG DELIMINATOR. */
+  /**
+   * Add Tag Name with TAG DELIMINATOR.
+   * 
+   * @throws ValidationException ValidationException
+   */
   @Test
-  public void testAddTags01() {
+  public void testAddTags01() throws ValidationException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       DocumentItem document = createTestData(siteId).get(0);
@@ -255,9 +260,13 @@ public class DocumentServiceImplTest implements DbKeys {
     }
   }
 
-  /** Add Tag Name only. */
+  /**
+   * Add Tag Name only.
+   * 
+   * @throws ValidationException ValidationException
+   */
   @Test
-  public void testAddTags02() {
+  public void testAddTags02() throws ValidationException {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
@@ -321,9 +330,13 @@ public class DocumentServiceImplTest implements DbKeys {
         service.findDocumentTags(siteId, documentId, null, MAX_RESULTS).getResults().size());
   }
 
-  /** Add Tag with Values. */
+  /**
+   * Add Tag with Values.
+   * 
+   * @throws ValidationException ValidationException
+   */
   @Test
-  public void testAddTags04() {
+  public void testAddTags04() throws ValidationException {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
@@ -375,9 +388,11 @@ public class DocumentServiceImplTest implements DbKeys {
 
   /**
    * Add a tag to a lot of documents.
+   * 
+   * @throws ValidationException ValidationException
    */
   @Test
-  void testAddTags05() {
+  void testAddTags05() throws ValidationException {
     // given
     final int count = 200;
     final String tagKey = "category123";
@@ -442,9 +457,13 @@ public class DocumentServiceImplTest implements DbKeys {
     }
   }
 
-  /** Delete Document. */
+  /**
+   * Delete Document.
+   * 
+   * @throws ValidationException ValidationException
+   */
   @Test
-  public void testDeleteDocument01() {
+  public void testDeleteDocument01() throws ValidationException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       Date now = new Date();
@@ -2065,9 +2084,10 @@ public class DocumentServiceImplTest implements DbKeys {
    * Test Saving / updating folders.
    * 
    * @throws InterruptedException InterruptedException
+   * @throws ValidationException ValidationException
    */
   @Test
-  public void testSaveFolders01() throws InterruptedException {
+  public void testSaveFolders01() throws InterruptedException, ValidationException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String userId0 = "joe";

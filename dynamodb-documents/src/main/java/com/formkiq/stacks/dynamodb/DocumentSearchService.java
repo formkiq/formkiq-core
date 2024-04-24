@@ -28,6 +28,7 @@ import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
+import com.formkiq.validation.ValidationException;
 
 /**
  * 
@@ -56,9 +57,10 @@ public interface DocumentSearchService {
    * @param token {@link PaginationMapToken}
    * @param maxresults int
    * @return {@link PaginationResults} {@link DynamicDocumentItem}
+   * @throws ValidationException ValidationException
    */
   PaginationResults<DynamicDocumentItem> search(String siteId, SearchQuery search,
-      PaginationMapToken token, int maxresults);
+      PaginationMapToken token, int maxresults) throws ValidationException;
 
   /**
    * Search for Document Ids.

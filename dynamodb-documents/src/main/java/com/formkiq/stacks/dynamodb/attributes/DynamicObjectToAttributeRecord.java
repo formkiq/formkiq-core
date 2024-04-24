@@ -49,6 +49,21 @@ public class DynamicObjectToAttributeRecord
     this.attributeDocumentId = documentId;
   }
 
+  private void addToList(final Collection<AttributeSearchRecord> list,
+      final AttributeSearchValueType valueType, final String key, final String stringValue,
+      final Boolean boolValue, final Double numberValue) {
+
+    AttributeSearchRecord a = new AttributeSearchRecord();
+    a.key(key);
+    a.documentId(this.attributeDocumentId);
+    a.stringValue(stringValue);
+    a.booleanValue(boolValue);
+    a.numberValue(numberValue);
+    a.valueType(valueType);
+
+    list.add(a);
+  }
+
   @Override
   public Collection<AttributeSearchRecord> apply(final Collection<DynamicObject> objs) {
 
@@ -62,19 +77,37 @@ public class DynamicObjectToAttributeRecord
       if (!Objects.isEmpty(stringValues)) {
 
         for (String value : stringValues) {
-
-          AttributeSearchRecord a = new AttributeSearchRecord();
-          a.key(key);
-          a.documentId(this.attributeDocumentId);
-          a.stringValue(value);
-          a.type(AttributeSearchType.STRING);
-
-          list.add(a);
+          addToList(list, AttributeSearchValueType.STRING, key, value, null, null);
         }
       }
+
+      List<Double> numberValues = getNumberValues(o);
+      if (!Objects.isEmpty(numberValues)) {
+
+        for (Double value : numberValues) {
+          addToList(list, AttributeSearchValueType.NUMBER, key, null, null, value);
+        }
+      }
+
+      Boolean bool = (Boolean) o.getOrDefault("booleanValue", null);
+      if (bool != null) {
+        addToList(list, AttributeSearchValueType.BOOLEAN, key, null, bool, null);
+      }
     }
-    // a.booleanValue(null);
-    // a.numberValue(null);
+
+    return list;
+  }
+
+  private List<Double> getNumberValues(final DynamicObject o) {
+    List<Double> list = o.getDoubleList("numberValues");
+    if (Objects.isEmpty(list)) {
+      list = new ArrayList<>();
+
+      Double s = o.getDouble("numberValue");
+      if (s != null) {
+        list.add(s);
+      }
+    }
 
     return list;
   }

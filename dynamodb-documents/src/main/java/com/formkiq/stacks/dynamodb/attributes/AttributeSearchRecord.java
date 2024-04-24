@@ -24,6 +24,7 @@
 package com.formkiq.stacks.dynamodb.attributes;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
+import static com.formkiq.aws.dynamodb.objects.Objects.formatDouble;
 import static com.formkiq.stacks.dynamodb.attributes.AttributeRecord.ATTR;
 import java.util.HashMap;
 import java.util.Map;
@@ -57,7 +58,7 @@ public class AttributeSearchRecord implements DynamodbRecord<AttributeSearchReco
   private String stringValue;
   /** Type of Attribute. */
   @Reflectable
-  private AttributeSearchType type;
+  private AttributeSearchValueType valueType;
 
   /**
    * constructor.
@@ -115,7 +116,7 @@ public class AttributeSearchRecord implements DynamodbRecord<AttributeSearchReco
 
     Map<String, AttributeValue> map = new HashMap<>();
     map.put("key", fromS(this.key));
-    map.put("type", fromS(this.type.name()));
+    map.put("valueType", fromS(this.valueType.name()));
     map.put("documentId", fromS(this.documentId));
 
     if (this.booleanValue != null) {
@@ -123,7 +124,7 @@ public class AttributeSearchRecord implements DynamodbRecord<AttributeSearchReco
     }
 
     if (this.numberValue != null) {
-      map.put("numberValue", AttributeValue.fromN("" + this.numberValue));
+      map.put("numberValue", AttributeValue.fromN(formatDouble(this.numberValue)));
     }
 
     if (this.stringValue != null) {
@@ -151,7 +152,7 @@ public class AttributeSearchRecord implements DynamodbRecord<AttributeSearchReco
     if (!attrs.isEmpty()) {
 
       record = new AttributeSearchRecord().documentId(ss(attrs, "documentId")).key(ss(attrs, "key"))
-          .type(AttributeSearchType.valueOf(ss(attrs, "type")));
+          .valueType(AttributeSearchValueType.valueOf(ss(attrs, "valueType")));
 
       if (attrs.containsKey("booleanValue")) {
         record.booleanValue(bb(attrs, "booleanValue"));
@@ -193,12 +194,12 @@ public class AttributeSearchRecord implements DynamodbRecord<AttributeSearchReco
   }
 
   /**
-   * Get Attribute Type.
+   * Get Attribute Value Type.
    * 
-   * @return {@link AttributeSearchType}
+   * @return {@link AttributeSearchValueType}
    */
-  public AttributeSearchType getType() {
-    return this.type;
+  public AttributeSearchValueType getValueType() {
+    return this.valueType;
   }
 
   /**
@@ -247,9 +248,13 @@ public class AttributeSearchRecord implements DynamodbRecord<AttributeSearchReco
   @Override
   public String sk() {
 
+    if (this.key == null) {
+      throw new IllegalArgumentException("'key' is required");
+    }
+
     String sk = ATTR + this.key + "#";
 
-    switch (this.type) {
+    switch (this.valueType) {
       case STRING: {
         sk += this.stringValue;
         break;
@@ -259,11 +264,11 @@ public class AttributeSearchRecord implements DynamodbRecord<AttributeSearchReco
         break;
       }
       case NUMBER: {
-        sk += this.numberValue;
+        sk += formatDouble(this.numberValue);
         break;
       }
       default:
-        throw new IllegalArgumentException("Unexpected value: " + this.type);
+        throw new IllegalArgumentException("Unexpected value: " + this.valueType);
     }
 
     return sk;
@@ -273,13 +278,13 @@ public class AttributeSearchRecord implements DynamodbRecord<AttributeSearchReco
   public String skGsi1() {
 
     String val = null;
-    switch (this.type) {
+    switch (this.valueType) {
       case STRING: {
         val = this.stringValue;
         break;
       }
       case NUMBER: {
-        val = this.numberValue.toString();
+        val = formatDouble(this.numberValue);
         break;
       }
       case BOOLEAN: {
@@ -287,7 +292,7 @@ public class AttributeSearchRecord implements DynamodbRecord<AttributeSearchReco
         break;
       }
       default:
-        throw new IllegalArgumentException("Unexpected value: " + this.type);
+        throw new IllegalArgumentException("Unexpected value: " + this.valueType);
     }
 
     return val;
@@ -312,11 +317,11 @@ public class AttributeSearchRecord implements DynamodbRecord<AttributeSearchReco
   /**
    * Set Attribute Type.
    * 
-   * @param attributeType {@link AttributeSearchType}
+   * @param attributeType {@link AttributeSearchValueType}
    * @return {@link AttributeSearchRecord}
    */
-  public AttributeSearchRecord type(final AttributeSearchType attributeType) {
-    this.type = attributeType;
+  public AttributeSearchRecord valueType(final AttributeSearchValueType attributeType) {
+    this.valueType = attributeType;
     return this;
   }
 }

@@ -95,6 +95,26 @@ public class Objects {
   }
 
   /**
+   * Format {@link Double}.
+   * 
+   * @param val {@link Double}
+   * @return {@link String}
+   */
+  public static String formatDouble(final Double val) {
+
+    String s = null;
+
+    double dv = val.doubleValue();
+    if (dv == (long) dv) {
+      s = String.format("%d", Long.valueOf((long) dv));
+    } else {
+      s = String.format("%s", val);
+    }
+
+    return s;
+  }
+
+  /**
    * Is {@link Collection} empty.
    * 
    * @param c {@link Collection}

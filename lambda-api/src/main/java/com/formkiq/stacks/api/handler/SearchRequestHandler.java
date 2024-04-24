@@ -235,10 +235,12 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
    * @return {@link PaginationResults} {@link DynamicDocumentItem}
    * @throws IOException IOException
    * @throws BadException BadException
+   * @throws ValidationException ValidationException
    */
   private PaginationResults<DynamicDocumentItem> query(final AwsServiceCache awsservice,
       final DocumentSearchService documentSearchService, final String siteId, final QueryRequest q,
-      final PaginationMapToken ptoken, final int limit) throws IOException, BadException {
+      final PaginationMapToken ptoken, final int limit)
+      throws IOException, BadException, ValidationException {
 
     String text = q.query().getText();
     PaginationResults<DynamicDocumentItem> results = null;
