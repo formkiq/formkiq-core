@@ -23,8 +23,13 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import static com.formkiq.aws.dynamodb.objects.Objects.formatDouble;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import java.math.BigDecimal;
 import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,10 +43,12 @@ import com.formkiq.client.model.Attribute;
 import com.formkiq.client.model.AttributeType;
 import com.formkiq.client.model.DocumentSearch;
 import com.formkiq.client.model.DocumentSearchAttribute;
+import com.formkiq.client.model.DocumentSearchRange;
 import com.formkiq.client.model.DocumentSearchRequest;
 import com.formkiq.client.model.DocumentSearchResponse;
 import com.formkiq.client.model.GetAttributeResponse;
 import com.formkiq.client.model.GetAttributesResponse;
+import com.formkiq.client.model.SearchResultDocument;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 
@@ -85,7 +92,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * POST /documents/upload.
+   * POST /documents/upload, POST /search attributes 'eq' stringValue.
    * 
    * @throws ApiException ApiException
    */
@@ -100,23 +107,431 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       AddAttributeRequest req = new AddAttributeRequest().attribute(new AddAttribute().key(key));
       this.attributesApi.addAttribute(req, siteId);
 
-      AddDocumentUploadRequest docReq = new AddDocumentUploadRequest()
-          .addAttributesItem(new AddDocumentAttribute().key(key).stringValue("confidential"));
+      // when
+      String documentId0 = addDocumentAttribute(siteId, key, "confidential", null, null);
+      String documentId1 = addDocumentAttribute(siteId, key, "confidential", null, null);
+
+      // then
+      DocumentSearchAttribute attribute = new DocumentSearchAttribute().key(key);
+      DocumentSearch query = new DocumentSearch().attribute(attribute);
+      DocumentSearchRequest searchRequest = new DocumentSearchRequest().query(query);
+
+      for (String val : Arrays.asList(null, "confidential")) {
+        attribute.eq(val);
+        DocumentSearchResponse response =
+            this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
+
+        assertEquals(2, response.getDocuments().size());
+        SearchResultDocument sr = response.getDocuments().get(0);
+        assertTrue(
+            documentId0.equals(sr.getDocumentId()) || documentId1.equals(sr.getDocumentId()));
+        assertEquals("security", sr.getMatchedAttribute().getKey());
+        assertEquals("confidential", sr.getMatchedAttribute().getStringValue());
+      }
+
+      query.addDocumentIdsItem(documentId1);
+      DocumentSearchResponse response =
+          this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
+      assertEquals(1, response.getDocuments().size());
+      assertEquals(documentId1, response.getDocuments().get(0).getDocumentId());
+
+      attribute.eq("confidential2");
+      response = this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
+      assertEquals(0, response.getDocuments().size());
+    }
+  }
+
+  /**
+   * POST /documents/upload, POST /search attributes 'eq' booleanValue.
+   * 
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testAddDocumentUploadAttribute02() throws ApiException {
+    // given
+    final String key = "security";
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+      AddAttributeRequest req = new AddAttributeRequest().attribute(new AddAttribute().key(key));
+      this.attributesApi.addAttribute(req, siteId);
+
+      // when
+      String documentId = addDocumentAttribute(siteId, key, null, Boolean.TRUE, null);
+
+      // then
+      DocumentSearchAttribute attribute = new DocumentSearchAttribute().key(key);
+      DocumentSearchRequest searchRequest =
+          new DocumentSearchRequest().query(new DocumentSearch().attribute(attribute));
+
+      for (Boolean val : Arrays.asList(null, Boolean.TRUE)) {
+        attribute.eq(val != null ? val.toString() : null);
+        DocumentSearchResponse response =
+            this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
+
+        assertEquals(1, response.getDocuments().size());
+        SearchResultDocument sr = response.getDocuments().get(0);
+        assertEquals(documentId, sr.getDocumentId());
+        assertEquals("security", sr.getMatchedAttribute().getKey());
+        assertEquals(Boolean.TRUE, sr.getMatchedAttribute().getBooleanValue());
+      }
+
+      attribute.eq(Boolean.FALSE.toString());
+      DocumentSearchResponse response =
+          this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
+      assertEquals(0, response.getDocuments().size());
+    }
+  }
+
+  /**
+   * POST /documents/upload, POST /search attributes 'eq' numberValue.
+   * 
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testAddDocumentUploadAttribute03() throws ApiException {
+
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+
+      for (String numberValue : Arrays.asList("100", "50.02")) {
+
+        final String key = "security" + UUID.randomUUID();
+
+        AddAttributeRequest req = new AddAttributeRequest().attribute(new AddAttribute().key(key));
+        this.attributesApi.addAttribute(req, siteId);
+
+        // AddDocumentUploadRequest docReq = new AddDocumentUploadRequest().addAttributesItem(
+        // new AddDocumentAttribute().key(key).numberValue(new BigDecimal(numberValue)));
+
+        // when
+        String documentId =
+            addDocumentAttribute(siteId, key, null, null, new BigDecimal(numberValue));
+        // String documentId =
+        // this.documentsApi.addDocumentUpload(docReq, siteId, null, null, null).getDocumentId();
+
+        // then
+        DocumentSearchAttribute attribute = new DocumentSearchAttribute().key(key);
+        DocumentSearchRequest searchRequest =
+            new DocumentSearchRequest().query(new DocumentSearch().attribute(attribute));
+
+        for (BigDecimal val : Arrays.asList(null, new BigDecimal(numberValue))) {
+          attribute.eq(val != null ? val.toString() : null);
+          DocumentSearchResponse response =
+              this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
+
+          assertEquals(1, response.getDocuments().size());
+          SearchResultDocument sr = response.getDocuments().get(0);
+          assertEquals(documentId, sr.getDocumentId());
+          assertEquals(key, sr.getMatchedAttribute().getKey());
+          assertEquals(numberValue, formatDouble(
+              Double.valueOf(sr.getMatchedAttribute().getNumberValue().doubleValue())));
+        }
+
+        attribute.eq("101");
+        DocumentSearchResponse response =
+            this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
+        assertEquals(0, response.getDocuments().size());
+      }
+    }
+  }
+
+  /**
+   * POST /documents/upload, POST /search attributes 'eq' stringValues.
+   * 
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testAddDocumentUploadAttribute04() throws ApiException {
+    // given
+    final String key = "security";
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+      AddAttributeRequest req = new AddAttributeRequest().attribute(new AddAttribute().key(key));
+      this.attributesApi.addAttribute(req, siteId);
+
+      AddDocumentUploadRequest docReq =
+          new AddDocumentUploadRequest().addAttributesItem(new AddDocumentAttribute().key(key)
+              .stringValues(Arrays.asList("confidential1", "confidential2")));
 
       // when
       String documentId =
           this.documentsApi.addDocumentUpload(docReq, siteId, null, null, null).getDocumentId();
 
       // then
-      DocumentSearchRequest s0 = new DocumentSearchRequest()
-          .query(new DocumentSearch().attribute(new DocumentSearchAttribute().key(key)));
+      DocumentSearchAttribute attribute = new DocumentSearchAttribute().key(key);
+      DocumentSearchRequest searchRequest =
+          new DocumentSearchRequest().query(new DocumentSearch().attribute(attribute));
 
-      DocumentSearchResponse response = this.searchApi.documentSearch(s0, siteId, null, null, null);
+      for (String val : Arrays.asList(null, "confidential1", "confidential2")) {
+        attribute.eq(val);
+        DocumentSearchResponse response =
+            this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
 
-      assertEquals(1, response.getDocuments().size());
-      assertEquals(documentId, response.getDocuments().get(0).getDocumentId());
+        assertEquals(1, response.getDocuments().size());
+        SearchResultDocument sr = response.getDocuments().get(0);
+        assertEquals(documentId, sr.getDocumentId());
+        assertEquals("security", sr.getMatchedAttribute().getKey());
 
-      // todo match matching attribute
+        if (val != null) {
+          assertEquals(val, sr.getMatchedAttribute().getStringValue());
+        } else {
+          assertEquals("confidential1", sr.getMatchedAttribute().getStringValue());
+        }
+      }
+
+      attribute.eq("confidential3");
+      DocumentSearchResponse response =
+          this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
+      assertEquals(0, response.getDocuments().size());
     }
   }
+
+  /**
+   * POST /documents/upload, POST /search attributes 'eq' numberValues.
+   * 
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testAddDocumentUploadAttribute05() throws ApiException {
+    // given
+    final String key = "security";
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+      AddAttributeRequest req = new AddAttributeRequest().attribute(new AddAttribute().key(key));
+      this.attributesApi.addAttribute(req, siteId);
+
+      AddDocumentUploadRequest docReq =
+          new AddDocumentUploadRequest().addAttributesItem(new AddDocumentAttribute().key(key)
+              .numberValues(Arrays.asList(new BigDecimal("100"), new BigDecimal("200"))));
+
+      // when
+      String documentId =
+          this.documentsApi.addDocumentUpload(docReq, siteId, null, null, null).getDocumentId();
+
+      // then
+      DocumentSearchAttribute attribute = new DocumentSearchAttribute().key(key);
+      DocumentSearchRequest searchRequest =
+          new DocumentSearchRequest().query(new DocumentSearch().attribute(attribute));
+
+      for (BigDecimal val : Arrays.asList(null, new BigDecimal("100"), new BigDecimal("200"))) {
+        attribute.eq(val != null ? val.toString() : null);
+        DocumentSearchResponse response =
+            this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
+
+        assertEquals(1, response.getDocuments().size());
+        SearchResultDocument sr = response.getDocuments().get(0);
+        assertEquals(documentId, sr.getDocumentId());
+        assertEquals("security", sr.getMatchedAttribute().getKey());
+
+        if (val != null) {
+          assertEquals(formatDouble(Double.valueOf(val.doubleValue())), formatDouble(
+              Double.valueOf(sr.getMatchedAttribute().getNumberValue().doubleValue())));
+        } else {
+          assertEquals("100", formatDouble(
+              Double.valueOf(sr.getMatchedAttribute().getNumberValue().doubleValue())));
+        }
+      }
+
+      attribute.eq("confidential3");
+      DocumentSearchResponse response =
+          this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
+      assertEquals(0, response.getDocuments().size());
+    }
+  }
+
+  /**
+   * POST /documents/upload, POST /search attributes 'range' stringValue.
+   * 
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testAddDocumentUploadAttribute06() throws ApiException {
+    // given
+    final String key = "date";
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+      AddAttributeRequest req = new AddAttributeRequest().attribute(new AddAttribute().key(key));
+      this.attributesApi.addAttribute(req, siteId);
+
+      // when
+      final String doc0 = addDocumentAttribute(siteId, key, "2024-01-01", null, null);
+      final String doc1 = addDocumentAttribute(siteId, key, "2024-01-02", null, null);
+      addDocumentAttribute(siteId, key, "2024-01-03", null, null);
+      final String doc3 = addDocumentAttribute(siteId, key, "2024-01-04", null, null);
+
+      // then
+      DocumentSearchAttribute attribute = new DocumentSearchAttribute().key(key);
+      DocumentSearch query = new DocumentSearch().attribute(attribute);
+      DocumentSearchRequest searchRequest = new DocumentSearchRequest().query(query);
+      DocumentSearchResponse response =
+          this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
+
+      final int expected = 4;
+      assertEquals(expected, response.getDocuments().size());
+
+      // range with start / end
+      attribute.range(new DocumentSearchRange().start("2024-01-01").end("2024-01-02"));
+      response = this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
+      assertEquals(2, response.getDocuments().size());
+      assertEquals(doc0, response.getDocuments().get(0).getDocumentId());
+      assertEquals(doc1, response.getDocuments().get(1).getDocumentId());
+
+      // range with documents ids
+      attribute.range(new DocumentSearchRange().start("2024-01-01").end("2024-01-02"));
+      query.addDocumentIdsItem(doc1).addDocumentIdsItem(doc3);
+      response = this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
+      assertEquals(1, response.getDocuments().size());
+      assertEquals(doc1, response.getDocuments().get(0).getDocumentId());
+      query.setDocumentIds(null);
+
+      // range with start
+      for (List<String> documentIds : Arrays.asList(null,
+          Arrays.asList(UUID.randomUUID().toString()))) {
+        query.setDocumentIds(documentIds);
+        attribute.range(new DocumentSearchRange().start("2024-01-03"));
+        assertInvalidSearch(siteId, searchRequest,
+            "{\"errors\":[{\"key\":\"end\",\"error\":\"'end' is required\"}]}");
+      }
+
+      // range with end only
+      attribute.range(new DocumentSearchRange().end("2024-01-03"));
+      assertInvalidSearch(siteId, searchRequest,
+          "{\"errors\":[{\"key\":\"start\",\"error\":\"'start' is required\"}]}");
+    }
+  }
+
+  private void assertInvalidSearch(final String siteId, final DocumentSearchRequest searchRequest,
+      final String responseBody) {
+    try {
+      this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
+      fail();
+    } catch (ApiException e) {
+      assertEquals(responseBody, e.getResponseBody());
+    }
+  }
+
+  /**
+   * POST /documents/upload, POST /search attributes 'beginswith' stringValue.
+   * 
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testAddDocumentUploadAttribute07() throws ApiException {
+    // given
+    final String key = "date";
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+      AddAttributeRequest req = new AddAttributeRequest().attribute(new AddAttribute().key(key));
+      this.attributesApi.addAttribute(req, siteId);
+
+      // when
+      final String documentId0 = addDocumentAttribute(siteId, key, "2024-01-01", null, null);
+      final String documentId1 = addDocumentAttribute(siteId, key, "2024-01-02", null, null);
+      final String documentId2 = addDocumentAttribute(siteId, key, "2024-02-03", null, null);
+
+      // then
+      DocumentSearchAttribute attribute = new DocumentSearchAttribute().key(key);
+      DocumentSearch query = new DocumentSearch().attribute(attribute);
+      DocumentSearchRequest searchRequest = new DocumentSearchRequest().query(query);
+      DocumentSearchResponse response =
+          this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
+
+      final int expected = 3;
+      assertEquals(expected, response.getDocuments().size());
+
+      // beginsWith
+      attribute.beginsWith("2024-01");
+      response = this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
+      assertEquals(2, response.getDocuments().size());
+      SearchResultDocument doc = response.getDocuments().get(0);
+      assertEquals(documentId0, doc.getDocumentId());
+      assertEquals(documentId1, response.getDocuments().get(1).getDocumentId());
+
+      // correct documentids
+      query.addDocumentIdsItem(documentId1);
+      response = this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
+      assertEquals(1, response.getDocuments().size());
+      doc = response.getDocuments().get(0);
+      assertEquals(key, doc.getMatchedAttribute().getKey());
+      assertEquals("2024-01-02", doc.getMatchedAttribute().getStringValue());
+
+      // incorrect document id
+      query.setDocumentIds(Arrays.asList(documentId2));
+      response = this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
+      assertEquals(0, response.getDocuments().size());
+    }
+  }
+
+  /**
+   * POST /documents/upload, POST /search attributes 'eqOr' stringValue.
+   * 
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testAddDocumentUploadAttribute08() throws ApiException {
+    // given
+    final String key = "security";
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+      AddAttributeRequest req = new AddAttributeRequest().attribute(new AddAttribute().key(key));
+      this.attributesApi.addAttribute(req, siteId);
+
+      final String doc0 = addDocumentAttribute(siteId, key, "confidential", null, null);
+      addDocumentAttribute(siteId, key, "private", null, null);
+      final String doc2 = addDocumentAttribute(siteId, key, "other", null, null);
+      final String doc3 = addDocumentAttribute(siteId, "anotherkey", "other", null, null);
+
+      // when
+      DocumentSearchAttribute attribute =
+          new DocumentSearchAttribute().key(key).eqOr(Arrays.asList("confidential", "other"));
+      DocumentSearchRequest searchRequest =
+          new DocumentSearchRequest().query(new DocumentSearch().attribute(attribute));
+      DocumentSearchResponse response =
+          this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
+
+      // then
+      assertEquals(2, response.getDocuments().size());
+      assertEquals(doc0, response.getDocuments().get(0).getDocumentId());
+      assertEquals(doc2, response.getDocuments().get(1).getDocumentId());
+
+      // given
+      searchRequest.getQuery().addDocumentIdsItem(doc2).addDocumentIdsItem(doc3);
+
+      // when
+      response = this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
+
+      // then
+      assertEquals(1, response.getDocuments().size());
+      assertEquals(doc2, response.getDocuments().get(0).getDocumentId());
+    }
+  }
+
+  private String addDocumentAttribute(final String siteId, final String key,
+      final String stringValue, final Boolean booleanValue, final BigDecimal numberValue)
+      throws ApiException {
+
+    AddDocumentUploadRequest docReq =
+        new AddDocumentUploadRequest().addAttributesItem(new AddDocumentAttribute().key(key)
+            .stringValue(stringValue).booleanValue(booleanValue).numberValue(numberValue));
+
+    return this.documentsApi.addDocumentUpload(docReq, siteId, null, null, null).getDocumentId();
+
+  }
+  // response fields
+  // check attributes exist in db when adding
+  // todo invalid attributes missing key
 }

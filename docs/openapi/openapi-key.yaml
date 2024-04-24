@@ -5934,6 +5934,10 @@
                   $ref: '#/components/schemas/SearchResponseFields'
             SearchResponseFields:
               properties:
+                attributes:
+                  type: array
+                  items:
+                    type: string
                 tags:
                   type: array
                   items:
@@ -6015,6 +6019,11 @@
                 eq:
                   type: string
                   description: Searches for strings that eq
+                eqOr:
+                  type: array
+                  description: Searches for ANY strings that eq
+                  items:
+                    type: string
                 beginsWith:
                   type: string
                   description: Searches for strings that begin with
@@ -6875,6 +6884,8 @@
                 belongsToDocumentId:
                   type: string
                   description: Parent Document Identifier
+                matchedAttribute:
+                  $ref: '#/components/schemas/DocumentSearchMatchAttribute'
                 matchedTag:
                   $ref: '#/components/schemas/DocumentSearchMatchTag'
                 matchedTags:
@@ -6888,6 +6899,21 @@
                   description: List of document Metadata
                   items:
                     $ref: '#/components/schemas/DocumentMetadata'
+            DocumentSearchMatchAttribute:
+              type: object
+              properties:
+                key:
+                  type: string
+                  description: Tag key
+                stringValue:
+                  type: string
+                  description: Attribute with string value
+                numberValue:
+                  type: number
+                  description: Attribute with number value
+                booleanValue:
+                  type: boolean
+                  description: Attribute with boolean value
             DocumentSearchMatchTag:
               type: object
               properties:

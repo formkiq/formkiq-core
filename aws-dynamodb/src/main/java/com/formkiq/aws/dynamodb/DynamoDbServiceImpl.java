@@ -95,6 +95,28 @@ public class DynamoDbServiceImpl implements DynamoDbService {
   }
 
   @Override
+  public QueryResponse between(final QueryConfig config, final AttributeValue pk,
+      final AttributeValue skStart, final AttributeValue skEnd,
+      final Map<String, AttributeValue> startkey, final int limit) {
+
+    String gsi = Strings.isEmpty(config.indexName()) ? "" : config.indexName();
+
+    String expression = gsi + PK + " = :pk and " + gsi + SK + " between :start and :end";
+    Map<String, AttributeValue> values = new HashMap<>();
+    values.put(":pk", pk);
+    values.put(":start", skStart);
+    values.put(":end", skEnd);
+
+    QueryRequest q =
+        QueryRequest.builder().tableName(this.tableName).keyConditionExpression(expression)
+            .expressionAttributeValues(values).scanIndexForward(config.isScanIndexForward())
+            .projectionExpression(config.projectionExpression()).indexName(config.indexName())
+            .exclusiveStartKey(startkey).limit(Integer.valueOf(limit)).build();
+
+    return this.dbClient.query(q);
+  }
+
+  @Override
   public boolean deleteItem(final AttributeValue pk, final AttributeValue sk) {
     Map<String, AttributeValue> sourceKey = Map.of(PK, pk, SK, sk);
     return deleteItem(sourceKey);
