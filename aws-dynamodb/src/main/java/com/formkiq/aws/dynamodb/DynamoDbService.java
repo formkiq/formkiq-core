@@ -79,7 +79,7 @@ public interface DynamoDbService {
   boolean deleteItems(Collection<Map<String, AttributeValue>> attrs);
 
   /**
-   * Whether Database Record Exists.
+   * Whether Database Record Exist.
    * 
    * @param pk {@link AttributeValue}
    * @param sk {@link AttributeValue}

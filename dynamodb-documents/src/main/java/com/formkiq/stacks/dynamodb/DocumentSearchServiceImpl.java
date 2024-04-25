@@ -67,6 +67,7 @@ import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.model.SearchAttributeCriteria;
 import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
+import com.formkiq.aws.dynamodb.model.SearchResponseFields;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteriaRange;
 import com.formkiq.aws.dynamodb.objects.Objects;
@@ -149,32 +150,56 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
       List<Map<String, AttributeValue>> attributeMatches = matchedTags.get(r.getDocumentId());
       Map<String, AttributeValue> attributeMatch = attributeMatches.get(0);
 
-      AttributeSearchValueType type =
-          AttributeSearchValueType.valueOf(attributeMatch.get("valueType").s());
-
-      Map<String, Object> values = new HashMap<>();
-      values.put("key", attributeMatch.get("key").s());
-
-      switch (type) {
-        case BOOLEAN: {
-          values.put("booleanValue", attributeMatch.get("booleanValue").bool());
-          break;
-        }
-        case NUMBER: {
-          Double value = Double.valueOf(attributeMatch.get("numberValue").n());
-          values.put("numberValue", value);
-          break;
-        }
-        case STRING: {
-          values.put("stringValue", attributeMatch.get("stringValue").s());
-          break;
-        }
-        default:
-          break;
-      }
-
+      Map<String, Object> values = getAttributeValuesMap(attributeMatch);
       r.put("matchedAttribute", values);
     });
+  }
+
+  /**
+   * Add Response Fields to {@link DynamicDocumentItem}.
+   * 
+   * @param siteId {@link String}
+   * @param results {@link List} {@link DynamicDocumentItem}
+   * @param searchResponseFields {@link SearchResponseFields}
+   */
+  private void addResponseFields(final String siteId, final List<DynamicDocumentItem> results,
+      final SearchResponseFields searchResponseFields) {
+
+    final int limit = 10;
+    if (searchResponseFields != null) {
+
+      List<String> attributes = Objects.notNull(searchResponseFields.getAttributes());
+
+      for (DynamicDocumentItem item : results) {
+
+        AttributeSearchRecord sr = new AttributeSearchRecord();
+        sr.documentId(item.getDocumentId());
+
+        List<Map<String, Object>> attributeFields = new ArrayList<>();
+
+        for (String key : attributes) {
+
+          QueryConfig config = new QueryConfig().scanIndexForward(Boolean.TRUE)
+              .projectionExpression("valueType,stringValue,numberValue,booleanValue");
+
+          sr.key(key);
+          AttributeValue pk = sr.fromS(sr.pk(siteId));
+          AttributeValue sk = sr.fromS(ATTR + key + "#");
+          QueryResponse response = this.db.queryBeginsWith(config, pk, sk, null, limit);
+
+          for (Map<String, AttributeValue> attribute : response.items()) {
+
+            Map<String, AttributeValue> attrs = new HashMap<>(attribute);
+            attrs.put("key", AttributeValue.fromS(key));
+
+            Map<String, Object> values = getAttributeValuesMap(attrs);
+            attributeFields.add(values);
+          }
+        }
+
+        item.put("responseAttributes", attributeFields);
+      }
+    }
   }
 
   private QueryRequest createQueryRequest(final String index, final String expression,
@@ -454,6 +479,35 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
     return searchByMeta(siteId, value, null, token, maxresults);
   }
 
+  private Map<String, Object> getAttributeValuesMap(
+      final Map<String, AttributeValue> attributeMatch) {
+
+    AttributeSearchValueType type =
+        AttributeSearchValueType.valueOf(attributeMatch.get("valueType").s());
+
+    Map<String, Object> values = new HashMap<>();
+    values.put("key", attributeMatch.get("key").s());
+
+    switch (type) {
+      case BOOLEAN: {
+        values.put("booleanValue", attributeMatch.get("booleanValue").bool());
+        break;
+      }
+      case NUMBER: {
+        Double value = Double.valueOf(attributeMatch.get("numberValue").n());
+        values.put("numberValue", value);
+        break;
+      }
+      case STRING: {
+        values.put("stringValue", attributeMatch.get("stringValue").s());
+        break;
+      }
+      default:
+        break;
+    }
+    return values;
+  }
+
   private String getFolderMetaDataKey(final String siteId, final SearchMetaCriteria meta) {
     String eq = meta.eq();
 
@@ -512,7 +566,8 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
 
   @Override
   public PaginationResults<DynamicDocumentItem> search(final String siteId, final SearchQuery query,
-      final PaginationMapToken token, final int maxresults) throws ValidationException {
+      final SearchResponseFields searchResponseFields, final PaginationMapToken token,
+      final int maxresults) throws ValidationException {
 
     SearchMetaCriteria meta = query.getMeta();
     PaginationResults<DynamicDocumentItem> results = null;
@@ -542,7 +597,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
     } else if (query.getAttribute() != null) {
 
       SearchAttributeCriteria search = query.getAttribute();
-      results = searchByAttribute(siteId, query, search, token, maxresults);
+      results = searchByAttribute(siteId, query, search, searchResponseFields, token, maxresults);
 
     } else {
 
@@ -700,7 +755,8 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
   }
 
   private PaginationResults<DynamicDocumentItem> searchByAttribute(final String siteId,
-      final SearchQuery query, final SearchAttributeCriteria search, final PaginationMapToken token,
+      final SearchQuery query, final SearchAttributeCriteria search,
+      final SearchResponseFields searchResponseFields, final PaginationMapToken token,
       final int limit) throws ValidationException {
 
     validate(search);
@@ -759,6 +815,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
             .collect(Collectors.toList()) : Collections.emptyList();
 
     addMatchAttributes(items, results);
+    addResponseFields(siteId, results, searchResponseFields);
 
     return new PaginationResults<>(results, pagination);
   }

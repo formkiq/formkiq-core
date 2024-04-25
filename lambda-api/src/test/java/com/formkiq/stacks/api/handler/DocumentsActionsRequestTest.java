@@ -64,6 +64,7 @@ import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.sqs.model.Message;
 
 /** Unit Tests for request /documents/{documentId}/actions. */
@@ -98,8 +99,9 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
    * 
    * @param siteId {@link String}
    * @return {@link String}
+   * @throws ValidationException ValidationException
    */
-  private String saveDocument(final String siteId) {
+  private String saveDocument(final String siteId) throws ValidationException {
     String documentId = UUID.randomUUID().toString();
 
     DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");

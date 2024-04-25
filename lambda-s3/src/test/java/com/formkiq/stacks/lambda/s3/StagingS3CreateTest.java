@@ -136,6 +136,7 @@ import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbHelper;
 import com.formkiq.testutils.aws.LocalStackExtension;
 import com.formkiq.testutils.aws.TestServices;
+import com.formkiq.validation.ValidationException;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -432,7 +433,7 @@ public class StagingS3CreateTest implements DbKeys {
   }
 
   private void createDocument(final String siteId, final String userId, final byte[] content,
-      final String docId) {
+      final String docId) throws ValidationException {
     DynamicDocumentItem item = new DynamicDocumentItem(new HashMap<>());
     item.setDocumentId(docId == null ? UUID.randomUUID().toString() : docId);
     item.setUserId(userId);
@@ -1349,10 +1350,11 @@ public class StagingS3CreateTest implements DbKeys {
    * Test .fkb64 file add Metadata.
    *
    * @throws IOException IOException
+   * @throws ValidationException ValidationException
    */
   @Test
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
-  void testFkB64Extension14() throws IOException {
+  void testFkB64Extension14() throws IOException, ValidationException {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
@@ -1383,10 +1385,11 @@ public class StagingS3CreateTest implements DbKeys {
    * Test .fkb64 file removing Metadata.
    *
    * @throws IOException IOException
+   * @throws ValidationException ValidationException
    */
   @Test
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
-  void testFkB64Extension15() throws IOException {
+  void testFkB64Extension15() throws IOException, ValidationException {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
@@ -1464,10 +1467,11 @@ public class StagingS3CreateTest implements DbKeys {
    * Test Update .fkb64 file deep link with content.
    *
    * @throws IOException IOException
+   * @throws ValidationException ValidationException
    */
   @Test
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
-  void testFkB64Extension18() throws IOException {
+  void testFkB64Extension18() throws IOException, ValidationException {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
@@ -1501,10 +1505,12 @@ public class StagingS3CreateTest implements DbKeys {
 
   /**
    * Test processing S3 file from PATCH /documents/tags.
+   * 
+   * @throws ValidationException ValidationException
    */
   @Test
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
-  void testPatchDocumentsTags01() {
+  void testPatchDocumentsTags01() throws ValidationException {
     // given
     final int maxDocuments = 150;
 
@@ -1554,10 +1560,12 @@ public class StagingS3CreateTest implements DbKeys {
 
   /**
    * Test processing S3 file from PATCH /documents/tags multiple tags.
+   * 
+   * @throws ValidationException ValidationException
    */
   @Test
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
-  void testPatchDocumentsTags02() {
+  void testPatchDocumentsTags02() throws ValidationException {
     // given
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 

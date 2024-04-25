@@ -48,6 +48,8 @@ import com.formkiq.client.model.DocumentSearchRequest;
 import com.formkiq.client.model.DocumentSearchResponse;
 import com.formkiq.client.model.GetAttributeResponse;
 import com.formkiq.client.model.GetAttributesResponse;
+import com.formkiq.client.model.SearchResponseAttributeField;
+import com.formkiq.client.model.SearchResponseFields;
 import com.formkiq.client.model.SearchResultDocument;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
@@ -88,6 +90,42 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       attribute = attr.getAttribute();
       assertEquals(key, attribute.getKey());
       assertEquals(AttributeType.STANDARD, attribute.getType());
+    }
+  }
+
+  /**
+   * POST /attributes missing key.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddAttributes02() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+      AddAttributeRequest req = new AddAttributeRequest();
+
+      // when
+      try {
+        this.attributesApi.addAttribute(req, siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals("{\"message\":\"invalid request body\"}", e.getResponseBody());
+      }
+
+      // given
+      req = new AddAttributeRequest().attribute(new AddAttribute());
+      // when
+      try {
+        this.attributesApi.addAttribute(req, siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals("{\"errors\":[{\"key\":\"key\",\"error\":\"'key' is required\"}]}",
+            e.getResponseBody());
+      }
     }
   }
 
@@ -487,8 +525,12 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
       setBearerToken(siteId);
-      AddAttributeRequest req = new AddAttributeRequest().attribute(new AddAttribute().key(key));
-      this.attributesApi.addAttribute(req, siteId);
+
+      for (String attribute : Arrays.asList(key, "anotherkey")) {
+        AddAttributeRequest req =
+            new AddAttributeRequest().attribute(new AddAttribute().key(attribute));
+        this.attributesApi.addAttribute(req, siteId);
+      }
 
       final String doc0 = addDocumentAttribute(siteId, key, "confidential", null, null);
       addDocumentAttribute(siteId, key, "private", null, null);
@@ -520,6 +562,89 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     }
   }
 
+  /**
+   * POST /documents/upload, POST /search attributes 'eq' stringValue with response fields.
+   * 
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testAddDocumentUploadAttribute09() throws ApiException {
+    // given
+    final String key = "security";
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+
+      for (String attribute : Arrays.asList(key, "playerId", "category")) {
+        AddAttributeRequest req =
+            new AddAttributeRequest().attribute(new AddAttribute().key(attribute));
+        this.attributesApi.addAttribute(req, siteId);
+      }
+
+      AddDocumentUploadRequest docReq = new AddDocumentUploadRequest()
+          .addAttributesItem(new AddDocumentAttribute().key(key).stringValue("confidential"))
+          .addAttributesItem(new AddDocumentAttribute().key("playerId").stringValue("1234"))
+          .addAttributesItem(new AddDocumentAttribute().key("category")
+              .stringValues(Arrays.asList("person", "house")));
+
+      this.documentsApi.addDocumentUpload(docReq, siteId, null, null, null);
+
+      DocumentSearchAttribute attribute = new DocumentSearchAttribute().key(key).eq("confidential");
+      DocumentSearch query = new DocumentSearch().attribute(attribute);
+      DocumentSearchRequest searchRequest =
+          new DocumentSearchRequest().query(query).responseFields(new SearchResponseFields()
+              .addAttributesItem(key).addAttributesItem("other").addAttributesItem("category"));
+
+      // when
+      DocumentSearchResponse response =
+          this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
+
+      // then
+      final int expected = 3;
+      List<SearchResponseAttributeField> responseAttributes =
+          response.getDocuments().get(0).getResponseAttributes();
+
+      assertEquals(expected, responseAttributes.size());
+      assertEquals("security", responseAttributes.get(0).getKey());
+      assertEquals("confidential", responseAttributes.get(0).getStringValue());
+      assertEquals("category", responseAttributes.get(1).getKey());
+      assertEquals("house", responseAttributes.get(1).getStringValue());
+      assertEquals("category", responseAttributes.get(2).getKey());
+      assertEquals("person", responseAttributes.get(2).getStringValue());
+    }
+  }
+
+  /**
+   * POST /documents/upload, with invalid attributes.
+   * 
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testAddDocumentUploadAttribute10() throws ApiException {
+    // given
+    final String key = "security";
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+
+      AddDocumentUploadRequest docReq = new AddDocumentUploadRequest()
+          .addAttributesItem(new AddDocumentAttribute().key(key).stringValue("confidential"));
+
+      // when
+      try {
+        this.documentsApi.addDocumentUpload(docReq, siteId, null, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(
+            "{\"errors\":[{\"key\":\"security\",\"error\":\"attribute 'security' not found\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
   private String addDocumentAttribute(final String siteId, final String key,
       final String stringValue, final Boolean booleanValue, final BigDecimal numberValue)
       throws ApiException {
@@ -529,9 +654,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
             .stringValue(stringValue).booleanValue(booleanValue).numberValue(numberValue));
 
     return this.documentsApi.addDocumentUpload(docReq, siteId, null, null, null).getDocumentId();
-
   }
-  // response fields
-  // check attributes exist in db when adding
-  // todo invalid attributes missing key
+
+  // add to POST /documents & S3Create
 }

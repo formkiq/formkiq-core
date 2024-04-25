@@ -95,8 +95,10 @@ public class DocumentSearchServiceImplTest {
    * @param tagKey {@link String}
    * @param tagValue {@link String}
    * @return {@link String}
+   * @throws ValidationException ValidationException
    */
-  private String createDocument(final String siteId, final String tagKey, final String tagValue) {
+  private String createDocument(final String siteId, final String tagKey, final String tagValue)
+      throws ValidationException {
     ZonedDateTime now = ZonedDateTime.now();
     DocumentItem doc = createDocument(UUID.randomUUID().toString(), now, "text/plain", "test.txt");
     Collection<DocumentTag> tags = Arrays
@@ -154,7 +156,11 @@ public class DocumentSearchServiceImplTest {
     items.forEach(item -> {
       Collection<DocumentTag> tags = Arrays.asList(
           new DocumentTag(item.getDocumentId(), "status", "active", new Date(), "testuser"));
-      this.service.saveDocument(prefix, item, tags);
+      try {
+        this.service.saveDocument(prefix, item, tags);
+      } catch (ValidationException e) {
+        throw new RuntimeException(e);
+      }
     });
 
     return items;
@@ -214,7 +220,7 @@ public class DocumentSearchServiceImplTest {
 
       // when
       PaginationResults<DynamicDocumentItem> results =
-          this.searchService.search(prefix, q, startkey, MAX_RESULTS);
+          this.searchService.search(prefix, q, null, startkey, MAX_RESULTS);
 
       // then
       assertEquals(MAX_RESULTS, results.getResults().size());
@@ -252,7 +258,7 @@ public class DocumentSearchServiceImplTest {
 
       // when
       PaginationResults<DynamicDocumentItem> results =
-          this.searchService.search(prefix, q, startkey, MAX_RESULTS);
+          this.searchService.search(prefix, q, null, startkey, MAX_RESULTS);
 
       // then
       assertEquals(0, results.getResults().size());
@@ -278,7 +284,7 @@ public class DocumentSearchServiceImplTest {
 
       // when
       PaginationResults<DynamicDocumentItem> results =
-          this.searchService.search(prefix, q, startkey, MAX_RESULTS);
+          this.searchService.search(prefix, q, null, startkey, MAX_RESULTS);
 
       // then
       assertEquals(MAX_RESULTS, results.getResults().size());
@@ -317,7 +323,7 @@ public class DocumentSearchServiceImplTest {
 
       // when
       PaginationResults<DynamicDocumentItem> results =
-          this.searchService.search(prefix, q, startkey, limit);
+          this.searchService.search(prefix, q, null, startkey, limit);
 
       // then
       assertEquals(1, results.getResults().size());
@@ -328,7 +334,7 @@ public class DocumentSearchServiceImplTest {
 
       // when
       PaginationResults<DynamicDocumentItem> results2 =
-          this.searchService.search(prefix, q, startkey, limit);
+          this.searchService.search(prefix, q, null, startkey, limit);
 
       // then
       assertEquals(1, results.getResults().size());
@@ -365,7 +371,7 @@ public class DocumentSearchServiceImplTest {
 
       // when
       PaginationResults<DynamicDocumentItem> results =
-          this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+          this.searchService.search(siteId, q, null, startkey, MAX_RESULTS);
 
       // then
       assertEquals(1, results.getResults().size());
@@ -407,7 +413,7 @@ public class DocumentSearchServiceImplTest {
 
       // when - wrong document id
       PaginationResults<DynamicDocumentItem> results =
-          this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+          this.searchService.search(siteId, q, null, startkey, MAX_RESULTS);
 
       // then
       assertEquals(1, results.getResults().size());
@@ -428,7 +434,7 @@ public class DocumentSearchServiceImplTest {
       q = new SearchQuery().tag(new SearchTagCriteria("nocategory"));
 
       // when
-      results = this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+      results = this.searchService.search(siteId, q, null, startkey, MAX_RESULTS);
 
       // then
       assertEquals(1, results.getResults().size());
@@ -437,7 +443,7 @@ public class DocumentSearchServiceImplTest {
       // given
       q.documentsIds(Arrays.asList("123"));
       // when
-      results = this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+      results = this.searchService.search(siteId, q, null, startkey, MAX_RESULTS);
       // then
       assertEquals(0, results.getResults().size());
     }
@@ -465,7 +471,7 @@ public class DocumentSearchServiceImplTest {
 
       // when
       PaginationResults<DynamicDocumentItem> results =
-          this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+          this.searchService.search(siteId, q, null, startkey, MAX_RESULTS);
       // then
       assertEquals(2, results.getResults().size());
 
@@ -504,7 +510,7 @@ public class DocumentSearchServiceImplTest {
 
       // when
       PaginationResults<DynamicDocumentItem> results =
-          this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+          this.searchService.search(siteId, q, null, startkey, MAX_RESULTS);
       // then
       assertEquals(0, results.getResults().size());
     }
@@ -534,7 +540,7 @@ public class DocumentSearchServiceImplTest {
 
       // when - wrong document id
       PaginationResults<DynamicDocumentItem> results =
-          this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+          this.searchService.search(siteId, q, null, startkey, MAX_RESULTS);
 
       // then
       assertEquals(1, results.getResults().size());
@@ -579,7 +585,7 @@ public class DocumentSearchServiceImplTest {
 
     // when - wrong document id
     PaginationResults<DynamicDocumentItem> results =
-        this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+        this.searchService.search(siteId, q, null, startkey, MAX_RESULTS);
 
     // then
     assertEquals(count, results.getResults().size());
@@ -611,7 +617,7 @@ public class DocumentSearchServiceImplTest {
 
       // when - wrong document id
       PaginationResults<DynamicDocumentItem> results =
-          this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+          this.searchService.search(siteId, q, null, startkey, MAX_RESULTS);
 
       // then
       assertEquals(1, results.getResults().size());
@@ -631,7 +637,7 @@ public class DocumentSearchServiceImplTest {
       // given
       q.documentsIds(Arrays.asList("123"));
       // when
-      results = this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+      results = this.searchService.search(siteId, q, null, startkey, MAX_RESULTS);
       // then
       assertEquals(0, results.getResults().size());
     }
@@ -674,7 +680,7 @@ public class DocumentSearchServiceImplTest {
 
       // when - wrong document id
       PaginationResults<DynamicDocumentItem> results =
-          this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+          this.searchService.search(siteId, q, null, startkey, MAX_RESULTS);
 
       // then
       List<DynamicDocumentItem> list = results.getResults();
@@ -700,7 +706,7 @@ public class DocumentSearchServiceImplTest {
       // given
       q.documentsIds(Arrays.asList("123"));
       // when
-      results = this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+      results = this.searchService.search(siteId, q, null, startkey, MAX_RESULTS);
       // then
       list = results.getResults();
       assertEquals(0, list.size());
@@ -733,7 +739,7 @@ public class DocumentSearchServiceImplTest {
 
       // when - wrong document id
       PaginationResults<DynamicDocumentItem> results =
-          this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+          this.searchService.search(siteId, q, null, startkey, MAX_RESULTS);
 
       // then
       List<DynamicDocumentItem> list = results.getResults();
@@ -786,7 +792,7 @@ public class DocumentSearchServiceImplTest {
 
       // when
       PaginationResults<DynamicDocumentItem> results =
-          this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+          this.searchService.search(siteId, q, null, startkey, MAX_RESULTS);
 
       // then
       final int expected = 3;
@@ -807,7 +813,7 @@ public class DocumentSearchServiceImplTest {
       q = new SearchQuery().meta(new SearchMetaCriteria().folder(folder));
 
       // when
-      results = this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+      results = this.searchService.search(siteId, q, null, startkey, MAX_RESULTS);
 
       // then
       list = results.getResults();
@@ -822,7 +828,7 @@ public class DocumentSearchServiceImplTest {
       q = new SearchQuery().meta(new SearchMetaCriteria().folder(folder));
 
       // when
-      results = this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+      results = this.searchService.search(siteId, q, null, startkey, MAX_RESULTS);
 
       // then
       list = results.getResults();
@@ -851,10 +857,10 @@ public class DocumentSearchServiceImplTest {
 
       // when
       PaginationResults<DynamicDocumentItem> results0 =
-          this.searchService.search(siteId, q0, startkey, MAX_RESULTS);
+          this.searchService.search(siteId, q0, null, startkey, MAX_RESULTS);
 
       PaginationResults<DynamicDocumentItem> results1 =
-          this.searchService.search(siteId, q1, startkey, MAX_RESULTS);
+          this.searchService.search(siteId, q1, null, startkey, MAX_RESULTS);
 
       // then
       List<DynamicDocumentItem> list0 = results0.getResults();
@@ -873,12 +879,12 @@ public class DocumentSearchServiceImplTest {
       this.service.deleteDocument(siteId, doc0.getDocumentId(), false);
 
       // then
-      results0 = this.searchService.search(siteId, q0, startkey, MAX_RESULTS);
+      results0 = this.searchService.search(siteId, q0, null, startkey, MAX_RESULTS);
       list0 = results0.getResults();
       assertEquals(1, list0.size());
       assertEquals("sample", list0.get(0).getPath());
 
-      results1 = this.searchService.search(siteId, q1, startkey, MAX_RESULTS);
+      results1 = this.searchService.search(siteId, q1, null, startkey, MAX_RESULTS);
       assertEquals(0, results1.getResults().size());
     }
   }
@@ -910,7 +916,7 @@ public class DocumentSearchServiceImplTest {
 
       // when
       PaginationResults<DynamicDocumentItem> results =
-          this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+          this.searchService.search(siteId, q, null, startkey, MAX_RESULTS);
 
       // then
       final int expected = 3;
@@ -949,7 +955,7 @@ public class DocumentSearchServiceImplTest {
 
       // when
       PaginationResults<DynamicDocumentItem> results =
-          this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+          this.searchService.search(siteId, q, null, startkey, MAX_RESULTS);
 
       // then
       List<DynamicDocumentItem> list = results.getResults();
@@ -958,7 +964,7 @@ public class DocumentSearchServiceImplTest {
       assertEquals("c", list.get(1).getPath());
 
       meta.folder("a/b");
-      results = this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+      results = this.searchService.search(siteId, q, null, startkey, MAX_RESULTS);
       list = results.getResults();
       assertEquals(0, list.size());
     }
@@ -984,7 +990,7 @@ public class DocumentSearchServiceImplTest {
 
       // when
       PaginationResults<DynamicDocumentItem> results =
-          this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+          this.searchService.search(siteId, q, null, startkey, MAX_RESULTS);
 
       // then
       List<DynamicDocumentItem> list = results.getResults();
@@ -997,16 +1003,20 @@ public class DocumentSearchServiceImplTest {
       q = new SearchQuery().meta(meta.path(path));
 
       // when
-      results = this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+      results = this.searchService.search(siteId, q, null, startkey, MAX_RESULTS);
 
       // then
       assertEquals(0, results.getResults().size());
     }
   }
 
-  /** Search by 'eq' / 'beginsWith' Tag Key & Value. */
+  /**
+   * Search by 'eq' / 'beginsWith' Tag Key & Value.
+   * 
+   * @throws ValidationException ValidationException
+   */
   @Test
-  public void testSearchForDocumentIds01() {
+  public void testSearchForDocumentIds01() throws ValidationException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       PaginationMapToken startkey = null;
@@ -1058,7 +1068,7 @@ public class DocumentSearchServiceImplTest {
 
       // when
       PaginationResults<DynamicDocumentItem> results =
-          this.searchService.search(siteId, q, null, MAX_RESULTS);
+          this.searchService.search(siteId, q, null, null, MAX_RESULTS);
 
       // then
       assertEquals(2, results.getResults().size());

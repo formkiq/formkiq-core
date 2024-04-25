@@ -5942,6 +5942,20 @@
                   type: array
                   items:
                     type: string
+            SearchResponseAttributeField:
+              properties:
+                key:
+                  type: string
+                  description: Attribute key
+                stringValue:
+                  type: string
+                  description: Attribute with string value
+                numberValue:
+                  type: number
+                  description: Attribute with number value
+                booleanValue:
+                  type: boolean
+                  description: Attribute with boolean value
             DocumentSearchMeta:
               type: object
               properties:
@@ -6894,6 +6908,11 @@
                 tags:
                   type: object
                   additionalProperties: true
+                responseAttributes:
+                  type: array
+                  description: List of document response attributes
+                  items:
+                    $ref: '#/components/schemas/SearchResponseAttributeField'
                 metadata:
                   type: array
                   description: List of document Metadata

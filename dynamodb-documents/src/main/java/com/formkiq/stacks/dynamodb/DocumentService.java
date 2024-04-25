@@ -38,6 +38,7 @@ import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.plugins.tagschema.DocumentTagLoader;
 import com.formkiq.stacks.dynamodb.attributes.AttributeSearchRecord;
+import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /** Services for Querying, Updating Documents. */
@@ -392,8 +393,10 @@ public interface DocumentService extends DocumentTagLoader {
    * @param siteId Optional Grouping siteId
    * @param document {@link DocumentItem}
    * @param tags {@link Collection} {@link DocumentTag}
+   * @throws ValidationException ValidationException
    */
-  void saveDocument(String siteId, DocumentItem document, Collection<DocumentTag> tags);
+  void saveDocument(String siteId, DocumentItem document, Collection<DocumentTag> tags)
+      throws ValidationException;
 
   /**
    * Save Document and Tags.
@@ -403,9 +406,11 @@ public interface DocumentService extends DocumentTagLoader {
    * @param tags {@link Collection} {@link DocumentTag}
    * @param searchAttributes {@link Collection} {@link AttributeSearchRecord}
    * @param options {@link SaveDocumentOptions}
+   * @throws ValidationException ValidationException
    */
   void saveDocument(String siteId, DocumentItem document, Collection<DocumentTag> tags,
-      Collection<AttributeSearchRecord> searchAttributes, SaveDocumentOptions options);
+      Collection<AttributeSearchRecord> searchAttributes, SaveDocumentOptions options)
+      throws ValidationException;
 
   /**
    * Save Document Format.
@@ -422,8 +427,10 @@ public interface DocumentService extends DocumentTagLoader {
    * @param siteId {@link String}
    * @param doc {@link DynamicDocumentItem}
    * @return {@link DocumentItem}
+   * @throws ValidationException ValidationException
    */
-  DocumentItem saveDocumentItemWithTag(String siteId, DynamicDocumentItem doc);
+  DocumentItem saveDocumentItemWithTag(String siteId, DynamicDocumentItem doc)
+      throws ValidationException;
 
   /**
    * Save Preset.
