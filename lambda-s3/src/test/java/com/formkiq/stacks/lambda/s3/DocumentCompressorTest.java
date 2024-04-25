@@ -65,6 +65,7 @@ import com.formkiq.testutils.aws.DynamoDbHelper;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.formkiq.testutils.aws.LocalStackExtension;
 import com.formkiq.testutils.aws.TestServices;
+import com.formkiq.validation.ValidationException;
 
 /**
  * Unit Test for {@link DocumentCompressor}.
@@ -175,7 +176,8 @@ public class DocumentCompressorTest {
     }
   }
 
-  private String createDocument(final String siteId, final String userId, final byte[] content) {
+  private String createDocument(final String siteId, final String userId, final byte[] content)
+      throws ValidationException {
     final DynamicDocumentItem item = new DynamicDocumentItem(new HashMap<>());
     item.setDocumentId(UUID.randomUUID().toString());
     item.setUserId(userId);

@@ -23,6 +23,7 @@
 			<allow pkg="com.formkiq.aws.sqs" />
 			<allow pkg="com.formkiq.aws.ssm" />
 			<allow pkg="com.formkiq.aws.ses" />
+			<allow pkg="com.formkiq.validation" />
 			<allow pkg="software.amazon.awssdk.services.ses.model" />
 			<allow pkg="com.formkiq.graalvm.annotations" />
 			<allow pkg="com.formkiq.module.actions" />

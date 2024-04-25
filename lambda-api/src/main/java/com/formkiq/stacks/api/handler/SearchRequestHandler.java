@@ -99,12 +99,12 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
 
     Map<String, Collection<DocumentTag>> map = Collections.emptyMap();
 
-    if (responseFields != null && !Objects.notNull(responseFields.tags()).isEmpty()) {
+    if (responseFields != null && !Objects.notNull(responseFields.getTags()).isEmpty()) {
 
       Set<String> documentIds =
           documents.stream().map(d -> d.getDocumentId()).collect(Collectors.toSet());
 
-      map = documentService.findDocumentsTags(siteId, documentIds, responseFields.tags());
+      map = documentService.findDocumentsTags(siteId, documentIds, responseFields.getTags());
     }
 
     return map;
@@ -271,7 +271,7 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
 
     } else {
 
-      results = documentSearchService.search(siteId, q.query(), ptoken, limit);
+      results = documentSearchService.search(siteId, q.query(), q.responseFields(), ptoken, limit);
     }
 
     return results;

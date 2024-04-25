@@ -50,6 +50,7 @@ import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
+import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /** Unit Tests for {@link ActionsServiceDynamoDbTest}. */
@@ -101,9 +102,11 @@ public class ActionsServiceDynamoDbTest {
 
   /**
    * Test Delete Document & Document Actions.
+   * 
+   * @throws ValidationException ValidationException
    */
   @Test
-  public void testDeleteDocument() {
+  public void testDeleteDocument() throws ValidationException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String documentId = UUID.randomUUID().toString();
@@ -125,9 +128,11 @@ public class ActionsServiceDynamoDbTest {
 
   /**
    * Test Document Actions.
+   * 
+   * @throws ValidationException ValidationException
    */
   @Test
-  public void testDeleteDocumentActions() {
+  public void testDeleteDocumentActions() throws ValidationException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String documentId = UUID.randomUUID().toString();

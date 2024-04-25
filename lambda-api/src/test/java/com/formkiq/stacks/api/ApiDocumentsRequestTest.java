@@ -1508,12 +1508,12 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       DocumentSearchService search = getAwsServices().getExtension(DocumentSearchService.class);
 
       SearchQuery q = new SearchQuery().meta(new SearchMetaCriteria().folder(""));
-      PaginationResults<DynamicDocumentItem> results = search.search(siteId, q, null, 2);
+      PaginationResults<DynamicDocumentItem> results = search.search(siteId, q, null, null, 2);
       assertEquals(1, results.getResults().size());
       assertEquals("something", results.getResults().get(0).get("path"));
 
       q = new SearchQuery().meta(new SearchMetaCriteria().folder("something"));
-      results = search.search(siteId, q, null, 2);
+      results = search.search(siteId, q, null, null, 2);
       assertEquals(1, results.getResults().size());
       assertEquals("bleh", results.getResults().get(0).get("path"));
 

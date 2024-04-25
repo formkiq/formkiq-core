@@ -97,7 +97,7 @@ public class IndicesSearchRequestHandler
         .meta(new SearchMetaCriteria().indexType(body.get("indexType").toString()));
 
     PaginationResults<DynamicDocumentItem> results =
-        documentSearchService.search(siteId, q, ptoken, limit);
+        documentSearchService.search(siteId, q, null, ptoken, limit);
 
     ApiPagination current =
         createPagination(cacheService, event, pagination, results.getToken(), limit);

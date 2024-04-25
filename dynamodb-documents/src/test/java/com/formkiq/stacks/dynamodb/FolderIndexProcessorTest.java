@@ -403,21 +403,21 @@ class FolderIndexProcessorTest implements DbKeys {
       SearchMetaCriteria smc = new SearchMetaCriteria().folder("");
       SearchQuery q = new SearchQuery().meta(smc);
       PaginationResults<DynamicDocumentItem> results =
-          searchService.search(siteId, q, null, MAX_RESULTS);
+          searchService.search(siteId, q, null, null, MAX_RESULTS);
       List<DynamicDocumentItem> list = results.getResults();
       assertEquals(2, list.size());
       assertEquals("a", list.get(0).get("path"));
       assertEquals("something", list.get(1).get("path"));
 
       smc.folder("a");
-      results = searchService.search(siteId, q, null, MAX_RESULTS);
+      results = searchService.search(siteId, q, null, null, MAX_RESULTS);
       list = results.getResults();
       assertEquals(1, list.size());
       assertEquals("b", list.get(0).get("path"));
       // final String bDocumentId = list.get(0).get("documentId").toString();
 
       smc.folder("a/b");
-      results = searchService.search(siteId, q, null, MAX_RESULTS);
+      results = searchService.search(siteId, q, null, null, MAX_RESULTS);
       list = results.getResults();
       assertEquals(1, list.size());
 
@@ -427,7 +427,7 @@ class FolderIndexProcessorTest implements DbKeys {
       assertEquals("/something/else/test.txt", list.get(0).get("path"));
 
       smc.folder("something");
-      results = searchService.search(siteId, q, null, MAX_RESULTS);
+      results = searchService.search(siteId, q, null, null, MAX_RESULTS);
       list = results.getResults();
       assertEquals(0, list.size());
 
@@ -474,18 +474,18 @@ class FolderIndexProcessorTest implements DbKeys {
       SearchMetaCriteria smc = new SearchMetaCriteria().folder("");
       SearchQuery q = new SearchQuery().meta(smc);
       PaginationResults<DynamicDocumentItem> results =
-          searchService.search(siteId, q, null, MAX_RESULTS);
+          searchService.search(siteId, q, null, null, MAX_RESULTS);
 
       assertEquals(2, results.getResults().size());
       assertEquals("directory1", results.getResults().get(0).get("path"));
       assertEquals("directory2", results.getResults().get(1).get("path"));
 
       smc.folder("directory1");
-      results = searchService.search(siteId, q, null, MAX_RESULTS);
+      results = searchService.search(siteId, q, null, null, MAX_RESULTS);
       assertEquals(0, results.getResults().size());
 
       smc.folder("directory2");
-      results = searchService.search(siteId, q, null, MAX_RESULTS);
+      results = searchService.search(siteId, q, null, null, MAX_RESULTS);
       assertEquals(1, results.getResults().size());
       DynamicDocumentItem doc2 = results.getResults().get(0);
       assertEquals("directory2/test.pdf", doc2.get("path"));
@@ -533,7 +533,7 @@ class FolderIndexProcessorTest implements DbKeys {
         SearchMetaCriteria smc = new SearchMetaCriteria().folder("");
         SearchQuery q = new SearchQuery().meta(smc);
         PaginationResults<DynamicDocumentItem> results =
-            searchService.search(siteId, q, null, MAX_RESULTS);
+            searchService.search(siteId, q, null, null, MAX_RESULTS);
 
         assertEquals(2, results.getResults().size());
         DynamicDocumentItem doc = results.getResults().get(0);
@@ -542,7 +542,7 @@ class FolderIndexProcessorTest implements DbKeys {
         assertEquals("test.pdf", dir2.get("path"));
 
         smc.folder("directory1");
-        results = searchService.search(siteId, q, null, MAX_RESULTS);
+        results = searchService.search(siteId, q, null, null, MAX_RESULTS);
 
         assertEquals(1, results.getResults().size());
         doc = results.getResults().get(0);
@@ -591,18 +591,18 @@ class FolderIndexProcessorTest implements DbKeys {
       SearchMetaCriteria smc = new SearchMetaCriteria().folder("");
       SearchQuery q = new SearchQuery().meta(smc);
       PaginationResults<DynamicDocumentItem> results =
-          searchService.search(siteId, q, null, MAX_RESULTS);
+          searchService.search(siteId, q, null, null, MAX_RESULTS);
 
       assertEquals(2, results.getResults().size());
       assertEquals("d1", results.getResults().get(0).get("path"));
       assertEquals("d2", results.getResults().get(1).get("path"));
 
       smc.folder("d1");
-      results = searchService.search(siteId, q, null, MAX_RESULTS);
+      results = searchService.search(siteId, q, null, null, MAX_RESULTS);
       assertEquals(0, results.getResults().size());
 
       smc.folder("d2");
-      results = searchService.search(siteId, q, null, MAX_RESULTS);
+      results = searchService.search(siteId, q, null, null, MAX_RESULTS);
       assertEquals(2, results.getResults().size());
       DynamicDocumentItem doc1 = results.getResults().get(0);
       assertEquals("d2/test1.pdf", doc1.get("path"));

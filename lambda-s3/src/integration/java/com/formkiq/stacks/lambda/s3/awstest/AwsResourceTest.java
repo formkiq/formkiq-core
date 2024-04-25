@@ -370,7 +370,7 @@ public class AwsResourceTest extends AbstractAwsTest {
     PaginationResults<DynamicDocumentItem> results = null;
 
     do {
-      results = getSearchService().search(siteId, query, null, MAX_RESULTS);
+      results = getSearchService().search(siteId, query, null, null, MAX_RESULTS);
       TimeUnit.SECONDS.sleep(1);
     } while (results.getResults().isEmpty());
 
@@ -511,7 +511,7 @@ public class AwsResourceTest extends AbstractAwsTest {
           new PaginationResults<>(Collections.emptyList(), null);
 
       while (result.getResults().size() != 1) {
-        result = getSearchService().search(siteId, q, null, DocumentService.MAX_RESULTS);
+        result = getSearchService().search(siteId, q, null, null, DocumentService.MAX_RESULTS);
         Thread.sleep(SLEEP);
       }
 

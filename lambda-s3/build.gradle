@@ -28,6 +28,7 @@ dependencies {
 	implementation project(':document-events')
 	implementation project(':actions')
 	implementation project(':fkq-lambda-services')
+	implementation project(':fkq-validation')
 	implementation project(':typesense')
 	implementation project(':http')
 	implementation project(':http-sigv4')

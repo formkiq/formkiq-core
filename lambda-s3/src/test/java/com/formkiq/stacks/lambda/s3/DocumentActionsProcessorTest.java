@@ -98,6 +98,7 @@ import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.formkiq.testutils.aws.LocalStackExtension;
 import com.formkiq.testutils.aws.TestServices;
 import com.formkiq.testutils.aws.TypesenseExtension;
+import com.formkiq.validation.ValidationException;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import joptsimple.internal.Strings;
@@ -803,10 +804,11 @@ public class DocumentActionsProcessorTest implements DbKeys {
    * 
    * @throws IOException IOException
    * @throws URISyntaxException URISyntaxException
+   * @throws ValidationException ValidationException
    */
   @SuppressWarnings("unchecked")
   @Test
-  public void testHandle02() throws IOException, URISyntaxException {
+  public void testHandle02() throws IOException, URISyntaxException, ValidationException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String documentId = UUID.randomUUID().toString();
@@ -844,10 +846,11 @@ public class DocumentActionsProcessorTest implements DbKeys {
    * 
    * @throws IOException IOException
    * @throws URISyntaxException URISyntaxException
+   * @throws ValidationException ValidationException
    */
   @SuppressWarnings("unchecked")
   @Test
-  public void testHandle03() throws IOException, URISyntaxException {
+  public void testHandle03() throws IOException, URISyntaxException, ValidationException {
 
     // given
     String documentId = DOCUMENT_ID_OCR;
@@ -921,10 +924,11 @@ public class DocumentActionsProcessorTest implements DbKeys {
    * 
    * @throws IOException IOException
    * @throws URISyntaxException URISyntaxException
+   * @throws ValidationException ValidationException
    */
   @SuppressWarnings("unchecked")
   @Test
-  public void testHandle05() throws IOException, URISyntaxException {
+  public void testHandle05() throws IOException, URISyntaxException, ValidationException {
     try (DynamoDbClient db = dbBuilder.build()) {
       for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
         // given
@@ -984,10 +988,11 @@ public class DocumentActionsProcessorTest implements DbKeys {
    * 
    * @throws IOException IOException
    * @throws URISyntaxException URISyntaxException
+   * @throws ValidationException ValidationException
    */
   @SuppressWarnings("unchecked")
   @Test
-  public void testHandle06() throws IOException, URISyntaxException {
+  public void testHandle06() throws IOException, URISyntaxException, ValidationException {
     try (DynamoDbClient db = dbBuilder.build()) {
       for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
         // given
@@ -1051,10 +1056,11 @@ public class DocumentActionsProcessorTest implements DbKeys {
    * 
    * @throws IOException IOException
    * @throws URISyntaxException URISyntaxException
+   * @throws ValidationException ValidationException
    */
   @SuppressWarnings("unchecked")
   @Test
-  public void testHandle07() throws IOException, URISyntaxException {
+  public void testHandle07() throws IOException, URISyntaxException, ValidationException {
     initProcessor("typesense", "chatgpt1");
 
     String content = "this is some data";
@@ -1102,9 +1108,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
    * 
    * @throws IOException IOException
    * @throws URISyntaxException URISyntaxException
+   * @throws ValidationException ValidationException
    */
   @Test
-  public void testHandle08() throws IOException, URISyntaxException {
+  public void testHandle08() throws IOException, URISyntaxException, ValidationException {
     try (DynamoDbClient db = dbBuilder.build()) {
       for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
         // given
@@ -1145,9 +1152,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
    * 
    * @throws IOException IOException
    * @throws URISyntaxException URISyntaxException
+   * @throws ValidationException ValidationException
    */
   @Test
-  public void testHandle09() throws IOException, URISyntaxException {
+  public void testHandle09() throws IOException, URISyntaxException, ValidationException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String documentId = UUID.randomUUID().toString();
@@ -1195,9 +1203,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
    * 
    * @throws IOException IOException
    * @throws URISyntaxException URISyntaxException
+   * @throws ValidationException ValidationException
    */
   @Test
-  public void testHandleFulltext01() throws IOException, URISyntaxException {
+  public void testHandleFulltext01() throws IOException, URISyntaxException, ValidationException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String documentId = UUID.randomUUID().toString();
@@ -1232,9 +1241,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
    * 
    * @throws IOException IOException
    * @throws URISyntaxException URISyntaxException
+   * @throws ValidationException ValidationException
    */
   @Test
-  public void testHandleFulltext02() throws IOException, URISyntaxException {
+  public void testHandleFulltext02() throws IOException, URISyntaxException, ValidationException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String documentId = UUID.randomUUID().toString();
@@ -1274,10 +1284,11 @@ public class DocumentActionsProcessorTest implements DbKeys {
    * 
    * @throws IOException IOException
    * @throws URISyntaxException URISyntaxException
+   * @throws ValidationException ValidationException
    */
   @SuppressWarnings("unchecked")
   @Test
-  public void testHandleFulltext03() throws IOException, URISyntaxException {
+  public void testHandleFulltext03() throws IOException, URISyntaxException, ValidationException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String documentId = DOCUMENT_ID_404;

@@ -101,6 +101,7 @@ import com.formkiq.stacks.dynamodb.FolderIndexProcessor;
 import com.formkiq.stacks.dynamodb.FolderIndexProcessorExtension;
 import com.formkiq.stacks.dynamodb.apimodels.MatchDocumentTag;
 import com.formkiq.stacks.dynamodb.apimodels.UpdateMatchingDocumentTagsRequest;
+import com.formkiq.validation.ValidationException;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
@@ -315,7 +316,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
   private DynamicDocumentItem createDocument(final LambdaLogger logger, final String siteId,
       final DynamicDocumentItem loadedDoc, final Date date, final boolean hasContent,
-      final DocumentItem existingDocument) {
+      final DocumentItem existingDocument) throws ValidationException {
 
     DynamicDocumentItem doc = new DynamicDocumentItem(loadedDoc);
 
@@ -541,10 +542,11 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
    * @param date {@link Date}
    * @throws IOException IOException
    * @throws InterruptedException InterruptedException
+   * @throws ValidationException ValidationException
    */
   private void processDefaultFile(final LambdaLogger logger, final String siteId,
       final String bucket, final String s3Key, final Date date)
-      throws IOException, InterruptedException {
+      throws IOException, InterruptedException, ValidationException {
 
     DynamicDocumentItem loadDocument = loadDocument(logger, bucket, siteId, s3Key);
 

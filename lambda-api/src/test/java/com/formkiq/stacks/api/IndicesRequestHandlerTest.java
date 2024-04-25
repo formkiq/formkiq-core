@@ -126,7 +126,8 @@ public class IndicesRequestHandlerTest {
       documentService.deleteDocument(siteId, item.getDocumentId(), false);
 
       SearchQuery q = new SearchQuery().meta(new SearchMetaCriteria().folder("x"));
-      PaginationResults<DynamicDocumentItem> results = dss.search(siteId, q, null, MAX_RESULTS);
+      PaginationResults<DynamicDocumentItem> results =
+          dss.search(siteId, q, null, null, MAX_RESULTS);
       assertEquals(1, results.getResults().size());
       DynamicDocumentItem folder = results.getResults().get(0);
       String indexKey = folder.get("indexKey").toString();
@@ -137,7 +138,7 @@ public class IndicesRequestHandlerTest {
       // then
       assertEquals("Folder deleted", response.getMessage());
 
-      results = dss.search(siteId, q, null, MAX_RESULTS);
+      results = dss.search(siteId, q, null, null, MAX_RESULTS);
       assertEquals(0, results.getResults().size());
     }
   }
@@ -160,7 +161,8 @@ public class IndicesRequestHandlerTest {
       documentService.saveDocument(siteId, item, null);
 
       SearchQuery q = new SearchQuery().meta(new SearchMetaCriteria().folder("x"));
-      PaginationResults<DynamicDocumentItem> results = dss.search(siteId, q, null, MAX_RESULTS);
+      PaginationResults<DynamicDocumentItem> results =
+          dss.search(siteId, q, null, null, MAX_RESULTS);
       assertEquals(1, results.getResults().size());
       DynamicDocumentItem folder = results.getResults().get(0);
       String indexKey = folder.get("indexKey").toString();
@@ -174,7 +176,7 @@ public class IndicesRequestHandlerTest {
         assertEquals("{\"message\":\"Folder not empty\"}", e.getResponseBody());
       }
 
-      results = dss.search(siteId, q, null, MAX_RESULTS);
+      results = dss.search(siteId, q, null, null, MAX_RESULTS);
       assertEquals(1, results.getResults().size());
     }
   }
@@ -223,7 +225,8 @@ public class IndicesRequestHandlerTest {
       DocumentTag tag = new DocumentTag(item.getDocumentId(), tagKey, tagValue, new Date(), "joe");
       documentService.saveDocument(siteId, item, Arrays.asList(tag));
 
-      PaginationResults<DynamicDocumentItem> results = dss.search(siteId, q, null, MAX_RESULTS);
+      PaginationResults<DynamicDocumentItem> results =
+          dss.search(siteId, q, null, null, MAX_RESULTS);
       assertEquals(1, results.getResults().size());
 
       String indexKey = "category";
@@ -234,7 +237,7 @@ public class IndicesRequestHandlerTest {
       // then
       assertEquals("Folder deleted", deleteIndex.getMessage());
 
-      results = dss.search(siteId, q, null, MAX_RESULTS);
+      results = dss.search(siteId, q, null, null, MAX_RESULTS);
       assertEquals(0, results.getResults().size());
     }
   }
@@ -282,7 +285,8 @@ public class IndicesRequestHandlerTest {
       documentService.deleteDocument(siteId, item.getDocumentId(), false);
 
       SearchQuery q = new SearchQuery().meta(new SearchMetaCriteria().folder("x"));
-      PaginationResults<DynamicDocumentItem> results = dss.search(siteId, q, null, MAX_RESULTS);
+      PaginationResults<DynamicDocumentItem> results =
+          dss.search(siteId, q, null, null, MAX_RESULTS);
       assertEquals(1, results.getResults().size());
       DynamicDocumentItem folder = results.getResults().get(0);
       String indexKey = folder.get("indexKey").toString();
@@ -296,7 +300,7 @@ public class IndicesRequestHandlerTest {
         assertEquals(STATUS_FORBIDDEN, e.getCode());
       }
 
-      results = dss.search(siteId, q, null, MAX_RESULTS);
+      results = dss.search(siteId, q, null, null, MAX_RESULTS);
       assertEquals(1, results.getResults().size());
     }
   }
