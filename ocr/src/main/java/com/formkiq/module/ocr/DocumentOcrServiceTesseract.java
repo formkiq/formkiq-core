@@ -139,7 +139,8 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
 
       Ocr ocr = new Ocr().documentId(documentId).jobId(jobId).engine(getOcrEngine(request))
           .status(OcrScanStatus.REQUESTED).contentType(APPLICATION_JSON).userId(userId)
-          .addPdfDetectedCharactersAsText(request.isAddPdfDetectedCharactersAsText());
+          .addPdfDetectedCharactersAsText(request.isAddPdfDetectedCharactersAsText())
+          .ocrExportToCsv(request.isOcrExportToCsv());
 
       save(siteId, ocr);
     }

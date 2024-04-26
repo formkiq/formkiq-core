@@ -55,6 +55,8 @@ public class Ocr implements DynamodbRecord<Ocr>, DbKeys {
   private Date insertedDate;
   /** Job Id. */
   private String jobId;
+  /** ocrExportToCsv. */
+  private boolean ocrExportToCsv = false;
   /** {@link OcrScanStatus}. */
   private OcrScanStatus status;
   /** UserId. */
@@ -166,6 +168,7 @@ public class Ocr implements DynamodbRecord<Ocr>, DbKeys {
     addS(pkvalues, "ocrStatus", status().name().toLowerCase());
     addS(pkvalues, "addPdfDetectedCharactersAsText",
         addPdfDetectedCharactersAsText() ? "true" : "false");
+    addS(pkvalues, "ocrExportToCsv", ocrExportToCsv() ? "true" : "false");
 
     return pkvalues;
   }
@@ -192,6 +195,10 @@ public class Ocr implements DynamodbRecord<Ocr>, DbKeys {
     if (attrs.containsKey("addPdfDetectedCharactersAsText")) {
       ocr.addPdfDetectedCharactersAsText(
           "true".equals(attrs.get("addPdfDetectedCharactersAsText").s()));
+    }
+
+    if (attrs.containsKey("ocrExportToCsv")) {
+      ocr.ocrExportToCsv("true".equals(attrs.get("ocrExportToCsv").s()));
     }
 
     if (attrs.containsKey("insertedDate")) {
@@ -242,6 +249,26 @@ public class Ocr implements DynamodbRecord<Ocr>, DbKeys {
    */
   public Ocr jobId(final String id) {
     this.jobId = id;
+    return this;
+  }
+
+  /**
+   * Get ocrExportToCsv.
+   * 
+   * @return boolean
+   */
+  public boolean ocrExportToCsv() {
+    return this.ocrExportToCsv;
+  }
+
+  /**
+   * Set ocrExportToCsv.
+   * 
+   * @param bool boolean
+   * @return {@link Ocr}
+   */
+  public Ocr ocrExportToCsv(final boolean bool) {
+    this.ocrExportToCsv = bool;
     return this;
   }
 
