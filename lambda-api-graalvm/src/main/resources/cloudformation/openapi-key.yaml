@@ -8229,6 +8229,9 @@ Resources:
                 ocrNumberOfPages:
                   type: "string"
                   description: "Number of pages to OCR (from start) (-1 all)"
+                ocrExportToCsv:
+                  type: boolean
+                  description: Whether to Export to CSV
             SetDocumentOcrRequest:
               required:
                 - "content"
