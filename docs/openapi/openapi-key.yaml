@@ -1779,6 +1779,7 @@
                 | -------- | ------- | ------- | ------- |
                 | OCR  | ocrParseTypes | Ocr Parsing strategy to use | TEXT, FORMS, TABLES |
                 | OCR | ocrEngine     | Ocr Engine to use | tesseract or textract |
+                | OCR | ocrExportToCsv     | Convert OCR result to CSV (textract table only) | true |
                 | OCR | ocrNumberOfPages  | Number of pages to OCR (from start) | -1 |
                 | OCR    | addPdfDetectedCharactersAsText | PDF Documents convert images to text | true or false |
                 | FULLTEXT    | characterMax    | Maximum number of characters to add to Fulltext destination | -1 |
@@ -7892,6 +7893,9 @@
                 ocrEngine:
                   type: string
                   description: The OCR technique used
+                ocrExportToCsv:
+                  type: boolean
+                  description: Whether to Export to CSV
                 ocrStatus:
                   type: string
                   description: The status of the OCR request
@@ -8096,6 +8100,9 @@
                   description: 'OCR: Parse types - TEXT, FORMS, TABLES'
                 ocrEngine:
                   $ref: '#/components/schemas/OcrEngine'
+                ocrExportToCsv:
+                  type: boolean
+                  description: Convert OCR result to CSV (textract table only)
                 ocrNumberOfPages:
                   type: string
                   description: Number of pages to OCR (from start) (-1 all)
