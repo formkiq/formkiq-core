@@ -211,6 +211,9 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
       payload.put("ocrNumberOfPages", parameters.get("ocrNumberOfPages"));
     }
 
+    String ocrExportToCsv = parameters.getOrDefault("ocrExportToCsv", "false");
+    payload.put("ocrExportToCsv", Boolean.valueOf("true".equals(ocrExportToCsv)));
+
     String ocrEngine = parameters.get("ocrEngine");
 
     if (!isEmpty(ocrEngine)) {
