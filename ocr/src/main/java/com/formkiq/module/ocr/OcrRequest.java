@@ -39,6 +39,8 @@ public class OcrRequest {
   private boolean addPdfDetectedCharactersAsText = false;
   /** {@link String}. */
   private String ocrEngine;
+  /** Ocr Export to CSV. */
+  private boolean ocrExportToCsv = false;
   /** Number of OCR Pages. */
   private String ocrNumberOfPages;
   /** Parse Types. */
@@ -88,6 +90,15 @@ public class OcrRequest {
   }
 
   /**
+   * Is ocrExportToCsv.
+   * 
+   * @return boolean
+   */
+  public boolean isOcrExportToCsv() {
+    return this.ocrExportToCsv;
+  }
+
+  /**
    * Set AddPdfDetectedCharactersAsText.
    * 
    * @param bool boolean
@@ -104,6 +115,17 @@ public class OcrRequest {
    */
   public OcrRequest setOcrEngine(final String engine) {
     this.ocrEngine = engine;
+    return this;
+  }
+
+  /**
+   * Set ocrExportToCsv.
+   * 
+   * @param bool boolean
+   * @return {@link OcrRequest}
+   */
+  public OcrRequest setOcrExportToCsv(final boolean bool) {
+    this.ocrExportToCsv = bool;
     return this;
   }
 
