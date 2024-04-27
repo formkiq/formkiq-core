@@ -751,11 +751,11 @@ public class DocumentActionsProcessorTest implements DbKeys {
     assertEquals("[TEXT]", processor.getOcrParseTypes(new Action()).toString());
 
     // invalid
-    Map<String, String> parameters = Map.of("parseTypes", "ADAD,IUJK");
+    Map<String, String> parameters = Map.of("ocrParseTypes", "ADAD,IUJK");
     assertEquals("[ADAD, IUJK]",
         processor.getOcrParseTypes(new Action().parameters(parameters)).toString());
 
-    parameters = Map.of("parseTypes", "tEXT, forms, TABLES");
+    parameters = Map.of("ocrParseTypes", "tEXT, forms, TABLES");
     assertEquals("[TEXT, FORMS, TABLES]",
         processor.getOcrParseTypes(new Action().parameters(parameters)).toString());
   }

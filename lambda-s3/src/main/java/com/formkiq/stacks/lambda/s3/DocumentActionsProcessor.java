@@ -335,7 +335,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   List<String> getOcrParseTypes(final Action action) {
 
     Map<String, String> parameters = notNull(action.parameters());
-    String s = parameters.containsKey("parseTypes") ? parameters.get("parseTypes") : "TEXT";
+    String s = parameters.containsKey("ocrParseTypes") ? parameters.get("ocrParseTypes") : "TEXT";
 
     List<String> ocrParseTypes = Arrays.asList(s.split(",")).stream().map(t -> {
       return t.trim().toUpperCase();
