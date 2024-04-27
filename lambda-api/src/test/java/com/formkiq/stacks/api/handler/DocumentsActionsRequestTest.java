@@ -158,7 +158,8 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
 
       AddDocumentActionsRequest req = new AddDocumentActionsRequest().actions(Arrays.asList(
           new AddAction().type(DocumentActionType.OCR)
-              .parameters(new AddActionParameters().ocrParseTypes("text")),
+              .parameters(new AddActionParameters().addPdfDetectedCharactersAsText("true")
+                  .ocrExportToCsv("true").ocrParseTypes("text")),
           new AddAction().type(DocumentActionType.WEBHOOK)
               .parameters(new AddActionParameters().url("https://localhost"))));
 
@@ -178,7 +179,8 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
 
       assertEquals(ActionType.OCR, actions.get(i).type());
       assertEquals(ActionStatus.PENDING, actions.get(i).status());
-      assertEquals("{ocrParseTypes=text}", actions.get(i++).parameters().toString());
+      assertEquals("{ocrParseTypes=text, ocrExportToCsv=true, addPdfDetectedCharactersAsText=true}",
+          actions.get(i++).parameters().toString());
 
       assertEquals(ActionType.WEBHOOK, actions.get(i).type());
       assertEquals(ActionStatus.PENDING, actions.get(i).status());

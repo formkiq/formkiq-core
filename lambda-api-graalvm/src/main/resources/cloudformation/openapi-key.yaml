@@ -7958,9 +7958,6 @@ Resources:
                 ocrEngine:
                   type: string
                   description: The OCR technique used
-                ocrExportToCsv:
-                  type: boolean
-                  description: Whether to Export to CSV
                 ocrStatus:
                   type: string
                   description: The status of the OCR request
@@ -8166,13 +8163,13 @@ Resources:
                 ocrEngine:
                   $ref: "#/components/schemas/OcrEngine"
                 ocrExportToCsv:
-                  type: boolean
+                  type: string
                   description: "Convert OCR result to CSV (textract table only)"
                 ocrNumberOfPages:
                   type: "string"
                   description: "Number of pages to OCR (from start) (-1 all)"
                 addPdfDetectedCharactersAsText:
-                  type: "boolean"
+                  type: "string"
                   description: "OCR: For the rewriting of the PDF document, converting any image text to searchable text"
                 url:
                   type: "string"
