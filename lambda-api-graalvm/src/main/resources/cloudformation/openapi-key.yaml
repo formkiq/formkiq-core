@@ -26,7 +26,7 @@ Resources:
             url: https://www.apache.org/licenses/LICENSE-2.0.html
           description: |-
             Formkiq API: Document Management Platform API using OAuth(JWT) Authentication
-            
+
             You can find out more about FormKiQ at [https://formkiq.com](http://formkiq.com).
             
             ## Introduction
@@ -55,6 +55,9 @@ Resources:
           - name: documentTags
             description: API for the add, updating and fetching of document tags
             x-displayName: Document Tags
+          - name: documentAttributes
+            description: API for the add, updating and fetching of document attributes
+            x-displayName: Document Attributes
           - name: documentSearch
             description: API for searching for documents
             x-displayName: Document Search
@@ -973,6 +976,173 @@ Resources:
                         $ref: '#/components/schemas/DeleteDocumentAccessAttributesResponse'
               security:
                 - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /documents/{documentId}/attributes:
+            get:
+              operationId: GetDocumentAttributes
+              summary: Get document's attributes
+              description: Get a listing of a document's attributes
+              tags:
+              - Document Attributes
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/limitParam'
+              - $ref: '#/components/parameters/nextParam'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetDocumentAttributesResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+            post:
+              operationId: AddDocumentAttributes
+              summary: Add attribute to document
+              description: Add multiple attributes to a document; this endpoint also accepts a different body parameter for adding a single attribute
+              tags:
+              - Document Attributes
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/wsParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/AddDocumentAttributesRequest'
+                    examples:
+                      Add_Key_Only_Attribute:
+                        value:
+                          key: category
+                      Add_Key_and_Value_Attribute:
+                        value:
+                          key: category
+                          value: person
+                      Add_Key_and_Values_Attribute:
+                        value:
+                          key: category
+                          values: [person,canadian]
+              responses:
+                '201':
+                  $ref: '#/components/responses/200Cors'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
+            put:
+              operationId: SetDocumentAttributes
+              summary: Set document's attributes
+              description: Set multiple attributes to a document; this endpoint also accepts a different body parameter for setting a single attribute
+              tags:
+              - Document Attributes
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/SetDocumentAttributesRequest'
+                    examples:
+                      Add_Key_Only_Attribute:
+                        value:
+                          tags:
+                            - key: category 
+                      Add_Key_and_Value_Attribute:
+                        value:
+                          tags:
+                            - key: category 
+                              value: sample
+                      Add_Key_and_Values_Attribute:
+                        value:
+                          tags:
+                            - key: players 
+                              values: ["111", "222"]
+              responses:
+                '200':
+                  $ref: '#/components/responses/200Cors'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /documents/{documentId}/attributes/{attributeKey}:
+            get:
+              operationId: GetDocumentAttribute
+              summary: Get document attribute by key
+              description: Get a document attribute by using its key
+              tags:
+              - Document Attributes
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/attributeKeyParam'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetDocumentAttributeResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+            delete:
+              operationId: DeleteDocumentAttribute
+              summary: Delete document attribute
+              description: Delete a document attribute by using its key
+              tags:
+              - Document Attributes
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/attributeKeyParam'
+              responses:
+                '200':
+                  $ref: '#/components/responses/200Cors'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /documents/{documentId}/attributes/{attributeKey}/{attributeValue}:
+            delete:
+              operationId: DeleteDocumentAttributeAndValue
+              summary: Delete document's attribute value
+              description: Delete a specific document attribute key/value combination; the request will be ignored if there is no valid key/value combination found
+              tags:
+              - Document Attributes
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/attributeKeyParam'
+              - $ref: '#/components/parameters/attributeValueParam'
+              responses:
+                '200':
+                  $ref: '#/components/responses/200Cors'
+              security:
+              - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /documents/{documentId}/tags:
@@ -5341,6 +5511,20 @@ Resources:
               required: true
               schema:
                 type: string
+            attributeKeyParam:
+              name: attributeKey
+              in: path
+              description: Attribute Key
+              required: true
+              schema:
+                type: string             
+            attributeValueParam:
+              name: attributeValue
+              in: path
+              description: Attribute Value
+              required: true
+              schema:
+                type: string             
             tagkeyParam:
               name: tagKey
               in: path
@@ -5689,6 +5873,27 @@ Resources:
                   type: "string"
                   description: "Type of share"
                   $ref: "#/components/schemas/UserSharePermissionType"
+            SetDocumentAttributeKeyRequest:
+              type: "object"
+              properties:
+                attribute:
+                  $ref: "#/components/schemas/DocumentAttribute"
+            GetDocumentAttributeResponse:
+              type: "object"
+              properties:
+                attribute:
+                  $ref: "#/components/schemas/DocumentAttribute"
+            GetDocumentAttributesResponse:
+              type: "object"
+              properties:
+                next:
+                  type: "string"
+                  description: "Next page of results token"
+                attributes:
+                  type: "array"
+                  description: "List of attributes"
+                  items:
+                    $ref: "#/components/schemas/DocumentAttribute"                  
             GetDocumentTagsResponse:
               type: "object"
               properties:
@@ -6289,6 +6494,24 @@ Resources:
                       description: "List of document tags"
                       items:
                         $ref: "#/components/schemas/AddDocumentTag"
+            SetDocumentAttributesRequest:
+              type: "object"
+              description: "Set List of document attributes"
+              properties:
+                attributes:
+                  type: "array"
+                  description: "List of document attributes"
+                  items:
+                    $ref: "#/components/schemas/AddDocumentAttribute"
+            AddDocumentAttributesRequest:
+              type: "object"
+              description: "Add List of document attributes"
+              properties:
+                attributes:
+                  type: "array"
+                  description: "List of document attributes"
+                  items:
+                    $ref: "#/components/schemas/AddDocumentAttribute"
             AddDocumentTagsRequest:
               type: "object"
               description: "Add List of document tags"
@@ -6379,7 +6602,7 @@ Resources:
               required:
               - "key"
               type: "object"
-              description: "Document Attribute (requires either: stringValue, numberValue, booleanValue)"
+              description: "Document Attribute"
               properties:
                 key:
                   type: "string"
@@ -6509,6 +6732,31 @@ Resources:
                 s3version:
                   type: "string"
                   description: "Document storage version"
+            DocumentAttribute:
+              type: "object"
+              properties:
+                key:
+                  type: "string"
+                  description: "Attribute key"
+                stringValue:
+                  type: "string"
+                  description: "Attribute with string value"
+                stringValues:
+                  type: "array"
+                  description: "Attribute with string values"
+                  items:
+                    type: "string"
+                numberValue:
+                  type: "number"
+                  description: "Attribute with number value"
+                numberValues:
+                  type: "array"
+                  description: "Attribute with number values"
+                  items:
+                    type: "number"
+                booleanValue:
+                  type: "boolean"
+                  description: "Attribute with boolean value"
             DocumentTag:
               type: "object"
               properties:
