@@ -97,7 +97,6 @@ import com.formkiq.aws.dynamodb.schema.DocumentSchema;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3Service;
-import com.formkiq.aws.s3.S3ServiceExtension;
 import com.formkiq.aws.sns.SnsAwsServiceRegistry;
 import com.formkiq.aws.sns.SnsService;
 import com.formkiq.aws.sns.SnsServiceExtension;
@@ -111,25 +110,22 @@ import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsService;
-import com.formkiq.module.actions.services.ActionsServiceExtension;
 import com.formkiq.module.events.document.DocumentEvent;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
-import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentSyncService;
-import com.formkiq.stacks.dynamodb.DocumentSyncServiceExtension;
-import com.formkiq.stacks.dynamodb.DocumentVersionService;
-import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
 import com.formkiq.stacks.dynamodb.FolderIndexProcessor;
-import com.formkiq.stacks.dynamodb.FolderIndexProcessorExtension;
 import com.formkiq.stacks.dynamodb.apimodels.AddDocumentTag;
 import com.formkiq.stacks.dynamodb.apimodels.MatchDocumentTag;
 import com.formkiq.stacks.dynamodb.apimodels.UpdateMatchingDocumentTagsRequest;
 import com.formkiq.stacks.dynamodb.apimodels.UpdateMatchingDocumentTagsRequestMatch;
 import com.formkiq.stacks.dynamodb.apimodels.UpdateMatchingDocumentTagsRequestUpdate;
+import com.formkiq.stacks.dynamodb.attributes.AttributeService;
+import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
+import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
 import com.formkiq.stacks.lambda.s3.util.LambdaContextRecorder;
 import com.formkiq.stacks.lambda.s3.util.LambdaLoggerRecorder;
 import com.formkiq.testutils.aws.DynamoDbExtension;
@@ -181,6 +177,8 @@ public class StagingS3CreateTest implements DbKeys {
   private static S3Service s3;
   /** {@link DocumentService}. */
   private static DocumentService service;
+  /** {@link AttributeService}. */
+  private static AttributeService attributeService;
   /** SQS Sns Update Queue. */
   private static final String SNS_SQS_CREATE_QUEUE = "sqssnsCreate";
   /** SQS Sns Queue. */
@@ -211,6 +209,9 @@ public class StagingS3CreateTest implements DbKeys {
   private static final String URL = "http://localhost:" + PORT;
   /** UUID 1. */
   private static final String UUID1 = "b53c92cf-f7b9-4787-9541-76574ec70d71";
+  /** {@link StagingS3Create}. */
+  private static StagingS3Create handler;
+
 
   /**
    * After Class.
@@ -231,6 +232,47 @@ public class StagingS3CreateTest implements DbKeys {
   @BeforeAll
   public static void beforeClass() throws URISyntaxException, InterruptedException, IOException {
 
+    createAwService();
+    awsServices.register(SnsService.class, new SnsServiceExtension());
+    awsServices.register(SsmService.class, new SsmServiceExtension());
+
+    snsService = awsServices.getExtension(SnsService.class);
+    snsDocumentEvent = snsService.createTopic("createDocument1").topicArn();
+    awsServices.environment().put("SNS_DOCUMENT_EVENT", snsDocumentEvent);
+
+    SsmService ssmService = awsServices.getExtension(SsmService.class);
+    ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/api/DocumentsIamUrl", URL);
+
+    createAwService();
+
+    handler = new StagingS3Create(awsServices);
+
+    awsServices.register(SqsService.class, new SqsServiceExtension());
+
+    s3 = awsServices.getExtension(S3Service.class);
+    syncService = awsServices.getExtension(DocumentSyncService.class);
+    sqsService = awsServices.getExtension(SqsService.class);
+    actionsService = awsServices.getExtension(ActionsService.class);
+    attributeService = awsServices.getExtension(AttributeService.class);
+
+    if (!sqsService.exists(SNS_SQS_CREATE_QUEUE)) {
+      sqsDocumentEventUrl = sqsService.createQueue(SNS_SQS_CREATE_QUEUE).queueUrl();
+    }
+
+    String sqsQueueArn = sqsService.getQueueArn(sqsDocumentEventUrl);
+    snsService.subscribe(snsDocumentEvent, "sqs", sqsQueueArn);
+
+    service = awsServices.getExtension(DocumentService.class);
+
+    folderIndexProcesor = awsServices.getExtension(FolderIndexProcessor.class);
+
+    dbHelper = new DynamoDbHelper(awsServices.getExtension(DynamoDbConnectionBuilder.class));
+    createResources();
+
+    createMockServer();
+  }
+
+  private static void createAwService() {
     Map<String, String> env = new HashMap<>();
     env.put("AWS_REGION", Region.US_EAST_1.id());
     env.put("DOCUMENTS_S3_BUCKET", DOCUMENTS_BUCKET);
@@ -251,44 +293,6 @@ public class StagingS3CreateTest implements DbKeys {
         .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
             new SnsAwsServiceRegistry(), new SqsAwsServiceRegistry(), new SmsAwsServiceRegistry())
         .build();
-
-    awsServices.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
-    awsServices.register(SnsService.class, new SnsServiceExtension());
-    awsServices.register(SsmService.class, new SsmServiceExtension());
-    awsServices.register(S3Service.class, new S3ServiceExtension());
-    awsServices.register(DocumentSyncService.class, new DocumentSyncServiceExtension());
-    awsServices.register(ActionsService.class, new ActionsServiceExtension());
-    awsServices.register(SqsService.class, new SqsServiceExtension());
-    awsServices.register(DocumentService.class, new DocumentServiceExtension());
-    awsServices.register(FolderIndexProcessor.class, new FolderIndexProcessorExtension());
-
-    SsmService ssmService = awsServices.getExtension(SsmService.class);
-    ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/api/DocumentsIamUrl", URL);
-
-    s3 = awsServices.getExtension(S3Service.class);
-    syncService = awsServices.getExtension(DocumentSyncService.class);
-    sqsService = awsServices.getExtension(SqsService.class);
-    actionsService = awsServices.getExtension(ActionsService.class);
-
-    if (!sqsService.exists(SNS_SQS_CREATE_QUEUE)) {
-      sqsDocumentEventUrl = sqsService.createQueue(SNS_SQS_CREATE_QUEUE).queueUrl();
-    }
-
-    snsService = awsServices.getExtension(SnsService.class);
-    snsDocumentEvent = snsService.createTopic("createDocument1").topicArn();
-    awsServices.environment().put("SNS_DOCUMENT_EVENT", snsDocumentEvent);
-
-    String sqsQueueArn = sqsService.getQueueArn(sqsDocumentEventUrl);
-    snsService.subscribe(snsDocumentEvent, "sqs", sqsQueueArn);
-
-    service = awsServices.getExtension(DocumentService.class);
-
-    folderIndexProcesor = awsServices.getExtension(FolderIndexProcessor.class);
-
-    dbHelper = new DynamoDbHelper(awsServices.getExtension(DynamoDbConnectionBuilder.class));
-    createResources();
-
-    createMockServer();
   }
 
   /**
@@ -524,10 +528,29 @@ public class StagingS3CreateTest implements DbKeys {
    * @param map {@link Map}
    */
   private void handleRequest(final Map<String, Object> map) {
-    final StagingS3Create handler = new StagingS3Create(awsServices);
-
     Void result = handler.handleRequest(map, this.context);
     assertNull(result);
+  }
+
+  /**
+   * Test .fkb64 file.
+   *
+   * @param siteId {@link String}
+   * @param docitem {@link DynamicDocumentItem}
+   * @throws IOException IOException
+   */
+  private void processFkB64File(final String siteId, final DynamicDocumentItem docitem)
+      throws IOException {
+
+    String documentId = docitem.getDocumentId();
+    this.logger.reset();
+
+    String key = createDatabaseKey(siteId, documentId + FORMKIQ_B64_EXT);
+
+    byte[] content = gson.toJson(docitem).getBytes(UTF_8);
+    s3.putObject(STAGING_BUCKET, key, content, null, null);
+
+    handleRequest(loadFileAsMap(this, "/objectcreate-event4.json", UUID1, key));
   }
 
   /**
@@ -1502,6 +1525,53 @@ public class StagingS3CreateTest implements DbKeys {
 
     // then
   }
+  
+  /**
+   * Test Update .fkb64 file attributes.
+   *
+   * @throws IOException IOException
+   * @throws ValidationException ValidationException
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  void testFkB64Extension19() throws IOException, ValidationException {
+    // given
+    final int limit = 10;
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      attributeService.addAttribute(siteId, "security");
+
+      String documentId = UUID.randomUUID().toString();
+      String json =
+          "{\"metadata\":[],\"newCompositeTags\":false,\"accessAttributes\":[],\"documents\":[],"
+              + "\"attributes\":[{\"key\":\"security\",\"stringValue\":\"confidential\","
+              + "\"stringValues\":[],\"numberValues\":[]}],\"documentId\":\"" + documentId
+              + "\",\"actions\":[],\"contentType\":\"application/octet-stream\","
+              + "\"userId\":\"joesmith\",\"content\":\"test\",\"tags\":[]}";
+
+      Map<String, Object> map = gson.fromJson(json, Map.class);
+      DynamicDocumentItem item = new DynamicDocumentItem(map);
+
+      // when
+      processFkB64File(siteId, item);
+
+      // then
+      DocumentItem doc = service.findDocument(siteId, item.getDocumentId());
+      assertEquals("joesmith", doc.getUserId());
+
+      PaginationResults<DocumentAttributeRecord> documentAttributes =
+          service.findDocumentAttributes(siteId, documentId, null, limit);
+      assertEquals(1, documentAttributes.getResults().size());
+
+      DocumentAttributeRecord r = documentAttributes.getResults().get(0);
+      assertEquals("security", r.getKey());
+      assertEquals(DocumentAttributeValueType.STRING, r.getValueType());
+      assertEquals("confidential", r.getStringValue());
+      assertNull(r.getBooleanValue());
+      assertNull(r.getNumberValue());
+    }
+  }
 
   /**
    * Test processing S3 file from PATCH /documents/tags.
@@ -1639,8 +1709,6 @@ public class StagingS3CreateTest implements DbKeys {
   void testUnknownEvent01() throws Exception {
     // given
     final Map<String, Object> map = loadFileAsMap(this, "/objectunknown-event1.json");
-
-    final StagingS3Create handler = new StagingS3Create(awsServices);
 
     // when
     Void result = handler.handleRequest(map, this.context);

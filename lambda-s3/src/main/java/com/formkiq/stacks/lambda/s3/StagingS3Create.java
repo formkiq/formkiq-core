@@ -101,6 +101,8 @@ import com.formkiq.stacks.dynamodb.FolderIndexProcessor;
 import com.formkiq.stacks.dynamodb.FolderIndexProcessorExtension;
 import com.formkiq.stacks.dynamodb.apimodels.MatchDocumentTag;
 import com.formkiq.stacks.dynamodb.apimodels.UpdateMatchingDocumentTagsRequest;
+import com.formkiq.stacks.dynamodb.attributes.AttributeService;
+import com.formkiq.stacks.dynamodb.attributes.AttributeServiceExtension;
 import com.formkiq.validation.ValidationException;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -206,6 +208,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     awsServiceCache.register(DocumentTagSchemaPlugin.class,
         new DocumentTagSchemaPluginExtension(null));
     awsServiceCache.register(DynamoDbService.class, new DynamoDbServiceExtension());
+    awsServiceCache.register(AttributeService.class, new AttributeServiceExtension());
 
     documentsBucket = awsServiceCache.environment("DOCUMENTS_S3_BUCKET");
     syncService = awsServiceCache.getExtension(DocumentSyncService.class);

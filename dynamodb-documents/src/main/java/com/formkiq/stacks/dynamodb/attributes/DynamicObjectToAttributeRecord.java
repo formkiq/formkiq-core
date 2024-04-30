@@ -32,10 +32,10 @@ import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.objects.Strings;
 
 /**
- * Convert {@link DynamicObject} to {@link AttributeSearchRecord}.
+ * Convert {@link DynamicObject} to {@link DocumentAttributeRecord}.
  */
 public class DynamicObjectToAttributeRecord
-    implements Function<Collection<DynamicObject>, Collection<AttributeSearchRecord>> {
+    implements Function<Collection<DynamicObject>, Collection<DocumentAttributeRecord>> {
 
   /** Document Id. */
   private String attributeDocumentId;
@@ -49,11 +49,11 @@ public class DynamicObjectToAttributeRecord
     this.attributeDocumentId = documentId;
   }
 
-  private void addToList(final Collection<AttributeSearchRecord> list,
-      final AttributeSearchValueType valueType, final String key, final String stringValue,
+  private void addToList(final Collection<DocumentAttributeRecord> list,
+      final DocumentAttributeValueType valueType, final String key, final String stringValue,
       final Boolean boolValue, final Double numberValue) {
 
-    AttributeSearchRecord a = new AttributeSearchRecord();
+    DocumentAttributeRecord a = new DocumentAttributeRecord();
     a.key(key);
     a.documentId(this.attributeDocumentId);
     a.stringValue(stringValue);
@@ -65,9 +65,9 @@ public class DynamicObjectToAttributeRecord
   }
 
   @Override
-  public Collection<AttributeSearchRecord> apply(final Collection<DynamicObject> objs) {
+  public Collection<DocumentAttributeRecord> apply(final Collection<DynamicObject> objs) {
 
-    Collection<AttributeSearchRecord> list = new ArrayList<>();
+    Collection<DocumentAttributeRecord> list = new ArrayList<>();
 
     for (DynamicObject o : objs) {
 
@@ -77,7 +77,7 @@ public class DynamicObjectToAttributeRecord
       if (!Objects.isEmpty(stringValues)) {
 
         for (String value : stringValues) {
-          addToList(list, AttributeSearchValueType.STRING, key, value, null, null);
+          addToList(list, DocumentAttributeValueType.STRING, key, value, null, null);
         }
       }
 
@@ -85,13 +85,13 @@ public class DynamicObjectToAttributeRecord
       if (!Objects.isEmpty(numberValues)) {
 
         for (Double value : numberValues) {
-          addToList(list, AttributeSearchValueType.NUMBER, key, null, null, value);
+          addToList(list, DocumentAttributeValueType.NUMBER, key, null, null, value);
         }
       }
 
       Boolean bool = (Boolean) o.getOrDefault("booleanValue", null);
       if (bool != null) {
-        addToList(list, AttributeSearchValueType.BOOLEAN, key, null, bool, null);
+        addToList(list, DocumentAttributeValueType.BOOLEAN, key, null, bool, null);
       }
     }
 

@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import static com.formkiq.testutils.aws.TestServices.STAGE_BUCKET_NAME;
 import static com.formkiq.aws.dynamodb.objects.Objects.formatDouble;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -33,11 +34,14 @@ import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
+import com.formkiq.aws.s3.S3Service;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAttribute;
 import com.formkiq.client.model.AddAttributeRequest;
 import com.formkiq.client.model.AddAttributeResponse;
 import com.formkiq.client.model.AddDocumentAttribute;
+import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AddDocumentUploadRequest;
 import com.formkiq.client.model.Attribute;
 import com.formkiq.client.model.AttributeType;
@@ -656,5 +660,103 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     return this.documentsApi.addDocumentUpload(docReq, siteId, null, null, null).getDocumentId();
   }
 
-  // add to POST /documents & S3Create
+  private String addDocument(final String siteId, final String key, final String stringValue,
+      final Boolean booleanValue, final BigDecimal numberValue) throws ApiException {
+
+    AddDocumentRequest docReq =
+        new AddDocumentRequest().content("test").addAttributesItem(new AddDocumentAttribute()
+            .key(key).stringValue(stringValue).booleanValue(booleanValue).numberValue(numberValue));
+
+    return this.documentsApi.addDocument(docReq, siteId, null).getDocumentId();
+  }
+
+  /**
+   * POST /documents.
+   * 
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testAddDocumentAttribute01() throws ApiException {
+    // given
+    final String key = "security";
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+      AddAttributeRequest req = new AddAttributeRequest().attribute(new AddAttribute().key(key));
+      this.attributesApi.addAttribute(req, siteId);
+
+      // when
+      String documentId = addDocument(siteId, key, "confidential", null, null);
+
+      // then
+      S3Service s3 = getAwsServices().getExtension(S3Service.class);
+
+      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId) + ".fkb64";
+      String content = s3.getContentAsString(STAGE_BUCKET_NAME, s3Key, null);
+
+      String expected =
+          "{\"metadata\":[],\"newCompositeTags\":false,\"accessAttributes\":[],\"documents\":[],"
+              + "\"attributes\":[{\"key\":\"security\",\"stringValue\":\"confidential\","
+              + "\"stringValues\":[],\"numberValues\":[]}],\"documentId\":\"" + documentId
+              + "\",\"actions\":[],\"contentType\":\"application/octet-stream\","
+              + "\"userId\":\"joesmith\",\"content\":\"test\",\"tags\":[]}";
+      assertEquals(expected, content);
+    }
+  }
+
+  /**
+   * POST /documents. Missing attribute key.
+   * 
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testAddDocumentAttribute02() throws ApiException {
+    // given
+    final String key = "security";
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+      AddAttributeRequest req = new AddAttributeRequest().attribute(new AddAttribute().key(key));
+      this.attributesApi.addAttribute(req, siteId);
+
+      // when
+      try {
+        addDocument(siteId, null, "confidential", null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals("{\"errors\":[{\"error\":\"'key' is missing from attribute\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * POST /documents. Invalid attribute key.
+   * 
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testAddDocumentAttribute03() throws ApiException {
+    // given
+    final String key = "security";
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+
+      // when
+      try {
+        addDocument(siteId, key, "confidential", null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(
+            "{\"errors\":[{\"key\":\"security\",\"error\":\"attribute 'security' not found\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
 }

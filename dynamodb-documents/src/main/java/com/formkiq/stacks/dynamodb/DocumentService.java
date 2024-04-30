@@ -37,18 +37,18 @@ import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.plugins.tagschema.DocumentTagLoader;
-import com.formkiq.stacks.dynamodb.attributes.AttributeSearchRecord;
+import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /** Services for Querying, Updating Documents. */
 public interface DocumentService extends DocumentTagLoader {
 
-  /** Soft Deleted Prefix. */
-  String SOFT_DELETE = "softdelete#";
-
   /** The Default maximum results returned. */
   int MAX_RESULTS = 10;
+
+  /** Soft Deleted Prefix. */
+  String SOFT_DELETE = "softdelete#";
 
   /** System Defined Tags. */
   Set<String> SYSTEM_DEFINED_TAGS =
@@ -200,6 +200,18 @@ public interface DocumentService extends DocumentTagLoader {
    */
   PaginationResult<DocumentItem> findDocument(String siteId, String documentId,
       boolean includeChildDocuments, PaginationMapToken token, int limit);
+
+  /**
+   * Find {@link DocumentAttributeRecord}.
+   * 
+   * @param siteId Optional Grouping siteId
+   * @param documentId {@link String}
+   * @param pagination {@link PaginationMapToken}
+   * @param limit int
+   * @return {@link PaginationResults} {@link DocumentAttributeRecord}
+   */
+  PaginationResults<DocumentAttributeRecord> findDocumentAttributes(String siteId,
+      String documentId, PaginationMapToken pagination, int limit);
 
   /**
    * Get Document Format.
@@ -404,12 +416,12 @@ public interface DocumentService extends DocumentTagLoader {
    * @param siteId Optional Grouping siteId
    * @param document {@link DocumentItem}
    * @param tags {@link Collection} {@link DocumentTag}
-   * @param searchAttributes {@link Collection} {@link AttributeSearchRecord}
+   * @param searchAttributes {@link Collection} {@link DocumentAttributeRecord}
    * @param options {@link SaveDocumentOptions}
    * @throws ValidationException ValidationException
    */
   void saveDocument(String siteId, DocumentItem document, Collection<DocumentTag> tags,
-      Collection<AttributeSearchRecord> searchAttributes, SaveDocumentOptions options)
+      Collection<DocumentAttributeRecord> searchAttributes, SaveDocumentOptions options)
       throws ValidationException;
 
   /**

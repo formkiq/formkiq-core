@@ -26,7 +26,7 @@ package com.formkiq.stacks.dynamodb.attributes;
 /**
  * Attribute Search Type.
  */
-public enum AttributeSearchValueType {
+public enum DocumentAttributeValueType {
   /** Boolean. */
   BOOLEAN,
   /** No Value. */
