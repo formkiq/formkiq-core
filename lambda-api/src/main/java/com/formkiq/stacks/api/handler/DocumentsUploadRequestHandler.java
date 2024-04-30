@@ -63,7 +63,7 @@ import com.formkiq.stacks.dynamodb.DocumentTagValidator;
 import com.formkiq.stacks.dynamodb.DocumentTagValidatorImpl;
 import com.formkiq.stacks.dynamodb.DynamicObjectToDocumentTag;
 import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
-import com.formkiq.stacks.dynamodb.attributes.AttributeSearchRecord;
+import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.DynamicObjectToAttributeRecord;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
@@ -95,7 +95,7 @@ public class DocumentsUploadRequestHandler
    * @param awsservice {@link AwsServiceCache}
    * @param siteId {@link String}
    * @param item {@link DynamicDocumentItem}
-   * @param searchAttributes {@link Collection} {@link AttributeSearchRecord}
+   * @param searchAttributes {@link Collection} {@link DocumentAttributeRecord}
    * @return {@link ApiRequestHandlerResponse}
    * @throws UnsupportedEncodingException UnsupportedEncodingException
    * @throws BadException BadException
@@ -103,7 +103,7 @@ public class DocumentsUploadRequestHandler
    */
   private ApiRequestHandlerResponse buildPresignedResponse(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final AwsServiceCache awsservice, final String siteId,
-      final DynamicDocumentItem item, final Collection<AttributeSearchRecord> searchAttributes)
+      final DynamicDocumentItem item, final Collection<DocumentAttributeRecord> searchAttributes)
       throws UnsupportedEncodingException, BadException, ValidationException {
 
     Date date = item.getInsertedDate();
@@ -291,10 +291,8 @@ public class DocumentsUploadRequestHandler
     }
 
     List<DynamicObject> list = item.getList("attributes");
-    Collection<AttributeSearchRecord> searchAttributes =
+    Collection<DocumentAttributeRecord> searchAttributes =
         new DynamicObjectToAttributeRecord(item.getDocumentId()).apply(list);
-
-    // TODO validate attributes
 
     String siteId = authorization.getSiteId();
     return buildPresignedResponse(logger, event, awsservice, siteId, item, searchAttributes);

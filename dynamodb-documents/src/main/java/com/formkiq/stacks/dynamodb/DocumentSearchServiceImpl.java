@@ -73,8 +73,8 @@ import com.formkiq.aws.dynamodb.model.SearchTagCriteriaRange;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
-import com.formkiq.stacks.dynamodb.attributes.AttributeSearchRecord;
-import com.formkiq.stacks.dynamodb.attributes.AttributeSearchValueType;
+import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
+import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
@@ -172,7 +172,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
 
       for (DynamicDocumentItem item : results) {
 
-        AttributeSearchRecord sr = new AttributeSearchRecord();
+        DocumentAttributeRecord sr = new DocumentAttributeRecord();
         sr.documentId(item.getDocumentId());
 
         List<Map<String, Object>> attributeFields = new ArrayList<>();
@@ -482,8 +482,8 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
   private Map<String, Object> getAttributeValuesMap(
       final Map<String, AttributeValue> attributeMatch) {
 
-    AttributeSearchValueType type =
-        AttributeSearchValueType.valueOf(attributeMatch.get("valueType").s());
+    DocumentAttributeValueType type =
+        DocumentAttributeValueType.valueOf(attributeMatch.get("valueType").s());
 
     Map<String, Object> values = new HashMap<>();
     values.put("key", attributeMatch.get("key").s());
@@ -609,7 +609,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
   }
 
   private QueryResponse searchAttributeBeginsWith(final String siteId,
-      final SearchAttributeCriteria search, final AttributeSearchRecord sr,
+      final SearchAttributeCriteria search, final DocumentAttributeRecord sr,
       final QueryConfig config, final Map<String, AttributeValue> startkey, final int limit) {
 
     config.indexName(GSI1);
@@ -638,10 +638,10 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
   }
 
   private QueryResponse searchAttributeEq(final String siteId, final SearchQuery query,
-      final SearchAttributeCriteria search, final AttributeSearchRecord sr,
+      final SearchAttributeCriteria search, final DocumentAttributeRecord sr,
       final QueryConfig config, final Map<String, AttributeValue> startkey, final int limit) {
 
-    sr.valueType(AttributeSearchValueType.STRING);
+    sr.valueType(DocumentAttributeValueType.STRING);
     sr.stringValue(search.getEq());
 
     QueryResponse response = null;
@@ -671,8 +671,8 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
     for (String documentId : documentIds) {
 
       List<Map<String, AttributeValue>> keyList = eqs.stream().map(eq -> {
-        AttributeSearchRecord sr = new AttributeSearchRecord().key(key)
-            .valueType(AttributeSearchValueType.STRING).stringValue(eq).documentId(documentId);
+        DocumentAttributeRecord sr = new DocumentAttributeRecord().key(key)
+            .valueType(DocumentAttributeValueType.STRING).stringValue(eq).documentId(documentId);
         return Map.of(PK, sr.fromS(sr.pk(siteId)), SK, sr.fromS(sr.sk()));
       }).toList();
       keys.addAll(keyList);
@@ -682,8 +682,8 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
   }
 
   private List<Map<String, AttributeValue>> searchAttributeEqOr(final String siteId,
-      final SearchQuery query, final SearchAttributeCriteria search, final AttributeSearchRecord sr,
-      final QueryConfig config, final int limit) {
+      final SearchQuery query, final SearchAttributeCriteria search,
+      final DocumentAttributeRecord sr, final QueryConfig config, final int limit) {
 
     List<Map<String, AttributeValue>> list = new ArrayList<>();
 
@@ -702,7 +702,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
       final SearchAttributeCriteria search, final Collection<String> documentIds) {
 
     String key = search.getKey();
-    AttributeSearchRecord sr = new AttributeSearchRecord().key(key);
+    DocumentAttributeRecord sr = new DocumentAttributeRecord().key(key);
     QueryConfig config = new QueryConfig();
 
     List<Map<String, AttributeValue>> list = new ArrayList<>();
@@ -741,7 +741,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
   }
 
   private QueryResponse searchAttributeRange(final String siteId,
-      final SearchAttributeCriteria search, final AttributeSearchRecord sr,
+      final SearchAttributeCriteria search, final DocumentAttributeRecord sr,
       final QueryConfig config, final Map<String, AttributeValue> startkey, final int limit) {
 
     SearchTagCriteriaRange range = search.getRange();
@@ -761,7 +761,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
 
     validate(search);
 
-    AttributeSearchRecord sr = new AttributeSearchRecord().key(search.getKey());
+    DocumentAttributeRecord sr = new DocumentAttributeRecord().key(search.getKey());
     Map<String, AttributeValue> startkey = new PaginationToAttributeValue().apply(token);
 
     QueryConfig config = new QueryConfig().scanIndexForward(Boolean.TRUE);

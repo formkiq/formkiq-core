@@ -88,6 +88,10 @@ import com.formkiq.stacks.dynamodb.DocumentValidator;
 import com.formkiq.stacks.dynamodb.DocumentValidatorImpl;
 import com.formkiq.stacks.dynamodb.DynamicDocumentTag;
 import com.formkiq.stacks.dynamodb.DynamicObjectToDocumentTag;
+import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
+import com.formkiq.stacks.dynamodb.attributes.AttributeValidator;
+import com.formkiq.stacks.dynamodb.attributes.AttributeValidatorImpl;
+import com.formkiq.stacks.dynamodb.attributes.DynamicObjectToAttributeRecord;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
@@ -381,6 +385,7 @@ public class DocumentIdRequestHandler
       }
 
     } else {
+
       addFieldsToObject(event, awsservice, authorization, siteId, documentId, item, documents);
       item.put("documents", documents);
 
@@ -390,6 +395,7 @@ public class DocumentIdRequestHandler
       Collection<ValidationError> errors = new ArrayList<>();
       validateTagSchema(awsservice, siteId, item, item.getUserId(), isUpdate, errors);
       validateTags(item, errors);
+      validateAttributes(awsservice, siteId, item, errors);
       validateActions(awsservice, siteId, item, authorization, errors);
       validateAccessAttributes(awsservice, item, errors);
 
@@ -406,6 +412,18 @@ public class DocumentIdRequestHandler
 
     ApiResponseStatus status = isUpdate ? SC_OK : SC_CREATED;
     return new ApiRequestHandlerResponse(status, new ApiMapResponse(map));
+  }
+
+  private void validateAttributes(final AwsServiceCache awsservice, final String siteId,
+      final DynamicDocumentItem item, final Collection<ValidationError> errors) {
+
+    List<DynamicObject> list = item.getList("attributes");
+    Collection<DocumentAttributeRecord> searchAttributes =
+        new DynamicObjectToAttributeRecord(item.getDocumentId()).apply(list);
+
+    DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
+    AttributeValidator validator = new AttributeValidatorImpl(db);
+    errors.addAll(validator.validate(siteId, searchAttributes));
   }
 
   /**
@@ -432,7 +450,6 @@ public class DocumentIdRequestHandler
     logger.log("s3 putObject " + key + " into bucket " + stageS3Bucket);
 
     S3Service s3 = awsservice.getExtension(S3Service.class);
-
     s3.putObject(stageS3Bucket, key, bytes, item.getString("contentType"));
 
     if (maxDocumentCount != null) {
@@ -547,12 +564,16 @@ public class DocumentIdRequestHandler
 
     boolean isFolder = isFolder(item);
 
+    Collection<ValidationError> errors = Collections.emptyList();
     if (!isFolder && !item.hasString("content") && item.getList("documents").isEmpty()
         && isEmpty(item.getDeepLinkPath())) {
-      throw new BadException("Invalid JSON body.");
+
+      errors = Arrays.asList(new ValidationErrorImpl()
+          .error("either 'content', 'documents', or 'deepLinkPath' are required"));
+      throw new ValidationException(errors);
     }
 
-    Collection<ValidationError> errors = this.documentValidator.validate(item.getMetadata());
+    errors = this.documentValidator.validate(item.getMetadata());
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }

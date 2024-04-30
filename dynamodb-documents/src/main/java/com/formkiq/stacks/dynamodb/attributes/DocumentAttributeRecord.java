@@ -35,11 +35,11 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
  * 
- * Attribute Search object.
+ * Document Attribute object.
  *
  */
 @Reflectable
-public class AttributeSearchRecord implements DynamodbRecord<AttributeSearchRecord>, DbKeys {
+public class DocumentAttributeRecord implements DynamodbRecord<DocumentAttributeRecord>, DbKeys {
 
   /** Boolean value. */
   @Reflectable
@@ -58,12 +58,12 @@ public class AttributeSearchRecord implements DynamodbRecord<AttributeSearchReco
   private String stringValue;
   /** Type of Attribute. */
   @Reflectable
-  private AttributeSearchValueType valueType;
+  private DocumentAttributeValueType valueType;
 
   /**
    * constructor.
    */
-  public AttributeSearchRecord() {
+  public DocumentAttributeRecord() {
 
   }
 
@@ -71,9 +71,9 @@ public class AttributeSearchRecord implements DynamodbRecord<AttributeSearchReco
    * Set Boolean Value.
    * 
    * @param value {@link Boolean}
-   * @return {@link AttributeSearchRecord}
+   * @return {@link DocumentAttributeRecord}
    */
-  public AttributeSearchRecord booleanValue(final Boolean value) {
+  public DocumentAttributeRecord booleanValue(final Boolean value) {
     this.booleanValue = value;
     return this;
   }
@@ -82,9 +82,9 @@ public class AttributeSearchRecord implements DynamodbRecord<AttributeSearchReco
    * Set Document Id.
    * 
    * @param document {@link String}
-   * @return {@link AttributeSearchRecord}
+   * @return {@link DocumentAttributeRecord}
    */
-  public AttributeSearchRecord documentId(final String document) {
+  public DocumentAttributeRecord documentId(final String document) {
     this.documentId = document;
     return this;
   }
@@ -144,15 +144,20 @@ public class AttributeSearchRecord implements DynamodbRecord<AttributeSearchReco
   }
 
   @Override
-  public AttributeSearchRecord getFromAttributes(final String siteId,
+  public DocumentAttributeRecord getFromAttributes(final String siteId,
       final Map<String, AttributeValue> attrs) {
 
-    AttributeSearchRecord record = null;
+    DocumentAttributeRecord record = null;
 
     if (!attrs.isEmpty()) {
 
-      record = new AttributeSearchRecord().documentId(ss(attrs, "documentId")).key(ss(attrs, "key"))
-          .valueType(AttributeSearchValueType.valueOf(ss(attrs, "valueType")));
+      record =
+          new DocumentAttributeRecord().documentId(ss(attrs, "documentId")).key(ss(attrs, "key"))
+              .valueType(DocumentAttributeValueType.valueOf(ss(attrs, "valueType")));
+
+      if (attrs.containsKey("stringValue")) {
+        record.stringValue(ss(attrs, "stringValue"));
+      }
 
       if (attrs.containsKey("booleanValue")) {
         record.booleanValue(bb(attrs, "booleanValue"));
@@ -196,9 +201,9 @@ public class AttributeSearchRecord implements DynamodbRecord<AttributeSearchReco
   /**
    * Get Attribute Value Type.
    * 
-   * @return {@link AttributeSearchValueType}
+   * @return {@link DocumentAttributeValueType}
    */
-  public AttributeSearchValueType getValueType() {
+  public DocumentAttributeValueType getValueType() {
     return this.valueType;
   }
 
@@ -206,9 +211,9 @@ public class AttributeSearchRecord implements DynamodbRecord<AttributeSearchReco
    * Set Key.
    * 
    * @param attributeKey {@link String}
-   * @return {@link AttributeSearchRecord}
+   * @return {@link DocumentAttributeRecord}
    */
-  public AttributeSearchRecord key(final String attributeKey) {
+  public DocumentAttributeRecord key(final String attributeKey) {
     this.key = attributeKey;
     return this;
   }
@@ -217,9 +222,9 @@ public class AttributeSearchRecord implements DynamodbRecord<AttributeSearchReco
    * Set Number Value.
    * 
    * @param value {@link Double}
-   * @return {@link AttributeSearchRecord}
+   * @return {@link DocumentAttributeRecord}
    */
-  public AttributeSearchRecord numberValue(final Double value) {
+  public DocumentAttributeRecord numberValue(final Double value) {
     this.numberValue = value;
     return this;
   }
@@ -307,9 +312,9 @@ public class AttributeSearchRecord implements DynamodbRecord<AttributeSearchReco
    * Set String value.
    * 
    * @param value {@link String}
-   * @return {@link AttributeSearchRecord}
+   * @return {@link DocumentAttributeRecord}
    */
-  public AttributeSearchRecord stringValue(final String value) {
+  public DocumentAttributeRecord stringValue(final String value) {
     this.stringValue = value;
     return this;
   }
@@ -317,10 +322,10 @@ public class AttributeSearchRecord implements DynamodbRecord<AttributeSearchReco
   /**
    * Set Attribute Type.
    * 
-   * @param attributeType {@link AttributeSearchValueType}
-   * @return {@link AttributeSearchRecord}
+   * @param attributeType {@link DocumentAttributeValueType}
+   * @return {@link DocumentAttributeRecord}
    */
-  public AttributeSearchRecord valueType(final AttributeSearchValueType attributeType) {
+  public DocumentAttributeRecord valueType(final DocumentAttributeValueType attributeType) {
     this.valueType = attributeType;
     return this;
   }
