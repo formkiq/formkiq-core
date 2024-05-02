@@ -23,17 +23,13 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-import java.util.ArrayList;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
-import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -46,13 +42,9 @@ import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
-import com.formkiq.plugins.tagschema.TagSchemaInterface;
 import com.formkiq.stacks.dynamodb.DocumentService;
-import com.formkiq.stacks.dynamodb.DocumentTagValidator;
-import com.formkiq.stacks.dynamodb.DocumentTagValidatorImpl;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
-import com.formkiq.validation.ValidationError;
+import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/attributes/{attributeKey}". */
@@ -117,108 +109,47 @@ public class DocumentAttributeRequestHandler
     return "/documents/{documentId}/attributes/{attributeKey}";
   }
 
-  /**
-   * Is Changing Tag from Value to Values or Values to Value.
-   * 
-   * @param tag {@link DocumentTag}
-   * @param value {@link String}
-   * @param values {@link List} {@link String}
-   * @return boolean
-   */
-  private boolean isTagValueTypeChanged(final DocumentTag tag, final String value,
-      final List<String> values) {
-    return (tag.getValue() != null && values != null) || (tag.getValues() != null && value != null);
+  private Collection<DocumentAttributeRecord> getDocumentAttributesFromRequest(
+      final ApiGatewayRequestEvent event, final String documentId, final String attributeKey)
+      throws BadException, IOException, ValidationException {
+
+    DocumentAttributeValueRequest request =
+        fromBodyToObject(event, DocumentAttributeValueRequest.class);
+    if (request.getAttribute() == null) {
+      throw new ValidationException(
+          Arrays.asList(new ValidationErrorImpl().error("no attribute values found")));
+    }
+
+    Collection<DocumentAttributeRecord> c =
+        new DocumentAttributeToDocumentAttributeRecord(documentId).apply(request.getAttribute());
+    c.forEach(a -> a.key(attributeKey));
+
+    return c;
   }
 
-  @SuppressWarnings("unchecked")
   @Override
   public ApiRequestHandlerResponse put(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    Map<String, String> map = event.getPathParameters();
-    final String documentId = map.get("documentId");
-    final String tagKey = map.get("tagKey");
-
-    Map<String, Object> body = fromBodyToObject(event, Map.class);
-    String value = body != null ? (String) body.getOrDefault("value", null) : null;
-    List<String> values = body != null ? (List<String>) body.getOrDefault("values", null) : null;
-
-    if (value == null && values == null) {
-      throw new BadException("request body is invalid");
-    }
-
+    String documentId = event.getPathParameters().get("documentId");
+    String attributeKey = event.getPathParameters().get("attributeKey");
     String siteId = authorization.getSiteId();
+
+    verifyDocument(awsservice, event, siteId, documentId);
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
-    DocumentItem document = documentService.findDocument(siteId, documentId);
-    throwIfNull(document, new DocumentNotFoundException(documentId));
+    Collection<DocumentAttributeRecord> documentAttributes =
+        getDocumentAttributesFromRequest(event, documentId, attributeKey);
 
-    DocumentTag tag = documentService.findDocumentTag(siteId, documentId, tagKey);
-    throwIfNull(document, new NotFoundException("Tag " + tagKey + " not found."));
-
-    // if trying to change from tag VALUE to VALUES or VALUES to VALUE
-    if (isTagValueTypeChanged(tag, value, values)) {
-      documentService.removeTags(siteId, documentId, Arrays.asList(tagKey));
-    }
-
-    Date now = new Date();
-    String userId = authorization.getUsername();
-
-    tag = new DocumentTag(null, tagKey, value, now, userId);
-    if (values != null) {
-      tag.setValue(null);
-      tag.setValues(values);
-    }
-
-    List<DocumentTag> tags = new ArrayList<>(Arrays.asList(tag));
-
-    if (document.getTagSchemaId() != null) {
-      Collection<ValidationError> errors = new ArrayList<>();
-
-      DocumentTagSchemaPlugin plugin = awsservice.getExtension(DocumentTagSchemaPlugin.class);
-      TagSchemaInterface tagSchema = plugin.getTagSchema(siteId, document.getTagSchemaId());
-
-      throwIfNull(tagSchema,
-          new BadException("TagschemaId " + document.getTagSchemaId() + " not found"));
-
-      plugin.updateInUse(siteId, tagSchema);
-
-      Collection<DocumentTag> newTags = plugin.addCompositeKeys(tagSchema, siteId,
-          document.getDocumentId(), tags, userId, false, errors);
-
-      if (!errors.isEmpty()) {
-        throw new ValidationException(errors);
-      }
-
-      tags.addAll(newTags);
-    }
+    documentService.deleteDocumentAttribute(siteId, documentId, attributeKey);
+    documentService.saveDocumentAttributes(siteId, documentAttributes);
 
 
-    validateTags(tags);
-
-    documentService.addTags(siteId, documentId, tags, null);
-
-    ApiResponse resp =
-        new ApiMessageResponse("Updated tag '" + tagKey + "' on document '" + documentId + "'.");
-
+    ApiResponse resp = new ApiMessageResponse(
+        "Updated attribute '" + attributeKey + "' on document '" + documentId + "'");
     return new ApiRequestHandlerResponse(SC_OK, resp);
-  }
-
-  /**
-   * Validate {@link DocumentTag}.
-   * 
-   * @param tags {@link List} {@link DocumentTag}
-   * @throws ValidationException ValidationException
-   */
-  private void validateTags(final List<DocumentTag> tags) throws ValidationException {
-    DocumentTagValidator validate = new DocumentTagValidatorImpl();
-    Collection<ValidationError> errors = validate.validate(tags);
-
-    if (!errors.isEmpty()) {
-      throw new ValidationException(errors);
-    }
   }
 
   private void verifyDocument(final AwsServiceCache awsservice, final ApiGatewayRequestEvent event,

@@ -3,20 +3,23 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
- * associated documentation files (the "Software"), to deal in the Software without restriction,
- * including without limitation the rights to use, copy, modify, merge, publish, distribute,
- * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all copies or
- * substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
- * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 package com.formkiq.stacks.api.handler;
 
@@ -39,6 +42,7 @@ import com.formkiq.client.model.AddAttribute;
 import com.formkiq.client.model.AddAttributeRequest;
 import com.formkiq.client.model.AddAttributeResponse;
 import com.formkiq.client.model.AddDocumentAttribute;
+import com.formkiq.client.model.AddDocumentAttributeValue;
 import com.formkiq.client.model.AddDocumentAttributesRequest;
 import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AddDocumentUploadRequest;
@@ -57,7 +61,9 @@ import com.formkiq.client.model.GetDocumentAttributesResponse;
 import com.formkiq.client.model.SearchResponseAttributeField;
 import com.formkiq.client.model.SearchResponseFields;
 import com.formkiq.client.model.SearchResultDocument;
+import com.formkiq.client.model.SetDocumentAttributeRequest;
 import com.formkiq.client.model.SetDocumentAttributesRequest;
+import com.formkiq.client.model.SetResponse;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 import joptsimple.internal.Strings;
@@ -1194,6 +1200,52 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     assertEquals("strings", attributes.get(1).getKey());
     assertEquals("abc,xyz", Strings.join(attributes.get(1).getStringValues(), ","));
   }
-}
 
-// PUT /documents/{documentId}/attributes/{attributeKey}
+  /**
+   * PUT /documents/{documentId}/attributes/{attributeKey}.
+   * 
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testPutDocumentAttribute01() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+      for (String a : Arrays.asList("security", "strings", "nums")) {
+        addAttribute(siteId, a);
+      }
+
+      String documentId = addDocumentAttribute(siteId, "security", "confidential", null, null);
+
+      AddDocumentAttribute strings =
+          new AddDocumentAttribute().key("strings").stringValues(Arrays.asList("abc", "xyz"));
+      addDocumentAttribute(siteId, documentId, strings);
+
+      SetDocumentAttributeRequest req = new SetDocumentAttributeRequest()
+          .attribute(new AddDocumentAttributeValue().stringValue("123"));
+
+      // when
+      SetResponse response =
+          this.documentAttributesApi.setDocumentAttributeValue(documentId, "security", req, siteId);
+
+      // then
+      assertEquals("Updated attribute 'security' on document '" + documentId + "'",
+          response.getMessage());
+
+      DocumentAttribute a = this.documentAttributesApi
+          .getDocumentAttribute(documentId, "security", siteId).getAttribute();
+      assertEquals("security", a.getKey());
+      assertEquals("123", a.getStringValue());
+
+      // when
+      this.documentAttributesApi.setDocumentAttributeValue(documentId, "strings", req, siteId);
+
+      // then
+      a = this.documentAttributesApi.getDocumentAttribute(documentId, "strings", siteId)
+          .getAttribute();
+      assertEquals("strings", a.getKey());
+      assertEquals("123", a.getStringValue());
+    }
+  }
+}
