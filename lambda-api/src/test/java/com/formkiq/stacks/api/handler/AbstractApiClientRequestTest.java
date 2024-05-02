@@ -37,6 +37,7 @@ import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.aws.sqs.SqsServiceExtension;
 import com.formkiq.client.api.AttributesApi;
 import com.formkiq.client.api.DocumentActionsApi;
+import com.formkiq.client.api.DocumentAttributesApi;
 import com.formkiq.client.api.DocumentFoldersApi;
 import com.formkiq.client.api.DocumentSearchApi;
 import com.formkiq.client.api.DocumentTagsApi;
@@ -140,6 +141,8 @@ public abstract class AbstractApiClientRequestTest {
   protected DocumentSearchApi searchApi = new DocumentSearchApi(this.client);
   /** {@link AttributeApi}. */
   protected AttributesApi attributesApi = new AttributesApi(this.client);
+  /** {@link DocumentAttributesApi}. */
+  protected DocumentAttributesApi documentAttributesApi = new DocumentAttributesApi(this.client);
 
   /**
    * Convert JSON to Object.

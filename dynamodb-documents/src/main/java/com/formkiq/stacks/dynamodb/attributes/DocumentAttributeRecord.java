@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.Map;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamodbRecord;
+import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.graalvm.annotations.Reflectable;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
@@ -272,6 +273,9 @@ public class DocumentAttributeRecord implements DynamodbRecord<DocumentAttribute
         sk += formatDouble(this.numberValue);
         break;
       }
+      case NO_VALUE: {
+        break;
+      }
       default:
         throw new IllegalArgumentException("Unexpected value: " + this.valueType);
     }
@@ -282,7 +286,8 @@ public class DocumentAttributeRecord implements DynamodbRecord<DocumentAttribute
   @Override
   public String skGsi1() {
 
-    String val = null;
+    String val;
+
     switch (this.valueType) {
       case STRING: {
         val = this.stringValue;
@@ -294,6 +299,10 @@ public class DocumentAttributeRecord implements DynamodbRecord<DocumentAttribute
       }
       case BOOLEAN: {
         val = this.booleanValue.toString();
+        break;
+      }
+      case NO_VALUE: {
+        val = "#";
         break;
       }
       default:
@@ -328,5 +337,20 @@ public class DocumentAttributeRecord implements DynamodbRecord<DocumentAttribute
   public DocumentAttributeRecord valueType(final DocumentAttributeValueType attributeType) {
     this.valueType = attributeType;
     return this;
+  }
+
+  /**
+   * Update Value Type.
+   */
+  public void updateValueType() {
+    this.valueType = DocumentAttributeValueType.NO_VALUE;
+
+    if (!Strings.isEmpty(this.stringValue)) {
+      this.valueType = DocumentAttributeValueType.STRING;
+    } else if (this.numberValue != null) {
+      this.valueType = DocumentAttributeValueType.NUMBER;
+    } else if (this.booleanValue != null) {
+      this.valueType = DocumentAttributeValueType.BOOLEAN;
+    }
   }
 }
