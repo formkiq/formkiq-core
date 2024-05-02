@@ -280,7 +280,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addGroupUsersEndpoints();
     addWorkflowEndpoints();
     addUserActivitiesEndpoints();
-    addRulesetsEndpoints();    
+    addRulesetsEndpoints();
     addDocumentAttributeEndpoints();
   }
 
