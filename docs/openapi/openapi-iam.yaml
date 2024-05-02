@@ -245,21 +245,7 @@
               - $ref: '#/components/parameters/siteIdPathParam'
               responses:
                 "200":
-                  description: 200 OK
-                  headers:
-                    Access-Control-Allow-Origin:
-                      schema:
-                        type: string
-                    Access-Control-Allow-Methods:
-                      schema:
-                        type: string
-                    Access-Control-Allow-Headers:
-                      schema:
-                        type: string
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/DeleteOpenSearchIndexResponse'
+                  $ref: '#/components/responses/200CorsDeleteResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -800,6 +786,10 @@
               responses:
                 "200":
                   $ref: '#/components/responses/200Cors'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DeleteResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -1070,7 +1060,7 @@
                             - "222"
               responses:
                 "200":
-                  $ref: '#/components/responses/200Cors'
+                  $ref: '#/components/responses/200CorsSetResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -1104,6 +1094,29 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+            put:
+              operationId: SetDocumentAttributeValue
+              summary: Set document's attributes value
+              description: Set attributes value to a document
+              tags:
+              - Document Attributes
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/attributeKeyParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/SetDocumentAttributeRequest'
+              responses:
+                "200":
+                  $ref: '#/components/responses/200CorsSetResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
             delete:
               operationId: DeleteDocumentAttribute
               summary: Delete document attribute
@@ -1116,7 +1129,7 @@
               - $ref: '#/components/parameters/attributeKeyParam'
               responses:
                 "200":
-                  $ref: '#/components/responses/200Cors'
+                  $ref: '#/components/responses/200CorsDeleteResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -1135,7 +1148,7 @@
               - $ref: '#/components/parameters/attributeValueParam'
               responses:
                 "200":
-                  $ref: '#/components/responses/200Cors'
+                  $ref: '#/components/responses/200CorsDeleteResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -1357,6 +1370,10 @@
               responses:
                 "200":
                   $ref: '#/components/responses/200Cors'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DeleteResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -1377,6 +1394,10 @@
               responses:
                 "200":
                   $ref: '#/components/responses/200Cors'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DeleteResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -2145,6 +2166,10 @@
               responses:
                 "200":
                   $ref: '#/components/responses/200Cors'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DeleteResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -2234,6 +2259,10 @@
               responses:
                 "200":
                   $ref: '#/components/responses/200Cors'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DeleteResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -3143,6 +3172,10 @@
               responses:
                 "200":
                   $ref: '#/components/responses/200Cors'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DeleteResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -5275,6 +5308,38 @@
               schema:
                 type: string
           responses:
+            200CorsSetResponse:
+              description: 200 OK
+              headers:
+                Access-Control-Allow-Origin:
+                  schema:
+                    type: string
+                Access-Control-Allow-Methods:
+                  schema:
+                    type: string
+                Access-Control-Allow-Headers:
+                  schema:
+                    type: string
+              content:
+                application/json:
+                  schema:
+                    $ref: '#/components/schemas/SetResponse'
+            200CorsDeleteResponse:
+              description: 200 OK
+              headers:
+                Access-Control-Allow-Origin:
+                  schema:
+                    type: string
+                Access-Control-Allow-Methods:
+                  schema:
+                    type: string
+                Access-Control-Allow-Headers:
+                  schema:
+                    type: string
+              content:
+                application/json:
+                  schema:
+                    $ref: '#/components/schemas/DeleteResponse'
             200Cors:
               description: 200 OK
               headers:
@@ -6478,6 +6543,12 @@
                       description: List of document tags
                       items:
                         $ref: '#/components/schemas/AddDocumentTag'
+            SetDocumentAttributeRequest:
+              type: object
+              description: Set List of document attributes
+              properties:
+                attribute:
+                  $ref: '#/components/schemas/AddDocumentAttributeValue'
             SetDocumentAttributesRequest:
               type: object
               description: Set List of document attributes
@@ -6579,6 +6650,29 @@
                 numberValue:
                   type: number
                   description: Attribute with number value
+                booleanValue:
+                  type: boolean
+                  description: Attribute with boolean value
+            AddDocumentAttributeValue:
+              type: object
+              description: Document Attribute Value
+              properties:
+                stringValue:
+                  type: string
+                  description: Attribute with string value
+                stringValues:
+                  type: array
+                  description: Attribute with string values
+                  items:
+                    type: string
+                numberValue:
+                  type: number
+                  description: Attribute with number value
+                numberValues:
+                  type: array
+                  description: Attribute with number values
+                  items:
+                    type: number
                 booleanValue:
                   type: boolean
                   description: Attribute with boolean value
@@ -8719,6 +8813,18 @@
                 indexSettings:
                   $ref: '#/components/schemas/OpenSearchIndex'
             SetOpenSearchIndexResponse:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: Result message
+            SetResponse:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: Result message
+            DeleteResponse:
               type: object
               properties:
                 message:

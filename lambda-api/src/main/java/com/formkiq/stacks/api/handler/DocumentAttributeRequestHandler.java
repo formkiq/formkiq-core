@@ -38,6 +38,7 @@ import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
+import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiMessageResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.ApiResponse;
@@ -47,10 +48,10 @@ import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 import com.formkiq.plugins.tagschema.TagSchemaInterface;
-import com.formkiq.stacks.api.ApiDocumentTagItemResponse;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentTagValidator;
 import com.formkiq.stacks.dynamodb.DocumentTagValidatorImpl;
+import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
 
@@ -70,37 +71,17 @@ public class DocumentAttributeRequestHandler
       final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorization.getSiteId();
-    Map<String, String> map = event.getPathParameters();
-    String documentId = map.get("documentId");
-    String tagKey = map.get("tagKey");
+    String documentId = event.getPathParameters().get("documentId");
+    String attributeKey = event.getPathParameters().get("attributeKey");
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
-
-    DocumentTag docTag = documentService.findDocumentTag(siteId, documentId, tagKey);
-    if (docTag == null) {
-      throw new NotFoundException("Tag '" + tagKey + "' not found.");
+    if (!documentService.deleteDocumentAttribute(siteId, documentId, attributeKey)) {
+      throw new NotFoundException(
+          "attribute '" + attributeKey + "' not found on document ' " + documentId + "'");
     }
 
-    DocumentItem document = documentService.findDocument(siteId, documentId);
-    throwIfNull(document, new DocumentNotFoundException(documentId));
-
-    List<String> tags = Arrays.asList(tagKey);
-
-    if (document.getTagSchemaId() != null) {
-
-      DocumentTagSchemaPlugin plugin = awsservice.getExtension(DocumentTagSchemaPlugin.class);
-      TagSchemaInterface tagSchema = plugin.getTagSchema(siteId, document.getTagSchemaId());
-
-      Collection<ValidationError> errors = plugin.validateRemoveTags(tagSchema, tags);
-      if (!errors.isEmpty()) {
-        throw new ValidationException(errors);
-      }
-    }
-
-    documentService.removeTags(siteId, documentId, tags);
-
-    ApiResponse resp =
-        new ApiMessageResponse("Removed '" + tagKey + "' from document '" + documentId + "'.");
+    ApiResponse resp = new ApiMessageResponse(
+        "attribute '" + attributeKey + "' removed from document '" + documentId + "'");
 
     return new ApiRequestHandlerResponse(SC_OK, resp);
   }
@@ -111,33 +92,23 @@ public class DocumentAttributeRequestHandler
       final AwsServiceCache awsservice) throws Exception {
 
     String documentId = event.getPathParameters().get("documentId");
-    String tagKey = event.getPathParameters().get("tagKey");
+    String attributeKey = event.getPathParameters().get("attributeKey");
     String siteId = authorization.getSiteId();
 
+    verifyDocument(awsservice, event, siteId, documentId);
+
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
-    DocumentItem item = documentService.findDocument(siteId, documentId);
-    throwIfNull(item, new DocumentNotFoundException(documentId));
+    List<DocumentAttributeRecord> list =
+        documentService.findDocumentAttribute(siteId, documentId, attributeKey);
 
-    DocumentTag tag = documentService.findDocumentTag(siteId, documentId, tagKey);
+    Collection<Map<String, Object>> map = new DocumentAttributeRecordToMap().apply(list);
 
-    if (tag == null) {
-      throw new NotFoundException("Tag " + tagKey + " not found.");
+    if (map.isEmpty()) {
+      throw new NotFoundException(
+          "attribute '" + attributeKey + "' not found on document ' " + documentId + "'");
     }
 
-    Collection<ValidationError> tagErrors = new DocumentTagValidatorImpl().validate(tag);
-    if (!tagErrors.isEmpty()) {
-      throw new ValidationException(tagErrors);
-    }
-
-    ApiDocumentTagItemResponse resp = new ApiDocumentTagItemResponse();
-    resp.setKey(tagKey);
-    resp.setValue(tag.getValue());
-    resp.setValues(tag.getValues());
-    resp.setInsertedDate(tag.getInsertedDate());
-    resp.setUserId(tag.getUserId());
-    resp.setType(tag.getType() != null ? tag.getType().name().toLowerCase() : null);
-    resp.setDocumentId(tag.getDocumentId());
-
+    ApiMapResponse resp = new ApiMapResponse(Map.of("attribute", map.iterator().next()));
     return new ApiRequestHandlerResponse(SC_OK, resp);
   }
 
@@ -247,6 +218,14 @@ public class DocumentAttributeRequestHandler
 
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
+    }
+  }
+
+  private void verifyDocument(final AwsServiceCache awsservice, final ApiGatewayRequestEvent event,
+      final String siteId, final String documentId) throws Exception {
+    DocumentService ds = awsservice.getExtension(DocumentService.class);
+    if (!ds.exists(siteId, documentId)) {
+      throw new DocumentNotFoundException(documentId);
     }
   }
 }

@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.api.handler;
 
@@ -47,6 +44,8 @@ import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AddDocumentUploadRequest;
 import com.formkiq.client.model.Attribute;
 import com.formkiq.client.model.AttributeType;
+import com.formkiq.client.model.DeleteResponse;
+import com.formkiq.client.model.DocumentAttribute;
 import com.formkiq.client.model.DocumentSearch;
 import com.formkiq.client.model.DocumentSearchAttribute;
 import com.formkiq.client.model.DocumentSearchRange;
@@ -81,6 +80,13 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
             .key(key).stringValue(stringValue).booleanValue(booleanValue).numberValue(numberValue));
 
     return this.documentsApi.addDocument(docReq, siteId, null).getDocumentId();
+  }
+
+  private void addDocumentAttribute(final String siteId, final String documentId,
+      final AddDocumentAttribute attribute) throws ApiException {
+    AddDocumentAttributesRequest req =
+        new AddDocumentAttributesRequest().addAttributesItem(attribute);
+    this.documentAttributesApi.addDocumentAttributes(documentId, req, siteId, null);
   }
 
   private String addDocumentAttribute(final String siteId, final String key,
@@ -840,6 +846,80 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * GET /documents/{documentId}/attributes/{attributeKey}.
+   * 
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testGetDocumentAttribute06() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+      for (String a : Arrays.asList("security", "other", "flag", "keyonly", "strings", "nums")) {
+        addAttribute(siteId, a);
+      }
+
+      // when
+      String documentId = addDocumentAttribute(siteId, "security", "confidential", null, null);
+
+      AddDocumentAttribute numberValue =
+          new AddDocumentAttribute().key("other").numberValue(new BigDecimal("100"));
+      addDocumentAttribute(siteId, documentId, numberValue);
+
+      AddDocumentAttribute booleanValue =
+          new AddDocumentAttribute().key("flag").booleanValue(Boolean.TRUE);
+      addDocumentAttribute(siteId, documentId, booleanValue);
+
+      AddDocumentAttribute keyOnly = new AddDocumentAttribute().key("keyonly");
+      addDocumentAttribute(siteId, documentId, keyOnly);
+
+      AddDocumentAttribute strings = new AddDocumentAttribute().key("strings")
+          .stringValues(Arrays.asList("abc", "xyz", "123"));
+      addDocumentAttribute(siteId, documentId, strings);
+
+      AddDocumentAttribute numberValues = new AddDocumentAttribute().key("nums").numberValues(
+          Arrays.asList(new BigDecimal("100"), new BigDecimal("200"), new BigDecimal("123")));
+      addDocumentAttribute(siteId, documentId, numberValues);
+
+      // then
+      DocumentAttribute a = this.documentAttributesApi
+          .getDocumentAttribute(documentId, "security", siteId).getAttribute();
+
+      assertEquals("security", a.getKey());
+      assertEquals("confidential", a.getStringValue());
+
+      a = this.documentAttributesApi.getDocumentAttribute(documentId, "other", siteId)
+          .getAttribute();
+      assertEquals("other", a.getKey());
+      assertEquals("100", formatDouble(Double.valueOf(a.getNumberValue().doubleValue())));
+
+      a = this.documentAttributesApi.getDocumentAttribute(documentId, "flag", siteId)
+          .getAttribute();
+      assertEquals("flag", a.getKey());
+      assertEquals(Boolean.TRUE, a.getBooleanValue());
+
+      a = this.documentAttributesApi.getDocumentAttribute(documentId, "keyonly", siteId)
+          .getAttribute();
+      assertEquals("keyonly", a.getKey());
+      assertNull(a.getBooleanValue());
+      assertNull(a.getStringValue());
+      assertNull(a.getNumberValue());
+
+      a = this.documentAttributesApi.getDocumentAttribute(documentId, "nums", siteId)
+          .getAttribute();
+      assertEquals("nums", a.getKey());
+      assertEquals("100,123,200", Strings.join(a.getNumberValues().stream()
+          .map(n -> formatDouble(Double.valueOf(n.doubleValue()))).toList(), ","));
+
+      a = this.documentAttributesApi.getDocumentAttribute(documentId, "strings", siteId)
+          .getAttribute();
+      assertEquals("strings", a.getKey());
+      assertEquals("123,abc,xyz", Strings.join(a.getStringValues(), ","));
+    }
+  }
+
+  /**
    * GET /documents/{documentId}/attributes.
    * 
    * @throws ApiException ApiException
@@ -1029,4 +1109,91 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       }
     }
   }
+
+  /**
+   * DELETE /documents/{documentId}/attributes/{attributeKey}.
+   * 
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testDeleteDocumentAttribute01() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+      for (String a : Arrays.asList("security", "strings", "nums")) {
+        addAttribute(siteId, a);
+      }
+
+      // when
+      String documentId = addDocumentAttribute(siteId, "security", "confidential", null, null);
+
+      AddDocumentAttribute strings =
+          new AddDocumentAttribute().key("strings").stringValues(Arrays.asList("abc", "xyz"));
+      addDocumentAttribute(siteId, documentId, strings);
+
+      AddDocumentAttribute numberValues = new AddDocumentAttribute().key("nums").numberValues(
+          Arrays.asList(new BigDecimal("100"), new BigDecimal("200"), new BigDecimal("123")));
+      addDocumentAttribute(siteId, documentId, numberValues);
+
+      // then
+      DocumentAttribute a = this.documentAttributesApi
+          .getDocumentAttribute(documentId, "security", siteId).getAttribute();
+
+      assertEquals("security", a.getKey());
+      assertEquals("confidential", a.getStringValue());
+
+      a = this.documentAttributesApi.getDocumentAttribute(documentId, "strings", siteId)
+          .getAttribute();
+      assertEquals("strings", a.getKey());
+      assertEquals("abc,xyz", Strings.join(a.getStringValues(), ","));
+
+      deleteDocumentAttributeSecurity(siteId, documentId);
+
+      // when
+      DeleteResponse response0 = this.documentAttributesApi
+          .deleteDocumentAttributeAndValue(documentId, "strings", "abc", siteId);
+      DeleteResponse response1 = this.documentAttributesApi
+          .deleteDocumentAttributeAndValue(documentId, "nums", "100", siteId);
+
+      // then
+      assertEquals(
+          "attribute value 'abc' removed from attribute 'strings', document '" + documentId + "'",
+          response0.getMessage());
+      assertEquals(
+          "attribute value '100' removed from attribute 'nums', document '" + documentId + "'",
+          response1.getMessage());
+
+      List<DocumentAttribute> attributes = this.documentAttributesApi
+          .getDocumentAttributes(documentId, siteId, null, null).getAttributes();
+      assertEquals(2, attributes.size());
+      assertEquals("nums", attributes.get(0).getKey());
+      assertEquals("123,200", Strings.join(attributes.get(0).getNumberValues().stream()
+          .map(n -> formatDouble(Double.valueOf(n.doubleValue()))).toList(), ","));
+      assertEquals("strings", attributes.get(1).getKey());
+      assertTrue(attributes.get(1).getStringValues().isEmpty());
+      assertEquals("xyz", attributes.get(1).getStringValue());
+    }
+  }
+
+  private void deleteDocumentAttributeSecurity(final String siteId, final String documentId)
+      throws ApiException {
+    // when
+    DeleteResponse response =
+        this.documentAttributesApi.deleteDocumentAttribute(documentId, "security", siteId);
+
+    // then
+    assertEquals("attribute 'security' removed from document '" + documentId + "'",
+        response.getMessage());
+    List<DocumentAttribute> attributes = this.documentAttributesApi
+        .getDocumentAttributes(documentId, siteId, null, null).getAttributes();
+    assertEquals(2, attributes.size());
+    assertEquals("nums", attributes.get(0).getKey());
+    assertEquals("100,123,200", Strings.join(attributes.get(0).getNumberValues().stream()
+        .map(n -> formatDouble(Double.valueOf(n.doubleValue()))).toList(), ","));
+    assertEquals("strings", attributes.get(1).getKey());
+    assertEquals("abc,xyz", Strings.join(attributes.get(1).getStringValues(), ","));
+  }
 }
+
+// PUT /documents/{documentId}/attributes/{attributeKey}

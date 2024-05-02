@@ -23,13 +23,8 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -37,16 +32,15 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMessageResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.ApiResponse;
-import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
-import com.formkiq.plugins.tagschema.TagSchemaInterface;
 import com.formkiq.stacks.dynamodb.DocumentService;
-import com.formkiq.validation.ValidationError;
-import com.formkiq.validation.ValidationException;
 
-/** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/tags/{tagKey}/{tagValue}". */
+/**
+ * {@link ApiGatewayRequestHandler} for
+ * 
+ * "/documents/{documentId}/attributes/{attributeKey}/{attributeValue}".
+ */
 public class DocumentAttributesValueRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
@@ -62,41 +56,25 @@ public class DocumentAttributesValueRequestHandler
       final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorization.getSiteId();
-    Map<String, String> map = event.getPathParameters();
-    String documentId = map.get("documentId");
-    String tagKey = map.get("tagKey");
-    String tagValue = map.get("tagValue");
+    String documentId = event.getPathParameters().get("documentId");
+    String attributeKey = event.getPathParameters().get("attributeKey");
+    String attributeValue = event.getPathParameters().get("attributeValue");
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
-
-    DocumentItem item = documentService.findDocument(siteId, documentId);
-    throwIfNull(item, new DocumentNotFoundException(documentId));
-
-    if (item.getTagSchemaId() != null) {
-      DocumentTagSchemaPlugin plugin = awsservice.getExtension(DocumentTagSchemaPlugin.class);
-
-      TagSchemaInterface tagSchema = plugin.getTagSchema(siteId, item.getTagSchemaId());
-
-      Collection<ValidationError> errors =
-          plugin.validateRemoveTags(tagSchema, Arrays.asList(tagKey));
-
-      if (!errors.isEmpty()) {
-        throw new ValidationException(errors);
-      }
+    if (!documentService.deleteDocumentAttributeValue(siteId, documentId, attributeKey,
+        attributeValue)) {
+      throw new NotFoundException(
+          "attribute '" + attributeKey + "' not found on document ' " + documentId + "'");
     }
 
-    boolean removed = documentService.removeTag(siteId, documentId, tagKey, tagValue);
-    if (!removed) {
-      throw new NotFoundException("Tag/Value combination not found.");
-    }
-
-    ApiResponse resp = new ApiMessageResponse("Removed Tag from document '" + documentId + "'.");
+    ApiResponse resp = new ApiMessageResponse("attribute value '" + attributeValue
+        + "' removed from attribute '" + attributeKey + "', document '" + documentId + "'");
 
     return new ApiRequestHandlerResponse(SC_OK, resp);
   }
 
   @Override
   public String getRequestUrl() {
-    return "/documents/{documentId}/tags/{tagKey}/{tagValue}";
+    return "/documents/{documentId}/attributes/{attributeKey}/{attributeValue}";
   }
 }

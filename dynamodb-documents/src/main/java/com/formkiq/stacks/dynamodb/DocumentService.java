@@ -97,12 +97,25 @@ public interface DocumentService extends DocumentTagLoader {
    * 
    * @param siteId {@link String}
    * @param documentId {@link String}
-   * @param key {@link String}
+   * @param attributeKey {@link String}
    * @return boolean
    * @throws ValidationException ValidationException
    */
-  boolean deleteDocumentAttribute(String siteId, String documentId, String key)
+  boolean deleteDocumentAttribute(String siteId, String documentId, String attributeKey)
       throws ValidationException;
+
+  /**
+   * Delete Document Attribute Value.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param attributeKey {@link String}
+   * @param attributeValue {@link String}
+   * @return boolean
+   * @throws ValidationException ValidationException
+   */
+  boolean deleteDocumentAttributeValue(String siteId, String documentId, String attributeKey,
+      String attributeValue) throws ValidationException;
 
   /**
    * Delete Document Format.
@@ -212,6 +225,17 @@ public interface DocumentService extends DocumentTagLoader {
    */
   PaginationResult<DocumentItem> findDocument(String siteId, String documentId,
       boolean includeChildDocuments, PaginationMapToken token, int limit);
+
+  /**
+   * Find Document Attribute.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param attributeKey {@link String}
+   * @return {@link List} {@link DocumentAttributeRecord}
+   */
+  List<DocumentAttributeRecord> findDocumentAttribute(String siteId, String documentId,
+      String attributeKey);
 
   /**
    * Find {@link DocumentAttributeRecord}.

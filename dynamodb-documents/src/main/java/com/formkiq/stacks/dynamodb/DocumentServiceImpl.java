@@ -78,6 +78,7 @@ import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidator;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidatorImpl;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
+import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
 import com.formkiq.stacks.dynamodb.attributes.DynamicObjectToAttributeRecord;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
@@ -329,6 +330,31 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
         response.items().stream().map(a -> Map.of(PK, a.get(PK), SK, a.get(SK))).toList();
 
     return this.dbService.deleteItems(keys);
+  }
+
+  @Override
+  public boolean deleteDocumentAttributeValue(final String siteId, final String documentId,
+      final String attributeKey, final String attributeValue) throws ValidationException {
+
+    if (attributeKey == null || attributeValue == null) {
+      Collection<ValidationError> errors = new ArrayList<>();
+
+      if (attributeKey == null) {
+        errors.add(new ValidationErrorImpl().key("key").error("'key' is empty"));
+      }
+
+      if (attributeValue == null) {
+        errors.add(new ValidationErrorImpl().key("value").error("'value' is empty"));
+      }
+
+      if (!errors.isEmpty()) {
+        throw new ValidationException(errors);
+      }
+    }
+
+    DocumentAttributeRecord r = new DocumentAttributeRecord().documentId(documentId)
+        .key(attributeKey).stringValue(attributeValue).valueType(DocumentAttributeValueType.STRING);
+    return this.dbService.deleteItem(Map.of(PK, r.fromS(r.pk(siteId)), SK, r.fromS(r.sk())));
   }
 
   @Override
@@ -605,6 +631,24 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     }
 
     return new PaginationResult<>(item, pagination);
+  }
+
+  @Override
+  public List<DocumentAttributeRecord> findDocumentAttribute(final String siteId,
+      final String documentId, final String attributeKey) {
+
+    final int limit = 100;
+    DocumentAttributeRecord r =
+        new DocumentAttributeRecord().documentId(documentId).key(attributeKey);
+
+    String sk = ATTR + attributeKey + "#";
+    QueryConfig config = new QueryConfig().scanIndexForward(Boolean.TRUE);
+
+    QueryResponse response =
+        this.dbService.queryBeginsWith(config, r.fromS(r.pk(siteId)), r.fromS(sk), null, limit);
+
+    return response.items().stream()
+        .map(a -> new DocumentAttributeRecord().getFromAttributes(siteId, a)).toList();
   }
 
   @Override
