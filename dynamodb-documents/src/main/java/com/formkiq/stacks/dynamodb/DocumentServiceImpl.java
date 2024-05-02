@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.dynamodb;
 
+import static com.formkiq.stacks.dynamodb.attributes.AttributeRecord.ATTR;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
@@ -79,6 +80,7 @@ import com.formkiq.stacks.dynamodb.attributes.AttributeValidatorImpl;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.DynamicObjectToAttributeRecord;
 import com.formkiq.validation.ValidationError;
+import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -305,6 +307,28 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     }
 
     return deleted;
+  }
+
+  @Override
+  public boolean deleteDocumentAttribute(final String siteId, final String documentId,
+      final String key) throws ValidationException {
+
+    if (Strings.isEmpty(key)) {
+      throw new ValidationException(
+          Arrays.asList(new ValidationErrorImpl().key("key").error("'key' is required")));
+    }
+
+    final int limit = 100;
+    DocumentAttributeRecord r = new DocumentAttributeRecord().documentId(documentId).key(key);
+
+    QueryConfig config = new QueryConfig();
+    QueryResponse response = this.dbService.queryBeginsWith(config, r.fromS(r.pk(siteId)),
+        r.fromS(ATTR + key + "#"), null, limit);
+
+    List<Map<String, AttributeValue>> keys =
+        response.items().stream().map(a -> Map.of(PK, a.get(PK), SK, a.get(SK))).toList();
+
+    return this.dbService.deleteItems(keys);
   }
 
   @Override
@@ -1569,6 +1593,15 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     updatePathFromDeepLink(document);
     Map<String, AttributeValue> keys = keysDocument(siteId, document.getDocumentId());
     saveDocument(keys, siteId, document, tags, searchAttributes, options);
+  }
+
+  @Override
+  public void saveDocumentAttributes(final String siteId,
+      final Collection<DocumentAttributeRecord> attributes) throws ValidationException {
+
+    WriteRequestBuilder writeBuilder = new WriteRequestBuilder();
+    appendSearchAttributes(writeBuilder, siteId, attributes);
+    writeBuilder.batchWriteItem(this.dbClient);
   }
 
   /**

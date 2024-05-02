@@ -63,6 +63,9 @@ import com.formkiq.stacks.api.handler.AttributesRequestHandler;
 import com.formkiq.stacks.api.handler.ConfigurationApiKeyRequestHandler;
 import com.formkiq.stacks.api.handler.ConfigurationApiKeysRequestHandler;
 import com.formkiq.stacks.api.handler.ConfigurationRequestHandler;
+import com.formkiq.stacks.api.handler.DocumentAttributeRequestHandler;
+import com.formkiq.stacks.api.handler.DocumentAttributesRequestHandler;
+import com.formkiq.stacks.api.handler.DocumentAttributesValueRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentIdContentRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentIdRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentIdRestoreRequestHandler;
@@ -163,6 +166,12 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new OpaConfigurationRequestHandler());
     addRequestHandler(new OpaIdConfigurationRequestHandler());
     addRequestHandler(new DocumentsIdAccessAttributesRequestHandler());
+  }
+
+  private static void addDocumentAttributeEndpoints() {
+    addRequestHandler(new DocumentAttributesRequestHandler());
+    addRequestHandler(new DocumentAttributeRequestHandler());
+    addRequestHandler(new DocumentAttributesValueRequestHandler());
   }
 
   private static void addEsignatureEndpoints() {
@@ -271,7 +280,8 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addGroupUsersEndpoints();
     addWorkflowEndpoints();
     addUserActivitiesEndpoints();
-    addRulesetsEndpoints();
+    addRulesetsEndpoints();    
+    addDocumentAttributeEndpoints();
   }
 
   /**

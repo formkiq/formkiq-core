@@ -93,6 +93,18 @@ public interface DocumentService extends DocumentTagLoader {
   boolean deleteDocument(String siteId, String documentId, boolean softDelete);
 
   /**
+   * Delete Document Attribute.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param key {@link String}
+   * @return boolean
+   * @throws ValidationException ValidationException
+   */
+  boolean deleteDocumentAttribute(String siteId, String documentId, String key)
+      throws ValidationException;
+
+  /**
    * Delete Document Format.
    * 
    * @param siteId Optional Grouping siteId
@@ -422,6 +434,16 @@ public interface DocumentService extends DocumentTagLoader {
    */
   void saveDocument(String siteId, DocumentItem document, Collection<DocumentTag> tags,
       Collection<DocumentAttributeRecord> searchAttributes, SaveDocumentOptions options)
+      throws ValidationException;
+
+  /**
+   * Save Document Attributes.
+   * 
+   * @param siteId {@link String}
+   * @param attributes {@link Collection} {@link DocumentAttributeRecord}
+   * @throws ValidationException ValidationException
+   */
+  void saveDocumentAttributes(String siteId, Collection<DocumentAttributeRecord> attributes)
       throws ValidationException;
 
   /**
