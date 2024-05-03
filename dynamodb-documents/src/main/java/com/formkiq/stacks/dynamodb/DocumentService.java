@@ -105,6 +105,15 @@ public interface DocumentService extends DocumentTagLoader {
       throws ValidationException;
 
   /**
+   * Delete Document Attributes.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @return boolean
+   */
+  boolean deleteDocumentAttributes(String siteId, String documentId);
+
+  /**
    * Delete Document Attribute Value.
    * 
    * @param siteId {@link String}

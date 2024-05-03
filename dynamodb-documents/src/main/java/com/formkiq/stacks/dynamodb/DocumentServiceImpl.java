@@ -333,6 +333,22 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
+  public boolean deleteDocumentAttributes(final String siteId, final String documentId) {
+
+    final int limit = 100;
+    DocumentAttributeRecord r = new DocumentAttributeRecord().documentId(documentId);
+
+    QueryConfig config = new QueryConfig();
+    QueryResponse response =
+        this.dbService.queryBeginsWith(config, r.fromS(r.pk(siteId)), r.fromS(ATTR), null, limit);
+
+    List<Map<String, AttributeValue>> keys =
+        response.items().stream().map(a -> Map.of(PK, a.get(PK), SK, a.get(SK))).toList();
+
+    return this.dbService.deleteItems(keys);
+  }
+
+  @Override
   public boolean deleteDocumentAttributeValue(final String siteId, final String documentId,
       final String attributeKey, final String attributeValue) throws ValidationException {
 

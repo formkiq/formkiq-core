@@ -1028,7 +1028,7 @@ Resources:
                           values: [person,canadian]
               responses:
                 '201':
-                  $ref: '#/components/responses/200Cors'
+                  $ref: '#/components/responses/200CorsAddResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -5324,6 +5324,22 @@ Resources:
               schema:
                 type: string
           responses:
+            200CorsAddResponse:
+              description: 200 OK
+              headers:
+                Access-Control-Allow-Origin:
+                  schema:
+                    type: string
+                Access-Control-Allow-Methods:
+                  schema:
+                    type: string
+                Access-Control-Allow-Headers:
+                  schema:
+                    type: string
+              content:
+                application/json:
+                  schema:
+                    "$ref": "#/components/schemas/AddResponse"
             200CorsSetResponse:
               description: 200 OK
               headers:
@@ -8874,6 +8890,12 @@ Resources:
                 indexSettings:
                   $ref: "#/components/schemas/OpenSearchIndex"
             SetOpenSearchIndexResponse:
+              type: "object"
+              properties:
+                message:
+                  type: "string"
+                  description: "Result message"
+            AddResponse:
               type: "object"
               properties:
                 message:
