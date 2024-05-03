@@ -40,10 +40,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.model.DocumentMapToDocument;
 import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.model.AddAttribute;
+import com.formkiq.client.model.AddAttributeRequest;
+import com.formkiq.client.model.AddDocumentAttribute;
 import com.formkiq.client.model.AddDocumentTag;
 import com.formkiq.client.model.AddDocumentTagsRequest;
 import com.formkiq.client.model.AddDocumentUploadRequest;
 import com.formkiq.client.model.DocumentSearch;
+import com.formkiq.client.model.DocumentSearchAttribute;
 import com.formkiq.client.model.DocumentSearchMatchTag;
 import com.formkiq.client.model.DocumentSearchMeta;
 import com.formkiq.client.model.DocumentSearchMeta.IndexTypeEnum;
@@ -64,6 +68,55 @@ import com.formkiq.testutils.aws.TypesenseExtension;
 @ExtendWith(LocalStackExtension.class)
 @ExtendWith(TypesenseExtension.class)
 public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
+
+  private void addAttribute(final String siteId, final String attribute) throws ApiException {
+    AddAttributeRequest req =
+        new AddAttributeRequest().attribute(new AddAttribute().key(attribute));
+    this.attributesApi.addAttribute(req, siteId);
+  }
+
+  private String addDocument(final String siteId, final List<AddDocumentTag> tags)
+      throws ApiException {
+
+    AddDocumentUploadRequest uploadReq = new AddDocumentUploadRequest().tags(tags);
+
+    return this.documentsApi.addDocumentUpload(uploadReq, siteId, null, null, null).getDocumentId();
+  }
+
+  private String addDocument(final String siteId, final String tagKey, final String tagValue,
+      final List<String> tagValues) throws ApiException {
+
+    AddDocumentUploadRequest uploadReq = new AddDocumentUploadRequest();
+
+    if (tagKey != null) {
+      AddDocumentTag tag = new AddDocumentTag().key(tagKey).value(tagValue).values(tagValues);
+      uploadReq.addTagsItem(tag);
+    }
+
+    return this.documentsApi.addDocumentUpload(uploadReq, siteId, null, null, null).getDocumentId();
+  }
+
+  private String addDocumentWithAttributes(final String siteId, final String attributeKey,
+      final String attributeValue, final List<String> attributeValues) throws ApiException {
+
+    AddDocumentUploadRequest uploadReq = new AddDocumentUploadRequest();
+
+    if (attributeKey != null) {
+      AddDocumentAttribute attr = new AddDocumentAttribute().key(attributeKey)
+          .stringValue(attributeValue).stringValues(attributeValues);
+      uploadReq.addAttributesItem(attr);
+    }
+
+    return this.documentsApi.addDocumentUpload(uploadReq, siteId, null, null, null).getDocumentId();
+  }
+
+  private DocumentSearchResponse query(final String siteId, final String key, final String eq,
+      final List<String> eqOr, final List<String> documentIds) throws ApiException {
+    DocumentSearchRequest dsq = new DocumentSearchRequest().query(new DocumentSearch()
+        .tag(new DocumentSearchTag().key(key).eq(eq).eqOr(eqOr)).documentIds(documentIds));
+
+    return this.searchApi.documentSearch(dsq, siteId, null, null, null);
+  }
 
   private String saveDocument(final String siteId, final String path) throws Exception {
 
@@ -213,35 +266,6 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
       assertNull(response.getNext());
       assertNull(response.getPrevious());
     }
-  }
-
-  private DocumentSearchResponse query(final String siteId, final String key, final String eq,
-      final List<String> eqOr, final List<String> documentIds) throws ApiException {
-    DocumentSearchRequest dsq = new DocumentSearchRequest().query(new DocumentSearch()
-        .tag(new DocumentSearchTag().key(key).eq(eq).eqOr(eqOr)).documentIds(documentIds));
-
-    return this.searchApi.documentSearch(dsq, siteId, null, null, null);
-  }
-
-  private String addDocument(final String siteId, final String tagKey, final String tagValue,
-      final List<String> tagValues) throws ApiException {
-
-    AddDocumentUploadRequest uploadReq = new AddDocumentUploadRequest();
-
-    if (tagKey != null) {
-      AddDocumentTag tag = new AddDocumentTag().key(tagKey).value(tagValue).values(tagValues);
-      uploadReq.addTagsItem(tag);
-    }
-
-    return this.documentsApi.addDocumentUpload(uploadReq, siteId, null, null, null).getDocumentId();
-  }
-
-  private String addDocument(final String siteId, final List<AddDocumentTag> tags)
-      throws ApiException {
-
-    AddDocumentUploadRequest uploadReq = new AddDocumentUploadRequest().tags(tags);
-
-    return this.documentsApi.addDocumentUpload(uploadReq, siteId, null, null, null).getDocumentId();
   }
 
   /**
@@ -769,6 +793,49 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
         assertEquals("{\"errors\":[{\"key\":\"tag/eq\",\"error\":\"'beginsWith','range' "
             + "is only supported on the last tag\"}]}", e.getResponseBody());
       }
+    }
+  }
+
+  /**
+   * Post search by attribute "eq".
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleSearchRequest21() throws Exception {
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "category");
+
+      String documentId0 = addDocumentWithAttributes(siteId, "category", "person", null);
+      addDocumentWithAttributes(siteId, "category", "other", null);
+
+      DocumentSearchRequest dsq = new DocumentSearchRequest().query(new DocumentSearch()
+          .attribute(new DocumentSearchAttribute().key("category").eq("person")));
+
+      // when
+      DocumentSearchResponse response =
+          this.searchApi.documentSearch(dsq, siteId, null, null, null);
+
+      // then
+      List<SearchResultDocument> documents = response.getDocuments();
+      assertEquals(1, documents.size());
+      assertEquals(documentId0, documents.get(0).getDocumentId());
+
+      // given
+      dsq = new DocumentSearchRequest().query(new DocumentSearch()
+          .addAttributesItem(new DocumentSearchAttribute().key("category").eq("person")));
+
+      // when
+      response = this.searchApi.documentSearch(dsq, siteId, null, null, null);
+
+      // then
+      documents = response.getDocuments();
+      assertEquals(1, documents.size());
+      assertEquals(documentId0, documents.get(0).getDocumentId());
     }
   }
 }
