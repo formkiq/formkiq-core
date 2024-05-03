@@ -594,9 +594,14 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
         results = searchByMeta(siteId, query, meta, token, maxresults);
       }
 
-    } else if (query.getAttribute() != null) {
+    } else if (query.getAttribute() != null || !notNull(query.getAttributes()).isEmpty()) {
 
       SearchAttributeCriteria search = query.getAttribute();
+      if (search == null) {
+        search = query.getAttributes().get(0);
+        // TODO handle multiple attributes search, check schemas
+      }
+
       results = searchByAttribute(siteId, query, search, searchResponseFields, token, maxresults);
 
     } else {

@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_PAYMENT;
 import static software.amazon.awssdk.utils.StringUtils.isEmpty;
@@ -124,7 +125,8 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
   }
 
   private boolean isTagOrAttribute(final QueryRequest q) {
-    return q.query().getAttribute() == null && q.query().getTag() == null;
+    return notNull(q.query().getAttributes()).isEmpty() && q.query().getAttribute() == null
+        && q.query().getTag() == null;
   }
 
   /**
