@@ -135,7 +135,8 @@ public class DocumentAttributesRequestHandler
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
     documentService.saveDocumentAttributes(siteId, attributes);
 
-    ApiResponse resp = new ApiMessageResponse("created attributes");
+    ApiResponse resp =
+        new ApiMessageResponse("added attributes to documentId '" + documentId + "'");
     return new ApiRequestHandlerResponse(SC_CREATED, resp);
   }
 
@@ -152,13 +153,10 @@ public class DocumentAttributesRequestHandler
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
-    for (DocumentAttributeRecord a : attributes) {
-      documentService.deleteDocumentAttribute(siteId, documentId, a.getKey());
-    }
-
+    documentService.deleteDocumentAttributes(siteId, documentId);
     documentService.saveDocumentAttributes(siteId, attributes);
 
-    ApiResponse resp = new ApiMessageResponse("set attributes");
+    ApiResponse resp = new ApiMessageResponse("set attributes on documentId '" + documentId + "'");
     return new ApiRequestHandlerResponse(SC_CREATED, resp);
   }
 

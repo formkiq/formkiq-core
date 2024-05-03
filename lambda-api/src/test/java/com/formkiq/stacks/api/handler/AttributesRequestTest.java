@@ -1012,7 +1012,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
       setBearerToken(siteId);
-      for (String attribute : Arrays.asList(key)) {
+      for (String attribute : Arrays.asList(key, key + "!")) {
         addAttribute(siteId, attribute);
       }
 
@@ -1036,7 +1036,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       // given
       SetDocumentAttributesRequest sreq = new SetDocumentAttributesRequest()
-          .addAttributesItem(new AddDocumentAttribute().key(key).booleanValue(Boolean.TRUE));
+          .addAttributesItem(new AddDocumentAttribute().key(key + "!").booleanValue(Boolean.TRUE));
 
       // when
       this.documentAttributesApi.setDocumentAttributes(documentId, sreq, siteId);
@@ -1045,7 +1045,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       response = this.documentAttributesApi.getDocumentAttributes(documentId, siteId, null, null);
       assertEquals(expected, response.getAttributes().size());
 
-      assertEquals(key, response.getAttributes().get(0).getKey());
+      assertEquals(key + "!", response.getAttributes().get(0).getKey());
       assertTrue(response.getAttributes().get(0).getStringValues().isEmpty());
       assertTrue(response.getAttributes().get(0).getBooleanValue().booleanValue());
     }
