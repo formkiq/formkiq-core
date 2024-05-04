@@ -112,7 +112,7 @@ public class SchemaServiceDynamodb implements SchemaService {
 
       SchemaAttributes schemaAttributes = schema.getAttributes();
       if (notNull(schemaAttributes.getRequired()).isEmpty()
-          && notNull(schemaAttributes.getRequired()).isEmpty()) {
+          && notNull(schemaAttributes.getOptional()).isEmpty()) {
         errors.add(new ValidationErrorImpl()
             .error("either 'required' or 'optional' attributes list is required"));
       }
