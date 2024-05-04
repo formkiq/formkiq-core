@@ -52,6 +52,9 @@ Resources:
           - name: attributes
             description: API for the add, updating and fetching of atttributes
             x-displayName: Attributes
+          - name: schemas
+            description: API for the add, updating and fetching of schemas
+            x-displayName: Schemas
           - name: documentTags
             description: API for the add, updating and fetching of document tags
             x-displayName: Document Tags
@@ -263,6 +266,45 @@ Resources:
                 - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
+          /sites/{siteId}/schema/document:
+            put:
+              operationId: SetSitesSchema
+              description: Sets Sites schema
+              summary: Set Sites Schema
+              tags:
+              - Schemas
+              parameters:
+              - $ref: '#/components/parameters/siteIdPathParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/SetSitesSchemaRequest'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/SetResponse'
+                '400':
+                  description: 400 OK
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/ValidationErrorsResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /sites/{siteId}/configuration:
             get:
               operationId: GetConfiguration
@@ -1014,18 +1056,6 @@ Resources:
                   application/json:
                     schema:
                       $ref: '#/components/schemas/AddDocumentAttributesRequest'
-                    examples:
-                      Add_Key_Only_Attribute:
-                        value:
-                          key: category
-                      Add_Key_and_Value_Attribute:
-                        value:
-                          key: category
-                          value: person
-                      Add_Key_and_Values_Attribute:
-                        value:
-                          key: category
-                          values: [person,canadian]
               responses:
                 '201':
                   $ref: '#/components/responses/200CorsAddResponse'
@@ -1048,21 +1078,6 @@ Resources:
                   application/json:
                     schema:
                       $ref: '#/components/schemas/SetDocumentAttributesRequest'
-                    examples:
-                      Add_Key_Only_Attribute:
-                        value:
-                          tags:
-                            - key: category 
-                      Add_Key_and_Value_Attribute:
-                        value:
-                          tags:
-                            - key: category 
-                              value: sample
-                      Add_Key_and_Values_Attribute:
-                        value:
-                          tags:
-                            - key: players 
-                              values: ["111", "222"]
               responses:
                 '200':
                   $ref: '#/components/responses/200CorsSetResponse'
@@ -8122,6 +8137,15 @@ Resources:
                 - STANDARD
                 - OPA
 
+            AttributeDataType:
+              type: string
+              description: Data Type of Attribute
+              enum:
+                - STRING
+                - NUMBER
+                - BOOLEAN
+                - KEY_ONLY
+                
             AddAttributeRequest:
               required:
               - "attribute"
@@ -8137,6 +8161,11 @@ Resources:
                 key:
                   type: "string"
                   description: "Attribute Key"
+                dataType:
+                  description: "Attribute Data type"
+                  $ref: "#/components/schemas/AttributeDataType"
+                  default: STRING
+
             AddAttributeResponse:
               type: "object"
               properties:
@@ -9214,6 +9243,35 @@ Resources:
                 message:
                   type: "string"
                   description: "Result message"
+            SetSitesSchemaRequest:
+              type: "object"
+              properties:
+                name:
+                  description: "Name of schema"
+                  type: "string"
+                attributes:
+                  $ref: "#/components/schemas/AddSchemaAttributes"
+            AddSchemaAttributes:
+              type: "object"
+              properties:
+                compositeKeys:
+                  type: "array"
+                  description: "List of Composite Keys"
+                  items:
+                    $ref: "#/components/schemas/AttributeSchemaCompositeKey"
+                required:
+                  type: "array"
+                  description: "List of Required Attributes"
+                  items:
+                    $ref: "#/components/schemas/AttributeSchemaRequired"
+                optional:
+                  type: "array"
+                  description: "List of Optional Attribute"
+                  items:
+                    $ref: "#/components/schemas/AttributeSchemaOptional"
+                allowAdditionalAttributes:
+                  type: "boolean"
+                  default: true
             AddTagSchemaRequest:
               type: "object"
               properties:
@@ -9300,11 +9358,36 @@ Resources:
                 allowAdditionalTags:
                   type: "boolean"
                   default: true
+            AttributeSchemaCompositeKey:
+              type: "object"
+              properties:
+                attributeKeys:
+                  type: "array"
+                  items:
+                    type: "string"
             TagSchemaCompositeKey:
               type: "object"
               properties:
                 key:
                   type: "array"
+                  items:
+                    type: "string"
+            AttributeSchemaRequired:
+              type: "object"
+              properties:
+                attributeKey:
+                  type: "string"
+                defaultValue:
+                  type: "string"
+                  description: "Default value"
+                defaultValues:
+                  type: "array"
+                  description: "Default values"
+                  items:
+                    type: "string"
+                allowedValues:
+                  type: "array"
+                  description: "Only valid string values"
                   items:
                     type: "string"
             TagSchemaRequired:
@@ -9320,6 +9403,24 @@ Resources:
                 allowedValues:
                   type: "array"
                   description: "Only valid values"
+                  items:
+                    type: "string"
+            AttributeSchemaOptional:
+              type: "object"
+              properties:
+                attributeKey:
+                  type: "string"
+                defaultValue:
+                  type: "string"
+                  description: "Default value"
+                defaultValues:
+                  type: "array"
+                  description: "Default values"
+                  items:
+                    type: "string"
+                allowedValues:
+                  type: "array"
+                  description: "Only valid string values"
                   items:
                     type: "string"
             TagSchemaOptional:

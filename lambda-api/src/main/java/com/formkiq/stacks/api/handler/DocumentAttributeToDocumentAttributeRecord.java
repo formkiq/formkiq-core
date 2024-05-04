@@ -97,7 +97,7 @@ public class DocumentAttributeToDocumentAttributeRecord
     }
 
     if (!used) {
-      addToList(c, DocumentAttributeValueType.NO_VALUE, key, null, null, null);
+      addToList(c, DocumentAttributeValueType.KEY_ONLY, key, null, null, null);
     }
 
     return c;

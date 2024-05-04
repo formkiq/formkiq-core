@@ -24,15 +24,15 @@
 package com.formkiq.stacks.dynamodb.attributes;
 
 /**
- * Attribute Search Type.
+ * Attribute Data Type.
  */
-public enum DocumentAttributeValueType {
-  /** Boolean. */
+public enum AttributeDataType {
+  /** {@link Boolean}. */
   BOOLEAN,
   /** Key Only. */
   KEY_ONLY,
   /** Number. */
   NUMBER,
-  /** String. */
+  /** {@link String}. */
   STRING;
 }

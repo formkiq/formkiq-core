@@ -123,6 +123,7 @@ import com.formkiq.stacks.dynamodb.apimodels.MatchDocumentTag;
 import com.formkiq.stacks.dynamodb.apimodels.UpdateMatchingDocumentTagsRequest;
 import com.formkiq.stacks.dynamodb.apimodels.UpdateMatchingDocumentTagsRequestMatch;
 import com.formkiq.stacks.dynamodb.apimodels.UpdateMatchingDocumentTagsRequestUpdate;
+import com.formkiq.stacks.dynamodb.attributes.AttributeDataType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
@@ -1540,7 +1541,7 @@ public class StagingS3CreateTest implements DbKeys {
     final int limit = 10;
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
-      attributeService.addAttribute(siteId, "security");
+      attributeService.addAttribute(siteId, "security", AttributeDataType.STRING);
 
       String documentId = UUID.randomUUID().toString();
       String json =

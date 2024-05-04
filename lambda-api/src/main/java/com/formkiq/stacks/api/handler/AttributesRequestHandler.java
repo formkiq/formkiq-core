@@ -39,6 +39,7 @@ import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.services.CacheService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.stacks.dynamodb.attributes.AttributeDataType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.validation.ValidationError;
@@ -92,7 +93,8 @@ public class AttributesRequestHandler
 
     AddAttributeRequest addAttribute = fromBodyToObject(event, AddAttributeRequest.class);
     String key = addAttribute.getAttribute().getKey();
-    Collection<ValidationError> errors = service.addAttribute(siteId, key);
+    AttributeDataType dataType = addAttribute.getAttribute().getDataType();
+    Collection<ValidationError> errors = service.addAttribute(siteId, key, dataType);
 
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
