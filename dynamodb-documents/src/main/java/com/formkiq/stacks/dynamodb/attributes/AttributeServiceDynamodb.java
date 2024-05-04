@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.BatchGetConfig;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
@@ -69,7 +70,8 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
   }
 
   @Override
-  public Collection<ValidationError> addAttribute(final String siteId, final String key) {
+  public Collection<ValidationError> addAttribute(final String siteId, final String key,
+      final AttributeDataType dataType) {
 
     Collection<ValidationError> errors = Collections.emptyList();
 
@@ -78,7 +80,8 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
     } else {
 
       AttributeRecord a =
-          new AttributeRecord().documentId(key).key(key).type(AttributeType.STANDARD);
+          new AttributeRecord().documentId(key).key(key).type(AttributeType.STANDARD)
+              .dataType(dataType != null ? dataType : AttributeDataType.STRING);
       this.db.putItem(a.getAttributes(siteId));
     }
 
@@ -127,5 +130,19 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
     }
 
     return r;
+  }
+
+  @Override
+  public Map<String, AttributeRecord> getAttributes(final String siteId,
+      final Collection<String> attributeKeys) {
+
+    List<Map<String, AttributeValue>> keys =
+        attributeKeys.stream().map(key -> new AttributeRecord().documentId(key))
+            .map(a -> Map.of(PK, a.fromS(a.pk(siteId)), SK, a.fromS(a.sk()))).toList();
+
+    List<Map<String, AttributeValue>> values = this.db.getBatch(new BatchGetConfig(), keys);
+
+    return values.stream().map(a -> new AttributeRecord().getFromAttributes(siteId, a))
+        .collect(Collectors.toMap(a -> a.getKey(), a -> a));
   }
 }

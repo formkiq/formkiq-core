@@ -32,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,6 +48,7 @@ import com.formkiq.client.model.AddDocumentAttributesRequest;
 import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AddDocumentUploadRequest;
 import com.formkiq.client.model.Attribute;
+import com.formkiq.client.model.AttributeDataType;
 import com.formkiq.client.model.AttributeType;
 import com.formkiq.client.model.DeleteResponse;
 import com.formkiq.client.model.DocumentAttribute;
@@ -73,8 +75,15 @@ import joptsimple.internal.Strings;
 @ExtendWith(LocalStackExtension.class)
 public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
-  private void addAttribute(final String siteId, final String key) throws ApiException {
-    AddAttributeRequest req = new AddAttributeRequest().attribute(new AddAttribute().key(key));
+  /** Data Type Map. */
+  private Map<String, AttributeDataType> dataTypes =
+      Map.of("other", AttributeDataType.NUMBER, "flag", AttributeDataType.BOOLEAN, "keyonly",
+          AttributeDataType.KEY_ONLY, "nums", AttributeDataType.NUMBER);
+
+  private void addAttribute(final String siteId, final String key, final AttributeDataType dataType)
+      throws ApiException {
+    AddAttributeRequest req =
+        new AddAttributeRequest().attribute(new AddAttribute().key(key).dataType(dataType));
     this.attributesApi.addAttribute(req, siteId);
   }
 
@@ -199,7 +208,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
       setBearerToken(siteId);
-      addAttribute(siteId, key);
+      addAttribute(siteId, key, null);
 
       // when
       String documentId = addDocument(siteId, key, "confidential", null, null);
@@ -233,7 +242,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
       setBearerToken(siteId);
-      addAttribute(siteId, key);
+      addAttribute(siteId, key, null);
 
       // when
       try {
@@ -343,7 +352,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
       setBearerToken(siteId);
-      addAttribute(siteId, key);
+      addAttribute(siteId, key, null);
 
       // when
       String documentId0 = addDocumentAttribute(siteId, key, "confidential", null, null);
@@ -392,7 +401,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
       setBearerToken(siteId);
-      addAttribute(siteId, key);
+      addAttribute(siteId, key, AttributeDataType.BOOLEAN);
 
       // when
       String documentId = addDocumentAttribute(siteId, key, null, Boolean.TRUE, null);
@@ -438,16 +447,11 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
         final String key = "security" + UUID.randomUUID();
 
-        addAttribute(siteId, key);
-
-        // AddDocumentUploadRequest docReq = new AddDocumentUploadRequest().addAttributesItem(
-        // new AddDocumentAttribute().key(key).numberValue(new BigDecimal(numberValue)));
+        addAttribute(siteId, key, AttributeDataType.NUMBER);
 
         // when
         String documentId =
             addDocumentAttribute(siteId, key, null, null, new BigDecimal(numberValue));
-        // String documentId =
-        // this.documentsApi.addDocumentUpload(docReq, siteId, null, null, null).getDocumentId();
 
         // then
         DocumentSearchAttribute attribute = new DocumentSearchAttribute().key(key);
@@ -488,7 +492,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
       setBearerToken(siteId);
-      addAttribute(siteId, key);
+      addAttribute(siteId, key, null);
 
       AddDocumentUploadRequest docReq =
           new AddDocumentUploadRequest().addAttributesItem(new AddDocumentAttribute().key(key)
@@ -540,7 +544,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
       setBearerToken(siteId);
-      addAttribute(siteId, key);
+      addAttribute(siteId, key, AttributeDataType.NUMBER);
 
       AddDocumentUploadRequest docReq =
           new AddDocumentUploadRequest().addAttributesItem(new AddDocumentAttribute().key(key)
@@ -594,7 +598,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
       setBearerToken(siteId);
-      addAttribute(siteId, key);
+      addAttribute(siteId, key, null);
 
       // when
       final String doc0 = addDocumentAttribute(siteId, key, "2024-01-01", null, null);
@@ -656,7 +660,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
       setBearerToken(siteId);
-      addAttribute(siteId, key);
+      addAttribute(siteId, key, null);
 
       // when
       final String documentId0 = addDocumentAttribute(siteId, key, "2024-01-01", null, null);
@@ -711,7 +715,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       setBearerToken(siteId);
 
       for (String attribute : Arrays.asList(key, "anotherkey")) {
-        addAttribute(siteId, attribute);
+        addAttribute(siteId, attribute, null);
       }
 
       final String doc0 = addDocumentAttribute(siteId, key, "confidential", null, null);
@@ -759,7 +763,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       setBearerToken(siteId);
 
       for (String attribute : Arrays.asList(key, "playerId", "category")) {
-        addAttribute(siteId, attribute);
+        addAttribute(siteId, attribute, null);
       }
 
       AddDocumentUploadRequest docReq = new AddDocumentUploadRequest()
@@ -857,13 +861,13 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
    * @throws ApiException ApiException
    */
   @Test
-  public void testGetDocumentAttribute06() throws ApiException {
+  public void testGetDocumentAttribute02() throws ApiException {
     // given
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
       setBearerToken(siteId);
       for (String a : Arrays.asList("security", "other", "flag", "keyonly", "strings", "nums")) {
-        addAttribute(siteId, a);
+        addAttribute(siteId, a, this.dataTypes.get(a));
       }
 
       // when
@@ -939,7 +943,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       setBearerToken(siteId);
       for (String attribute : Arrays.asList(key, "other", "flag", "keyonly", "strings", "nums")) {
-        addAttribute(siteId, attribute);
+        addAttribute(siteId, attribute, this.dataTypes.get(attribute));
       }
 
       String documentId = addDocumentAttribute(siteId, key, "confidential", null, null);
@@ -1012,9 +1016,9 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
       setBearerToken(siteId);
-      for (String attribute : Arrays.asList(key, key + "!")) {
-        addAttribute(siteId, attribute);
-      }
+
+      addAttribute(siteId, key, AttributeDataType.STRING);
+      addAttribute(siteId, key + "!", AttributeDataType.BOOLEAN);
 
       String documentId = addDocumentAttribute(siteId, null, null, null, null);
 
@@ -1066,7 +1070,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       setBearerToken(siteId);
       for (String attribute : Arrays.asList(key)) {
-        addAttribute(siteId, attribute);
+        addAttribute(siteId, attribute, null);
       }
 
       String documentId = addDocumentAttribute(siteId, key, "555", null, null);
@@ -1128,7 +1132,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       setBearerToken(siteId);
       for (String a : Arrays.asList("security", "strings", "nums")) {
-        addAttribute(siteId, a);
+        addAttribute(siteId, a, this.dataTypes.get(a));
       }
 
       // when
@@ -1213,7 +1217,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       setBearerToken(siteId);
       for (String a : Arrays.asList("security", "strings", "nums")) {
-        addAttribute(siteId, a);
+        addAttribute(siteId, a, null);
       }
 
       String documentId = addDocumentAttribute(siteId, "security", "confidential", null, null);

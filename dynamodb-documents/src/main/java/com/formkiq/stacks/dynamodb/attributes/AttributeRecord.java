@@ -41,14 +41,13 @@ public class AttributeRecord implements DynamodbRecord<AttributeRecord> {
 
   /** Attribute constant. */
   public static final String ATTR = "attr#";
+  /** {@link AttributeDataType}. */
+  private AttributeDataType dataType;
   /** Queue Document Id. */
-  @Reflectable
   private String documentId;
   /** Key of Attribute. */
-  @Reflectable
   private String key;
   /** Type of Attribute. */
-  @Reflectable
   private AttributeType type;
 
   /**
@@ -56,6 +55,17 @@ public class AttributeRecord implements DynamodbRecord<AttributeRecord> {
    */
   public AttributeRecord() {
 
+  }
+
+  /**
+   * Set {@link AttributeDataType}.
+   * 
+   * @param attributeDataType {@link AttributeDataType}
+   * @return {@link AttributeRecord}
+   */
+  public AttributeRecord dataType(final AttributeDataType attributeDataType) {
+    this.dataType = attributeDataType;
+    return this;
   }
 
   /**
@@ -84,8 +94,17 @@ public class AttributeRecord implements DynamodbRecord<AttributeRecord> {
 
   @Override
   public Map<String, AttributeValue> getDataAttributes() {
-    return Map.of("documentId", fromS(this.documentId), "type", fromS(this.type.name()), "key",
-        fromS(this.key));
+    return Map.of("documentId", fromS(this.documentId), "dataType", fromS(this.dataType.name()),
+        "type", fromS(this.type.name()), "key", fromS(this.key));
+  }
+
+  /**
+   * Get {@link AttributeDataType}.
+   * 
+   * @return {@link AttributeDataType}
+   */
+  public AttributeDataType getDataType() {
+    return this.dataType;
   }
 
   /**

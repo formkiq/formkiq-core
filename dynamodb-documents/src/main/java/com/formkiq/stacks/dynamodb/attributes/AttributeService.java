@@ -24,6 +24,7 @@
 package com.formkiq.stacks.dynamodb.attributes;
 
 import java.util.Collection;
+import java.util.Map;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.validation.ValidationError;
@@ -38,9 +39,10 @@ public interface AttributeService {
    * 
    * @param siteId {@link String}
    * @param key {@link String}
+   * @param dataType {@link AttributeDataType}
    * @return {@link Collection} {@link ValidationError}
    */
-  Collection<ValidationError> addAttribute(String siteId, String key);
+  Collection<ValidationError> addAttribute(String siteId, String key, AttributeDataType dataType);
 
   /**
    * Delete Attribute.
@@ -70,4 +72,13 @@ public interface AttributeService {
    * @return {@link AttributeRecord}
    */
   AttributeRecord getAttribute(String siteId, String key);
+
+  /**
+   * Get {@link AttributeRecord} by {@link Map}.
+   * 
+   * @param siteId {@link String}
+   * @param attributeKeys {@link Collection} {@link String}
+   * @return {@link AttributeRecord}
+   */
+  Map<String, AttributeRecord> getAttributes(String siteId, Collection<String> attributeKeys);
 }

@@ -273,7 +273,7 @@ public class DocumentAttributeRecord implements DynamodbRecord<DocumentAttribute
         sk += formatDouble(this.numberValue);
         break;
       }
-      case NO_VALUE: {
+      case KEY_ONLY: {
         break;
       }
       default:
@@ -301,7 +301,7 @@ public class DocumentAttributeRecord implements DynamodbRecord<DocumentAttribute
         val = this.booleanValue.toString();
         break;
       }
-      case NO_VALUE: {
+      case KEY_ONLY: {
         val = "#";
         break;
       }
@@ -343,7 +343,7 @@ public class DocumentAttributeRecord implements DynamodbRecord<DocumentAttribute
    * Update Value Type.
    */
   public void updateValueType() {
-    this.valueType = DocumentAttributeValueType.NO_VALUE;
+    this.valueType = DocumentAttributeValueType.KEY_ONLY;
 
     if (!Strings.isEmpty(this.stringValue)) {
       this.valueType = DocumentAttributeValueType.STRING;
