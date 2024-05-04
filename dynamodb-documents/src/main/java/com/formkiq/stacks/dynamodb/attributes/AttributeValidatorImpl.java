@@ -85,19 +85,8 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
       final Collection<DocumentAttributeRecord> searchAttributes,
       final Collection<ValidationError> errors) {
 
-    List<Map<String, AttributeValue>> keys = searchAttributes.stream().map(a -> {
-      AttributeRecord r = new AttributeRecord().documentId(a.getKey());
-      return Map.of(PK, r.fromS(r.pk(siteId)), SK, r.fromS(r.sk()));
-    }).distinct().toList();
-
-    BatchGetConfig config = new BatchGetConfig().projectionExpression("PK,SK,#key,dataType")
-        .expressionAttributeNames(Map.of("#key", "key"));
-
-    List<Map<String, AttributeValue>> batch = this.db.getBatch(config, keys);
-    Map<String, AttributeDataType> attributesMap = batch.stream()
-        .map(a -> Map.of(a.get("key").s(), AttributeDataType.valueOf(a.get("dataType").s())))
-        .flatMap(m -> m.entrySet().stream())
-        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    List<String> attributeKeys = searchAttributes.stream().map(a -> a.getKey()).toList();
+    Map<String, AttributeDataType> attributesMap = getAttributeDataType(siteId, attributeKeys);
 
     for (DocumentAttributeRecord da : searchAttributes) {
 
@@ -159,5 +148,26 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
         errors.add(new ValidationErrorImpl().error("'key' is missing from attribute"));
       }
     }
+  }
+
+  @Override
+  public Map<String, AttributeDataType> getAttributeDataType(final String siteId,
+      final Collection<String> attributeKeys) {
+
+    List<Map<String, AttributeValue>> keys = attributeKeys.stream().map(key -> {
+      AttributeRecord r = new AttributeRecord().documentId(key);
+      return Map.of(PK, r.fromS(r.pk(siteId)), SK, r.fromS(r.sk()));
+    }).distinct().toList();
+
+    BatchGetConfig config = new BatchGetConfig().projectionExpression("PK,SK,#key,dataType")
+        .expressionAttributeNames(Map.of("#key", "key"));
+
+    List<Map<String, AttributeValue>> batch = this.db.getBatch(config, keys);
+    Map<String, AttributeDataType> attributesMap = batch.stream()
+        .map(a -> Map.of(a.get("key").s(), AttributeDataType.valueOf(a.get("dataType").s())))
+        .flatMap(m -> m.entrySet().stream())
+        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+    return attributesMap;
   }
 }

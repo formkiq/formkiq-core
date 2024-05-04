@@ -24,12 +24,23 @@
 package com.formkiq.stacks.dynamodb.attributes;
 
 import java.util.Collection;
+import java.util.Map;
 import com.formkiq.validation.ValidationError;
 
 /**
  * Attribute Validator.
  */
 public interface AttributeValidator {
+
+  /**
+   * Get Attribute Data Type.
+   * 
+   * @param siteId {@link String}
+   * @param attributeKeys {@link Collection} {@link String}
+   * @return {@link Map} {@link String} {@link AttributeDataType}
+   */
+  Map<String, AttributeDataType> getAttributeDataType(String siteId,
+      Collection<String> attributeKeys);
 
   /**
    * Validate {@link DocumentAttributeRecord}.
