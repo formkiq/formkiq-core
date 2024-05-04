@@ -31,9 +31,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.BatchGetConfig;
 import com.formkiq.aws.dynamodb.DbKeys;
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
-import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.PaginationToAttributeValue;
@@ -56,17 +54,11 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
   /**
    * constructor.
    * 
-   * @param connection {@link DynamoDbConnectionBuilder}
-   * @param documentsTable {@link String}
+   * @param dbService {@link DynamoDbService}
+   * 
    */
-  public AttributeServiceDynamodb(final DynamoDbConnectionBuilder connection,
-      final String documentsTable) {
-
-    if (documentsTable == null) {
-      throw new IllegalArgumentException("'documentsTable' is null");
-    }
-
-    this.db = new DynamoDbServiceImpl(connection, documentsTable);
+  public AttributeServiceDynamodb(final DynamoDbService dbService) {
+    this.db = dbService;
   }
 
   @Override

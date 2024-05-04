@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb.attributes;
+package com.formkiq.stacks.dynamodb.schemas;
 
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -29,24 +29,24 @@ import com.formkiq.module.lambdaservices.AwsServiceExtension;
 
 /**
  * 
- * {@link AwsServiceExtension} for {@link AttributeService}.
+ * {@link AwsServiceExtension} for {@link SchemaService}.
  *
  */
-public class AttributeServiceExtension implements AwsServiceExtension<AttributeService> {
+public class SchemaServiceExtension implements AwsServiceExtension<SchemaService> {
 
-  /** {@link AttributeService}. */
-  private AttributeService service;
+  /** {@link SchemaService}. */
+  private SchemaService service;
 
   /**
    * constructor.
    */
-  public AttributeServiceExtension() {}
+  public SchemaServiceExtension() {}
 
   @Override
-  public AttributeService loadService(final AwsServiceCache awsServiceCache) {
+  public SchemaService loadService(final AwsServiceCache awsServiceCache) {
     if (this.service == null) {
       DynamoDbService db = awsServiceCache.getExtension(DynamoDbService.class);
-      this.service = new AttributeServiceDynamodb(db);
+      this.service = new SchemaServiceDynamodb(db);
     }
 
     return this.service;

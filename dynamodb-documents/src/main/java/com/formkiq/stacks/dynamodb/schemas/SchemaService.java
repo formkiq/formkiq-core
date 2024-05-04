@@ -21,34 +21,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb.attributes;
+package com.formkiq.stacks.dynamodb.schemas;
 
-import com.formkiq.aws.dynamodb.DynamoDbService;
-import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.module.lambdaservices.AwsServiceExtension;
+import java.util.Collection;
+import com.formkiq.validation.ValidationError;
 
 /**
- * 
- * {@link AwsServiceExtension} for {@link AttributeService}.
- *
+ * Services for Schema.
  */
-public class AttributeServiceExtension implements AwsServiceExtension<AttributeService> {
-
-  /** {@link AttributeService}. */
-  private AttributeService service;
+public interface SchemaService {
 
   /**
-   * constructor.
+   * Get Sites Schema.
+   * 
+   * @param siteId {@link String}
+   * @return {@link SiteSchemasRecord}
    */
-  public AttributeServiceExtension() {}
+  SiteSchemasRecord getSitesSchema(String siteId);
 
-  @Override
-  public AttributeService loadService(final AwsServiceCache awsServiceCache) {
-    if (this.service == null) {
-      DynamoDbService db = awsServiceCache.getExtension(DynamoDbService.class);
-      this.service = new AttributeServiceDynamodb(db);
-    }
-
-    return this.service;
-  }
+  /**
+   * Set Sites Schema.
+   * 
+   * @param siteId {@link String}
+   * @param name {@link String}
+   * @param schemaJson {@link String}
+   * @param schema {@link Schema}
+   * @return {@link Collection} {@link ValidationError}
+   */
+  Collection<ValidationError> setSitesSchema(String siteId, String name, String schemaJson,
+      Schema schema);
 }

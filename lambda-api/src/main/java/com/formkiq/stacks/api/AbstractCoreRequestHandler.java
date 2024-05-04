@@ -117,6 +117,7 @@ import com.formkiq.stacks.api.handler.SearchFulltextRequestHandler;
 import com.formkiq.stacks.api.handler.SearchRequestHandler;
 import com.formkiq.stacks.api.handler.SitesOpenSearchIndexRequestHandler;
 import com.formkiq.stacks.api.handler.SitesRequestHandler;
+import com.formkiq.stacks.api.handler.SitesSchemaRequestHandler;
 import com.formkiq.stacks.api.handler.TagSchemasIdRequestHandler;
 import com.formkiq.stacks.api.handler.TagSchemasRequestHandler;
 import com.formkiq.stacks.api.handler.UpdateDocumentMatchingRequestHandler;
@@ -149,6 +150,8 @@ import com.formkiq.stacks.dynamodb.WebhooksService;
 import com.formkiq.stacks.dynamodb.WebhooksServiceExtension;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeServiceExtension;
+import com.formkiq.stacks.dynamodb.schemas.SchemaService;
+import com.formkiq.stacks.dynamodb.schemas.SchemaServiceExtension;
 
 /**
  * 
@@ -282,6 +285,8 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addUserActivitiesEndpoints();
     addRulesetsEndpoints();
     addDocumentAttributeEndpoints();
+
+    addRequestHandler(new SitesSchemaRequestHandler());
   }
 
   /**
@@ -348,6 +353,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     serviceCache.register(DynamoDbService.class, new DynamoDbServiceExtension());
     serviceCache.register(WebhooksService.class, new WebhooksServiceExtension());
     serviceCache.register(AttributeService.class, new AttributeServiceExtension());
+    serviceCache.register(SchemaService.class, new SchemaServiceExtension());
   }
 
   /** constructor. */

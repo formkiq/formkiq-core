@@ -44,6 +44,7 @@ import com.formkiq.client.api.DocumentTagsApi;
 import com.formkiq.client.api.DocumentWorkflowsApi;
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.api.RulesetsApi;
+import com.formkiq.client.api.SchemasApi;
 import com.formkiq.client.api.SystemManagementApi;
 import com.formkiq.client.api.UserActivitiesApi;
 import com.formkiq.client.invoker.ApiClient;
@@ -143,6 +144,8 @@ public abstract class AbstractApiClientRequestTest {
   protected AttributesApi attributesApi = new AttributesApi(this.client);
   /** {@link DocumentAttributesApi}. */
   protected DocumentAttributesApi documentAttributesApi = new DocumentAttributesApi(this.client);
+  /** {@link SchemasApi}. */
+  protected SchemasApi schemasApi = new SchemasApi(this.client);
 
   /**
    * Convert JSON to Object.

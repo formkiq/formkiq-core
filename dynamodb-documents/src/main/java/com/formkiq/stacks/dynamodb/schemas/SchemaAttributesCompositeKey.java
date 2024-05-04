@@ -21,34 +21,44 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb.attributes;
+package com.formkiq.stacks.dynamodb.schemas;
 
-import com.formkiq.aws.dynamodb.DynamoDbService;
-import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.module.lambdaservices.AwsServiceExtension;
+import java.util.List;
+import com.formkiq.graalvm.annotations.Reflectable;
 
 /**
- * 
- * {@link AwsServiceExtension} for {@link AttributeService}.
- *
+ * Schema Attributes Composite Key.
  */
-public class AttributeServiceExtension implements AwsServiceExtension<AttributeService> {
+@Reflectable
+public class SchemaAttributesCompositeKey {
 
-  /** {@link AttributeService}. */
-  private AttributeService service;
+  /** Attribute Keys. */
+  private List<String> attributeKeys;
 
   /**
    * constructor.
    */
-  public AttributeServiceExtension() {}
+  public SchemaAttributesCompositeKey() {
 
-  @Override
-  public AttributeService loadService(final AwsServiceCache awsServiceCache) {
-    if (this.service == null) {
-      DynamoDbService db = awsServiceCache.getExtension(DynamoDbService.class);
-      this.service = new AttributeServiceDynamodb(db);
-    }
+  }
 
-    return this.service;
+  /**
+   * Get Attribute Keys.
+   * 
+   * @return {@link List} {@link String}
+   */
+  public List<String> getAttributeKeys() {
+    return this.attributeKeys;
+  }
+
+  /**
+   * Set Attribute Keys.
+   * 
+   * @param compositeAttributeKeys {@link List} {@link String}
+   * @return {@link SchemaAttributesCompositeKey}
+   */
+  public SchemaAttributesCompositeKey attributeKeys(final List<String> compositeAttributeKeys) {
+    this.attributeKeys = compositeAttributeKeys;
+    return this;
   }
 }
