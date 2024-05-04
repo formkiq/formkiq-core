@@ -267,6 +267,35 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
           /sites/{siteId}/schema/document:
+            get:
+              operationId: GetSitesSchema
+              description: Gets Sites schema
+              summary: Get Sites Schema
+              tags:
+              - Schemas
+              parameters:
+              - $ref: '#/components/parameters/siteIdPathParam'
+              responses:
+                '200':
+                  description: "200 OK"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: "string"
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: "string"
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: "string"
+                  content:
+                    application/json:
+                      schema:
+                        "$ref": "#/components/schemas/GetSitesSchemaResponse"
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
             put:
               operationId: SetSitesSchema
               description: Sets Sites schema
@@ -9243,6 +9272,14 @@ Resources:
                 message:
                   type: "string"
                   description: "Result message"
+            GetSitesSchemaResponse:
+              type: "object"
+              properties:
+                name:
+                  description: "Name of schema"
+                  type: "string"
+                attributes:
+                  $ref: "#/components/schemas/SchemaAttributes"
             SetSitesSchemaRequest:
               type: "object"
               properties:
@@ -9250,8 +9287,8 @@ Resources:
                   description: "Name of schema"
                   type: "string"
                 attributes:
-                  $ref: "#/components/schemas/AddSchemaAttributes"
-            AddSchemaAttributes:
+                  $ref: "#/components/schemas/SchemaAttributes"
+            SchemaAttributes:
               type: "object"
               properties:
                 compositeKeys:

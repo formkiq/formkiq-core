@@ -21,34 +21,65 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb.attributes;
+package com.formkiq.stacks.dynamodb.schemas;
 
-import com.formkiq.aws.dynamodb.DynamoDbService;
-import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.module.lambdaservices.AwsServiceExtension;
+import com.formkiq.graalvm.annotations.Reflectable;
 
 /**
- * 
- * {@link AwsServiceExtension} for {@link AttributeService}.
- *
+ * Attributes Schema.
  */
-public class AttributeServiceExtension implements AwsServiceExtension<AttributeService> {
+@Reflectable
+public class Schema {
 
-  /** {@link AttributeService}. */
-  private AttributeService service;
+  /** {@link SchemaAttributes}. */
+  private SchemaAttributes attributes;
+  /** Schema Name. */
+  private String name;
 
   /**
    * constructor.
    */
-  public AttributeServiceExtension() {}
+  public Schema() {
 
-  @Override
-  public AttributeService loadService(final AwsServiceCache awsServiceCache) {
-    if (this.service == null) {
-      DynamoDbService db = awsServiceCache.getExtension(DynamoDbService.class);
-      this.service = new AttributeServiceDynamodb(db);
-    }
+  }
 
-    return this.service;
+  /**
+   * Set {@link SchemaAttributes}.
+   * 
+   * @param schemaAttributes {@link SchemaAttributes}
+   * @return {@link Schema}
+   */
+  public Schema attributes(final SchemaAttributes schemaAttributes) {
+    this.attributes = schemaAttributes;
+    return this;
+  }
+
+  /**
+   * Get {@link SchemaAttributes}.
+   * 
+   * @return {@link SchemaAttributes}
+   */
+  public SchemaAttributes getAttributes() {
+    return this.attributes;
+  }
+
+  /**
+   * Get Schema Name.
+   * 
+   * @return {@link String}
+   */
+  public String getName() {
+    return this.name;
+  }
+
+  /**
+   * Set Schema Name.
+   * 
+   * @param schemaName {@link String}
+   * @return {@link Schema}
+   */
+  public Schema name(final String schemaName) {
+    this.name = schemaName;
+    return this;
   }
 }
