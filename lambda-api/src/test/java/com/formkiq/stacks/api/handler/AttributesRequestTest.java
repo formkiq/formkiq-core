@@ -340,6 +340,114 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * Add numeric value to string attribute.
+   * 
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testAddDocumentAttribute06() throws ApiException {
+    // given
+    final String key = "security";
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+      addAttribute(siteId, key, AttributeDataType.STRING);
+
+      // when
+      try {
+        addDocument(siteId, key, null, null, new BigDecimal("100"));
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals("{\"errors\":[{\"key\":\"security\","
+            + "\"error\":\"attribute only support string value\"}]}", e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * Add string value to number attribute.
+   * 
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testAddDocumentAttribute07() throws ApiException {
+    // given
+    final String key = "security";
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+      addAttribute(siteId, key, AttributeDataType.NUMBER);
+
+      // when
+      try {
+        addDocument(siteId, key, "asd", null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals("{\"errors\":[{\"key\":\"security\","
+            + "\"error\":\"attribute only support number value\"}]}", e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * Add string value to boolean attribute.
+   * 
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testAddDocumentAttribute08() throws ApiException {
+    // given
+    final String key = "security";
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+      addAttribute(siteId, key, AttributeDataType.BOOLEAN);
+
+      // when
+      try {
+        addDocument(siteId, key, "asd", null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals("{\"errors\":[{\"key\":\"security\","
+            + "\"error\":\"attribute only support boolean value\"}]}", e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * Add string value to keys only attribute.
+   * 
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testAddDocumentAttribute09() throws ApiException {
+    // given
+    final String key = "security";
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+      addAttribute(siteId, key, AttributeDataType.KEY_ONLY);
+
+      // when
+      try {
+        addDocument(siteId, key, "asd", null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals("{\"errors\":[{\"key\":\"security\","
+            + "\"error\":\"attribute does not support a value\"}]}", e.getResponseBody());
+      }
+    }
+  }
+
+  /**
    * POST /documents/upload, POST /search attributes 'eq' stringValue.
    * 
    * @throws ApiException ApiException

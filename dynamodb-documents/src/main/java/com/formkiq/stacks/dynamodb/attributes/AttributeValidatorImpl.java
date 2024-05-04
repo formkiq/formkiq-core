@@ -145,7 +145,7 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
 
       if (!isKeyOnlyValues(a)) {
 
-        String errorMsg = "attribute only support boolean value";
+        String errorMsg = "attribute does not support a value";
         errors.add(new ValidationErrorImpl().key(a.getKey()).error(errorMsg));
       }
     }
