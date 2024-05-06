@@ -36,10 +36,6 @@ public class SchemaAttributesOptional {
   private List<String> allowedValues;
   /** Attribute Key. */
   private String attributeKey;
-  /** Default Value. */
-  private String defaultValue;
-  /** Default Values. */
-  private List<String> defaultValues;
 
   /**
    * constructor.
@@ -71,28 +67,6 @@ public class SchemaAttributesOptional {
   }
 
   /**
-   * Set Default Value.
-   * 
-   * @param requiredDefaultValue {@link String}
-   * @return {@link SchemaAttributesOptional}
-   */
-  public SchemaAttributesOptional defaultValue(final String requiredDefaultValue) {
-    this.defaultValue = requiredDefaultValue;
-    return this;
-  }
-
-  /**
-   * Set Default Values.
-   * 
-   * @param requiredDefaultValues {@link List} {@link String}
-   * @return {@link SchemaAttributesOptional}
-   */
-  public SchemaAttributesOptional defaultValues(final List<String> requiredDefaultValues) {
-    this.defaultValues = requiredDefaultValues;
-    return this;
-  }
-
-  /**
    * Get Allowed Values.
    * 
    * @return {@link List} {@link String}
@@ -108,23 +82,5 @@ public class SchemaAttributesOptional {
    */
   public String getAttributeKey() {
     return this.attributeKey;
-  }
-
-  /**
-   * Get Default Value.
-   * 
-   * @return {@link String}
-   */
-  public String getDefaultValue() {
-    return this.defaultValue;
-  }
-
-  /**
-   * Get Default Values.
-   * 
-   * @return {@link List} {@link String}
-   */
-  public List<String> getDefaultValues() {
-    return this.defaultValues;
   }
 }

@@ -35,7 +35,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
  * Site Schemas object.
  *
  */
-public class SiteSchemasRecord implements DynamodbRecord<SiteSchemasRecord> {
+public class SitesSchemaRecord implements DynamodbRecord<SitesSchemaRecord> {
 
   /** Name of Schema. */
   private String name;
@@ -45,7 +45,7 @@ public class SiteSchemasRecord implements DynamodbRecord<SiteSchemasRecord> {
   /**
    * constructor.
    */
-  public SiteSchemasRecord() {
+  public SitesSchemaRecord() {
 
   }
 
@@ -66,13 +66,13 @@ public class SiteSchemasRecord implements DynamodbRecord<SiteSchemasRecord> {
   }
 
   @Override
-  public SiteSchemasRecord getFromAttributes(final String siteId,
+  public SitesSchemaRecord getFromAttributes(final String siteId,
       final Map<String, AttributeValue> attrs) {
 
-    SiteSchemasRecord record = null;
+    SitesSchemaRecord record = null;
 
     if (!attrs.isEmpty()) {
-      record = new SiteSchemasRecord().name(ss(attrs, "name")).schema(ss(attrs, "schema"));
+      record = new SitesSchemaRecord().name(ss(attrs, "name")).schema(ss(attrs, "schema"));
     }
 
     return record;
@@ -100,9 +100,9 @@ public class SiteSchemasRecord implements DynamodbRecord<SiteSchemasRecord> {
    * Set Name.
    * 
    * @param schemaName {@link String}
-   * @return {@link SiteSchemasRecord}
+   * @return {@link SitesSchemaRecord}
    */
-  public SiteSchemasRecord name(final String schemaName) {
+  public SitesSchemaRecord name(final String schemaName) {
     this.name = schemaName;
     return this;
   }
@@ -126,9 +126,9 @@ public class SiteSchemasRecord implements DynamodbRecord<SiteSchemasRecord> {
    * Set Schema.
    * 
    * @param siteSchema {@link String}
-   * @return {@link SiteSchemasRecord}
+   * @return {@link SitesSchemaRecord}
    */
-  public SiteSchemasRecord schema(final String siteSchema) {
+  public SitesSchemaRecord schema(final String siteSchema) {
     this.schema = siteSchema;
     return this;
   }

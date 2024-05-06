@@ -216,23 +216,26 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
    * 
    * @param writeBuilder {@link WriteRequestBuilder}
    * @param siteId {@link String}
-   * @param searchAttributes {@link Collection} {@link DocumentAttributeRecord}
+   * @param documentId {@link String}
+   * @param documentAttributes {@link Collection} {@link DocumentAttributeRecord}
    * @throws ValidationException ValidationException
    */
   private void appendSearchAttributes(final WriteRequestBuilder writeBuilder, final String siteId,
-      final Collection<DocumentAttributeRecord> searchAttributes) throws ValidationException {
+      final String documentId, final Collection<DocumentAttributeRecord> documentAttributes)
+      throws ValidationException {
 
-    if (searchAttributes != null) {
+    if (documentAttributes != null) {
 
       AttributeValidator validator = new AttributeValidatorImpl(this.dbService);
-      Collection<ValidationError> errors = validator.validate(siteId, searchAttributes);
+      Collection<ValidationError> errors =
+          validator.validate(siteId, documentId, documentAttributes);
 
       if (!errors.isEmpty()) {
         throw new ValidationException(errors);
       }
 
       writeBuilder.appends(this.documentTableName,
-          searchAttributes.stream().map(a -> a.getAttributes(siteId)).toList());
+          documentAttributes.stream().map(a -> a.getAttributes(siteId)).toList());
     }
   }
 
@@ -1618,7 +1621,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
         .append(this.documentTableName, documentValues).appends(this.documentTableName, tagValues)
         .appends(this.documentTableName, folderIndex);
 
-    appendSearchAttributes(writeBuilder, siteId, attributes);
+    appendSearchAttributes(writeBuilder, siteId, document.getDocumentId(), attributes);
 
     if (hasDocumentChanged) {
       writeBuilder = writeBuilder.appends(documentVersionsTableName, Arrays.asList(previous));
@@ -1656,11 +1659,11 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
-  public void saveDocumentAttributes(final String siteId,
+  public void saveDocumentAttributes(final String siteId, final String documentId,
       final Collection<DocumentAttributeRecord> attributes) throws ValidationException {
 
     WriteRequestBuilder writeBuilder = new WriteRequestBuilder();
-    appendSearchAttributes(writeBuilder, siteId, attributes);
+    appendSearchAttributes(writeBuilder, siteId, documentId, attributes);
     writeBuilder.batchWriteItem(this.dbClient);
   }
 

@@ -24,7 +24,6 @@
 package com.formkiq.stacks.dynamodb.attributes;
 
 import java.util.Collection;
-import java.util.Map;
 import com.formkiq.validation.ValidationError;
 
 /**
@@ -33,22 +32,13 @@ import com.formkiq.validation.ValidationError;
 public interface AttributeValidator {
 
   /**
-   * Get Attribute Data Type.
-   * 
-   * @param siteId {@link String}
-   * @param attributeKeys {@link Collection} {@link String}
-   * @return {@link Map} {@link String} {@link AttributeDataType}
-   */
-  Map<String, AttributeDataType> getAttributeDataType(String siteId,
-      Collection<String> attributeKeys);
-
-  /**
    * Validate {@link DocumentAttributeRecord}.
    * 
    * @param siteId {@link String}
+   * @param documentId {@link String}
    * @param searchAttributes {@link Collection} {@link DocumentAttributeRecord}
    * @return {@link Collection} {@link ValidationError}
    */
-  Collection<ValidationError> validate(String siteId,
+  Collection<ValidationError> validate(String siteId, String documentId,
       Collection<DocumentAttributeRecord> searchAttributes);
 }

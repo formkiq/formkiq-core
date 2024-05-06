@@ -418,12 +418,12 @@ public class DocumentIdRequestHandler
       final DynamicDocumentItem item, final Collection<ValidationError> errors) {
 
     List<DynamicObject> list = item.getList("attributes");
-    Collection<DocumentAttributeRecord> searchAttributes =
+    Collection<DocumentAttributeRecord> documentAttributes =
         new DynamicObjectToAttributeRecord(item.getDocumentId()).apply(list);
 
     DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
     AttributeValidator validator = new AttributeValidatorImpl(db);
-    errors.addAll(validator.validate(siteId, searchAttributes));
+    errors.addAll(validator.validate(siteId, item.getDocumentId(), documentAttributes));
   }
 
   /**

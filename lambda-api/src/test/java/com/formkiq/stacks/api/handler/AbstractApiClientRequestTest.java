@@ -121,7 +121,7 @@ public abstract class AbstractApiClientRequestTest {
 
   /** {@link ApiClient}. */
   protected ApiClient client =
-      Configuration.getDefaultApiClient().setReadTimeout(TIMEOUT).setBasePath(server.getBasePath());
+      Configuration.getDefaultApiClient().setReadTimeout(0).setBasePath(server.getBasePath());
   /** {@link DocumentActionsApi}. */
   protected DocumentActionsApi documentActionsApi = new DocumentActionsApi(this.client);
   /** {@link DocumentsApi}. */

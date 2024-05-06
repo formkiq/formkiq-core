@@ -38,7 +38,7 @@ import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.schemas.Schema;
 import com.formkiq.stacks.dynamodb.schemas.SchemaService;
-import com.formkiq.stacks.dynamodb.schemas.SiteSchemasRecord;
+import com.formkiq.stacks.dynamodb.schemas.SitesSchemaRecord;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
 import com.google.gson.Gson;
@@ -57,7 +57,7 @@ public class SitesSchemaRequestHandler
 
     String siteId = authorization.getSiteId();
     SchemaService service = awsServices.getExtension(SchemaService.class);
-    SiteSchemasRecord record = service.getSitesSchema(siteId);
+    SitesSchemaRecord record = service.getSitesSchemaRecord(siteId);
 
     if (record == null) {
       throw new NotFoundException("Sites Schema not found");
