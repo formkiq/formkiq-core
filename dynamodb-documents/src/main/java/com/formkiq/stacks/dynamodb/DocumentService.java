@@ -473,11 +473,12 @@ public interface DocumentService extends DocumentTagLoader {
    * Save Document Attributes.
    * 
    * @param siteId {@link String}
+   * @param documentId {@link String}
    * @param attributes {@link Collection} {@link DocumentAttributeRecord}
    * @throws ValidationException ValidationException
    */
-  void saveDocumentAttributes(String siteId, Collection<DocumentAttributeRecord> attributes)
-      throws ValidationException;
+  void saveDocumentAttributes(String siteId, String documentId,
+      Collection<DocumentAttributeRecord> attributes) throws ValidationException;
 
   /**
    * Save Document Format.

@@ -124,7 +124,8 @@ public class AttributeRecord implements DynamodbRecord<AttributeRecord> {
 
     if (!attrs.isEmpty()) {
       record = new AttributeRecord().documentId(ss(attrs, "documentId")).key(ss(attrs, "key"))
-          .type(AttributeType.valueOf(ss(attrs, "type")));
+          .type(AttributeType.valueOf(ss(attrs, "type")))
+          .dataType(AttributeDataType.valueOf(ss(attrs, "dataType")));
     }
 
     return record;

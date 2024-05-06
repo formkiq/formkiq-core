@@ -144,7 +144,7 @@ public class DocumentAttributeRequestHandler
         getDocumentAttributesFromRequest(event, documentId, attributeKey);
 
     documentService.deleteDocumentAttribute(siteId, documentId, attributeKey);
-    documentService.saveDocumentAttributes(siteId, documentAttributes);
+    documentService.saveDocumentAttributes(siteId, documentId, documentAttributes);
 
 
     ApiResponse resp = new ApiMessageResponse(

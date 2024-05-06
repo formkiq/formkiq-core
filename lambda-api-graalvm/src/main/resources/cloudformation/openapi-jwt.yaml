@@ -9441,14 +9441,6 @@ Resources:
               properties:
                 attributeKey:
                   type: "string"
-                defaultValue:
-                  type: "string"
-                  description: "Default value"
-                defaultValues:
-                  type: "array"
-                  description: "Default values"
-                  items:
-                    type: "string"
                 allowedValues:
                   type: "array"
                   description: "Only valid string values"

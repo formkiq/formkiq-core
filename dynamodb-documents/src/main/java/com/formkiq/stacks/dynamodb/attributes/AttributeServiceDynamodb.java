@@ -130,7 +130,7 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
 
     List<Map<String, AttributeValue>> keys =
         attributeKeys.stream().map(key -> new AttributeRecord().documentId(key))
-            .map(a -> Map.of(PK, a.fromS(a.pk(siteId)), SK, a.fromS(a.sk()))).toList();
+            .map(a -> Map.of(PK, a.fromS(a.pk(siteId)), SK, a.fromS(a.sk()))).distinct().toList();
 
     List<Map<String, AttributeValue>> values = this.db.getBatch(new BatchGetConfig(), keys);
 

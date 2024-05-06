@@ -32,10 +32,13 @@ import java.util.Map;
 import java.util.stream.Stream;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeDataType;
-import com.formkiq.stacks.dynamodb.attributes.AttributeValidator;
-import com.formkiq.stacks.dynamodb.attributes.AttributeValidatorImpl;
+import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
+import com.formkiq.stacks.dynamodb.attributes.AttributeService;
+import com.formkiq.stacks.dynamodb.attributes.AttributeServiceDynamodb;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
@@ -43,8 +46,8 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
  */
 public class SchemaServiceDynamodb implements SchemaService {
 
-  /** {@link AttributeValidator}. */
-  private AttributeValidator attributeValidation;
+  /** {@link AttributeService}. */
+  private AttributeService attributeService;
   /** {@link DynamoDbService}. */
   private DynamoDbService db;
 
@@ -56,12 +59,26 @@ public class SchemaServiceDynamodb implements SchemaService {
    */
   public SchemaServiceDynamodb(final DynamoDbService dbService) {
     this.db = dbService;
-    this.attributeValidation = new AttributeValidatorImpl(dbService);
+    this.attributeService = new AttributeServiceDynamodb(dbService);
   }
 
   @Override
-  public SiteSchemasRecord getSitesSchema(final String siteId) {
-    SiteSchemasRecord r = new SiteSchemasRecord();
+  public Schema getSitesSchema(final String siteId) {
+
+    Schema schema = null;
+    SitesSchemaRecord record = getSitesSchemaRecord(siteId);
+
+    if (record != null) {
+      Gson gson = new GsonBuilder().create();
+      schema = gson.fromJson(record.getSchema(), Schema.class);
+    }
+
+    return schema;
+  }
+
+  @Override
+  public SitesSchemaRecord getSitesSchemaRecord(final String siteId) {
+    SitesSchemaRecord r = new SitesSchemaRecord();
 
     Map<String, AttributeValue> attr = this.db.get(r.fromS(r.pk(siteId)), r.fromS(r.sk()));
 
@@ -80,17 +97,8 @@ public class SchemaServiceDynamodb implements SchemaService {
 
     Collection<ValidationError> errors = validate(siteId, name, schemaJson, schema);
 
-    // TODO validation
-    // Todo update all documents if changed
-
-    // If you add a new attribute to an existing schema, it would require a default attribute,
-    // maybe?
-    // default value
-    // If you want to remove an attribute on a schema that doesn't allow extra fields, I think it
-    // may need to just not allow for now. Later, it could try and do some painful check
-
     if (errors.isEmpty()) {
-      SiteSchemasRecord r = new SiteSchemasRecord().name(name).schema(schemaJson);
+      SitesSchemaRecord r = new SitesSchemaRecord().name(name).schema(schemaJson);
       this.db.putItem(r.getAttributes(siteId));
     }
 
@@ -138,10 +146,12 @@ public class SchemaServiceDynamodb implements SchemaService {
     List<String> attributeKeys =
         Stream.concat(requiredAttributes.stream(), optionalAttributes.stream()).toList();
 
-    Map<String, AttributeDataType> attributeDataTypes =
-        this.attributeValidation.getAttributeDataType(siteId, attributeKeys);
+    Map<String, AttributeRecord> attributeDataTypes =
+        this.attributeService.getAttributes(siteId, attributeKeys);
 
     validateAttributesExist(attributeDataTypes, attributeKeys, errors);
+
+    validateDefaultValues(schema, attributeDataTypes, errors);
 
     validateOverlap(requiredAttributes, optionalAttributes, errors);
 
@@ -150,12 +160,12 @@ public class SchemaServiceDynamodb implements SchemaService {
     return errors;
   }
 
-  private void validateAttributesExist(final Map<String, AttributeDataType> attributeDataTypes,
+  private void validateAttributesExist(final Map<String, AttributeRecord> attributes,
       final List<String> attributeKeys, final Collection<ValidationError> errors) {
 
     for (String attributeKey : attributeKeys) {
 
-      if (!attributeDataTypes.containsKey(attributeKey)) {
+      if (!attributes.containsKey(attributeKey)) {
         String errorMsg = "attribute '" + attributeKey + "' not found";
         errors.add(new ValidationErrorImpl().key(attributeKey).error(errorMsg));
       }
@@ -177,6 +187,31 @@ public class SchemaServiceDynamodb implements SchemaService {
       }
 
     });
+  }
+
+  private void validateDefaultValues(final Schema schema,
+      final Map<String, AttributeRecord> attributes, final Collection<ValidationError> errors) {
+
+    if (errors.isEmpty()) {
+      notNull(schema.getAttributes().getRequired()).forEach(a -> {
+
+        String attributeKey = a.getAttributeKey();
+        AttributeRecord ar = attributes.get(attributeKey);
+
+        if (AttributeDataType.KEY_ONLY.equals(ar.getDataType())) {
+
+          if (!notNull(a.getAllowedValues()).isEmpty()) {
+            String errorMsg = "attribute '" + attributeKey + "' does not allow allowed values";
+            errors.add(new ValidationErrorImpl().key(attributeKey).error(errorMsg));
+          }
+
+          if (!notNull(a.getDefaultValues()).isEmpty() || a.getDefaultValue() != null) {
+            String errorMsg = "attribute '" + attributeKey + "' does not allow default values";
+            errors.add(new ValidationErrorImpl().key(attributeKey).error(errorMsg));
+          }
+        }
+      });
+    }
   }
 
   private void validateOverlap(final List<String> requiredAttributes,

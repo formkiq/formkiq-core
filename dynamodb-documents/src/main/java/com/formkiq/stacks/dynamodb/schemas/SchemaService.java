@@ -35,9 +35,17 @@ public interface SchemaService {
    * Get Sites Schema.
    * 
    * @param siteId {@link String}
-   * @return {@link SiteSchemasRecord}
+   * @return {@link SitesSchemaRecord}
    */
-  SiteSchemasRecord getSitesSchema(String siteId);
+  Schema getSitesSchema(String siteId);
+
+  /**
+   * Get Sites Schema.
+   * 
+   * @param siteId {@link String}
+   * @return {@link SitesSchemaRecord}
+   */
+  SitesSchemaRecord getSitesSchemaRecord(String siteId);
 
   /**
    * Set Sites Schema.
