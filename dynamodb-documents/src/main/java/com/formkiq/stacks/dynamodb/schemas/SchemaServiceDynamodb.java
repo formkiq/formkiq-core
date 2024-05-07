@@ -108,6 +108,18 @@ public class SchemaServiceDynamodb implements SchemaService {
   private Collection<ValidationError> validate(final String siteId, final String name,
       final String schemaJson, final Schema schema) {
 
+    Collection<ValidationError> errors = validateSchema(schema, name, schemaJson);
+
+    if (errors.isEmpty()) {
+      errors = validateAttributes(siteId, schema);
+    }
+
+    return errors;
+  }
+
+  private Collection<ValidationError> validateSchema(final Schema schema, final String name,
+      final String schemaJson) {
+
     Collection<ValidationError> errors = new ArrayList<>();
 
     if (isEmpty(name)) {
@@ -126,36 +138,56 @@ public class SchemaServiceDynamodb implements SchemaService {
       }
     }
 
-    if (errors.isEmpty()) {
-      errors = validateAttributes(siteId, schema);
-    }
-
     return errors;
   }
 
   private Collection<ValidationError> validateAttributes(final String siteId, final Schema schema) {
 
+    Collection<ValidationError> errors = validateAttributes(schema.getAttributes());
+
+    if (errors.isEmpty()) {
+
+      List<String> requiredAttributes = notNull(schema.getAttributes().getRequired()).stream()
+          .map(a -> a.getAttributeKey()).toList();
+
+      List<String> optionalAttributes = notNull(schema.getAttributes().getOptional()).stream()
+          .map(a -> a.getAttributeKey()).toList();
+
+      List<String> attributeKeys =
+          Stream.concat(requiredAttributes.stream(), optionalAttributes.stream()).toList();
+
+      Map<String, AttributeRecord> attributeDataTypes =
+          this.attributeService.getAttributes(siteId, attributeKeys);
+
+      validateAttributesExist(attributeDataTypes, attributeKeys, errors);
+
+      validateDefaultValues(schema, attributeDataTypes, errors);
+
+      validateOverlap(requiredAttributes, optionalAttributes, errors);
+
+      validateCompositeAttributes(schema, attributeKeys, errors);
+    }
+
+    return errors;
+  }
+
+  private Collection<ValidationError> validateAttributes(final SchemaAttributes attributes) {
+
     Collection<ValidationError> errors = new ArrayList<>();
 
-    List<String> requiredAttributes = notNull(schema.getAttributes().getRequired()).stream()
-        .map(a -> a.getAttributeKey()).toList();
+    notNull(attributes.getRequired()).forEach(a -> {
+      if (isEmpty(a.getAttributeKey())) {
+        String errorMsg = "required attribute missing attributeKey'";
+        errors.add(new ValidationErrorImpl().error(errorMsg));
+      }
+    });
 
-    List<String> optionalAttributes = notNull(schema.getAttributes().getOptional()).stream()
-        .map(a -> a.getAttributeKey()).toList();
-
-    List<String> attributeKeys =
-        Stream.concat(requiredAttributes.stream(), optionalAttributes.stream()).toList();
-
-    Map<String, AttributeRecord> attributeDataTypes =
-        this.attributeService.getAttributes(siteId, attributeKeys);
-
-    validateAttributesExist(attributeDataTypes, attributeKeys, errors);
-
-    validateDefaultValues(schema, attributeDataTypes, errors);
-
-    validateOverlap(requiredAttributes, optionalAttributes, errors);
-
-    validateCompositeAttributes(schema, attributeKeys, errors);
+    notNull(attributes.getOptional()).forEach(a -> {
+      if (isEmpty(a.getAttributeKey())) {
+        String errorMsg = "optional attribute missing attributeKey'";
+        errors.add(new ValidationErrorImpl().error(errorMsg));
+      }
+    });
 
     return errors;
   }
@@ -175,18 +207,19 @@ public class SchemaServiceDynamodb implements SchemaService {
   private void validateCompositeAttributes(final Schema schema, final List<String> attributeKeys,
       final Collection<ValidationError> errors) {
 
-    notNull(schema.getAttributes().getCompositeKeys()).forEach(a -> {
+    if (!schema.getAttributes().isAllowAdditionalAttributes()) {
+      notNull(schema.getAttributes().getCompositeKeys()).forEach(a -> {
 
-      List<String> overlapAttributeKeys =
-          a.getAttributeKeys().stream().filter(item -> !attributeKeys.contains(item)).toList();
+        List<String> overlapAttributeKeys =
+            a.getAttributeKeys().stream().filter(item -> !attributeKeys.contains(item)).toList();
 
-      for (String attributeKey : overlapAttributeKeys) {
-        String errorMsg =
-            "attribute '" + attributeKey + "' not listed in required/optional attributes";
-        errors.add(new ValidationErrorImpl().key(attributeKey).error(errorMsg));
-      }
-
-    });
+        for (String attributeKey : overlapAttributeKeys) {
+          String errorMsg =
+              "attribute '" + attributeKey + "' not listed in required/optional attributes";
+          errors.add(new ValidationErrorImpl().key(attributeKey).error(errorMsg));
+        }
+      });
+    }
   }
 
   private void validateDefaultValues(final Schema schema,

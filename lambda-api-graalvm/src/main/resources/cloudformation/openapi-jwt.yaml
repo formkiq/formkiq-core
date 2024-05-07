@@ -6348,6 +6348,13 @@ Resources:
                 key:
                   type: "string"
                   description: "Tag key to search"
+            SearchRangeDataType:
+              type: string
+              description: Search Range Data Type
+              enum:
+                - STRING
+                - NUMBER
+              default: "STRING"
             DocumentSearchRange:
               required:
               - "start"
@@ -6360,6 +6367,8 @@ Resources:
                 end:
                   type: "string"
                   description: "End of range query"
+                type:
+                  $ref: "#/components/schemas/SearchRangeDataType"
             DocumentSearchTags:
               required:
               - "key"
@@ -8167,6 +8176,7 @@ Resources:
                 - NUMBER
                 - BOOLEAN
                 - KEY_ONLY
+                - COMPOSITE_STRING
                 
             AddAttributeRequest:
               required:

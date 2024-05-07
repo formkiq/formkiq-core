@@ -64,7 +64,9 @@ import com.formkiq.stacks.dynamodb.DocumentTagValidatorImpl;
 import com.formkiq.stacks.dynamodb.DynamicObjectToDocumentTag;
 import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
-import com.formkiq.stacks.dynamodb.attributes.DynamicObjectToAttributeRecord;
+import com.formkiq.stacks.dynamodb.attributes.DynamicObjectToDocumentAttributeRecord;
+import com.formkiq.stacks.dynamodb.schemas.Schema;
+import com.formkiq.stacks.dynamodb.schemas.SchemaService;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
 
@@ -291,10 +293,15 @@ public class DocumentsUploadRequestHandler
     }
 
     List<DynamicObject> list = item.getList("attributes");
-    Collection<DocumentAttributeRecord> searchAttributes =
-        new DynamicObjectToAttributeRecord(item.getDocumentId()).apply(list);
+
+    SchemaService schemaService = awsservice.getExtension(SchemaService.class);
 
     String siteId = authorization.getSiteId();
+    Schema schema = schemaService.getSitesSchema(siteId);
+
+    Collection<DocumentAttributeRecord> searchAttributes =
+        new DynamicObjectToDocumentAttributeRecord(item.getDocumentId(), schema).apply(list);
+
     return buildPresignedResponse(logger, event, awsservice, siteId, item, searchAttributes);
   }
 

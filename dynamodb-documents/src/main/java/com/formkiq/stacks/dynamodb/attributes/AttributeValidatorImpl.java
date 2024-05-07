@@ -153,15 +153,18 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
 
     for (DocumentAttributeRecord da : searchAttributes) {
 
-      if (!attributesMap.containsKey(da.getKey())) {
+      if (!DocumentAttributeValueType.COMPOSITE_STRING.equals(da.getValueType())) {
 
-        String errorMsg = "attribute '" + da.getKey() + "' not found";
-        errors.add(new ValidationErrorImpl().key(da.getKey()).error(errorMsg));
+        if (!attributesMap.containsKey(da.getKey())) {
 
-      } else {
+          String errorMsg = "attribute '" + da.getKey() + "' not found";
+          errors.add(new ValidationErrorImpl().key(da.getKey()).error(errorMsg));
 
-        AttributeDataType dataType = attributesMap.get(da.getKey()).getDataType();
-        validateDataType(da, dataType, errors);
+        } else {
+
+          AttributeDataType dataType = attributesMap.get(da.getKey()).getDataType();
+          validateDataType(da, dataType, errors);
+        }
       }
     }
   }
@@ -260,11 +263,13 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
 
       for (DocumentAttributeRecord documentAttribute : documentAttributes) {
 
-        String attributeKey = documentAttribute.getKey();
+        if (!DocumentAttributeValueType.COMPOSITE_STRING.equals(documentAttribute.getValueType())) {
+          String attributeKey = documentAttribute.getKey();
 
-        if (!requiredKeys.contains(attributeKey) && !optionalKeys.contains(attributeKey)) {
-          errors.add(new ValidationErrorImpl().key(attributeKey).error("attribute '" + attributeKey
-              + "' is not listed as a required or optional attribute"));
+          if (!requiredKeys.contains(attributeKey) && !optionalKeys.contains(attributeKey)) {
+            errors.add(new ValidationErrorImpl().key(attributeKey).error("attribute '"
+                + attributeKey + "' is not listed as a required or optional attribute"));
+          }
         }
       }
     }

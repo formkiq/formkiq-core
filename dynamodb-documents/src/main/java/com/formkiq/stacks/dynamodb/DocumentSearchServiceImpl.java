@@ -36,7 +36,9 @@ import static com.formkiq.aws.dynamodb.DbKeys.PREFIX_TAGS;
 import static com.formkiq.aws.dynamodb.DbKeys.SK;
 import static com.formkiq.aws.dynamodb.DbKeys.TAG_DELIMINATOR;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
+import static com.formkiq.aws.dynamodb.objects.Objects.last;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static com.formkiq.stacks.dynamodb.attributes.AttributeRecord.ATTR;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -200,6 +202,53 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
         item.put("responseAttributes", attributeFields);
       }
     }
+  }
+
+  private SearchAttributeCriteria createAttributesCriteria(final SearchQuery query)
+      throws ValidationException {
+
+    validateSearchAttributeCriteria(query.getAttributes());
+
+    String attributeKey =
+        query.getAttributes().stream().map(a -> a.getKey()).collect(Collectors.joining("#"));
+
+    String eq = query.getAttributes().stream().map(a -> a.getEq()).filter(s -> s != null)
+        .collect(Collectors.joining("#"));
+
+    SearchAttributeCriteria last = last(query.getAttributes());
+    String beginsWith = last.getBeginsWith();
+    SearchTagCriteriaRange range = last.getRange();
+
+    if (!isEmpty(beginsWith) && !isEmpty(eq)) {
+      beginsWith = eq + "#" + beginsWith;
+      eq = null;
+    }
+
+    if (range != null) {
+
+      boolean number = "number".equalsIgnoreCase(range.getType());
+
+      String start = range.getStart();
+      String end = range.getEnd();
+
+      if (number) {
+
+        try {
+          start = Objects.formatDouble(Double.valueOf(range.getStart()), Objects.DOUBLE_FORMAT);
+          end = Objects.formatDouble(Double.valueOf(range.getEnd()), Objects.DOUBLE_FORMAT);
+        } catch (NumberFormatException e) {
+          start = range.getStart();
+          end = range.getEnd();
+        }
+      }
+
+      range.start(eq + "#" + start);
+      range.end(eq + "#" + end);
+      eq = null;
+    }
+
+    return new SearchAttributeCriteria().key(attributeKey).eq(eq).beginsWith(beginsWith)
+        .range(range);
   }
 
   private QueryRequest createQueryRequest(final String index, final String expression,
@@ -489,19 +538,20 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
     values.put("key", attributeMatch.get("key").s());
 
     switch (type) {
-      case BOOLEAN: {
+      case BOOLEAN:
         values.put("booleanValue", attributeMatch.get("booleanValue").bool());
         break;
-      }
-      case NUMBER: {
+
+      case NUMBER:
         Double value = Double.valueOf(attributeMatch.get("numberValue").n());
         values.put("numberValue", value);
         break;
-      }
-      case STRING: {
+
+      case STRING:
+      case COMPOSITE_STRING:
         values.put("stringValue", attributeMatch.get("stringValue").s());
         break;
-      }
+
       default:
         break;
     }
@@ -597,9 +647,9 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
     } else if (query.getAttribute() != null || !notNull(query.getAttributes()).isEmpty()) {
 
       SearchAttributeCriteria search = query.getAttribute();
-      if (search == null) {
-        search = query.getAttributes().get(0);
-        // TODO handle multiple attributes search, check schemas
+
+      if (!notNull(query.getAttributes()).isEmpty()) {
+        search = createAttributesCriteria(query);
       }
 
       results = searchByAttribute(siteId, query, search, searchResponseFields, token, maxresults);
@@ -1129,6 +1179,32 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
 
       if (Strings.isEmpty(range.getEnd())) {
         errors.add(new ValidationErrorImpl().key("end").error("'end' is required"));
+      }
+    }
+
+    if (!errors.isEmpty()) {
+      throw new ValidationException(errors);
+    }
+  }
+
+  private void validateSearchAttributeCriteria(final List<SearchAttributeCriteria> attributes)
+      throws ValidationException {
+
+    List<ValidationError> errors = new ArrayList<>();
+
+    for (int i = 0; i < attributes.size() - 1; i++) {
+
+      SearchAttributeCriteria c = attributes.get(i);
+
+      if (!isEmpty(c.getBeginsWith())) {
+        errors.add(new ValidationErrorImpl().key("beginsWith")
+            .error("'beginsWith' can only be used on last attribute in list"));
+      } else if (c.getRange() != null) {
+        errors.add(new ValidationErrorImpl().key("range")
+            .error("'range' can only be used on last attribute in list"));
+      } else if (!notNull(c.getEqOr()).isEmpty()) {
+        errors.add(new ValidationErrorImpl().key("range")
+            .error("'eqOr' is not supported with composite keys"));
       }
     }
 

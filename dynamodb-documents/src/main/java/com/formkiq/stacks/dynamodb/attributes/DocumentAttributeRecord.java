@@ -261,21 +261,22 @@ public class DocumentAttributeRecord implements DynamodbRecord<DocumentAttribute
     String sk = ATTR + this.key + "#";
 
     switch (this.valueType) {
-      case STRING: {
+      case STRING:
+      case COMPOSITE_STRING:
         sk += this.stringValue;
         break;
-      }
-      case BOOLEAN: {
+
+      case BOOLEAN:
         sk += this.booleanValue;
         break;
-      }
-      case NUMBER: {
+
+      case NUMBER:
         sk += formatDouble(this.numberValue);
         break;
-      }
-      case KEY_ONLY: {
+
+      case KEY_ONLY:
         break;
-      }
+
       default:
         throw new IllegalArgumentException("Unexpected value: " + this.valueType);
     }
@@ -289,22 +290,23 @@ public class DocumentAttributeRecord implements DynamodbRecord<DocumentAttribute
     String val;
 
     switch (this.valueType) {
-      case STRING: {
+      case STRING:
+      case COMPOSITE_STRING:
         val = this.stringValue;
         break;
-      }
-      case NUMBER: {
+
+      case NUMBER:
         val = formatDouble(this.numberValue);
         break;
-      }
-      case BOOLEAN: {
+
+      case BOOLEAN:
         val = this.booleanValue.toString();
         break;
-      }
-      case KEY_ONLY: {
+
+      case KEY_ONLY:
         val = "#";
         break;
-      }
+
       default:
         throw new IllegalArgumentException("Unexpected value: " + this.valueType);
     }
