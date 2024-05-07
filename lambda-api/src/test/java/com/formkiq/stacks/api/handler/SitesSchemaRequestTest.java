@@ -869,6 +869,53 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * Search document by strict composite key using POST /documents/upload EQ with optional tag.
+   * 
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testSearchCompositeKey07() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "strings", null);
+      addAttribute(siteId, "category", null);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SchemaAttributes().allowAdditionalAttributes(Boolean.FALSE)
+              .addOptionalItem(new AttributeSchemaOptional().attributeKey("category"))
+              .addRequiredItem(new AttributeSchemaRequired().attributeKey("strings"))
+              .addCompositeKeysItem(new AttributeSchemaCompositeKey()
+                  .attributeKeys(Arrays.asList("strings", "category"))));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
+          .addAttributesItem(
+              new AddDocumentAttribute().key("category").stringValues(Arrays.asList("person")))
+          .addAttributesItem(
+              new AddDocumentAttribute().key("strings").stringValues(Arrays.asList("111", "222")));
+
+      // when
+      GetDocumentUrlResponse response =
+          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null);
+
+      // then
+      assertNotNull(response.getDocumentId());
+
+      // valid search
+      DocumentSearchRequest sreq0 = new DocumentSearchRequest().query(new DocumentSearch()
+          .addAttributesItem(new DocumentSearchAttribute().key("strings").eq("222"))
+          .addAttributesItem(new DocumentSearchAttribute().key("category").eq("person")));
+
+      DocumentSearchResponse response0 =
+          this.searchApi.documentSearch(sreq0, siteId, null, null, null);
+      assertEquals(1, response0.getDocuments().size());
+    }
+  }
+
+  /**
    * PUT /sites/{siteId}/schema/document with required attribute.
    *
    * @throws ApiException an error has occurred
