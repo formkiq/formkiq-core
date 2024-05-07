@@ -37,6 +37,17 @@ import org.junit.jupiter.api.Test;
 public class ObjectsTest {
 
   /**
+   * Format Integer.
+   */
+  @Test
+  public void testFormatInt() {
+    assertEquals("000001", Objects.formatInt(1, Objects.INT_ZERO_PAD_FORMAT));
+
+    final int num1 = 42345;
+    assertEquals("042345", Objects.formatInt(num1, Objects.INT_ZERO_PAD_FORMAT));
+  }
+
+  /**
    * Unit Test Paritioning.
    */
   @Test
@@ -92,5 +103,4 @@ public class ObjectsTest {
     assertEquals("[80, 81, 82, 83, 84, 85, 86]", result.get(i++).toString());
     assertEquals("[87, 88, 89, 90]", result.get(i++).toString());
   }
-
 }

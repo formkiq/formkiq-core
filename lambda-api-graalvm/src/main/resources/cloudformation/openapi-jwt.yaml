@@ -275,6 +275,7 @@ Resources:
               - Schemas
               parameters:
               - $ref: '#/components/parameters/siteIdPathParam'
+              - $ref: '#/components/parameters/versionParam'
               responses:
                 '200':
                   description: "200 OK"
@@ -5437,6 +5438,13 @@ Resources:
               required: true
               schema:
                 type: string
+            versionParam:
+              name: version
+              in: query
+              description: Version
+              required: false
+              schema:
+                type: string
             versionKeyParam:
               name: versionKey
               in: query
@@ -9284,6 +9292,9 @@ Resources:
                   type: "string"
                 attributes:
                   $ref: "#/components/schemas/SchemaAttributes"
+                version:
+                  description: "Version of schema"
+                  type: "integer"
             SetSitesSchemaRequest:
               type: "object"
               properties:

@@ -27,10 +27,12 @@ import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.QueryConfig;
 import com.formkiq.stacks.dynamodb.attributes.AttributeDataType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
@@ -40,6 +42,7 @@ import com.formkiq.validation.ValidationErrorImpl;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 
 /**
  * DynamoDB implementation for {@link SchemaService}.
@@ -63,10 +66,10 @@ public class SchemaServiceDynamodb implements SchemaService {
   }
 
   @Override
-  public Schema getSitesSchema(final String siteId) {
+  public Schema getSitesSchema(final String siteId, final Integer version) {
 
     Schema schema = null;
-    SitesSchemaRecord record = getSitesSchemaRecord(siteId);
+    SitesSchemaRecord record = getSitesSchemaRecord(siteId, version);
 
     if (record != null) {
       Gson gson = new GsonBuilder().create();
@@ -77,10 +80,23 @@ public class SchemaServiceDynamodb implements SchemaService {
   }
 
   @Override
-  public SitesSchemaRecord getSitesSchemaRecord(final String siteId) {
-    SitesSchemaRecord r = new SitesSchemaRecord();
+  public SitesSchemaRecord getSitesSchemaRecord(final String siteId, final Integer version) {
 
-    Map<String, AttributeValue> attr = this.db.get(r.fromS(r.pk(siteId)), r.fromS(r.sk()));
+    SitesSchemaRecord r = new SitesSchemaRecord();
+    AttributeValue pk = r.fromS(r.pk(siteId));
+    Map<String, AttributeValue> attr = null;
+
+    if (version == null) {
+      AttributeValue sk = r.fromS(SitesSchemaRecord.PREFIX_SK);
+      QueryConfig config = new QueryConfig().scanIndexForward(Boolean.FALSE);
+      QueryResponse response = this.db.queryBeginsWith(config, pk, sk, null, 1);
+      attr = response.items().size() == 1 ? response.items().get(0) : Collections.emptyMap();
+
+    } else {
+
+      r.version(version);
+      attr = this.db.get(r.fromS(r.pk(siteId)), r.fromS(r.sk()));
+    }
 
     if (!attr.isEmpty()) {
       r = r.getFromAttributes(siteId, attr);
@@ -98,7 +114,12 @@ public class SchemaServiceDynamodb implements SchemaService {
     Collection<ValidationError> errors = validate(siteId, name, schemaJson, schema);
 
     if (errors.isEmpty()) {
-      SitesSchemaRecord r = new SitesSchemaRecord().name(name).schema(schemaJson);
+
+      SitesSchemaRecord schemaRecord = getSitesSchemaRecord(siteId, null);
+      int version = schemaRecord != null ? schemaRecord.getVersion().intValue() + 1 : 1;
+
+      SitesSchemaRecord r =
+          new SitesSchemaRecord().name(name).schema(schemaJson).version(Integer.valueOf(version));
       this.db.putItem(r.getAttributes(siteId));
     }
 
