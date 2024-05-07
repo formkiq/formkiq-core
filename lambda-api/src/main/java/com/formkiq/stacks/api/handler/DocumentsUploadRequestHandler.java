@@ -297,7 +297,7 @@ public class DocumentsUploadRequestHandler
     SchemaService schemaService = awsservice.getExtension(SchemaService.class);
 
     String siteId = authorization.getSiteId();
-    Schema schema = schemaService.getSitesSchema(siteId);
+    Schema schema = schemaService.getSitesSchema(siteId, null);
 
     Collection<DocumentAttributeRecord> searchAttributes =
         new DynamicObjectToDocumentAttributeRecord(item.getDocumentId(), schema).apply(list);

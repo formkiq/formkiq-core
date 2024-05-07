@@ -230,7 +230,7 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
       final Collection<DocumentAttributeRecord> documentAttributes,
       final Collection<ValidationError> errors) {
 
-    Schema schema = this.schemaService.getSitesSchema(siteId);
+    Schema schema = this.schemaService.getSitesSchema(siteId, null);
 
     if (schema != null) {
 

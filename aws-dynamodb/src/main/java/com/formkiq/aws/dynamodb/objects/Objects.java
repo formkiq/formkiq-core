@@ -39,7 +39,6 @@ public class Objects {
   /** Double Format. */
   public static final String DOUBLE_FORMAT = "%020.4f";
 
-<<<<<<< HEAD
   /** Double Format. */
   public static final String INT_ZERO_PAD_FORMAT = "%06d";
 
@@ -124,6 +123,17 @@ public class Objects {
    */
   public static String formatDouble(final Double val, final String format) {
     return String.format(format, val);
+  }
+
+  /**
+   * Format {@link Double} using a {@link String} format.
+   * 
+   * @param val int
+   * @param format {@link String}
+   * @return {@link String}
+   */
+  public static String formatInt(final int val, final String format) {
+    return String.format(format, Integer.valueOf(val));
   }
 
   /**
