@@ -91,7 +91,7 @@ import com.formkiq.stacks.dynamodb.DynamicObjectToDocumentTag;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidator;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidatorImpl;
-import com.formkiq.stacks.dynamodb.attributes.DynamicObjectToAttributeRecord;
+import com.formkiq.stacks.dynamodb.attributes.DynamicObjectToDocumentAttributeRecord;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
@@ -419,7 +419,7 @@ public class DocumentIdRequestHandler
 
     List<DynamicObject> list = item.getList("attributes");
     Collection<DocumentAttributeRecord> documentAttributes =
-        new DynamicObjectToAttributeRecord(item.getDocumentId()).apply(list);
+        new DynamicObjectToDocumentAttributeRecord(item.getDocumentId(), null).apply(list);
 
     DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
     AttributeValidator validator = new AttributeValidatorImpl(db);

@@ -79,7 +79,7 @@ import com.formkiq.stacks.dynamodb.attributes.AttributeValidator;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidatorImpl;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
-import com.formkiq.stacks.dynamodb.attributes.DynamicObjectToAttributeRecord;
+import com.formkiq.stacks.dynamodb.attributes.DynamicObjectToDocumentAttributeRecord;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
@@ -1061,7 +1061,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   private Collection<DocumentAttributeRecord> getDocumentAttributes(final DynamicDocumentItem doc) {
     List<DynamicObject> list = doc.getList("attributes");
     Collection<DocumentAttributeRecord> attributes =
-        new DynamicObjectToAttributeRecord(doc.getDocumentId()).apply(list);
+        new DynamicObjectToDocumentAttributeRecord(doc.getDocumentId(), null).apply(list);
     return attributes;
   }
 

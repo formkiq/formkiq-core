@@ -29,6 +29,8 @@ package com.formkiq.stacks.dynamodb.attributes;
 public enum DocumentAttributeValueType {
   /** Boolean. */
   BOOLEAN,
+  /** Composite String. */
+  COMPOSITE_STRING,
   /** Key Only. */
   KEY_ONLY,
   /** Number. */
