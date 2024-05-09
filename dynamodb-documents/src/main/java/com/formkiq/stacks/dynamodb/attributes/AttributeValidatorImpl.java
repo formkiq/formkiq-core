@@ -26,7 +26,6 @@ package com.formkiq.stacks.dynamodb.attributes;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -62,42 +61,42 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
     this.schemaService = new SchemaServiceDynamodb(dbService);
   }
 
-  private Double convertToDouble(final String value) {
-    try {
-      return Double.valueOf(value);
-    } catch (NumberFormatException e) {
-      return null;
-    }
-  }
+  // private Double convertToDouble(final String value) {
+  // try {
+  // return Double.valueOf(value);
+  // } catch (NumberFormatException e) {
+  // return null;
+  // }
+  // }
 
-  private Collection<DocumentAttributeRecord> createRequiredAttributes(
-      final SchemaAttributesRequired attribute, final String documentId, final String attributeKey,
-      final AttributeDataType dataType) {
-
-    Collection<DocumentAttributeRecord> records = new ArrayList<>();
-
-    List<String> values =
-        !notNull(attribute.getDefaultValues()).isEmpty() ? attribute.getDefaultValues()
-            : Arrays.asList(attribute.getDefaultValue());
-
-    for (String value : values) {
-
-      String stringValue = AttributeDataType.STRING.equals(dataType) ? value : null;
-      Boolean booleanValue =
-          AttributeDataType.BOOLEAN.equals(dataType) ? Boolean.valueOf(value) : null;
-      Double numberValue =
-          AttributeDataType.NUMBER.equals(dataType) ? convertToDouble(value) : null;
-
-      DocumentAttributeRecord a =
-          new DocumentAttributeRecord().key(attributeKey).documentId(documentId)
-              .stringValue(stringValue).booleanValue(booleanValue).numberValue(numberValue);
-      a.updateValueType();
-
-      records.add(a);
-    }
-
-    return records;
-  }
+  // private Collection<DocumentAttributeRecord> createRequiredAttributes(
+  // final SchemaAttributesRequired attribute, final String documentId, final String attributeKey,
+  // final AttributeDataType dataType) {
+  //
+  // Collection<DocumentAttributeRecord> records = new ArrayList<>();
+  //
+  // List<String> values =
+  // !notNull(attribute.getDefaultValues()).isEmpty() ? attribute.getDefaultValues()
+  // : Arrays.asList(attribute.getDefaultValue());
+  //
+  // for (String value : values) {
+  //
+  // String stringValue = AttributeDataType.STRING.equals(dataType) ? value : null;
+  // Boolean booleanValue =
+  // AttributeDataType.BOOLEAN.equals(dataType) ? Boolean.valueOf(value) : null;
+  // Double numberValue =
+  // AttributeDataType.NUMBER.equals(dataType) ? convertToDouble(value) : null;
+  //
+  // DocumentAttributeRecord a =
+  // new DocumentAttributeRecord().key(attributeKey).documentId(documentId)
+  // .stringValue(stringValue).booleanValue(booleanValue).numberValue(numberValue);
+  // a.updateValueType();
+  //
+  // records.add(a);
+  // }
+  //
+  // return records;
+  // }
 
   private Map<String, AttributeRecord> getAttributeRecordMap(final String siteId,
       final Collection<DocumentAttributeRecord> searchAttributes) {
@@ -235,8 +234,8 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
     if (schema != null) {
 
       SchemaAttributes attributes = schema.getAttributes();
-      validateAndAddRequiredAttributes(siteId, documentId, attributes, attributesMap,
-          documentAttributes, errors);
+      validateRequiredAttributes(siteId, documentId, attributes, attributesMap, documentAttributes,
+          errors);
 
       if (errors.isEmpty()) {
         validateOptionalAttributes(siteId, documentId, attributes, attributesMap,
@@ -328,7 +327,7 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
     return matchString || matchBoolean || matchNumber;
   }
 
-  private void validateAndAddRequiredAttributes(final String siteId, final String documentId,
+  private void validateRequiredAttributes(final String siteId, final String documentId,
       final SchemaAttributes attributes, final Map<String, AttributeRecord> attributesMap,
       final Collection<DocumentAttributeRecord> documentAttributes,
       final Collection<ValidationError> errors) {
@@ -349,10 +348,10 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
 
       if (!isEmptyDefaultValue(missingAttribute) || AttributeDataType.KEY_ONLY.equals(dataType)) {
 
-        Collection<DocumentAttributeRecord> requiredAttributes =
-            createRequiredAttributes(missingAttribute, documentId, attributeKey, dataType);
+        // Collection<DocumentAttributeRecord> requiredAttributes =
+        // createRequiredAttributes(missingAttribute, documentId, attributeKey, dataType);
 
-        documentAttributes.addAll(requiredAttributes);
+        // documentAttributes.addAll(requiredAttributes);
 
       } else {
         errors.add(new ValidationErrorImpl().key(attributeKey)

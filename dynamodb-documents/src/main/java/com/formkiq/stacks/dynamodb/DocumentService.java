@@ -58,10 +58,11 @@ public interface DocumentService extends DocumentTagLoader {
    * Add Folder Index.
    * 
    * @param siteId {@link String}
-   * @param item {@link DocumentItem}
+   * @param path {@link String}
+   * @param userId {@link String}
    * @throws IOException IOException
    */
-  void addFolderIndex(String siteId, DocumentItem item) throws IOException;
+  void addFolderIndex(String siteId, String path, String userId) throws IOException;
 
   /**
    * Add Tags to {@link Collection} of Documents.
@@ -410,10 +411,10 @@ public interface DocumentService extends DocumentTagLoader {
    * Is Folder Exists.
    * 
    * @param siteId {@link String}
-   * @param item {@link DocumentItem}
+   * @param path {@link String}
    * @return boolean
    */
-  boolean isFolderExists(String siteId, DocumentItem item);
+  boolean isFolderExists(String siteId, String path);
 
   /**
    * Remove Tag from Document.

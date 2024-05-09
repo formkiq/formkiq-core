@@ -45,6 +45,8 @@ public enum MimeType {
   MIME_JPG("image/jpg"),
   /** application/json. */
   MIME_JSON("application/json"),
+  /** application/octet-stream. */
+  MIME_OCTET_STREAM("application/octet-stream"),
   /** application/pdf. */
   MIME_PDF("application/pdf"),
   /** text/plain. */

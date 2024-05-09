@@ -153,12 +153,13 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
-  public void addFolderIndex(final String siteId, final DocumentItem item) throws IOException {
+  public void addFolderIndex(final String siteId, final String path, final String userId)
+      throws IOException {
 
-    Date now = item.getLastModifiedDate();
+    Date now = new Date();
 
     List<FolderIndexRecordExtended> list =
-        this.folderIndexProcessor.get(siteId, item.getPath(), "folder", item.getUserId(), now);
+        this.folderIndexProcessor.get(siteId, path, "folder", userId, now);
     List<Map<String, AttributeValue>> folderIndex = list.stream().filter(r -> r.isChanged())
         .map(r -> r.record().getAttributes(siteId)).collect(Collectors.toList());
 
@@ -1233,11 +1234,11 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
-  public boolean isFolderExists(final String siteId, final DocumentItem item) {
+  public boolean isFolderExists(final String siteId, final String path) {
 
     boolean exists = false;
     try {
-      Map<String, String> map = this.folderIndexProcessor.getIndex(siteId, item.getPath());
+      Map<String, String> map = this.folderIndexProcessor.getIndex(siteId, path);
 
       if ("folder".equals(map.get("type"))) {
         GetItemResponse response =
@@ -1656,6 +1657,23 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     updatePathFromDeepLink(document);
     Map<String, AttributeValue> keys = keysDocument(siteId, document.getDocumentId());
     saveDocument(keys, siteId, document, tags, searchAttributes, options);
+
+    for (DocumentItem childDoc : notNull(document.getDocuments())) {
+
+      DocumentItem dockey = new DynamicDocumentItem(new HashMap<>());
+      dockey.setDocumentId(childDoc.getDocumentId());
+      dockey.setBelongsToDocumentId(document.getDocumentId());
+
+      // save child document
+      keys = keysDocument(siteId, document.getDocumentId(), Optional.of(childDoc.getDocumentId()));
+
+      SaveDocumentOptions childOptions =
+          new SaveDocumentOptions().saveDocumentDate(false).timeToLive(childDoc.getTimeToLive());
+      saveDocument(keys, siteId, dockey, null, null, childOptions);
+
+      keys = keysDocument(siteId, childDoc.getDocumentId(), Optional.empty());
+      saveDocument(keys, siteId, childDoc, null, null, childOptions);
+    }
   }
 
   @Override

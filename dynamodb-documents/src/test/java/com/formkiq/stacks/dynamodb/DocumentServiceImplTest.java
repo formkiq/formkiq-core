@@ -2204,7 +2204,7 @@ public class DocumentServiceImplTest implements DbKeys {
       service.saveDocument(siteId, item, null);
 
       // when
-      service.addFolderIndex(siteId, item);
+      service.addFolderIndex(siteId, item.getPath(), item.getUserId());
       SearchQuery q = new SearchQuery().meta(new SearchMetaCriteria().folder(""));
 
       // then

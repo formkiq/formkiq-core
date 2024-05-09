@@ -21,19 +21,35 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api.handler;
+package com.formkiq.stacks.api.validators;
 
-import java.util.Map;
-import java.util.function.Function;
-import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
+import java.util.List;
+import com.formkiq.aws.dynamodb.model.DocumentTag;
+import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.services.lambda.ApiAuthorization;
+import com.formkiq.aws.services.lambda.exceptions.BadException;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.stacks.api.handler.AddDocumentRequest;
+import com.formkiq.validation.ValidationException;
 
 /**
- * {@link Function} transform {@link AttributeRecord} to {@link Map}.
+ * Document Validator.
  */
-public class AttributeRecordToMap implements Function<AttributeRecord, Map<String, Object>> {
+public interface DocumentEntityValidator {
 
-  @Override
-  public Map<String, Object> apply(final AttributeRecord a) {
-    return Map.of("key", a.getKey(), "type", a.getType().name());
-  }
+  /**
+   * Valiate {@link AddDocumentRequest}.
+   * 
+   * @param authorization {@link ApiAuthorization}
+   * @param awsservice {@link AwsServiceCache}
+   * @param siteId {@link String}
+   * @param item {@link DynamicDocumentItem}
+   * @param isUpdate boolean
+   * @return {@link List} {@link DocumentTag}
+   * @throws ValidationException ValidationException
+   * @throws BadException BadException
+   */
+  List<DocumentTag> validate(ApiAuthorization authorization, AwsServiceCache awsservice,
+      String siteId, AddDocumentRequest item, boolean isUpdate)
+      throws ValidationException, BadException;
 }

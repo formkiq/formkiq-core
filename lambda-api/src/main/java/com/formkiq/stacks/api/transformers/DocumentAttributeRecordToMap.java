@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api.handler;
+package com.formkiq.stacks.api.transformers;
 
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import java.util.ArrayList;

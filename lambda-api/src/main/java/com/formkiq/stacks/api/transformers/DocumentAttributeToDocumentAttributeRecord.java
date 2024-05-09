@@ -21,13 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api.handler;
+package com.formkiq.stacks.api.transformers;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.function.Function;
+import com.formkiq.stacks.api.handler.DocumentAttribute;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
 
@@ -66,6 +67,17 @@ public class DocumentAttributeToDocumentAttributeRecord
 
   @Override
   public Collection<DocumentAttributeRecord> apply(final DocumentAttribute a) {
+    Collection<DocumentAttributeRecord> c = buildAttributeRecords(a);
+    return c;
+  }
+
+  /**
+   * Build {@link Collection} {@link DocumentAttributeRecord} from {@link DocumentAttribute}.
+   * 
+   * @param a {@link DocumentAttribute}
+   * @return {@link Collection} {@link DocumentAttributeRecord}
+   */
+  private Collection<DocumentAttributeRecord> buildAttributeRecords(final DocumentAttribute a) {
     Collection<DocumentAttributeRecord> c = new ArrayList<>();
 
     boolean used = false;
@@ -99,7 +111,6 @@ public class DocumentAttributeToDocumentAttributeRecord
     if (!used) {
       addToList(c, DocumentAttributeValueType.KEY_ONLY, key, null, null, null);
     }
-
     return c;
   }
 }

@@ -21,75 +21,54 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb.attributes;
+package com.formkiq.stacks.api.transformers;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.objects.Objects;
-import com.formkiq.aws.dynamodb.objects.Strings;
+import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
+import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
 import com.formkiq.stacks.dynamodb.schemas.Schema;
 import com.formkiq.stacks.dynamodb.schemas.SchemaAttributesCompositeKey;
 
 /**
- * Convert {@link DynamicObject} to {@link DocumentAttributeRecord}.
- * 
- * @deprecated replaced with DocumentAttributeToDocumentAttributeRecord
+ * {@link Function} to create {@link DocumentAttributeRecord} from a {@link Schema}.
  */
-@Deprecated
-public class DynamicObjectToDocumentAttributeRecord
-    implements Function<Collection<DynamicObject>, Collection<DocumentAttributeRecord>> {
+public class DocumentAttributeSchema
+    implements Function<Collection<DocumentAttributeRecord>, Collection<DocumentAttributeRecord>> {
 
   /** Document Id. */
-  private String attributeDocumentId;
-  /** {@link Schema}. */
+  private String docId;
+  /** Schema. */
   private Schema schema;
 
   /**
    * constructor.
    * 
-   * @param documentId {@link String}
    * @param documentSchema {@link Schema}
-   * @deprecated Schema isnot needed.
+   * @param documentId {@link String}
    */
-  @Deprecated
-  public DynamicObjectToDocumentAttributeRecord(final String documentId,
-      final Schema documentSchema) {
-    this.attributeDocumentId = documentId;
+  public DocumentAttributeSchema(final Schema documentSchema, final String documentId) {
+    this.docId = documentId;
     this.schema = documentSchema;
   }
 
-  private void addToList(final Collection<DocumentAttributeRecord> list,
-      final DocumentAttributeValueType valueType, final String key, final String stringValue,
-      final Boolean boolValue, final Double numberValue) {
-
-    DocumentAttributeRecord a = new DocumentAttributeRecord();
-    a.key(key);
-    a.documentId(this.attributeDocumentId);
-    a.stringValue(stringValue);
-    a.booleanValue(boolValue);
-    a.numberValue(numberValue);
-    a.valueType(valueType);
-
-    list.add(a);
-  }
-
   @Override
-  public Collection<DocumentAttributeRecord> apply(final Collection<DynamicObject> objs) {
+  public Collection<DocumentAttributeRecord> apply(final Collection<DocumentAttributeRecord> c) {
 
-    Collection<DocumentAttributeRecord> list = convert(objs);
+    Collection<DocumentAttributeRecord> compositeKeys = Collections.emptyList();
 
     if (this.schema != null) {
-      Collection<DocumentAttributeRecord> compositeKeys = createCompositeKeys(list);
-      list.addAll(compositeKeys);
+      compositeKeys = createCompositeKeys(c);
     }
 
-    return list;
+    return compositeKeys;
   }
 
   /**
@@ -113,6 +92,35 @@ public class DynamicObjectToDocumentAttributeRecord
 
     return compositeKeys;
   }
+
+  /**
+   * Create Composite Keys from Keys and Values.
+   * 
+   * @param compositeKeys {@link List} {@link String}
+   * @param compositeValues {@link List} {@link String}
+   * @return {@link List} {@link DocumentAttributeRecord}
+   */
+  private List<DocumentAttributeRecord> createCompositeKeys(final List<List<String>> compositeKeys,
+      final List<List<String>> compositeValues) {
+
+    List<DocumentAttributeRecord> records = new ArrayList<>();
+
+    for (int i = 0; i < compositeKeys.size(); i++) {
+
+      String compositeKey = compositeKeys.get(i).stream().collect(Collectors.joining("#"));
+      String stringValue = compositeValues.get(i).stream().collect(Collectors.joining("#"));
+
+      DocumentAttributeRecord r = new DocumentAttributeRecord();
+      r.key(compositeKey);
+      r.documentId(this.docId);
+      r.valueType(DocumentAttributeValueType.COMPOSITE_STRING);
+      r.stringValue(stringValue);
+      records.add(r);
+    }
+
+    return records;
+  }
+
 
   /**
    * Create Composite Keys from {@link SchemaAttributesCompositeKey}.
@@ -180,93 +188,4 @@ public class DynamicObjectToDocumentAttributeRecord
 
     return compositeKeys;
   }
-
-  /**
-   * Create Composite Keys from Keys and Values.
-   * 
-   * @param compositeKeys {@link List} {@link String}
-   * @param compositeValues {@link List} {@link String}
-   * @return {@link List} {@link DocumentAttributeRecord}
-   */
-  private List<DocumentAttributeRecord> createCompositeKeys(final List<List<String>> compositeKeys,
-      final List<List<String>> compositeValues) {
-
-    List<DocumentAttributeRecord> records = new ArrayList<>();
-
-    for (int i = 0; i < compositeKeys.size(); i++) {
-
-      String compositeKey = compositeKeys.get(i).stream().collect(Collectors.joining("#"));
-      String stringValue = compositeValues.get(i).stream().collect(Collectors.joining("#"));
-
-      DocumentAttributeRecord r = new DocumentAttributeRecord();
-      r.key(compositeKey);
-      r.documentId(this.attributeDocumentId);
-      r.valueType(DocumentAttributeValueType.COMPOSITE_STRING);
-      r.stringValue(stringValue);
-      records.add(r);
-    }
-
-    return records;
-  }
-
-  private Collection<DocumentAttributeRecord> convert(final Collection<DynamicObject> objs) {
-    Collection<DocumentAttributeRecord> list = new ArrayList<>();
-
-    for (DynamicObject o : objs) {
-
-      String key = o.getString("key");
-
-      List<String> stringValues = getStringValues(o);
-      if (!Objects.isEmpty(stringValues)) {
-
-        for (String value : stringValues) {
-          addToList(list, DocumentAttributeValueType.STRING, key, value, null, null);
-        }
-      }
-
-      List<Double> numberValues = getNumberValues(o);
-      if (!Objects.isEmpty(numberValues)) {
-
-        for (Double value : numberValues) {
-          addToList(list, DocumentAttributeValueType.NUMBER, key, null, null, value);
-        }
-      }
-
-      Boolean bool = (Boolean) o.getOrDefault("booleanValue", null);
-      if (bool != null) {
-        addToList(list, DocumentAttributeValueType.BOOLEAN, key, null, bool, null);
-      }
-    }
-    return list;
-  }
-
-  private List<Double> getNumberValues(final DynamicObject o) {
-    List<Double> list = o.getDoubleList("numberValues");
-    if (Objects.isEmpty(list)) {
-      list = new ArrayList<>();
-
-      Double s = o.getDouble("numberValue");
-      if (s != null) {
-        list.add(s);
-      }
-    }
-
-    return list;
-  }
-
-  private List<String> getStringValues(final DynamicObject o) {
-
-    List<String> list = o.getStringList("stringValues");
-    if (Objects.isEmpty(list)) {
-      list = new ArrayList<>();
-
-      String s = o.getString("stringValue");
-      if (!Strings.isEmpty(s)) {
-        list.add(s);
-      }
-    }
-
-    return list;
-  }
-
 }

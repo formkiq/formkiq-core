@@ -139,6 +139,6 @@
     "domainName": "u8nk1xfkj6.execute-api.us-east-1.amazonaws.com",
     "apiId": "u8nk1xfkj6"
   },
-  "body": "{\"tagSchemaId\":\"123\",\"content\": \"dGhpcyBpcyBhIHRlc3Q=\",\"path\": \"/file/test.txt\",\"tags\":[{\"key\":\"firstname\",\"value\":\"john\"},{\"key\":\"lastname\",\"value\":\"smith\"}]}",
+  "body": "{\"isBase64\":true,\"tagSchemaId\":\"123\",\"content\": \"dGhpcyBpcyBhIHRlc3Q=\",\"path\": \"/file/test.txt\",\"tags\":[{\"key\":\"firstname\",\"value\":\"john\"},{\"key\":\"lastname\",\"value\":\"smith\"}]}",
   "isBase64Encoded": false
 }

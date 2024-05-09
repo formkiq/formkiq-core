@@ -23,27 +23,28 @@
  */
 package com.formkiq.stacks.api;
 
-import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
-import static com.formkiq.stacks.api.handler.DocumentIdRequestHandler.FORMKIQ_DOC_EXT;
-import static com.formkiq.testutils.aws.TestServices.STAGE_BUCKET_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentMetadata;
-import com.formkiq.aws.s3.S3Service;
+import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventBuilder;
 import com.formkiq.aws.services.lambda.ApiResponseError;
@@ -101,8 +102,12 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
       // then
       assert200Response(siteId, response);
 
-      assertTrue(
-          getLogger().containsString("setting userId: joesmith " + "contentType: application/pdf"));
+      DocumentItem document = getDocumentService().findDocument(siteId, documentId);
+      assertEquals("application/pdf", document.getContentType());
+      assertEquals("/documents/test2.txt", document.getPath());
+
+      // assertTrue(
+      // getLogger().containsString("setting userId: joesmith " + "contentType: application/pdf"));
     }
   }
 
@@ -133,7 +138,6 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandlePatchDocuments03() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -148,6 +152,7 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
       item.setContentLength(Long.valueOf(contentLength));
       getDocumentService().saveDocument(siteId, item, new ArrayList<>());
 
+      TimeUnit.SECONDS.sleep(1);
       ApiGatewayRequestEvent event = toRequestEvent("/request-patch-documents-documentid02.json");
       addParameter(event, "siteId", siteId);
       setPathParameter(event, "documentId", documentId);
@@ -159,16 +164,9 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
       assert200Response(siteId, response);
 
       DocumentItem doc = getDocumentService().findDocument(siteId, documentId);
-      assertEquals("test.txt", doc.getPath());
+      assertEquals("/documents/test2.txt", doc.getPath());
       assertEquals("jsmith", doc.getUserId());
-      assertEquals(doc.getLastModifiedDate(), doc.getInsertedDate());
-
-      String key = createDatabaseKey(siteId, documentId + FORMKIQ_DOC_EXT);
-      String s = getS3().getContentAsString(STAGE_BUCKET_NAME, key, null);
-      Map<String, Object> map = fromJson(s, Map.class);
-      assertEquals(documentId, map.get("documentId"));
-      assertEquals("/documents/test2.txt", map.get("path"));
-      assertNull(map.get("contentLength"));
+      assertNotEquals(doc.getLastModifiedDate(), doc.getInsertedDate());
     }
   }
 
@@ -207,7 +205,6 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandlePatchDocuments05() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -236,19 +233,27 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
       // then
       assert200Response(siteId, response);
 
-      S3Service s3 = getS3();
-      String s3key = createDatabaseKey(siteId, documentId + FORMKIQ_DOC_EXT);
+      List<DocumentTag> tags =
+          getDocumentService().findDocumentTags(siteId, documentId, null, 2).getResults();
+      // assertEquals(1, tags.size());
+      //
+      // assertEquals("", tags.get(0).getKey());
+      // assertEquals("", tags.get(0).getType());
+      // assertEquals("", tags.get(0).getValue());
 
-      String json = s3.getContentAsString(STAGE_BUCKET_NAME, s3key, null);
-      Map<String, Object> map = fromJson(json, Map.class);
-      assertEquals(documentId, map.get("documentId"));
+      // S3Service s3 = getS3();
+      // String s3key = createDatabaseKey(siteId, documentId + FORMKIQ_DOC_EXT);
 
-      List<Map<String, String>> tags = (List<Map<String, String>>) map.get("tags");
+      // String json = s3.getContentAsString(STAGE_BUCKET_NAME, s3key, null);
+      // Map<String, Object> map = fromJson(json, Map.class);
+      // assertEquals(documentId, map.get("documentId"));
+
+      // List<Map<String, String>> tags = (List<Map<String, String>>) map.get("tags");
       assertEquals(1, tags.size());
 
-      assertEquals("USERDEFINED", tags.get(0).get("type"));
-      assertEquals("author", tags.get(0).get("key"));
-      assertEquals("Bacon", tags.get(0).get("value"));
+      assertEquals("USERDEFINED", tags.get(0).getType().name());
+      assertEquals("author", tags.get(0).getKey());
+      assertEquals("Bacon", tags.get(0).getValue());
     }
   }
 
@@ -257,7 +262,6 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandlePatchDocuments06() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -282,17 +286,24 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
       // then
       assert200Response(siteId, response);
 
-      String s3key = createDatabaseKey(siteId, documentId + FORMKIQ_DOC_EXT);
+      DocumentItem item = getDocumentService().findDocument(siteId, documentId);
+      // String s3key = createDatabaseKey(siteId, documentId + FORMKIQ_DOC_EXT);
 
-      String json = getS3().getContentAsString(STAGE_BUCKET_NAME, s3key, null);
-      Map<String, Object> map = fromJson(json, Map.class);
+      // String json = getS3().getContentAsString(STAGE_BUCKET_NAME, s3key, null);
+      // Map<String, Object> map = fromJson(json, Map.class);
 
-      List<Map<String, Object>> metadata = (List<Map<String, Object>>) map.get("metadata");
+      // List<Map<String, Object>> metadata = (List<Map<String, Object>>) map.get("metadata");
+      Collection<DocumentMetadata> metadata = item.getMetadata();
       assertEquals(2, metadata.size());
-      assertEquals("person", metadata.get(0).get("key"));
-      assertEquals("category", metadata.get(0).get("value"));
-      assertEquals("playerId", metadata.get(1).get("key"));
-      assertEquals("[111, 222]", metadata.get(1).get("values").toString());
+
+      DocumentMetadata o =
+          metadata.stream().filter(m -> m.getKey().equals("person")).findFirst().get();
+      assertEquals("person", o.getKey());
+      assertEquals("category", o.getValue());
+
+      o = metadata.stream().filter(m -> m.getKey().equals("playerId")).findFirst().get();
+      assertEquals("playerId", o.getKey());
+      assertEquals("111,222", o.getValues().stream().collect(Collectors.joining(",")));
     }
   }
 
@@ -398,11 +409,11 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
     assertNull(resp.get("next"));
     assertNull(resp.get("previous"));
 
-    String key = siteId != null ? siteId + "/" + resp.get("documentId") + ".fkb64"
-        : resp.get("documentId") + ".fkb64";
+    // String key = siteId != null ? siteId + "/" + resp.get("documentId") + ".fkb64"
+    // : resp.get("documentId") + ".fkb64";
 
-    assertTrue(
-        getLogger().containsString("s3 putObject " + key + " into bucket " + STAGE_BUCKET_NAME));
+    // assertTrue(
+    // getLogger().containsString("s3 putObject " + key + " into bucket " + STAGE_BUCKET_NAME));
     assertNotNull(UUID.fromString(resp.getString("documentId")));
   }
 
