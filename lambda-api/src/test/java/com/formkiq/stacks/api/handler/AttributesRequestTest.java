@@ -24,7 +24,6 @@
 package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.formatDouble;
-import static com.formkiq.testutils.aws.TestServices.STAGE_BUCKET_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -36,8 +35,6 @@ import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
-import com.formkiq.aws.s3.S3Service;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAttribute;
 import com.formkiq.client.model.AddAttributeRequest;
@@ -59,6 +56,7 @@ import com.formkiq.client.model.DocumentSearchRequest;
 import com.formkiq.client.model.DocumentSearchResponse;
 import com.formkiq.client.model.GetAttributeResponse;
 import com.formkiq.client.model.GetAttributesResponse;
+import com.formkiq.client.model.GetDocumentAttributeResponse;
 import com.formkiq.client.model.GetDocumentAttributesResponse;
 import com.formkiq.client.model.SearchResponseAttributeField;
 import com.formkiq.client.model.SearchResponseFields;
@@ -66,6 +64,7 @@ import com.formkiq.client.model.SearchResultDocument;
 import com.formkiq.client.model.SetDocumentAttributeRequest;
 import com.formkiq.client.model.SetDocumentAttributesRequest;
 import com.formkiq.client.model.SetResponse;
+import com.formkiq.client.model.UpdateDocumentRequest;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 import joptsimple.internal.Strings;
@@ -108,9 +107,13 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       final String stringValue, final Boolean booleanValue, final BigDecimal numberValue)
       throws ApiException {
 
-    AddDocumentUploadRequest docReq =
-        new AddDocumentUploadRequest().addAttributesItem(new AddDocumentAttribute().key(key)
-            .stringValue(stringValue).booleanValue(booleanValue).numberValue(numberValue));
+    AddDocumentUploadRequest docReq = new AddDocumentUploadRequest();
+
+    if (key != null) {
+      AddDocumentAttribute attr = new AddDocumentAttribute().key(key).stringValue(stringValue)
+          .booleanValue(booleanValue).numberValue(numberValue);
+      docReq.addAttributesItem(attr);
+    }
 
     return this.documentsApi.addDocumentUpload(docReq, siteId, null, null, null).getDocumentId();
   }
@@ -214,18 +217,9 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       String documentId = addDocument(siteId, key, "confidential", null, null);
 
       // then
-      S3Service s3 = getAwsServices().getExtension(S3Service.class);
-
-      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId) + ".fkb64";
-      String content = s3.getContentAsString(STAGE_BUCKET_NAME, s3Key, null);
-
-      String expected =
-          "{\"metadata\":[],\"newCompositeTags\":false,\"accessAttributes\":[],\"documents\":[],"
-              + "\"attributes\":[{\"key\":\"security\",\"stringValue\":\"confidential\","
-              + "\"stringValues\":[],\"numberValues\":[]}],\"documentId\":\"" + documentId
-              + "\",\"actions\":[],\"contentType\":\"application/octet-stream\","
-              + "\"userId\":\"joesmith\",\"content\":\"test\",\"tags\":[]}";
-      assertEquals(expected, content);
+      GetDocumentAttributeResponse response =
+          this.documentAttributesApi.getDocumentAttribute(documentId, key, siteId);
+      assertEquals("confidential", response.getAttribute().getStringValue());
     }
   }
 
@@ -934,6 +928,53 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
             "{\"errors\":[{\"key\":\"security\",\"error\":\"attribute 'security' not found\"}]}",
             e.getResponseBody());
       }
+    }
+  }
+
+  /**
+   * POST /documents, than PATCH /documents/{documentId}, POST /search attributes 'eq' stringValue.
+   * 
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testAddDocumentUploadAttribute11() throws ApiException {
+    // given
+    final String key = "security";
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+
+      for (String attribute : Arrays.asList(key, "playerId", "category")) {
+        addAttribute(siteId, attribute, null);
+      }
+
+      AddDocumentUploadRequest docReq = new AddDocumentUploadRequest()
+          .addAttributesItem(new AddDocumentAttribute().key(key).stringValue("public"));
+
+      // when add document
+      String documentId =
+          this.documentsApi.addDocumentUpload(docReq, siteId, null, null, null).getDocumentId();
+
+      // then
+      DocumentSearchAttribute attribute = new DocumentSearchAttribute().key(key).eq("confidential");
+      DocumentSearch query = new DocumentSearch().attribute(attribute);
+      DocumentSearchRequest searchRequest = new DocumentSearchRequest().query(query);
+
+      DocumentSearchResponse response =
+          this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
+      assertEquals(0, response.getDocuments().size());
+
+      // given
+      UpdateDocumentRequest updateReq = new UpdateDocumentRequest()
+          .addAttributesItem(new AddDocumentAttribute().key(key).stringValue("confidential"));
+
+      // when patch document
+      this.documentsApi.updateDocument(documentId, updateReq, siteId, null);
+
+      // then
+      response = this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
+      assertEquals(1, response.getDocuments().size());
     }
   }
 

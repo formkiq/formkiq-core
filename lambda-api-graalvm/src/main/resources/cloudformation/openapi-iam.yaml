@@ -6547,6 +6547,11 @@ Resources:
                   description: "List of document Metadata"
                   items:
                     $ref: "#/components/schemas/AddDocumentMetadata"
+                attributes:
+                  type: "array"
+                  description: "List of document attributes"
+                  items:
+                    $ref: "#/components/schemas/AddDocumentAttribute"
                 actions:
                   type: array
                   description: "List of Actions"

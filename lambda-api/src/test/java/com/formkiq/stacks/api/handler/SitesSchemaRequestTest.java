@@ -38,6 +38,8 @@ import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAttribute;
 import com.formkiq.client.model.AddAttributeRequest;
 import com.formkiq.client.model.AddDocumentAttribute;
+import com.formkiq.client.model.AddDocumentRequest;
+import com.formkiq.client.model.AddDocumentResponse;
 import com.formkiq.client.model.AddDocumentUploadRequest;
 import com.formkiq.client.model.AttributeDataType;
 import com.formkiq.client.model.AttributeSchemaCompositeKey;
@@ -158,33 +160,42 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
           new AddDocumentUploadRequest().path("sample.txt").contentType("text/plain");
 
       // when
-      GetDocumentUrlResponse response =
+      GetDocumentUrlResponse response0 =
           this.documentsApi.addDocumentUpload(ureq, siteId, null, null, null);
 
+      AddDocumentRequest areq = new AddDocumentRequest().path("sample.txt").content("test sample")
+          .contentType("text/plain");
+
+      AddDocumentResponse response1 = this.documentsApi.addDocument(areq, siteId, null);
+
       // then
-      String documentId = response.getDocumentId();
-      GetDocumentAttributesResponse attributes =
-          this.documentAttributesApi.getDocumentAttributes(documentId, siteId, null, null);
+      for (String documentId : Arrays.asList(response0.getDocumentId(),
+          response1.getDocumentId())) {
 
-      int i = 0;
-      final int expected = 5;
-      assertEquals(expected, attributes.getAttributes().size());
-      assertEquals("category", attributes.getAttributes().get(i).getKey());
-      assertEquals("person", attributes.getAttributes().get(i++).getStringValue());
+        GetDocumentAttributesResponse attributes =
+            this.documentAttributesApi.getDocumentAttributes(documentId, siteId, null, null);
 
-      assertEquals("flag", attributes.getAttributes().get(i).getKey());
-      assertTrue(attributes.getAttributes().get(i++).getBooleanValue().booleanValue());
+        int i = 0;
+        final int expected = 5;
+        assertEquals(expected, attributes.getAttributes().size());
+        assertEquals("category", attributes.getAttributes().get(i).getKey());
+        assertEquals("person", attributes.getAttributes().get(i++).getStringValue());
 
-      assertEquals("keyonly", attributes.getAttributes().get(i).getKey());
-      assertNull(attributes.getAttributes().get(i++).getStringValue());
+        assertEquals("flag", attributes.getAttributes().get(i).getKey());
+        assertTrue(attributes.getAttributes().get(i++).getBooleanValue().booleanValue());
 
-      assertEquals("num", attributes.getAttributes().get(i).getKey());
-      assertEquals("123,233", String.join(",", attributes.getAttributes().get(i++).getNumberValues()
-          .stream().map(n -> formatDouble(Double.valueOf(n.doubleValue()))).toList()));
+        assertEquals("keyonly", attributes.getAttributes().get(i).getKey());
+        assertNull(attributes.getAttributes().get(i++).getStringValue());
 
-      assertEquals("strings", attributes.getAttributes().get(i).getKey());
-      assertEquals("abc,qwe",
-          String.join(",", attributes.getAttributes().get(i++).getStringValues()));
+        assertEquals("num", attributes.getAttributes().get(i).getKey());
+        assertEquals("123,233",
+            String.join(",", attributes.getAttributes().get(i++).getNumberValues().stream()
+                .map(n -> formatDouble(Double.valueOf(n.doubleValue()))).toList()));
+
+        assertEquals("strings", attributes.getAttributes().get(i).getKey());
+        assertEquals("abc,qwe",
+            String.join(",", attributes.getAttributes().get(i++).getStringValues()));
+      }
     }
   }
 
@@ -498,7 +509,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.schemasApi.getSitesSchema(siteId);
+        this.schemasApi.getSitesSchema(siteId, null);
         fail();
       } catch (ApiException e) {
         // then
@@ -939,8 +950,34 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       // then
       assertEquals("Sites Schema set", response.getMessage());
 
-      GetSitesSchemaResponse schema = this.schemasApi.getSitesSchema(siteId);
+      GetSitesSchemaResponse schema = this.schemasApi.getSitesSchema(siteId, null);
       assertEquals("joe", schema.getName());
+      assertEquals(1, schema.getVersion().intValue());
+      assertEquals(key, schema.getAttributes().getRequired().get(0).getAttributeKey());
+      assertTrue(schema.getAttributes().getRequired().get(0).getAllowedValues().isEmpty());
+
+      req =
+          new SetSitesSchemaRequest().name("joe").attributes(new SchemaAttributes().addRequiredItem(
+              new AttributeSchemaRequired().attributeKey(key).addAllowedValuesItem("123")));
+
+      // when
+      response = this.schemasApi.setSitesSchema(siteId, req);
+
+      // then
+      assertEquals("Sites Schema set", response.getMessage());
+
+      schema = this.schemasApi.getSitesSchema(siteId, null);
+      assertEquals("joe", schema.getName());
+      assertEquals(2, schema.getVersion().intValue());
+      assertEquals(key, schema.getAttributes().getRequired().get(0).getAttributeKey());
+      assertEquals("123",
+          String.join(",", schema.getAttributes().getRequired().get(0).getAllowedValues()));
+
+      schema = this.schemasApi.getSitesSchema(siteId, "1");
+      assertEquals("joe", schema.getName());
+      assertEquals(1, schema.getVersion().intValue());
+      assertEquals(key, schema.getAttributes().getRequired().get(0).getAttributeKey());
+      assertTrue(schema.getAttributes().getRequired().get(0).getAllowedValues().isEmpty());
     }
   }
 
@@ -1078,7 +1115,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       // then
       assertEquals("Sites Schema set", response.getMessage());
 
-      GetSitesSchemaResponse schema = this.schemasApi.getSitesSchema(siteId);
+      GetSitesSchemaResponse schema = this.schemasApi.getSitesSchema(siteId, null);
       assertEquals("joe", schema.getName());
     }
   }
@@ -1164,4 +1201,9 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
   }
 
   // test POST /documents & PATCH /documents ??
+
+  // PATCH /documents after sites schema is updated?? What happens? remains tied to version it was
+  // created by
+  // POST/DELETE/PUT /documents/{documentId}/attributes
+  // reindex...???
 }

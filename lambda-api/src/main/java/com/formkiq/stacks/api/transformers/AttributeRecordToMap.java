@@ -21,31 +21,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.services.lambda;
+package com.formkiq.stacks.api.transformers;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import java.util.Map;
+import java.util.function.Function;
+import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 
-/** {@link Gson} utils. */
-public final class GsonUtil {
+/**
+ * {@link Function} transform {@link AttributeRecord} to {@link Map}.
+ */
+public class AttributeRecordToMap implements Function<AttributeRecord, Map<String, Object>> {
 
-  /** Date Format. */
-  public static final String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ssZ";
-
-  /** {@link Gson}. */
-  private static final Gson GSON =
-      new GsonBuilder().disableHtmlEscaping().setDateFormat(DATE_FORMAT)
-          .registerTypeAdapterFactory(new CaseInsensitiveEnumTypeAdapterFactory()).create();
-
-  /** private constructor. */
-  private GsonUtil() {}
-
-  /**
-   * Get Instance of {@link Gson}.
-   *
-   * @return {@link Gson}
-   */
-  public static Gson getInstance() {
-    return GSON;
+  @Override
+  public Map<String, Object> apply(final AttributeRecord a) {
+    return Map.of("key", a.getKey(), "type", a.getType().name());
   }
 }

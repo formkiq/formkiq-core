@@ -40,6 +40,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 /**
  * Action.
  */
+@Reflectable
 public class Action implements DynamodbRecord<Action>, DbKeys {
 
   /** Record Completed date. */
