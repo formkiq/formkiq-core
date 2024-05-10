@@ -75,9 +75,6 @@ import software.amazon.awssdk.services.s3.model.S3Exception;
 public class DocumentIdRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
-  // /** Default Duration Hours. */
-  // private static final int DEFAULT_DURATION_HOURS = 2;
-
   /** Extension for FormKiQ config file. */
   public static final String FORMKIQ_DOC_EXT = ".fkb64";
 
@@ -85,82 +82,12 @@ public class DocumentIdRequestHandler
   private DocumentEntityValidator documentEntityValidator = new DocumentEntityValidatorImpl();
   /** {@link DocumentValidator}. */
   private DocumentValidator documentValidator = new DocumentValidatorImpl();
-  // /** {@link DocumentsRestrictionsMaxDocuments}. */
-  // private DocumentsRestrictionsMaxDocuments restrictionMaxDocuments =
-  // new DocumentsRestrictionsMaxDocuments();
 
   /**
    * constructor.
    *
    */
   public DocumentIdRequestHandler() {}
-
-  // /**
-  // * Add field to object.
-  // *
-  // * @param event {@link ApiGatewayRequestEvent}
-  // * @param awsservice {@link AwsServiceCache}
-  // * @param authorization {@link ApiAuthorization}
-  // * @param siteId {@link String}
-  // * @param documentId {@link String}
-  // * @param item {@link DynamicObject}
-  // * @param documents {@link List} {@link DynamicObject}
-  // */
-  // private void addFieldsToObject(final ApiGatewayRequestEvent event,
-  // final AwsServiceCache awsservice, final ApiAuthorization authorization, final String siteId,
-  // final String documentId, final DynamicObject item, final List<DynamicObject> documents) {
-  //
-  // String userId = authorization.getUsername();
-  //
-  // item.put("documentId", documentId);
-  // item.put("userId", userId);
-  //
-  // for (DynamicObject map : documents) {
-  // map.put("documentId", UUID.randomUUID().toString());
-  // map.put("userId", userId);
-  // }
-  //
-  // }
-
-  // /**
-  // * Build Response {@link Map}.
-  // *
-  // * @param siteId {@link String}
-  // * @param documentId {@link String}
-  // * @param documents {@link List} {@link Map}
-  // * @param uploadUrls {@link Map}
-  // * @return {@link Map}
-  // */
-  // private Map<String, Object> buildResponse(final String siteId, final String documentId,
-  // final List<DynamicObject> documents, final Map<String, String> uploadUrls) {
-  //
-  // Map<String, Object> map = new HashMap<>();
-  // map.put("documentId", documentId);
-  // map.put("uploadUrl", uploadUrls.get(documentId));
-  //
-  // if (siteId != null) {
-  // map.put("siteId", siteId);
-  // }
-  //
-  // List<Map<String, String>> documentsMap = documents.stream().map(d -> {
-  // Map<String, String> m = new HashMap<>();
-  //
-  // String id = d.getString("documentId");
-  // m.put("documentId", id);
-  //
-  // if (uploadUrls.containsKey(id)) {
-  // m.put("uploadUrl", uploadUrls.get(id));
-  // }
-  //
-  // return m;
-  // }).collect(Collectors.toList());
-  //
-  // if (!documentsMap.isEmpty()) {
-  // map.put("documents", documentsMap);
-  // }
-  //
-  // return map;
-  // }
 
   @Override
   public ApiRequestHandlerResponse delete(final LambdaLogger logger,
@@ -212,61 +139,6 @@ public class DocumentIdRequestHandler
     }
   }
 
-  // /**
-  // * Generate Presigned Upload Url.
-  // *
-  // * @param awsservice {@link AwsServiceCache}
-  // * @param siteId {@link String}
-  // * @param documentId {@link String}
-  // * @return {@link String}
-  // */
-  // private String generateUploadUrl(final AwsServiceCache awsservice, final String siteId,
-  // final String documentId) {
-  //
-  // String url = null;
-  // if (documentId != null) {
-  // Duration duration = Duration.ofHours(DEFAULT_DURATION_HOURS);
-  // String key = createS3Key(siteId, documentId);
-  // S3PresignerService s3Service = awsservice.getExtension(S3PresignerService.class);
-  //
-  // Map<String, String> map = Map.of("checksum", UUID.randomUUID().toString());
-  // url = s3Service.presignPutUrl(awsservice.environment("DOCUMENTS_S3_BUCKET"), key, duration,
-  // Optional.empty(), map).toString();
-  // }
-  //
-  // return url;
-  // }
-
-  // /**
-  // * Add field to object.
-  // *
-  // * @param awsservice {@link AwsServiceCache}
-  // * @param siteId {@link String}
-  // * @param documentId {@link String}
-  // * @param item {@link DynamicObject}
-  // * @param documents {@link List} {@link DynamicObject}
-  // * @return {@link Map}
-  // */
-  // private Map<String, String> generateUploadUrls(final AwsServiceCache awsservice,
-  // final String siteId, final String documentId, final DynamicObject item,
-  // final List<DynamicObject> documents) {
-  //
-  // Map<String, String> map = new HashMap<>();
-  //
-  // if (!item.hasString("content")) {
-  // map.put(documentId, generateUploadUrl(awsservice, siteId, documentId));
-  // }
-  //
-  // for (DynamicObject o : documents) {
-  // if (!o.hasString("content")) {
-  // String docid = o.getString("documentId");
-  // map.put(docid, generateUploadUrl(awsservice, siteId, docid));
-  // }
-  // }
-  //
-  // return map;
-  // }
-
   @Override
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
@@ -304,18 +176,10 @@ public class DocumentIdRequestHandler
     return "/documents/{documentId}";
   }
 
-  // private boolean isFolder(final DynamicDocumentItem item) {
-  // boolean isFolder = item.hasString("path") && item.getString("path").endsWith("/");
-  // return isFolder;
-  // }
-
   @Override
   public ApiRequestHandlerResponse patch(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
-
-    // boolean isUpdate = event.getHttpMethod().equalsIgnoreCase("patch")
-    // && event.getPathParameters().containsKey("documentId");
 
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
@@ -333,44 +197,12 @@ public class DocumentIdRequestHandler
         new AddDocumentRequestToDocumentItem(existingItem, authorization.getUsername(), null)
             .apply(request);
 
-
     validatePatch(awsservice, event, siteId, documentId, item);
-
-    // List<DynamicObject> documents = item.getList("documents");
-
-    // String maxDocumentCount = null;
-    //
-    // if (!isUpdate) {
-    // maxDocumentCount = validatePost(awsservice, siteId, item);
-    // }
-
-    // Map<String, Object> map = null;
-
-    // if (!isUpdate && isFolder(item)) {
-    //
-    // // DocumentService docService = awsservice.getExtension(DocumentService.class);
-    // //
-    // // if (!docService.isFolderExists(siteId, item.getPath())) {
-    // // docService.addFolderIndex(siteId, item);
-    // // map = Map.of("message", "folder created");
-    // // } else {
-    // // throw new ValidationException(
-    // // Arrays.asList(new ValidationErrorImpl().key("folder").error("already exists")));
-    // // }
-    //
-    // } else {
-
-    // TODO remove sending to S3 for patches
-    // addFieldsToObject(event, awsservice, authorization, siteId, documentId, item, documents);
-    // item.put("documents", documents);
 
     logger.log("setting userId: " + item.getUserId() + " contentType: " + item.getContentType());
 
-    // AddDocumentRequest
     List<DocumentTag> tags =
         this.documentEntityValidator.validate(authorization, awsservice, siteId, request, true);
-
-    // putObjectToStaging(logger, awsservice, null, siteId, item);
 
     DocumentService service = awsservice.getExtension(DocumentService.class);
 
@@ -390,60 +222,9 @@ public class DocumentIdRequestHandler
     Map<String, Object> uploadUrls = addDocumentRequestToPresignedUrls.apply(request);
     new PresignedUrlsToS3Bucket(request).apply(uploadUrls);
 
-    // Map<String, String> uploadUrls =
-    // generateUploadUrls(awsservice, siteId, documentId, item, documents);
-    // map = buildResponse(siteId, documentId, documents, uploadUrls);
-    // }
-
-    // ApiResponseStatus status = isUpdate ? SC_OK : SC_CREATED;
     uploadUrls.put("siteId", siteId != null ? siteId : null);
     return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(uploadUrls));
   }
-
-  // /**
-  // * Put Object to Staging Bucket.
-  // *
-  // * @param logger {@link LambdaLogger}
-  // * @param awsservice {@link AwsServiceCache}
-  // * @param maxDocumentCount {@link String}
-  // * @param siteId {@link String}
-  // * @param item {@link DynamicObject}
-  // */
-  // private void putObjectToStaging(final LambdaLogger logger, final AwsServiceCache awsservice,
-  // final String maxDocumentCount, final String siteId, final DynamicObject item) {
-  //
-  // List<DynamicObject> documents = item.getList("documents");
-  // item.put("documents", documents);
-  //
-  // String s = GSON.toJson(item);
-  //
-  // byte[] bytes = s.getBytes(StandardCharsets.UTF_8);
-  //
-  // String key = createDatabaseKey(siteId, item.getString("documentId") + FORMKIQ_DOC_EXT);
-  // String stageS3Bucket = awsservice.environment("STAGE_DOCUMENTS_S3_BUCKET");
-  // logger.log("s3 putObject " + key + " into bucket " + stageS3Bucket);
-  //
-  // S3Service s3 = awsservice.getExtension(S3Service.class);
-  // s3.putObject(stageS3Bucket, key, bytes, item.getString("contentType"));
-  //
-  // if (maxDocumentCount != null) {
-  // DocumentCountService countService = awsservice.getExtension(DocumentCountService.class);
-  // countService.incrementDocumentCount(siteId);
-  // }
-  // }
-
-  // /**
-  // * Update Content-Type on {@link DynamicObject} based on {@link ApiGatewayRequestEvent}.
-  // *
-  // * @param event {@link ApiGatewayRequestEvent}
-  // * @param item {@link DynamicObject}
-  // */
-  // private void updateContentType(final ApiGatewayRequestEvent event, final DynamicObject item) {
-  //
-  // if (!item.containsKey("contentType")) {
-  // item.put("contentType", "application/octet-stream");
-  // }
-  // }
 
   /**
    * Validate Patch Request.
