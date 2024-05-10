@@ -277,8 +277,9 @@ public class DocumentsRequestHandler
       apiMapResponse = new ApiMapResponse(mapResponse);
     }
 
-    apiMapResponse.getMap().put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
-    return new ApiRequestHandlerResponse(SC_CREATED, apiMapResponse);
+    Map<String, Object> hashMap = new HashMap<>(apiMapResponse.getMap());
+    hashMap.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
+    return new ApiRequestHandlerResponse(SC_CREATED, new ApiMapResponse(hashMap));
   }
 
   /**
