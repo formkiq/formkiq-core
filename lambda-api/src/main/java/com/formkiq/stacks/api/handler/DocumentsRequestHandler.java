@@ -74,8 +74,6 @@ public class DocumentsRequestHandler
 
   /** {@link SimpleDateFormat}. */
   private SimpleDateFormat df;
-  // /** {@link HttpClient}. */
-  // private HttpClient http = HttpClient.newHttpClient();
 
   /**
    * constructor.
@@ -276,49 +274,12 @@ public class DocumentsRequestHandler
 
       new PresignedUrlsToS3Bucket(request).apply(mapResponse);
 
-      // String content = request.getContent();
-      //
-      // postContent(mapResponse, request.isBase64(), content, request.getContentType());
-      //
-      // int i = 0;
-      //
-      // List<Map<String, Object>> docs = (List<Map<String, Object>>) mapResponse.get("documents");
-      //
-      // for (Map<String, Object> map : notNull(docs)) {
-      //
-      // AddDocumentRequest childReq = request.getDocuments().get(i);
-      // postContent(map, childReq.isBase64(), childReq.getContent(), childReq.getContentType());
-      //
-      // i++;
-      // }
-
       apiMapResponse = new ApiMapResponse(mapResponse);
     }
 
+    apiMapResponse.getMap().put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
     return new ApiRequestHandlerResponse(SC_CREATED, apiMapResponse);
   }
-
-  // private void postContent(final Map<String, Object> map, final boolean isBase64,
-  // final String content, final String contentType)
-  // throws IOException, InterruptedException, URISyntaxException {
-  //
-  // if (!isEmpty(content)) {
-  //
-  // String url = (String) map.get("url");
-  // String ct = !isEmpty(contentType) ? contentType : MimeType.MIME_OCTET_STREAM.getContentType();
-  //
-  // byte[] bytes = isBase64 ? Base64.getDecoder().decode(content.getBytes(StandardCharsets.UTF_8))
-  // : content.getBytes(StandardCharsets.UTF_8);
-  //
-  // this.http.send(HttpRequest.newBuilder(new URI(url)).header("Content-Type", ct)
-  // .method("PUT", BodyPublishers.ofByteArray(bytes)).build(), BodyHandlers.ofString());
-  //
-  // } else {
-  // map.put("uploadUrl", map.get("url"));
-  // }
-  //
-  // map.remove("url");
-  // }
 
   /**
    * Transform {@link String} to {@link ZonedDateTime}.
