@@ -316,8 +316,18 @@ public class DocumentsUploadRequestHandler
     String path = query != null && query.containsKey("path") ? query.get("path") : null;
     item.setPath(path);
 
-    return buildPresignedResponse(event, authorization, awsservice, siteId, item, new ArrayList<>(),
-        null);
+    String maxDocumentCount = validateMaxDocuments(awsservice, siteId);
+
+    ApiRequestHandlerResponse response = buildPresignedResponse(event, authorization, awsservice,
+        siteId, item, new ArrayList<>(), null);
+
+    if (maxDocumentCount != null) {
+
+      DocumentCountService countService = awsservice.getExtension(DocumentCountService.class);
+      countService.incrementDocumentCount(siteId);
+    }
+
+    return response;
   }
 
   @Override
@@ -427,6 +437,11 @@ public class DocumentsUploadRequestHandler
       throw new ValidationException(errors);
     }
 
+    return validateMaxDocuments(awsservice, siteId);
+  }
+
+  private String validateMaxDocuments(final AwsServiceCache awsservice, final String siteId)
+      throws BadException {
     String maxDocumentCount = this.restrictionMaxDocuments.getValue(awsservice, siteId);
     if (maxDocumentCount != null
         && this.restrictionMaxDocuments.enforced(awsservice, siteId, maxDocumentCount)) {
