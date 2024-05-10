@@ -3,27 +3,25 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.api.transformers;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -90,12 +88,19 @@ public class SchemaMissingRequiredAttributes
         Map<String, AttributeRecord> attributeMap =
             this.service.getAttributes(this.site, attributeKeys);
 
-        missingAttributes = requiredAttributes.stream().flatMap(a -> {
+        // filter out anything that doesn't have a default value or KEY_ONLY datatype
+        missingAttributes =
+            requiredAttributes.stream()
+                .filter(
+                    a -> !isEmpty(a.getDefaultValue()) || !notNull(a.getDefaultValues()).isEmpty()
+                        || AttributeDataType.KEY_ONLY
+                            .equals(attributeMap.get(a.getAttributeKey()).getDataType()))
+                .flatMap(a -> {
 
-          String attributeKey = a.getAttributeKey();
-          AttributeDataType dataType = attributeMap.get(attributeKey).getDataType();
-          return createRequiredAttributes(a, this.docId, attributeKey, dataType).stream();
-        }).toList();
+                  String attributeKey = a.getAttributeKey();
+                  AttributeDataType dataType = attributeMap.get(attributeKey).getDataType();
+                  return createRequiredAttributes(a, this.docId, attributeKey, dataType).stream();
+                }).toList();
       }
     }
 
