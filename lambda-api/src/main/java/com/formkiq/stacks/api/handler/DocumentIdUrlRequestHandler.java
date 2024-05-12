@@ -49,6 +49,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.useractivity.UserActivityPlugin;
@@ -75,7 +76,6 @@ public class DocumentIdUrlRequestHandler
 
     String documentId = event.getPathParameters().get("documentId");
     String siteId = authorization.getSiteId();
-    boolean inline = "true".equals(getParameter(event, "inline"));
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
     DocumentItem item = documentService.findDocument(siteId, documentId);
@@ -90,6 +90,11 @@ public class DocumentIdUrlRequestHandler
     DynamoDbConnectionBuilder connection = awsservice.getExtension(DynamoDbConnectionBuilder.class);
     String versionId = versionService.getVersionId(connection, siteId, documentId, versionKey);
 
+    if (versionId == null && !isEmpty(versionKey)) {
+      throw new BadException("invalid versionKey '" + versionKey + "'");
+    }
+
+    boolean inline = "true".equals(getParameter(event, "inline"));
     URL url = getS3Url(logger, authorization, awsservice, event, item, versionId, inline);
 
     if (url != null) {
@@ -156,7 +161,8 @@ public class DocumentIdUrlRequestHandler
     String siteId = authorization.getSiteId();
 
     if (awsservice.debug()) {
-      logger.log("Finding S3 Url for 'Content-Type' " + contentType);
+      logger.log("Finding S3 Url for document '" + item.getDocumentId() + "' version = '"
+          + versionId + "'");
     }
 
     S3PresignerService s3Service = awsservice.getExtension(S3PresignerService.class);
