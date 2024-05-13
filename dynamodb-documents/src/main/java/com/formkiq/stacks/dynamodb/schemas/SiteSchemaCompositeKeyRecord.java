@@ -24,11 +24,13 @@
 package com.formkiq.stacks.dynamodb.schemas;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamodbRecord;
-import com.formkiq.aws.dynamodb.objects.Objects;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
@@ -36,21 +38,18 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
  * Site Schemas object.
  *
  */
-public class SitesSchemaRecord implements DynamodbRecord<SitesSchemaRecord> {
+public class SiteSchemaCompositeKeyRecord implements DynamodbRecord<SiteSchemaCompositeKeyRecord> {
 
   /** SK Prefix. */
-  public static final String PREFIX_SK = "site#document#";
-  /** Name of Schema. */
-  private String name;
-  /** Schema {@link String}. */
-  private String schema;
-  /** Schema Version. */
-  private Integer version;
+  public static final String PREFIX_SK = "key#";
+
+  /** {@link List} {@link String}. */
+  private List<String> keys;
 
   /**
    * constructor.
    */
-  public SitesSchemaRecord() {
+  public SiteSchemaCompositeKeyRecord() {
 
   }
 
@@ -67,56 +66,43 @@ public class SitesSchemaRecord implements DynamodbRecord<SitesSchemaRecord> {
 
   @Override
   public Map<String, AttributeValue> getDataAttributes() {
-    return Map.of("name", fromS(this.name), "schema", fromS(this.schema), "version",
-        AttributeValue.fromN("" + this.version));
+    return Map.of("keys", AttributeValue.fromL(this.keys.stream().map(a -> fromS(a)).toList()));
   }
 
   @Override
-  public SitesSchemaRecord getFromAttributes(final String siteId,
+  public SiteSchemaCompositeKeyRecord getFromAttributes(final String siteId,
       final Map<String, AttributeValue> attrs) {
 
-    SitesSchemaRecord record = null;
-
     if (!attrs.isEmpty()) {
-      record = new SitesSchemaRecord().name(ss(attrs, "name")).schema(ss(attrs, "schema"))
-          .version(Integer.valueOf(toInt(attrs, "version")));
+      this.keys = attrs.get("keys").l().stream().map(a -> a.s()).toList();
     }
 
-    return record;
+    return this;
   }
 
   /**
-   * Get Name.
+   * Get Keys.
    * 
-   * @return {@link String}
+   * @return {@link List} {@link String}
    */
-  public String getName() {
-    return this.name;
+  public List<String> getKeys() {
+    return this.keys;
   }
 
   /**
-   * Get Schema.
+   * Set Composite Keys.
    * 
-   * @return {@link String}
+   * @param compositeKeys {@link List} {@link String}
+   * @return {@link SiteSchemaCompositeKeyRecord}
    */
-  public String getSchema() {
-    return this.schema;
-  }
-
-  /**
-   * Set Name.
-   * 
-   * @param schemaName {@link String}
-   * @return {@link SitesSchemaRecord}
-   */
-  public SitesSchemaRecord name(final String schemaName) {
-    this.name = schemaName;
+  public SiteSchemaCompositeKeyRecord keys(final List<String> compositeKeys) {
+    this.keys = compositeKeys;
     return this;
   }
 
   @Override
   public String pk(final String siteId) {
-    return createDatabaseKey(siteId, "schemas");
+    return createDatabaseKey(siteId, "schemas#compositeKey");
   }
 
   @Override
@@ -129,24 +115,15 @@ public class SitesSchemaRecord implements DynamodbRecord<SitesSchemaRecord> {
     return null;
   }
 
-  /**
-   * Set Schema.
-   * 
-   * @param siteSchema {@link String}
-   * @return {@link SitesSchemaRecord}
-   */
-  public SitesSchemaRecord schema(final String siteSchema) {
-    this.schema = siteSchema;
-    return this;
-  }
-
   @Override
   public String sk() {
-    if (this.version == null) {
-      throw new IllegalArgumentException("'version' is required");
+    if (this.keys == null) {
+      throw new IllegalArgumentException("'keys' is required");
     }
-    return PREFIX_SK + "v"
-        + Objects.formatInt(this.version.intValue(), Objects.INT_ZERO_PAD_FORMAT);
+
+    List<String> s = new ArrayList<>(this.keys);
+    Collections.sort(s);
+    return PREFIX_SK + String.join("#", s);
   }
 
   @Override
@@ -157,25 +134,5 @@ public class SitesSchemaRecord implements DynamodbRecord<SitesSchemaRecord> {
   @Override
   public String skGsi2() {
     return null;
-  }
-
-  /**
-   * Get Version.
-   * 
-   * @return {@link Integer}
-   */
-  public Integer getVersion() {
-    return this.version;
-  }
-
-  /**
-   * Set Version.
-   * 
-   * @param schemaVersion {@link Integer}
-   * @return {@link SitesSchemaRecord}
-   */
-  public SitesSchemaRecord version(final Integer schemaVersion) {
-    this.version = schemaVersion;
-    return this;
   }
 }

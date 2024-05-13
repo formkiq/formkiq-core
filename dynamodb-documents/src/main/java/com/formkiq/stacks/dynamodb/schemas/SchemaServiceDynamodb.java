@@ -30,7 +30,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.QueryConfig;
 import com.formkiq.stacks.dynamodb.attributes.AttributeDataType;
@@ -47,7 +49,7 @@ import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 /**
  * DynamoDB implementation for {@link SchemaService}.
  */
-public class SchemaServiceDynamodb implements SchemaService {
+public class SchemaServiceDynamodb implements SchemaService, DbKeys {
 
   /** {@link AttributeService}. */
   private AttributeService attributeService;
@@ -63,6 +65,20 @@ public class SchemaServiceDynamodb implements SchemaService {
   public SchemaServiceDynamodb(final DynamoDbService dbService) {
     this.db = dbService;
     this.attributeService = new AttributeServiceDynamodb(dbService);
+  }
+
+  private List<SiteSchemaCompositeKeyRecord> createCompositeKeys(
+      final List<SchemaAttributesCompositeKey> compositeKeys) {
+
+    List<SiteSchemaCompositeKeyRecord> records = new ArrayList<>();
+
+    for (SchemaAttributesCompositeKey compositeKey : notNull(compositeKeys)) {
+      SiteSchemaCompositeKeyRecord r =
+          new SiteSchemaCompositeKeyRecord().keys(compositeKey.getAttributeKeys());
+      records.add(r);
+    }
+
+    return records;
   }
 
   @Override
@@ -108,6 +124,14 @@ public class SchemaServiceDynamodb implements SchemaService {
   }
 
   @Override
+  public SiteSchemaCompositeKeyRecord getCompositeKey(final String siteId,
+      final List<String> attributeKeys) {
+    SiteSchemaCompositeKeyRecord r = new SiteSchemaCompositeKeyRecord().keys(attributeKeys);
+    Map<String, AttributeValue> map = this.db.get(r.fromS(r.pk(siteId)), r.fromS(r.sk()));
+    return !map.isEmpty() ? r.getFromAttributes(siteId, map) : null;
+  }
+
+  @Override
   public Collection<ValidationError> setSitesSchema(final String siteId, final String name,
       final String schemaJson, final Schema schema) {
 
@@ -120,10 +144,50 @@ public class SchemaServiceDynamodb implements SchemaService {
 
       SitesSchemaRecord r =
           new SitesSchemaRecord().name(name).schema(schemaJson).version(Integer.valueOf(version));
-      this.db.putItem(r.getAttributes(siteId));
+
+      List<SiteSchemaCompositeKeyRecord> compositeKeys =
+          createCompositeKeys(schema.getAttributes().getCompositeKeys());
+
+      deleteSiteSchemaCompositeKeys(siteId);
+
+      List<Map<String, AttributeValue>> list = new ArrayList<>();
+      list.add(r.getAttributes(siteId));
+      list.addAll(compositeKeys.stream().map(a -> a.getAttributes(siteId)).toList());
+
+      this.db.putItems(list);
     }
 
     return errors;
+  }
+
+  private boolean deleteSiteSchemaCompositeKeys(final String siteId) {
+
+    SiteSchemaCompositeKeyRecord r = new SiteSchemaCompositeKeyRecord();
+
+    final int limit = 100;
+    QueryConfig config = new QueryConfig().projectionExpression("PK,SK");
+    Map<String, AttributeValue> startkey = null;
+    List<Map<String, AttributeValue>> list = new ArrayList<>();
+
+    AttributeValue pk = AttributeValue.fromS(r.pk(siteId));
+    AttributeValue sk = AttributeValue.fromS(SiteSchemaCompositeKeyRecord.PREFIX_SK);
+
+    do {
+
+      QueryResponse response = this.db.queryBeginsWith(config, pk, sk, startkey, limit);
+
+      List<Map<String, AttributeValue>> attrs =
+          response.items().stream().collect(Collectors.toList());
+      list.addAll(attrs);
+
+      startkey = response.lastEvaluatedKey();
+
+    } while (startkey != null && !startkey.isEmpty());
+
+    List<Map<String, AttributeValue>> keys =
+        list.stream().map(a -> Map.of(PK, a.get(PK), SK, a.get(SK))).toList();
+
+    return this.db.deleteItems(keys);
   }
 
   private Collection<ValidationError> validate(final String siteId, final String name,
@@ -138,26 +202,23 @@ public class SchemaServiceDynamodb implements SchemaService {
     return errors;
   }
 
-  private Collection<ValidationError> validateSchema(final Schema schema, final String name,
-      final String schemaJson) {
+  private Collection<ValidationError> validateAttributes(final SchemaAttributes attributes) {
 
     Collection<ValidationError> errors = new ArrayList<>();
 
-    if (isEmpty(name)) {
-      errors.add(new ValidationErrorImpl().key("name").error("'name' is required"));
-    }
-
-    if (isEmpty(schemaJson) || schema.getAttributes() == null) {
-      errors.add(new ValidationErrorImpl().key("schema").error("'schema' is required"));
-    } else {
-
-      SchemaAttributes schemaAttributes = schema.getAttributes();
-      if (notNull(schemaAttributes.getRequired()).isEmpty()
-          && notNull(schemaAttributes.getOptional()).isEmpty()) {
-        errors.add(new ValidationErrorImpl()
-            .error("either 'required' or 'optional' attributes list is required"));
+    notNull(attributes.getRequired()).forEach(a -> {
+      if (isEmpty(a.getAttributeKey())) {
+        String errorMsg = "required attribute missing attributeKey'";
+        errors.add(new ValidationErrorImpl().error(errorMsg));
       }
-    }
+    });
+
+    notNull(attributes.getOptional()).forEach(a -> {
+      if (isEmpty(a.getAttributeKey())) {
+        String errorMsg = "optional attribute missing attributeKey'";
+        errors.add(new ValidationErrorImpl().error(errorMsg));
+      }
+    });
 
     return errors;
   }
@@ -188,27 +249,6 @@ public class SchemaServiceDynamodb implements SchemaService {
 
       validateCompositeAttributes(schema, attributeKeys, errors);
     }
-
-    return errors;
-  }
-
-  private Collection<ValidationError> validateAttributes(final SchemaAttributes attributes) {
-
-    Collection<ValidationError> errors = new ArrayList<>();
-
-    notNull(attributes.getRequired()).forEach(a -> {
-      if (isEmpty(a.getAttributeKey())) {
-        String errorMsg = "required attribute missing attributeKey'";
-        errors.add(new ValidationErrorImpl().error(errorMsg));
-      }
-    });
-
-    notNull(attributes.getOptional()).forEach(a -> {
-      if (isEmpty(a.getAttributeKey())) {
-        String errorMsg = "optional attribute missing attributeKey'";
-        errors.add(new ValidationErrorImpl().error(errorMsg));
-      }
-    });
 
     return errors;
   }
@@ -278,6 +318,30 @@ public class SchemaServiceDynamodb implements SchemaService {
       errors.add(new ValidationErrorImpl().key(attribyteKey)
           .error("attribute '" + attribyteKey + "' is in both required & optional lists"));
     }
+  }
+
+  private Collection<ValidationError> validateSchema(final Schema schema, final String name,
+      final String schemaJson) {
+
+    Collection<ValidationError> errors = new ArrayList<>();
+
+    if (isEmpty(name)) {
+      errors.add(new ValidationErrorImpl().key("name").error("'name' is required"));
+    }
+
+    if (isEmpty(schemaJson) || schema.getAttributes() == null) {
+      errors.add(new ValidationErrorImpl().key("schema").error("'schema' is required"));
+    } else {
+
+      SchemaAttributes schemaAttributes = schema.getAttributes();
+      if (notNull(schemaAttributes.getRequired()).isEmpty()
+          && notNull(schemaAttributes.getOptional()).isEmpty()) {
+        errors.add(new ValidationErrorImpl()
+            .error("either 'required' or 'optional' attributes list is required"));
+      }
+    }
+
+    return errors;
   }
 
 }
