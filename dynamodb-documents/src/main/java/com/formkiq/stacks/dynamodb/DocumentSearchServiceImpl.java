@@ -77,6 +77,9 @@ import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
+import com.formkiq.stacks.dynamodb.schemas.SchemaService;
+import com.formkiq.stacks.dynamodb.schemas.SchemaServiceDynamodb;
+import com.formkiq.stacks.dynamodb.schemas.SiteSchemaCompositeKeyRecord;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
@@ -106,6 +109,8 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
   private String documentTableName;
   /** {@link FolderIndexProcessor}. */
   private FolderIndexProcessor folderIndexProcesor;
+  /** {@link SchemaService}. */
+  private SchemaService schemaService;
   /** {@link DocumentTagSchemaPlugin}. */
   private DocumentTagSchemaPlugin tagSchemaPlugin;
 
@@ -133,6 +138,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
     this.documentTableName = documentsTable;
     this.db = new DynamoDbServiceImpl(connection, documentsTable);
     this.folderIndexProcesor = new FolderIndexProcessorImpl(connection, documentsTable);
+    this.schemaService = new SchemaServiceDynamodb(this.db);
   }
 
   private void addMatchAttributes(final List<Map<String, AttributeValue>> items,
@@ -204,18 +210,22 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
     }
   }
 
-  private SearchAttributeCriteria createAttributesCriteria(final SearchQuery query)
-      throws ValidationException {
+  private SearchAttributeCriteria createAttributesCriteria(final String siteId,
+      final SearchQuery query) throws ValidationException {
 
-    validateSearchAttributeCriteria(query.getAttributes());
+    List<SearchAttributeCriteria> attributes = query.getAttributes();
+    Map<String, SearchAttributeCriteria> map = attributes.stream()
+        .collect(Collectors.toMap(SearchAttributeCriteria::getKey, Function.identity()));
 
-    String attributeKey =
-        query.getAttributes().stream().map(a -> a.getKey()).collect(Collectors.joining("#"));
+    SiteSchemaCompositeKeyRecord compositeKey = validateSearchAttributeCriteria(siteId, attributes);
 
-    String eq = query.getAttributes().stream().map(a -> a.getEq()).filter(s -> s != null)
-        .collect(Collectors.joining("#"));
+    String attributeKey = compositeKey.getKeys().stream().collect(Collectors.joining("#"));
 
-    SearchAttributeCriteria last = last(query.getAttributes());
+    String eq = compositeKey.getKeys().stream().map(k -> map.get(k)).map(a -> a.getEq())
+        .filter(s -> s != null).collect(Collectors.joining("#"));
+
+    String lastKey = last(compositeKey.getKeys());
+    SearchAttributeCriteria last = map.get(lastKey);
     String beginsWith = last.getBeginsWith();
     SearchTagCriteriaRange range = last.getRange();
 
@@ -649,7 +659,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
       SearchAttributeCriteria search = query.getAttribute();
 
       if (!notNull(query.getAttributes()).isEmpty()) {
-        search = createAttributesCriteria(query);
+        search = createAttributesCriteria(siteId, query);
       }
 
       results = searchByAttribute(siteId, query, search, searchResponseFields, token, maxresults);
@@ -704,6 +714,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
     config.indexName(GSI1);
     AttributeValue pk = AttributeValue.fromS(sr.pkGsi1(siteId));
     AttributeValue sk = AttributeValue.fromS(sr.skGsi1());
+
     response = this.db.query(config, pk, sk, startkey, limit);
 
     return response;
@@ -1187,10 +1198,21 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
     }
   }
 
-  private void validateSearchAttributeCriteria(final List<SearchAttributeCriteria> attributes)
-      throws ValidationException {
+  private SiteSchemaCompositeKeyRecord validateSearchAttributeCriteria(final String siteId,
+      final List<SearchAttributeCriteria> attributes) throws ValidationException {
 
+    SiteSchemaCompositeKeyRecord compositeKey = null;
     List<ValidationError> errors = new ArrayList<>();
+
+    if (attributes.size() > 1) {
+      List<String> attributeKeys = attributes.stream().map(a -> a.getKey()).toList();
+
+      compositeKey = this.schemaService.getCompositeKey(siteId, attributeKeys);
+      if (compositeKey == null) {
+        errors.add(new ValidationErrorImpl().error(
+            "no composite key found for attributes '" + String.join(",", attributeKeys) + "'"));
+      }
+    }
 
     for (int i = 0; i < attributes.size() - 1; i++) {
 
@@ -1211,5 +1233,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }
+
+    return compositeKey;
   }
 }

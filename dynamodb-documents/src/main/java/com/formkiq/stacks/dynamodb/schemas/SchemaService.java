@@ -24,6 +24,7 @@
 package com.formkiq.stacks.dynamodb.schemas;
 
 import java.util.Collection;
+import java.util.List;
 import com.formkiq.validation.ValidationError;
 
 /**
@@ -48,6 +49,15 @@ public interface SchemaService {
    * @return {@link SitesSchemaRecord}
    */
   SitesSchemaRecord getSitesSchemaRecord(String siteId, Integer version);
+
+  /**
+   * Get Composite Key.
+   * 
+   * @param siteId {@link String}
+   * @param attributeKeys {@link List} {@link String}
+   * @return {@link SiteSchemaCompositeKeyRecord}
+   */
+  SiteSchemaCompositeKeyRecord getCompositeKey(String siteId, List<String> attributeKeys);
 
   /**
    * Set Sites Schema.

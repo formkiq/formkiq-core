@@ -1173,7 +1173,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       DocumentSearchResponse response2 =
           this.searchApi.documentSearch(sreq2, siteId, null, null, null);
-      assertEquals(0, response2.getDocuments().size());
+      assertEquals(1, response2.getDocuments().size());
     }
   }
 
@@ -1309,11 +1309,14 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
           .addAttributesItem(new DocumentSearchAttribute().key("category")
               .range(new DocumentSearchRange().start("2024-02-04").end("2024-03-05"))));
 
-      DocumentSearchResponse response1 =
-          this.searchApi.documentSearch(sreq1, siteId, null, null, null);
-
-      // then
-      assertEquals(0, response1.getDocuments().size());
+      try {
+        this.searchApi.documentSearch(sreq1, siteId, null, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals("{\"errors\":[{\"error\":\"no composite key"
+            + " found for attributes 'strings,category'\"}]}", e.getResponseBody());
+      }
     }
   }
 
@@ -1347,8 +1350,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // range as first element
       DocumentSearchRequest sreq2 = new DocumentSearchRequest().query(new DocumentSearch()
-          .addAttributesItem(new DocumentSearchAttribute().key("strings")
-              .range(new DocumentSearchRange().start("01").end("02")))
+          .addAttributesItem(new DocumentSearchAttribute().key("date")
+              .range(new DocumentSearchRange().start("2024-01-0").end("2024-01-0")))
           .addAttributesItem(new DocumentSearchAttribute().key("category").eq("p")));
 
       // when
@@ -1519,6 +1522,68 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       assertEquals(1, response0.getDocuments().size());
     }
   }
+
+  /**
+   * Search document by old composite key.
+   * 
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testSearchCompositeKey08() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "strings", null);
+      addAttribute(siteId, "category", null);
+      addAttribute(siteId, "other", null);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SchemaAttributes().allowAdditionalAttributes(Boolean.FALSE)
+              .addRequiredItem(new AttributeSchemaRequired().attributeKey("category"))
+              .addRequiredItem(new AttributeSchemaRequired().attributeKey("strings"))
+              .addCompositeKeysItem(new AttributeSchemaCompositeKey()
+                  .attributeKeys(Arrays.asList("strings", "category"))));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      req = new SetSitesSchemaRequest().name("joe").attributes(new SchemaAttributes()
+          .allowAdditionalAttributes(Boolean.FALSE)
+          .addRequiredItem(new AttributeSchemaRequired().attributeKey("category"))
+          .addRequiredItem(new AttributeSchemaRequired().attributeKey("other"))
+          .addCompositeKeysItem(
+              new AttributeSchemaCompositeKey().attributeKeys(Arrays.asList("other", "category"))));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
+          .addAttributesItem(
+              new AddDocumentAttribute().key("category").stringValues(Arrays.asList("person")))
+          .addAttributesItem(
+              new AddDocumentAttribute().key("other").stringValues(Arrays.asList("111", "222")));
+
+      // when
+      GetDocumentUrlResponse response =
+          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null);
+
+      // then
+      assertNotNull(response.getDocumentId());
+
+      // old composite key search
+      DocumentSearchRequest sreq0 = new DocumentSearchRequest().query(new DocumentSearch()
+          .addAttributesItem(new DocumentSearchAttribute().key("strings").eq("222"))
+          .addAttributesItem(new DocumentSearchAttribute().key("category").eq("person")));
+
+      try {
+        this.searchApi.documentSearch(sreq0, siteId, null, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals("{\"errors\":[{\"error\":\"no composite key found "
+            + "for attributes 'strings,category'\"}]}", e.getResponseBody());
+      }
+    }
+  }
+
 
   /**
    * PUT /documents/{documentId}/attributes. Add attributes.
