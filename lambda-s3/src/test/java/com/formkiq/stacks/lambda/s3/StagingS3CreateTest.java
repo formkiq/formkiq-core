@@ -1526,7 +1526,7 @@ public class StagingS3CreateTest implements DbKeys {
 
     // then
   }
-  
+
   /**
    * Test Update .fkb64 file attributes.
    *
