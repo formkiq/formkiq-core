@@ -218,13 +218,15 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
         .collect(Collectors.toMap(SearchAttributeCriteria::getKey, Function.identity()));
 
     SiteSchemaCompositeKeyRecord compositeKey = validateSearchAttributeCriteria(siteId, attributes);
+    List<String> compositeKeys = compositeKey != null ? compositeKey.getKeys()
+        : query.getAttributes().stream().map(a -> a.getKey()).toList();
 
-    String attributeKey = compositeKey.getKeys().stream().collect(Collectors.joining("#"));
+    String attributeKey = compositeKeys.stream().collect(Collectors.joining("#"));
 
-    String eq = compositeKey.getKeys().stream().map(k -> map.get(k)).map(a -> a.getEq())
+    String eq = compositeKeys.stream().map(k -> map.get(k)).map(a -> a.getEq())
         .filter(s -> s != null).collect(Collectors.joining("#"));
 
-    String lastKey = last(compositeKey.getKeys());
+    String lastKey = last(compositeKeys);
     SearchAttributeCriteria last = map.get(lastKey);
     String beginsWith = last.getBeginsWith();
     SearchTagCriteriaRange range = last.getRange();
