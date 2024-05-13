@@ -1310,6 +1310,22 @@ public class DocumentActionsProcessorTest implements DbKeys {
   }
 
   /**
+   * Handle Invalid Request.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  public void testInvalidRequest() throws Exception {
+    // given
+    Map<String, Object> map = new HashMap<>();
+
+    // when
+    processor.handleRequest(map, this.context);
+
+    // then
+  }
+
+  /**
    * Handle Queue Action.
    * 
    * @throws Exception Exception

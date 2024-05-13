@@ -59,6 +59,7 @@ import com.formkiq.aws.dynamodb.model.DocumentSyncType;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
+import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.s3.S3ObjectMetadata;
@@ -678,7 +679,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   private void processRecords(final LambdaLogger logger, final Date date,
       final List<Map<String, Object>> records) {
 
-    for (Map<String, Object> event : records) {
+    for (Map<String, Object> event : Objects.notNull(records)) {
 
       if (event.containsKey("body")) {
 

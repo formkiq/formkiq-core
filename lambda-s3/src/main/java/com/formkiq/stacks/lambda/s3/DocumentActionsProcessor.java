@@ -58,6 +58,7 @@ import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentMapToDocument;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.s3.S3PresignerService;
@@ -594,7 +595,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   private void processRecords(final LambdaLogger logger, final List<Map<String, Object>> records)
       throws IOException, InterruptedException {
 
-    for (Map<String, Object> e : records) {
+    for (Map<String, Object> e : Objects.notNull(records)) {
 
       if (e.containsKey("body")) {
 

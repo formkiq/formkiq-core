@@ -1459,6 +1459,21 @@ public class StagingS3CreateTest implements DbKeys {
   }
 
   /**
+   * Test invalid request.
+   */
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  void testInvalidRequest() {
+    // given
+    Map<String, Object> requestMap = new HashMap<>();
+
+    // when
+    handleRequest(requestMap);
+
+    // then
+  }
+
+  /**
    * Test processing S3 file from PATCH /documents/tags.
    */
   @Test

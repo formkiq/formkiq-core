@@ -122,18 +122,22 @@ public class DocumentsS3UpdateTest implements DbKeys {
   private static ActionsService actionsService;
   /** App Environment. */
   private static final String APP_ENVIRONMENT = "test";
+  /** {@link AwsServiceCache}. */
+  private static AwsServiceCache awsServices;
   /** Bucket Key. */
   private static final String BUCKET_KEY = "b53c92cf-f7b9-4787-9541-76574ec70d71";
   /** {@link DynamoDbClient}. */
   private static DynamoDbClient db;
   /** {@link DynamoDbConnectionBuilder}. */
   private static DynamoDbConnectionBuilder dbBuilder;
+
   /** {@link DynamoDbHelper}. */
   private static DynamoDbHelper dbHelper;
 
   /** SQS Error Queue. */
   private static final String ERROR_SQS_QUEUE = "sqserror";
-
+  /** {@link DocumentsS3Update}. */
+  private static DocumentsS3Update handler;
   /** Request OK Status. */
   private static final int OK = 200;
   /** Port to run Test server. */
@@ -158,10 +162,9 @@ public class DocumentsS3UpdateTest implements DbKeys {
   private static String sqsDocumentEventUrl;
   /** {@link SqsService}. */
   private static SqsService sqsService;
-  /** {@link AwsServiceCache}. */
-  private static AwsServiceCache awsServices;
   /** Test Timeout. */
   private static final long TEST_TIMEOUT = 30;
+
   /** Test server URL. */
   private static final String URL = "http://localhost:" + PORT;
 
@@ -252,9 +255,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
   /** {@link Gson}. */
   private Gson gson = new GsonBuilder().create();
-
-  /** {@link DocumentsS3Update}. */
-  private static DocumentsS3Update handler;
 
   /** {@link LambdaLoggerRecorder}. */
   private LambdaLoggerRecorder logger;
@@ -1082,6 +1082,24 @@ public class DocumentsS3UpdateTest implements DbKeys {
       assertEquals(ActionStatus.RUNNING, actions.get(0).status());
       assertEquals(ActionType.OCR, actions.get(0).type());
     }
+  }
+
+  /**
+   * Invalid Request.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  public void testInvalidRequest01() throws Exception {
+    // given
+    String siteId = null;
+    Map<String, Object> map = new HashMap<>();
+
+    // when
+    handleRequest(siteId, BUCKET_KEY, map);
+
+    // then
   }
 
   /**
