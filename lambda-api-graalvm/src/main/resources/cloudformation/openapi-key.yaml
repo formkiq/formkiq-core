@@ -565,9 +565,9 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /sites/{siteId}/opa/accessPolicy:
             get:
-              operationId: GetOpaConfiguration
-              description: Returns OPA Configuration, can only be requested with ADMIN privileges
-              summary: Get OPA Configuration
+              operationId: GetOpaAccessPolicy
+              description: Returns OPA Access Policy, can only be requested with ADMIN privileges
+              summary: Get OPA Access Policy
               tags:
                 - Access Control
               parameters:
@@ -588,19 +588,160 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        "$ref": "#/components/schemas/GetOpaConfigurationResponse"
+                        "$ref": "#/components/schemas/GetOpaAccessPolicyResponse"
               security:
                 - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
-            delete:
-              operationId: DeleteOpaConfiguration
-              summary: Delete OPA Configuration
-              description: Delete OPA Configuration
+          /sites/{siteId}/opa/accessPolicy/policyItems:
+            get:
+              operationId: GetOpaAccessPolicyItems
+              description: Returns OPA Access Policy Items, can only be requested with ADMIN privileges
+              summary: Get OPA Access Policy Items
               tags:
                 - Access Control
               parameters:
                 - $ref: '#/components/parameters/siteIdPathParam'
+              responses:
+                '200':
+                  description: "200 OK"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: "string"
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: "string"
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: "string"
+                  content:
+                    application/json:
+                      schema:
+                        "$ref": "#/components/schemas/GetOpaAccessPolicyItemsResponse"
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+            post:
+              operationId: AddOpaAccessPolicyItem
+              description: |-
+                Creates a new opa access policy item
+              summary: Add new opa access policy item, can only be requested with ADMIN privileges
+              tags:
+              - Access Control
+              parameters:
+              - $ref: '#/components/parameters/siteIdPathParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/AddOpaAccessPolicyItemRequest'
+              responses:
+                '201':
+                  description: 201 CREATED
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/AddResponse'
+                '400':
+                  description: 400 OK
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/ValidationErrorsResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
+          /sites/{siteId}/opa/accessPolicy/policyItems/{policyItemId}:
+            get:
+              operationId: GetOpaAccessPolicyItem
+              description: Returns OPA Access Policy Item, can only be requested with ADMIN privileges
+              summary: Get OPA Access Policy Item
+              tags:
+              - Access Control
+              parameters:
+              - $ref: '#/components/parameters/siteIdPathParam'
+              - $ref: '#/components/parameters/policyItemIdPathParam'
+              responses:
+                '200':
+                  description: "200 OK"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: "string"
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: "string"
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: "string"
+                  content:
+                    application/json:
+                      schema:
+                        "$ref": "#/components/schemas/GetOpaAccessPolicyItemResponse"
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+            put:
+              operationId: SetOpaAccessPolicyItem
+              description: |-
+                Sets opa access policy item
+              summary: Set opa access policy item, can only be requested with ADMIN privileges
+              tags:
+              - Access Control
+              parameters:
+              - $ref: '#/components/parameters/siteIdPathParam'
+              - $ref: '#/components/parameters/policyItemIdPathParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/SetOpaAccessPolicyItemRequest'
+              responses:
+                '200':
+                  description: 200 CREATED
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/SetResponse'
+                '400':
+                  description: 400 OK
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/ValidationErrorsResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
+            delete:
+              operationId: DeleteOpaAccessPolicyItem
+              summary: Delete OPA Access Policy Item
+              description: Delete OPA Access Policy Item
+              tags:
+              - Access Control
+              parameters:
+              - $ref: '#/components/parameters/siteIdPathParam'
+              - $ref: '#/components/parameters/policyItemIdPathParam'
               responses:
                 '200':
                   description: 200 OK
@@ -614,7 +755,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/DeleteOpaConfigurationResponse'
+                        $ref: '#/components/schemas/DeleteResponse'
               security:
                 - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -5494,6 +5635,13 @@ Resources:
               required: false
               schema:
                 type: string
+            policyItemIdPathParam:
+              name: policyItemId
+              in: path
+              description: Policy Item Identifier
+              required: true
+              schema:
+                type: string
             siteIdPathParam:
               name: siteId
               in: path
@@ -8797,14 +8945,63 @@ Resources:
                 policy:
                   type: "string"
                   description: "OPA Policy in REGO format"
-                insertedDate:
+            OpaPolicyAttribute:
+              type: "object"
+              properties:
+                key:
                   type: "string"
-                  description: "Inserted Timestamp"
-            GetOpaConfigurationResponse:
+                  description: "Attribute Key"
+                eq:
+                  type: "string"
+                  description: "The value to compare the Attribute Key value to"
+            OpaPolicyItemType:
+              type: string
+              description: Type of Opa Policy Item
+              enum:
+                - ALLOW
+            OpaPolicyItem:
+              type: "object"
+              properties:
+                type:
+                  $ref: "#/components/schemas/OpaPolicyItemType"
+                allRoles:
+                  items:
+                    type: "string"
+                  description: "User must match all roles"
+                anyRoles:
+                  items:
+                    type: "string"
+                  description: "User must match any role"
+                attributes:
+                  items:
+                    $ref: "#/components/schemas/OpaPolicyAttribute"
+            SetOpaAccessPolicyItemRequest:
+              type: object
+              properties:
+                policyItem:
+                  $ref: "#/components/schemas/OpaPolicyItem"         
+            AddOpaAccessPolicyItemRequest:
+              type: object
+              properties:
+                policyItem:
+                  $ref: "#/components/schemas/OpaPolicyItem"         
+            GetOpaAccessPolicyResponse:
               type: object
               properties:
                 opaPolicy:
-                  $ref: "#/components/schemas/OpaPolicy"
+                  type: "string"
+                  description: "OPA Policy in REGO format"
+            GetOpaAccessPolicyItemResponse:
+              type: object
+              properties:
+                policyItem:
+                  $ref: "#/components/schemas/OpaPolicyItem"                  
+            GetOpaAccessPolicyItemsResponse:
+              type: object
+              properties:
+                policyItems:
+                  items:
+                    $ref: "#/components/schemas/OpaPolicyItem"
             SetOpaConfigurationRequest:
               type: object
               properties:
@@ -8851,12 +9048,6 @@ Resources:
                   type: "string"
                   description: "Result message"
             DeleteCaseTaskResponse:
-              type: object
-              properties:
-                message:
-                  type: "string"
-                  description: "Result message"
-            DeleteOpaConfigurationResponse:
               type: object
               properties:
                 message:
