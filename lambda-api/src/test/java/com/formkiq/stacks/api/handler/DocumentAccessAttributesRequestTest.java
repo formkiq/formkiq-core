@@ -35,7 +35,7 @@ import com.formkiq.client.api.AccessControlApi;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddDocumentAccessAttributesRequest;
 import com.formkiq.client.model.SetDocumentAccessAttributesRequest;
-import com.formkiq.client.model.SetOpaConfigurationRequest;
+import com.formkiq.client.model.SetOpaAccessPolicyItemsRequest;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 
@@ -98,22 +98,20 @@ public class DocumentAccessAttributesRequestTest extends AbstractApiClientReques
   }
 
   /**
-   * DELETE /sites/{siteId}/opa/accessPolicy.
+   * DELETE /sites/{siteId}/opa/accessPolicy/policyItems.
    *
    * @throws Exception an error has occurred
    */
   @Test
   public void testDeleteOpaConfiguration() throws Exception {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
 
       setBearerToken(siteId);
 
-      String opaId = UUID.randomUUID().toString();
-
       try {
         // when
-        this.api.deleteOpaConfiguration(opaId);
+        this.api.deleteOpaAccessPolicyItem(siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -160,7 +158,7 @@ public class DocumentAccessAttributesRequestTest extends AbstractApiClientReques
 
       try {
         // when
-        this.api.getOpaConfiguration(siteId);
+        this.api.getOpaAccessPolicy(siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -191,21 +189,21 @@ public class DocumentAccessAttributesRequestTest extends AbstractApiClientReques
   }
 
   /**
-   * PUT /configuration/opa.
+   * PUT /sites/{siteId}/opa/accessPolicy/policyItems.
    *
    * @throws Exception an error has occurred
    */
   @Test
   public void testPutOpaConfiguration() throws Exception {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
 
       setBearerToken(siteId);
-      SetOpaConfigurationRequest request = new SetOpaConfigurationRequest();
+      SetOpaAccessPolicyItemsRequest req = new SetOpaAccessPolicyItemsRequest();
 
       try {
         // when
-        this.api.setOpaConfiguration(request);
+        this.api.setOpaAccessPolicyItems(siteId, req);
         fail();
       } catch (ApiException e) {
         // then

@@ -101,8 +101,9 @@ import com.formkiq.stacks.api.handler.IndicesSearchRequestHandler;
 import com.formkiq.stacks.api.handler.OnlyOfficeEditRequestHandler;
 import com.formkiq.stacks.api.handler.OnlyOfficeNewRequestHandler;
 import com.formkiq.stacks.api.handler.OnlyOfficeSaveRequestHandler;
-import com.formkiq.stacks.api.handler.OpaConfigurationRequestHandler;
-import com.formkiq.stacks.api.handler.OpaIdConfigurationRequestHandler;
+import com.formkiq.stacks.api.handler.OpaAccessPoliciesRequestHandler;
+import com.formkiq.stacks.api.handler.OpaAccessPolicyItemsRequestHandler;
+import com.formkiq.stacks.api.handler.OpaIdAccessPolicyRequestHandler;
 import com.formkiq.stacks.api.handler.PrivateWebhooksRequestHandler;
 import com.formkiq.stacks.api.handler.PublicDocumentsRequestHandler;
 import com.formkiq.stacks.api.handler.PublicWebhooksRequestHandler;
@@ -166,8 +167,9 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
   private static final Map<String, ApiGatewayRequestHandler> URL_MAP = new HashMap<>();
 
   private static void addAccessControlEndpoints() {
-    addRequestHandler(new OpaConfigurationRequestHandler());
-    addRequestHandler(new OpaIdConfigurationRequestHandler());
+    addRequestHandler(new OpaAccessPoliciesRequestHandler());
+    addRequestHandler(new OpaIdAccessPolicyRequestHandler());
+    addRequestHandler(new OpaAccessPolicyItemsRequestHandler());
     addRequestHandler(new DocumentsIdAccessAttributesRequestHandler());
   }
 
