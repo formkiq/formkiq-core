@@ -79,6 +79,15 @@ public interface DynamoDbService {
   boolean deleteItems(Collection<Map<String, AttributeValue>> attrs);
 
   /**
+   * Delete all records that beginsWith SK.
+   * 
+   * @param pk {@link AttributeValue}
+   * @param sk {@link AttributeValue}
+   * @return boolean
+   */
+  boolean deleteItemsBeginsWith(AttributeValue pk, AttributeValue sk);
+
+  /**
    * Whether Database Record Exist.
    * 
    * @param pk {@link AttributeValue}
