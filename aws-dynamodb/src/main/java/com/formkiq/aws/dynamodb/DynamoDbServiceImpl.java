@@ -148,6 +148,29 @@ public class DynamoDbServiceImpl implements DynamoDbService {
   }
 
   @Override
+  public boolean deleteItemsBeginsWith(final AttributeValue pk, final AttributeValue sk) {
+
+    final int limit = 100;
+    Map<String, AttributeValue> startkey = null;
+    List<Map<String, AttributeValue>> list = new ArrayList<>();
+    QueryConfig config = new QueryConfig().projectionExpression("PK,SK");
+
+    do {
+
+      QueryResponse response = queryBeginsWith(config, pk, sk, startkey, limit);
+
+      List<Map<String, AttributeValue>> attrs =
+          response.items().stream().collect(Collectors.toList());
+      list.addAll(attrs);
+
+      startkey = response.lastEvaluatedKey();
+
+    } while (startkey != null && !startkey.isEmpty());
+
+    return deleteItems(list);
+  }
+
+  @Override
   public boolean exists(final AttributeValue pk, final AttributeValue sk) {
     GetItemRequest r = GetItemRequest.builder().key(Map.of(PK, pk, SK, sk))
         .tableName(this.tableName).projectionExpression("PK").consistentRead(Boolean.TRUE).build();
