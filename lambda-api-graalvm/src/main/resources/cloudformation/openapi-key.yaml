@@ -8847,8 +8847,21 @@ Resources:
                   type: "string"
                   description: "Attribute Key"
                 eq:
+                  $ref: "#/components/schemas/OpaPolicyAttributeEq"
+            OpaPolicyAttributeEq:
+              type: "object"
+              properties:
+                text:
                   type: "string"
                   description: "The value to compare the Attribute Key value to"
+                input:
+                  $ref: "#/components/schemas/OpaPolicyAttributeInput"
+            OpaPolicyAttributeInput:
+              type: "object"
+              properties:
+                matchUsername:
+                  type: "boolean"
+                  description: "Match Input Username"
             OpaPolicyItemType:
               type: string
               description: Type of Opa Policy Item
