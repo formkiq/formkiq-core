@@ -72,9 +72,7 @@ public class DocumentEntityValidatorImpl implements DocumentEntityValidator {
     Collection<ValidationError> errors = new ArrayList<>();
     List<DocumentTag> tags = validateTagSchema(awsservice, siteId, item, userId, isUpdate, errors);
     validateTags(tags, errors);
-    // validateAttributes(awsservice, siteId, item, errors);
     validateActions(awsservice, siteId, item, authorization, errors);
-    // validateAccessAttributes(awsservice, item, errors);
 
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
@@ -83,24 +81,6 @@ public class DocumentEntityValidatorImpl implements DocumentEntityValidator {
     return tags;
   }
 
-  // /**
-  // * Validate Access Attributes.
-  // *
-  // * @param awsservice {@link AwsServiceCache}
-  // * @param item {@link DynamicDocumentItem}
-  // * @param errors {@link Collection} {@link ValidationError}
-  // */
-  // private void validateAccessAttributes(final AwsServiceCache awsservice,
-  // final DynamicDocumentItem item, final Collection<ValidationError> errors) {
-  //
-  // List<DynamicObject> list = item.getList("accessAttributes");
-  //
-  // if (!awsservice.hasModule("opa") && list != null && !list.isEmpty()) {
-  // errors.add(new ValidationErrorImpl().key("accessAttributes")
-  // .error("Access attributes are only supported with the 'open policy access' module"));
-  // }
-  // }
-
   private void validateActions(final AwsServiceCache awsservice, final String siteId,
       final AddDocumentRequest item, final ApiAuthorization authorization,
       final Collection<ValidationError> errors) {
@@ -108,59 +88,19 @@ public class DocumentEntityValidatorImpl implements DocumentEntityValidator {
     initActionsValidator(awsservice);
 
     List<Action> actions = item.getActions();
-    // List<DynamicObject> objs = item.getList("actions");
+
     if (!notNull(actions).isEmpty()) {
 
       actions.forEach(a -> a.userId(authorization.getUsername()));
-      // item.put("actions", objs);
 
       ConfigService configsService = awsservice.getExtension(ConfigService.class);
       DynamicObject configs = configsService.get(siteId);
-
-      // actions.forEach(a -> {
-      // // a.ty
-      // // });
-      // // List<Action> actions = objs.stream().map(o -> {
-      //
-      // // ActionType type;
-      // // try {
-      // // String stype = o.containsKey("type") ? o.getString("type").toUpperCase() : "";
-      // // type = ActionType.valueOf(stype);
-      // // } catch (IllegalArgumentException e) {
-      // // type = null;
-      // // }
-      //
-      // String queueId = a.queueId();
-      // DynamicObject map = o.containsKey("parameters") ? o.getMap("parameters") : null;
-      // Map<String, String> parameters = map != null
-      // ? map.entrySet().stream()
-      // .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue().toString()))
-      // : Collections.emptyMap();
-      //
-      // return new Action().type(type).queueId(queueId).parameters(parameters)
-      // .userId(o.getString("userId"));
-      // });// .collect(Collectors.toList());
 
       for (Action action : actions) {
         errors.addAll(this.actionsValidator.validation(siteId, action, configs));
       }
     }
   }
-
-  // private void validateAttributes(final AwsServiceCache awsservice, final String siteId,
-  // final AddDocumentRequest item, final Collection<ValidationError> errors) {
-  //
-  // List<DocumentAttribute> list = notNull(item.getAttributes());
-  // DocumentAttributeToDocumentAttributeRecord tr =
-  // new DocumentAttributeToDocumentAttributeRecord(item.getDocumentId());
-  //
-  // List<DocumentAttributeRecord> documentAttributes =
-  // list.stream().flatMap(a -> tr.apply(a).stream()).toList();
-  //
-  // DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
-  // AttributeValidator validator = new AttributeValidatorImpl(db);
-  // // errors.addAll(validator.validate(siteId, item.getDocumentId(), documentAttributes));
-  // }
 
   /**
    * Validate Document Tags.
@@ -223,19 +163,12 @@ public class DocumentEntityValidatorImpl implements DocumentEntityValidator {
           plugin.addCompositeKeys(tagSchema, siteId, item.getDocumentId(), tags, userId, !isUpdate,
               errors).stream().map(t -> t).collect(Collectors.toList());
 
-      // newCompositeTags = !compositeTags.isEmpty();
-
       if (!errors.isEmpty()) {
         throw new ValidationException(errors);
       }
 
       tags.addAll(compositeTags);
     }
-
-    // DocumentTagToDynamicDocumentTag tf = new DocumentTagToDynamicDocumentTag();
-    // List<DynamicDocumentTag> objs = tags.stream().map(tf).collect(Collectors.toList());
-    // item.put("tags", objs);
-    // item.put("newCompositeTags", Boolean.valueOf(newCompositeTags));
 
     return tags;
   }

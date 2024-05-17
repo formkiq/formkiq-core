@@ -33,69 +33,17 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.client.api.AccessControlApi;
 import com.formkiq.client.invoker.ApiException;
-import com.formkiq.client.model.AddDocumentAccessAttributesRequest;
-import com.formkiq.client.model.SetDocumentAccessAttributesRequest;
 import com.formkiq.client.model.SetOpaAccessPolicyItemsRequest;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 
-/** Unit Tests for request /documents/{documentId}/accessAttributes. */
+/** Unit Tests for request /sites/{siteId}/opa/accessPolicy. */
 @ExtendWith(DynamoDbExtension.class)
 @ExtendWith(LocalStackExtension.class)
-public class DocumentAccessAttributesRequestTest extends AbstractApiClientRequestTest {
+public class DocumentAccessPolicyRequestTest extends AbstractApiClientRequestTest {
 
   /** {@link AccessControlApi}. */
   private AccessControlApi api = new AccessControlApi(this.client);
-  /** Document Id. */
-  private String documentId = UUID.randomUUID().toString();
-
-  /**
-   * POST /documents/{documentId}/accessAttribute.
-   *
-   * @throws Exception an error has occurred
-   */
-  @Test
-  public void testAddDocumentAccessAttributes() throws Exception {
-    // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-
-      setBearerToken(siteId);
-
-      AddDocumentAccessAttributesRequest req = new AddDocumentAccessAttributesRequest();
-
-      try {
-        // when
-        this.api.addDocumentAccessAttributes(this.documentId, req, siteId);
-        fail();
-      } catch (ApiException e) {
-        // then
-        assertEquals(SC_PAYMENT.getStatusCode(), e.getCode());
-      }
-    }
-  }
-
-  /**
-   * DELETE /documents/{documentId}/accessAttribute.
-   *
-   * @throws Exception an error has occurred
-   */
-  @Test
-  public void testDeleteDocumentAccessAttributes() throws Exception {
-    // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-
-      setBearerToken(siteId);
-
-      try {
-        // when
-        this.api.deleteDocumentAccessAttributes(this.documentId, siteId);
-        fail();
-      } catch (ApiException e) {
-        // then
-        assertEquals(SC_PAYMENT.getStatusCode(), e.getCode());
-      }
-    }
-  }
 
   /**
    * DELETE /sites/{siteId}/opa/accessPolicy/policyItems.
@@ -112,29 +60,6 @@ public class DocumentAccessAttributesRequestTest extends AbstractApiClientReques
       try {
         // when
         this.api.deleteOpaAccessPolicyItem(siteId);
-        fail();
-      } catch (ApiException e) {
-        // then
-        assertEquals(SC_PAYMENT.getStatusCode(), e.getCode());
-      }
-    }
-  }
-
-  /**
-   * GET /documents/{documentId}/accessAttribute.
-   *
-   * @throws Exception an error has occurred
-   */
-  @Test
-  public void testGetDocumentAccessAttributes() throws Exception {
-    // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-
-      setBearerToken(siteId);
-
-      try {
-        // when
-        this.api.getDocumentAccessAttributes(this.documentId, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -204,30 +129,6 @@ public class DocumentAccessAttributesRequestTest extends AbstractApiClientReques
       try {
         // when
         this.api.setOpaAccessPolicyItems(siteId, req);
-        fail();
-      } catch (ApiException e) {
-        // then
-        assertEquals(SC_PAYMENT.getStatusCode(), e.getCode());
-      }
-    }
-  }
-
-  /**
-   * PUT /documents/{documentId}/accessAttribute.
-   *
-   * @throws Exception an error has occurred
-   */
-  @Test
-  public void testSetDocumentAccessAttributes() throws Exception {
-    // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-
-      setBearerToken(siteId);
-      SetDocumentAccessAttributesRequest req = new SetDocumentAccessAttributesRequest();
-
-      try {
-        // when
-        this.api.setDocumentAccessAttributes(this.documentId, req, siteId);
         fail();
       } catch (ApiException e) {
         // then

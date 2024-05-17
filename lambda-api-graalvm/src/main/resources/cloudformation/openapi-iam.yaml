@@ -974,6 +974,7 @@ Resources:
                 - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+<<<<<<< HEAD
           /documents/{documentId}/accessAttributes:
             get:
               operationId: GetDocumentAccessAttributes
@@ -6552,12 +6553,7 @@ Resources:
                   type: array
                   description: "List of Attributes to add to document"
                   items: 
-                    $ref: "#/components/schemas/AddDocumentAttribute"
-                accessAttributes:
-                  type: array
-                  description: "List of Access Attributes (only available in pro/enterprise)"
-                  items:
-                    $ref: "#/components/schemas/AddAccessAttribute"
+                    $ref: "#/components/schemas/AddDocumentAttribute" 
                 documents:
                   type: "array"
                   description: "List of child documents"
@@ -6755,49 +6751,6 @@ Resources:
                   items:
                     type: "string"
                     description: "Metadata value"
-            AddDocumentAccessAttributesRequest:
-              type: "object"
-              description: "List of document access attributes to add"
-              properties:
-                accessAttributes:
-                  type: "array"
-                  description: "List of document access attributes"
-                  items:
-                    $ref: "#/components/schemas/AddAccessAttribute"
-            SetDocumentAccessAttributesRequest:
-              type: "object"
-              description: "List of document access attributes to set"
-              properties:
-                accessAttributes:
-                  type: "array"
-                  description: "List of document access attributes"
-                  items:
-                    $ref: "#/components/schemas/AddAccessAttribute"
-            GetDocumentAccessAttributesResponse:
-              type: "object"
-              description: "List of document access attributes"
-              properties:
-                accessAttributes:
-                  type: "array"
-                  description: "List of document access attributes"
-                  items:
-                    $ref: "#/components/schemas/AccessAttribute"
-            AccessAttribute:
-              type: "object"
-              description: "Document Access Attribute (requires either: stringValue, numberValue, booleanValue)"
-              properties:
-                key:
-                  type: "string"
-                  description: "Attribute key"
-                stringValue:
-                  type: "string"
-                  description: "Attribute with string value"
-                numberValue:
-                  type: "number"
-                  description: "Attribute with number value"
-                booleanValue:
-                  type: "boolean"
-                  description: "Attribute with boolean value"
             AddDocumentAttributeValue:
               type: "object"
               description: "Document Attribute Value"
@@ -6849,24 +6802,7 @@ Resources:
                 booleanValue:
                   type: "boolean"
                   description: "Attribute with boolean value"
-            AddAccessAttribute:
-              required:
-                - "key"
-              type: "object"
-              description: "Document Access Attribute (requires either: stringValue, numberValue, booleanValue)"
-              properties:
-                key:
-                  type: "string"
-                  description: "Attribute key"
-                stringValue:
-                  type: "string"
-                  description: "Attribute with string value"
-                numberValue:
-                  type: "number"
-                  description: "Attribute with number value"
-                booleanValue:
-                  type: "boolean"
-                  description: "Attribute with boolean value"
+
             AddDocumentTag:
               required:
                 - "key"
@@ -8458,24 +8394,6 @@ Resources:
                 insertedDate:
                   type: "string"
                   description: "Inserted Timestamp"
-            AddDocumentAccessAttributesResponse:
-              type: object
-              properties:
-                message:
-                  type: string
-                  description: Document Action message
-            SetDocumentAccessAttributesResponse:
-              type: object
-              properties:
-                message:
-                  type: string
-                  description: Document Action message
-            DeleteDocumentAccessAttributesResponse:
-              type: object
-              properties:
-                message:
-                  type: string
-                  description: Document Action message
             AddDocumentActionsResponse:
               type: object
               properties:

@@ -83,7 +83,6 @@ import com.formkiq.stacks.api.handler.DocumentsCompressRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsFulltextRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsFulltextRequestTagsKeyHandler;
 import com.formkiq.stacks.api.handler.DocumentsFulltextRequestTagsKeyValueHandler;
-import com.formkiq.stacks.api.handler.DocumentsIdAccessAttributesRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsIdUploadRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsOptionsRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsRequestHandler;
@@ -170,7 +169,6 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new OpaAccessPoliciesRequestHandler());
     addRequestHandler(new OpaIdAccessPolicyRequestHandler());
     addRequestHandler(new OpaAccessPolicyItemsRequestHandler());
-    addRequestHandler(new DocumentsIdAccessAttributesRequestHandler());
   }
 
   private static void addDocumentAttributeEndpoints() {
