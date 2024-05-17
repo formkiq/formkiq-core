@@ -45,7 +45,6 @@ import com.formkiq.client.api.DocumentTagsApi;
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
-import com.formkiq.client.model.AddAccessAttribute;
 import com.formkiq.client.model.AddAction;
 import com.formkiq.client.model.AddDocumentResponse;
 import com.formkiq.client.model.AddDocumentTagsRequest;
@@ -150,32 +149,6 @@ public class FkqDocumentService {
     com.formkiq.client.model.AddDocumentRequest req =
         new com.formkiq.client.model.AddDocumentRequest().content(content).contentType(contentType)
             .path(path).actions(actions);
-    AddDocumentResponse response = api.addDocument(req, siteId, null);
-    return response.getDocumentId();
-  }
-
-  /**
-   * Add Document.
-   * 
-   * @param apiClient {@link ApiClient}
-   * @param siteId {@link String}
-   * @param path {@link String}
-   * @param content {@link String}
-   * @param contentType {@link String}
-   * @param actions {@link List} {@link AddAction}
-   * @param accessAttributes {@link List} {@link AddAccessAttribute}
-   * @return {@link String}
-   * @throws ApiException ApiException
-   */
-  public static String addDocument(final ApiClient apiClient, final String siteId,
-      final String path, final String content, final String contentType,
-      final List<AddAction> actions, final List<AddAccessAttribute> accessAttributes)
-      throws ApiException {
-
-    DocumentsApi api = new DocumentsApi(apiClient);
-    com.formkiq.client.model.AddDocumentRequest req =
-        new com.formkiq.client.model.AddDocumentRequest().content(content).contentType(contentType)
-            .path(path).actions(actions).accessAttributes(accessAttributes);
     AddDocumentResponse response = api.addDocument(req, siteId, null);
     return response.getDocumentId();
   }

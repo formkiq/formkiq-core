@@ -28,11 +28,9 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.client.invoker.ApiException;
-import com.formkiq.client.model.AddAccessAttribute;
 import com.formkiq.client.model.AddAction;
 import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AddDocumentResponse;
@@ -228,35 +226,6 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       assertEquals("sample.pdf", document.getPath());
       assertEquals("http://google.com/test/sample.pdf", document.getDeepLinkPath());
       assertEquals("application/pdf", document.getContentType());
-    }
-  }
-
-  /**
-   * POST /documents/{documentId} request, access attributes.
-   *
-   * @throws Exception an error has occurred
-   */
-  @Test
-  @Disabled
-  public void testHandleAddDocument02() throws Exception {
-    // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      setBearerToken(siteId);
-
-      AddDocumentRequest req = new AddDocumentRequest().content("SKADJASKDSA")
-          .contentType("text/plain").addAccessAttributesItem(
-              new AddAccessAttribute().key("department").stringValue("marketing"));
-
-      // when
-      try {
-        this.documentsApi.addDocument(req, siteId, null);
-        fail();
-      } catch (ApiException e) {
-        // then
-        assertEquals("{\"errors\":[{\"key\":\"accessAttributes\","
-            + "\"error\":\"Access attributes are only supported with "
-            + "the 'open policy access' module\"}]}", e.getResponseBody());
-      }
     }
   }
 

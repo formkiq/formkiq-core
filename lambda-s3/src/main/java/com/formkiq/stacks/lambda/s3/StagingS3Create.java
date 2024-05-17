@@ -45,7 +45,6 @@ import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
-import com.formkiq.aws.dynamodb.DocumentAccessAttributesRecord;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.DynamoDbService;
@@ -120,13 +119,8 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
   /** {@link ActionsService}. */
   private static ActionsService actionsService;
-
-  /** {@link DynamoDbService}. */
-  private static DynamoDbService db;
-
   /** {@link String}. */
   private static String documentsBucket;
-
   /** {@link FolderIndexProcessor}. */
   private static FolderIndexProcessor folderIndexProcesor;
 
@@ -216,7 +210,6 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     service = awsServiceCache.getExtension(DocumentService.class);
     actionsService = awsServiceCache.getExtension(ActionsService.class);
     s3 = awsServiceCache.getExtension(S3Service.class);
-    db = awsServiceCache.getExtension(DynamoDbService.class);
 
     snsDocumentEvent = awsServiceCache.environment("SNS_DOCUMENT_EVENT");
     notificationService = awsServiceCache.getExtension(ActionsNotificationService.class);
@@ -346,8 +339,6 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     saveDocumentSync(siteId, doc, existingDocument);
 
     saveDocumentActions(siteId, doc);
-
-    saveDocumentAccessAttributes(siteId, loadedDoc);
 
     return doc;
   }
@@ -741,46 +732,6 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
       service.addTags(siteId, tagMap, null);
 
     } while (token != null);
-  }
-
-  @SuppressWarnings("unchecked")
-  private void saveDocumentAccessAttributes(final String siteId,
-      final DynamicDocumentItem loadedDoc) {
-
-    if (loadedDoc.containsKey("accessAttributes")) {
-
-      List<Map<String, Object>> attributes =
-          (List<Map<String, Object>>) loadedDoc.get("accessAttributes");
-
-      if (!attributes.isEmpty()) {
-
-        DocumentAccessAttributesRecord ar =
-            new DocumentAccessAttributesRecord().documentId(loadedDoc.getDocumentId());
-
-        attributes.forEach(a -> {
-
-          String key = a.get("key").toString();
-          String stringValue = a.containsKey("stringValue") ? (String) a.get("stringValue") : null;
-          Double numberValue = a.containsKey("numberValue") ? (Double) a.get("numberValue") : null;
-          Boolean booleanValue =
-              a.containsKey("booleanValue") ? (Boolean) a.get("booleanValue") : null;
-
-          if (stringValue != null && !stringValue.isEmpty()) {
-            ar.addStringValue(key, stringValue);
-          }
-
-          if (numberValue != null) {
-            ar.addNumberValue(key, numberValue);
-          }
-
-          if (booleanValue != null) {
-            ar.addBooleanValue(key, booleanValue);
-          }
-        });
-
-        db.putItem(ar.getAttributes(siteId));
-      }
-    }
   }
 
   /**

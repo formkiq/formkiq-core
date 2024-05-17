@@ -942,139 +942,6 @@ Resources:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
-          /documents/{documentId}/accessAttributes:
-            get:
-              operationId: GetDocumentAccessAttributes
-              summary: Get document access attributes
-              description: Retrieves a document's access attributes (only "admin" role can call API)
-              tags:
-              - Access Control
-              parameters:
-              - $ref: '#/components/parameters/siteIdParam'
-              - $ref: '#/components/parameters/documentIdParam'
-              responses:
-                '200':
-                  description: 200 OK
-                  headers:
-                    Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
-                    Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
-                    Access-Control-Allow-Headers:
-                      $ref: '#/components/headers/AccessControlAllowHeaders'
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/GetDocumentAccessAttributesResponse'
-              security:
-              - ApiAuthorization: []
-              x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
-            post:
-              operationId: AddDocumentAccessAttributes
-              summary: Add document access attributes
-              description: Add a document's access attributes (only "admin" role can call API)
-              tags:
-              - Access Control
-              parameters:
-              - $ref: '#/components/parameters/siteIdParam'
-              - $ref: '#/components/parameters/documentIdParam'
-              requestBody:
-                required: true
-                content:
-                  application/json:
-                    schema:
-                      $ref: '#/components/schemas/AddDocumentAccessAttributesRequest'
-              responses:
-                '200':
-                  description: 200 OK
-                  headers:
-                    Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
-                    Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
-                    Access-Control-Allow-Headers:
-                      $ref: '#/components/headers/AccessControlAllowHeaders'
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/AddDocumentAccessAttributesResponse'
-                '400':
-                  description: 400 OK
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/ValidationErrorsResponse'
-              security:
-              - ApiAuthorization: []
-              x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
-            put:
-              operationId: SetDocumentAccessAttributes
-              summary: Set document access attributes
-              description: Set a document's access attributes (only "admin" role can call API)
-              tags:
-              - Access Control
-              parameters:
-              - $ref: '#/components/parameters/siteIdParam'
-              - $ref: '#/components/parameters/documentIdParam'
-              requestBody:
-                required: true
-                content:
-                  application/json:
-                    schema:
-                      $ref: '#/components/schemas/SetDocumentAccessAttributesRequest'
-              responses:
-                '200':
-                  description: 200 OK
-                  headers:
-                    Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
-                    Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
-                    Access-Control-Allow-Headers:
-                      $ref: '#/components/headers/AccessControlAllowHeaders'
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/SetDocumentAccessAttributesResponse'
-                '400':
-                  description: 400 OK
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/ValidationErrorsResponse'
-              security:
-              - ApiAuthorization: []
-              x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
-            delete:
-              operationId: DeleteDocumentAccessAttributes
-              summary: Delete document's access attributes
-              description: Delete a document's access attributes
-              tags:
-              - Access Control
-              parameters:
-              - $ref: '#/components/parameters/siteIdParam'
-              - $ref: '#/components/parameters/documentIdParam'
-              responses:
-                '200':
-                  description: 200 OK
-                  headers:
-                    Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
-                    Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
-                    Access-Control-Allow-Headers:
-                      $ref: '#/components/headers/AccessControlAllowHeaders'
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/DeleteDocumentAccessAttributesResponse'
-              security:
-              - ApiAuthorization: []
-              x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /documents/{documentId}/attributes:
             get:
               operationId: GetDocumentAttributes
@@ -6520,12 +6387,7 @@ Resources:
                   type: array
                   description: "List of Attributes to add to document"
                   items: 
-                    $ref: "#/components/schemas/AddDocumentAttribute"
-                accessAttributes:
-                  type: array
-                  description: "List of Access Attributes (only available in pro/enterprise)"
-                  items: 
-                    $ref: "#/components/schemas/AddAccessAttribute" 
+                    $ref: "#/components/schemas/AddDocumentAttribute" 
                 documents:
                   type: "array"
                   description: "List of child documents"
@@ -6723,49 +6585,6 @@ Resources:
                   items:
                     type: "string"
                     description: "Metadata value"
-            AddDocumentAccessAttributesRequest:
-              type: "object"
-              description: "List of document access attributes to add"
-              properties:
-                accessAttributes:
-                  type: "array"
-                  description: "List of document access attributes"
-                  items:
-                    $ref: "#/components/schemas/AddAccessAttribute"
-            SetDocumentAccessAttributesRequest:
-              type: "object"
-              description: "List of document access attributes to set"
-              properties:
-                accessAttributes:
-                  type: "array"
-                  description: "List of document access attributes"
-                  items:
-                    $ref: "#/components/schemas/AddAccessAttribute"
-            GetDocumentAccessAttributesResponse:
-              type: "object"
-              description: "List of document access attributes"
-              properties:
-                accessAttributes:
-                  type: "array"
-                  description: "List of document access attributes"
-                  items:
-                    $ref: "#/components/schemas/AccessAttribute"
-            AccessAttribute:
-              type: "object"
-              description: "Document Access Attribute (requires either: stringValue, numberValue, booleanValue)"
-              properties:
-                key:
-                  type: "string"
-                  description: "Attribute key"
-                stringValue:
-                  type: "string"
-                  description: "Attribute with string value"
-                numberValue:
-                  type: "number"
-                  description: "Attribute with number value"
-                booleanValue:
-                  type: "boolean"
-                  description: "Attribute with boolean value"
             AddDocumentAttributeValue:
               type: "object"
               description: "Document Attribute Value"
@@ -6814,24 +6633,6 @@ Resources:
                   description: "Attribute with number values"
                   items:
                     type: "number"
-                booleanValue:
-                  type: "boolean"
-                  description: "Attribute with boolean value"
-            AddAccessAttribute:
-              required:
-              - "key"
-              type: "object"
-              description: "Document Access Attribute (requires either: stringValue, numberValue, booleanValue)"
-              properties:
-                key:
-                  type: "string"
-                  description: "Attribute key"
-                stringValue:
-                  type: "string"
-                  description: "Attribute with string value"
-                numberValue:
-                  type: "number"
-                  description: "Attribute with number value"
                 booleanValue:
                   type: "boolean"
                   description: "Attribute with boolean value"
@@ -8413,24 +8214,6 @@ Resources:
                 insertedDate:
                   type: "string"
                   description: "Inserted Timestamp"
-            AddDocumentAccessAttributesResponse:
-              type: object
-              properties:
-                message:
-                  type: string
-                  description: Document Action message
-            SetDocumentAccessAttributesResponse:
-              type: object
-              properties:
-                message:
-                  type: string
-                  description: Document Action message
-            DeleteDocumentAccessAttributesResponse:
-              type: object
-              properties:
-                message:
-                  type: string
-                  description: Document Action message
             AddDocumentActionsResponse:
               type: object
               properties:
