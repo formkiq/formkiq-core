@@ -507,9 +507,9 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /sites/opa/accessPolicies:
             get:
-              operationId: GetOpaConfigurations
-              description: Returns a list of OPA Configuration, can only be requested with ADMIN privileges
-              summary: Get OPAs Configuration
+              operationId: GetOpaAccessPolicies
+              description: Returns a list of OPA Access Policies, can only be requested with ADMIN privileges
+              summary: Get OPAs Access Policies
               tags:
                 - Access Control
               responses:
@@ -528,7 +528,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        "$ref": "#/components/schemas/GetOpaConfigurationsResponse"
+                        "$ref": "#/components/schemas/GetOpaAccessPoliciesResponse"
               security:
                 - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -665,7 +665,7 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
             delete:
-              operationId: DeleteOpaAccessPolicyItem
+              operationId: DeleteOpaAccessPolicyItems
               summary: Delete OPA Access Policy Items
               description: Delete OPA Access Policy Items
               tags:
@@ -1929,12 +1929,29 @@ Resources:
                     schema:
                       $ref: '#/components/schemas/DocumentSearchRequest'
                     examples:
-                      Search_By_Key:
+                      Search_By_Attribute_Key:
+                        value:
+                          query:
+                            attribute:
+                              key: category
+                      Search_By_Attribute_Value:
+                        value:
+                          query:
+                            attribute:
+                              key: category
+                              eq: person
+                      Search_By_Attribute_Value_Begins_With:
+                        value:
+                          query:
+                            attribute:
+                              key: firstname
+                              beginsWith: jo                           
+                      Search_By_Tag_Key:
                         value:
                           query:
                             tag:
                               key: category
-                      Search_By_Value:
+                      Search_By_Tag_Value:
                         value:
                           query:
                             tag:
@@ -8739,7 +8756,7 @@ Resources:
                 message:
                   type: "string"
                   description: "Result message"
-            GetOpaConfigurationsResponse:
+            GetOpaAccessPoliciesResponse:
               type: object
               properties:
                 next:

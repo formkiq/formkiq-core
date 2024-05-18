@@ -21,10 +21,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api;
+package com.formkiq.aws.dynamodb.model;
 
-import com.formkiq.aws.dynamodb.model.SearchQuery;
-import com.formkiq.aws.dynamodb.model.SearchResponseFields;
 import com.formkiq.graalvm.annotations.Reflectable;
 
 /** Query Request. */

@@ -27,6 +27,7 @@ import static software.amazon.awssdk.utils.StringUtils.isEmpty;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import com.formkiq.aws.dynamodb.model.QueryRequest;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.validation.ValidationError;
