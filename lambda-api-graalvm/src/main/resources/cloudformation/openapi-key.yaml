@@ -1872,18 +1872,7 @@ Resources:
               - $ref: '#/components/parameters/keyParam'
               responses:
                 '200':
-                  description: 200 CREATED
-                  headers:
-                    Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
-                    Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
-                    Access-Control-Allow-Headers:
-                      $ref: '#/components/headers/AccessControlAllowHeaders'
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/DeleteAttributeResponse'
+                  $ref: '#/components/responses/200CorsDeleteResponse'
                 '400':
                   description: 400 OK
                   content:
@@ -8151,13 +8140,6 @@ Resources:
                 attribute:
                   $ref: "#/components/schemas/Attribute"
 
-            DeleteAttributeResponse:
-              type: object
-              properties:
-                message:
-                  type: string
-                  description: Attribute message
-
             GetAttributesResponse:
               type: "object"
               properties:
@@ -8178,10 +8160,16 @@ Resources:
                 key:
                   type: "string"
                   description: "Attribute Key"
+                dataType:
+                  $ref: "#/components/schemas/AttributeDataType"
+                inUse:
+                  type: "boolean"
+                  description: "Whether the Attribute is in use"
 
             AttributeType:
               type: string
               description: Type of Attribute
+              default: STANDARD
               enum:
                 - STANDARD
                 - OPA
@@ -8214,6 +8202,8 @@ Resources:
                   description: "Attribute Key"
                 dataType:
                   $ref: "#/components/schemas/AttributeDataType"
+                type:
+                  $ref: "#/components/schemas/AttributeType"
 
             AddAttributeResponse:
               type: "object"

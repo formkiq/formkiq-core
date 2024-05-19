@@ -21,20 +21,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api.transformers;
-
-import java.util.Map;
-import java.util.function.Function;
-import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
+package com.formkiq.stacks.dynamodb.attributes;
 
 /**
- * {@link Function} transform {@link AttributeRecord} to {@link Map}.
+ * Attribute Validation method.
  */
-public class AttributeRecordToMap implements Function<AttributeRecord, Map<String, Object>> {
+public enum AttributeValidationAccess {
 
-  @Override
-  public Map<String, Object> apply(final AttributeRecord a) {
-    return Map.of("key", a.getKey(), "type", a.getType().name(), "inUse",
-        Boolean.valueOf(a.isInUse()), "dataType", a.getDataType().name());
-  }
+  /** Admin Create Access. */
+  ADMIN_CREATE,
+  /** Admin Delete Access. */
+  ADMIN_DELETE,
+  /** Admin Set Access. */
+  ADMIN_SET,
+  /** Admin Update Access. */
+  ADMIN_UPDATE,
+  /** Create Access. */
+  CREATE,
+  /** Delete Access. */
+  DELETE,
+  /** None Access. */
+  NONE,
+  /** Set Access. */
+  SET,
+  /** Update Access. */
+  UPDATE;
 }

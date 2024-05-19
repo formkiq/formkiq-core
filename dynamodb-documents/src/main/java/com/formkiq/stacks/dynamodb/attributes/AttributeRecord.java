@@ -45,6 +45,8 @@ public class AttributeRecord implements DynamodbRecord<AttributeRecord> {
   private AttributeDataType dataType;
   /** Queue Document Id. */
   private String documentId;
+  /** In Use. */
+  private boolean inUse = false;
   /** Key of Attribute. */
   private String key;
   /** Type of Attribute. */
@@ -95,7 +97,8 @@ public class AttributeRecord implements DynamodbRecord<AttributeRecord> {
   @Override
   public Map<String, AttributeValue> getDataAttributes() {
     return Map.of("documentId", fromS(this.documentId), "dataType", fromS(this.dataType.name()),
-        "type", fromS(this.type.name()), "key", fromS(this.key));
+        "type", fromS(this.type.name()), "key", fromS(this.key), "isInUse",
+        AttributeValue.fromBool(Boolean.valueOf(this.inUse)));
   }
 
   /**
@@ -125,7 +128,8 @@ public class AttributeRecord implements DynamodbRecord<AttributeRecord> {
     if (!attrs.isEmpty()) {
       record = new AttributeRecord().documentId(ss(attrs, "documentId")).key(ss(attrs, "key"))
           .type(AttributeType.valueOf(ss(attrs, "type")))
-          .dataType(AttributeDataType.valueOf(ss(attrs, "dataType")));
+          .dataType(AttributeDataType.valueOf(ss(attrs, "dataType")))
+          .inUse(bb(attrs, "isInUse").booleanValue());
     }
 
     return record;
@@ -147,6 +151,26 @@ public class AttributeRecord implements DynamodbRecord<AttributeRecord> {
    */
   public AttributeType getType() {
     return this.type;
+  }
+
+  /**
+   * Set Is In Use.
+   * 
+   * @param attributeIsInUse boolean
+   * @return {@link AttributeRecord}
+   */
+  public AttributeRecord inUse(final boolean attributeIsInUse) {
+    this.inUse = attributeIsInUse;
+    return this;
+  }
+
+  /**
+   * Is In Use.
+   * 
+   * @return boolean
+   */
+  public boolean isInUse() {
+    return this.inUse;
   }
 
   /**

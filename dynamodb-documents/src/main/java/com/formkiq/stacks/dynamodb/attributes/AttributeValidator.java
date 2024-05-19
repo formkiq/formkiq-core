@@ -24,6 +24,7 @@
 package com.formkiq.stacks.dynamodb.attributes;
 
 import java.util.Collection;
+import java.util.Map;
 import com.formkiq.validation.ValidationError;
 
 /**
@@ -32,13 +33,25 @@ import com.formkiq.validation.ValidationError;
 public interface AttributeValidator {
 
   /**
+   * Get {@link AttributeRecord} {@link Map}.
+   * 
+   * @param siteId {@link String}
+   * @param documentAttributes {@link Collection} {@link DocumentAttributeRecord}
+   * @return {@link Map} {@link String} {@link AttributeRecord}
+   */
+  Map<String, AttributeRecord> getAttributeRecordMap(String siteId,
+      Collection<DocumentAttributeRecord> documentAttributes);
+
+  /**
    * Validates Deleting Attribute.
    * 
    * @param siteId {@link String}
    * @param attributeKey {@link String}
+   * @param validationAccess {@link AttributeValidationAccess}
    * @return {@link Collection} {@link ValidationError}
    */
-  Collection<ValidationError> validateDeleteAttribute(String siteId, String attributeKey);
+  Collection<ValidationError> validateDeleteAttribute(String siteId, String attributeKey,
+      AttributeValidationAccess validationAccess);
 
   /**
    * Validate Delete Attribute and Value.
@@ -46,10 +59,11 @@ public interface AttributeValidator {
    * @param siteId {@link String}
    * @param attributeKey {@link String}
    * @param attributeValue {@link String}
+   * @param validationAccess {@link AttributeValidationAccess}
    * @return {@link Collection} {@link ValidationError}
    */
   Collection<ValidationError> validateDeleteAttributeValue(String siteId, String attributeKey,
-      String attributeValue);
+      String attributeValue, AttributeValidationAccess validationAccess);
 
   /**
    * Validate {@link DocumentAttributeRecord}.
@@ -57,19 +71,26 @@ public interface AttributeValidator {
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param documentAttributes {@link Collection} {@link DocumentAttributeRecord}
+   * @param attributesMap {@link Map}
    * @param isDocumentUpdate is updating document
+   * @param access {@link AttributeValidationAccess}
    * @return {@link Collection} {@link ValidationError}
    */
   Collection<ValidationError> validateFullAttribute(String siteId, String documentId,
-      Collection<DocumentAttributeRecord> documentAttributes, boolean isDocumentUpdate);
+      Collection<DocumentAttributeRecord> documentAttributes,
+      Map<String, AttributeRecord> attributesMap, boolean isDocumentUpdate,
+      AttributeValidationAccess access);
 
   /**
    * Validate {@link DocumentAttributeRecord}.
    * 
    * @param siteId {@link String}
    * @param documentAttributes {@link DocumentAttributeRecord}
+   * @param attributesMap {@link Map}
+   * @param access {@link AttributeValidationAccess}
    * @return {@link Collection} {@link ValidationError}
    */
   Collection<ValidationError> validatePartialAttribute(String siteId,
-      Collection<DocumentAttributeRecord> documentAttributes);
+      Collection<DocumentAttributeRecord> documentAttributes,
+      Map<String, AttributeRecord> attributesMap, AttributeValidationAccess access);
 }

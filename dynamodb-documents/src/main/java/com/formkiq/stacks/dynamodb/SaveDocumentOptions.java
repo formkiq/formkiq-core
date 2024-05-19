@@ -23,6 +23,8 @@
  */
 package com.formkiq.stacks.dynamodb;
 
+import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
+
 /**
  * Options to use when saving a document.
  *
@@ -33,12 +35,23 @@ public class SaveDocumentOptions {
   private boolean saveDocumentDate = false;
   /** Time to Live. */
   private String timeToLive;
+  /** {@link AttributeValidationAccess}. */
+  private AttributeValidationAccess validationAccess;
 
   /**
    * constructor.
    */
   public SaveDocumentOptions() {
 
+  }
+
+  /**
+   * Is Validation Access.
+   * 
+   * @return boolean
+   */
+  public AttributeValidationAccess getValidationAccess() {
+    return this.validationAccess;
   }
 
   /**
@@ -78,6 +91,17 @@ public class SaveDocumentOptions {
    */
   public SaveDocumentOptions timeToLive(final String ttl) {
     this.timeToLive = ttl;
+    return this;
+  }
+
+  /**
+   * Set Is Admin Role.
+   * 
+   * @param access {@link AttributeValidationAccess}
+   * @return {@link SaveDocumentOptions}
+   */
+  public SaveDocumentOptions validationAccess(final AttributeValidationAccess access) {
+    this.validationAccess = access;
     return this;
   }
 }

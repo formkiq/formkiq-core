@@ -49,6 +49,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiMessageResponse;
 import com.formkiq.aws.services.lambda.ApiPagination;
+import com.formkiq.aws.services.lambda.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
@@ -66,6 +67,7 @@ import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentValidator;
 import com.formkiq.stacks.dynamodb.DocumentValidatorImpl;
 import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
+import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
@@ -171,6 +173,13 @@ public class DocumentIdRequestHandler
     return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(ditem));
   }
 
+  private AttributeValidationAccess getAttributeValidationAccess(
+      final ApiAuthorization authorization, final String siteId) {
+
+    boolean isAdmin = authorization.getPermissions(siteId).contains(ApiPermission.ADMIN);
+    return isAdmin ? AttributeValidationAccess.ADMIN_UPDATE : AttributeValidationAccess.UPDATE;
+  }
+
   @Override
   public String getRequestUrl() {
     return "/documents/{documentId}";
@@ -210,11 +219,12 @@ public class DocumentIdRequestHandler
         new DocumentAttributeToDocumentAttributeRecord(request.getDocumentId());
 
     List<DocumentAttribute> attributes = notNull(request.getAttributes());
-    List<DocumentAttributeRecord> searchAttributes =
+    List<DocumentAttributeRecord> documentAttributes =
         attributes.stream().flatMap(a -> tr.apply(a).stream()).toList();
 
-    SaveDocumentOptions options = new SaveDocumentOptions();
-    service.saveDocument(siteId, item, tags, searchAttributes, options);
+    SaveDocumentOptions options = new SaveDocumentOptions()
+        .validationAccess(getAttributeValidationAccess(authorization, siteId));
+    service.saveDocument(siteId, item, tags, documentAttributes, options);
 
     AddDocumentRequestToPresignedUrls addDocumentRequestToPresignedUrls =
         new AddDocumentRequestToPresignedUrls(awsservice, siteId, null, Optional.empty());

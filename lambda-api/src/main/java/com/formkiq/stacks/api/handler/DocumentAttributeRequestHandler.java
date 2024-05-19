@@ -37,6 +37,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiMessageResponse;
+import com.formkiq.aws.services.lambda.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
@@ -46,7 +47,9 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.transformers.DocumentAttributeRecordToMap;
 import com.formkiq.stacks.api.transformers.DocumentAttributeToDocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidation;
+import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidator;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidatorImpl;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
@@ -73,11 +76,14 @@ public class DocumentAttributeRequestHandler
     String documentId = event.getPathParameters().get("documentId");
     String attributeKey = event.getPathParameters().get("attributeKey");
 
+    AttributeValidationAccess validationAccess =
+        getAttributeValidationAccessDelete(authorization, siteId);
+
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
     if (!documentService.deleteDocumentAttribute(siteId, documentId, attributeKey,
-        AttributeValidation.FULL)) {
+        AttributeValidation.FULL, validationAccess)) {
       throw new NotFoundException(
-          "attribute '" + attributeKey + "' not found on document ' " + documentId + "'");
+          "attribute '" + attributeKey + "' not found on document '" + documentId + "'");
     }
 
     ApiResponse resp = new ApiMessageResponse(
@@ -105,11 +111,25 @@ public class DocumentAttributeRequestHandler
 
     if (map.isEmpty()) {
       throw new NotFoundException(
-          "attribute '" + attributeKey + "' not found on document ' " + documentId + "'");
+          "attribute '" + attributeKey + "' not found on document '" + documentId + "'");
     }
 
     ApiMapResponse resp = new ApiMapResponse(Map.of("attribute", map.iterator().next()));
     return new ApiRequestHandlerResponse(SC_OK, resp);
+  }
+
+  private AttributeValidationAccess getAttributeValidationAccess(
+      final ApiAuthorization authorization, final String siteId) {
+
+    boolean isAdmin = authorization.getPermissions(siteId).contains(ApiPermission.ADMIN);
+    return isAdmin ? AttributeValidationAccess.ADMIN_UPDATE : AttributeValidationAccess.UPDATE;
+  }
+
+  private AttributeValidationAccess getAttributeValidationAccessDelete(
+      final ApiAuthorization authorization, final String siteId) {
+
+    boolean isAdmin = authorization.getPermissions(siteId).contains(ApiPermission.ADMIN);
+    return isAdmin ? AttributeValidationAccess.ADMIN_DELETE : AttributeValidationAccess.DELETE;
   }
 
   private Collection<DocumentAttributeRecord> getDocumentAttributesFromRequest(
@@ -153,17 +173,24 @@ public class DocumentAttributeRequestHandler
 
     DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
     AttributeValidator validator = new AttributeValidatorImpl(db);
-    Collection<ValidationError> errors =
-        validator.validatePartialAttribute(siteId, documentAttributes);
+
+    Map<String, AttributeRecord> attributeRecordMap =
+        validator.getAttributeRecordMap(siteId, documentAttributes);
+
+    AttributeValidationAccess attributeValidationAccess =
+        getAttributeValidationAccess(authorization, siteId);
+
+    Collection<ValidationError> errors = validator.validatePartialAttribute(siteId,
+        documentAttributes, attributeRecordMap, attributeValidationAccess);
 
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }
 
     documentService.deleteDocumentAttribute(siteId, documentId, attributeKey,
-        AttributeValidation.NONE);
+        AttributeValidation.NONE, AttributeValidationAccess.NONE);
     documentService.saveDocumentAttributes(siteId, documentId, documentAttributes, true,
-        AttributeValidation.NONE);
+        AttributeValidation.NONE, attributeValidationAccess);
 
     ApiResponse resp = new ApiMessageResponse(
         "Updated attribute '" + attributeKey + "' on document '" + documentId + "'");

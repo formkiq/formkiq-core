@@ -709,7 +709,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       } catch (ApiException e) {
         // then
         assertEquals(
-            "{\"message\":\"attribute 'strings' not found on document ' " + documentId + "'\"}",
+            "{\"message\":\"attribute 'strings' not found on document '" + documentId + "'\"}",
             e.getResponseBody());
       }
     }

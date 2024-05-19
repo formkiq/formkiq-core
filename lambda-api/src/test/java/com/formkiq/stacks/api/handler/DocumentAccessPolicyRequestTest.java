@@ -59,7 +59,7 @@ public class DocumentAccessPolicyRequestTest extends AbstractApiClientRequestTes
 
       try {
         // when
-        this.api.deleteOpaAccessPolicyItem(siteId);
+        this.api.deleteOpaAccessPolicyItems(siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -105,7 +105,7 @@ public class DocumentAccessPolicyRequestTest extends AbstractApiClientRequestTes
 
     try {
       // when
-      this.api.getOpaConfigurations();
+      this.api.getOpaAccessPolicies();
       fail();
     } catch (ApiException e) {
       // then

@@ -43,6 +43,7 @@ import com.formkiq.stacks.api.transformers.AttributeRecordToMap;
 import com.formkiq.stacks.dynamodb.attributes.AttributeDataType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
+import com.formkiq.stacks.dynamodb.attributes.AttributeType;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
 
@@ -94,8 +95,11 @@ public class AttributesRequestHandler
 
     AddAttributeRequest addAttribute = fromBodyToObject(event, AddAttributeRequest.class);
     String key = addAttribute.getAttribute().getKey();
+
     AttributeDataType dataType = addAttribute.getAttribute().getDataType();
-    Collection<ValidationError> errors = service.addAttribute(siteId, key, dataType);
+    AttributeType type = addAttribute.getAttribute().getType();
+
+    Collection<ValidationError> errors = service.addAttribute(siteId, key, dataType, type);
 
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);

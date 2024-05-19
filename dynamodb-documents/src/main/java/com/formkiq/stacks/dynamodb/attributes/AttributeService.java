@@ -40,9 +40,11 @@ public interface AttributeService {
    * @param siteId {@link String}
    * @param key {@link String}
    * @param dataType {@link AttributeDataType}
+   * @param type {@link AttributeType}
    * @return {@link Collection} {@link ValidationError}
    */
-  Collection<ValidationError> addAttribute(String siteId, String key, AttributeDataType dataType);
+  Collection<ValidationError> addAttribute(String siteId, String key, AttributeDataType dataType,
+      AttributeType type);
 
   /**
    * Delete Attribute.
@@ -81,4 +83,22 @@ public interface AttributeService {
    * @return {@link AttributeRecord}
    */
   Map<String, AttributeRecord> getAttributes(String siteId, Collection<String> attributeKeys);
+
+  /**
+   * Set {@link AttributeType}.
+   * 
+   * @param siteId {@link String}
+   * @param key {@link String}
+   * @param type {@link AttributeType}
+   */
+  void setAttributeType(String siteId, String key, AttributeType type);
+
+
+  /**
+   * Set {@link AttributeRecord} in use.
+   * 
+   * @param siteId {@link String}'
+   * @param key {@link String}
+   */
+  void setInUse(String siteId, String key);
 }
