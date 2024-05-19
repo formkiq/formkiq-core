@@ -661,6 +661,15 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
       SearchAttributeCriteria search = query.getAttribute();
 
       if (!notNull(query.getAttributes()).isEmpty()) {
+
+        Collection<String> list =
+            query.getAttributes().stream().map(a -> a.getKey()).collect(Collectors.toSet());
+        
+        if (list.size() != query.getAttributes().size()) {
+          throw new ValidationException(
+              Arrays.asList(new ValidationErrorImpl().error("duplicate attributes in query")));
+        }
+
         search = createAttributesCriteria(siteId, query);
       }
 

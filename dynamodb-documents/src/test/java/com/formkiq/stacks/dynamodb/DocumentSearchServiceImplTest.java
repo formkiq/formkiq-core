@@ -30,6 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.time.ZonedDateTime;
@@ -52,6 +53,7 @@ import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.dynamodb.model.SearchAttributeCriteria;
 import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
@@ -1074,6 +1076,29 @@ public class DocumentSearchServiceImplTest {
       assertEquals(2, results.getResults().size());
       assertEquals(documentId0, results.getResults().get(0).getDocumentId());
       assertEquals(documentId1, results.getResults().get(1).getDocumentId());
+    }
+  }
+
+  /**
+   * Search by duplicate attributes.
+   * 
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testSearch20() throws ValidationException {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      SearchAttributeCriteria a0 = new SearchAttributeCriteria().key("category").eq("person");
+      SearchQuery q = new SearchQuery().attributes(Arrays.asList(a0, a0));
+
+      // when
+      try {
+        this.searchService.search(siteId, q, null, null, MAX_RESULTS);
+        fail();
+      } catch (ValidationException e) {
+        // then
+        assertEquals("duplicate attributes in query", e.errors().iterator().next().error());
+      }
     }
   }
 }
