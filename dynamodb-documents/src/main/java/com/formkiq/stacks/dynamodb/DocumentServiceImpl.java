@@ -75,13 +75,18 @@ import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
+import com.formkiq.stacks.dynamodb.attributes.AttributeService;
+import com.formkiq.stacks.dynamodb.attributes.AttributeServiceDynamodb;
+import com.formkiq.stacks.dynamodb.attributes.AttributeType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidation;
+import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidator;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidatorImpl;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
 import com.formkiq.stacks.dynamodb.attributes.DynamicObjectToDocumentAttributeRecord;
 import com.formkiq.validation.ValidationError;
+import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -104,6 +109,10 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
   /** Maximum number of Records DynamoDb can be queries for at a time. */
   private static final int MAX_QUERY_RECORDS = 100;
+  /** {@link AttributeService}. */
+  private AttributeService attributeService;
+  /** {@link AttributeValidator}. */
+  private AttributeValidator attributeValidator;
   /** {@link DynamoDbClient}. */
   private DynamoDbClient dbClient;
   /** {@link DynamoDbService}. */
@@ -124,8 +133,6 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   private SimpleDateFormat yyyymmddFormat;
   /** {@link DateTimeFormatter}. */
   private DateTimeFormatter yyyymmddFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-  /** {@link AttributeValidator}. */
-  private AttributeValidator attributeValidator;
 
   /**
    * constructor.
@@ -148,6 +155,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     this.folderIndexProcessor = new FolderIndexProcessorImpl(connection, documentsTable);
     this.dbService = new DynamoDbServiceImpl(connection, documentsTable);
     this.attributeValidator = new AttributeValidatorImpl(this.dbService);
+    this.attributeService = new AttributeServiceDynamodb(this.dbService);
     this.yyyymmddFormat = new SimpleDateFormat("yyyy-MM-dd");
 
     TimeZone tz = TimeZone.getTimeZone("UTC");
@@ -223,43 +231,44 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
    * @param documentAttributes {@link Collection} {@link DocumentAttributeRecord}
    * @param isUpdate is document update
    * @param validation {@link AttributeValidation}
+   * @param validationAccess {@link AttributeValidationAccess}
    * @throws ValidationException ValidationException
    */
   private void appendDocumentAttributes(final WriteRequestBuilder writeBuilder, final String siteId,
       final String documentId, final Collection<DocumentAttributeRecord> documentAttributes,
-      final boolean isUpdate, final AttributeValidation validation) throws ValidationException {
+      final boolean isUpdate, final AttributeValidation validation,
+      final AttributeValidationAccess validationAccess) throws ValidationException {
 
     if (documentAttributes != null) {
 
-      validateDocumentAttributes(siteId, documentId, documentAttributes, isUpdate, validation);
+      Map<String, AttributeRecord> attributeMap = validateDocumentAttributes(siteId, documentId,
+          documentAttributes, isUpdate, validation, validationAccess);
+
+      for (AttributeRecord attribute : attributeMap.values()) {
+        if (!attribute.isInUse()) {
+          this.attributeService.setInUse(siteId, attribute.getKey());
+        }
+      }
+
+      // when updating attributes remove existing attribute keys
+      if (AttributeValidationAccess.ADMIN_UPDATE.equals(validationAccess)
+          || AttributeValidationAccess.UPDATE.equals(validationAccess)) {
+
+        List<String> attributeKeys = documentAttributes.stream().map(a -> a.getKey()).toList();
+        for (String attributeKey : attributeKeys) {
+          deleteDocumentAttribute(siteId, documentId, attributeKey, AttributeValidation.NONE,
+              AttributeValidationAccess.NONE);
+        }
+      }
+
+      // when setting attributes remove existing attribute
+      if (AttributeValidationAccess.ADMIN_SET.equals(validationAccess)
+          || AttributeValidationAccess.SET.equals(validationAccess)) {
+        deleteDocumentAttributes(siteId, documentId, validationAccess);
+      }
 
       writeBuilder.appends(this.documentTableName,
           documentAttributes.stream().map(a -> a.getAttributes(siteId)).toList());
-    }
-  }
-
-  private void validateDocumentAttributes(final String siteId, final String documentId,
-      final Collection<DocumentAttributeRecord> documentAttributes, final boolean isUpdate,
-      final AttributeValidation validation) throws ValidationException {
-
-    Collection<ValidationError> errors = Collections.emptyList();
-
-    switch (validation) {
-      case FULL:
-        errors = this.attributeValidator.validateFullAttribute(siteId, documentId,
-            documentAttributes, isUpdate);
-        break;
-      case PARTIAL:
-        errors = this.attributeValidator.validatePartialAttribute(siteId, documentAttributes);
-        break;
-      case NONE:
-        break;
-      default:
-        throw new IllegalArgumentException("Unexpected value: " + validation);
-    }
-
-    if (!errors.isEmpty()) {
-      throw new ValidationException(errors);
     }
   }
 
@@ -339,11 +348,12 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
   @Override
   public boolean deleteDocumentAttribute(final String siteId, final String documentId,
-      final String attributeKey, final AttributeValidation validation) throws ValidationException {
+      final String attributeKey, final AttributeValidation validation,
+      final AttributeValidationAccess validationAccess) throws ValidationException {
 
     if (!AttributeValidation.NONE.equals(validation)) {
       Collection<ValidationError> errors =
-          this.attributeValidator.validateDeleteAttribute(siteId, attributeKey);
+          this.attributeValidator.validateDeleteAttribute(siteId, attributeKey, validationAccess);
       if (!errors.isEmpty()) {
         throw new ValidationException(errors);
       }
@@ -364,7 +374,13 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
-  public boolean deleteDocumentAttributes(final String siteId, final String documentId) {
+  public boolean deleteDocumentAttributes(final String siteId, final String documentId)
+      throws ValidationException {
+    return deleteDocumentAttributes(siteId, documentId, null);
+  }
+
+  private boolean deleteDocumentAttributes(final String siteId, final String documentId,
+      final AttributeValidationAccess validationAccess) throws ValidationException {
 
     final int limit = 100;
     DocumentAttributeRecord r = new DocumentAttributeRecord().documentId(documentId);
@@ -372,6 +388,23 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     QueryConfig config = new QueryConfig();
     QueryResponse response =
         this.dbService.queryBeginsWith(config, r.fromS(r.pk(siteId)), r.fromS(ATTR), null, limit);
+
+    if (AttributeValidationAccess.SET.equals(validationAccess)) {
+      List<String> attributeKeys = response.items().stream().map(a -> a.get("key").s()).toList();
+
+      Map<String, AttributeRecord> attributes =
+          this.attributeService.getAttributes(siteId, attributeKeys);
+
+      Optional<AttributeRecord> o =
+          attributes.values().stream().filter(a -> AttributeType.OPA.equals(a.getType())).findAny();
+
+      if (!o.isEmpty()) {
+        String key = o.get().getKey();
+        String error = "Cannot remove attribute '" + key + "' type OPA";
+        throw new ValidationException(
+            Arrays.asList(new ValidationErrorImpl().key(key).error(error)));
+      }
+    }
 
     List<Map<String, AttributeValue>> keys =
         response.items().stream().map(a -> Map.of(PK, a.get(PK), SK, a.get(SK))).toList();
@@ -381,10 +414,11 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
   @Override
   public boolean deleteDocumentAttributeValue(final String siteId, final String documentId,
-      final String attributeKey, final String attributeValue) throws ValidationException {
+      final String attributeKey, final String attributeValue,
+      final AttributeValidationAccess validationAccess) throws ValidationException {
 
-    Collection<ValidationError> errors =
-        this.attributeValidator.validateDeleteAttributeValue(siteId, attributeKey, attributeValue);
+    Collection<ValidationError> errors = this.attributeValidator
+        .validateDeleteAttributeValue(siteId, attributeKey, attributeValue, validationAccess);
 
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
@@ -1641,7 +1675,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
         .appends(this.documentTableName, folderIndex);
 
     appendDocumentAttributes(writeBuilder, siteId, document.getDocumentId(), attributes,
-        documentExists, AttributeValidation.FULL);
+        documentExists, AttributeValidation.FULL, options.getValidationAccess());
 
     if (hasDocumentChanged) {
       writeBuilder = writeBuilder.appends(documentVersionsTableName, Arrays.asList(previous));
@@ -1670,12 +1704,12 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   @Override
   public void saveDocument(final String siteId, final DocumentItem document,
       final Collection<DocumentTag> tags,
-      final Collection<DocumentAttributeRecord> searchAttributes, final SaveDocumentOptions options)
-      throws ValidationException {
+      final Collection<DocumentAttributeRecord> documentAttributes,
+      final SaveDocumentOptions options) throws ValidationException {
 
     updatePathFromDeepLink(document);
     Map<String, AttributeValue> keys = keysDocument(siteId, document.getDocumentId());
-    saveDocument(keys, siteId, document, tags, searchAttributes, options);
+    saveDocument(keys, siteId, document, tags, documentAttributes, options);
 
     for (DocumentItem childDoc : notNull(document.getDocuments())) {
 
@@ -1698,10 +1732,13 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   @Override
   public void saveDocumentAttributes(final String siteId, final String documentId,
       final Collection<DocumentAttributeRecord> attributes, final boolean isUpdate,
-      final AttributeValidation validation) throws ValidationException {
+      final AttributeValidation validation, final AttributeValidationAccess validationAccess)
+      throws ValidationException {
 
     WriteRequestBuilder writeBuilder = new WriteRequestBuilder();
-    appendDocumentAttributes(writeBuilder, siteId, documentId, attributes, isUpdate, validation);
+    appendDocumentAttributes(writeBuilder, siteId, documentId, attributes, isUpdate, validation,
+        validationAccess);
+
     writeBuilder.batchWriteItem(this.dbClient);
   }
 
@@ -1962,5 +1999,37 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
         }
       }
     }
+  }
+
+  private Map<String, AttributeRecord> validateDocumentAttributes(final String siteId,
+      final String documentId, final Collection<DocumentAttributeRecord> documentAttributes,
+      final boolean isUpdate, final AttributeValidation validation,
+      final AttributeValidationAccess validationAccess) throws ValidationException {
+
+    Collection<ValidationError> errors = Collections.emptyList();
+
+    Map<String, AttributeRecord> attributeRecordMap =
+        this.attributeValidator.getAttributeRecordMap(siteId, documentAttributes);
+
+    switch (validation) {
+      case FULL:
+        errors = this.attributeValidator.validateFullAttribute(siteId, documentId,
+            documentAttributes, attributeRecordMap, isUpdate, validationAccess);
+        break;
+      case PARTIAL:
+        errors = this.attributeValidator.validatePartialAttribute(siteId, documentAttributes,
+            attributeRecordMap, validationAccess);
+        break;
+      case NONE:
+        break;
+      default:
+        throw new IllegalArgumentException("Unexpected value: " + validation);
+    }
+
+    if (!errors.isEmpty()) {
+      throw new ValidationException(errors);
+    }
+
+    return attributeRecordMap;
   }
 }

@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.dynamodb.attributes;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -40,6 +41,7 @@ import com.formkiq.aws.dynamodb.QueryResponseToPagination;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 
 
@@ -63,7 +65,7 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
 
   @Override
   public Collection<ValidationError> addAttribute(final String siteId, final String key,
-      final AttributeDataType dataType) {
+      final AttributeDataType dataType, final AttributeType type) {
 
     Collection<ValidationError> errors = Collections.emptyList();
 
@@ -71,9 +73,9 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
       errors = Arrays.asList(new ValidationErrorImpl().key("key").error("'key' is required"));
     } else {
 
-      AttributeRecord a =
-          new AttributeRecord().documentId(key).key(key).type(AttributeType.STANDARD)
-              .dataType(dataType != null ? dataType : AttributeDataType.STRING);
+      AttributeRecord a = new AttributeRecord().documentId(key).key(key)
+          .type(type != null ? type : AttributeType.STANDARD)
+          .dataType(dataType != null ? dataType : AttributeDataType.STRING);
       this.db.putItem(a.getAttributes(siteId));
     }
 
@@ -82,11 +84,28 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
 
   @Override
   public Collection<ValidationError> deleteAttribute(final String siteId, final String key) {
+
+    boolean deleted = false;
+    Collection<ValidationError> errors = new ArrayList<>();
     AttributeRecord r = new AttributeRecord().documentId(key);
     Map<String, AttributeValue> dbKey = this.db.get(r.fromS(r.pk(siteId)), r.fromS(r.sk()));
-    boolean deleted = this.db.deleteItem(dbKey);
-    return !deleted ? Arrays.asList(new ValidationErrorImpl().key("key").error("'key' not found"))
-        : Collections.emptyList();
+
+    if (!dbKey.isEmpty()) {
+
+      r = r.getFromAttributes(siteId, dbKey);
+
+      if (!r.isInUse()) {
+        deleted = this.db.deleteItem(Map.of(PK, dbKey.get(PK), SK, dbKey.get(SK)));
+      } else {
+        errors.add(new ValidationErrorImpl().error("attribute 'key' is in use, cannot be deleted"));
+      }
+    }
+
+    if (!deleted && errors.isEmpty()) {
+      errors.add(new ValidationErrorImpl().key("key").error("attribute 'key' not found"));
+    }
+
+    return errors;
   }
 
   @Override
@@ -136,5 +155,24 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
 
     return values.stream().map(a -> new AttributeRecord().getFromAttributes(siteId, a))
         .collect(Collectors.toMap(a -> a.getKey(), a -> a));
+  }
+
+  @Override
+  public void setAttributeType(final String siteId, final String key, final AttributeType type) {
+    AttributeRecord r = new AttributeRecord().key(key).documentId(key);
+
+    Map<String, AttributeValueUpdate> attributes = Map.of("type",
+        AttributeValueUpdate.builder().value(AttributeValue.fromS(type.name())).build());
+    this.db.updateItem(r.fromS(r.pk(siteId)), r.fromS(r.sk()), attributes);
+  }
+
+  @Override
+  public void setInUse(final String siteId, final String key) {
+
+    AttributeRecord r = new AttributeRecord().key(key).documentId(key);
+
+    Map<String, AttributeValueUpdate> attributes = Map.of("isInUse",
+        AttributeValueUpdate.builder().value(AttributeValue.fromBool(Boolean.TRUE)).build());
+    this.db.updateItem(r.fromS(r.pk(siteId)), r.fromS(r.sk()), attributes);
   }
 }

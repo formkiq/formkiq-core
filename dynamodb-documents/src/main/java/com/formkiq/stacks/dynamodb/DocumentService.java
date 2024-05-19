@@ -38,6 +38,7 @@ import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.plugins.tagschema.DocumentTagLoader;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidation;
+import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -101,11 +102,13 @@ public interface DocumentService extends DocumentTagLoader {
    * @param documentId {@link String}
    * @param attributeKey {@link String}
    * @param validation {@link AttributeValidation}
+   * @param validationAccess {@link AttributeValidationAccess}
    * @return boolean
    * @throws ValidationException ValidationException
    */
   boolean deleteDocumentAttribute(String siteId, String documentId, String attributeKey,
-      AttributeValidation validation) throws ValidationException;
+      AttributeValidation validation, AttributeValidationAccess validationAccess)
+      throws ValidationException;
 
   /**
    * Delete Document Attributes.
@@ -113,8 +116,9 @@ public interface DocumentService extends DocumentTagLoader {
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @return boolean
+   * @throws ValidationException ValidationException
    */
-  boolean deleteDocumentAttributes(String siteId, String documentId);
+  boolean deleteDocumentAttributes(String siteId, String documentId) throws ValidationException;
 
   /**
    * Delete Document Attribute Value.
@@ -123,11 +127,12 @@ public interface DocumentService extends DocumentTagLoader {
    * @param documentId {@link String}
    * @param attributeKey {@link String}
    * @param attributeValue {@link String}
+   * @param validationAccess {@link AttributeValidationAccess}
    * @return boolean
    * @throws ValidationException ValidationException
    */
   boolean deleteDocumentAttributeValue(String siteId, String documentId, String attributeKey,
-      String attributeValue) throws ValidationException;
+      String attributeValue, AttributeValidationAccess validationAccess) throws ValidationException;
 
   /**
    * Delete Document Format.
@@ -480,11 +485,13 @@ public interface DocumentService extends DocumentTagLoader {
    * @param attributes {@link Collection} {@link DocumentAttributeRecord}
    * @param isUpdate boolean
    * @param validation {@link AttributeValidation}
+   * @param validationAccess {@link AttributeValidationAccess}
    * @throws ValidationException ValidationException
    */
   void saveDocumentAttributes(String siteId, String documentId,
       Collection<DocumentAttributeRecord> attributes, boolean isUpdate,
-      AttributeValidation validation) throws ValidationException;
+      AttributeValidation validation, AttributeValidationAccess validationAccess)
+      throws ValidationException;
 
   /**
    * Save Document Format.

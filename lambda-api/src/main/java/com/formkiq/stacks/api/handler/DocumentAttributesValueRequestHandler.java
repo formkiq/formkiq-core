@@ -30,11 +30,13 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMessageResponse;
+import com.formkiq.aws.services.lambda.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 
 /**
  * {@link ApiGatewayRequestHandler} for
@@ -50,6 +52,13 @@ public class DocumentAttributesValueRequestHandler
    */
   public DocumentAttributesValueRequestHandler() {}
 
+  private AttributeValidationAccess getAttributeValidationAccessDelete(
+      final ApiAuthorization authorization, final String siteId) {
+
+    boolean isAdmin = authorization.getPermissions(siteId).contains(ApiPermission.ADMIN);
+    return isAdmin ? AttributeValidationAccess.ADMIN_DELETE : AttributeValidationAccess.DELETE;
+  }
+
   @Override
   public ApiRequestHandlerResponse delete(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
@@ -60,9 +69,12 @@ public class DocumentAttributesValueRequestHandler
     String attributeKey = event.getPathParameters().get("attributeKey");
     String attributeValue = event.getPathParameters().get("attributeValue");
 
+    AttributeValidationAccess validationAccess =
+        getAttributeValidationAccessDelete(authorization, siteId);
+
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
     if (!documentService.deleteDocumentAttributeValue(siteId, documentId, attributeKey,
-        attributeValue)) {
+        attributeValue, validationAccess)) {
       throw new NotFoundException(
           "attribute '" + attributeKey + "' not found on document ' " + documentId + "'");
     }

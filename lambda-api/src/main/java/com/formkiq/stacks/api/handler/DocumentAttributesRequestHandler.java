@@ -41,6 +41,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiMessageResponse;
 import com.formkiq.aws.services.lambda.ApiPagination;
+import com.formkiq.aws.services.lambda.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
@@ -51,6 +52,7 @@ import com.formkiq.stacks.api.transformers.DocumentAttributeRecordToMap;
 import com.formkiq.stacks.api.transformers.DocumentAttributeToDocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidation;
+import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
@@ -135,13 +137,24 @@ public class DocumentAttributesRequestHandler
 
     List<DocumentAttributeRecord> attributes = getDocumentAttributesFromRequest(event, documentId);
 
+    AttributeValidationAccess validationAccess = getAttributeValidationAccess(authorization, siteId,
+        AttributeValidationAccess.ADMIN_CREATE, AttributeValidationAccess.CREATE);
+
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
     documentService.saveDocumentAttributes(siteId, documentId, attributes, false,
-        AttributeValidation.FULL);
+        AttributeValidation.FULL, validationAccess);
 
     ApiResponse resp =
         new ApiMessageResponse("added attributes to documentId '" + documentId + "'");
     return new ApiRequestHandlerResponse(SC_CREATED, resp);
+  }
+
+  private AttributeValidationAccess getAttributeValidationAccess(
+      final ApiAuthorization authorization, final String siteId,
+      final AttributeValidationAccess admin, final AttributeValidationAccess regular) {
+
+    boolean isAdmin = authorization.getPermissions(siteId).contains(ApiPermission.ADMIN);
+    return isAdmin ? admin : regular;
   }
 
   @Override
@@ -157,9 +170,11 @@ public class DocumentAttributesRequestHandler
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
-    documentService.deleteDocumentAttributes(siteId, documentId);
+    AttributeValidationAccess validationAccess = getAttributeValidationAccess(authorization, siteId,
+        AttributeValidationAccess.ADMIN_SET, AttributeValidationAccess.SET);
+
     documentService.saveDocumentAttributes(siteId, documentId, attributes, false,
-        AttributeValidation.FULL);
+        AttributeValidation.FULL, validationAccess);
 
     ApiResponse resp = new ApiMessageResponse("set attributes on documentId '" + documentId + "'");
     return new ApiRequestHandlerResponse(SC_CREATED, resp);

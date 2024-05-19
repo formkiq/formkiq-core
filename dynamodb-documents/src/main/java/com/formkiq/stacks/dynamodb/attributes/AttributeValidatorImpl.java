@@ -62,13 +62,14 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
     this.schemaService = new SchemaServiceDynamodb(dbService);
   }
 
-  private Map<String, AttributeRecord> getAttributeRecordMap(final String siteId,
-      final Collection<DocumentAttributeRecord> searchAttributes) {
-    List<String> attributeKeys = searchAttributes.stream().map(a -> a.getKey()).toList();
+  @Override
+  public Map<String, AttributeRecord> getAttributeRecordMap(final String siteId,
+      final Collection<DocumentAttributeRecord> documentAttributes) {
 
-    Map<String, AttributeRecord> attributesMap =
-        this.attributeService.getAttributes(siteId, attributeKeys);
-    return attributesMap;
+    List<String> attributeKeys =
+        documentAttributes.stream().filter(a -> !isEmpty(a.getKey())).map(a -> a.getKey()).toList();
+
+    return this.attributeService.getAttributes(siteId, attributeKeys);
   }
 
   private boolean isEmptyDefaultValue(final SchemaAttributesRequired attribute) {
@@ -137,14 +138,15 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
    * Validate Attribute exists and has the correct data type.
    * 
    * @param attributesMap {@link Map} {@link AttributeRecord}
-   * @param searchAttributes {@link Collection} {@link DocumentAttributeRecord}
+   * @param documentAttributes {@link Collection} {@link DocumentAttributeRecord}
+   * @param access {@link AttributeValidationAccess}
    * @param errors {@link Collection} {@link ValidationError}
    */
   private void validateAttributeExistsAndDataType(final Map<String, AttributeRecord> attributesMap,
-      final Collection<DocumentAttributeRecord> searchAttributes,
-      final Collection<ValidationError> errors) {
+      final Collection<DocumentAttributeRecord> documentAttributes,
+      final AttributeValidationAccess access, final Collection<ValidationError> errors) {
 
-    for (DocumentAttributeRecord da : searchAttributes) {
+    for (DocumentAttributeRecord da : documentAttributes) {
 
       if (!DocumentAttributeValueType.COMPOSITE_STRING.equals(da.getValueType())) {
 
@@ -155,28 +157,21 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
 
         } else {
 
-          AttributeDataType dataType = attributesMap.get(da.getKey()).getDataType();
+          AttributeRecord attribute = attributesMap.get(da.getKey());
+          AttributeDataType dataType = attribute.getDataType();
           validateDataType(da, dataType, errors);
+
+          if (AttributeValidationAccess.UPDATE.equals(access)
+              && AttributeType.OPA.equals(attribute.getType())) {
+
+            String errorMsg = "attribute '" + da.getKey()
+                + "' is an access attribute, can only be changed by Admin";
+            errors.add(new ValidationErrorImpl().key(da.getKey()).error(errorMsg));
+          }
         }
       }
     }
   }
-
-  // @Override
-  // public Collection<ValidationError> validateAttribute(final String siteId,
-  // final String attributeKey, final String value) {
-  //
-  // Collection<ValidationError> errors = new ArrayList<>();
-  //
-  // AttributeRecord record = this.attributeService.getAttribute(siteId, attributeKey);
-  //
-  // if (record == null) {
-  // String errorMsg = "attribute '" + attributeKey + "' not found";
-  // errors.add(new ValidationErrorImpl().key(attributeKey).error(errorMsg));
-  // }
-  //
-  // return errors;
-  // }
 
   private void validateDataType(final DocumentAttributeRecord a, final AttributeDataType dataType,
       final Collection<ValidationError> errors) {
@@ -217,22 +212,44 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
 
   @Override
   public Collection<ValidationError> validateDeleteAttribute(final String siteId,
-      final String attributeKey) {
+      final String attributeKey, final AttributeValidationAccess validationAccess) {
 
     Collection<ValidationError> errors = new ArrayList<>();
 
     if (Strings.isEmpty(attributeKey)) {
+
       errors.add(new ValidationErrorImpl().key("key").error("'key' is required"));
+
     } else {
-      validateRequiredAttribute(siteId, attributeKey, errors);
+
+      validateOpaAttribute(siteId, attributeKey, validationAccess, errors);
+
+      if (errors.isEmpty()) {
+        validateRequiredAttribute(siteId, attributeKey, errors);
+      }
     }
 
     return errors;
   }
 
+  private void validateOpaAttribute(final String siteId, final String attributeKey,
+      final AttributeValidationAccess validationAccess, final Collection<ValidationError> errors) {
+
+    if (AttributeValidationAccess.DELETE.equals(validationAccess)) {
+      AttributeRecord attribute = this.attributeService.getAttribute(siteId, attributeKey);
+
+      if (attribute != null && AttributeType.OPA.equals(attribute.getType())) {
+        String errorMsg =
+            "attribute '" + attributeKey + "' is an access attribute, can only be changed by Admin";
+        errors.add(new ValidationErrorImpl().key(attributeKey).error(errorMsg));
+      }
+    }
+  }
+
   @Override
   public Collection<ValidationError> validateDeleteAttributeValue(final String siteId,
-      final String attributeKey, final String attributeValue) {
+      final String attributeKey, final String attributeValue,
+      final AttributeValidationAccess validationAccess) {
 
     Collection<ValidationError> errors = new ArrayList<>();
 
@@ -247,7 +264,12 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
       }
 
     } else {
-      validateRequiredAttribute(siteId, attributeKey, errors);
+
+      validateOpaAttribute(siteId, attributeKey, validationAccess, errors);
+
+      if (errors.isEmpty()) {
+        validateRequiredAttribute(siteId, attributeKey, errors);
+      }
     }
 
     return errors;
@@ -256,7 +278,8 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
   @Override
   public Collection<ValidationError> validateFullAttribute(final String siteId,
       final String documentId, final Collection<DocumentAttributeRecord> documentAttributes,
-      final boolean isUpdate) {
+      final Map<String, AttributeRecord> attributesMap, final boolean isUpdate,
+      final AttributeValidationAccess access) {
 
     Collection<ValidationError> errors = new ArrayList<>();
 
@@ -264,10 +287,7 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
 
     if (errors.isEmpty()) {
 
-      Map<String, AttributeRecord> attributesMap =
-          getAttributeRecordMap(siteId, documentAttributes);
-
-      validateAttributeExistsAndDataType(attributesMap, documentAttributes, errors);
+      validateAttributeExistsAndDataType(attributesMap, documentAttributes, access, errors);
 
       if (errors.isEmpty()) {
 
@@ -308,19 +328,15 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
 
   @Override
   public Collection<ValidationError> validatePartialAttribute(final String siteId,
-      final Collection<DocumentAttributeRecord> documentAttributes) {
+      final Collection<DocumentAttributeRecord> documentAttributes,
+      final Map<String, AttributeRecord> attributesMap, final AttributeValidationAccess access) {
 
     Collection<ValidationError> errors = new ArrayList<>();
 
     validateRequired(documentAttributes, errors);
 
     if (errors.isEmpty()) {
-
-      Map<String, AttributeRecord> attributesMap =
-          getAttributeRecordMap(siteId, documentAttributes);
-
-      validateAttributeExistsAndDataType(attributesMap, documentAttributes, errors);
-
+      validateAttributeExistsAndDataType(attributesMap, documentAttributes, access, errors);
     }
 
     if (errors.isEmpty()) {
@@ -381,11 +397,7 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
       String attributeKey = missingAttribute.getAttributeKey();
       AttributeDataType dataType = missingAttributesMap.get(attributeKey).getDataType();
 
-      if (!isEmptyDefaultValue(missingAttribute) || AttributeDataType.KEY_ONLY.equals(dataType)) {
-
-        // TODO fix
-
-      } else {
+      if (isEmptyDefaultValue(missingAttribute) && !AttributeDataType.KEY_ONLY.equals(dataType)) {
         errors.add(new ValidationErrorImpl().key(attributeKey)
             .error("missing required attribute '" + attributeKey + "'"));
       }
