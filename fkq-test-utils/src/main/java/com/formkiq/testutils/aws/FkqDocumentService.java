@@ -46,6 +46,7 @@ import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAction;
+import com.formkiq.client.model.AddDocumentAttribute;
 import com.formkiq.client.model.AddDocumentResponse;
 import com.formkiq.client.model.AddDocumentTagsRequest;
 import com.formkiq.client.model.DocumentAction;
@@ -170,6 +171,33 @@ public class FkqDocumentService {
     AddDocumentTagsRequest req = new AddDocumentTagsRequest()
         .addTagsItem(new com.formkiq.client.model.AddDocumentTag().key(key).value(value));
     api.addDocumentTags(documentId, req, siteId, "true");
+  }
+
+  /**
+   * Add Document.
+   * 
+   * @param apiClient {@link ApiClient}
+   * @param siteId {@link String}
+   * @param path {@link String}
+   * @param data byte[]
+   * @param contentType {@link String}
+   * @param actions {@link List} {@link AddAction}
+   * @param attributes {@link List} {@link AddDocumentAttribute}
+   * @return {@link String}
+   * @throws ApiException ApiException
+   */
+  public static String addDocumentWithAttributes(final ApiClient apiClient, final String siteId,
+      final String path, final byte[] data, final String contentType,
+      final List<AddDocumentAttribute> attributes, final List<AddAction> actions)
+      throws ApiException {
+
+    DocumentsApi api = new DocumentsApi(apiClient);
+    String content = Base64.getEncoder().encodeToString(data);
+    com.formkiq.client.model.AddDocumentRequest req =
+        new com.formkiq.client.model.AddDocumentRequest().content(content).contentType(contentType)
+            .isBase64(Boolean.TRUE).path(path).actions(actions).attributes(attributes);
+    AddDocumentResponse response = api.addDocument(req, siteId, null);
+    return response.getDocumentId();
   }
 
   /**
