@@ -36,6 +36,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.model.DocumentMapToDocument;
@@ -631,6 +633,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
       final String path = "something/My Document.docx";
 
       String documentId = saveDocument(siteId, path);
+      TimeUnit.SECONDS.sleep(2);
 
       DocumentSearchRequest dsq =
           new DocumentSearchRequest().query(new DocumentSearch().text(text));
