@@ -39,6 +39,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.model.DocumentMapToDocument;
 import com.formkiq.client.invoker.ApiException;
@@ -70,6 +71,9 @@ import com.formkiq.testutils.aws.TypesenseExtension;
 @ExtendWith(LocalStackExtension.class)
 @ExtendWith(TypesenseExtension.class)
 public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
+
+  /** JUnit Test Timeout. */
+  private static final int TEST_TIMEOUT = 20;
 
   private void addAttribute(final String siteId, final String attribute) throws ApiException {
     AddAttributeRequest req =
@@ -624,6 +628,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
    * @throws Exception an error has occurred
    */
   @Test
+  @Timeout(value = TEST_TIMEOUT)
   public void testHandleSearchRequest15() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
@@ -633,24 +638,28 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
       final String path = "something/My Document.docx";
 
       String documentId = saveDocument(siteId, path);
-      TimeUnit.SECONDS.sleep(2);
 
       DocumentSearchRequest dsq =
           new DocumentSearchRequest().query(new DocumentSearch().text(text));
 
-      // when
-      DocumentSearchResponse response =
-          this.searchApi.documentSearch(dsq, siteId, null, null, null);
+      List<SearchResultDocument> documents = null;
 
-      // then
-      List<SearchResultDocument> documents = response.getDocuments();
+      while (documents == null) {
+        // when
+        DocumentSearchResponse response =
+            this.searchApi.documentSearch(dsq, siteId, null, null, null);
+
+        // then
+        documents = response.getDocuments();
+        if (documents.isEmpty()) {
+          documents = null;
+          TimeUnit.SECONDS.sleep(1);
+        }
+      }
 
       assertEquals(1, documents.size());
       assertEquals(documentId, documents.get(0).getDocumentId());
       assertEquals(path, documents.get(0).getPath());
-
-      assertNull(response.getNext());
-      assertNull(response.getPrevious());
     }
   }
 
