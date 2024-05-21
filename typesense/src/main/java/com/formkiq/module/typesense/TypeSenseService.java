@@ -110,4 +110,11 @@ public interface TypeSenseService {
    */
   HttpResponse<String> updateDocument(String siteId, String documentId, Map<String, Object> data)
       throws IOException;
+
+  /**
+   * Process /health request.
+   * 
+   * @return {@link HttpResponse}
+   */
+  HttpResponse<String> isHealthy() throws IOException;
 }

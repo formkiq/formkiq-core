@@ -275,4 +275,13 @@ public class TypeSenseServiceImpl implements TypeSenseService {
 
     return response;
   }
+
+  @Override
+  public HttpResponse<String> isHealthy() throws IOException {
+    String url = String.format("%s/health", this.host);
+
+    HttpHeaders headers = getHeader();
+
+    return this.service.get(url, Optional.of(headers), Optional.empty());
+  }
 }
