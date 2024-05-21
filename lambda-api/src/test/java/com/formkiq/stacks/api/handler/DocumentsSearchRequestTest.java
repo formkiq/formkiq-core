@@ -46,6 +46,7 @@ import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.api.AdvancedDocumentSearchApi;
 import com.formkiq.client.model.DocumentSyncStatus;
 import com.formkiq.client.model.GetDocumentSyncResponse;
+import com.formkiq.module.typesense.TypeSenseService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -148,6 +149,13 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
     Map<String, Object> document = new DocumentMapToDocument().apply(data);
 
     TypesenseProcessor processor = new TypesenseProcessor(getAwsServices());
+
+    TypeSenseService typeSenseService = getAwsServices().getExtension(TypeSenseService.class);
+    HttpResponse<String> healthy = typeSenseService.isHealthy();
+    if (healthy.statusCode() != ApiResponseStatus.SC_OK.getStatusCode()) {
+      throw new IOException("status: " + healthy.statusCode() + " body: " + healthy.body());
+    }
+
     HttpResponse<String> response =
         processor.addOrUpdate(siteId, documentId, document, "joesmith", false);
     if (response.statusCode() != ApiResponseStatus.SC_CREATED.getStatusCode()) {
@@ -642,15 +650,12 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
   public void testHandleSearchRequest15() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      // String siteId = UUID.randomUUID().toString();
       setBearerToken(siteId);
 
       final String text = "My Document.docx";
       final String path = "something/My Document.docx";
 
       String documentId = saveDocument(siteId, path);
-      final int sleep = 10;
-      TimeUnit.SECONDS.sleep(sleep);
       GetDocumentSyncResponse syncResponse =
           this.documentsApi.getDocumentSyncs(documentId, siteId, null, null);
       assertEquals(1, syncResponse.getSyncs().size());
