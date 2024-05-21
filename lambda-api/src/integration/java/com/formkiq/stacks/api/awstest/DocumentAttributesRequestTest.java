@@ -216,14 +216,14 @@ public class DocumentAttributesRequestTest extends AbstractAwsIntegrationTest {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  @Timeout(value = TEST_TIMEOUT)
   public void testSearchDocumentAttributes01() throws Exception {
     // given
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
       List<ApiClient> apiClients = getApiClients(siteId);
 
-      final String key = "category_" + UUID.randomUUID().toString();
+      final String key = "category_" + UUID.randomUUID();
       final String value = "person";
 
       AttributesApi attributeApi = new AttributesApi(apiClients.get(0));

@@ -31,13 +31,21 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
+
+import java.io.IOException;
+import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import com.formkiq.aws.services.lambda.ApiResponseStatus;
+import com.formkiq.client.api.AdvancedDocumentSearchApi;
+import com.formkiq.client.model.DocumentSyncStatus;
+import com.formkiq.client.model.GetDocumentSyncResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -140,7 +148,11 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
     Map<String, Object> document = new DocumentMapToDocument().apply(data);
 
     TypesenseProcessor processor = new TypesenseProcessor(getAwsServices());
-    processor.addOrUpdate(siteId, documentId, document, "joesmith", false);
+    HttpResponse<String> response =
+        processor.addOrUpdate(siteId, documentId, document, "joesmith", false);
+    if (response.statusCode() != ApiResponseStatus.SC_CREATED.getStatusCode()) {
+      throw new IOException("status: " + response.statusCode() + " body: " + response.body());
+    }
 
     return documentId;
   }
@@ -213,10 +225,10 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
 
         DocumentSearchRequest dsq = new DocumentSearchRequest()
             .query(new DocumentSearch().tag(new DocumentSearchTag().key("category").eq("person"))
-                .documentIds(Arrays.asList(documentId)));
+                .documentIds(Collections.singletonList(documentId)));
 
         if ("eqOr".equals(op)) {
-          dsq.getQuery().getTag().eq(null).eqOr(Arrays.asList("person"));
+          dsq.getQuery().getTag().eq(null).eqOr(List.of("person"));
         }
 
         // when
@@ -256,7 +268,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
 
       // when
       DocumentSearchResponse response =
-          query(siteId, "category", "xyz", null, Arrays.asList(documentId));
+          query(siteId, "category", "xyz", null, Collections.singletonList(documentId));
 
       // then
       List<SearchResultDocument> documents = response.getDocuments();
@@ -296,7 +308,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
 
         if ("eqOr".equals(op)) {
           eq = null;
-          eqOr = (Arrays.asList("person"));
+          eqOr = (List.of("person"));
           // dsq.tag().eq(null).eqOr(Arrays.asList("person"));
         }
 
@@ -311,7 +323,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
 
         // when
         DocumentSearchResponse response =
-            query(siteId, "category", eq, eqOr, Arrays.asList(documentId));
+            query(siteId, "category", eq, eqOr, Collections.singletonList(documentId));
 
         // then
         List<SearchResultDocument> documents = response.getDocuments();
@@ -326,7 +338,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
         assertEquals("USERDEFINED", matchedTag.getType());
 
         // when
-        response = query(siteId, "category", eq, eqOr, Arrays.asList("123"));
+        response = query(siteId, "category", eq, eqOr, List.of("123"));
 
         // then
         documents = response.getDocuments();
@@ -428,10 +440,9 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
   /**
    * Test Setting multiple tags.
    *
-   * @throws Exception an error has occurred
    */
   @Test
-  public void testHandleSearchRequest10() throws Exception {
+  public void testHandleSearchRequest10() {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       setBearerToken(siteId);
@@ -456,10 +467,9 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
   /**
    * Missing Tag Key.
    *
-   * @throws Exception an error has occurred
    */
   @Test
-  public void testHandleSearchRequest11() throws Exception {
+  public void testHandleSearchRequest11() {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       setBearerToken(siteId);
@@ -507,7 +517,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
 
       DocumentSearchRequest dsq = new DocumentSearchRequest()
           .query(new DocumentSearch().tag(new DocumentSearchTag().key(tagKey0).eq(tagvalue0)))
-          .responseFields(new SearchResponseFields().tags(Arrays.asList(tagKey1)));
+          .responseFields(new SearchResponseFields().tags(List.of(tagKey1)));
 
       // when
       DocumentSearchResponse response =
@@ -554,7 +564,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
         assertNotNull(documents.get(0).getInsertedDate());
         assertNotNull(documents.get(0).getLastModifiedDate());
 
-        if (folder.length() == 0) {
+        if (folder.isEmpty()) {
           assertEquals("something", documents.get(0).getPath());
           assertEquals("true", documents.get(0).getFolder().toString());
           assertNotNull(documents.get(0).getDocumentId());
@@ -628,16 +638,26 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
    * @throws Exception an error has occurred
    */
   @Test
-  @Timeout(value = TEST_TIMEOUT)
+  @Timeout(value = TEST_TIMEOUT * 2)
   public void testHandleSearchRequest15() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
+      // String siteId = UUID.randomUUID().toString();
       setBearerToken(siteId);
 
       final String text = "My Document.docx";
       final String path = "something/My Document.docx";
 
       String documentId = saveDocument(siteId, path);
+      TimeUnit.SECONDS.sleep(10);
+      GetDocumentSyncResponse syncResponse =
+          this.documentsApi.getDocumentSyncs(documentId, siteId, null, null);
+      assertEquals(1, syncResponse.getSyncs().size());
+      assertEquals(DocumentSyncStatus.COMPLETE, syncResponse.getSyncs().get(0).getStatus());
+
+      AdvancedDocumentSearchApi api = new AdvancedDocumentSearchApi(client);
+      assertEquals("something/My Document.docx",
+          api.getDocumentFulltext(documentId, siteId, null).getPath());
 
       DocumentSearchRequest dsq =
           new DocumentSearchRequest().query(new DocumentSearch().text(text));
@@ -753,10 +773,9 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
   /**
    * Invalid POST search by range query.
    *
-   * @throws Exception an error has occurred
    */
   @Test
-  public void testHandleSearchRequest19() throws Exception {
+  public void testHandleSearchRequest19() {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       setBearerToken(siteId);
@@ -781,10 +800,9 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
   /**
    * Invalid POST search by beginsWith / range query.
    *
-   * @throws Exception an error has occurred
    */
   @Test
-  public void testHandleSearchRequest20() throws Exception {
+  public void testHandleSearchRequest20() {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       setBearerToken(siteId);

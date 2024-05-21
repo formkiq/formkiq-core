@@ -6948,28 +6948,34 @@ Resources:
                   description: "List of document syncs"
                   items:
                     $ref: "#/components/schemas/GetDocumentSync"
+            DocumentSyncService:
+              type: string
+              description: Service of Document Sync
+              enum:
+                - TYPESENSE
+                - OPENSEARCH
+            DocumentSyncStatus:
+              type: string
+              description: Status of Document Sync
+              enum:
+                - COMPLETE
+                - FAILED
+            DocumentSyncType:
+              type: string
+              description: Type of Document Sync
+              enum:
+                - METADATA
+                - TAG
+                - CONTENT
             GetDocumentSync:
               type: "object"
               properties:
                 service:
-                  type: "string"
-                  description: "To which service the data was synced"
-                  enum:
-                    - TYPESENSE
-                    - OPENSEARCH
+                  $ref: "#/components/schemas/DocumentSyncService"
                 status:
-                  type: "string"
-                  description: "The status of the sync"
-                  enum:
-                    - COMPLETE
-                    - FAILED
+                  $ref: "#/components/schemas/DocumentSyncStatus"
                 type:
-                  type: "string"
-                  description: "The type of the sync"
-                  enum:
-                    - METADATA
-                    - TAG
-                    - CONTENT
+                  $ref: "#/components/schemas/DocumentSyncType"
                 syncDate:
                   type: "string"
                   description: "Timestamp of synchronization"
@@ -6990,6 +6996,11 @@ Resources:
                   description: "List of user activities syncs"
                   items:
                     $ref: "#/components/schemas/UserActivity"
+            UserActivityType:
+              type: string
+              description:  "The type of the activity"
+              enum:
+                - VIEW
             UserActivity:
               type: "object"
               properties:
@@ -6997,10 +7008,7 @@ Resources:
                   type: "string"
                   description: "Activity identifier"
                 type:
-                  type: "string"
-                  description: "The type of the activity"
-                  enum:
-                    - VIEW
+                  $ref: "#/components/schemas/UserActivityType"
                 insertedDate:
                   type: "string"
                   description: "Inserted Timestamp"

@@ -272,10 +272,10 @@ Resources:
               description: Gets Sites schema
               summary: Get Sites Schema
               tags:
-              - Schemas
+                - Schemas
               parameters:
-              - $ref: '#/components/parameters/siteIdPathParam'
-              - $ref: '#/components/parameters/versionParam'
+                - $ref: '#/components/parameters/siteIdPathParam'
+                - $ref: '#/components/parameters/versionParam'
               responses:
                 '200':
                   description: "200 OK"
@@ -294,7 +294,7 @@ Resources:
                       schema:
                         "$ref": "#/components/schemas/GetSitesSchemaResponse"
               security:
-              - ApiAuthorization: []
+                - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
             put:
@@ -302,9 +302,9 @@ Resources:
               description: Sets Sites schema
               summary: Set Sites Schema
               tags:
-              - Schemas
+                - Schemas
               parameters:
-              - $ref: '#/components/parameters/siteIdPathParam'
+                - $ref: '#/components/parameters/siteIdPathParam'
               requestBody:
                 required: true
                 content:
@@ -316,9 +316,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -332,7 +332,7 @@ Resources:
                       schema:
                         $ref: '#/components/schemas/ValidationErrorsResponse'
               security:
-              - ApiAuthorization: []
+                - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /sites/{siteId}/configuration:
@@ -622,7 +622,7 @@ Resources:
                       schema:
                         "$ref": "#/components/schemas/GetOpaAccessPolicyItemsResponse"
               security:
-              - ApiAuthorization: []
+                - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             put:
@@ -631,9 +631,9 @@ Resources:
                 Sets opa access policy items
               summary: Set opa access policy items, can only be requested with ADMIN privileges
               tags:
-              - Access Control
+                - Access Control
               parameters:
-              - $ref: '#/components/parameters/siteIdPathParam'
+                - $ref: '#/components/parameters/siteIdPathParam'
               requestBody:
                 required: true
                 content:
@@ -645,9 +645,9 @@ Resources:
                   description: 200 CREATED
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -661,7 +661,7 @@ Resources:
                       schema:
                         $ref: '#/components/schemas/ValidationErrorsResponse'
               security:
-              - ApiAuthorization: []
+                - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
             delete:
@@ -669,9 +669,9 @@ Resources:
               summary: Delete OPA Access Policy Items
               description: Delete OPA Access Policy Items
               tags:
-              - Access Control
+                - Access Control
               parameters:
-              - $ref: '#/components/parameters/siteIdPathParam'
+                - $ref: '#/components/parameters/siteIdPathParam'
               responses:
                 '200':
                   description: 200 OK
@@ -972,6 +972,7 @@ Resources:
                         $ref: '#/components/schemas/GetDocumentContentResponse'
               security:
                 - ApiAuthorization: []
+<<<<<<< HEAD
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
 <<<<<<< HEAD
@@ -1106,6 +1107,8 @@ Resources:
                         $ref: '#/components/schemas/DeleteDocumentAccessAttributesResponse'
               security:
                 - ApiAuthorization: []
+=======
+>>>>>>> 0c505172 (update)
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /documents/{documentId}/attributes:
@@ -1114,20 +1117,20 @@ Resources:
               summary: Get document's attributes
               description: Get a listing of a document's attributes
               tags:
-              - Document Attributes
+                - Document Attributes
               parameters:
-              - $ref: '#/components/parameters/siteIdParam'
-              - $ref: '#/components/parameters/documentIdParam'
-              - $ref: '#/components/parameters/limitParam'
-              - $ref: '#/components/parameters/nextParam'
+                - $ref: '#/components/parameters/siteIdParam'
+                - $ref: '#/components/parameters/documentIdParam'
+                - $ref: '#/components/parameters/limitParam'
+                - $ref: '#/components/parameters/nextParam'
               responses:
                 '200':
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -1135,7 +1138,7 @@ Resources:
                       schema:
                         $ref: '#/components/schemas/GetDocumentAttributesResponse'
               security:
-              - ApiAuthorization: []
+                - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             post:
@@ -1143,11 +1146,11 @@ Resources:
               summary: Add attribute to document
               description: Add multiple attributes to a document; this endpoint also accepts a different body parameter for adding a single attribute
               tags:
-              - Document Attributes
+                - Document Attributes
               parameters:
-              - $ref: '#/components/parameters/siteIdParam'
-              - $ref: '#/components/parameters/documentIdParam'
-              - $ref: '#/components/parameters/wsParam'
+                - $ref: '#/components/parameters/siteIdParam'
+                - $ref: '#/components/parameters/documentIdParam'
+                - $ref: '#/components/parameters/wsParam'
               requestBody:
                 required: true
                 content:
@@ -1158,7 +1161,7 @@ Resources:
                 '201':
                   $ref: '#/components/responses/200CorsAddResponse'
               security:
-              - ApiAuthorization: []
+                - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
             put:
@@ -1166,10 +1169,10 @@ Resources:
               summary: Set document's attributes
               description: Set multiple attributes to a document; this endpoint also accepts a different body parameter for setting a single attribute
               tags:
-              - Document Attributes
+                - Document Attributes
               parameters:
-              - $ref: '#/components/parameters/siteIdParam'
-              - $ref: '#/components/parameters/documentIdParam'
+                - $ref: '#/components/parameters/siteIdParam'
+                - $ref: '#/components/parameters/documentIdParam'
               requestBody:
                 required: true
                 content:
@@ -1180,7 +1183,7 @@ Resources:
                 '200':
                   $ref: '#/components/responses/200CorsSetResponse'
               security:
-              - ApiAuthorization: []
+                - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /documents/{documentId}/attributes/{attributeKey}:
@@ -1189,19 +1192,19 @@ Resources:
               summary: Get document attribute by key
               description: Get a document attribute by using its key
               tags:
-              - Document Attributes
+                - Document Attributes
               parameters:
-              - $ref: '#/components/parameters/siteIdParam'
-              - $ref: '#/components/parameters/documentIdParam'
-              - $ref: '#/components/parameters/attributeKeyParam'
+                - $ref: '#/components/parameters/siteIdParam'
+                - $ref: '#/components/parameters/documentIdParam'
+                - $ref: '#/components/parameters/attributeKeyParam'
               responses:
                 '200':
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -1209,7 +1212,7 @@ Resources:
                       schema:
                         $ref: '#/components/schemas/GetDocumentAttributeResponse'
               security:
-              - ApiAuthorization: []
+                - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             put:
@@ -1217,11 +1220,11 @@ Resources:
               summary: Set document's attributes value
               description: Set attributes value to a document
               tags:
-              - Document Attributes
+                - Document Attributes
               parameters:
-              - $ref: '#/components/parameters/siteIdParam'
-              - $ref: '#/components/parameters/documentIdParam'
-              - $ref: '#/components/parameters/attributeKeyParam'
+                - $ref: '#/components/parameters/siteIdParam'
+                - $ref: '#/components/parameters/documentIdParam'
+                - $ref: '#/components/parameters/attributeKeyParam'
               requestBody:
                 required: true
                 content:
@@ -1232,7 +1235,7 @@ Resources:
                 '200':
                   $ref: '#/components/responses/200CorsSetResponse'
               security:
-              - ApiAuthorization: []
+                - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             delete:
@@ -1240,16 +1243,16 @@ Resources:
               summary: Delete document attribute
               description: Delete a document attribute by using its key
               tags:
-              - Document Attributes
+                - Document Attributes
               parameters:
-              - $ref: '#/components/parameters/siteIdParam'
-              - $ref: '#/components/parameters/documentIdParam'
-              - $ref: '#/components/parameters/attributeKeyParam'
+                - $ref: '#/components/parameters/siteIdParam'
+                - $ref: '#/components/parameters/documentIdParam'
+                - $ref: '#/components/parameters/attributeKeyParam'
               responses:
                 '200':
                   $ref: '#/components/responses/200CorsDeleteResponse'
               security:
-              - ApiAuthorization: []
+                - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /documents/{documentId}/attributes/{attributeKey}/{attributeValue}:
@@ -1258,17 +1261,17 @@ Resources:
               summary: Delete document's attribute value
               description: Delete a specific document attribute key/value combination; the request will be ignored if there is no valid key/value combination found
               tags:
-              - Document Attributes
+                - Document Attributes
               parameters:
-              - $ref: '#/components/parameters/siteIdParam'
-              - $ref: '#/components/parameters/documentIdParam'
-              - $ref: '#/components/parameters/attributeKeyParam'
-              - $ref: '#/components/parameters/attributeValueParam'
+                - $ref: '#/components/parameters/siteIdParam'
+                - $ref: '#/components/parameters/documentIdParam'
+                - $ref: '#/components/parameters/attributeKeyParam'
+                - $ref: '#/components/parameters/attributeValueParam'
               responses:
                 '200':
                   $ref: '#/components/responses/200CorsDeleteResponse'
               security:
-              - ApiAuthorization: []
+                - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /documents/{documentId}/tags:
@@ -1761,13 +1764,13 @@ Resources:
             get:
               operationId: GetAttributes
               tags:
-              - Attributes
+                - Attributes
               description: Returns a list of attributes
               summary: Get Attributes listing
               parameters:
-              - $ref: '#/components/parameters/siteIdParam'
-              - $ref: '#/components/parameters/nextParam'
-              - $ref: '#/components/parameters/limitParam'
+                - $ref: '#/components/parameters/siteIdParam'
+                - $ref: '#/components/parameters/nextParam'
+                - $ref: '#/components/parameters/limitParam'
               responses:
                 '200':
                   description: "200 OK"
@@ -1786,18 +1789,18 @@ Resources:
                       schema:
                         "$ref": "#/components/schemas/GetAttributesResponse"
               security:
-              - ApiAuthorization: []
+                - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             post:
-              operationId: AddAttribute            
+              operationId: AddAttribute
               description: |-
                 Creates a new attribute
               summary: Add new attribute
               tags:
-              - Attributes
+                - Attributes
               parameters:
-              - $ref: '#/components/parameters/siteIdParam'
+                - $ref: '#/components/parameters/siteIdParam'
               requestBody:
                 required: true
                 content:
@@ -1809,9 +1812,9 @@ Resources:
                   description: 201 CREATED
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -1825,19 +1828,19 @@ Resources:
                       schema:
                         $ref: '#/components/schemas/ValidationErrorsResponse'
               security:
-              - ApiAuthorization: []
+                - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
           /attributes/{key}:
             get:
               operationId: GetAttribute
               tags:
-              - Attributes
+                - Attributes
               description: Returns a attribute
               summary: Get Attribute
               parameters:
-              - $ref: '#/components/parameters/siteIdParam'
-              - $ref: '#/components/parameters/keyParam'
+                - $ref: '#/components/parameters/siteIdParam'
+                - $ref: '#/components/parameters/keyParam'
               responses:
                 '200':
                   description: "200 OK"
@@ -1856,19 +1859,19 @@ Resources:
                       schema:
                         "$ref": "#/components/schemas/GetAttributeResponse"
               security:
-              - ApiAuthorization: []
+                - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             delete:
-              operationId: DeleteAttribute            
+              operationId: DeleteAttribute
               description: |-
                 Delete a attribute
               summary: Delete attribute
               tags:
-              - Attributes
+                - Attributes
               parameters:
-              - $ref: '#/components/parameters/siteIdParam'
-              - $ref: '#/components/parameters/keyParam'
+                - $ref: '#/components/parameters/siteIdParam'
+                - $ref: '#/components/parameters/keyParam'
               responses:
                 '200':
                   $ref: '#/components/responses/200CorsDeleteResponse'
@@ -1879,7 +1882,7 @@ Resources:
                       schema:
                         $ref: '#/components/schemas/ValidationErrorsResponse'
               security:
-              - ApiAuthorization: []
+                - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /search:
@@ -1933,7 +1936,7 @@ Resources:
                           query:
                             attribute:
                               key: firstname
-                              beginsWith: jo                           
+                              beginsWith: jo
                       Search_By_Tag_Key:
                         value:
                           query:
@@ -4898,10 +4901,10 @@ Resources:
               summary: Add New Task
               description: Adds new task; ONLY available with FormKiQ Enterprise
               parameters:
-              - $ref: '#/components/parameters/siteIdParam'
-              - $ref: '#/components/parameters/caseIdParam'
+                - $ref: '#/components/parameters/siteIdParam'
+                - $ref: '#/components/parameters/caseIdParam'
               tags:
-              - Case Management
+                - Case Management
               requestBody:
                 required: true
                 content:
@@ -4913,9 +4916,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -4923,7 +4926,7 @@ Resources:
                       schema:
                         $ref: '#/components/schemas/AddTaskResponse'
               security:
-              - ApiAuthorization: []
+                - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
           /cases/{caseId}/nigos:
@@ -4968,10 +4971,10 @@ Resources:
               summary: Add New Nigo
               description: Adds new nigo; ONLY available with FormKiQ Enterprise
               parameters:
-              - $ref: '#/components/parameters/siteIdParam'
-              - $ref: '#/components/parameters/caseIdParam'
+                - $ref: '#/components/parameters/siteIdParam'
+                - $ref: '#/components/parameters/caseIdParam'
               tags:
-              - Case Management
+                - Case Management
               requestBody:
                 required: true
                 content:
@@ -4983,9 +4986,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -4993,7 +4996,7 @@ Resources:
                       schema:
                         $ref: '#/components/schemas/AddNigoResponse'
               security:
-              - ApiAuthorization: []
+                - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
           /rulesets:
@@ -5711,14 +5714,14 @@ Resources:
               description: Attribute Key
               required: true
               schema:
-                type: string             
+                type: string
             attributeValueParam:
               name: attributeValue
               in: path
               description: Attribute Value
               required: true
               schema:
-                type: string             
+                type: string
             tagkeyParam:
               name: tagKey
               in: path
@@ -6080,7 +6083,7 @@ Resources:
                   type: "array"
                   description: "List of attributes"
                   items:
-                    $ref: "#/components/schemas/DocumentAttribute"                  
+                    $ref: "#/components/schemas/DocumentAttribute"
             GetDocumentTagsResponse:
               type: "object"
               properties:
@@ -6449,7 +6452,7 @@ Resources:
                   description: "Tag key to search"
             DocumentSearchAttribute:
               required:
-              - "key"
+                - "key"
               type: "object"
               properties:
                 eq:
@@ -6505,7 +6508,7 @@ Resources:
                 attributes:
                   type: array
                   description: "List of Attributes to add to document"
-                  items: 
+                  items:
                     $ref: "#/components/schemas/AddDocumentAttribute"
                 tags:
                   type: "array"
@@ -6558,8 +6561,8 @@ Resources:
                 attributes:
                   type: array
                   description: "List of Attributes to add to document"
-                  items: 
-                    $ref: "#/components/schemas/AddDocumentAttribute" 
+                  items:
+                    $ref: "#/components/schemas/AddDocumentAttribute"
                 documents:
                   type: "array"
                   description: "List of child documents"
@@ -6782,7 +6785,7 @@ Resources:
                   description: "Attribute with boolean value"
             AddDocumentAttribute:
               required:
-              - "key"
+                - "key"
               type: "object"
               description: "Document Attribute"
               properties:
@@ -7115,28 +7118,34 @@ Resources:
                   description: "List of document syncs"
                   items:
                     $ref: "#/components/schemas/GetDocumentSync"
+            DocumentSyncService:
+              type: string
+              description: Service of Document Sync
+              enum:
+                - TYPESENSE
+                - OPENSEARCH
+            DocumentSyncStatus:
+              type: string
+              description: Status of Document Sync
+              enum:
+                - COMPLETE
+                - FAILED
+            DocumentSyncType:
+              type: string
+              description: Type of Document Sync
+              enum:
+                - METADATA
+                - TAG
+                - CONTENT
             GetDocumentSync:
               type: "object"
               properties:
                 service:
-                  type: "string"
-                  description: "To which service the data was synced"
-                  enum:
-                    - TYPESENSE
-                    - OPENSEARCH
+                  $ref: "#/components/schemas/DocumentSyncService"
                 status:
-                  type: "string"
-                  description: "The status of the sync"
-                  enum:
-                    - COMPLETE
-                    - FAILED
+                  $ref: "#/components/schemas/DocumentSyncStatus"
                 type:
-                  type: "string"
-                  description: "The type of the sync"
-                  enum:
-                    - METADATA
-                    - TAG
-                    - CONTENT
+                  $ref: "#/components/schemas/DocumentSyncType"
                 syncDate:
                   type: "string"
                   description: "Timestamp of synchronization"
@@ -7157,6 +7166,11 @@ Resources:
                   description: "List of user activities syncs"
                   items:
                     $ref: "#/components/schemas/UserActivity"
+            UserActivityType:
+              type: string
+              description:  "The type of the activity"
+              enum:
+                - VIEW
             UserActivity:
               type: "object"
               properties:
@@ -7164,10 +7178,7 @@ Resources:
                   type: "string"
                   description: "Activity identifier"
                 type:
-                  type: "string"
-                  description: "The type of the activity"
-                  enum:
-                    - VIEW
+                  $ref: "#/components/schemas/UserActivityType"
                 insertedDate:
                   type: "string"
                   description: "Inserted Timestamp"
@@ -7449,6 +7460,7 @@ Resources:
                   type: "array"
                   items:
                     $ref: "#/components/schemas/AddNigo"
+
             StringFormat:
               type: "object"
               properties:
@@ -7581,7 +7593,7 @@ Resources:
                     type: "string"
             AddTaskRequest:
               required:
-              - "task"
+                - "task"
               type: "object"
               properties:
                 task:
@@ -7648,7 +7660,7 @@ Resources:
                     type: "string"
             AddNigoRequest:
               required:
-              - "nigo"
+                - "nigo"
               type: "object"
               properties:
                 nigo:
@@ -8057,6 +8069,7 @@ Resources:
                   items:
                     $ref: "#/components/schemas/RuleConditionMust"
 
+<<<<<<< HEAD
             RuleConditionCriterion:
               type: string
               description: Rule condition attribute (deprecated, use Criterion)
@@ -8066,6 +8079,8 @@ Resources:
                 - BARCODE
                 - FIELD
 
+=======
+>>>>>>> 0c505172 (update)
             RuleConditionAttribute:
               type: string
               description: Rule condition attribute (deprecated, use Criterion)
@@ -8183,17 +8198,17 @@ Resources:
                 - BOOLEAN
                 - KEY_ONLY
                 - COMPOSITE_STRING
-                
+
             AddAttributeRequest:
               required:
-              - "attribute"
+                - "attribute"
               type: "object"
               properties:
                 attribute:
                   $ref: "#/components/schemas/AddAttribute"
             AddAttribute:
               required:
-              - "key"
+                - "key"
               type: "object"
               properties:
                 key:
@@ -8211,6 +8226,10 @@ Resources:
                   type: "string"
                   description: "Response Message"
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 0c505172 (update)
             GetDocumentsResponse:
               type: "object"
               properties:
@@ -8815,7 +8834,7 @@ Resources:
                   type: "array"
                   description: "List of OPA policy items"
                   items:
-                    $ref: "#/components/schemas/OpaPolicyItem"         
+                    $ref: "#/components/schemas/OpaPolicyItem"
             GetOpaAccessPolicyResponse:
               type: object
               properties:
