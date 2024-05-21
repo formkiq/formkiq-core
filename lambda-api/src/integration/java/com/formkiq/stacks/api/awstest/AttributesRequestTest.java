@@ -50,7 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /**
- * Integration Test for URLS:
+ * Integration Test for URLS.
  * <p>
  * GET /attributes
  * </p>
