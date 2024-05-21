@@ -1716,6 +1716,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       DocumentItem dockey = new DynamicDocumentItem(new HashMap<>());
       dockey.setDocumentId(childDoc.getDocumentId());
       dockey.setBelongsToDocumentId(document.getDocumentId());
+      childDoc.setBelongsToDocumentId(document.getDocumentId());
 
       // save child document
       keys = keysDocument(siteId, document.getDocumentId(), Optional.of(childDoc.getDocumentId()));

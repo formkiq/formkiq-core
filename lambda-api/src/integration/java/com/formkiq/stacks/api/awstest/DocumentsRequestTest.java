@@ -61,6 +61,7 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.objects.MimeType;
+import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.services.lambda.GsonUtil;
 import com.formkiq.client.api.DocumentSearchApi;
 import com.formkiq.client.api.DocumentTagsApi;
@@ -760,7 +761,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
 
         // then
         assertNotNull(document);
-        assertNull(document.getDocuments());
+        assertTrue(Objects.notNull(document.getDocuments()).isEmpty());
         assertEquals(response.getDocumentId(), document.getBelongsToDocumentId());
       }
     }
