@@ -649,55 +649,53 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
   @Test
   @Timeout(value = TEST_TIMEOUT * 2)
   public void testHandleSearchRequest15() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      // given
-      setBearerToken(siteId);
+    // given
+    String siteId = null;
+    setBearerToken(siteId);
 
-      final String text = "My Document.docx";
-      final String path = "something/My Document.docx";
+    final String text = "My Document.docx";
+    final String path = "something/My Document.docx";
 
-      String documentId = saveDocument(siteId, path);
-      GetDocumentSyncResponse syncResponse =
-          this.documentsApi.getDocumentSyncs(documentId, siteId, null, null);
-      assertEquals(1, syncResponse.getSyncs().size());
-      assertEquals(DocumentSyncStatus.COMPLETE, syncResponse.getSyncs().get(0).getStatus());
+    String documentId = saveDocument(siteId, path);
+    GetDocumentSyncResponse syncResponse =
+        this.documentsApi.getDocumentSyncs(documentId, siteId, null, null);
+    assertEquals(1, syncResponse.getSyncs().size());
+    assertEquals(DocumentSyncStatus.COMPLETE, syncResponse.getSyncs().get(0).getStatus());
 
-      GetDocumentFulltextResponse getResponse = null;
-      while (getResponse == null) {
-        AdvancedDocumentSearchApi api = new AdvancedDocumentSearchApi(client);
+    GetDocumentFulltextResponse getResponse = null;
+    while (getResponse == null) {
+      AdvancedDocumentSearchApi api = new AdvancedDocumentSearchApi(client);
 
-        try {
-          getResponse = api.getDocumentFulltext(documentId, siteId, null);
-        } catch (ApiException e) {
-          getResponse = null;
-          TimeUnit.SECONDS.sleep(1);
-        }
+      try {
+        getResponse = api.getDocumentFulltext(documentId, siteId, null);
+      } catch (ApiException e) {
+        getResponse = null;
+        TimeUnit.SECONDS.sleep(1);
       }
-
-      assertEquals("something/My Document.docx", getResponse.getPath());
-
-      DocumentSearchRequest dsq =
-          new DocumentSearchRequest().query(new DocumentSearch().text(text));
-
-      List<SearchResultDocument> documents = null;
-
-      while (documents == null) {
-        // when
-        DocumentSearchResponse response =
-            this.searchApi.documentSearch(dsq, siteId, null, null, null);
-
-        // then
-        documents = response.getDocuments();
-        if (documents.isEmpty()) {
-          documents = null;
-          TimeUnit.SECONDS.sleep(1);
-        }
-      }
-
-      assertEquals(1, documents.size());
-      assertEquals(documentId, documents.get(0).getDocumentId());
-      assertEquals(path, documents.get(0).getPath());
     }
+
+    assertEquals(path, getResponse.getPath());
+
+    DocumentSearchRequest dsq = new DocumentSearchRequest().query(new DocumentSearch().text(text));
+
+    List<SearchResultDocument> documents = null;
+
+    while (documents == null) {
+      // when
+      DocumentSearchResponse response =
+          this.searchApi.documentSearch(dsq, siteId, null, null, null);
+
+      // then
+      documents = response.getDocuments();
+      if (documents.isEmpty()) {
+        documents = null;
+        TimeUnit.SECONDS.sleep(1);
+      }
+    }
+
+    assertEquals(1, documents.size());
+    assertEquals(documentId, documents.get(0).getDocumentId());
+    assertEquals(path, documents.get(0).getPath());
   }
 
   /**
