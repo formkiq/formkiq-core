@@ -182,7 +182,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   private void addMetadata(final DocumentItem document,
       final Map<String, AttributeValue> pkvalues) {
     notNull(document.getMetadata()).forEach(m -> {
-      if (m.getValues() != null) {
+      if (!notNull(m.getValues()).isEmpty()) {
         addL(pkvalues, PREFIX_DOCUMENT_METADATA + m.getKey(), m.getValues());
       } else {
         addS(pkvalues, PREFIX_DOCUMENT_METADATA + m.getKey(), m.getValue());

@@ -664,7 +664,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
 
         Collection<String> list =
             query.getAttributes().stream().map(a -> a.getKey()).collect(Collectors.toSet());
-        
+
         if (list.size() != query.getAttributes().size()) {
           throw new ValidationException(
               Arrays.asList(new ValidationErrorImpl().error("duplicate attributes in query")));

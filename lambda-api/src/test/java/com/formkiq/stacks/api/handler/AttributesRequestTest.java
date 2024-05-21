@@ -75,6 +75,9 @@ import joptsimple.internal.Strings;
 @ExtendWith(LocalStackExtension.class)
 public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
+  /** SiteId. */
+  private static final String SITE_ID = UUID.randomUUID().toString();
+
   /** Data Type Map. */
   private Map<String, AttributeDataType> dataTypes =
       Map.of("other", AttributeDataType.NUMBER, "flag", AttributeDataType.BOOLEAN, "keyonly",
@@ -175,7 +178,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     // given
     final String key = "security";
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
 
       setBearerToken(siteId);
       AddAttributeRequest req = new AddAttributeRequest().attribute(new AddAttribute().key(key));
@@ -211,7 +214,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testAddAttributes02() throws ApiException {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
 
       setBearerToken(siteId);
       AddAttributeRequest req = new AddAttributeRequest();
@@ -249,7 +252,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     // given
     final String key = "security";
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
 
       setBearerToken(siteId);
       addAttribute(siteId, key, null, null);
@@ -274,7 +277,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     // given
     final String key = "security";
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
 
       setBearerToken(siteId);
       addAttribute(siteId, key, null, null);
@@ -301,7 +304,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     // given
     final String key = "security";
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
 
       setBearerToken(siteId);
 
@@ -326,7 +329,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testAddDocumentAttribute04() throws ApiException {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
 
       setBearerToken(siteId);
 
@@ -354,7 +357,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testAddDocumentAttribute05() throws ApiException {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
 
       setBearerToken(siteId);
 
@@ -384,7 +387,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     // given
     final String key = "security";
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
 
       setBearerToken(siteId);
       addAttribute(siteId, key, AttributeDataType.STRING, null);
@@ -411,7 +414,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     // given
     final String key = "security";
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
 
       setBearerToken(siteId);
       addAttribute(siteId, key, AttributeDataType.NUMBER, null);
@@ -438,7 +441,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     // given
     final String key = "security";
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
 
       setBearerToken(siteId);
       addAttribute(siteId, key, AttributeDataType.BOOLEAN, null);
@@ -465,7 +468,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     // given
     final String key = "security";
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
 
       setBearerToken(siteId);
       addAttribute(siteId, key, AttributeDataType.KEY_ONLY, null);
@@ -492,7 +495,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     // given
     final String key = "security";
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
 
       setBearerToken(siteId);
       addAttribute(siteId, key, null, null);
@@ -547,7 +550,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     // given
     final String key = "security";
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
 
       setBearerToken(siteId);
       addAttribute(siteId, key, AttributeDataType.BOOLEAN, null);
@@ -588,7 +591,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
   public void testAddDocumentUploadAttribute03() throws ApiException {
 
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
 
       setBearerToken(siteId);
 
@@ -638,7 +641,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     // given
     final String key = "security";
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
 
       setBearerToken(siteId);
       addAttribute(siteId, key, null, null);
@@ -690,7 +693,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     // given
     final String key = "security";
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
 
       setBearerToken(siteId);
       addAttribute(siteId, key, AttributeDataType.NUMBER, null);
@@ -744,7 +747,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     // given
     final String key = "date";
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
 
       setBearerToken(siteId);
       addAttribute(siteId, key, null, null);
@@ -806,7 +809,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     // given
     final String key = "date";
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
 
       setBearerToken(siteId);
       addAttribute(siteId, key, null, null);
@@ -859,7 +862,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     // given
     final String key = "security";
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
 
       setBearerToken(siteId);
 
@@ -907,7 +910,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     // given
     final String key = "security";
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
 
       setBearerToken(siteId);
 
@@ -958,7 +961,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     // given
     final String key = "security";
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
 
       setBearerToken(siteId);
 
@@ -988,7 +991,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     // given
     final String key = "security";
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
 
       setBearerToken(siteId);
 
@@ -1035,7 +1038,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     // given
     final String key = "security";
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
 
       setBearerToken(siteId);
 
@@ -1068,7 +1071,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     // given
     final String key = "security";
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
 
       setBearerToken(siteId);
 
@@ -1104,7 +1107,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     // given
     final String key = "security";
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
 
       setBearerToken(siteId);
       AddAttributeRequest req = new AddAttributeRequest().attribute(new AddAttribute().key(key));
@@ -1128,7 +1131,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     // given
     final String key = "security";
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
 
       setBearerToken(siteId);
 
@@ -1154,7 +1157,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     // given
     final String key = "security";
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
 
       setBearerToken(siteId);
       AddAttributeRequest req = new AddAttributeRequest().attribute(new AddAttribute().key(key));
@@ -1185,7 +1188,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testDeleteDocumentAttribute01() throws ApiException {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
 
       setBearerToken(siteId);
       for (String a : Arrays.asList("security", "strings", "nums")) {
@@ -1251,7 +1254,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testDeleteDocumentAttribute02() throws ApiException {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
 
       setBearerToken(siteId);
 
@@ -1297,7 +1300,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testDeleteDocumentAttributeValue01() throws ApiException {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
 
       setBearerToken(siteId);
 
@@ -1345,7 +1348,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testGetDocumentAttribute01() throws ApiException {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
 
       setBearerToken(siteId);
 
@@ -1371,7 +1374,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testGetDocumentAttribute02() throws ApiException {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
 
       setBearerToken(siteId);
       for (String a : Arrays.asList("security", "other", "flag", "keyonly", "strings", "nums")) {
@@ -1447,7 +1450,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     // given
     final String key = "security";
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
 
       setBearerToken(siteId);
       for (String attribute : Arrays.asList(key, "other", "flag", "keyonly", "strings", "nums")) {
@@ -1521,7 +1524,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     // given
     final String key = "security";
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
 
       setBearerToken(siteId);
 
@@ -1574,7 +1577,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     // given
     final String key = "security";
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
 
       setBearerToken(siteId);
       for (String attribute : Arrays.asList(key)) {
@@ -1609,7 +1612,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testPutDocumentAttribute01() throws ApiException {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
 
       setBearerToken(siteId);
       for (String a : Arrays.asList("security", "strings", "nums")) {
@@ -1657,7 +1660,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testPutDocumentAttribute02() throws ApiException {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
 
       setBearerToken(siteId);
 
@@ -1714,7 +1717,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testPutDocumentAttributeValue01() throws ApiException {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
 
       setBearerToken(siteId);
 
@@ -1756,7 +1759,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testSetDocumentAttribute01() throws ApiException {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
 
       setBearerToken(siteId);
 

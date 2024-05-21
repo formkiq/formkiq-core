@@ -30,6 +30,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import java.util.Arrays;
 import java.util.UUID;
+
+import com.formkiq.client.model.AddDocumentMetadata;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.objects.Objects;
@@ -76,11 +78,10 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
   /**
    * Save new File missing content.
-   * 
-   * @throws ApiException ApiException
+   *
    */
   @Test
-  public void testPost02() throws ApiException {
+  public void testPost02() {
     // given
     for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
 
@@ -177,6 +178,40 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
           this.documentsApi.getDocument(childDocumentId, null, null);
       assertTrue(Objects.notNull(childDocument.getDocuments()).isEmpty());
       assertEquals(documentId, childDocument.getBelongsToDocumentId());
+    }
+  }
+
+  /**
+   * Save Document with Metadata.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  public void testPost5() throws Exception {
+    // given
+    String content = "test data";
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+
+      AddDocumentRequest req = new AddDocumentRequest().contentType("text/plain").content(content)
+          .addMetadataItem(new AddDocumentMetadata().key("person").value("category"))
+          .addMetadataItem(
+              new AddDocumentMetadata().key("playerId").values(Arrays.asList("11", "22")));
+
+      // when
+      AddDocumentResponse response = this.documentsApi.addDocument(req, siteId, null);
+
+      // then
+      String documentId = response.getDocumentId();
+
+      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
+      assertNotNull(document);
+      assertEquals(2, document.getMetadata().size());
+      assertEquals("playerId", document.getMetadata().get(0).getKey());
+      assertEquals("11,22", String.join(",", document.getMetadata().get(0).getValues()));
+      assertEquals("person", document.getMetadata().get(1).getKey());
+      assertEquals("category", document.getMetadata().get(1).getValue());
     }
   }
 }
