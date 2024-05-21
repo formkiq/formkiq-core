@@ -45,6 +45,7 @@ import java.util.concurrent.TimeUnit;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.api.AdvancedDocumentSearchApi;
 import com.formkiq.client.model.DocumentSyncStatus;
+import com.formkiq.client.model.GetDocumentFulltextResponse;
 import com.formkiq.client.model.GetDocumentSyncResponse;
 import com.formkiq.module.typesense.TypeSenseService;
 import org.junit.jupiter.api.Test;
@@ -661,9 +662,19 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
       assertEquals(1, syncResponse.getSyncs().size());
       assertEquals(DocumentSyncStatus.COMPLETE, syncResponse.getSyncs().get(0).getStatus());
 
-      AdvancedDocumentSearchApi api = new AdvancedDocumentSearchApi(client);
-      assertEquals("something/My Document.docx",
-          api.getDocumentFulltext(documentId, siteId, null).getPath());
+      GetDocumentFulltextResponse getResponse = null;
+      while (getResponse == null) {
+        AdvancedDocumentSearchApi api = new AdvancedDocumentSearchApi(client);
+
+        try {
+          getResponse = api.getDocumentFulltext(documentId, siteId, null);
+        } catch (ApiException e) {
+          getResponse = null;
+          TimeUnit.SECONDS.sleep(1);
+        }
+      }
+
+      assertEquals("something/My Document.docx", getResponse.getPath());
 
       DocumentSearchRequest dsq =
           new DocumentSearchRequest().query(new DocumentSearch().text(text));
