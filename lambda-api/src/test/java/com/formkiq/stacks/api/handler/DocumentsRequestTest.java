@@ -25,15 +25,21 @@ package com.formkiq.stacks.api.handler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import java.util.Arrays;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.model.AddChildDocument;
 import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AddDocumentResponse;
+import com.formkiq.client.model.AddDocumentTag;
 import com.formkiq.client.model.GetDocumentResponse;
+import com.formkiq.client.model.GetDocumentTagsResponse;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 
@@ -116,6 +122,61 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
       GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
       assertEquals("http://google.com", document.getDeepLinkPath());
+    }
+  }
+
+  /**
+   * Save document with subdocuments.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  public void testPost04() throws Exception {
+
+    // given
+    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+
+      String content = "{\"firstName\": \"Jan\",\"lastName\": \"Doe\"}";
+
+      AddDocumentRequest req = new AddDocumentRequest()
+          .addTagsItem(new AddDocumentTag().key("formName").value("Job Application Form"))
+          .addDocumentsItem(new AddChildDocument().content(content).contentType("application/json")
+              .addTagsItem(new AddDocumentTag().key("formData")));
+
+      // when
+      AddDocumentResponse response = this.documentsApi.addDocument(req, siteId, null);
+
+      // then
+      assertNotNull(response.getUploadUrl());
+
+      assertEquals(1, response.getDocuments().size());
+      assertNull(response.getDocuments().get(0).getUploadUrl());
+
+      String documentId = response.getDocumentId();
+      String childDocumentId = response.getDocuments().get(0).getDocumentId();
+
+      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
+      assertEquals(1, document.getDocuments().size());
+      assertEquals(childDocumentId, document.getDocuments().get(0).getDocumentId());
+      assertEquals("application/json", document.getDocuments().get(0).getContentType());
+      assertEquals(documentId, document.getDocuments().get(0).getBelongsToDocumentId());
+
+      GetDocumentTagsResponse tags =
+          this.tagsApi.getDocumentTags(documentId, siteId, null, null, null, null);
+
+      assertEquals(1, tags.getTags().size());
+      assertEquals("formName", tags.getTags().get(0).getKey());
+      assertEquals("Job Application Form", tags.getTags().get(0).getValue());
+
+      tags = this.tagsApi.getDocumentTags(childDocumentId, siteId, null, null, null, null);
+      assertEquals(0, tags.getTags().size());
+
+      GetDocumentResponse childDocument =
+          this.documentsApi.getDocument(childDocumentId, null, null);
+      assertTrue(Objects.notNull(childDocument.getDocuments()).isEmpty());
+      assertEquals(documentId, childDocument.getBelongsToDocumentId());
     }
   }
 }

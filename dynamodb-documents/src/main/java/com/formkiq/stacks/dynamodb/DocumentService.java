@@ -469,12 +469,12 @@ public interface DocumentService extends DocumentTagLoader {
    * @param siteId Optional Grouping siteId
    * @param document {@link DocumentItem}
    * @param tags {@link Collection} {@link DocumentTag}
-   * @param searchAttributes {@link Collection} {@link DocumentAttributeRecord}
+   * @param documentAttributes {@link Collection} {@link DocumentAttributeRecord}
    * @param options {@link SaveDocumentOptions}
    * @throws ValidationException ValidationException
    */
   void saveDocument(String siteId, DocumentItem document, Collection<DocumentTag> tags,
-      Collection<DocumentAttributeRecord> searchAttributes, SaveDocumentOptions options)
+      Collection<DocumentAttributeRecord> documentAttributes, SaveDocumentOptions options)
       throws ValidationException;
 
   /**
