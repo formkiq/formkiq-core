@@ -640,16 +640,14 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
   @Test
   @Timeout(value = TEST_TIMEOUT * 2)
   public void testHandleSearchRequest15() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      // String siteId = UUID.randomUUID().toString();
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       setBearerToken(siteId);
 
       final String text = "My Document.docx";
       final String path = "something/My Document.docx";
 
       String documentId = saveDocument(siteId, path);
-      TimeUnit.SECONDS.sleep(10);
       GetDocumentSyncResponse syncResponse =
           this.documentsApi.getDocumentSyncs(documentId, siteId, null, null);
       assertEquals(1, syncResponse.getSyncs().size());
