@@ -7289,10 +7289,19 @@ Resources:
                   description: "List of rule conditions"
                   items:
                     $ref: "#/components/schemas/RuleConditionMust"
-        
+
+            RuleConditionCriterion:
+              type: string
+              description: Rule condition attribute (deprecated, use Criterion)
+              enum:
+                - TEXT
+                - CONTENT_TYPE
+                - BARCODE
+                - FIELD
+
             RuleConditionAttribute:
               type: string
-              description: Rule condition attribute
+              description: Rule condition attribute (deprecated, use Criterion)
               enum:
                 - TEXT
                 - CONTENT_TYPE
@@ -7311,9 +7320,11 @@ Resources:
               properties:
                 attribute:
                   $ref: "#/components/schemas/RuleConditionAttribute"
+                criterion:
+                  $ref: "#/components/schemas/RuleConditionCriterion"
                 fieldName:
                   type: "string"
-                  description: "Rule field name (only required for FIELD attribute)"
+                  description: "Rule field name (only required for FIELD criterion)"
                 value:
                   type: "string"
                   description: "Rule condition value"
