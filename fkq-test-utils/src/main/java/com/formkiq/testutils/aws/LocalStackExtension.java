@@ -29,6 +29,7 @@ import static com.formkiq.testutils.aws.TestServices.FORMKIQ_APP_ENVIRONMENT;
 import static com.formkiq.testutils.aws.TestServices.OCR_BUCKET_NAME;
 import static com.formkiq.testutils.aws.TestServices.STAGE_BUCKET_NAME;
 import java.util.Map;
+import java.util.UUID;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.testcontainers.containers.localstack.LocalStackContainer;
@@ -37,8 +38,12 @@ import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.s3.S3ServiceExtension;
 import com.formkiq.aws.sns.SnsAwsServiceRegistry;
+import com.formkiq.aws.sns.SnsService;
+import com.formkiq.aws.sns.SnsServiceExtension;
 import com.formkiq.aws.sqs.SqsAwsServiceRegistry;
-import com.formkiq.aws.ssm.SmsAwsServiceRegistry;
+import com.formkiq.aws.sqs.SqsService;
+import com.formkiq.aws.sqs.SqsServiceExtension;
+import com.formkiq.aws.ssm.SsmAwsServiceRegistry;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceExtension;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -55,17 +60,15 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 public class LocalStackExtension
     implements BeforeAllCallback, ExtensionContext.Store.CloseableResource {
 
-  /** {@link AwsServiceCache}. */
-  private static AwsServiceCache serviceCache;
+  /** SQS Sns Update Queue. */
+  private static final String SNS_SQS_CREATE_QUEUE = "sqssnsCreate" + UUID.randomUUID();
+  /** SNS Topic. */
+  private static final String SNS_TOPIC = "createDocument" + UUID.randomUUID();
 
-  /**
-   * Get {@link AwsServiceCache}.
-   * 
-   * @return {@link AwsServiceCache}
-   */
-  public static AwsServiceCache getAwsServiceCache() {
-    return serviceCache;
-  }
+  /** Sns Document Event. */
+  private String snsDocumentEvent;
+  /** Sqs Document Event Url. */
+  private String sqsDocumentEventUrl;
 
   @Override
   public void beforeAll(final ExtensionContext context) throws Exception {
@@ -76,17 +79,38 @@ public class LocalStackExtension
     AwsCredentials creds = AwsBasicCredentials.create("aaa", "bbb");
     StaticCredentialsProvider credentialsProvider = StaticCredentialsProvider.create(creds);
 
-    serviceCache =
+    AwsServiceCache serviceCache =
         new AwsServiceCacheBuilder(env, TestServices.getEndpointMap(), credentialsProvider)
             .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
                 new SnsAwsServiceRegistry(), new SqsAwsServiceRegistry(),
-                new SmsAwsServiceRegistry())
+                new SsmAwsServiceRegistry())
             .build();
 
     serviceCache.register(S3Service.class, new S3ServiceExtension());
     serviceCache.register(SsmService.class, new SsmServiceExtension());
+    serviceCache.register(SqsService.class, new SqsServiceExtension());
+    serviceCache.register(SnsService.class, new SnsServiceExtension());
 
     S3Service s3service = serviceCache.getExtension(S3Service.class);
+    createS3Buckets(s3service);
+
+    SqsService sqsService = serviceCache.getExtension(SqsService.class);
+    this.sqsDocumentEventUrl = createSqsQueue(sqsService);
+
+    SnsService snsService = serviceCache.getExtension(SnsService.class);
+    subscribeSnsTopics(snsService, sqsService);
+
+    SsmService ssm = serviceCache.getExtension(SsmService.class);
+    ssm.putParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/version", "1.1");
+  }
+
+  @Override
+  public void close() throws Throwable {
+    TestServices.stopLocalStack();
+  }
+
+  private void createS3Buckets(final S3Service s3service) {
+
     if (!s3service.exists(BUCKET_NAME)) {
       s3service.createBucket(BUCKET_NAME);
     }
@@ -98,13 +122,34 @@ public class LocalStackExtension
     if (!s3service.exists(OCR_BUCKET_NAME)) {
       s3service.createBucket(OCR_BUCKET_NAME);
     }
-
-    SsmService ssm = serviceCache.getExtension(SsmService.class);
-    ssm.putParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/version", "1.1");
   }
 
-  @Override
-  public void close() throws Throwable {
-    TestServices.stopLocalStack();
+  private String createSqsQueue(final SqsService sqs) {
+    return sqs.createQueue(SNS_SQS_CREATE_QUEUE).queueUrl();
+  }
+
+  private void subscribeSnsTopics(final SnsService snsService, final SqsService sqsService) {
+
+    String queueSqsArn = sqsService.getQueueArn(this.sqsDocumentEventUrl);
+    this.snsDocumentEvent = snsService.createTopic(SNS_TOPIC).topicArn();
+    snsService.subscribe(this.snsDocumentEvent, "sqs", queueSqsArn);
+  }
+
+  /**
+   * Get SNS Document Event.
+   * 
+   * @return {@link String}
+   */
+  public String getSnsDocumentEvent() {
+    return this.snsDocumentEvent;
+  }
+
+  /**
+   * Get SQS Document Event Url.
+   * 
+   * @return {@link String}
+   */
+  public String getSqsDocumentEventUrl() {
+    return this.sqsDocumentEventUrl;
   }
 }

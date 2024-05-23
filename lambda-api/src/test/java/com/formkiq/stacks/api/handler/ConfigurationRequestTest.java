@@ -28,22 +28,33 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 import java.util.Map;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.GetConfigurationResponse;
 import com.formkiq.client.model.UpdateConfigurationRequest;
 import com.formkiq.client.model.UpdateConfigurationResponse;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.ConfigService;
-import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.stacks.dynamodb.ConfigServiceExtension;
 
 /** Unit Tests for request /configuration. */
-@ExtendWith(DynamoDbExtension.class)
-@ExtendWith(LocalStackExtension.class)
 public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
+
+  /** {@link ConfigService}. */
+  private ConfigService config;
+
+  /**
+   * Before Each.
+   */
+  @BeforeEach
+  public void beforeEach() {
+    AwsServiceCache awsServices = getAwsServices();
+    awsServices.register(ConfigService.class, new ConfigServiceExtension());
+    this.config = awsServices.getExtension(ConfigService.class);
+  }
 
   /**
    * Get /config default as Admin.
@@ -56,8 +67,7 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     String siteId = SiteIdKeyGenerator.DEFAULT_SITE_ID;
     String group = "Admins";
 
-    ConfigService config = getAwsServices().getExtension(ConfigService.class);
-    config.save(siteId, new DynamicObject(Map.of("chatGptApiKey", "somevalue")));
+    this.config.save(siteId, new DynamicObject(Map.of("chatGptApiKey", "somevalue")));
 
     setBearerToken(group);
 
@@ -84,8 +94,8 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
   public void testHandleGetConfiguration02() throws Exception {
     // given
     String siteId = SiteIdKeyGenerator.DEFAULT_SITE_ID;
-    ConfigService config = getAwsServices().getExtension(ConfigService.class);
-    config.save(siteId, new DynamicObject(Map.of(CHATGPT_API_KEY, "somevalue")));
+
+    this.config.save(siteId, new DynamicObject(Map.of(CHATGPT_API_KEY, "somevalue")));
 
     String group = "Admins";
     setBearerToken(group);
@@ -114,8 +124,7 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     String group = "Admins";
     setBearerToken(group);
 
-    ConfigService config = getAwsServices().getExtension(ConfigService.class);
-    config.save(null, new DynamicObject(Map.of(CHATGPT_API_KEY, "somevalue")));
+    this.config.save(null, new DynamicObject(Map.of(CHATGPT_API_KEY, "somevalue")));
 
     // when
     GetConfigurationResponse response = this.systemApi.getConfiguration(siteId);
@@ -140,9 +149,8 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     String group = "Admins";
     setBearerToken(group);
 
-    ConfigService config = getAwsServices().getExtension(ConfigService.class);
-    config.save(null, new DynamicObject(Map.of(CHATGPT_API_KEY, "somevalue")));
-    config.save(siteId, new DynamicObject(Map.of(CHATGPT_API_KEY, "anothervalue")));
+    this.config.save(null, new DynamicObject(Map.of(CHATGPT_API_KEY, "somevalue")));
+    this.config.save(siteId, new DynamicObject(Map.of(CHATGPT_API_KEY, "anothervalue")));
 
     // when
     GetConfigurationResponse response = this.systemApi.getConfiguration(siteId);
@@ -167,11 +175,11 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     String group = "Admins";
     setBearerToken(group);
 
-    UpdateConfigurationRequest config = new UpdateConfigurationRequest().chatGptApiKey("anotherkey")
+    UpdateConfigurationRequest req = new UpdateConfigurationRequest().chatGptApiKey("anotherkey")
         .maxContentLengthBytes("1000000").maxDocuments("1000").maxWebhooks("5");
 
     // when
-    UpdateConfigurationResponse configResponse = this.systemApi.updateConfiguration(siteId, config);
+    UpdateConfigurationResponse configResponse = this.systemApi.updateConfiguration(siteId, req);
     GetConfigurationResponse response = this.systemApi.getConfiguration(siteId);
 
     // then
@@ -196,12 +204,12 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     String group = "default";
     setBearerToken(group);
 
-    UpdateConfigurationRequest config = new UpdateConfigurationRequest().chatGptApiKey("anotherkey")
+    UpdateConfigurationRequest req = new UpdateConfigurationRequest().chatGptApiKey("anotherkey")
         .maxContentLengthBytes("1000000").maxDocuments("1000").maxWebhooks("5");
 
     // when
     try {
-      this.systemApi.updateConfiguration(siteId, config);
+      this.systemApi.updateConfiguration(siteId, req);
       fail();
     } catch (ApiException e) {
       final int code = 401;

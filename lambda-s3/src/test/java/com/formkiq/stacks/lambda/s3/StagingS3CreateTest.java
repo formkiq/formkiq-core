@@ -103,7 +103,7 @@ import com.formkiq.aws.sns.SnsServiceExtension;
 import com.formkiq.aws.sqs.SqsAwsServiceRegistry;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.aws.sqs.SqsServiceExtension;
-import com.formkiq.aws.ssm.SmsAwsServiceRegistry;
+import com.formkiq.aws.ssm.SsmAwsServiceRegistry;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceExtension;
 import com.formkiq.module.actions.Action;
@@ -293,7 +293,7 @@ public class StagingS3CreateTest implements DbKeys {
     awsServices = new AwsServiceCacheBuilder(Collections.unmodifiableMap(env),
         TestServices.getEndpointMap(), credentialsProvider)
         .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
-            new SnsAwsServiceRegistry(), new SqsAwsServiceRegistry(), new SmsAwsServiceRegistry())
+            new SnsAwsServiceRegistry(), new SqsAwsServiceRegistry(), new SsmAwsServiceRegistry())
         .build();
   }
 

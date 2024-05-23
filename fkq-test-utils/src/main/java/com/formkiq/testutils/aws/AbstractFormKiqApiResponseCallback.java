@@ -26,13 +26,11 @@ package com.formkiq.testutils.aws;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
-import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.stream.Collectors;
 import org.mockserver.mock.action.ExpectationResponseCallback;
 import org.mockserver.model.Header;
@@ -51,23 +49,17 @@ import com.google.gson.GsonBuilder;
  */
 public abstract class AbstractFormKiqApiResponseCallback implements ExpectationResponseCallback {
 
-  /** {@link Random}. */
-  private static final Random NUM_RAND = new Random();
   /** {@link Context}. */
   private Context context = new LambdaContextRecorder();
   /** {@link Gson}. */
   private Gson gson = new GsonBuilder().disableHtmlEscaping().create();
-  /** Port to run Test server. */
-  private int port = -1;
+  /** Environment Map. */
+  private Map<String, String> environment = null;
 
   /**
    * constructor.
-   * 
-   * @param serverPort int
    */
-  public AbstractFormKiqApiResponseCallback(final int serverPort) {
-    this.port = serverPort;
-  }
+  public AbstractFormKiqApiResponseCallback() {}
 
   /**
    * Create {@link HttpResponse} from {@link String} response.
@@ -89,30 +81,11 @@ public abstract class AbstractFormKiqApiResponseCallback implements ExpectationR
   }
 
   /**
-   * Generate Random Port.
-   * 
-   * @return int
-   */
-  public static int generatePort() {
-    final int topPort = 8000;
-    final int bottomPort = 5000;
-    return NUM_RAND.nextInt(topPort - bottomPort) + bottomPort;
-  }
-
-  /**
    * Get {@link RequestStreamHandler}.
    * 
    * @return {@link RequestStreamHandler}
    */
   public abstract RequestStreamHandler getHandler();
-
-  /**
-   * Get Lambda {@link Map} environment.
-   * 
-   * @return {@link Map}
-   * @throws URISyntaxException URISyntaxException
-   */
-  public abstract Map<String, String> getMapEnvironment() throws URISyntaxException;
 
   /**
    * Get Resource Urls.
@@ -122,21 +95,12 @@ public abstract class AbstractFormKiqApiResponseCallback implements ExpectationR
   public abstract Collection<String> getResourceUrls();
 
   /**
-   * Get Server Port.
-   * 
-   * @return int
-   */
-  public int getServerPort() {
-    return this.port;
-  }
-
-  /**
    * Handle transforming {@link HttpRequest} to {@link HttpResponse}.
    */
   @Override
   public HttpResponse handle(final HttpRequest httpRequest) throws Exception {
 
-    initHandler();
+    initHandler(this.environment);
 
     ApiHttpRequest event = new HttpRequestToApiHttpRequest(getResourceUrls()).apply(httpRequest);
 
@@ -152,6 +116,20 @@ public abstract class AbstractFormKiqApiResponseCallback implements ExpectationR
 
   /**
    * Initialize Handler.
+   * 
+   * @param environmentMap {@link Map}
+   * 
    */
-  public abstract void initHandler();
+  public abstract void initHandler(Map<String, String> environmentMap);
+
+  /**
+   * Sets Environment Map.
+   * 
+   * @param environmentMap {@link Map}
+   */
+  public void setEnvironmentMap(final Map<String, String> environmentMap) {
+    this.environment = environmentMap;
+  }
+
+
 }

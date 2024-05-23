@@ -25,13 +25,10 @@ package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_BAD_REQUEST;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_PAYMENT;
-import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENT_SYNCS_TABLE;
-import static com.formkiq.testutils.aws.TypesenseExtension.API_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
-
 import java.io.IOException;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
@@ -41,17 +38,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-
-import com.formkiq.aws.services.lambda.ApiResponseStatus;
-import com.formkiq.client.api.AdvancedDocumentSearchApi;
-import com.formkiq.client.model.DocumentSyncStatus;
-import com.formkiq.client.model.GetDocumentFulltextResponse;
-import com.formkiq.client.model.GetDocumentSyncResponse;
-import com.formkiq.module.typesense.TypeSenseService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.model.DocumentMapToDocument;
+import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAttribute;
 import com.formkiq.client.model.AddAttributeRequest;
@@ -69,21 +59,19 @@ import com.formkiq.client.model.DocumentSearchRequest;
 import com.formkiq.client.model.DocumentSearchResponse;
 import com.formkiq.client.model.DocumentSearchTag;
 import com.formkiq.client.model.DocumentSearchTags;
+import com.formkiq.client.model.DocumentSyncStatus;
+import com.formkiq.client.model.GetDocumentFulltextResponse;
+import com.formkiq.client.model.GetDocumentSyncResponse;
 import com.formkiq.client.model.SearchResponseFields;
 import com.formkiq.client.model.SearchResultDocument;
 import com.formkiq.module.lambda.typesense.TypesenseProcessor;
-import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.LocalStackExtension;
-import com.formkiq.testutils.aws.TypesenseExtension;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
 
 /** Unit Tests for request /search. */
-@ExtendWith(DynamoDbExtension.class)
-@ExtendWith(LocalStackExtension.class)
-@ExtendWith(TypesenseExtension.class)
 public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
 
   /** JUnit Test Timeout. */
-  private static final int TEST_TIMEOUT = 20;
+  private static final int TEST_TIMEOUT = 10;
 
   private void addAttribute(final String siteId, final String attribute) throws ApiException {
     AddAttributeRequest req =
@@ -136,11 +124,6 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
 
   private String saveDocument(final String siteId, final String path) throws Exception {
 
-    getAwsServices().environment().put("TYPESENSE_HOST",
-        "http://localhost:" + TypesenseExtension.getMappedPort());
-    getAwsServices().environment().put("TYPESENSE_API_KEY", API_KEY);
-    getAwsServices().environment().put("DOCUMENT_SYNC_TABLE", DOCUMENT_SYNCS_TABLE);
-
     AddDocumentUploadRequest uploadReq = new AddDocumentUploadRequest().path(path);
     String documentId =
         this.documentsApi.addDocumentUpload(uploadReq, siteId, null, null, null).getDocumentId();
@@ -149,13 +132,9 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
         Map.of("documentId", Map.of("S", documentId), "path", Map.of("S", path));
     Map<String, Object> document = new DocumentMapToDocument().apply(data);
 
-    TypesenseProcessor processor = new TypesenseProcessor(getAwsServices());
+    AwsServiceCache awsServices = getAwsServices();
 
-    TypeSenseService typeSenseService = getAwsServices().getExtension(TypeSenseService.class);
-    HttpResponse<String> healthy = typeSenseService.isHealthy();
-    if (healthy.statusCode() != ApiResponseStatus.SC_OK.getStatusCode()) {
-      throw new IOException("status: " + healthy.statusCode() + " body: " + healthy.body());
-    }
+    TypesenseProcessor processor = new TypesenseProcessor(awsServices);
 
     HttpResponse<String> response =
         processor.addOrUpdate(siteId, documentId, document, "joesmith", false);
@@ -647,7 +626,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
    * @throws Exception an error has occurred
    */
   @Test
-  @Timeout(value = TEST_TIMEOUT * 2)
+  @Timeout(value = TEST_TIMEOUT)
   public void testHandleSearchRequest15() throws Exception {
     // given
     String siteId = null;
@@ -664,12 +643,9 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
 
     GetDocumentFulltextResponse getResponse = null;
     while (getResponse == null) {
-      AdvancedDocumentSearchApi api = new AdvancedDocumentSearchApi(client);
-
       try {
-        getResponse = api.getDocumentFulltext(documentId, siteId, null);
+        getResponse = this.advancedSearchApi.getDocumentFulltext(documentId, siteId, null);
       } catch (ApiException e) {
-        getResponse = null;
         TimeUnit.SECONDS.sleep(1);
       }
     }

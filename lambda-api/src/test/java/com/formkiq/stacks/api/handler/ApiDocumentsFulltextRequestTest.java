@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api;
+package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -30,13 +30,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.extension.RegisterExtension;
-import com.formkiq.client.api.AdvancedDocumentSearchApi;
-import com.formkiq.client.api.CustomIndexApi;
-import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
-import com.formkiq.client.invoker.Configuration;
 import com.formkiq.client.model.AddDocumentMetadata;
 import com.formkiq.client.model.AddDocumentTag;
 import com.formkiq.client.model.DeleteFulltextResponse;
@@ -44,41 +38,9 @@ import com.formkiq.client.model.GetDocumentFulltextResponse;
 import com.formkiq.client.model.SetDocumentFulltextRequest;
 import com.formkiq.client.model.SetDocumentFulltextResponse;
 import com.formkiq.client.model.UpdateDocumentFulltextRequest;
-import com.formkiq.stacks.api.handler.FormKiQResponseCallback;
-import com.formkiq.testutils.aws.AbstractFormKiqApiResponseCallback;
-import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.FormKiqApiExtension;
-import com.formkiq.testutils.aws.JwtTokenEncoder;
-import com.formkiq.testutils.aws.LocalStackExtension;
-import com.formkiq.testutils.aws.TypesenseExtension;
 
 /** Unit Tests for request /documents/{documentId}/fulltext. */
-@ExtendWith(LocalStackExtension.class)
-@ExtendWith(DynamoDbExtension.class)
-@ExtendWith(TypesenseExtension.class)
-public class ApiDocumentsFulltextRequestTest {
-  /** {@link FormKiQResponseCallback}. */
-  private static final FormKiQResponseCallback CALLBACK =
-      new FormKiQResponseCallback(AbstractFormKiqApiResponseCallback.generatePort());
-  /** FormKiQ Server. */
-  @RegisterExtension
-  static FormKiqApiExtension server = new FormKiqApiExtension(CALLBACK);
-  /** {@link ApiClient}. */
-  private ApiClient client =
-      Configuration.getDefaultApiClient().setReadTimeout(0).setBasePath(server.getBasePath());
-  /** {@link CustomIndexApi}. */
-  private AdvancedDocumentSearchApi searchApi = new AdvancedDocumentSearchApi(this.client);
-
-  /**
-   * Set BearerToken.
-   * 
-   * @param siteId {@link String}
-   */
-  private void setBearerToken(final String siteId) {
-    String jwt = JwtTokenEncoder.encodeCognito(new String[] {siteId != null ? siteId : "default"},
-        "joesmith");
-    this.client.addDefaultHeader("Authorization", jwt);
-  }
+public class ApiDocumentsFulltextRequestTest extends AbstractApiClientRequestTest {
 
   /**
    * GET /documents/{documentId}/fulltext request. Document NOT found.
@@ -95,7 +57,7 @@ public class ApiDocumentsFulltextRequestTest {
 
       // when
       try {
-        this.searchApi.getDocumentFulltext(documentId, siteId, null);
+        this.advancedSearchApi.getDocumentFulltext(documentId, siteId, null);
       } catch (ApiException e) {
         // then
         assertEquals("{\"message\":\"Document " + documentId + " not found.\"}",
@@ -126,13 +88,13 @@ public class ApiDocumentsFulltextRequestTest {
 
       // when
       SetDocumentFulltextResponse putResponse =
-          this.searchApi.setDocumentFulltext(documentId, siteId, req);
+          this.advancedSearchApi.setDocumentFulltext(documentId, siteId, req);
 
       // then
       assertEquals("Add document to Typesense", putResponse.getMessage());
 
       GetDocumentFulltextResponse response =
-          this.searchApi.getDocumentFulltext(documentId, siteId, null);
+          this.advancedSearchApi.getDocumentFulltext(documentId, siteId, null);
       assertEquals("text/plain", response.getContentType());
       assertEquals(content, response.getContent());
       Map<String, Object> metadata = response.getMetadata();
@@ -161,7 +123,7 @@ public class ApiDocumentsFulltextRequestTest {
 
       try {
         // when
-        this.searchApi.setDocumentFulltext(documentId, siteId, req);
+        this.advancedSearchApi.setDocumentFulltext(documentId, siteId, req);
         fail();
       } catch (ApiException e) {
         // then
@@ -190,7 +152,7 @@ public class ApiDocumentsFulltextRequestTest {
 
       try {
         // when
-        this.searchApi.setDocumentFulltext(documentId, siteId, req);
+        this.advancedSearchApi.setDocumentFulltext(documentId, siteId, req);
         fail();
       } catch (ApiException e) {
         // then
@@ -216,10 +178,11 @@ public class ApiDocumentsFulltextRequestTest {
 
       SetDocumentFulltextRequest req =
           new SetDocumentFulltextRequest().content(content).contentType("text/plain");
-      this.searchApi.setDocumentFulltext(documentId, siteId, req);
+      this.advancedSearchApi.setDocumentFulltext(documentId, siteId, req);
 
       // when
-      DeleteFulltextResponse response = this.searchApi.deleteDocumentFulltext(documentId, siteId);
+      DeleteFulltextResponse response =
+          this.advancedSearchApi.deleteDocumentFulltext(documentId, siteId);
 
       // then
       assertEquals("Deleted document '" + documentId + "'", response.getMessage());
@@ -245,17 +208,17 @@ public class ApiDocumentsFulltextRequestTest {
           new SetDocumentFulltextRequest().content(content).contentType("text/plain");
 
       SetDocumentFulltextResponse putResponse =
-          this.searchApi.setDocumentFulltext(documentId, siteId, req);
+          this.advancedSearchApi.setDocumentFulltext(documentId, siteId, req);
 
       UpdateDocumentFulltextRequest updateReq =
           new UpdateDocumentFulltextRequest().content(content2).contentType("text/plain");
 
       // when
-      this.searchApi.updateDocumentFulltext(documentId, siteId, updateReq);
+      this.advancedSearchApi.updateDocumentFulltext(documentId, siteId, updateReq);
 
       // then
       GetDocumentFulltextResponse documentFulltext =
-          this.searchApi.getDocumentFulltext(documentId, siteId, null);
+          this.advancedSearchApi.getDocumentFulltext(documentId, siteId, null);
       assertEquals(content2, documentFulltext.getContent());
       assertEquals("Add document to Typesense", putResponse.getMessage());
     }

@@ -57,23 +57,12 @@ public class FormKiQResponseCallback extends AbstractFormKiqApiResponseCallback 
   /** {@link OcrTesseractProcessor}. */
   private OcrTesseractProcessor handler;
 
-  /**
-   * constructor.
-   * 
-   * @param serverPort int
-   */
-  public FormKiQResponseCallback(final int serverPort) {
-    super(serverPort);
-  }
-
-
   @Override
   public RequestStreamHandler getHandler() {
     return this.handler;
   }
 
-  @Override
-  public Map<String, String> getMapEnvironment() {
+  private Map<String, String> getMapEnvironment() {
 
     String pathBin = "/opt/homebrew/bin/";
 
@@ -112,7 +101,7 @@ public class FormKiQResponseCallback extends AbstractFormKiqApiResponseCallback 
   }
 
   @Override
-  public void initHandler() {
+  public void initHandler(final Map<String, String> environmentMap) {
 
     AwsCredentials creds = AwsBasicCredentials.create("aaa", "bbb");
     StaticCredentialsProvider credentialsProvider = StaticCredentialsProvider.create(creds);

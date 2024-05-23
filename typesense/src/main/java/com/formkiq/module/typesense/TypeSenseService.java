@@ -89,6 +89,14 @@ public interface TypeSenseService {
   HttpResponse<String> getDocument(String siteId, String documentId) throws IOException;
 
   /**
+   * Process /health request.
+   * 
+   * @return {@link HttpResponse}
+   * @throws IOException IOException
+   */
+  HttpResponse<String> isHealthy() throws IOException;
+
+  /**
    * Full text search.
    * 
    * @param siteId {@link String}
@@ -110,11 +118,4 @@ public interface TypeSenseService {
    */
   HttpResponse<String> updateDocument(String siteId, String documentId, Map<String, Object> data)
       throws IOException;
-
-  /**
-   * Process /health request.
-   * 
-   * @return {@link HttpResponse}
-   */
-  HttpResponse<String> isHealthy() throws IOException;
 }

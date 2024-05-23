@@ -69,7 +69,7 @@ import com.formkiq.aws.ses.SesAwsServiceRegistry;
 import com.formkiq.aws.ses.SesService;
 import com.formkiq.aws.ses.SesServiceExtension;
 import com.formkiq.aws.sns.SnsAwsServiceRegistry;
-import com.formkiq.aws.ssm.SmsAwsServiceRegistry;
+import com.formkiq.aws.ssm.SsmAwsServiceRegistry;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceExtension;
 import com.formkiq.graalvm.annotations.Reflectable;
@@ -119,7 +119,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
       serviceCache = new AwsServiceCacheBuilder(System.getenv(), Map.of(),
           EnvironmentVariableCredentialsProvider.create())
           .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
-              new SnsAwsServiceRegistry(), new SmsAwsServiceRegistry(), new SesAwsServiceRegistry())
+              new SnsAwsServiceRegistry(), new SsmAwsServiceRegistry(), new SesAwsServiceRegistry())
           .build();
 
       initialize(serviceCache);

@@ -68,8 +68,6 @@ public class AttributesRequestTest extends AbstractAwsIntegrationTest {
 
   /** JUnit Test Timeout. */
   private static final int TEST_TIMEOUT = 30;
-  /** Site Id. */
-  private static final String SITE_ID = UUID.randomUUID().toString();
 
   /**
    * Add Attribute missing key.

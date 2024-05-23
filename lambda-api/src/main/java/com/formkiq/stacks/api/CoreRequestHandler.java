@@ -29,7 +29,7 @@ import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.sns.SnsAwsServiceRegistry;
 import com.formkiq.aws.sqs.SqsAwsServiceRegistry;
-import com.formkiq.aws.ssm.SmsAwsServiceRegistry;
+import com.formkiq.aws.ssm.SsmAwsServiceRegistry;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
@@ -48,7 +48,7 @@ public class CoreRequestHandler extends AbstractCoreRequestHandler {
     serviceCache = new AwsServiceCacheBuilder(System.getenv(), Map.of(),
         EnvironmentVariableCredentialsProvider.create())
         .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
-            new SnsAwsServiceRegistry(), new SqsAwsServiceRegistry(), new SmsAwsServiceRegistry())
+            new SnsAwsServiceRegistry(), new SqsAwsServiceRegistry(), new SsmAwsServiceRegistry())
         .build();
 
     initialize(serviceCache, new DocumentTagSchemaPluginEmpty());

@@ -29,7 +29,7 @@ import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.sns.SnsAwsServiceRegistry;
 import com.formkiq.aws.sqs.SqsAwsServiceRegistry;
-import com.formkiq.aws.ssm.SmsAwsServiceRegistry;
+import com.formkiq.aws.ssm.SsmAwsServiceRegistry;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPluginEmpty;
@@ -56,7 +56,7 @@ public class NettyRequestHandler extends AbstractCoreRequestHandler {
       final AwsCredentialsProvider credentialsProvider) {
     this.serviceCache = new AwsServiceCacheBuilder(env, awsServiceEndpoints, credentialsProvider)
         .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
-            new SnsAwsServiceRegistry(), new SqsAwsServiceRegistry(), new SmsAwsServiceRegistry())
+            new SnsAwsServiceRegistry(), new SqsAwsServiceRegistry(), new SsmAwsServiceRegistry())
         .build();
 
     initialize(this.serviceCache, new DocumentTagSchemaPluginEmpty());

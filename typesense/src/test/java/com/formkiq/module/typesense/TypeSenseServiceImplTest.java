@@ -33,6 +33,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import com.formkiq.testutils.aws.TypesenseExtension;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
@@ -46,6 +47,9 @@ import software.amazon.awssdk.regions.Region;
 @ExtendWith(TypesenseExtension.class)
 class TypeSenseServiceImplTest {
 
+  /** {@link TypesenseExtension}. */
+  @RegisterExtension
+  static TypesenseExtension typesenseExtension = new TypesenseExtension();
   /** {@link TypeSenseService}. */
   private TypeSenseService service;
   /** {@link AwsCredentials}. */
@@ -54,8 +58,8 @@ class TypeSenseServiceImplTest {
   @BeforeEach
   public void beforeEach() {
     this.service =
-        new TypeSenseServiceImpl("http://localhost:" + TypesenseExtension.getMappedPort(), API_KEY,
-            Region.US_EAST_1, this.credentials);
+        new TypeSenseServiceImpl("http://localhost:" + typesenseExtension.getFirstMappedPort(),
+            API_KEY, Region.US_EAST_1, this.credentials);
   }
 
   /**
