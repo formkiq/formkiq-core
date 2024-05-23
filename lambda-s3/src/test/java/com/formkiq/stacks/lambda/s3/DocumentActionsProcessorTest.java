@@ -55,6 +55,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpRequest;
 import com.formkiq.aws.dynamodb.DbKeys;
@@ -71,7 +72,7 @@ import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.ses.SesAwsServiceRegistry;
 import com.formkiq.aws.sns.SnsAwsServiceRegistry;
 import com.formkiq.aws.sns.SnsService;
-import com.formkiq.aws.ssm.SmsAwsServiceRegistry;
+import com.formkiq.aws.ssm.SsmAwsServiceRegistry;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceCache;
@@ -111,8 +112,11 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 /** Unit Tests for {@link DocumentActionsProcessor}. */
 @ExtendWith(DynamoDbExtension.class)
 @ExtendWith(LocalStackExtension.class)
-@ExtendWith(TypesenseExtension.class)
 public class DocumentActionsProcessorTest implements DbKeys {
+
+  /** {@link TypesenseExtension}. */
+  @RegisterExtension
+  static TypesenseExtension typesenseExtension = new TypesenseExtension();
 
   /** {@link ActionsService}. */
   private static ActionsService actionsService;
@@ -185,7 +189,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
     ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/api/DocumentsIamUrl", URL);
 
-    String typeSenseHost = "http://localhost:" + TypesenseExtension.getMappedPort();
+    String typeSenseHost = "http://localhost:" + typesenseExtension.getFirstMappedPort();
     ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/api/TypesenseEndpoint",
         typeSenseHost);
     ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/typesense/ApiKey", API_KEY);
@@ -252,7 +256,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     AwsServiceCache serviceCache =
         new AwsServiceCacheBuilder(env, TestServices.getEndpointMap(), credentialsProvider)
             .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
-                new SnsAwsServiceRegistry(), new SmsAwsServiceRegistry(),
+                new SnsAwsServiceRegistry(), new SsmAwsServiceRegistry(),
                 new SesAwsServiceRegistry())
             .build();
 

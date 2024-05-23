@@ -28,15 +28,13 @@ import static com.formkiq.testutils.aws.TestServices.STAGE_BUCKET_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.s3.S3Service;
+import com.formkiq.aws.s3.S3ServiceExtension;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddDocumentTag;
 import com.formkiq.client.model.MatchDocumentTag;
@@ -44,8 +42,7 @@ import com.formkiq.client.model.UpdateMatchingDocumentTagsRequest;
 import com.formkiq.client.model.UpdateMatchingDocumentTagsRequestMatch;
 import com.formkiq.client.model.UpdateMatchingDocumentTagsRequestUpdate;
 import com.formkiq.client.model.UpdateMatchingDocumentTagsResponse;
-import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
 import software.amazon.awssdk.services.s3.model.GetObjectTaggingResponse;
 import software.amazon.awssdk.services.s3.model.ListObjectsResponse;
 import software.amazon.awssdk.services.s3.model.S3Object;
@@ -55,29 +52,21 @@ import software.amazon.awssdk.services.s3.model.S3Object;
  * Test Handlers for: PATCH /documents/tags.
  *
  */
-@ExtendWith(DynamoDbExtension.class)
-@ExtendWith(LocalStackExtension.class)
 public class UpdateDocumentMatchingRequestHandlerTest extends AbstractApiClientRequestTest {
 
   /** {@link S3Service}. */
-  private static S3Service s3;
-
-  /**
-   * BeforeAll.
-   * 
-   * @throws URISyntaxException URISyntaxException
-   */
-  @BeforeAll
-  public static void beforeAll() throws URISyntaxException {
-    s3 = getAwsServices().getExtension(S3Service.class);
-  }
+  private S3Service s3 = null;
 
   /**
    * BeforeEach.
    */
   @BeforeEach
   public void beforeEach() {
-    s3.deleteAllFiles(STAGE_BUCKET_NAME);
+    AwsServiceCache awsServices = getAwsServices();
+    awsServices.register(S3Service.class, new S3ServiceExtension());
+
+    this.s3 = awsServices.getExtension(S3Service.class);
+    this.s3.deleteAllFiles(STAGE_BUCKET_NAME);
   }
 
   /**
@@ -145,13 +134,14 @@ public class UpdateDocumentMatchingRequestHandlerTest extends AbstractApiClientR
       // then
       assertEquals("received update tags request", response.getMessage());
 
-      ListObjectsResponse s3Response = s3.listObjects(STAGE_BUCKET_NAME, siteId);
+      ListObjectsResponse s3Response = this.s3.listObjects(STAGE_BUCKET_NAME, siteId);
       List<S3Object> contents = s3Response.contents();
       assertEquals(1, contents.size());
       assertTrue(contents.get(0).key().contains("patch_documents_tags_"));
       assertTrue(contents.get(0).key().endsWith(FORMKIQ_DOC_EXT));
 
-      GetObjectTaggingResponse tags = s3.getObjectTags(STAGE_BUCKET_NAME, contents.get(0).key());
+      GetObjectTaggingResponse tags =
+          this.s3.getObjectTags(STAGE_BUCKET_NAME, contents.get(0).key());
       assertEquals(1, tags.tagSet().size());
       assertEquals("userId", tags.tagSet().get(0).key());
       assertEquals("joesmith", tags.tagSet().get(0).value());

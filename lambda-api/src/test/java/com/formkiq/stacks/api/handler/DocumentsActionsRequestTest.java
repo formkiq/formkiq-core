@@ -37,9 +37,9 @@ import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.DynamoDbServiceExtension;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.services.lambda.GsonUtil;
 import com.formkiq.client.invoker.ApiException;
@@ -59,17 +59,19 @@ import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.Queue;
 import com.formkiq.module.actions.services.ActionsService;
+import com.formkiq.module.actions.services.ActionsServiceExtension;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.ConfigService;
+import com.formkiq.stacks.dynamodb.ConfigServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
-import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
+import com.formkiq.stacks.dynamodb.DocumentVersionService;
+import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
 import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.sqs.model.Message;
 
 /** Unit Tests for request /documents/{documentId}/actions. */
-@ExtendWith(DynamoDbExtension.class)
-@ExtendWith(LocalStackExtension.class)
 public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
 
   /** {@link ConfigService}. */
@@ -88,10 +90,18 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
    */
   @BeforeEach
   public void before() throws Exception {
-    this.db = getAwsServices().getExtension(DynamoDbService.class);
-    this.service = getAwsServices().getExtension(ActionsService.class);
-    this.documentService = getAwsServices().getExtension(DocumentService.class);
-    this.configService = getAwsServices().getExtension(ConfigService.class);
+
+    AwsServiceCache awsServices = getAwsServices();
+    awsServices.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
+    awsServices.register(DynamoDbService.class, new DynamoDbServiceExtension());
+    awsServices.register(ActionsService.class, new ActionsServiceExtension());
+    awsServices.register(DocumentService.class, new DocumentServiceExtension());
+    awsServices.register(ConfigService.class, new ConfigServiceExtension());
+
+    this.db = awsServices.getExtension(DynamoDbService.class);
+    this.service = awsServices.getExtension(ActionsService.class);
+    this.documentService = awsServices.getExtension(DocumentService.class);
+    this.configService = awsServices.getExtension(ConfigService.class);
   }
 
   /**

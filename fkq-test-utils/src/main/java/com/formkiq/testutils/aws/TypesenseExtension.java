@@ -24,10 +24,10 @@
 package com.formkiq.testutils.aws;
 
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 
 /**
@@ -45,16 +45,7 @@ public class TypesenseExtension
   /** Type Sense Image. */
   private static DockerImageName image = DockerImageName.parse("typesense/typesense:0.25.1");
   /** Mapped Port. */
-  private static Integer mappedPort = null;
-
-  /**
-   * Get Mapped Port.
-   * 
-   * @return {@link Integer}
-   */
-  public static Integer getMappedPort() {
-    return mappedPort;
-  }
+  private Integer mappedPort = null;
 
   /** {@link GenericContainer}. */
   private GenericContainer<?> container;
@@ -65,17 +56,23 @@ public class TypesenseExtension
     final Integer exposedPort = Integer.valueOf(DEFAULT_PORT);
     this.container = new GenericContainer<>(image)
         .withEnv(Map.of("TYPESENSE_DATA_DIR", "/tmp", "TYPESENSE_API_KEY", API_KEY))
-        .withExposedPorts(exposedPort);
+        .withExposedPorts(exposedPort).waitingFor(Wait.forHttp("/health"));
     this.container.start();
 
-    final int timeout = 4;
-    TimeUnit.SECONDS.sleep(timeout);
-
-    mappedPort = this.container.getFirstMappedPort();
+    this.mappedPort = this.container.getFirstMappedPort();
   }
 
   @Override
   public void close() throws Throwable {
     this.container.close();
+  }
+
+  /**
+   * Get First Mapped Port.
+   * 
+   * @return Integer
+   */
+  public Integer getFirstMappedPort() {
+    return this.mappedPort;
   }
 }

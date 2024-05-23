@@ -42,21 +42,21 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.ssm.SsmService;
+import com.formkiq.aws.ssm.SsmServiceExtension;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.GetSitesResponse;
 import com.formkiq.client.model.GetVersionResponse;
 import com.formkiq.client.model.SetOpenSearchIndexRequest;
 import com.formkiq.client.model.Site;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.ConfigService;
-import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.stacks.dynamodb.ConfigServiceExtension;
 
 /** Unit Tests for request /sites. */
-@ExtendWith(DynamoDbExtension.class)
-@ExtendWith(LocalStackExtension.class)
+// @ExtendWith(DynamoDbExtension.class)
+// @ExtendWith(LocalStackExtension.class)
 public class SitesRequestTest extends AbstractApiClientRequestTest {
 
   /** {@link ConfigService}. */
@@ -71,8 +71,13 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
    */
   @BeforeEach
   public void beforeEach() {
-    config = getAwsServices().getExtension(ConfigService.class);
-    ssm = getAwsServices().getExtension(SsmService.class);
+    AwsServiceCache awsServices = getAwsServices();
+
+    awsServices.register(ConfigService.class, new ConfigServiceExtension());
+    awsServices.register(SsmService.class, new SsmServiceExtension());
+
+    config = awsServices.getExtension(ConfigService.class);
+    ssm = awsServices.getExtension(SsmService.class);
   }
 
   /**
@@ -249,8 +254,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     String siteId = "finance";
     setBearerToken(siteId);
 
-    ConfigService configService = getAwsServices().getExtension(ConfigService.class);
-    configService.save(siteId, new DynamicObject(Map.of(MAX_DOCUMENTS, "5", MAX_WEBHOOKS, "10")));
+    config.save(siteId, new DynamicObject(Map.of(MAX_DOCUMENTS, "5", MAX_WEBHOOKS, "10")));
 
     // when
     GetSitesResponse response = this.systemApi.getSites();

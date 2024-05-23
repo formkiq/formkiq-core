@@ -31,9 +31,9 @@ import com.formkiq.module.lambdaservices.ClassServiceExtension;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 
 /**
- * SMS {@link AwsServiceRegistry}.
+ * SSM {@link AwsServiceRegistry}.
  */
-public class SmsAwsServiceRegistry implements AwsServiceRegistry {
+public class SsmAwsServiceRegistry implements AwsServiceRegistry {
 
   @Override
   public void initService(final AwsServiceCache serviceCache,

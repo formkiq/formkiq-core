@@ -38,6 +38,7 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
@@ -71,8 +72,11 @@ import software.amazon.awssdk.utils.IoUtils;
  *
  */
 @ExtendWith(DynamoDbExtension.class)
-@ExtendWith(TypesenseExtension.class)
 class TypesenseProcessorTest {
+
+  /** {@link TypesenseExtension}. */
+  @RegisterExtension
+  static TypesenseExtension typesenseExtension = new TypesenseExtension();
 
   /** {@link Gson}. */
   private static final Gson GSON = new GsonBuilder().create();
@@ -90,9 +94,10 @@ class TypesenseProcessorTest {
     AwsBasicCredentials cred = AwsBasicCredentials.create("asd", "asd");
     DynamoDbConnectionBuilder db = DynamoDbTestServices.getDynamoDbConnection();
 
-    Map<String, String> map = Map.of("AWS_REGION", "us-east-1", "DOCUMENT_SYNC_TABLE",
-        DOCUMENT_SYNCS_TABLE, "TYPESENSE_HOST",
-        "http://localhost:" + TypesenseExtension.getMappedPort(), "TYPESENSE_API_KEY", API_KEY);
+    Map<String, String> map =
+        Map.of("AWS_REGION", "us-east-1", "DOCUMENT_SYNC_TABLE", DOCUMENT_SYNCS_TABLE,
+            "TYPESENSE_HOST", "http://localhost:" + typesenseExtension.getFirstMappedPort(),
+            "TYPESENSE_API_KEY", API_KEY);
 
     AwsCredentials creds = AwsBasicCredentials.create("aaa", "bbb");
     StaticCredentialsProvider credentialsProvider = StaticCredentialsProvider.create(creds);
@@ -103,8 +108,9 @@ class TypesenseProcessorTest {
 
     processor = new TypesenseProcessor(serviceCache);
 
-    service = new TypeSenseServiceImpl("http://localhost:" + TypesenseExtension.getMappedPort(),
-        API_KEY, Region.US_EAST_1, cred);
+    service =
+        new TypeSenseServiceImpl("http://localhost:" + typesenseExtension.getFirstMappedPort(),
+            API_KEY, Region.US_EAST_1, cred);
 
     syncService = new DocumentSyncServiceDynamoDb(db, DOCUMENT_SYNCS_TABLE);
   }
