@@ -23,10 +23,12 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import static com.formkiq.module.http.HttpResponseStatus.is2XX;
 import static com.formkiq.module.http.HttpResponseStatus.is404;
 import java.net.http.HttpResponse;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
@@ -56,6 +58,7 @@ public class DocumentsFulltextRequestHandler
    * @return {@link Map}
    * @throws BadException BadException
    */
+  @SuppressWarnings("unchecked")
   private Map<String, Object> buildDocumentFromRequestBody(final Map<String, Object> body)
       throws BadException {
 
@@ -63,11 +66,17 @@ public class DocumentsFulltextRequestHandler
     Map<String, Object> document = fulltext.apply(body);
 
     if (body.containsKey("contentUrls")) {
-      throw new BadException("'contentUrls' are not supported by Typesense");
+      List<String> contentUrls = (List<String>) body.get("contentUrls");
+      if (!contentUrls.isEmpty()) {
+        throw new BadException("'contentUrls' are not supported by Typesense");
+      }
     }
 
     if (body.containsKey("tags")) {
-      throw new BadException("'tags' are not supported with Typesense");
+      List<Object> tags = (List<Object>) body.get("tags");
+      if (!tags.isEmpty()) {
+        throw new BadException("'tags' are not supported with Typesense");
+      }
     }
 
     return document;

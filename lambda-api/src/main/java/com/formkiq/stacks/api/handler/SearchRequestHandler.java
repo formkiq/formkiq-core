@@ -180,7 +180,7 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
       PaginationMapToken ptoken = pagination != null ? pagination.getStartkey() : null;
 
       Collection<String> documentIds = q.query().documentIds();
-      if (documentIds != null) {
+      if (!Objects.isEmpty(documentIds)) {
         if (documentIds.size() > MAX_DOCUMENT_IDS) {
           throw new BadException("Maximum number of DocumentIds is " + MAX_DOCUMENT_IDS);
         }

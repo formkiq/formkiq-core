@@ -28,12 +28,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
+import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -121,9 +123,10 @@ public class ConfigurationApiKeysRequestHandler
     String name = body.get("name").toString();
     Collection<ApiKeyPermission> permissions = Collections.emptyList();
 
-    if (body.containsKey("permissions")) {
-      permissions = body.getStringList("permissions").stream()
-          .map(p -> ApiKeyPermission.valueOf(p.toUpperCase())).collect(Collectors.toList());
+    List<String> permissionList = body.getStringList("permissions");
+    if (!Objects.isEmpty(permissionList)) {
+      permissions = permissionList.stream().map(p -> ApiKeyPermission.valueOf(p.toUpperCase()))
+          .collect(Collectors.toList());
     } else {
       permissions =
           Arrays.asList(ApiKeyPermission.READ, ApiKeyPermission.WRITE, ApiKeyPermission.DELETE);
@@ -137,7 +140,7 @@ public class ConfigurationApiKeysRequestHandler
 
   /**
    * Validate.
-   * 
+   *
    * @param body {@link Map}
    * @throws ValidationException ValidationException
    */

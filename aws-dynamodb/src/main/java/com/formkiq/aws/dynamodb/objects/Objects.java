@@ -30,15 +30,73 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 
+ *
  * Objects Helper.
  *
  */
 public class Objects {
 
+  /** Double Format. */
+  public static final String DOUBLE_FORMAT = "%020.4f";
+
+  /** Double Format. */
+  public static final String INT_ZERO_PAD_FORMAT = "%06d";
+
+  /**
+   * Format {@link Double}.
+   *
+   * @param val {@link Double}
+   * @return {@link String}
+   */
+  public static String formatDouble(final Double val) {
+
+    String s = null;
+
+    double dv = val.doubleValue();
+    if (dv == (long) dv) {
+      s = String.format("%d", Long.valueOf((long) dv));
+    } else {
+      s = String.format("%s", val);
+    }
+
+    return s;
+  }
+
+  /**
+   * Format {@link Double} using a {@link String} format.
+   *
+   * @param val {@link Double}
+   * @param format {@link String}
+   * @return {@link String}
+   */
+  public static String formatDouble(final Double val, final String format) {
+    return String.format(format, val);
+  }
+
+  /**
+   * Format {@link Double} using a {@link String} format.
+   *
+   * @param val int
+   * @param format {@link String}
+   * @return {@link String}
+   */
+  public static String formatInt(final int val, final String format) {
+    return String.format(format, Integer.valueOf(val));
+  }
+
+  /**
+   * Is {@link Collection} empty.
+   *
+   * @param c {@link Collection}
+   * @return boolean
+   */
+  public static boolean isEmpty(final Collection<?> c) {
+    return notNull(c).isEmpty();
+  }
+
   /**
    * Get Last Element of {@link List}.
-   * 
+   *
    * @param <T> Type of Object.
    * @param list {@link List}
    * @return {@link Object}
@@ -49,7 +107,7 @@ public class Objects {
 
   /**
    * Returns a {@link Collection} that is guarantee not to be null.
-   * 
+   *
    * @param <T> Type
    * @param list {@link List}
    * @return {@link List}
@@ -60,7 +118,7 @@ public class Objects {
 
   /**
    * Returns a {@link List} that is guarantee not to be null.
-   * 
+   *
    * @param <T> Type
    * @param list {@link List}
    * @return {@link List}
@@ -71,7 +129,7 @@ public class Objects {
 
   /**
    * Returns a {@link List} that is guarantee not to be null.
-   * 
+   *
    * @param <T> Type
    * @param <S> Type
    * @param map {@link List}
@@ -83,7 +141,7 @@ public class Objects {
 
   /**
    * Parition a {@link List} into a certain max size.
-   * 
+   *
    * @param <T> Type of {@link List}
    * @param list {@link List}
    * @param partitionSize max size
@@ -102,7 +160,7 @@ public class Objects {
 
   /**
    * If {@link Object} is null throw {@link Exception}.
-   * 
+   *
    * @param obj {@link Object}
    * @param ex {@link Exception}
    * @throws Exception Exception

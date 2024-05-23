@@ -26,6 +26,7 @@ package com.formkiq.stacks.dynamodb;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.function.Function;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
@@ -76,8 +77,11 @@ public class DynamicObjectToDocumentTag implements Function<DynamicObject, Docum
     }
 
     if (t.containsKey("values")) {
-      tag.setValue(null);
-      tag.setValues(t.getStringList("values"));
+      List<String> list = t.getStringList("values");
+      if (!list.isEmpty()) {
+        tag.setValue(null);
+        tag.setValues(list);
+      }
     }
 
     if (tag.getInsertedDate() == null) {

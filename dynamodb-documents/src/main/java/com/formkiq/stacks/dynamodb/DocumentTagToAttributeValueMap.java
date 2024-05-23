@@ -42,10 +42,11 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
+import com.formkiq.aws.dynamodb.objects.Objects;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
- * 
+ *
  * Function to Map {@link DocumentTag} to {@link Map}.
  *
  */
@@ -64,7 +65,7 @@ public class DocumentTagToAttributeValueMap
 
   /**
    * constructor.
-   * 
+   *
    * @param dateformat {@link SimpleDateFormat}
    * @param pkPrefix {@link String}
    * @param siteId {@link String}
@@ -120,8 +121,6 @@ public class DocumentTagToAttributeValueMap
     String tagKey = tag.getKey();
     String fulldate = this.df.format(tag.getInsertedDate());
 
-    DocumentTagType type = tag.getType() != null ? tag.getType() : DocumentTagType.USERDEFINED;
-
     Map<String, AttributeValue> pkvalues = new HashMap<String, AttributeValue>();
 
     String pk = createDatabaseKey(siteId, this.keyPrefix + documentId);
@@ -138,11 +137,12 @@ public class DocumentTagToAttributeValueMap
 
     pkvalues.put(GSI2_PK,
         AttributeValue.builder().s(createDatabaseKey(siteId, PREFIX_TAG + tagKey)).build());
-    pkvalues.put(GSI2_SK, AttributeValue.builder()
-        .s(tagValue + TAG_DELIMINATOR + fulldate + TAG_DELIMINATOR + documentId).build());
+    String tv = tagValue != null && !tagValue.isEmpty() ? tagValue : " ";
+    pkvalues.put(GSI2_SK, AttributeValue.builder().s(tv).build());
 
     pkvalues.put("documentId", AttributeValue.builder().s(documentId).build());
 
+    DocumentTagType type = tag.getType() != null ? tag.getType() : DocumentTagType.USERDEFINED;
     pkvalues.put("type", AttributeValue.builder().s(type.name()).build());
 
     if (tagKey != null) {
@@ -153,7 +153,7 @@ public class DocumentTagToAttributeValueMap
       pkvalues.put("tagValue", AttributeValue.builder().s(tagValue).build());
     }
 
-    if (tag.getValues() != null) {
+    if (!Objects.isEmpty(tag.getValues())) {
       List<AttributeValue> values = tag.getValues().stream()
           .map(s -> AttributeValue.builder().s(s).build()).collect(Collectors.toList());
       pkvalues.put("tagValues", AttributeValue.builder().l(values).build());
@@ -170,7 +170,7 @@ public class DocumentTagToAttributeValueMap
 
   /**
    * Is Has Value List.
-   * 
+   *
    * @param tag {@link DocumentTag}
    * @return boolean
    */
