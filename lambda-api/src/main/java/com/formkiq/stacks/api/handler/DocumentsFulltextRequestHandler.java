@@ -23,7 +23,6 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import static com.formkiq.module.http.HttpResponseStatus.is2XX;
 import static com.formkiq.module.http.HttpResponseStatus.is404;
