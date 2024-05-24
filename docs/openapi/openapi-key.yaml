@@ -6867,10 +6867,6 @@
                   type: object
                   additionalProperties:
                     type: object
-                accessAttributes:
-                  type: object
-                  additionalProperties:
-                    type: object
             GetDocumentFulltextResponse:
               type: object
               properties:
@@ -6909,10 +6905,6 @@
                   additionalProperties:
                     type: object
                 metadata:
-                  type: object
-                  additionalProperties:
-                    type: object
-                accessAttributes:
                   type: object
                   additionalProperties:
                     type: object
@@ -7402,6 +7394,9 @@
               - description
               type: object
               properties:
+                name:
+                  type: string
+                  description: Name of Task
                 description:
                   type: string
                   description: Description of Task
@@ -7469,9 +7464,12 @@
               - name
               type: object
               properties:
+                name:
+                  type: string
+                  description: Name of Nigo
                 description:
                   type: string
-                  description: Description of Task
+                  description: Description of Nigo
                 status:
                   $ref: '#/components/schemas/NigoStatus'
                 startDate:
