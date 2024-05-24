@@ -44,58 +44,6 @@ public class Objects {
 
   /**
    * Format {@link Double}.
-   *
-   * @param val {@link Double}
-   * @return {@link String}
-   */
-  public static String formatDouble(final Double val) {
-
-    String s = null;
-
-    double dv = val.doubleValue();
-    if (dv == (long) dv) {
-      s = String.format("%d", Long.valueOf((long) dv));
-    } else {
-      s = String.format("%s", val);
-    }
-
-    return s;
-  }
-
-  /**
-   * Format {@link Double} using a {@link String} format.
-   *
-   * @param val {@link Double}
-   * @param format {@link String}
-   * @return {@link String}
-   */
-  public static String formatDouble(final Double val, final String format) {
-    return String.format(format, val);
-  }
-
-  /**
-   * Format {@link Double} using a {@link String} format.
-   *
-   * @param val int
-   * @param format {@link String}
-   * @return {@link String}
-   */
-  public static String formatInt(final int val, final String format) {
-    return String.format(format, Integer.valueOf(val));
-  }
-
-  /**
-   * Is {@link Collection} empty.
-   *
-   * @param c {@link Collection}
-   * @return boolean
-   */
-  public static boolean isEmpty(final Collection<?> c) {
-    return notNull(c).isEmpty();
-  }
-
-  /**
-   * Format {@link Double}.
    * 
    * @param val {@link Double}
    * @return {@link String}
