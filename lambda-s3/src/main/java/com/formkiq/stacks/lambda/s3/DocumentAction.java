@@ -24,8 +24,11 @@
 package com.formkiq.stacks.lambda.s3;
 
 import java.io.IOException;
+import java.util.List;
+
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.module.actions.Action;
+import com.formkiq.validation.ValidationException;
 
 /**
  * 
@@ -40,8 +43,10 @@ public interface DocumentAction {
    * @param logger {@link LambdaLogger}
    * @param siteId {@link String}
    * @param documentId {@link String}
+   * @param actions {@link List} {@link Action}
    * @param action {@link Action}
    * @throws IOException IOException
    */
-  void run(LambdaLogger logger, String siteId, String documentId, Action action) throws IOException;
+  void run(LambdaLogger logger, String siteId, String documentId, List<Action> actions,
+      Action action) throws IOException, ValidationException;
 }

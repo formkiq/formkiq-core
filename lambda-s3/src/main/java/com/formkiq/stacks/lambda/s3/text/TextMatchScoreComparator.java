@@ -21,35 +21,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.validation;
+package com.formkiq.stacks.lambda.s3.text;
 
-import java.util.Collection;
-import java.util.stream.Collectors;
+import java.io.Serializable;
+import java.util.Comparator;
 
-/** {@link Exception} that will return a 400 error. */
-public class ValidationException extends Exception {
+/**
+ * {@link Comparator} for {@link TextMatch} score.
+ */
+public class TextMatchScoreComparator implements Comparator<TextMatch>, Serializable {
 
-  /** serialVersionUID. */
-  private static final long serialVersionUID = -3307615320614370509L;
-  /** {@link ValidationError}. */
-  private final Collection<ValidationError> errors;
-
-  /**
-   * constructor.
-   * 
-   * @param validationErrors {@link Collection} {@link ValidationError}
-   */
-  public ValidationException(final Collection<ValidationError> validationErrors) {
-    super(validationErrors.stream().map(ValidationError::error).collect(Collectors.joining(",")));
-    this.errors = validationErrors;
-  }
-
-  /**
-   * Get {@link ValidationError}.
-   * 
-   * @return {@link Collection} {@link ValidationError}
-   */
-  public Collection<ValidationError> errors() {
-    return this.errors;
+  @Override
+  public int compare(final TextMatch o1, final TextMatch o2) {
+    return Integer.compare(o1.getScore(), o2.getScore());
   }
 }

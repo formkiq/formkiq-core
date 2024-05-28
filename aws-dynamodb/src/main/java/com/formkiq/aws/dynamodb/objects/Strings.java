@@ -23,12 +23,14 @@
  */
 package com.formkiq.aws.dynamodb.objects;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.SecureRandom;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -60,11 +62,9 @@ public class Strings {
             }
 
             return match;
-          }).collect(Collectors.toList());
+          }).toList();
 
-      o = matches.size() == 1
-          ? Optional.of(Arrays.asList(matches.get(0)).stream().collect(Collectors.joining("/")))
-          : Optional.empty();
+      o = matches.size() == 1 ? Optional.of(String.join("/", matches.get(0))) : Optional.empty();
     }
 
     return o.orElse(null);
@@ -79,7 +79,7 @@ public class Strings {
    */
   public static String findUrlMatch(final Collection<String> strs, final String s) {
     List<String[]> resourceSplits =
-        strs.stream().filter(r -> r != null).map(r -> r.split("/")).collect(Collectors.toList());
+        strs.stream().filter(Objects::nonNull).map(r -> r.split("/")).collect(Collectors.toList());
 
     return findMatch(strs, resourceSplits, s);
   }
@@ -110,8 +110,7 @@ public class Strings {
    */
   public static String getExtension(final String filename) {
     int pos = filename.lastIndexOf(".");
-    String ext = pos > -1 ? filename.substring(pos + 1) : "";
-    return ext;
+    return pos > -1 ? filename.substring(pos + 1) : "";
   }
 
   /**
@@ -130,7 +129,7 @@ public class Strings {
 
   private static String getUri(final String path) {
 
-    String name = null;
+    String name;
 
     try {
       URI u = new URI(path);
@@ -149,7 +148,7 @@ public class Strings {
    * @return boolean
    */
   public static boolean isEmpty(final CharSequence cs) {
-    return cs == null || cs.length() == 0;
+    return cs == null || cs.isEmpty();
   }
 
   /**
@@ -184,7 +183,7 @@ public class Strings {
    * @return {@link String}
    */
   public static String removeEndingPunctuation(final String s) {
-    return s.replaceAll("[!\\.,?]$", "");
+    return s.replaceAll("[!.,?]$", "");
   }
 
   /**
@@ -195,5 +194,12 @@ public class Strings {
    */
   public static String removeQuotes(final String s) {
     return s.replaceAll("^['\"]|['\"]$", "");
+  }
+
+  public static String toString(final Exception e) {
+    StringWriter sw = new StringWriter();
+    PrintWriter pw = new PrintWriter(sw);
+    e.printStackTrace(pw);
+    return sw.toString();
   }
 }

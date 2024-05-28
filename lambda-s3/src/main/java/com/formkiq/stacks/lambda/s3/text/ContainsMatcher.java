@@ -21,35 +21,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.validation;
+package com.formkiq.stacks.lambda.s3.text;
 
-import java.util.Collection;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Function;
 
-/** {@link Exception} that will return a 400 error. */
-public class ValidationException extends Exception {
+/**
+ * {@link Function} that implements contains {@link String} matching.
+ */
+public class ContainsMatcher implements TextMatchAlgorithm {
 
-  /** serialVersionUID. */
-  private static final long serialVersionUID = -3307615320614370509L;
-  /** {@link ValidationError}. */
-  private final Collection<ValidationError> errors;
+  @Override
+  public List<TextMatch> findMatches(final List<Token> tokens, final String match) {
 
-  /**
-   * constructor.
-   * 
-   * @param validationErrors {@link Collection} {@link ValidationError}
-   */
-  public ValidationException(final Collection<ValidationError> validationErrors) {
-    super(validationErrors.stream().map(ValidationError::error).collect(Collectors.joining(",")));
-    this.errors = validationErrors;
-  }
+    List<TextMatch> matches = new ArrayList<>();
 
-  /**
-   * Get {@link ValidationError}.
-   * 
-   * @return {@link Collection} {@link ValidationError}
-   */
-  public Collection<ValidationError> errors() {
-    return this.errors;
+    for (Token token : tokens) {
+
+      if (token.getFormatted().contains(match)) {
+        matches.add(new TextMatch(token, 1));
+        break;
+      }
+    }
+
+    return matches;
   }
 }

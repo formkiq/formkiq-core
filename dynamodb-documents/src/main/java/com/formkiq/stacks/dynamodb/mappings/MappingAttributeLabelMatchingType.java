@@ -21,35 +21,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.validation;
+package com.formkiq.stacks.dynamodb.mappings;
 
-import java.util.Collection;
-import java.util.stream.Collectors;
-
-/** {@link Exception} that will return a 400 error. */
-public class ValidationException extends Exception {
-
-  /** serialVersionUID. */
-  private static final long serialVersionUID = -3307615320614370509L;
-  /** {@link ValidationError}. */
-  private final Collection<ValidationError> errors;
-
-  /**
-   * constructor.
-   * 
-   * @param validationErrors {@link Collection} {@link ValidationError}
-   */
-  public ValidationException(final Collection<ValidationError> validationErrors) {
-    super(validationErrors.stream().map(ValidationError::error).collect(Collectors.joining(",")));
-    this.errors = validationErrors;
-  }
-
-  /**
-   * Get {@link ValidationError}.
-   * 
-   * @return {@link Collection} {@link ValidationError}
-   */
-  public Collection<ValidationError> errors() {
-    return this.errors;
-  }
+/**
+ * Mapping Attribute Label Matching Type.
+ */
+public enum MappingAttributeLabelMatchingType {
+  /** Fuzzy. */
+  FUZZY,
+  /** Exact. */
+  EXACT,
+  /** Contains. */
+  BEGINS_WITH,
+  /** Contains. */
+  CONTAINS;
 }

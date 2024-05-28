@@ -31,7 +31,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -57,15 +56,15 @@ import com.google.gson.GsonBuilder;
 public class DocumentContentFunction {
 
   /** S3 Documents Bucket. */
-  private String documentsBucket;
+  private final String documentsBucket;
   /** {@link Gson}. */
-  private Gson gson = new GsonBuilder().create();
+  private final Gson gson = new GsonBuilder().create();
   /** {@link S3PresignerService}. */
-  private S3PresignerService s3Service;
+  private final S3PresignerService s3Service;
   /** {@link HttpService}. */
-  private HttpService http;
+  private final HttpService http;
   /** {@link String}. */
-  private String documentsIamUrl;
+  private final String documentsIamUrl;
 
   /**
    * constructor.
@@ -107,7 +106,7 @@ public class DocumentContentFunction {
 
       String url = this.s3Service
           .presignGetUrl(this.documentsBucket, s3Key, Duration.ofHours(1), null, config).toString();
-      urls = Arrays.asList(url);
+      urls = Collections.singletonList(url);
 
     } else {
 
