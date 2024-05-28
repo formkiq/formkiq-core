@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.lambda.s3;
+package com.formkiq.stacks.lambda.s3.actions;
 
 import static com.formkiq.aws.dynamodb.objects.Strings.removeEndingPunctuation;
 import static com.formkiq.aws.dynamodb.objects.Strings.removeQuotes;
@@ -54,6 +54,8 @@ import com.formkiq.module.http.HttpServiceJdk11;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.ConfigService;
 import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.stacks.lambda.s3.DocumentAction;
+import com.formkiq.stacks.lambda.s3.DocumentContentFunction;
 import com.formkiq.stacks.lambda.s3.openai.OpenAiChatCompletionsChoice;
 import com.formkiq.stacks.lambda.s3.openai.OpenAiChatCompletionsChoiceMessage;
 import com.formkiq.stacks.lambda.s3.openai.OpenAiChatCompletionsChoiceMessageFunctionCall;
@@ -240,7 +242,7 @@ public class DocumentTaggingAction implements DocumentAction {
 
   @Override
   public void run(final LambdaLogger logger, final String siteId, final String documentId,
-      final Action action) throws IOException {
+      final List<Action> actions, final Action action) throws IOException {
 
     String engine = action.parameters().get("engine");
     if (engine != null && "chatgpt".equals(engine.toLowerCase())) {

@@ -21,35 +21,62 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.validation;
+package com.formkiq.stacks.lambda.s3.text;
 
-import java.util.Collection;
-import java.util.stream.Collectors;
+/**
+ * {@link String} Token.
+ */
+public class Token {
 
-/** {@link Exception} that will return a 400 error. */
-public class ValidationException extends Exception {
-
-  /** serialVersionUID. */
-  private static final long serialVersionUID = -3307615320614370509L;
-  /** {@link ValidationError}. */
-  private final Collection<ValidationError> errors;
+  /** Formatted Text. */
+  private String formatted;
+  /** Original Text. */
+  private String original;
 
   /**
    * constructor.
-   * 
-   * @param validationErrors {@link Collection} {@link ValidationError}
    */
-  public ValidationException(final Collection<ValidationError> validationErrors) {
-    super(validationErrors.stream().map(ValidationError::error).collect(Collectors.joining(",")));
-    this.errors = validationErrors;
+  public Token() {
+
   }
 
   /**
-   * Get {@link ValidationError}.
+   * Get Formatted Text.
    * 
-   * @return {@link Collection} {@link ValidationError}
+   * @return {@link String}
    */
-  public Collection<ValidationError> errors() {
-    return this.errors;
+  public String getFormatted() {
+    return this.formatted;
+  }
+
+  /**
+   * Set Formatted Text.
+   * 
+   * @param text {@link String}
+   * @return Token
+   */
+  public Token setFormatted(final String text) {
+    this.formatted = text;
+    return this;
+  }
+
+  /**
+   * Get Original Text.
+   * 
+   * @return String
+   */
+  public String getOriginal() {
+    return this.original;
+  }
+
+  /**
+   * Set Original Text.
+   * 
+   * @param text {@link String}
+   * @return Token
+   */
+  public Token setOriginal(final String text) {
+    this.original = text;
+    return this;
   }
 }

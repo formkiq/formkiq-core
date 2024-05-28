@@ -21,35 +21,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.validation;
+package com.formkiq.stacks.dynamodb.mappings;
 
-import java.util.Collection;
-import java.util.stream.Collectors;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
-/** {@link Exception} that will return a 400 error. */
-public class ValidationException extends Exception {
+import java.util.UUID;
+import java.util.function.Function;
 
-  /** serialVersionUID. */
-  private static final long serialVersionUID = -3307615320614370509L;
-  /** {@link ValidationError}. */
-  private final Collection<ValidationError> errors;
+/**
+ * {@link Function} to convert {@link Mapping} to {@link MappingRecord}.
+ */
+public class MappingToMappingRecord implements Function<Mapping, MappingRecord> {
 
-  /**
-   * constructor.
-   * 
-   * @param validationErrors {@link Collection} {@link ValidationError}
-   */
-  public ValidationException(final Collection<ValidationError> validationErrors) {
-    super(validationErrors.stream().map(ValidationError::error).collect(Collectors.joining(",")));
-    this.errors = validationErrors;
-  }
+  /** {@link Gson}. */
+  private final Gson gson = new GsonBuilder().create();
 
-  /**
-   * Get {@link ValidationError}.
-   * 
-   * @return {@link Collection} {@link ValidationError}
-   */
-  public Collection<ValidationError> errors() {
-    return this.errors;
+  @Override
+  public MappingRecord apply(final Mapping mapping) {
+    MappingRecord r = new MappingRecord();
+    r.setName(mapping.getName());
+    r.setDescription(mapping.getDescription());
+    r.setDocumentId(UUID.randomUUID().toString());
+    r.setAttributes(this.gson.toJson(mapping.getAttributes()));
+    return r;
   }
 }

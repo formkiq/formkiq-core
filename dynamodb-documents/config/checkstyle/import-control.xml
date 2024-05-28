@@ -44,6 +44,11 @@
 		<subpackage name="schemas">
 			<allow pkg="com.google.gson" />
 		</subpackage>
+
+		<subpackage name="mappings">
+			<allow pkg="com.google.gson" />
+		</subpackage>
+
 	</subpackage>
 
 	<subpackage name="common">

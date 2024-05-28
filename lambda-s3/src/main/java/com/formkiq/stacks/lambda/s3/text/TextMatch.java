@@ -21,35 +21,43 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.validation;
+package com.formkiq.stacks.lambda.s3.text;
 
-import java.util.Collection;
-import java.util.stream.Collectors;
-
-/** {@link Exception} that will return a 400 error. */
-public class ValidationException extends Exception {
-
-  /** serialVersionUID. */
-  private static final long serialVersionUID = -3307615320614370509L;
-  /** {@link ValidationError}. */
-  private final Collection<ValidationError> errors;
+/**
+ * Text Match.
+ */
+public class TextMatch {
+  /** Token Matched. */
+  private final Token token;
+  /** Match Score. */
+  private final int score;
 
   /**
    * constructor.
    * 
-   * @param validationErrors {@link Collection} {@link ValidationError}
+   * @param matchToken {@link Token}
+   * @param matchScore int
    */
-  public ValidationException(final Collection<ValidationError> validationErrors) {
-    super(validationErrors.stream().map(ValidationError::error).collect(Collectors.joining(",")));
-    this.errors = validationErrors;
+  public TextMatch(final Token matchToken, final int matchScore) {
+    this.token = matchToken;
+    this.score = matchScore;
   }
 
   /**
-   * Get {@link ValidationError}.
+   * Get Score.
    * 
-   * @return {@link Collection} {@link ValidationError}
+   * @return int
    */
-  public Collection<ValidationError> errors() {
-    return this.errors;
+  public int getScore() {
+    return this.score;
+  }
+
+  /**
+   * Get {@link Token}.
+   * 
+   * @return {@link String}
+   */
+  public Token getToken() {
+    return this.token;
   }
 }

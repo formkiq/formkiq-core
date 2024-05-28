@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.lambda.s3;
+package com.formkiq.stacks.lambda.s3.actions;
 
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION_HTML;
@@ -31,6 +31,8 @@ import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION
 import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION_TO_CC;
 import static com.formkiq.stacks.dynamodb.ConfigService.NOTIFICATION_EMAIL;
 import java.io.IOException;
+import java.util.List;
+
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.ses.SesService;
@@ -38,6 +40,7 @@ import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.ConfigService;
+import com.formkiq.stacks.lambda.s3.DocumentAction;
 import software.amazon.awssdk.services.ses.model.Body;
 import software.amazon.awssdk.services.ses.model.Content;
 import software.amazon.awssdk.services.ses.model.Message;
@@ -69,7 +72,7 @@ public class NotificationAction implements DocumentAction {
 
   @Override
   public void run(final LambdaLogger logger, final String siteId, final String documentId,
-      final Action action) throws IOException {
+      final List<Action> actions, final Action action) throws IOException {
 
     String cc = action.parameters().get(PARAMETER_NOTIFICATION_TO_CC);
     String bcc = action.parameters().get(PARAMETER_NOTIFICATION_TO_BCC);

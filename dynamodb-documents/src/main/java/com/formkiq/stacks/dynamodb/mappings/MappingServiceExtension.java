@@ -21,35 +21,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.validation;
+package com.formkiq.stacks.dynamodb.mappings;
 
-import java.util.Collection;
-import java.util.stream.Collectors;
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.AwsServiceExtension;
 
-/** {@link Exception} that will return a 400 error. */
-public class ValidationException extends Exception {
+/**
+ * 
+ * {@link AwsServiceExtension} for {@link MappingService}.
+ *
+ */
+public class MappingServiceExtension implements AwsServiceExtension<MappingService> {
 
-  /** serialVersionUID. */
-  private static final long serialVersionUID = -3307615320614370509L;
-  /** {@link ValidationError}. */
-  private final Collection<ValidationError> errors;
+  /** {@link MappingService}. */
+  private MappingService service;
 
   /**
    * constructor.
-   * 
-   * @param validationErrors {@link Collection} {@link ValidationError}
    */
-  public ValidationException(final Collection<ValidationError> validationErrors) {
-    super(validationErrors.stream().map(ValidationError::error).collect(Collectors.joining(",")));
-    this.errors = validationErrors;
-  }
+  public MappingServiceExtension() {}
 
-  /**
-   * Get {@link ValidationError}.
-   * 
-   * @return {@link Collection} {@link ValidationError}
-   */
-  public Collection<ValidationError> errors() {
-    return this.errors;
+  @Override
+  public MappingService loadService(final AwsServiceCache awsServiceCache) {
+    if (this.service == null) {
+      DynamoDbService db = awsServiceCache.getExtension(DynamoDbService.class);
+      this.service = new MappingServiceDynamodb(db);
+    }
+
+    return this.service;
   }
 }

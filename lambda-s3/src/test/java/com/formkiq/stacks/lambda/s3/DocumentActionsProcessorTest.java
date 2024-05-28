@@ -37,19 +37,38 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 import static org.mockserver.model.HttpRequest.request;
+
+import java.io.FileInputStream;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
+
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
+import com.formkiq.stacks.dynamodb.attributes.AttributeDataType;
+import com.formkiq.stacks.dynamodb.attributes.AttributeService;
+import com.formkiq.stacks.dynamodb.attributes.AttributeServiceDynamodb;
+import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
+import com.formkiq.stacks.dynamodb.mappings.Mapping;
+import com.formkiq.stacks.dynamodb.mappings.MappingAttribute;
+import com.formkiq.stacks.dynamodb.mappings.MappingAttributeLabelMatchingType;
+import com.formkiq.stacks.dynamodb.mappings.MappingAttributeMetadataField;
+import com.formkiq.stacks.dynamodb.mappings.MappingAttributeSourceType;
+import com.formkiq.stacks.dynamodb.mappings.MappingRecord;
+import com.formkiq.stacks.dynamodb.mappings.MappingService;
+import com.formkiq.stacks.dynamodb.mappings.MappingServiceDynamodb;
+import com.formkiq.stacks.lambda.s3.actions.AddOcrAction;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -107,60 +126,65 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.utils.IoUtils;
 
 /** Unit Tests for {@link DocumentActionsProcessor}. */
 @ExtendWith(DynamoDbExtension.class)
 @ExtendWith(LocalStackExtension.class)
 public class DocumentActionsProcessorTest implements DbKeys {
 
-  /** {@link TypesenseExtension}. */
-  @RegisterExtension
-  static TypesenseExtension typesenseExtension = new TypesenseExtension();
-
-  /** {@link ActionsService}. */
-  private static ActionsService actionsService;
   /** App Environment. */
   private static final String APP_ENVIRONMENT = "test";
   /** {@link RequestRecordExpectationResponseCallback}. */
-  private static RequestRecordExpectationResponseCallback callback =
+  private static final RequestRecordExpectationResponseCallback CALLBACK =
       new RequestRecordExpectationResponseCallback();
-  /** {@link ConfigService}. */
-  private static ConfigService configService;
   /** {@link AwsBasicCredentials}. */
-  private static AwsBasicCredentials credentials = AwsBasicCredentials.create("asd", "asd");
-  /** {@link DynamoDbConnectionBuilder}. */
-  private static DynamoDbConnectionBuilder dbBuilder;
+  private static final AwsBasicCredentials CREDENTIALS = AwsBasicCredentials.create("asd", "asd");
   /** Full text 404 document. */
   private static final String DOCUMENT_ID_404 = UUID.randomUUID().toString();
   /** Document Id with OCR. */
   private static final String DOCUMENT_ID_OCR = UUID.randomUUID().toString();
-  /** {@link DocumentService}. */
-  private static DocumentService documentService;
   /** {@link Gson}. */
-  private static Gson gson = new GsonBuilder().disableHtmlEscaping().create();
-  /** {@link ClientAndServer}. */
-  private static ClientAndServer mockServer;
+  private static final Gson GSON = new GsonBuilder().disableHtmlEscaping().create();
   /** Port to run Test server. */
   private static final int PORT = 8888;
+  /** Sns Document Event. */
+  private static final String SNS_DOCUMENT_EVENT_TOPIC = "SNS_DOCUMENT_EVENT";
+  /** Test server URL. */
+  private static final String URL = "http://localhost:" + PORT;
+  /** Search Limit. */
+  private static final int LIMIT = 100;
+  /** {@link TypesenseExtension}. */
+  @RegisterExtension
+  static TypesenseExtension typesenseExtension = new TypesenseExtension();
+  /** {@link ActionsService}. */
+  private static ActionsService actionsService;
+  /** {@link AttributeService}. */
+  private static AttributeService attributeService;
+  /** {@link MappingService}. */
+  private static MappingService mappingService;
+  /** {@link ConfigService}. */
+  private static ConfigService configService;
+  /** {@link DocumentService}. */
+  private static DocumentService documentService;
+  /** {@link ClientAndServer}. */
+  private static ClientAndServer mockServer;
   /** {@link DocumentActionsProcessor}. */
   private static DocumentActionsProcessor processor;
   /** {@link S3Service}. */
   private static S3Service s3Service;
-  /** Sns Document Event. */
-  private static final String SNS_DOCUMENT_EVENT_TOPIC = "SNS_DOCUMENT_EVENT";
   /** Sns Document Event Topic Arn. */
   private static String snsDocumentEventTopicArn;
-  /** {@link SsmService}. */
-  private static SsmService ssmService;
   /** {@link TypeSenseService}. */
   private static TypeSenseService typesense;
-  /** Test server URL. */
-  private static final String URL = "http://localhost:" + PORT;
+  /** {@link AwsServiceCache}. */
+  private static AwsServiceCache serviceCache;
+  /** {@link LambdaContextRecorder}. */
+  private LambdaContextRecorder context;
 
   /**
    * After Class.
-   * 
+   *
    */
   @AfterAll
   public static void afterClass() {
@@ -169,24 +193,26 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
   /**
    * Before Class.
-   * 
+   *
    * @throws Exception Exception
    */
   @BeforeAll
   public static void beforeClass() throws Exception {
 
-    dbBuilder = DynamoDbTestServices.getDynamoDbConnection();
-
+    DynamoDbConnectionBuilder dbBuilder = DynamoDbTestServices.getDynamoDbConnection();
+    DynamoDbService db = new DynamoDbServiceImpl(dbBuilder, DOCUMENTS_TABLE);
     DocumentVersionService versionService = new DocumentVersionServiceNoVersioning();
 
     documentService = new DocumentServiceImpl(dbBuilder, DOCUMENTS_TABLE, versionService);
     actionsService = new ActionsServiceDynamoDb(dbBuilder, DOCUMENTS_TABLE);
+    mappingService = new MappingServiceDynamodb(db);
+    attributeService = new AttributeServiceDynamodb(db);
     createMockServer();
 
     s3Service = new S3Service(TestServices.getS3Connection(null));
     SsmConnectionBuilder ssmBuilder = TestServices.getSsmConnection(null);
-    ssmService = new SsmServiceCache(ssmBuilder, 1, TimeUnit.DAYS);
 
+    SsmService ssmService = new SsmServiceCache(ssmBuilder, 1, TimeUnit.DAYS);
     ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/api/DocumentsIamUrl", URL);
 
     String typeSenseHost = "http://localhost:" + typesenseExtension.getFirstMappedPort();
@@ -194,7 +220,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
         typeSenseHost);
     ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/typesense/ApiKey", API_KEY);
 
-    typesense = new TypeSenseServiceImpl(typeSenseHost, API_KEY, Region.US_EAST_1, credentials);
+    typesense = new TypeSenseServiceImpl(typeSenseHost, API_KEY, Region.US_EAST_1, CREDENTIALS);
 
     configService = new ConfigServiceDynamoDb(dbBuilder, DOCUMENTS_TABLE);
 
@@ -204,41 +230,57 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
   /**
    * Create Mock Server.
-   * 
+   *
    * @throws IOException IOException
    */
   private static void createMockServer() throws IOException {
 
-    mockServer = startClientAndServer(Integer.valueOf(PORT));
+    mockServer = startClientAndServer(PORT);
 
     final int status = 200;
 
     for (String item : Arrays.asList("1", "2", "3", "4", "5", "6")) {
       String text = FileUtils.loadFile(mockServer, "/chatgpt/response" + item + ".json");
-      mockServer.when(request().withMethod("POST").withPath("/chatgpt" + item)).respond(
-          org.mockserver.model.HttpResponse.response(text).withStatusCode(Integer.valueOf(status)));
+      mockServer.when(request().withMethod("POST").withPath("/chatgpt" + item))
+          .respond(org.mockserver.model.HttpResponse.response(text).withStatusCode(status));
     }
 
     final int notFound = 404;
     mockServer
         .when(request().withMethod("PATCH").withPath("/documents/" + DOCUMENT_ID_404 + "/fulltext"))
-        .respond(org.mockserver.model.HttpResponse.response("")
-            .withStatusCode(Integer.valueOf(notFound)));
+        .respond(org.mockserver.model.HttpResponse.response("").withStatusCode(notFound));
 
     mockServer
         .when(request().withMethod("POST").withPath("/documents/" + DOCUMENT_ID_404 + "/fulltext"))
-        .respond(callback);
+        .respond(CALLBACK);
 
     mockServer.when(request().withMethod("GET").withPath("/documents/" + DOCUMENT_ID_OCR + "/ocr*"))
         .respond(org.mockserver.model.HttpResponse
             .response("{\"contentUrls\":[\"" + URL + "/" + DOCUMENT_ID_OCR + "\"]}"));
-    mockServer.when(request().withMethod("PATCH")).respond(callback);
-    mockServer.when(request().withMethod("POST")).respond(callback);
-    mockServer.when(request().withMethod("PUT")).respond(callback);
-    mockServer.when(request().withMethod("GET")).respond(callback);
+    mockServer.when(request().withMethod("PATCH")).respond(CALLBACK);
+    mockServer.when(request().withMethod("POST")).respond(CALLBACK);
+    mockServer.when(request().withMethod("PUT")).respond(CALLBACK);
+    mockServer.when(request().withMethod("GET")).respond(CALLBACK);
   }
 
   private static void initProcessor(final String module, final String chatgptUrl) {
+    Map<String, String> env = buildEnvironment(module, chatgptUrl);
+
+    AwsCredentials creds = AwsBasicCredentials.create("aaa", "bbb");
+    StaticCredentialsProvider credentialsProvider = StaticCredentialsProvider.create(creds);
+
+    serviceCache =
+        new AwsServiceCacheBuilder(env, TestServices.getEndpointMap(), credentialsProvider)
+            .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
+                new SnsAwsServiceRegistry(), new SsmAwsServiceRegistry(),
+                new SesAwsServiceRegistry())
+            .build();
+
+    processor = new DocumentActionsProcessor(serviceCache);
+  }
+
+  private static @NotNull Map<String, String> buildEnvironment(final String module,
+      final String chatgptUrl) {
     Map<String, String> env = new HashMap<>();
     env.put("AWS_REGION", AWS_REGION.toString());
     env.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
@@ -249,32 +291,17 @@ public class DocumentActionsProcessorTest implements DbKeys {
     env.put("SNS_DOCUMENT_EVENT", snsDocumentEventTopicArn);
     env.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
     env.put("CHATGPT_API_COMPLETIONS_URL", URL + "/" + chatgptUrl);
-
-    AwsCredentials creds = AwsBasicCredentials.create("aaa", "bbb");
-    StaticCredentialsProvider credentialsProvider = StaticCredentialsProvider.create(creds);
-
-    AwsServiceCache serviceCache =
-        new AwsServiceCacheBuilder(env, TestServices.getEndpointMap(), credentialsProvider)
-            .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
-                new SnsAwsServiceRegistry(), new SsmAwsServiceRegistry(),
-                new SesAwsServiceRegistry())
-            .build();
-
-    processor = new DocumentActionsProcessor(serviceCache);
+    return env;
   }
-
-  /** {@link LambdaContextRecorder}. */
-  private LambdaContextRecorder context;
 
   /**
    * BeforeEach.
-   * 
-   * @throws Exception Exception
+   *
    */
   @BeforeEach
-  public void beforeEach() throws Exception {
+  public void beforeEach() {
     this.context = new LambdaContextRecorder();
-    callback.reset();
+    CALLBACK.reset();
 
     initProcessor("opensearch", "chatgpt1");
   }
@@ -289,7 +316,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String documentId = UUID.randomUUID().toString();
-      List<Action> actions = Arrays.asList(
+      List<Action> actions = Collections.singletonList(
           new Action().type(ActionType.DOCUMENTTAGGING).userId("joe").parameters(Map.of("engine",
               "chatgpt", "tags", "organization,location,person,subject,sentiment,document type")));
       actionsService.saveNewActions(siteId, documentId, actions);
@@ -332,10 +359,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
           "text/plain");
 
       documentService.saveDocument(siteId, item, null);
-      documentService.addTags(siteId, documentId, Arrays.asList(new DocumentTag(documentId,
-          "untagged", "", new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
+      documentService.addTags(siteId, documentId, List.of(new DocumentTag(documentId, "untagged",
+          "", new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
 
-      List<Action> actions = Arrays.asList(
+      List<Action> actions = Collections.singletonList(
           new Action().type(ActionType.DOCUMENTTAGGING).userId("joe").parameters(Map.of("engine",
               "chatgpt", "tags", "organization,location,person,subject,sentiment,document type")));
       actionsService.saveNewActions(siteId, documentId, actions);
@@ -371,7 +398,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
           String.join(",", tags.getResults().get(i++).getValues()));
 
       assertEquals("subject", tags.getResults().get(i).getKey());
-      assertEquals("MINUTES OF A MEETING OF DIRECTORS", tags.getResults().get(i++).getValue());
+      assertEquals("MINUTES OF A MEETING OF DIRECTORS", tags.getResults().get(i).getValue());
     }
   }
 
@@ -385,7 +412,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String documentId = UUID.randomUUID().toString();
-      List<Action> actions = Arrays.asList(
+      List<Action> actions = Collections.singletonList(
           new Action().type(ActionType.DOCUMENTTAGGING).userId("joe").parameters(Map.of("engine",
               "unknown", "tags", "organization,location,person,subject,sentiment,document type")));
       actionsService.saveNewActions(siteId, documentId, actions);
@@ -430,10 +457,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
           "text/plain");
 
       documentService.saveDocument(siteId, item, null);
-      documentService.addTags(siteId, documentId, Arrays.asList(new DocumentTag(documentId,
-          "untagged", "", new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
+      documentService.addTags(siteId, documentId, List.of(new DocumentTag(documentId, "untagged",
+          "", new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
 
-      List<Action> actions = Arrays.asList(
+      List<Action> actions = Collections.singletonList(
           new Action().type(ActionType.DOCUMENTTAGGING).userId("joe").parameters(Map.of("engine",
               "chatgpt", "tags", "Organization,location,person,subject,sentiment,document type")));
       actionsService.saveNewActions(siteId, documentId, actions);
@@ -472,7 +499,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertEquals("None", tags.getResults().get(i++).getValue());
 
       assertEquals("subject", tags.getResults().get(i).getKey());
-      assertEquals("Receipt", tags.getResults().get(i++).getValue());
+      assertEquals("Receipt", tags.getResults().get(i).getValue());
     }
   }
 
@@ -501,10 +528,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
           "text/plain");
 
       documentService.saveDocument(siteId, item, null);
-      documentService.addTags(siteId, documentId, Arrays.asList(new DocumentTag(documentId,
-          "untagged", "", new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
+      documentService.addTags(siteId, documentId, List.of(new DocumentTag(documentId, "untagged",
+          "", new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
 
-      List<Action> actions = Arrays.asList(
+      List<Action> actions = Collections.singletonList(
           new Action().type(ActionType.DOCUMENTTAGGING).userId("joe").parameters(Map.of("engine",
               "chatgpt", "tags", "Organization,location,person,subject,sentiment,document type")));
       actionsService.saveNewActions(siteId, documentId, actions);
@@ -541,7 +568,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
       assertEquals("subject", tags.getResults().get(i).getKey());
       assertEquals("Frontend eaar brake cabies,New set of podal arms,Labor shrs 500",
-          String.join(",", tags.getResults().get(i++).getValues()));
+          String.join(",", tags.getResults().get(i).getValues()));
     }
   }
 
@@ -570,10 +597,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
           "text/plain");
 
       documentService.saveDocument(siteId, item, null);
-      documentService.addTags(siteId, documentId, Arrays.asList(new DocumentTag(documentId,
-          "untagged", "", new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
+      documentService.addTags(siteId, documentId, List.of(new DocumentTag(documentId, "untagged",
+          "", new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
 
-      List<Action> actions = Arrays.asList(
+      List<Action> actions = Collections.singletonList(
           new Action().type(ActionType.DOCUMENTTAGGING).userId("joe").parameters(Map.of("engine",
               "chatgpt", "tags", "organization,location,person,subject,sentiment,document type")));
       actionsService.saveNewActions(siteId, documentId, actions);
@@ -606,7 +633,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
           String.join(",", tags.getResults().get(i++).getValues()));
 
       assertEquals("subject", tags.getResults().get(i).getKey());
-      assertEquals("MINUTES OF A MEETING OF DIRECTORS", tags.getResults().get(i++).getValue());
+      assertEquals("MINUTES OF A MEETING OF DIRECTORS", tags.getResults().get(i).getValue());
     }
   }
 
@@ -635,10 +662,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
           "text/plain");
 
       documentService.saveDocument(siteId, item, null);
-      documentService.addTags(siteId, documentId, Arrays.asList(new DocumentTag(documentId,
-          "untagged", "", new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
+      documentService.addTags(siteId, documentId, List.of(new DocumentTag(documentId, "untagged",
+          "", new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
 
-      List<Action> actions = Arrays.asList(new Action().type(ActionType.DOCUMENTTAGGING)
+      List<Action> actions = Collections.singletonList(new Action().type(ActionType.DOCUMENTTAGGING)
           .userId("joe").parameters(Map.of("engine", "chatgpt", "tags",
               "document type,meeting date,chairperson,secretary,board members,resolutions")));
       actionsService.saveNewActions(siteId, documentId, actions);
@@ -677,7 +704,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertEquals("Thomas Bewick", tags.getResults().get(i++).getValue());
 
       assertEquals("secretary", tags.getResults().get(i).getKey());
-      assertEquals("Aaron Thomas", tags.getResults().get(i++).getValue());
+      assertEquals("Aaron Thomas", tags.getResults().get(i).getValue());
     }
   }
 
@@ -706,10 +733,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
           "text/plain");
 
       documentService.saveDocument(siteId, item, null);
-      documentService.addTags(siteId, documentId, Arrays.asList(new DocumentTag(documentId,
-          "untagged", "", new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
+      documentService.addTags(siteId, documentId, List.of(new DocumentTag(documentId, "untagged",
+          "", new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
 
-      List<Action> actions = Arrays.asList(
+      List<Action> actions = Collections.singletonList(
           new Action().type(ActionType.DOCUMENTTAGGING).userId("joe").parameters(Map.of("engine",
               "chatgpt", "tags", "Organization,location,person,subject,sentiment,document type")));
       actionsService.saveNewActions(siteId, documentId, actions);
@@ -736,14 +763,14 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
       assertEquals("location", tags.getResults().get(i).getKey());
       assertEquals("New York, NY,Cambutdigo, MA",
-          tags.getResults().get(i++).getValues().stream().collect(Collectors.joining(",")));
+          String.join(",", tags.getResults().get(i++).getValues()));
 
       assertEquals("person", tags.getResults().get(i).getKey());
       assertEquals("Job Smith", tags.getResults().get(i++).getValue());
 
       assertEquals("subject", tags.getResults().get(i).getKey());
       assertEquals("Receipt,Frontend eaar brake cabies,New set of podal arms,Labor shrs",
-          tags.getResults().get(i++).getValues().stream().collect(Collectors.joining(",")));
+          String.join(",", tags.getResults().get(i).getValues()));
     }
   }
 
@@ -752,33 +779,33 @@ public class DocumentActionsProcessorTest implements DbKeys {
    */
   @Test
   public void testGetOcrParseTypes01() {
-    assertEquals("[TEXT]", processor.getOcrParseTypes(new Action()).toString());
+    AddOcrAction ocrAction = new AddOcrAction(serviceCache);
+    assertEquals("[TEXT]", ocrAction.getOcrParseTypes(new Action()).toString());
 
     // invalid
     Map<String, String> parameters = Map.of("ocrParseTypes", "ADAD,IUJK");
     assertEquals("[ADAD, IUJK]",
-        processor.getOcrParseTypes(new Action().parameters(parameters)).toString());
+        ocrAction.getOcrParseTypes(new Action().parameters(parameters)).toString());
 
     parameters = Map.of("ocrParseTypes", "tEXT, forms, TABLES");
     assertEquals("[TEXT, FORMS, TABLES]",
-        processor.getOcrParseTypes(new Action().parameters(parameters)).toString());
+        ocrAction.getOcrParseTypes(new Action().parameters(parameters)).toString());
   }
 
   /**
    * Handle OCR Action.
    * 
    * @throws IOException IOException
-   * @throws URISyntaxException URISyntaxException
    */
   @SuppressWarnings("unchecked")
   @Test
-  public void testHandle01() throws IOException, URISyntaxException {
+  public void testHandle01() throws IOException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String documentId = UUID.randomUUID().toString();
-      List<Action> actions = Arrays.asList(new Action().type(ActionType.OCR).userId("joe")
-          .parameters(Map.of("addPdfDetectedCharactersAsText", "true", "ocrNumberOfPages", "2",
-              "ocrExportToCsv", "true")));
+      List<Action> actions = Collections.singletonList(new Action().type(ActionType.OCR)
+          .userId("joe").parameters(Map.of("addPdfDetectedCharactersAsText", "true",
+              "ocrNumberOfPages", "2", "ocrExportToCsv", "true")));
       actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
@@ -789,9 +816,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
       processor.handleRequest(map, this.context);
 
       // then
-      HttpRequest lastRequest = callback.getLastRequest();
+      HttpRequest lastRequest = CALLBACK.getLastRequest();
       assertTrue(lastRequest.getPath().toString().endsWith("/ocr"));
-      Map<String, Object> resultmap = gson.fromJson(lastRequest.getBodyAsString(), Map.class);
+      Map<String, Object> resultmap = GSON.fromJson(lastRequest.getBodyAsString(), Map.class);
       assertEquals("[TEXT]", resultmap.get("parseTypes").toString());
       assertEquals("true", resultmap.get("addPdfDetectedCharactersAsText").toString());
       assertEquals("2", resultmap.get("ocrNumberOfPages").toString());
@@ -809,12 +836,11 @@ public class DocumentActionsProcessorTest implements DbKeys {
    * Handle Fulltext(Opensearch) plain/text document.
    * 
    * @throws IOException IOException
-   * @throws URISyntaxException URISyntaxException
    * @throws ValidationException ValidationException
    */
   @SuppressWarnings("unchecked")
   @Test
-  public void testHandle02() throws IOException, URISyntaxException, ValidationException {
+  public void testHandle02() throws IOException, ValidationException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String documentId = UUID.randomUUID().toString();
@@ -823,7 +849,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
       item.setContentType("text/plain");
 
       documentService.saveDocument(siteId, item, null);
-      List<Action> actions = Arrays.asList(new Action().type(ActionType.FULLTEXT).userId("joe"));
+      List<Action> actions =
+          Collections.singletonList(new Action().type(ActionType.FULLTEXT).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
@@ -834,9 +861,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
       processor.handleRequest(map, this.context);
 
       // then
-      HttpRequest lastRequest = callback.getLastRequest();
+      HttpRequest lastRequest = CALLBACK.getLastRequest();
       assertTrue(lastRequest.getPath().toString().endsWith("/fulltext"));
-      Map<String, Object> resultmap = gson.fromJson(lastRequest.getBodyAsString(), Map.class);
+      Map<String, Object> resultmap = GSON.fromJson(lastRequest.getBodyAsString(), Map.class);
       assertNotNull(resultmap.get("contentUrls").toString());
 
       Action action = actionsService.getActions(siteId, documentId).get(0);
@@ -851,12 +878,11 @@ public class DocumentActionsProcessorTest implements DbKeys {
    * Handle Fulltext application/pdf document.
    * 
    * @throws IOException IOException
-   * @throws URISyntaxException URISyntaxException
    * @throws ValidationException ValidationException
    */
   @SuppressWarnings("unchecked")
   @Test
-  public void testHandle03() throws IOException, URISyntaxException, ValidationException {
+  public void testHandle03() throws IOException, ValidationException {
 
     // given
     String documentId = DOCUMENT_ID_OCR;
@@ -867,7 +893,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
       item.setContentType("application/pdf");
 
       documentService.saveDocument(siteId, item, null);
-      List<Action> actions = Arrays.asList(new Action().type(ActionType.FULLTEXT).userId("joe"));
+      List<Action> actions =
+          Collections.singletonList(new Action().type(ActionType.FULLTEXT).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
@@ -878,9 +905,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
       processor.handleRequest(map, this.context);
 
       // then
-      HttpRequest lastRequest = callback.getLastRequest();
+      HttpRequest lastRequest = CALLBACK.getLastRequest();
       assertTrue(lastRequest.getPath().toString().endsWith("/fulltext"));
-      Map<String, Object> resultmap = gson.fromJson(lastRequest.getBodyAsString(), Map.class);
+      Map<String, Object> resultmap = GSON.fromJson(lastRequest.getBodyAsString(), Map.class);
       assertNotNull(resultmap.get("contentUrls").toString());
 
       Action action = actionsService.getActions(siteId, documentId).get(0);
@@ -895,14 +922,14 @@ public class DocumentActionsProcessorTest implements DbKeys {
    * Handle Fulltext missing document failed Actionstatus.
    * 
    * @throws IOException IOException
-   * @throws URISyntaxException URISyntaxException
    */
   @Test
-  public void testHandle04() throws IOException, URISyntaxException {
+  public void testHandle04() throws IOException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String documentId = UUID.randomUUID().toString();
-      List<Action> actions = Arrays.asList(new Action().type(ActionType.FULLTEXT).userId("joe"));
+      List<Action> actions =
+          Collections.singletonList(new Action().type(ActionType.FULLTEXT).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
@@ -929,63 +956,55 @@ public class DocumentActionsProcessorTest implements DbKeys {
    * Handle WEBHOOK Action.
    * 
    * @throws IOException IOException
-   * @throws URISyntaxException URISyntaxException
    * @throws ValidationException ValidationException
    */
   @SuppressWarnings("unchecked")
   @Test
-  public void testHandle05() throws IOException, URISyntaxException, ValidationException {
-    try (DynamoDbClient db = dbBuilder.build()) {
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-        // given
-        String documentId = UUID.randomUUID().toString();
+  public void testHandle05() throws IOException, ValidationException {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String documentId = UUID.randomUUID().toString();
 
-        DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-        item.setContentType("application/pdf");
-        documentService.saveDocument(siteId, item, null);
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      item.setContentType("application/pdf");
+      documentService.saveDocument(siteId, item, null);
 
-        List<Action> actions = Arrays.asList(new Action().type(ActionType.WEBHOOK).userId("joe")
-            .parameters(Map.of("url", URL + "/callback")));
-        actionsService.saveNewActions(siteId, documentId, actions);
+      List<Action> actions = Collections.singletonList(new Action().type(ActionType.WEBHOOK)
+          .userId("joe").parameters(Map.of("url", URL + "/callback")));
+      actionsService.saveNewActions(siteId, documentId, actions);
 
-        Map<String, Object> map =
-            loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
-                documentId, "default", siteId != null ? siteId : "default");
+      Map<String, Object> map =
+          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
+              documentId, "default", siteId != null ? siteId : "default");
 
-        // when
-        processor.handleRequest(map, this.context);
+      // when
+      processor.handleRequest(map, this.context);
 
-        // then
-        actions = actionsService.getActions(siteId, documentId);
-        assertEquals(1, actions.size());
-        assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
+      // then
+      actions = actionsService.getActions(siteId, documentId);
+      assertEquals(1, actions.size());
+      assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
 
-        HttpRequest lastRequest = callback.getLastRequest();
-        assertTrue(lastRequest.getPath().toString().endsWith("/callback"));
-        Map<String, Object> resultmap = gson.fromJson(lastRequest.getBodyAsString(), Map.class);
-        List<Map<String, String>> documents =
-            (List<Map<String, String>>) resultmap.get("documents");
-        assertEquals(1, documents.size());
+      HttpRequest lastRequest = CALLBACK.getLastRequest();
+      assertTrue(lastRequest.getPath().toString().endsWith("/callback"));
+      Map<String, Object> resultmap = GSON.fromJson(lastRequest.getBodyAsString(), Map.class);
+      List<Map<String, String>> documents = (List<Map<String, String>>) resultmap.get("documents");
+      assertEquals(1, documents.size());
 
-        if (siteId != null) {
-          assertEquals(siteId, documents.get(0).get("siteId"));
-        } else {
-          assertEquals("default", documents.get(0).get("siteId"));
-        }
+      assertEquals(Objects.requireNonNullElse(siteId, "default"), documents.get(0).get("siteId"));
 
-        assertEquals(documentId, documents.get(0).get("documentId"));
-        assertEquals("application/pdf", documents.get(0).get("contentType"));
-        assertEquals("joe", documents.get(0).get("userId"));
-        assertNotNull(documents.get(0).get("insertedDate"));
-        assertNotNull(documents.get(0).get("lastModifiedDate"));
-        assertNotNull(documents.get(0).get("url"));
+      assertEquals(documentId, documents.get(0).get("documentId"));
+      assertEquals("application/pdf", documents.get(0).get("contentType"));
+      assertEquals("joe", documents.get(0).get("userId"));
+      assertNotNull(documents.get(0).get("insertedDate"));
+      assertNotNull(documents.get(0).get("lastModifiedDate"));
+      assertNotNull(documents.get(0).get("url"));
 
-        Action action = actionsService.getActions(siteId, documentId).get(0);
-        assertEquals(ActionStatus.COMPLETE, action.status());
-        assertNotNull(action.startDate());
-        assertNotNull(action.insertedDate());
-        assertNotNull(action.completedDate());
-      }
+      Action action = actionsService.getActions(siteId, documentId).get(0);
+      assertEquals(ActionStatus.COMPLETE, action.status());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertNotNull(action.completedDate());
     }
   }
 
@@ -993,67 +1012,59 @@ public class DocumentActionsProcessorTest implements DbKeys {
    * Handle WEBHOOK + ANTIVIRUS Action.
    * 
    * @throws IOException IOException
-   * @throws URISyntaxException URISyntaxException
    * @throws ValidationException ValidationException
    */
   @SuppressWarnings("unchecked")
   @Test
-  public void testHandle06() throws IOException, URISyntaxException, ValidationException {
-    try (DynamoDbClient db = dbBuilder.build()) {
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-        // given
-        String documentId = UUID.randomUUID().toString();
+  public void testHandle06() throws IOException, ValidationException {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String documentId = UUID.randomUUID().toString();
 
-        DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-        Collection<DocumentTag> tags = Arrays.asList(
-            new DocumentTag(documentId, "CLAMAV_SCAN_STATUS", "CLEAN", new Date(), "joe",
-                DocumentTagType.SYSTEMDEFINED),
-            new DocumentTag(documentId, "CLAMAV_SCAN_TIMESTAMP", "2022-01-01", new Date(), "joe",
-                DocumentTagType.SYSTEMDEFINED));
-        documentService.saveDocument(siteId, item, tags);
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      Collection<DocumentTag> tags = Arrays.asList(
+          new DocumentTag(documentId, "CLAMAV_SCAN_STATUS", "CLEAN", new Date(), "joe",
+              DocumentTagType.SYSTEMDEFINED),
+          new DocumentTag(documentId, "CLAMAV_SCAN_TIMESTAMP", "2022-01-01", new Date(), "joe",
+              DocumentTagType.SYSTEMDEFINED));
+      documentService.saveDocument(siteId, item, tags);
 
-        List<Action> actions = Arrays.asList(
-            new Action().type(ActionType.ANTIVIRUS).userId("joe").status(ActionStatus.COMPLETE),
-            new Action().type(ActionType.WEBHOOK).userId("joe")
-                .parameters(Map.of("url", URL + "/callback")));
-        actionsService.saveNewActions(siteId, documentId, actions);
+      List<Action> actions = Arrays.asList(
+          new Action().type(ActionType.ANTIVIRUS).userId("joe").status(ActionStatus.COMPLETE),
+          new Action().type(ActionType.WEBHOOK).userId("joe")
+              .parameters(Map.of("url", URL + "/callback")));
+      actionsService.saveNewActions(siteId, documentId, actions);
 
-        Map<String, Object> map =
-            loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
-                documentId, "default", siteId != null ? siteId : "default");
+      Map<String, Object> map =
+          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
+              documentId, "default", siteId != null ? siteId : "default");
 
-        // when
-        processor.handleRequest(map, this.context);
+      // when
+      processor.handleRequest(map, this.context);
 
-        // then
-        actions = actionsService.getActions(siteId, documentId);
-        assertEquals(2, actions.size());
-        assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
-        assertEquals(ActionStatus.COMPLETE, actions.get(1).status());
+      // then
+      actions = actionsService.getActions(siteId, documentId);
+      assertEquals(2, actions.size());
+      assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
+      assertEquals(ActionStatus.COMPLETE, actions.get(1).status());
 
-        HttpRequest lastRequest = callback.getLastRequest();
-        assertTrue(lastRequest.getPath().toString().endsWith("/callback"));
-        Map<String, Object> resultmap = gson.fromJson(lastRequest.getBodyAsString(), Map.class);
-        List<Map<String, String>> documents =
-            (List<Map<String, String>>) resultmap.get("documents");
-        assertEquals(1, documents.size());
+      HttpRequest lastRequest = CALLBACK.getLastRequest();
+      assertTrue(lastRequest.getPath().toString().endsWith("/callback"));
+      Map<String, Object> resultmap = GSON.fromJson(lastRequest.getBodyAsString(), Map.class);
+      List<Map<String, String>> documents = (List<Map<String, String>>) resultmap.get("documents");
+      assertEquals(1, documents.size());
 
-        if (siteId != null) {
-          assertEquals(siteId, documents.get(0).get("siteId"));
-        } else {
-          assertEquals("default", documents.get(0).get("siteId"));
-        }
+      assertEquals(Objects.requireNonNullElse(siteId, "default"), documents.get(0).get("siteId"));
 
-        assertEquals(documentId, documents.get(0).get("documentId"));
-        assertEquals("CLEAN", documents.get(0).get("status"));
-        assertEquals("2022-01-01", documents.get(0).get("timestamp"));
+      assertEquals(documentId, documents.get(0).get("documentId"));
+      assertEquals("CLEAN", documents.get(0).get("status"));
+      assertEquals("2022-01-01", documents.get(0).get("timestamp"));
 
-        Action action = actionsService.getActions(siteId, documentId).get(1);
-        assertEquals(ActionStatus.COMPLETE, action.status());
-        assertNotNull(action.startDate());
-        assertNotNull(action.insertedDate());
-        assertNotNull(action.completedDate());
-      }
+      Action action = actionsService.getActions(siteId, documentId).get(1);
+      assertEquals(ActionStatus.COMPLETE, action.status());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertNotNull(action.completedDate());
     }
   }
 
@@ -1061,12 +1072,11 @@ public class DocumentActionsProcessorTest implements DbKeys {
    * Handle Fulltext(Typesense) plain/text document.
    * 
    * @throws IOException IOException
-   * @throws URISyntaxException URISyntaxException
    * @throws ValidationException ValidationException
    */
   @SuppressWarnings("unchecked")
   @Test
-  public void testHandle07() throws IOException, URISyntaxException, ValidationException {
+  public void testHandle07() throws IOException, ValidationException {
     initProcessor("typesense", "chatgpt1");
 
     String content = "this is some data";
@@ -1083,7 +1093,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
           "text/plain");
 
       documentService.saveDocument(siteId, item, null);
-      List<Action> actions = Arrays.asList(new Action().type(ActionType.FULLTEXT).userId("joe"));
+      List<Action> actions =
+          Collections.singletonList(new Action().type(ActionType.FULLTEXT).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
@@ -1094,7 +1105,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       processor.handleRequest(map, this.context);
 
       // then
-      HttpRequest lastRequest = callback.getLastRequest();
+      HttpRequest lastRequest = CALLBACK.getLastRequest();
       assertNull(lastRequest);
 
       assertEquals(ActionStatus.COMPLETE,
@@ -1103,7 +1114,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       HttpResponse<String> response = typesense.getDocument(siteId, documentId);
       assertEquals("200", String.valueOf(response.statusCode()));
 
-      Map<String, String> body = gson.fromJson(response.body(), Map.class);
+      Map<String, String> body = GSON.fromJson(response.body(), Map.class);
       assertEquals(documentId, body.get("id"));
       assertEquals(content, body.get("content"));
     }
@@ -1113,43 +1124,40 @@ public class DocumentActionsProcessorTest implements DbKeys {
    * Handle RUNNING action in progress.
    * 
    * @throws IOException IOException
-   * @throws URISyntaxException URISyntaxException
    * @throws ValidationException ValidationException
    */
   @Test
-  public void testHandle08() throws IOException, URISyntaxException, ValidationException {
-    try (DynamoDbClient db = dbBuilder.build()) {
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-        // given
-        String documentId = UUID.randomUUID().toString();
+  public void testHandle08() throws IOException, ValidationException {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String documentId = UUID.randomUUID().toString();
 
-        DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-        item.setContentType("application/pdf");
-        documentService.saveDocument(siteId, item, null);
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      item.setContentType("application/pdf");
+      documentService.saveDocument(siteId, item, null);
 
-        List<Action> actions = Arrays.asList(
-            new Action().status(ActionStatus.RUNNING).type(ActionType.WEBHOOK).userId("joe")
-                .parameters(Map.of("url", URL + "/callback")),
-            new Action().type(ActionType.WEBHOOK).userId("joe")
-                .parameters(Map.of("url", URL + "/callback2")));
-        actionsService.saveNewActions(siteId, documentId, actions);
+      List<Action> actions = Arrays.asList(
+          new Action().status(ActionStatus.RUNNING).type(ActionType.WEBHOOK).userId("joe")
+              .parameters(Map.of("url", URL + "/callback")),
+          new Action().type(ActionType.WEBHOOK).userId("joe")
+              .parameters(Map.of("url", URL + "/callback2")));
+      actionsService.saveNewActions(siteId, documentId, actions);
 
-        Map<String, Object> map =
-            loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
-                documentId, "default", siteId != null ? siteId : "default");
+      Map<String, Object> map =
+          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
+              documentId, "default", siteId != null ? siteId : "default");
 
-        // when
-        processor.handleRequest(map, this.context);
+      // when
+      processor.handleRequest(map, this.context);
 
-        // then
-        actions = actionsService.getActions(siteId, documentId);
-        assertEquals(2, actions.size());
-        assertEquals(ActionStatus.RUNNING, actions.get(0).status());
-        assertEquals(ActionStatus.PENDING, actions.get(1).status());
+      // then
+      actions = actionsService.getActions(siteId, documentId);
+      assertEquals(2, actions.size());
+      assertEquals(ActionStatus.RUNNING, actions.get(0).status());
+      assertEquals(ActionStatus.PENDING, actions.get(1).status());
 
-        HttpRequest lastRequest = callback.getLastRequest();
-        assertNull(lastRequest);
-      }
+      HttpRequest lastRequest = CALLBACK.getLastRequest();
+      assertNull(lastRequest);
     }
   }
 
@@ -1157,11 +1165,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
    * Handle FAILED and PENDING action.
    * 
    * @throws IOException IOException
-   * @throws URISyntaxException URISyntaxException
    * @throws ValidationException ValidationException
    */
   @Test
-  public void testHandle09() throws IOException, URISyntaxException, ValidationException {
+  public void testHandle09() throws IOException, ValidationException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String documentId = UUID.randomUUID().toString();
@@ -1199,7 +1206,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertNotNull(action.insertedDate());
       assertNotNull(action.completedDate());
 
-      HttpRequest lastRequest = callback.getLastRequest();
+      HttpRequest lastRequest = CALLBACK.getLastRequest();
       assertNotNull(lastRequest);
     }
   }
@@ -1208,11 +1215,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
    * Handle Fulltext that needs OCR Action.
    * 
    * @throws IOException IOException
-   * @throws URISyntaxException URISyntaxException
    * @throws ValidationException ValidationException
    */
   @Test
-  public void testHandleFulltext01() throws IOException, URISyntaxException, ValidationException {
+  public void testHandleFulltext01() throws IOException, ValidationException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String documentId = UUID.randomUUID().toString();
@@ -1221,7 +1227,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
       item.setContentType("application/pdf");
       documentService.saveDocument(siteId, item, null);
 
-      List<Action> actions = Arrays.asList(new Action().type(ActionType.FULLTEXT).userId("joe"));
+      List<Action> actions =
+          Collections.singletonList(new Action().type(ActionType.FULLTEXT).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
@@ -1246,11 +1253,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
    * Handle Fulltext that needs OCR Action.
    * 
    * @throws IOException IOException
-   * @throws URISyntaxException URISyntaxException
    * @throws ValidationException ValidationException
    */
   @Test
-  public void testHandleFulltext02() throws IOException, URISyntaxException, ValidationException {
+  public void testHandleFulltext02() throws IOException, ValidationException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String documentId = UUID.randomUUID().toString();
@@ -1289,12 +1295,11 @@ public class DocumentActionsProcessorTest implements DbKeys {
    * Handle Fulltext(Opensearch) plain/text PATCH document not found 404, POST works.
    * 
    * @throws IOException IOException
-   * @throws URISyntaxException URISyntaxException
    * @throws ValidationException ValidationException
    */
   @SuppressWarnings("unchecked")
   @Test
-  public void testHandleFulltext03() throws IOException, URISyntaxException, ValidationException {
+  public void testHandleFulltext03() throws IOException, ValidationException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String documentId = DOCUMENT_ID_404;
@@ -1303,7 +1308,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
       item.setContentType("text/plain");
 
       documentService.saveDocument(siteId, item, null);
-      List<Action> actions = Arrays.asList(new Action().type(ActionType.FULLTEXT).userId("joe"));
+      List<Action> actions =
+          Collections.singletonList(new Action().type(ActionType.FULLTEXT).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
@@ -1314,9 +1320,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
       processor.handleRequest(map, this.context);
 
       // then
-      HttpRequest lastRequest = callback.getLastRequest();
+      HttpRequest lastRequest = CALLBACK.getLastRequest();
       assertTrue(lastRequest.getPath().toString().endsWith("/fulltext"));
-      Map<String, Object> resultmap = gson.fromJson(lastRequest.getBodyAsString(), Map.class);
+      Map<String, Object> resultmap = GSON.fromJson(lastRequest.getBodyAsString(), Map.class);
       assertNotNull(resultmap.get("contentUrls").toString());
 
       Action action = actionsService.getActions(siteId, documentId).get(0);
@@ -1329,11 +1335,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
   /**
    * Handle Invalid Request.
-   * 
-   * @throws Exception Exception
+   *
    */
   @Test
-  public void testInvalidRequest() throws Exception {
+  public void testInvalidRequest() {
     // given
     Map<String, Object> map = new HashMap<>();
 
@@ -1355,8 +1360,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
       String documentId = UUID.randomUUID().toString();
       String name = "testqueue#" + documentId;
 
-      List<Action> actions =
-          Arrays.asList(new Action().type(ActionType.QUEUE).userId("joe").queueId(name));
+      List<Action> actions = Collections
+          .singletonList(new Action().type(ActionType.QUEUE).userId("joe").queueId(name));
       actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
@@ -1370,5 +1375,319 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertEquals(ActionStatus.IN_QUEUE,
           actionsService.getActions(siteId, documentId).get(0).status());
     }
+  }
+
+  private String addTextToBucket(final String siteId, final String text) {
+    String documentId = UUID.randomUUID().toString();
+
+    String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
+    s3Service.putObject(BUCKET_NAME, s3Key, text.getBytes(StandardCharsets.UTF_8), "text/plain");
+
+    return documentId;
+  }
+
+  /**
+   * Handle Idp with Mapping Action text/plain, Attribute STRING_VALUE.
+   *
+   * @throws IOException IOException
+   */
+  @Test
+  public void testIdp01() throws IOException, ValidationException {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String text = IoUtils.toUtf8String(new FileInputStream("src/test/resources/text/text01.txt"));
+      String documentId = addTextToBucket(siteId, text);
+
+      attributeService.addAttribute(siteId, "invoice", null, null);
+
+      Mapping mapping =
+          createMapping("invoice", "P.O. Number", MappingAttributeLabelMatchingType.FUZZY,
+              MappingAttributeSourceType.CONTENT, null, null, null);
+      MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
+
+      processRequest(siteId, documentId, mappingRecord);
+
+      // then
+      Action action = actionsService.getActions(siteId, documentId).get(0);
+      assertNull(action.message());
+      assertEquals(ActionStatus.COMPLETE, action.status());
+      assertEquals(ActionType.IDP, action.type());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertNotNull(action.completedDate());
+
+      List<DocumentAttributeRecord> results =
+          documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
+      assertEquals(1, results.size());
+      DocumentAttributeRecord record = results.get(0);
+      assertEquals("invoice", record.getKey());
+      assertEquals("6200041751", record.getStringValue());
+    }
+  }
+
+  /**
+   * Handle Idp with Mapping Action text/plain, Attribute NUMBER_VALUE.
+   *
+   * @throws IOException IOException
+   */
+  @Test
+  public void testIdp02() throws IOException, ValidationException {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String text = IoUtils.toUtf8String(new FileInputStream("src/test/resources/text/text01.txt"));
+      String documentId = addTextToBucket(siteId, text);
+
+      attributeService.addAttribute(siteId, "invoice", AttributeDataType.NUMBER, null);
+
+      Mapping mapping =
+          createMapping("invoice", "P.O. Number", MappingAttributeLabelMatchingType.FUZZY,
+              MappingAttributeSourceType.CONTENT, null, null, null);
+      MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
+
+      processRequest(siteId, documentId, mappingRecord);
+
+      // then
+      Action action = actionsService.getActions(siteId, documentId).get(0);
+      assertNull(action.message());
+      assertEquals(ActionStatus.COMPLETE, action.status());
+      assertEquals(ActionType.IDP, action.type());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertNotNull(action.completedDate());
+
+      List<DocumentAttributeRecord> results =
+          documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
+      assertEquals(1, results.size());
+      DocumentAttributeRecord record = results.get(0);
+      assertEquals("invoice", record.getKey());
+      assertEquals("6.200041751E9", record.getNumberValue().toString());
+    }
+  }
+
+  /**
+   * Handle Idp with Mapping Action text/plain, Attribute missing.
+   *
+   * @throws IOException IOException
+   */
+  @Test
+  public void testIdp03() throws IOException, ValidationException {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String text = IoUtils.toUtf8String(new FileInputStream("src/test/resources/text/text01.txt"));
+      String documentId = addTextToBucket(siteId, text);
+
+      attributeService.addAttribute(siteId, "invoice", AttributeDataType.NUMBER, null);
+
+      Mapping mapping = createMapping("invoice", "abcdef", MappingAttributeLabelMatchingType.EXACT,
+          MappingAttributeSourceType.CONTENT, null, null, null);
+      MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
+
+      processRequest(siteId, documentId, mappingRecord);
+
+      // then
+      Action action = actionsService.getActions(siteId, documentId).get(0);
+      assertNull(action.message());
+      assertEquals(ActionStatus.COMPLETE, action.status());
+      assertEquals(ActionType.IDP, action.type());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertNotNull(action.completedDate());
+
+      List<DocumentAttributeRecord> results =
+          documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
+      assertEquals(0, results.size());
+    }
+  }
+
+  /**
+   * Handle Idp with Mapping Action text/plain, Attribute default value.
+   *
+   * @throws IOException IOException
+   */
+  @Test
+  public void testIdp04() throws IOException, ValidationException {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String text = IoUtils.toUtf8String(new FileInputStream("src/test/resources/text/text01.txt"));
+      String documentId = addTextToBucket(siteId, text);
+
+      attributeService.addAttribute(siteId, "invoice", AttributeDataType.STRING, null);
+
+      Mapping mapping = createMapping("invoice", "abcdef", MappingAttributeLabelMatchingType.EXACT,
+          MappingAttributeSourceType.CONTENT, "somevalue", null, null);
+
+      MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
+
+      processRequest(siteId, documentId, mappingRecord);
+
+      // then
+      Action action = actionsService.getActions(siteId, documentId).get(0);
+      assertNull(action.message());
+      assertEquals(ActionStatus.COMPLETE, action.status());
+      assertEquals(ActionType.IDP, action.type());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertNotNull(action.completedDate());
+
+      List<DocumentAttributeRecord> results =
+          documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
+      assertEquals(1, results.size());
+      DocumentAttributeRecord record = results.get(0);
+      assertEquals("invoice", record.getKey());
+      assertEquals("somevalue", record.getStringValue());
+    }
+  }
+
+  /**
+   * Handle Idp with Mapping Action text/plain, Attribute default values.
+   *
+   * @throws IOException IOException
+   */
+  @Test
+  public void testIdp05() throws IOException, ValidationException {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String text = IoUtils.toUtf8String(new FileInputStream("src/test/resources/text/text01.txt"));
+      String documentId = addTextToBucket(siteId, text);
+
+      attributeService.addAttribute(siteId, "invoice", AttributeDataType.STRING, null);
+
+      Mapping mapping = createMapping("invoice", "abcdef", MappingAttributeLabelMatchingType.EXACT,
+          MappingAttributeSourceType.CONTENT, null, Arrays.asList("123", "abc"), null);
+
+      MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
+
+      processRequest(siteId, documentId, mappingRecord);
+
+      // then
+      Action action = actionsService.getActions(siteId, documentId).get(0);
+      assertNull(action.message());
+      assertEquals(ActionStatus.COMPLETE, action.status());
+      assertEquals(ActionType.IDP, action.type());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertNotNull(action.completedDate());
+
+      List<DocumentAttributeRecord> results =
+          documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
+      assertEquals(2, results.size());
+      DocumentAttributeRecord record = results.get(0);
+      assertEquals("invoice", record.getKey());
+      assertEquals("123", record.getStringValue());
+
+      record = results.get(1);
+      assertEquals("invoice", record.getKey());
+      assertEquals("abc", record.getStringValue());
+    }
+  }
+
+  /**
+   * Handle Idp with Mapping Action text/plain, MappingAttributeLabelMatchingType contains.
+   *
+   * @throws IOException IOException
+   */
+  @Test
+  public void testIdp06() throws IOException, ValidationException {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String text = IoUtils.toUtf8String(new FileInputStream("src/test/resources/text/text01.txt"));
+      String documentId = addTextToBucket(siteId, text);
+
+      attributeService.addAttribute(siteId, "invoice", null, null);
+
+      Mapping mapping =
+          createMapping("invoice", "P.O. NO.:", MappingAttributeLabelMatchingType.CONTAINS,
+              MappingAttributeSourceType.CONTENT, null, null, null);
+      MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
+
+      processRequest(siteId, documentId, mappingRecord);
+
+      // then
+      Action action = actionsService.getActions(siteId, documentId).get(0);
+      assertNull(action.message());
+      assertEquals(ActionStatus.COMPLETE, action.status());
+      assertEquals(ActionType.IDP, action.type());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertNotNull(action.completedDate());
+
+      List<DocumentAttributeRecord> results =
+          documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
+      assertEquals(1, results.size());
+      DocumentAttributeRecord record = results.get(0);
+      assertEquals("invoice", record.getKey());
+      assertEquals("6200041751", record.getStringValue());
+    }
+  }
+
+  /**
+   * Handle Idp with Mapping Action text/plain, MappingAttributeLabelMatchingType begins with,
+   * METADATA.
+   *
+   * @throws IOException IOException
+   */
+  @Test
+  public void testIdp07() throws IOException, ValidationException {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String text = IoUtils.toUtf8String(new FileInputStream("src/test/resources/text/text01.txt"));
+      String documentId = addTextToBucket(siteId, text);
+
+      attributeService.addAttribute(siteId, "path", null, null);
+
+      Mapping mapping = createMapping("path", "j", MappingAttributeLabelMatchingType.BEGINS_WITH,
+          MappingAttributeSourceType.METADATA, null, null, MappingAttributeMetadataField.USERNAME);
+      MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
+
+      processRequest(siteId, documentId, mappingRecord);
+
+      // then
+      Action action = actionsService.getActions(siteId, documentId).get(0);
+      assertNull(action.message());
+      assertEquals(ActionStatus.COMPLETE, action.status());
+      assertEquals(ActionType.IDP, action.type());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertNotNull(action.completedDate());
+
+      List<DocumentAttributeRecord> results =
+          documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
+      assertEquals(1, results.size());
+      DocumentAttributeRecord record = results.get(0);
+      assertEquals("path", record.getKey());
+      assertEquals("joe", record.getStringValue());
+    }
+  }
+
+  private void processRequest(final String siteId, final String documentId,
+      final MappingRecord mappingRecord) throws ValidationException, IOException {
+    DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+    item.setContentType("text/plain");
+    documentService.saveDocument(siteId, item, null);
+
+    List<Action> actions = Collections.singletonList(new Action().type(ActionType.IDP).userId("joe")
+        .parameters(Map.of("mappingId", mappingRecord.getDocumentId())));
+    actionsService.saveNewActions(siteId, documentId, actions);
+
+    Map<String, Object> map =
+        loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
+            documentId, "default", siteId != null ? siteId : "default");
+
+    // when
+    processor.handleRequest(map, this.context);
+  }
+
+  private Mapping createMapping(final String attributeKey, final String labelText,
+      final MappingAttributeLabelMatchingType matchingType,
+      final MappingAttributeSourceType sourceType, final String value, final List<String> values,
+      final MappingAttributeMetadataField metadataField) {
+
+    List<String> labelTexts = labelText != null ? List.of(labelText) : null;
+
+    MappingAttribute a0 = new MappingAttribute().setAttributeKey(attributeKey)
+        .setSourceType(sourceType).setLabelMatchingType(matchingType).setLabelTexts(labelTexts)
+        .setDefaultValue(value).setDefaultValues(values).setMetadataField(metadataField);
+
+    return new Mapping().setName("test").setAttributes(Collections.singletonList(a0));
   }
 }

@@ -38,6 +38,8 @@ public enum ActionType {
   DOCUMENTTAGGING,
   /** Full Text. */
   FULLTEXT,
+  /** Intelligent Document Processing. */
+  IDP,
   /** Notification Action. */
   NOTIFICATION,
   /** OCR. */

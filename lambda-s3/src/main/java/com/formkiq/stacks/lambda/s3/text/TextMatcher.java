@@ -21,35 +21,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.validation;
+package com.formkiq.stacks.lambda.s3.text;
 
-import java.util.Collection;
-import java.util.stream.Collectors;
+import java.util.List;
 
-/** {@link Exception} that will return a 400 error. */
-public class ValidationException extends Exception {
-
-  /** serialVersionUID. */
-  private static final long serialVersionUID = -3307615320614370509L;
-  /** {@link ValidationError}. */
-  private final Collection<ValidationError> errors;
+/**
+ * Interface for find best match against a list of text.
+ */
+public interface TextMatcher {
 
   /**
-   * constructor.
+   * Find Best Match.
    * 
-   * @param validationErrors {@link Collection} {@link ValidationError}
+   * @param text {@link String}
+   * @param matches {@link List} {@link String}
+   * @param tokenGenerator {@link TokenGenerator}
+   * @param matchAlgorithm {@link TextMatchAlgorithm}
+   * @return {@link TextMatch}
    */
-  public ValidationException(final Collection<ValidationError> validationErrors) {
-    super(validationErrors.stream().map(ValidationError::error).collect(Collectors.joining(",")));
-    this.errors = validationErrors;
-  }
+  TextMatch findMatch(String text, List<String> matches, TokenGenerator tokenGenerator,
+      TextMatchAlgorithm matchAlgorithm);
 
   /**
-   * Get {@link ValidationError}.
+   * Find Match Value.
    * 
-   * @return {@link Collection} {@link ValidationError}
+   * @param text {@link String}
+   * @param textMatch {@link TextMatch}
+   * @param validationRegex {@link String}
+   * @return {@link String}
    */
-  public Collection<ValidationError> errors() {
-    return this.errors;
-  }
+  String findMatchValue(String text, TextMatch textMatch, String validationRegex);
 }
