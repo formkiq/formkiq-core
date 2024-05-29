@@ -196,6 +196,12 @@ public class Strings {
     return s.replaceAll("^['\"]|['\"]$", "");
   }
 
+  /**
+   * Convert {@link Exception} to {@link String}.
+   * 
+   * @param e {@link Exception}
+   * @return {@link String}
+   */
   public static String toString(final Exception e) {
     StringWriter sw = new StringWriter();
     PrintWriter pw = new PrintWriter(sw);

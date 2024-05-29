@@ -46,6 +46,7 @@ public interface DocumentAction {
    * @param actions {@link List} {@link Action}
    * @param action {@link Action}
    * @throws IOException IOException
+   * @throws ValidationException ValidationException
    */
   void run(LambdaLogger logger, String siteId, String documentId, List<Action> actions,
       Action action) throws IOException, ValidationException;

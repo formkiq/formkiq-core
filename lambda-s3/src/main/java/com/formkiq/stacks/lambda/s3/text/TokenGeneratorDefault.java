@@ -53,6 +53,7 @@ public class TokenGeneratorDefault implements TokenGenerator {
     return text.toLowerCase().replaceAll("\\p{Punct}", "").replaceAll(ALPHANUMERIC, " ");
   }
 
+  @Override
   public String getSplitRegex() {
     return "\\s+";
   }

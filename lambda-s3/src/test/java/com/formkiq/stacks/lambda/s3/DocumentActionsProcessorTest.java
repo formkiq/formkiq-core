@@ -37,9 +37,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 import static org.mockserver.model.HttpRequest.request;
-
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -52,22 +52,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-
-import com.formkiq.aws.dynamodb.DynamoDbService;
-import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
-import com.formkiq.stacks.dynamodb.attributes.AttributeDataType;
-import com.formkiq.stacks.dynamodb.attributes.AttributeService;
-import com.formkiq.stacks.dynamodb.attributes.AttributeServiceDynamodb;
-import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
-import com.formkiq.stacks.dynamodb.mappings.Mapping;
-import com.formkiq.stacks.dynamodb.mappings.MappingAttribute;
-import com.formkiq.stacks.dynamodb.mappings.MappingAttributeLabelMatchingType;
-import com.formkiq.stacks.dynamodb.mappings.MappingAttributeMetadataField;
-import com.formkiq.stacks.dynamodb.mappings.MappingAttributeSourceType;
-import com.formkiq.stacks.dynamodb.mappings.MappingRecord;
-import com.formkiq.stacks.dynamodb.mappings.MappingService;
-import com.formkiq.stacks.dynamodb.mappings.MappingServiceDynamodb;
-import com.formkiq.stacks.lambda.s3.actions.AddOcrAction;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -81,6 +65,8 @@ import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
@@ -111,6 +97,19 @@ import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
+import com.formkiq.stacks.dynamodb.attributes.AttributeDataType;
+import com.formkiq.stacks.dynamodb.attributes.AttributeService;
+import com.formkiq.stacks.dynamodb.attributes.AttributeServiceDynamodb;
+import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
+import com.formkiq.stacks.dynamodb.mappings.Mapping;
+import com.formkiq.stacks.dynamodb.mappings.MappingAttribute;
+import com.formkiq.stacks.dynamodb.mappings.MappingAttributeLabelMatchingType;
+import com.formkiq.stacks.dynamodb.mappings.MappingAttributeMetadataField;
+import com.formkiq.stacks.dynamodb.mappings.MappingAttributeSourceType;
+import com.formkiq.stacks.dynamodb.mappings.MappingRecord;
+import com.formkiq.stacks.dynamodb.mappings.MappingService;
+import com.formkiq.stacks.dynamodb.mappings.MappingServiceDynamodb;
+import com.formkiq.stacks.lambda.s3.actions.AddOcrAction;
 import com.formkiq.stacks.lambda.s3.util.FileUtils;
 import com.formkiq.stacks.lambda.s3.util.LambdaContextRecorder;
 import com.formkiq.testutils.aws.DynamoDbExtension;
@@ -1390,7 +1389,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
    * Handle Idp with Mapping Action text/plain, Attribute STRING_VALUE.
    *
    * @throws IOException IOException
+   * @throws ValidationException ValidationException
    */
+  @SuppressWarnings("resource")
   @Test
   public void testIdp01() throws IOException, ValidationException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -1429,38 +1430,41 @@ public class DocumentActionsProcessorTest implements DbKeys {
    * Handle Idp with Mapping Action text/plain, Attribute NUMBER_VALUE.
    *
    * @throws IOException IOException
+   * @throws ValidationException ValidationException
    */
   @Test
   public void testIdp02() throws IOException, ValidationException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      String text = IoUtils.toUtf8String(new FileInputStream("src/test/resources/text/text01.txt"));
-      String documentId = addTextToBucket(siteId, text);
+      try (FileInputStream is = new FileInputStream("src/test/resources/text/text01.txt")) {
+        String text = IoUtils.toUtf8String(is);
+        String documentId = addTextToBucket(siteId, text);
 
-      attributeService.addAttribute(siteId, "invoice", AttributeDataType.NUMBER, null);
+        attributeService.addAttribute(siteId, "invoice", AttributeDataType.NUMBER, null);
 
-      Mapping mapping =
-          createMapping("invoice", "P.O. Number", MappingAttributeLabelMatchingType.FUZZY,
-              MappingAttributeSourceType.CONTENT, null, null, null);
-      MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
+        Mapping mapping =
+            createMapping("invoice", "P.O. Number", MappingAttributeLabelMatchingType.FUZZY,
+                MappingAttributeSourceType.CONTENT, null, null, null);
+        MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-      processRequest(siteId, documentId, mappingRecord);
+        processRequest(siteId, documentId, mappingRecord);
 
-      // then
-      Action action = actionsService.getActions(siteId, documentId).get(0);
-      assertNull(action.message());
-      assertEquals(ActionStatus.COMPLETE, action.status());
-      assertEquals(ActionType.IDP, action.type());
-      assertNotNull(action.startDate());
-      assertNotNull(action.insertedDate());
-      assertNotNull(action.completedDate());
+        // then
+        Action action = actionsService.getActions(siteId, documentId).get(0);
+        assertNull(action.message());
+        assertEquals(ActionStatus.COMPLETE, action.status());
+        assertEquals(ActionType.IDP, action.type());
+        assertNotNull(action.startDate());
+        assertNotNull(action.insertedDate());
+        assertNotNull(action.completedDate());
 
-      List<DocumentAttributeRecord> results =
-          documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
-      assertEquals(1, results.size());
-      DocumentAttributeRecord record = results.get(0);
-      assertEquals("invoice", record.getKey());
-      assertEquals("6.200041751E9", record.getNumberValue().toString());
+        List<DocumentAttributeRecord> results =
+            documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
+        assertEquals(1, results.size());
+        DocumentAttributeRecord record = results.get(0);
+        assertEquals("invoice", record.getKey());
+        assertEquals("6.200041751E9", record.getNumberValue().toString());
+      }
     }
   }
 
@@ -1468,34 +1472,38 @@ public class DocumentActionsProcessorTest implements DbKeys {
    * Handle Idp with Mapping Action text/plain, Attribute missing.
    *
    * @throws IOException IOException
+   * @throws ValidationException ValidationException
    */
   @Test
   public void testIdp03() throws IOException, ValidationException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      String text = IoUtils.toUtf8String(new FileInputStream("src/test/resources/text/text01.txt"));
-      String documentId = addTextToBucket(siteId, text);
+      try (FileInputStream is = new FileInputStream("src/test/resources/text/text01.txt")) {
+        String text = IoUtils.toUtf8String(is);
+        String documentId = addTextToBucket(siteId, text);
 
-      attributeService.addAttribute(siteId, "invoice", AttributeDataType.NUMBER, null);
+        attributeService.addAttribute(siteId, "invoice", AttributeDataType.NUMBER, null);
 
-      Mapping mapping = createMapping("invoice", "abcdef", MappingAttributeLabelMatchingType.EXACT,
-          MappingAttributeSourceType.CONTENT, null, null, null);
-      MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
+        Mapping mapping =
+            createMapping("invoice", "abcdef", MappingAttributeLabelMatchingType.EXACT,
+                MappingAttributeSourceType.CONTENT, null, null, null);
+        MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-      processRequest(siteId, documentId, mappingRecord);
+        processRequest(siteId, documentId, mappingRecord);
 
-      // then
-      Action action = actionsService.getActions(siteId, documentId).get(0);
-      assertNull(action.message());
-      assertEquals(ActionStatus.COMPLETE, action.status());
-      assertEquals(ActionType.IDP, action.type());
-      assertNotNull(action.startDate());
-      assertNotNull(action.insertedDate());
-      assertNotNull(action.completedDate());
+        // then
+        Action action = actionsService.getActions(siteId, documentId).get(0);
+        assertNull(action.message());
+        assertEquals(ActionStatus.COMPLETE, action.status());
+        assertEquals(ActionType.IDP, action.type());
+        assertNotNull(action.startDate());
+        assertNotNull(action.insertedDate());
+        assertNotNull(action.completedDate());
 
-      List<DocumentAttributeRecord> results =
-          documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
-      assertEquals(0, results.size());
+        List<DocumentAttributeRecord> results =
+            documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
+        assertEquals(0, results.size());
+      }
     }
   }
 
@@ -1503,38 +1511,42 @@ public class DocumentActionsProcessorTest implements DbKeys {
    * Handle Idp with Mapping Action text/plain, Attribute default value.
    *
    * @throws IOException IOException
+   * @throws ValidationException ValidationException
    */
   @Test
   public void testIdp04() throws IOException, ValidationException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      String text = IoUtils.toUtf8String(new FileInputStream("src/test/resources/text/text01.txt"));
-      String documentId = addTextToBucket(siteId, text);
+      try (InputStream is = new FileInputStream("src/test/resources/text/text01.txt")) {
+        String text = IoUtils.toUtf8String(is);
+        String documentId = addTextToBucket(siteId, text);
 
-      attributeService.addAttribute(siteId, "invoice", AttributeDataType.STRING, null);
+        attributeService.addAttribute(siteId, "invoice", AttributeDataType.STRING, null);
 
-      Mapping mapping = createMapping("invoice", "abcdef", MappingAttributeLabelMatchingType.EXACT,
-          MappingAttributeSourceType.CONTENT, "somevalue", null, null);
+        Mapping mapping =
+            createMapping("invoice", "abcdef", MappingAttributeLabelMatchingType.EXACT,
+                MappingAttributeSourceType.CONTENT, "somevalue", null, null);
 
-      MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
+        MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-      processRequest(siteId, documentId, mappingRecord);
+        processRequest(siteId, documentId, mappingRecord);
 
-      // then
-      Action action = actionsService.getActions(siteId, documentId).get(0);
-      assertNull(action.message());
-      assertEquals(ActionStatus.COMPLETE, action.status());
-      assertEquals(ActionType.IDP, action.type());
-      assertNotNull(action.startDate());
-      assertNotNull(action.insertedDate());
-      assertNotNull(action.completedDate());
+        // then
+        Action action = actionsService.getActions(siteId, documentId).get(0);
+        assertNull(action.message());
+        assertEquals(ActionStatus.COMPLETE, action.status());
+        assertEquals(ActionType.IDP, action.type());
+        assertNotNull(action.startDate());
+        assertNotNull(action.insertedDate());
+        assertNotNull(action.completedDate());
 
-      List<DocumentAttributeRecord> results =
-          documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
-      assertEquals(1, results.size());
-      DocumentAttributeRecord record = results.get(0);
-      assertEquals("invoice", record.getKey());
-      assertEquals("somevalue", record.getStringValue());
+        List<DocumentAttributeRecord> results =
+            documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
+        assertEquals(1, results.size());
+        DocumentAttributeRecord record = results.get(0);
+        assertEquals("invoice", record.getKey());
+        assertEquals("somevalue", record.getStringValue());
+      }
     }
   }
 
@@ -1542,42 +1554,46 @@ public class DocumentActionsProcessorTest implements DbKeys {
    * Handle Idp with Mapping Action text/plain, Attribute default values.
    *
    * @throws IOException IOException
+   * @throws ValidationException ValidationException
    */
   @Test
   public void testIdp05() throws IOException, ValidationException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      String text = IoUtils.toUtf8String(new FileInputStream("src/test/resources/text/text01.txt"));
-      String documentId = addTextToBucket(siteId, text);
+      try (InputStream is = new FileInputStream("src/test/resources/text/text01.txt")) {
+        String text = IoUtils.toUtf8String(is);
+        String documentId = addTextToBucket(siteId, text);
 
-      attributeService.addAttribute(siteId, "invoice", AttributeDataType.STRING, null);
+        attributeService.addAttribute(siteId, "invoice", AttributeDataType.STRING, null);
 
-      Mapping mapping = createMapping("invoice", "abcdef", MappingAttributeLabelMatchingType.EXACT,
-          MappingAttributeSourceType.CONTENT, null, Arrays.asList("123", "abc"), null);
+        Mapping mapping =
+            createMapping("invoice", "abcdef", MappingAttributeLabelMatchingType.EXACT,
+                MappingAttributeSourceType.CONTENT, null, Arrays.asList("123", "abc"), null);
 
-      MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
+        MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-      processRequest(siteId, documentId, mappingRecord);
+        processRequest(siteId, documentId, mappingRecord);
 
-      // then
-      Action action = actionsService.getActions(siteId, documentId).get(0);
-      assertNull(action.message());
-      assertEquals(ActionStatus.COMPLETE, action.status());
-      assertEquals(ActionType.IDP, action.type());
-      assertNotNull(action.startDate());
-      assertNotNull(action.insertedDate());
-      assertNotNull(action.completedDate());
+        // then
+        Action action = actionsService.getActions(siteId, documentId).get(0);
+        assertNull(action.message());
+        assertEquals(ActionStatus.COMPLETE, action.status());
+        assertEquals(ActionType.IDP, action.type());
+        assertNotNull(action.startDate());
+        assertNotNull(action.insertedDate());
+        assertNotNull(action.completedDate());
 
-      List<DocumentAttributeRecord> results =
-          documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
-      assertEquals(2, results.size());
-      DocumentAttributeRecord record = results.get(0);
-      assertEquals("invoice", record.getKey());
-      assertEquals("123", record.getStringValue());
+        List<DocumentAttributeRecord> results =
+            documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
+        assertEquals(2, results.size());
+        DocumentAttributeRecord record = results.get(0);
+        assertEquals("invoice", record.getKey());
+        assertEquals("123", record.getStringValue());
 
-      record = results.get(1);
-      assertEquals("invoice", record.getKey());
-      assertEquals("abc", record.getStringValue());
+        record = results.get(1);
+        assertEquals("invoice", record.getKey());
+        assertEquals("abc", record.getStringValue());
+      }
     }
   }
 
@@ -1585,38 +1601,41 @@ public class DocumentActionsProcessorTest implements DbKeys {
    * Handle Idp with Mapping Action text/plain, MappingAttributeLabelMatchingType contains.
    *
    * @throws IOException IOException
+   * @throws ValidationException ValidationException
    */
   @Test
   public void testIdp06() throws IOException, ValidationException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      String text = IoUtils.toUtf8String(new FileInputStream("src/test/resources/text/text01.txt"));
-      String documentId = addTextToBucket(siteId, text);
+      try (InputStream is = new FileInputStream("src/test/resources/text/text01.txt")) {
+        String text = IoUtils.toUtf8String(is);
+        String documentId = addTextToBucket(siteId, text);
 
-      attributeService.addAttribute(siteId, "invoice", null, null);
+        attributeService.addAttribute(siteId, "invoice", null, null);
 
-      Mapping mapping =
-          createMapping("invoice", "P.O. NO.:", MappingAttributeLabelMatchingType.CONTAINS,
-              MappingAttributeSourceType.CONTENT, null, null, null);
-      MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
+        Mapping mapping =
+            createMapping("invoice", "P.O. NO.:", MappingAttributeLabelMatchingType.CONTAINS,
+                MappingAttributeSourceType.CONTENT, null, null, null);
+        MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-      processRequest(siteId, documentId, mappingRecord);
+        processRequest(siteId, documentId, mappingRecord);
 
-      // then
-      Action action = actionsService.getActions(siteId, documentId).get(0);
-      assertNull(action.message());
-      assertEquals(ActionStatus.COMPLETE, action.status());
-      assertEquals(ActionType.IDP, action.type());
-      assertNotNull(action.startDate());
-      assertNotNull(action.insertedDate());
-      assertNotNull(action.completedDate());
+        // then
+        Action action = actionsService.getActions(siteId, documentId).get(0);
+        assertNull(action.message());
+        assertEquals(ActionStatus.COMPLETE, action.status());
+        assertEquals(ActionType.IDP, action.type());
+        assertNotNull(action.startDate());
+        assertNotNull(action.insertedDate());
+        assertNotNull(action.completedDate());
 
-      List<DocumentAttributeRecord> results =
-          documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
-      assertEquals(1, results.size());
-      DocumentAttributeRecord record = results.get(0);
-      assertEquals("invoice", record.getKey());
-      assertEquals("6200041751", record.getStringValue());
+        List<DocumentAttributeRecord> results =
+            documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
+        assertEquals(1, results.size());
+        DocumentAttributeRecord record = results.get(0);
+        assertEquals("invoice", record.getKey());
+        assertEquals("6200041751", record.getStringValue());
+      }
     }
   }
 
@@ -1625,37 +1644,41 @@ public class DocumentActionsProcessorTest implements DbKeys {
    * METADATA.
    *
    * @throws IOException IOException
+   * @throws ValidationException ValidationException
    */
   @Test
   public void testIdp07() throws IOException, ValidationException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      String text = IoUtils.toUtf8String(new FileInputStream("src/test/resources/text/text01.txt"));
-      String documentId = addTextToBucket(siteId, text);
+      try (InputStream is = new FileInputStream("src/test/resources/text/text01.txt")) {
+        String text = IoUtils.toUtf8String(is);
+        String documentId = addTextToBucket(siteId, text);
 
-      attributeService.addAttribute(siteId, "path", null, null);
+        attributeService.addAttribute(siteId, "path", null, null);
 
-      Mapping mapping = createMapping("path", "j", MappingAttributeLabelMatchingType.BEGINS_WITH,
-          MappingAttributeSourceType.METADATA, null, null, MappingAttributeMetadataField.USERNAME);
-      MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
+        Mapping mapping = createMapping("path", "j", MappingAttributeLabelMatchingType.BEGINS_WITH,
+            MappingAttributeSourceType.METADATA, null, null,
+            MappingAttributeMetadataField.USERNAME);
+        MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-      processRequest(siteId, documentId, mappingRecord);
+        processRequest(siteId, documentId, mappingRecord);
 
-      // then
-      Action action = actionsService.getActions(siteId, documentId).get(0);
-      assertNull(action.message());
-      assertEquals(ActionStatus.COMPLETE, action.status());
-      assertEquals(ActionType.IDP, action.type());
-      assertNotNull(action.startDate());
-      assertNotNull(action.insertedDate());
-      assertNotNull(action.completedDate());
+        // then
+        Action action = actionsService.getActions(siteId, documentId).get(0);
+        assertNull(action.message());
+        assertEquals(ActionStatus.COMPLETE, action.status());
+        assertEquals(ActionType.IDP, action.type());
+        assertNotNull(action.startDate());
+        assertNotNull(action.insertedDate());
+        assertNotNull(action.completedDate());
 
-      List<DocumentAttributeRecord> results =
-          documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
-      assertEquals(1, results.size());
-      DocumentAttributeRecord record = results.get(0);
-      assertEquals("path", record.getKey());
-      assertEquals("joe", record.getStringValue());
+        List<DocumentAttributeRecord> results =
+            documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
+        assertEquals(1, results.size());
+        DocumentAttributeRecord record = results.get(0);
+        assertEquals("path", record.getKey());
+        assertEquals("joe", record.getStringValue());
+      }
     }
   }
 

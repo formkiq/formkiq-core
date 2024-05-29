@@ -31,6 +31,9 @@ import java.util.Comparator;
  */
 public class TextMatchScoreComparator implements Comparator<TextMatch>, Serializable {
 
+  /** Serial Version UID. */
+  private static final long serialVersionUID = -9124636645063016390L;
+
   @Override
   public int compare(final TextMatch o1, final TextMatch o2) {
     return Integer.compare(o1.getScore(), o2.getScore());
