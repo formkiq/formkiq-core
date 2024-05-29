@@ -2004,7 +2004,7 @@
             get:
               operationId: GetDocumentOcr
               summary: Get document ocr content
-              description: Get a document's optical character recognition (OCR) result, if exists; ONLY available with FormKiQ Pro and Enterprise
+              description: "Get a document's optical character recognition (OCR) result, if exists; \n\nTesseract available for all editions, but Textract engine and tables and forms options ONLY available with FormKiQ Pro and Enterprise"
               tags:
               - Document OCR
               parameters:
@@ -2034,7 +2034,7 @@
             post:
               operationId: AddDocumentOcr
               summary: Perform document ocr
-              description: Document optical character recognition (OCR) request; extract text and data from a document; ONLY available with FormKiQ Pro and Enterprise
+              description: "Document optical character recognition (OCR) request; extract text and data from a document; \n\nTesseract available for all editions, but Textract engine and tables and forms options ONLY available with FormKiQ Pro and Enterprise"
               tags:
               - Document OCR
               parameters:
@@ -2067,7 +2067,7 @@
             put:
               operationId: SetDocumentOcr
               summary: Set document ocr result
-              description: Set a document's optical character recognition (OCR) result for a document; ONLY available with FormKiQ Pro and Enterprise
+              description: "Set a document's optical character recognition (OCR) result for a document; \n\nTesseract available for all editions, but Textract engine and tables and forms options ONLY available with FormKiQ Pro and Enterprise"
               tags:
               - Document OCR
               parameters:
@@ -2100,7 +2100,7 @@
             delete:
               operationId: DeleteDocumentOcr
               summary: Delete document ocr
-              description: Delete a document's optical character recognition (OCR) result, if exists; ONLY available with FormKiQ Pro and Enterprise
+              description: "Delete a document's optical character recognition (OCR) result, if exists; \n\nTesseract available for all editions, but Textract engine and tables and forms options ONLY available with FormKiQ Pro and Enterprise"
               tags:
               - Document OCR
               parameters:
