@@ -99,15 +99,15 @@ public class FullTextAction implements DocumentAction {
       final List<Action> actions, final Action action) throws IOException {
 
     ActionStatus status = ActionStatus.PENDING;
-    DocumentItem item = documentService.findDocument(siteId, documentId);
+    DocumentItem item = this.documentService.findDocument(siteId, documentId);
     debug(logger, siteId, item);
 
     List<String> contentUrls =
-        documentContentFunc.getContentUrls(this.debug ? logger : null, siteId, item);
+        this.documentContentFunc.getContentUrls(this.debug ? logger : null, siteId, item);
 
     if (!contentUrls.isEmpty()) {
 
-      if (moduleFulltext) {
+      if (this.moduleFulltext) {
 
         try {
           updateOpensearchFulltext(siteId, documentId, contentUrls);
@@ -118,8 +118,8 @@ public class FullTextAction implements DocumentAction {
         status = ActionStatus.COMPLETE;
       }
 
-      if (moduleTypesense) {
-        updateTypesense(documentContentFunc, siteId, documentId, action, contentUrls);
+      if (this.moduleTypesense) {
+        updateTypesense(this.documentContentFunc, siteId, documentId, action, contentUrls);
         status = ActionStatus.COMPLETE;
       }
 
@@ -131,7 +131,7 @@ public class FullTextAction implements DocumentAction {
 
       Action ocrAction = new Action().userId("System").type(ActionType.OCR)
           .parameters(Map.of("ocrEngine", "tesseract"));
-      actionsService.insertBeforeAction(siteId, documentId, actions, action, ocrAction);
+      this.actionsService.insertBeforeAction(siteId, documentId, actions, action, ocrAction);
 
       this.notificationService.publishNextActionEvent(siteId, documentId);
 
@@ -140,7 +140,7 @@ public class FullTextAction implements DocumentAction {
     }
 
     action.status(status);
-    actionsService.updateActionStatus(siteId, documentId, action);
+    this.actionsService.updateActionStatus(siteId, documentId, action);
   }
 
   private void debug(final LambdaLogger logger, final String siteId, final DocumentItem item) {
@@ -220,7 +220,8 @@ public class FullTextAction implements DocumentAction {
 
       Map<String, Object> document = new DocumentMapToDocument().apply(data);
 
-      HttpResponse<String> response = typesense.addOrUpdateDocument(siteId, documentId, document);
+      HttpResponse<String> response =
+          this.typesense.addOrUpdateDocument(siteId, documentId, document);
 
       if (!is2XX(response)) {
         throw new IOException(response.body());

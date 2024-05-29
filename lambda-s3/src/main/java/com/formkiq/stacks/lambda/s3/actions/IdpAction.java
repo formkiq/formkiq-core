@@ -130,7 +130,7 @@ public class IdpAction implements DocumentAction {
       final String documentId) {
     String text;
 
-    DocumentItem document = documentService.findDocument(siteId, documentId);
+    DocumentItem document = this.documentService.findDocument(siteId, documentId);
 
     MappingAttributeMetadataField metadataField = mappingAttribute.getMetadataField();
     switch (metadataField) {
@@ -229,16 +229,16 @@ public class IdpAction implements DocumentAction {
 
   private String getDocumentContent(final LambdaLogger logger, final String siteId,
       final String documentId) throws IOException {
-    DocumentItem item = documentService.findDocument(siteId, documentId);
+    DocumentItem item = this.documentService.findDocument(siteId, documentId);
 
     List<String> contentUrls =
-        documentContentFunc.getContentUrls(this.debug ? logger : null, siteId, item);
-    StringBuilder sb = documentContentFunc.getContentUrls(contentUrls);
+        this.documentContentFunc.getContentUrls(this.debug ? logger : null, siteId, item);
+    StringBuilder sb = this.documentContentFunc.getContentUrls(contentUrls);
     return sb.toString();
   }
 
   private MappingRecord getMapping(final String siteId, final String mappingId) throws IOException {
-    MappingRecord mapping = mappingService.getMapping(siteId, mappingId);
+    MappingRecord mapping = this.mappingService.getMapping(siteId, mappingId);
     if (mapping == null) {
       throw new IOException("Mapping '" + mappingId + "' not found");
     }

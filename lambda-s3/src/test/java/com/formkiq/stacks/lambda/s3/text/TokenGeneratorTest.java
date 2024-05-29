@@ -25,14 +25,13 @@ package com.formkiq.stacks.lambda.s3.text;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-
-import org.junit.jupiter.api.Test;
-import software.amazon.awssdk.utils.IoUtils;
-
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
+import org.junit.jupiter.api.Test;
+import software.amazon.awssdk.utils.IoUtils;
 
 /**
  * Unit Test for {@link TokenGeneratorDefault}.
@@ -50,20 +49,22 @@ public class TokenGeneratorTest {
   @Test
   void testIdpTextMatcher01() throws IOException {
     // given
-    String text = IoUtils.toUtf8String(new FileInputStream("src/test/resources/text/text01.txt"));
-    List<String> textLabels = Arrays.asList("P.O. Number", "PO Number", "Purchase Order Number");
+    try (InputStream is = new FileInputStream("src/test/resources/text/text01.txt")) {
+      String text = IoUtils.toUtf8String(is);
+      List<String> textLabels = Arrays.asList("P.O. Number", "PO Number", "Purchase Order Number");
 
-    // when
-    final TextMatch match =
-        idpTextMatcher.findMatch(text, textLabels, new TokenGeneratorDefault(), new FuzzyMatcher());
-    final String matchValue0 = idpTextMatcher.findMatchValue(text, match, "");
-    final String matchValue1 = idpTextMatcher.findMatchValue(text, match, "[0-9]+");
+      // when
+      final TextMatch match = this.idpTextMatcher.findMatch(text, textLabels,
+          new TokenGeneratorDefault(), new FuzzyMatcher());
+      final String matchValue0 = this.idpTextMatcher.findMatchValue(text, match, "");
+      final String matchValue1 = this.idpTextMatcher.findMatchValue(text, match, "[0-9]+");
 
-    // then
-    assertEquals("P.O. NO.:", match.getToken().getOriginal());
-    assertEquals("po no", match.getToken().getFormatted());
-    assertEquals("6200041751", matchValue0);
-    assertEquals("6200041751", matchValue1);
+      // then
+      assertEquals("P.O. NO.:", match.getToken().getOriginal());
+      assertEquals("po no", match.getToken().getFormatted());
+      assertEquals("6200041751", matchValue0);
+      assertEquals("6200041751", matchValue1);
+    }
   }
 
   /**
@@ -74,20 +75,22 @@ public class TokenGeneratorTest {
   @Test
   void testIdpTextMatcher02() throws IOException {
     // given
-    String text = IoUtils.toUtf8String(new FileInputStream("src/test/resources/text/text01.txt"));
-    List<String> textLabels = List.of("P.O. No");
+    try (InputStream is = new FileInputStream("src/test/resources/text/text01.txt")) {
+      String text = IoUtils.toUtf8String(is);
+      List<String> textLabels = List.of("P.O. No");
 
-    // when
-    final TextMatch match =
-        idpTextMatcher.findMatch(text, textLabels, new TokenGeneratorDefault(), new ExactMatcher());
-    final String matchValue0 = idpTextMatcher.findMatchValue(text, match, "");
-    final String matchValue1 = idpTextMatcher.findMatchValue(text, match, "[0-9]+");
+      // when
+      final TextMatch match = this.idpTextMatcher.findMatch(text, textLabels,
+          new TokenGeneratorDefault(), new ExactMatcher());
+      final String matchValue0 = this.idpTextMatcher.findMatchValue(text, match, "");
+      final String matchValue1 = this.idpTextMatcher.findMatchValue(text, match, "[0-9]+");
 
-    // then
-    assertEquals("P.O. NO.:", match.getToken().getOriginal());
-    assertEquals("po no", match.getToken().getFormatted());
-    assertEquals("6200041751", matchValue0);
-    assertEquals("6200041751", matchValue1);
+      // then
+      assertEquals("P.O. NO.:", match.getToken().getOriginal());
+      assertEquals("po no", match.getToken().getFormatted());
+      assertEquals("6200041751", matchValue0);
+      assertEquals("6200041751", matchValue1);
+    }
   }
 
   /**
@@ -98,18 +101,20 @@ public class TokenGeneratorTest {
   @Test
   void testIdpTextMatcher03() throws IOException {
     // given
-    String text = IoUtils.toUtf8String(new FileInputStream("src/test/resources/text/text01.txt"));
-    List<String> textLabels = List.of("P.O. Number");
+    try (InputStream is = new FileInputStream("src/test/resources/text/text01.txt")) {
+      String text = IoUtils.toUtf8String(is);
+      List<String> textLabels = List.of("P.O. Number");
 
-    // when
-    final TextMatch match =
-        idpTextMatcher.findMatch(text, textLabels, new TokenGeneratorDefault(), new ExactMatcher());
-    final String matchValue0 = idpTextMatcher.findMatchValue(text, match, "");
-    final String matchValue1 = idpTextMatcher.findMatchValue(text, match, "[0-9]+");
+      // when
+      final TextMatch match = this.idpTextMatcher.findMatch(text, textLabels,
+          new TokenGeneratorDefault(), new ExactMatcher());
+      final String matchValue0 = this.idpTextMatcher.findMatchValue(text, match, "");
+      final String matchValue1 = this.idpTextMatcher.findMatchValue(text, match, "[0-9]+");
 
-    // then
-    assertNull(match);
-    assertNull(matchValue0);
-    assertNull(matchValue1);
+      // then
+      assertNull(match);
+      assertNull(matchValue0);
+      assertNull(matchValue1);
+    }
   }
 }

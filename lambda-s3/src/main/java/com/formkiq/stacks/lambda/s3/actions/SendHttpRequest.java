@@ -51,6 +51,15 @@ public class SendHttpRequest {
     this.documentsIamUrl = serviceCache.environment("documentsIamUrl");
   }
 
+  /**
+   * Send Http Request.
+   * 
+   * @param siteId {@link String}
+   * @param method {@link String}
+   * @param url {@link String}
+   * @param payload {@link String}
+   * @throws IOException IOException
+   */
   public void sendRequest(final String siteId, final String method, final String url,
       final String payload) throws IOException {
 
@@ -64,11 +73,11 @@ public class SendHttpRequest {
 
     HttpResponse<String> response;
     if ("put".equalsIgnoreCase(method)) {
-      response = http.put(u, Optional.empty(), parameters, payload);
+      response = this.http.put(u, Optional.empty(), parameters, payload);
     } else if ("post".equalsIgnoreCase(method)) {
-      response = http.post(u, Optional.empty(), parameters, payload);
+      response = this.http.post(u, Optional.empty(), parameters, payload);
     } else if ("patch".equalsIgnoreCase(method)) {
-      response = http.patch(u, Optional.empty(), parameters, payload);
+      response = this.http.patch(u, Optional.empty(), parameters, payload);
     } else {
       throw new UnsupportedOperationException("unsupported method '" + method + "'");
     }
