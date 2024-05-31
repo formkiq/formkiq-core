@@ -24,7 +24,6 @@
 package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_FORBIDDEN;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_PAYMENT;
 import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENTS;
 import static com.formkiq.stacks.dynamodb.ConfigService.MAX_WEBHOOKS;
@@ -40,6 +39,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import com.formkiq.aws.dynamodb.DynamicObject;
@@ -132,9 +133,8 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testHandleGetSites01() throws Exception {
     // given
-    String siteId = null;
     setBearerToken(new String[] {"default", "Admins", "finance"});
-    config.save(siteId, new DynamicObject(Map.of("chatGptApiKey", "somevalue")));
+    config.save(null, new DynamicObject(Map.of("chatGptApiKey", "somevalue")));
 
     ssm.putParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/maildomain", "tryformkiq.com");
 
@@ -148,7 +148,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     assertEquals(DEFAULT_SITE_ID, sites.get(0).getSiteId());
     assertEquals("READ_WRITE", sites.get(0).getPermission().toString());
     assertEquals("ADMIN,DELETE,READ,WRITE",
-        sites.get(0).getPermissions().stream().map(p -> p.name()).collect(Collectors.joining(",")));
+        sites.get(0).getPermissions().stream().map(Enum::name).collect(Collectors.joining(",")));
     assertNotNull(sites.get(0).getUploadEmail());
 
     String uploadEmail = sites.get(0).getUploadEmail();
@@ -270,10 +270,9 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
   /**
    * Get /sites with 'authentication_only' role.
    *
-   * @throws Exception an error has occurred
    */
   @Test
-  public void testHandleGetSites05() throws Exception {
+  public void testHandleGetSites05() {
     // given
     String siteId = "authentication_only";
     setBearerToken(siteId);
@@ -284,7 +283,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
       fail();
     } catch (ApiException e) {
       // then
-      assertEquals(SC_FORBIDDEN.getStatusCode(), e.getCode());
+      assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
     }
   }
 

@@ -336,15 +336,14 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
         assertEquals("person", attributes.getAttributes().get(i++).getStringValue());
 
         assertEquals("flag", attributes.getAttributes().get(i).getKey());
-        assertTrue(attributes.getAttributes().get(i++).getBooleanValue().booleanValue());
+        assertTrue(attributes.getAttributes().get(i++).getBooleanValue());
 
         assertEquals("keyonly", attributes.getAttributes().get(i).getKey());
         assertNull(attributes.getAttributes().get(i++).getStringValue());
 
         assertEquals("num", attributes.getAttributes().get(i).getKey());
-        assertEquals("123,233",
-            String.join(",", attributes.getAttributes().get(i++).getNumberValues().stream()
-                .map(n -> formatDouble(Double.valueOf(n.doubleValue()))).toList()));
+        assertEquals("123,233", String.join(",", attributes.getAttributes().get(i++)
+            .getNumberValues().stream().map(n -> formatDouble(n.doubleValue())).toList()));
 
         assertEquals("strings", attributes.getAttributes().get(i).getKey());
         assertEquals("abc,qwe",
@@ -400,15 +399,14 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       assertEquals(expected, attributes.getAttributes().size());
 
       assertEquals("flag", attributes.getAttributes().get(i).getKey());
-      assertTrue(attributes.getAttributes().get(i++).getBooleanValue().booleanValue());
+      assertTrue(attributes.getAttributes().get(i++).getBooleanValue());
 
       assertEquals("keyonly", attributes.getAttributes().get(i).getKey());
       assertNull(attributes.getAttributes().get(i++).getStringValue());
 
       assertEquals("num", attributes.getAttributes().get(i).getKey());
-      assertEquals("111.11,222.22",
-          String.join(",", attributes.getAttributes().get(i++).getNumberValues().stream()
-              .map(n -> formatDouble(Double.valueOf(n.doubleValue()))).toList()));
+      assertEquals("111.11,222.22", String.join(",", attributes.getAttributes().get(i++)
+          .getNumberValues().stream().map(n -> formatDouble(n.doubleValue())).toList()));
 
       assertEquals("strings", attributes.getAttributes().get(i).getKey());
       assertEquals("111,222",
@@ -465,8 +463,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // given
       AddDocumentUploadRequest ureq1 = new AddDocumentUploadRequest().path("sample.txt")
-          .addAttributesItem(
-              new AddDocumentAttribute().key("strings").stringValues(Arrays.asList("333")))
+          .addAttributesItem(new AddDocumentAttribute().key("strings").stringValues(List.of("333")))
           .addAttributesItem(new AddDocumentAttribute().key("flag").booleanValue(Boolean.FALSE))
           .addAttributesItem(
               new AddDocumentAttribute().key("num").addNumberValuesItem(new BigDecimal("111.12")));
@@ -507,14 +504,14 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
           .attributes(new SchemaAttributes()
               .addOptionalItem(new AttributeSchemaOptional().attributeKey("strings")
-                  .allowedValues(Arrays.asList("123")))
+                  .allowedValues(List.of("123")))
               .addOptionalItem(new AttributeSchemaOptional().attributeKey("category")
-                  .allowedValues(Arrays.asList("person"))));
+                  .allowedValues(List.of("person"))));
       this.schemasApi.setSitesSchema(siteId, req);
 
       AddDocumentUploadRequest ureq0 =
           new AddDocumentUploadRequest().path("sample.txt").addAttributesItem(
-              new AddDocumentAttribute().key("strings").stringValues(Arrays.asList("123")));
+              new AddDocumentAttribute().key("strings").stringValues(List.of("123")));
 
       // when
       GetDocumentUrlResponse response =
@@ -526,7 +523,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       // given
       AddDocumentUploadRequest ureq1 =
           new AddDocumentUploadRequest().path("sample.txt").addAttributesItem(
-              new AddDocumentAttribute().key("strings").stringValues(Arrays.asList("333")));
+              new AddDocumentAttribute().key("strings").stringValues(List.of("333")));
 
       // when
       try {
@@ -566,7 +563,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       AddDocumentUploadRequest ureq0 =
           new AddDocumentUploadRequest().path("sample.txt").addAttributesItem(
-              new AddDocumentAttribute().key("category").stringValues(Arrays.asList("123")));
+              new AddDocumentAttribute().key("category").stringValues(List.of("123")));
 
       // when
       GetDocumentUrlResponse response =
@@ -633,7 +630,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       AddDocumentUploadRequest ureq0 =
           new AddDocumentUploadRequest().path("sample.txt").addAttributesItem(
-              new AddDocumentAttribute().key("category").stringValues(Arrays.asList("123")));
+              new AddDocumentAttribute().key("category").stringValues(List.of("123")));
 
       // when
       try {
@@ -890,10 +887,9 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
   /**
    * GET /sites/{siteId}/schema/document, not set.
    *
-   * @throws ApiException an error has occurred
    */
   @Test
-  public void testGetSitesSchema01() throws ApiException {
+  public void testGetSitesSchema01() {
     // given
     for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
 
@@ -1137,7 +1133,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
           .addAttributesItem(
-              new AddDocumentAttribute().key("category").stringValues(Arrays.asList("person")))
+              new AddDocumentAttribute().key("category").stringValues(List.of("person")))
           .addAttributesItem(
               new AddDocumentAttribute().key("strings").stringValues(Arrays.asList("111", "222")));
 
@@ -1202,7 +1198,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
           .addAttributesItem(
-              new AddDocumentAttribute().key("category").stringValues(Arrays.asList("person")))
+              new AddDocumentAttribute().key("category").stringValues(List.of("person")))
           .addAttributesItem(
               new AddDocumentAttribute().key("strings").stringValues(Arrays.asList("111", "222")));
 
@@ -1448,7 +1444,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
           .addAttributesItem(
-              new AddDocumentAttribute().key("category").stringValues(Arrays.asList("person")))
+              new AddDocumentAttribute().key("category").stringValues(List.of("person")))
           .addAttributesItem(new AddDocumentAttribute().key("strings")
               .stringValues(Arrays.asList("111", "222", "333")));
 
@@ -1501,7 +1497,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
           .addAttributesItem(
-              new AddDocumentAttribute().key("category").stringValues(Arrays.asList("person")))
+              new AddDocumentAttribute().key("category").stringValues(List.of("person")))
           .addAttributesItem(
               new AddDocumentAttribute().key("strings").stringValues(Arrays.asList("111", "222")));
 
@@ -1557,7 +1553,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
           .addAttributesItem(
-              new AddDocumentAttribute().key("category").stringValues(Arrays.asList("person")))
+              new AddDocumentAttribute().key("category").stringValues(List.of("person")))
           .addAttributesItem(
               new AddDocumentAttribute().key("other").stringValues(Arrays.asList("111", "222")));
 
@@ -1720,10 +1716,9 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
   /**
    * PUT /sites/{siteId}/schema/document. Empty.
    *
-   * @throws ApiException an error has occurred
    */
   @Test
-  public void testSetSitesSchema02() throws ApiException {
+  public void testSetSitesSchema02() {
     // given
     for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
 
@@ -1761,10 +1756,9 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
   /**
    * PUT /sites/{siteId}/schema/document invalid attribute.
    *
-   * @throws ApiException an error has occurred
    */
   @Test
-  public void testSetSitesSchema03() throws ApiException {
+  public void testSetSitesSchema03() {
     // given
     for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
 

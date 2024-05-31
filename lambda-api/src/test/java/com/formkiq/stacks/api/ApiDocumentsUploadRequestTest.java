@@ -549,7 +549,7 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
 
         // then
         Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
-        assertEquals("403.0", String.valueOf(m.get("statusCode")));
+        assertEquals("401.0", String.valueOf(m.get("statusCode")));
 
         String body = String.valueOf(m.get("body"));
         assertTrue(body.contains("\"message\":\"fkq access denied (groups:"));
