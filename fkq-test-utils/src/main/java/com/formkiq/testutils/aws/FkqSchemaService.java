@@ -50,12 +50,8 @@ public class FkqSchemaService {
 
     SchemasApi api = new SchemasApi(client);
 
-    List<AttributeSchemaOptional> optionalKeys =
-        compositeKeys.stream().map(key -> new AttributeSchemaOptional().attributeKey(key)).toList();
-
-    SchemaAttributes attributes = new SchemaAttributes().allowAdditionalAttributes(Boolean.TRUE)
-        .optional(optionalKeys).compositeKeys(Collections
-            .singletonList(new AttributeSchemaCompositeKey().attributeKeys(compositeKeys)));
+    SchemaAttributes attributes = new SchemaAttributes().compositeKeys(
+        Collections.singletonList(new AttributeSchemaCompositeKey().attributeKeys(compositeKeys)));
     api.setSitesSchema(siteId, new SetSitesSchemaRequest().name(name).attributes(attributes));
   }
 }
