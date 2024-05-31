@@ -334,11 +334,22 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
     } else {
 
       SchemaAttributes schemaAttributes = schema.getAttributes();
+
+      List<SchemaAttributesCompositeKey> compositeKeys =
+          notNull(schemaAttributes.getCompositeKeys());
+
       if (notNull(schemaAttributes.getRequired()).isEmpty()
-          && notNull(schemaAttributes.getOptional()).isEmpty()) {
+          && notNull(schemaAttributes.getOptional()).isEmpty() && compositeKeys.isEmpty()) {
         errors.add(new ValidationErrorImpl()
-            .error("either 'required' or 'optional' attributes list is required"));
+            .error("either 'required', 'optional' or 'compositeKeys' attributes list is required"));
       }
+
+      compositeKeys.forEach(keys -> {
+        if (notNull(keys.getAttributeKeys()).size() == 1) {
+          errors.add(new ValidationErrorImpl().key("compositeKeys")
+              .error("compositeKeys must have more than 1 value"));
+        }
+      });
     }
 
     return errors;

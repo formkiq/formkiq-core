@@ -33,6 +33,8 @@ import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+
+import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.client.invoker.ApiException;
@@ -347,7 +349,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
         assertEquals("strings", attributes.getAttributes().get(i).getKey());
         assertEquals("abc,qwe",
-            String.join(",", attributes.getAttributes().get(i++).getStringValues()));
+            String.join(",", attributes.getAttributes().get(i).getStringValues()));
       }
     }
   }
@@ -410,7 +412,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       assertEquals("strings", attributes.getAttributes().get(i).getKey());
       assertEquals("111,222",
-          String.join(",", attributes.getAttributes().get(i++).getStringValues()));
+          String.join(",", attributes.getAttributes().get(i).getStringValues()));
     }
   }
 
@@ -1297,7 +1299,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       assertEquals("category#date", response0.getDocuments().get(i).getMatchedAttribute().getKey());
       assertEquals("person#2024-01-10",
-          response0.getDocuments().get(i++).getMatchedAttribute().getStringValue());
+          response0.getDocuments().get(i).getMatchedAttribute().getStringValue());
 
       // when - invalid search
       DocumentSearchRequest sreq1 = new DocumentSearchRequest().query(new DocumentSearch()
@@ -1415,7 +1417,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       assertEquals("category#date", response0.getDocuments().get(i).getMatchedAttribute().getKey());
       assertEquals("person#000000000000200.0000",
-          response0.getDocuments().get(i++).getMatchedAttribute().getStringValue());
+          response0.getDocuments().get(i).getMatchedAttribute().getStringValue());
     }
   }
 
@@ -1580,6 +1582,48 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
     }
   }
 
+  /**
+   * Search document by composite key not defined in optional/required attributes.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testSearchCompositeKey09() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+
+      String key0 = "strings_" + siteId;
+      String key1 = "category_" + siteId;
+      addAttribute(siteId, key0, null);
+      addAttribute(siteId, key1, null);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SchemaAttributes().addCompositeKeysItem(
+              new AttributeSchemaCompositeKey().attributeKeys(Arrays.asList(key0, key1))));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
+          .addAttributesItem(new AddDocumentAttribute().key(key1).stringValues(List.of("person")))
+          .addAttributesItem(
+              new AddDocumentAttribute().key(key0).stringValues(Arrays.asList("111", "222")));
+
+      // when
+      String documentId0 =
+          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null).getDocumentId();
+
+      // then
+      DocumentSearchRequest sreq0 = new DocumentSearchRequest().query(
+          new DocumentSearch().addAttributesItem(new DocumentSearchAttribute().key(key0).eq("222"))
+              .addAttributesItem(new DocumentSearchAttribute().key(key1).eq("person")));
+
+      DocumentSearchResponse response0 =
+          this.searchApi.documentSearch(sreq0, siteId, null, null, null);
+      assertEquals(1, response0.getDocuments().size());
+      assertEquals(documentId0, response0.getDocuments().get(0).getDocumentId());
+    }
+  }
 
   /**
    * PUT /documents/{documentId}/attributes. Add attributes.
@@ -1745,10 +1789,9 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
         fail();
       } catch (ApiException e) {
         // then
-        assertEquals(
-            "{\"errors\":[{\"key\":\"name\",\"error\":\"'name' is required\"},"
-                + "{\"error\":\"either 'required' or 'optional' attributes list is required\"}]}",
-            e.getResponseBody());
+        assertEquals("{\"errors\":[{\"key\":\"name\",\"error\":\"'name' is required\"},"
+            + "{\"error\":\"either 'required', 'optional' or 'compositeKeys' "
+            + "attributes list is required\"}]}", e.getResponseBody());
       }
     }
   }
@@ -1893,7 +1936,6 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
             e.getResponseBody());
       }
     }
-
   }
 
   /**
@@ -1925,6 +1967,39 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
                 + "\"error\":\"attribute 'keyonly' does not allow allowed values\"},"
                 + "{\"key\":\"keyonly\","
                 + "\"error\":\"attribute 'keyonly' does not allow default values\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * PUT /sites/{siteId}/schema/document with single composite attribute.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testSetSitesSchema08() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "category", null);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe").attributes(
+          new SchemaAttributes().allowAdditionalAttributes(Boolean.TRUE).addCompositeKeysItem(
+              new AttributeSchemaCompositeKey().attributeKeys(List.of("category"))));
+
+      // when
+      try {
+        this.schemasApi.setSitesSchema(siteId, req);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"compositeKeys\","
+                + "\"error\":\"compositeKeys must have more than 1 value\"}]}",
             e.getResponseBody());
       }
     }
