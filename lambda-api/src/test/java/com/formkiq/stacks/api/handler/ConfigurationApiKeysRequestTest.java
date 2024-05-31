@@ -30,6 +30,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.util.Arrays;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
+import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
@@ -46,16 +48,12 @@ import com.formkiq.testutils.aws.LocalStackExtension;
 @ExtendWith(LocalStackExtension.class)
 public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTest {
 
-  /** Unauthorized (401). */
-  private static final int STATUS_UNAUTHORIZED = 401;
-
   /**
    * Delete /sites/{siteId}/apiKeys default as User.
    *
-   * @throws Exception an error has occurred
    */
   @Test
-  public void testHandleDeleteApiKeys01() throws Exception {
+  public void testHandleDeleteApiKeys01() {
     // given
     for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
 
@@ -67,8 +65,8 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
         fail();
       } catch (ApiException e) {
         // then
-        assertEquals(STATUS_UNAUTHORIZED, e.getCode());
-        assertEquals("{\"message\":\"user is unauthorized\"}", e.getResponseBody());
+        assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
+        assertEquals("{\"message\":\"fkq access denied to siteId (ABC)\"}", e.getResponseBody());
       }
     }
   }
@@ -76,10 +74,9 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
   /**
    * POST /sites/{siteId}/apiKeys default as User.
    *
-   * @throws Exception an error has occurred
    */
   @Test
-  public void testHandlePostApiKeys01() throws Exception {
+  public void testHandlePostApiKeys01() {
     // given
     for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
 
@@ -93,7 +90,7 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
         fail();
       } catch (ApiException e) {
         // then
-        assertEquals(STATUS_UNAUTHORIZED, e.getCode());
+        assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
         assertEquals("{\"message\":\"user is unauthorized\"}", e.getResponseBody());
       }
     }
@@ -132,7 +129,7 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
       assertNotNull(apiKeys.getApiKeys().get(0).getInsertedDate());
       assertEquals(apiKeyName, apiKeys.getApiKeys().get(0).getName());
       assertEquals("DELETE,READ,WRITE", apiKeys.getApiKeys().get(0).getPermissions().stream()
-          .map(p -> p.name()).sorted().collect(Collectors.joining(",")));
+          .map(Enum::name).sorted().collect(Collectors.joining(",")));
       assertEquals("joesmith", apiKeys.getApiKeys().get(0).getUserId());
       assertEquals(siteId, apiKeys.getApiKeys().get(0).getSiteId());
 
@@ -152,10 +149,9 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
   /**
    * Get /sites/{siteId}/apiKeys default as User.
    *
-   * @throws Exception an error has occurred
    */
   @Test
-  public void testHandleGetApiKeys02() throws Exception {
+  public void testHandleGetApiKeys02() {
     // given
     String siteId = SiteIdKeyGenerator.DEFAULT_SITE_ID;
     String group = "default";

@@ -562,7 +562,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
 
     final int mapsize = 3;
     assertEquals(mapsize, m.size());
-    assertEquals("403.0", String.valueOf(m.get("statusCode")));
+    assertEquals("401.0", String.valueOf(m.get("statusCode")));
     assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
     ApiResponseError resp = fromJson(m.get("body"), ApiResponseError.class);
     assertEquals("fkq access denied to siteId (" + siteId + ")", resp.getMessage());
@@ -590,7 +590,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
 
     final int mapsize = 3;
     assertEquals(mapsize, m.size());
-    assertEquals("403.0", String.valueOf(m.get("statusCode")));
+    assertEquals("401.0", String.valueOf(m.get("statusCode")));
     assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
     ApiResponseError resp = fromJson(m.get("body"), ApiResponseError.class);
     assertEquals("fkq access denied to siteId (" + siteId + ")", resp.getMessage());
@@ -650,7 +650,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
 
     final int mapsize = 3;
     assertEquals(mapsize, m.size());
-    assertEquals("403.0", String.valueOf(m.get("statusCode")));
+    assertEquals("401.0", String.valueOf(m.get("statusCode")));
     assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
     assertEquals("{\"message\":\"fkq access denied to siteId (default)\"}", m.get("body"));
   }
@@ -1185,7 +1185,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
 
     // then
     String expected = "{" + getHeaders() + ",\"body\":\""
-        + "{\\\"message\\\":\\\"fkq access denied to siteId (demo)\\\"}\",\"statusCode\":403}";
+        + "{\\\"message\\\":\\\"fkq access denied to siteId (demo)\\\"}\",\"statusCode\":401}";
 
     assertEquals(expected, response);
   }
@@ -1242,7 +1242,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
 
     final int mapsize = 3;
     assertEquals(mapsize, m.size());
-    assertEquals("403.0", String.valueOf(m.get("statusCode")));
+    assertEquals("401.0", String.valueOf(m.get("statusCode")));
     assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
   }
 

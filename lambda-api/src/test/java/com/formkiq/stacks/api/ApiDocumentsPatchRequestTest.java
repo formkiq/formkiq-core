@@ -39,6 +39,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamicObject;
@@ -195,7 +196,7 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
       // then
       Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
 
-      assertEquals("403.0", String.valueOf(m.get("statusCode")));
+      assertEquals("401.0", String.valueOf(m.get("statusCode")));
       assertTrue(m.get("body").contains("fkq access denied"));
     }
   }

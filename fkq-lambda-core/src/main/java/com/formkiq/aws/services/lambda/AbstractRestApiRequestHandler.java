@@ -26,7 +26,6 @@ package com.formkiq.aws.services.lambda;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_BAD_REQUEST;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_ERROR;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_FORBIDDEN;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_FOUND;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_METHOD_CONFLICT;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_FOUND;
@@ -82,7 +81,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
       logger.log(e.getDebug());
     }
 
-    buildResponse(logger, awsServices, output, SC_FORBIDDEN, Collections.emptyMap(),
+    buildResponse(logger, awsServices, output, SC_UNAUTHORIZED, Collections.emptyMap(),
         new ApiResponseError(e.getMessage()));
   }
 
@@ -510,7 +509,6 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
    * @param e {@link Exception}
    */
   private void logError(final LambdaLogger logger, final Exception e) {
-    e.printStackTrace();
     StringWriter sw = new StringWriter();
     PrintWriter pw = new PrintWriter(sw);
     e.printStackTrace(pw);

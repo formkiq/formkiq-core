@@ -33,6 +33,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+
+import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.client.invoker.ApiException;
@@ -52,9 +54,6 @@ import com.formkiq.testutils.aws.LocalStackExtension;
 @ExtendWith(DynamoDbExtension.class)
 @ExtendWith(LocalStackExtension.class)
 public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
-
-  /** Forbidden (403). */
-  private static final int STATUS_FORBIDDEN = 403;
 
   /**
    * Test getting folders.
@@ -151,7 +150,7 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
 
       setBearerToken(siteId);
 
-      for (String path : Arrays.asList("Chicago")) {
+      for (String path : List.of("Chicago")) {
 
         for (int i = 0; i < count; i++) {
           addDocument(this.client, siteId, path + "/sample_" + i,
@@ -242,17 +241,16 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
 
   /**
    * Test /delete folders that does not exist.
-   * 
-   * @throws Exception Exception
+   *
    */
   @Test
-  void testDeletedFolders01() throws Exception {
+  void testDeletedFolders01() {
     // given
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
 
       setBearerToken(siteId);
 
-      String indexKey = UUID.randomUUID().toString() + "#" + UUID.randomUUID().toString();
+      String indexKey = UUID.randomUUID() + "#" + UUID.randomUUID();
 
       // when
       try {
@@ -267,11 +265,10 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
 
   /**
    * Test add folders - missing path.
-   * 
-   * @throws Exception Exception
+   *
    */
   @Test
-  void testAddFolders02() throws Exception {
+  void testAddFolders02() {
     // given
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
 
@@ -298,7 +295,7 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
       this.foldersApi.getFolderDocuments(siteId, null, null, null, null);
       fail();
     } catch (ApiException e) {
-      assertEquals(STATUS_FORBIDDEN, e.getCode());
+      assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
     }
   }
 }

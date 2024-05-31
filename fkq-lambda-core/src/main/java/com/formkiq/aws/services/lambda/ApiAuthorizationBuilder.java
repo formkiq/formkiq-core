@@ -72,14 +72,14 @@ public class ApiAuthorizationBuilder {
       if (!COGNITO_ADMIN_GROUP.equalsIgnoreCase(group)) {
         if (group.endsWith(COGNITO_READ_SUFFIX)) {
           authorization.addPermission(group.replace(COGNITO_READ_SUFFIX, ""),
-              Arrays.asList(ApiPermission.READ));
+              List.of(ApiPermission.READ));
         } else if (admin) {
           authorization.addPermission(group, Arrays.asList(ApiPermission.READ, ApiPermission.WRITE,
               ApiPermission.DELETE, ApiPermission.ADMIN));
         } else if (claims.containsKey("permissions")) {
 
           String[] list = claims.get("permissions").toString().split(",");
-          List<ApiPermission> permissions = Arrays.asList(list).stream()
+          List<ApiPermission> permissions = Arrays.stream(list)
               .map(p -> ApiPermission.valueOf(p.toUpperCase())).collect(Collectors.toList());
           authorization.addPermission(group, permissions);
 
@@ -104,7 +104,7 @@ public class ApiAuthorizationBuilder {
     Collection<String> groups = getGroups(event);
     boolean admin = isAdmin(groups);
 
-    String defaultSiteId = getDefaultSiteId(event, groups, admin);
+    String defaultSiteId = getDefaultSiteId(event, groups);
 
     Collection<String> roles = getRoles(event);
 
@@ -178,9 +178,9 @@ public class ApiAuthorizationBuilder {
   }
 
   private String getDefaultSiteId(final ApiGatewayRequestEvent event,
-      final Collection<String> groups, final boolean admin) {
+      final Collection<String> groups) {
 
-    String siteId = getQueryStringParameter(event, "siteId");
+    String siteId = getSiteIdRequestParameter(event);
 
     if (siteId == null) {
       Collection<String> filteredGroups =
@@ -205,20 +205,30 @@ public class ApiAuthorizationBuilder {
    * @return {@link List} {@link String}
    */
   private Collection<String> getGroups(final ApiGatewayRequestEvent event) {
-
-    Collection<String> groups = loadJwtGroups(event);
-    return groups;
+    return loadJwtGroups(event);
   }
 
   /**
    * Get Query Parameter from {@link ApiGatewayRequestEvent}.
    * 
    * @param event {@link ApiGatewayRequestEvent}
-   * @param key {@link String}
    * @return {@link String}
    */
-  private String getQueryStringParameter(final ApiGatewayRequestEvent event, final String key) {
-    return event != null ? notNull(event.getQueryStringParameters()).get("siteId") : null;
+  private String getSiteIdRequestParameter(final ApiGatewayRequestEvent event) {
+    String key = "siteId";
+
+    String siteId = null;
+
+    if (event != null) {
+
+      siteId = notNull(event.getPathParameters()).get(key);
+
+      if (siteId == null) {
+        siteId = notNull(event.getQueryStringParameters()).get(key);
+      }
+    }
+
+    return siteId;
   }
 
   /**
@@ -237,7 +247,7 @@ public class ApiAuthorizationBuilder {
       if (obj != null) {
         String s = obj.toString().replaceFirst("^\\[", "").replaceAll("\\]$", "");
         groups = new HashSet<>(Arrays.asList(s.split(" ")));
-        groups.removeIf(g -> g.length() == 0);
+        groups.removeIf(String::isEmpty);
       }
     }
     return groups;
@@ -330,8 +340,7 @@ public class ApiAuthorizationBuilder {
    * @return boolean
    */
   private boolean isAdmin(final Collection<String> groups) {
-    return groups.stream().filter(g -> g.equalsIgnoreCase(COGNITO_ADMIN_GROUP)).findAny()
-        .isPresent();
+    return groups.stream().anyMatch(g -> g.equalsIgnoreCase(COGNITO_ADMIN_GROUP));
   }
 
   /**
@@ -354,7 +363,7 @@ public class ApiAuthorizationBuilder {
     }
 
     if (groups.contains(COGNITO_ADMIN_GROUP)) {
-      String siteId = getQueryStringParameter(event, "siteId");
+      String siteId = getSiteIdRequestParameter(event);
       if (siteId != null) {
         groups.add(siteId);
       } else if (groups.size() < 2) {

@@ -24,7 +24,6 @@
 package com.formkiq.stacks.api;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
-import static com.formkiq.module.http.HttpResponseStatus.STATUS_FORBIDDEN;
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -32,8 +31,11 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
+import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -74,10 +76,10 @@ public class IndicesRequestHandlerTest {
   @RegisterExtension
   static FormKiqApiExtension server = new FormKiqApiExtension(null, null, Map.of(), CALLBACK);
   /** {@link ApiClient}. */
-  private ApiClient client =
+  private final ApiClient client =
       Configuration.getDefaultApiClient().setReadTimeout(0).setBasePath(server.getBasePath());
   /** {@link CustomIndexApi}. */
-  private CustomIndexApi indexApi = new CustomIndexApi(this.client);
+  private final CustomIndexApi indexApi = new CustomIndexApi(this.client);
   /** {@link DocumentService}. */
   private static DocumentService documentService;
   /** {@link DocumentSearchService}. */
@@ -183,10 +185,9 @@ public class IndicesRequestHandlerTest {
   /**
    * DELETE /indices/{type}/{key} request, invalid key.
    *
-   * @throws Exception an error has occurred
    */
   @Test
-  public void testHandleDelete03() throws Exception {
+  public void testHandleDelete03() {
 
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
       // given
@@ -222,7 +223,7 @@ public class IndicesRequestHandlerTest {
       String tagKey = "category";
       String tagValue = "person";
       DocumentTag tag = new DocumentTag(item.getDocumentId(), tagKey, tagValue, new Date(), "joe");
-      documentService.saveDocument(siteId, item, Arrays.asList(tag));
+      documentService.saveDocument(siteId, item, List.of(tag));
 
       PaginationResults<DynamicDocumentItem> results =
           dss.search(siteId, q, null, null, MAX_RESULTS);
@@ -245,10 +246,9 @@ public class IndicesRequestHandlerTest {
   /**
    * DELETE /indices/{type}/{key} request, invalid type.
    *
-   * @throws Exception an error has occurred
    */
   @Test
-  public void testHandleDelete05() throws Exception {
+  public void testHandleDelete05() {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
@@ -296,7 +296,7 @@ public class IndicesRequestHandlerTest {
         fail();
       } catch (ApiException e) {
         // then
-        assertEquals(STATUS_FORBIDDEN, e.getCode());
+        assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
       }
 
       results = dss.search(siteId, q, null, null, MAX_RESULTS);
