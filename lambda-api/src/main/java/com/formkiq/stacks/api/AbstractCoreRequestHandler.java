@@ -97,6 +97,8 @@ import com.formkiq.stacks.api.handler.GroupsUsersRequestHandler;
 import com.formkiq.stacks.api.handler.IndicesFolderMoveRequestHandler;
 import com.formkiq.stacks.api.handler.IndicesRequestHandler;
 import com.formkiq.stacks.api.handler.IndicesSearchRequestHandler;
+import com.formkiq.stacks.api.handler.MappingsIdRequestHandler;
+import com.formkiq.stacks.api.handler.MappingsRequestHandler;
 import com.formkiq.stacks.api.handler.OnlyOfficeEditRequestHandler;
 import com.formkiq.stacks.api.handler.OnlyOfficeNewRequestHandler;
 import com.formkiq.stacks.api.handler.OnlyOfficeSaveRequestHandler;
@@ -150,6 +152,8 @@ import com.formkiq.stacks.dynamodb.WebhooksService;
 import com.formkiq.stacks.dynamodb.WebhooksServiceExtension;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeServiceExtension;
+import com.formkiq.stacks.dynamodb.mappings.MappingService;
+import com.formkiq.stacks.dynamodb.mappings.MappingServiceExtension;
 import com.formkiq.stacks.dynamodb.schemas.SchemaService;
 import com.formkiq.stacks.dynamodb.schemas.SchemaServiceExtension;
 
@@ -160,76 +164,80 @@ import com.formkiq.stacks.dynamodb.schemas.SchemaServiceExtension;
  */
 public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestHandler {
 
-  /** Is Public Urls Enabled. */
-  private static boolean isEnablePublicUrls;
   /** Url Class Map. */
   private static final Map<String, ApiGatewayRequestHandler> URL_MAP = new HashMap<>();
+  /** Is Public Urls Enabled. */
+  private static boolean isEnablePublicUrls;
 
-  private static void addAccessControlEndpoints() {
-    addRequestHandler(new OpaAccessPoliciesRequestHandler());
-    addRequestHandler(new OpaIdAccessPolicyRequestHandler());
-    addRequestHandler(new OpaAccessPolicyItemsRequestHandler());
-  }
+  /** constructor. */
+  public AbstractCoreRequestHandler() {}
 
-  private static void addDocumentAttributeEndpoints() {
-    addRequestHandler(new DocumentAttributesRequestHandler());
-    addRequestHandler(new DocumentAttributeRequestHandler());
-    addRequestHandler(new DocumentAttributesValueRequestHandler());
-  }
+  /**
+   * Initialize.
+   *
+   * @param serviceCache {@link AwsServiceCache}
+   * @param plugin {@link DocumentTagSchemaPlugin}
+   */
+  public static void initialize(final AwsServiceCache serviceCache,
+      final DocumentTagSchemaPlugin plugin) {
 
-  private static void addEsignatureEndpoints() {
-    addRequestHandler(new EsignatureDocusignDocumentIdRequestHandler());
-    addRequestHandler(new EsignatureDocusignConfigRequestHandler());
-  }
+    registerExtensions(serviceCache, plugin);
 
-  private static void addGroupUsersEndpoints() {
-    addRequestHandler(new GroupsRequestHandler());
-    addRequestHandler(new GroupsUsersRequestHandler());
-  }
+    if (serviceCache.hasModule("typesense")) {
+      serviceCache.register(TypeSenseService.class, new TypeSenseServiceExtension());
+    }
 
-  private static void addOnlyOfficeEndpoints() {
-    addRequestHandler(new OnlyOfficeNewRequestHandler());
-    addRequestHandler(new OnlyOfficeSaveRequestHandler());
-    addRequestHandler(new OnlyOfficeEditRequestHandler());
+    isEnablePublicUrls = isEnablePublicUrls(serviceCache);
+
+    buildUrlMap();
   }
 
   /**
-   * Add Url Request Handler Mapping.
-   * 
-   * @param handler {@link ApiGatewayRequestHandler}
+   * Register Extensions.
+   *
+   * @param serviceCache {@link AwsServiceCache}
+   * @param schemaEvents {@link DocumentTagSchemaPlugin}
    */
-  public static void addRequestHandler(final ApiGatewayRequestHandler handler) {
-    URL_MAP.put(handler.getRequestUrl(), handler);
+  private static void registerExtensions(final AwsServiceCache serviceCache,
+      final DocumentTagSchemaPlugin schemaEvents) {
+
+    serviceCache.register(CognitoIdentityProviderService.class,
+        new CognitoIdentityProviderServiceExtension());
+    serviceCache.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
+    serviceCache.register(EventService.class, new EventServiceSnsExtension());
+    serviceCache.register(ActionsNotificationService.class,
+        new ActionsNotificationServiceExtension());
+    serviceCache.register(ActionsService.class, new ActionsServiceExtension());
+    serviceCache.register(SsmService.class, new SsmServiceExtension());
+    serviceCache.register(S3Service.class, new S3ServiceExtension());
+    serviceCache.register(S3PresignerService.class, new S3PresignerServiceExtension());
+    serviceCache.register(SqsService.class, new SqsServiceExtension());
+    serviceCache.register(DocumentTagSchemaPlugin.class,
+        new DocumentTagSchemaPluginExtension(schemaEvents));
+    serviceCache.register(CacheService.class, new DynamoDbCacheServiceExtension());
+    serviceCache.register(DocumentService.class, new DocumentServiceExtension());
+    serviceCache.register(DocumentSearchService.class, new DocumentSearchServiceExtension());
+    serviceCache.register(DocumentCountService.class, new DocumentCountServiceExtension());
+    serviceCache.register(FolderIndexProcessor.class, new FolderIndexProcessorExtension());
+    serviceCache.register(ConfigService.class, new ConfigServiceExtension());
+    serviceCache.register(ApiKeysService.class, new ApiKeysServiceExtension());
+    serviceCache.register(DocumentSyncService.class, new DocumentSyncServiceExtension());
+    serviceCache.register(DocumentOcrService.class, new DocumentOcrServiceExtension());
+    serviceCache.register(DynamoDbService.class, new DynamoDbServiceExtension());
+    serviceCache.register(WebhooksService.class, new WebhooksServiceExtension());
+    serviceCache.register(AttributeService.class, new AttributeServiceExtension());
+    serviceCache.register(SchemaService.class, new SchemaServiceExtension());
+    serviceCache.register(MappingService.class, new MappingServiceExtension());
   }
 
-  private static void addRulesetsEndpoints() {
-    addRequestHandler(new RulesetsRequestHandler());
-    addRequestHandler(new RulesetsIdRequestHandler());
-    addRequestHandler(new RulesetsRuleRequestHandler());
-    addRequestHandler(new RulesetsRuleIdRequestHandler());
-  }
-
-  private static void addSystemEndpoints() {
-    addRequestHandler(new VersionRequestHandler());
-    addRequestHandler(new SitesRequestHandler());
-    addRequestHandler(new ConfigurationRequestHandler());
-    addRequestHandler(new ConfigurationApiKeysRequestHandler());
-    addRequestHandler(new ConfigurationApiKeyRequestHandler());
-    addRequestHandler(new SitesOpenSearchIndexRequestHandler());
-  }
-
-  private static void addUserActivitiesEndpoints() {
-    addRequestHandler(new UserActivitiesRequestHandler());
-    addRequestHandler(new UserActivitiesDocumentIdRequestHandler());
-  }
-
-  private static void addWorkflowEndpoints() {
-    addRequestHandler(new WorkflowsRequestHandler());
-    addRequestHandler(new WorkflowsIdRequestHandler());
-    addRequestHandler(new QueuesRequestHandler());
-    addRequestHandler(new QueueIdRequestHandler());
-    addRequestHandler(new QueueDocumentsRequestHandler());
-    addRequestHandler(new WorkflowDocumentsRequestHandler());
+  /**
+   * Whether to enable public urls.
+   *
+   * @param serviceCache {@link AwsServiceCache}
+   * @return boolean
+   */
+  private static boolean isEnablePublicUrls(final AwsServiceCache serviceCache) {
+    return "true".equals(serviceCache.environment().getOrDefault("ENABLE_PUBLIC_URLS", "false"));
   }
 
   /**
@@ -240,8 +248,8 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addSystemEndpoints();
     addAccessControlEndpoints();
 
-    addRequestHandler(new AttributesRequestHandler());
-    addRequestHandler(new AttributesIdRequestHandler());
+    addAttributeRequestHandlers();
+    addMappingRequestHandlers();
 
     addRequestHandler(new DocumentVersionsRequestHandler());
     addRequestHandler(new DocumentVersionsKeyRequestHandler());
@@ -289,75 +297,82 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new SitesSchemaRequestHandler());
   }
 
-  /**
-   * Initialize.
-   * 
-   * @param serviceCache {@link AwsServiceCache}
-   * @param plugin {@link DocumentTagSchemaPlugin}
-   */
-  public static void initialize(final AwsServiceCache serviceCache,
-      final DocumentTagSchemaPlugin plugin) {
+  private static void addSystemEndpoints() {
+    addRequestHandler(new VersionRequestHandler());
+    addRequestHandler(new SitesRequestHandler());
+    addRequestHandler(new ConfigurationRequestHandler());
+    addRequestHandler(new ConfigurationApiKeysRequestHandler());
+    addRequestHandler(new ConfigurationApiKeyRequestHandler());
+    addRequestHandler(new SitesOpenSearchIndexRequestHandler());
+  }
 
-    registerExtensions(serviceCache, plugin);
+  private static void addAccessControlEndpoints() {
+    addRequestHandler(new OpaAccessPoliciesRequestHandler());
+    addRequestHandler(new OpaIdAccessPolicyRequestHandler());
+    addRequestHandler(new OpaAccessPolicyItemsRequestHandler());
+  }
 
-    if (serviceCache.hasModule("typesense")) {
-      serviceCache.register(TypeSenseService.class, new TypeSenseServiceExtension());
-    }
+  private static void addAttributeRequestHandlers() {
+    addRequestHandler(new AttributesRequestHandler());
+    addRequestHandler(new AttributesIdRequestHandler());
+  }
 
-    isEnablePublicUrls = isEnablePublicUrls(serviceCache);
-
-    buildUrlMap();
+  private static void addMappingRequestHandlers() {
+    addRequestHandler(new MappingsRequestHandler());
+    addRequestHandler(new MappingsIdRequestHandler());
   }
 
   /**
-   * Whether to enable public urls.
+   * Add Url Request Handler Mapping.
    *
-   * @param serviceCache {@link AwsServiceCache}
-   * @return boolean
+   * @param handler {@link ApiGatewayRequestHandler}
    */
-  private static boolean isEnablePublicUrls(final AwsServiceCache serviceCache) {
-    return "true".equals(serviceCache.environment().getOrDefault("ENABLE_PUBLIC_URLS", "false"));
+  public static void addRequestHandler(final ApiGatewayRequestHandler handler) {
+    URL_MAP.put(handler.getRequestUrl(), handler);
   }
 
-  /**
-   * Register Extensions.
-   *
-   * @param serviceCache {@link AwsServiceCache}
-   * @param schemaEvents {@link DocumentTagSchemaPlugin}
-   */
-  private static void registerExtensions(final AwsServiceCache serviceCache,
-      final DocumentTagSchemaPlugin schemaEvents) {
-
-    serviceCache.register(CognitoIdentityProviderService.class,
-        new CognitoIdentityProviderServiceExtension());
-    serviceCache.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
-    serviceCache.register(EventService.class, new EventServiceSnsExtension());
-    serviceCache.register(ActionsNotificationService.class,
-        new ActionsNotificationServiceExtension());
-    serviceCache.register(ActionsService.class, new ActionsServiceExtension());
-    serviceCache.register(SsmService.class, new SsmServiceExtension());
-    serviceCache.register(S3Service.class, new S3ServiceExtension());
-    serviceCache.register(S3PresignerService.class, new S3PresignerServiceExtension());
-    serviceCache.register(SqsService.class, new SqsServiceExtension());
-    serviceCache.register(DocumentTagSchemaPlugin.class,
-        new DocumentTagSchemaPluginExtension(schemaEvents));
-    serviceCache.register(CacheService.class, new DynamoDbCacheServiceExtension());
-    serviceCache.register(DocumentService.class, new DocumentServiceExtension());
-    serviceCache.register(DocumentSearchService.class, new DocumentSearchServiceExtension());
-    serviceCache.register(DocumentCountService.class, new DocumentCountServiceExtension());
-    serviceCache.register(FolderIndexProcessor.class, new FolderIndexProcessorExtension());
-    serviceCache.register(ConfigService.class, new ConfigServiceExtension());
-    serviceCache.register(ApiKeysService.class, new ApiKeysServiceExtension());
-    serviceCache.register(DocumentSyncService.class, new DocumentSyncServiceExtension());
-    serviceCache.register(DocumentOcrService.class, new DocumentOcrServiceExtension());
-    serviceCache.register(DynamoDbService.class, new DynamoDbServiceExtension());
-    serviceCache.register(WebhooksService.class, new WebhooksServiceExtension());
-    serviceCache.register(AttributeService.class, new AttributeServiceExtension());
-    serviceCache.register(SchemaService.class, new SchemaServiceExtension());
+  private static void addEsignatureEndpoints() {
+    addRequestHandler(new EsignatureDocusignDocumentIdRequestHandler());
+    addRequestHandler(new EsignatureDocusignConfigRequestHandler());
   }
 
-  /** constructor. */
-  public AbstractCoreRequestHandler() {}
+  private static void addOnlyOfficeEndpoints() {
+    addRequestHandler(new OnlyOfficeNewRequestHandler());
+    addRequestHandler(new OnlyOfficeSaveRequestHandler());
+    addRequestHandler(new OnlyOfficeEditRequestHandler());
+  }
+
+  private static void addGroupUsersEndpoints() {
+    addRequestHandler(new GroupsRequestHandler());
+    addRequestHandler(new GroupsUsersRequestHandler());
+  }
+
+  private static void addWorkflowEndpoints() {
+    addRequestHandler(new WorkflowsRequestHandler());
+    addRequestHandler(new WorkflowsIdRequestHandler());
+    addRequestHandler(new QueuesRequestHandler());
+    addRequestHandler(new QueueIdRequestHandler());
+    addRequestHandler(new QueueDocumentsRequestHandler());
+    addRequestHandler(new WorkflowDocumentsRequestHandler());
+  }
+
+  private static void addUserActivitiesEndpoints() {
+    addRequestHandler(new UserActivitiesRequestHandler());
+    addRequestHandler(new UserActivitiesDocumentIdRequestHandler());
+  }
+
+  private static void addRulesetsEndpoints() {
+    addRequestHandler(new RulesetsRequestHandler());
+    addRequestHandler(new RulesetsIdRequestHandler());
+    addRequestHandler(new RulesetsRuleRequestHandler());
+    addRequestHandler(new RulesetsRuleIdRequestHandler());
+  }
+
+  private static void addDocumentAttributeEndpoints() {
+    addRequestHandler(new DocumentAttributesRequestHandler());
+    addRequestHandler(new DocumentAttributeRequestHandler());
+    addRequestHandler(new DocumentAttributesValueRequestHandler());
+  }
 
   @Override
   @SuppressWarnings("returncount")

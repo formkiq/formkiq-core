@@ -29,6 +29,8 @@ import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+
+import com.formkiq.client.api.MappingsApi;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -130,6 +132,8 @@ public abstract class AbstractApiClientRequestTest {
   /** {@link AdvancedDocumentSearchApi}. */
   protected AdvancedDocumentSearchApi advancedSearchApi =
       new AdvancedDocumentSearchApi(this.client);
+  /** {@link MappingsApi}. */
+  protected MappingsApi mappingsApi = new MappingsApi(this.client);
 
   /**
    * Convert JSON to Object.

@@ -42,7 +42,7 @@ public class AddAttributeRequest {
   public AddAttributeRequest() {}
 
   /**
-   * Set Case.
+   * Set Attribute.
    * 
    * @param attributeRecord {@link AttributeRecord}
    * @return {@link AddAttributeRequest}
@@ -53,7 +53,7 @@ public class AddAttributeRequest {
   }
 
   /**
-   * Get Case.
+   * Get Attribute.
    * 
    * @return {@link AttributeRecord}
    * @throws BadException BadException
