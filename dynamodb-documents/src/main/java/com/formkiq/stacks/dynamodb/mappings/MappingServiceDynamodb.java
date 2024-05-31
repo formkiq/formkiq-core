@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.dynamodb.mappings;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 
@@ -86,7 +87,7 @@ public class MappingServiceDynamodb implements MappingService, DbKeys {
 
     Map<String, AttributeValue> startkey = new PaginationToAttributeValue().apply(token);
     QueryConfig config = new QueryConfig().indexName(DbKeys.GSI1).scanIndexForward(Boolean.TRUE);
-    AttributeValue pk = AttributeValue.fromS(MappingRecord.PREFIX_PK);
+    AttributeValue pk = AttributeValue.fromS(createDatabaseKey(siteId, MappingRecord.PREFIX_PK));
     AttributeValue sk = AttributeValue.fromS(MappingRecord.PREFIX_SK_GSI1);
     QueryResponse response = this.db.queryBeginsWith(config, pk, sk, startkey, limit);
 

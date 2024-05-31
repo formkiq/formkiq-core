@@ -21,36 +21,37 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.testutils.aws;
+package com.formkiq.stacks.api.transformers;
 
-import com.formkiq.client.api.SchemasApi;
-import com.formkiq.client.invoker.ApiClient;
-import com.formkiq.client.invoker.ApiException;
-import com.formkiq.client.model.AttributeSchemaCompositeKey;
-import com.formkiq.client.model.SchemaAttributes;
-import com.formkiq.client.model.SetSitesSchemaRequest;
+import com.formkiq.stacks.dynamodb.mappings.MappingAttribute;
+import com.formkiq.stacks.dynamodb.mappings.MappingRecord;
+import com.formkiq.stacks.dynamodb.mappings.MappingService;
 
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 
-public class FkqSchemaService {
+/**
+ * {@link Function} transform {@link MappingRecord} to {@link Map}.
+ */
+public class MappingRecordToMap implements Function<MappingRecord, Map<String, Object>> {
+
+  /** {@link MappingService}. */
+  private final MappingService service;
 
   /**
-   * Add Composite Key.
-   *
-   * @param client {@link ApiClient}
-   * @param siteId {@link String}
-   * @param name {@link String}
-   * @param compositeKeys {@link List} {@link String}
-   * @throws ApiException ApiException
+   * constructor.
+   * 
+   * @param mappingService {@link MappingService}
    */
-  public static void setSitesSchema(final ApiClient client, final String siteId, final String name,
-      final List<String> compositeKeys) throws ApiException {
+  public MappingRecordToMap(final MappingService mappingService) {
+    this.service = mappingService;
+  }
 
-    SchemasApi api = new SchemasApi(client);
-
-    SchemaAttributes attributes = new SchemaAttributes().compositeKeys(
-        Collections.singletonList(new AttributeSchemaCompositeKey().attributeKeys(compositeKeys)));
-    api.setSitesSchema(siteId, new SetSitesSchemaRequest().name(name).attributes(attributes));
+  @Override
+  public Map<String, Object> apply(final MappingRecord a) {
+    List<MappingAttribute> attributes = service.getAttributes(a);
+    return Map.of("name", a.getName(), "attributes", attributes, "description",
+        a.getDescription() != null ? a.getDescription() : "");
   }
 }

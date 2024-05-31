@@ -21,36 +21,42 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.testutils.aws;
+package com.formkiq.stacks.api.handler;
 
-import com.formkiq.client.api.SchemasApi;
-import com.formkiq.client.invoker.ApiClient;
-import com.formkiq.client.invoker.ApiException;
-import com.formkiq.client.model.AttributeSchemaCompositeKey;
-import com.formkiq.client.model.SchemaAttributes;
-import com.formkiq.client.model.SetSitesSchemaRequest;
+import com.formkiq.aws.services.lambda.exceptions.BadException;
+import com.formkiq.graalvm.annotations.Reflectable;
+import com.formkiq.stacks.dynamodb.mappings.Mapping;
 
-import java.util.Collections;
-import java.util.List;
-
-public class FkqSchemaService {
+/**
+ * Add Mapping Request.
+ */
+@Reflectable
+public class AddMappingRequest {
+  /** {@link Mapping}. */
+  private Mapping mapping;
 
   /**
-   * Add Composite Key.
-   *
-   * @param client {@link ApiClient}
-   * @param siteId {@link String}
-   * @param name {@link String}
-   * @param compositeKeys {@link List} {@link String}
-   * @throws ApiException ApiException
+   * constructor.
    */
-  public static void setSitesSchema(final ApiClient client, final String siteId, final String name,
-      final List<String> compositeKeys) throws ApiException {
+  public AddMappingRequest() {
 
-    SchemasApi api = new SchemasApi(client);
+  }
 
-    SchemaAttributes attributes = new SchemaAttributes().compositeKeys(
-        Collections.singletonList(new AttributeSchemaCompositeKey().attributeKeys(compositeKeys)));
-    api.setSitesSchema(siteId, new SetSitesSchemaRequest().name(name).attributes(attributes));
+  /**
+   * Get {@link Mapping}.
+   * 
+   * @return {@link Mapping}
+   */
+  public Mapping getMapping() throws BadException {
+
+    if (this.mapping == null) {
+      throw new BadException("invalid request body");
+    }
+    return this.mapping;
+  }
+
+  public AddMappingRequest setMapping(final Mapping addMapping) {
+    this.mapping = addMapping;
+    return this;
   }
 }
