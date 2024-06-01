@@ -24,7 +24,7 @@
 package com.formkiq.stacks.api.transformers;
 
 import com.formkiq.stacks.dynamodb.mappings.MappingAttribute;
-import com.formkiq.stacks.dynamodb.mappings.MappingRecord;
+import com.formkiq.aws.dynamodb.model.MappingRecord;
 import com.formkiq.stacks.dynamodb.mappings.MappingService;
 
 import java.util.List;

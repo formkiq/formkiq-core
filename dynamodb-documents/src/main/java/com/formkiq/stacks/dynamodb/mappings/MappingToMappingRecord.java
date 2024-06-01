@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.dynamodb.mappings;
 
+import com.formkiq.aws.dynamodb.model.MappingRecord;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 

@@ -36,7 +36,7 @@ import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.services.CacheService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.transformers.MappingRecordToMap;
-import com.formkiq.stacks.dynamodb.mappings.MappingRecord;
+import com.formkiq.aws.dynamodb.model.MappingRecord;
 import com.formkiq.stacks.dynamodb.mappings.MappingService;
 
 import java.util.HashMap;
