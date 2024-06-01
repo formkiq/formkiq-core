@@ -23,9 +23,12 @@
  */
 package com.formkiq.stacks.dynamodb.mappings;
 
+import com.formkiq.graalvm.annotations.Reflectable;
+
 /**
  * Mapping Attribute Label Matching Type.
  */
+@Reflectable
 public enum MappingAttributeLabelMatchingType {
   /** Fuzzy. */
   FUZZY,

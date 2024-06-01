@@ -23,9 +23,12 @@
  */
 package com.formkiq.stacks.dynamodb.mappings;
 
+import com.formkiq.graalvm.annotations.Reflectable;
+
 /**
  * Mapping Attribute Metadata Field.
  */
+@Reflectable
 public enum MappingAttributeMetadataField {
   /** Document Create by User. */
   USERNAME,
