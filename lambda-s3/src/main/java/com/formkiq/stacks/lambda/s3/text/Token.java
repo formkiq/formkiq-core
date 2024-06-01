@@ -32,12 +32,50 @@ public class Token {
   private String formatted;
   /** Original Text. */
   private String original;
+  /** Start Position. */
+  private int start;
+  /** End Position. */
+  private int end;
 
   /**
    * constructor.
    */
   public Token() {
 
+  }
+
+  /**
+   * Get Start Position.
+   * 
+   * @return int
+   */
+  public int getStart() {
+    return this.start;
+  }
+
+  public Token setStart(final int startPosition) {
+    this.start = startPosition;
+    return this;
+  }
+
+  /**
+   * Get End Position.
+   * 
+   * @return int
+   */
+  public int getEnd() {
+    return this.end;
+  }
+
+  /**
+   * Set End Position.
+   * 
+   * @param endPosition int
+   * @return Token
+   */
+  public Token setEnd(final int endPosition) {
+    this.end = endPosition;
+    return this;
   }
 
   /**

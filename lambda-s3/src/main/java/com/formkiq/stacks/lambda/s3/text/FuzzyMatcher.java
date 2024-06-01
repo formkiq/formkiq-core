@@ -102,6 +102,11 @@ public class FuzzyMatcher implements TextMatchAlgorithm {
       }
     }
 
+    // exact term match get a bonus
+    if (term.equals(query)) {
+      score++;
+    }
+
     return score;
   }
 }

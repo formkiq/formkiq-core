@@ -26,7 +26,6 @@ package com.formkiq.stacks.lambda.s3.text;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.stream.IntStream;
 
 /**
  * Token Generator.
@@ -50,12 +49,9 @@ public interface TokenGenerator {
    */
   default List<Token> groupTokens(final List<Token> tokens, final int tokenGroupSize) {
 
-    List<Token> results = tokens;
+    List<Token> groupedTokens = tokenGroupSize > 1 ? new ArrayList<>() : new ArrayList<>(tokens);
 
     if (tokenGroupSize > 1) {
-
-      List<StringBuffer> newFormattedTokens = new ArrayList<>();
-      List<StringBuffer> newOriginalTokens = new ArrayList<>();
 
       Iterator<Token> itr = tokens.iterator();
 
@@ -63,39 +59,32 @@ public interface TokenGenerator {
 
         if (itr.hasNext()) {
           Token token = itr.next();
-
-          StringBuffer tk = new StringBuffer(token.getFormatted().trim());
-          newFormattedTokens.add(tk);
-
-          StringBuffer or = new StringBuffer(token.getOriginal());
-          newOriginalTokens.add(or);
+          groupedTokens.add(createToken(token));
         }
       }
 
       while (itr.hasNext()) {
 
         Token token = itr.next();
+        groupedTokens.add(createToken(token));
 
-        StringBuffer tk = new StringBuffer(token.getFormatted().trim());
-        newFormattedTokens.add(tk);
+        int size = groupedTokens.size();
 
-        StringBuffer or = new StringBuffer(token.getOriginal());
-        newOriginalTokens.add(or);
-
-        int size = newFormattedTokens.size();
         for (int i = 1; i < tokenGroupSize; i++) {
-          newFormattedTokens.get(size - 1 - i).append(" ").append(token.getFormatted());
-          newOriginalTokens.get(size - 1 - i).append(" ").append(token.getOriginal());
+          Token groupedToken = groupedTokens.get(size - 1 - i);
+          groupedToken.setOriginal(groupedToken.getOriginal() + " " + token.getOriginal());
+          groupedToken.setFormatted(groupedToken.getFormatted() + " " + token.getFormatted());
+          groupedToken.setEnd(token.getEnd());
         }
       }
-
-      results = IntStream.range(0, newFormattedTokens.size())
-          .mapToObj(i -> new Token().setOriginal(newOriginalTokens.get(i).toString())
-              .setFormatted(newFormattedTokens.get(i).toString()))
-          .toList();
     }
 
-    return results;
+    return groupedTokens;
+  }
+
+  private Token createToken(final Token token) {
+    return new Token().setOriginal(token.getOriginal()).setFormatted(token.getFormatted())
+        .setStart(token.getStart()).setEnd(token.getEnd());
   }
 
   /**

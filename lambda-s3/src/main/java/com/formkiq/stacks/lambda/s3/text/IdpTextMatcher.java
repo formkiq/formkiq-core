@@ -69,12 +69,10 @@ public class IdpTextMatcher implements TextMatcher {
     String value = null;
 
     if (textMatch != null) {
-      String originalText = textMatch.getToken().getOriginal();
-      int pos = text.indexOf(originalText);
+      int pos = textMatch.getToken().getEnd();
 
       if (pos > -1) {
 
-        pos += originalText.length();
         String subText = text.substring(pos).trim();
 
         if (!Strings.isEmpty(validationRegex)) {
