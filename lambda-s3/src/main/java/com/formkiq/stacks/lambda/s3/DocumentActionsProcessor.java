@@ -440,10 +440,17 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
           processAction(logger, siteId, documentId, actions, action);
 
         } catch (Exception e) {
-          logger.log(Strings.toString(e));
+
+          String stacktrace = Strings.toString(e);
+          logger.log(stacktrace);
 
           action.status(ActionStatus.FAILED);
-          action.message(e.getMessage());
+
+          if (!isEmpty(e.getMessage())) {
+            action.message(e.getMessage());
+          } else {
+            action.message(stacktrace);
+          }
 
           updateDocumentWorkflow(siteId, documentId, action);
 
