@@ -28,6 +28,7 @@ import java.util.List;
 
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
+import com.formkiq.aws.dynamodb.model.MappingRecord;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
 

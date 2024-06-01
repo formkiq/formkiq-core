@@ -38,7 +38,7 @@ import com.formkiq.stacks.dynamodb.mappings.MappingAttribute;
 import com.formkiq.stacks.dynamodb.mappings.MappingAttributeLabelMatchingType;
 import com.formkiq.stacks.dynamodb.mappings.MappingAttributeMetadataField;
 import com.formkiq.stacks.dynamodb.mappings.MappingAttributeSourceType;
-import com.formkiq.stacks.dynamodb.mappings.MappingRecord;
+import com.formkiq.aws.dynamodb.model.MappingRecord;
 import com.formkiq.stacks.dynamodb.mappings.MappingService;
 import com.formkiq.stacks.lambda.s3.DocumentAction;
 import com.formkiq.stacks.lambda.s3.DocumentContentFunction;
