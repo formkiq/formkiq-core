@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.formatDouble;
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -31,9 +32,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import java.math.BigDecimal;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
+import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.client.invoker.ApiException;
@@ -79,7 +83,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
   private static final String SITE_ID = UUID.randomUUID().toString();
 
   /** Data Type Map. */
-  private Map<String, AttributeDataType> dataTypes =
+  private final Map<String, AttributeDataType> dataTypes =
       Map.of("other", AttributeDataType.NUMBER, "flag", AttributeDataType.BOOLEAN, "keyonly",
           AttributeDataType.KEY_ONLY, "nums", AttributeDataType.NUMBER);
 
@@ -91,11 +95,11 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
   }
 
   private String addDocument(final String siteId, final String key, final String stringValue,
-      final Boolean booleanValue, final BigDecimal numberValue) throws ApiException {
+      final BigDecimal numberValue) throws ApiException {
 
     AddDocumentRequest docReq =
         new AddDocumentRequest().content("test").addAttributesItem(new AddDocumentAttribute()
-            .key(key).stringValue(stringValue).booleanValue(booleanValue).numberValue(numberValue));
+            .key(key).stringValue(stringValue).booleanValue(null).numberValue(numberValue));
 
     return this.documentsApi.addDocument(docReq, siteId, null).getDocumentId();
   }
@@ -141,26 +145,25 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     // then
     assertEquals("attribute 'security' removed from document '" + documentId + "'",
         response.getMessage());
-    List<DocumentAttribute> attributes = this.documentAttributesApi
-        .getDocumentAttributes(documentId, siteId, null, null).getAttributes();
+    List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
+        .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
     assertEquals(2, attributes.size());
     assertEquals("nums", attributes.get(0).getKey());
     assertEquals("100,123,200", Strings.join(attributes.get(0).getNumberValues().stream()
-        .map(n -> formatDouble(Double.valueOf(n.doubleValue()))).toList(), ","));
+        .map(n -> formatDouble(n.doubleValue())).toList(), ","));
     assertEquals("strings", attributes.get(1).getKey());
     assertEquals("abc,xyz", Strings.join(attributes.get(1).getStringValues(), ","));
   }
 
   /**
    * Get {@link Attribute}.
-   * 
+   *
    * @param siteId {@link String}
-   * @param key {@link String}
    * @return {@link Attribute}
    * @throws ApiException ApiException
    */
-  private Attribute getAttribute(final String siteId, final String key) throws ApiException {
-    return this.attributesApi.getAttribute(key, siteId).getAttribute();
+  private Attribute getAttribute(final String siteId) throws ApiException {
+    return this.attributesApi.getAttribute("security", siteId).getAttribute();
   }
 
   private DocumentAttribute getDocumentAttribute(final String siteId, final String documentId,
@@ -176,10 +179,9 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testAddAttributes01() throws ApiException {
     // given
-    final String key = "security";
-
     for (String siteId : Arrays.asList(null, SITE_ID)) {
 
+      String key = "security_" + siteId;
       setBearerToken(siteId);
       AddAttributeRequest req = new AddAttributeRequest().attribute(new AddAttribute().key(key));
 
@@ -187,7 +189,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       AddAttributeResponse response = this.attributesApi.addAttribute(req, siteId);
 
       // then
-      assertEquals("Attribute 'security' created", response.getMessage());
+      assertEquals("Attribute '" + key + "' created", response.getMessage());
 
       GetAttributesResponse attributes = this.attributesApi.getAttributes(siteId, null, null);
       assertEquals(1, attributes.getAttributes().size());
@@ -195,14 +197,24 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       assertEquals(key, attribute.getKey());
       assertEquals(AttributeType.STANDARD, attribute.getType());
       assertEquals(AttributeDataType.STRING, attribute.getDataType());
-      assertFalse(attribute.getInUse().booleanValue());
+      assertFalse(attribute.getInUse());
 
       GetAttributeResponse attr = this.attributesApi.getAttribute(key, siteId);
       attribute = attr.getAttribute();
       assertEquals(key, attribute.getKey());
       assertEquals(AttributeType.STANDARD, attribute.getType());
       assertEquals(AttributeDataType.STRING, attribute.getDataType());
-      assertFalse(attribute.getInUse().booleanValue());
+      assertFalse(attribute.getInUse());
+
+      try {
+        this.attributesApi.addAttribute(req, siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"errors\":[{\"key\":\"key\"," + "\"error\":\"attribute '" + key
+            + "' already exists\"}]}", e.getResponseBody());
+      }
     }
   }
 
@@ -258,7 +270,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       addAttribute(siteId, key, null, null);
 
       // when
-      String documentId = addDocument(siteId, key, "confidential", null, null);
+      String documentId = addDocument(siteId, key, "confidential", null);
 
       // then
       GetDocumentAttributeResponse response =
@@ -284,7 +296,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        addDocument(siteId, null, "confidential", null, null);
+        addDocument(siteId, null, "confidential", null);
         fail();
       } catch (ApiException e) {
         // then
@@ -296,11 +308,10 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
   /**
    * POST /documents. Invalid attribute key.
-   * 
-   * @throws ApiException ApiException
+   *
    */
   @Test
-  public void testAddDocumentAttribute03() throws ApiException {
+  public void testAddDocumentAttribute03() {
     // given
     final String key = "security";
 
@@ -310,7 +321,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        addDocument(siteId, key, "confidential", null, null);
+        addDocument(siteId, key, "confidential", null);
         fail();
       } catch (ApiException e) {
         // then
@@ -351,11 +362,10 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
   /**
    * POST /documents/{documentId}/attributes. Invalid documentId.
-   * 
-   * @throws ApiException ApiException
+   *
    */
   @Test
-  public void testAddDocumentAttribute05() throws ApiException {
+  public void testAddDocumentAttribute05() {
     // given
     for (String siteId : Arrays.asList(null, SITE_ID)) {
 
@@ -394,7 +404,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        addDocument(siteId, key, null, null, new BigDecimal("100"));
+        addDocument(siteId, key, null, new BigDecimal("100"));
         fail();
       } catch (ApiException e) {
         // then
@@ -421,7 +431,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        addDocument(siteId, key, "asd", null, null);
+        addDocument(siteId, key, "asd", null);
         fail();
       } catch (ApiException e) {
         // then
@@ -448,7 +458,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        addDocument(siteId, key, "asd", null, null);
+        addDocument(siteId, key, "asd", null);
         fail();
       } catch (ApiException e) {
         // then
@@ -475,7 +485,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        addDocument(siteId, key, "asd", null, null);
+        addDocument(siteId, key, "asd", null);
         fail();
       } catch (ApiException e) {
         // then
@@ -532,11 +542,11 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       response = this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
       assertEquals(0, response.getDocuments().size());
 
-      Attribute attribute = getAttribute(siteId, key);
+      Attribute attribute = getAttribute(siteId);
       assertEquals("security", attribute.getKey());
       assertEquals(AttributeDataType.STRING, attribute.getDataType());
       assertEquals(AttributeType.STANDARD, attribute.getType());
-      assertTrue(attribute.getInUse().booleanValue());
+      assertTrue(attribute.getInUse());
     }
   }
 
@@ -619,8 +629,8 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
           SearchResultDocument sr = response.getDocuments().get(0);
           assertEquals(documentId, sr.getDocumentId());
           assertEquals(key, sr.getMatchedAttribute().getKey());
-          assertEquals(numberValue, formatDouble(
-              Double.valueOf(sr.getMatchedAttribute().getNumberValue().doubleValue())));
+          assertEquals(numberValue,
+              formatDouble(sr.getMatchedAttribute().getNumberValue().doubleValue()));
         }
 
         attribute.eq("101");
@@ -722,11 +732,11 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
         assertEquals("security", sr.getMatchedAttribute().getKey());
 
         if (val != null) {
-          assertEquals(formatDouble(Double.valueOf(val.doubleValue())), formatDouble(
-              Double.valueOf(sr.getMatchedAttribute().getNumberValue().doubleValue())));
+          assertEquals(formatDouble(val.doubleValue()),
+              formatDouble(sr.getMatchedAttribute().getNumberValue().doubleValue()));
         } else {
-          assertEquals("100", formatDouble(
-              Double.valueOf(sr.getMatchedAttribute().getNumberValue().doubleValue())));
+          assertEquals("100",
+              formatDouble(sr.getMatchedAttribute().getNumberValue().doubleValue()));
         }
       }
 
@@ -785,7 +795,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       // range with start
       for (List<String> documentIds : Arrays.asList(null,
-          Arrays.asList(UUID.randomUUID().toString()))) {
+          Collections.singletonList(UUID.randomUUID().toString()))) {
         query.setDocumentIds(documentIds);
         attribute.range(new DocumentSearchRange().start("2024-01-03"));
         assertInvalidSearch(siteId, searchRequest,
@@ -846,7 +856,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       assertEquals("2024-01-02", doc.getMatchedAttribute().getStringValue());
 
       // incorrect document id
-      query.setDocumentIds(Arrays.asList(documentId2));
+      query.setDocumentIds(Collections.singletonList(documentId2));
       response = this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
       assertEquals(0, response.getDocuments().size());
     }
@@ -953,11 +963,10 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
   /**
    * POST /documents/upload, with invalid attributes.
-   * 
-   * @throws ApiException ApiException
+   *
    */
   @Test
-  public void testAddDocumentUploadAttribute10() throws ApiException {
+  public void testAddDocumentUploadAttribute10() {
     // given
     final String key = "security";
 
@@ -1124,10 +1133,9 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
   /**
    * DELETE /attributes missing attribute.
    *
-   * @throws ApiException an error has occurred
    */
   @Test
-  public void testDeleteAttributes02() throws ApiException {
+  public void testDeleteAttributes02() {
     // given
     final String key = "security";
 
@@ -1239,7 +1247,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       assertEquals(2, attributes.size());
       assertEquals("nums", attributes.get(0).getKey());
       assertEquals("123,200", Strings.join(attributes.get(0).getNumberValues().stream()
-          .map(n -> formatDouble(Double.valueOf(n.doubleValue()))).toList(), ","));
+          .map(n -> formatDouble(n.doubleValue())).toList(), ","));
       assertEquals("strings", attributes.get(1).getKey());
       assertTrue(attributes.get(1).getStringValues().isEmpty());
       assertEquals("xyz", attributes.get(1).getStringValue());
@@ -1342,11 +1350,10 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
   /**
    * POST /documents/{documentId}/attributes. Invalid documentId.
-   * 
-   * @throws ApiException ApiException
+   *
    */
   @Test
-  public void testGetDocumentAttribute01() throws ApiException {
+  public void testGetDocumentAttribute01() {
     // given
     for (String siteId : Arrays.asList(null, SITE_ID)) {
 
@@ -1413,7 +1420,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       a = this.documentAttributesApi.getDocumentAttribute(documentId, "other", siteId)
           .getAttribute();
       assertEquals("other", a.getKey());
-      assertEquals("100", formatDouble(Double.valueOf(a.getNumberValue().doubleValue())));
+      assertEquals("100", formatDouble(a.getNumberValue().doubleValue()));
 
       a = this.documentAttributesApi.getDocumentAttribute(documentId, "flag", siteId)
           .getAttribute();
@@ -1430,8 +1437,8 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       a = this.documentAttributesApi.getDocumentAttribute(documentId, "nums", siteId)
           .getAttribute();
       assertEquals("nums", a.getKey());
-      assertEquals("100,123,200", Strings.join(a.getNumberValues().stream()
-          .map(n -> formatDouble(Double.valueOf(n.doubleValue()))).toList(), ","));
+      assertEquals("100,123,200", Strings.join(
+          a.getNumberValues().stream().map(n -> formatDouble(n.doubleValue())).toList(), ","));
 
       a = this.documentAttributesApi.getDocumentAttribute(documentId, "strings", siteId)
           .getAttribute();
@@ -1499,18 +1506,18 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       assertEquals("nums", response.getAttributes().get(i).getKey());
       assertEquals("100,123,200", Strings.join(response.getAttributes().get(i++).getNumberValues()
-          .stream().map(n -> formatDouble(Double.valueOf(n.doubleValue()))).toList(), ","));
+          .stream().map(n -> formatDouble(n.doubleValue())).toList(), ","));
 
       assertEquals("other", response.getAttributes().get(i).getKey());
-      assertEquals("100", formatDouble(
-          Double.valueOf(response.getAttributes().get(i++).getNumberValue().doubleValue())));
+      assertEquals("100",
+          formatDouble(response.getAttributes().get(i++).getNumberValue().doubleValue()));
 
       assertEquals("security", response.getAttributes().get(i).getKey());
       assertEquals("confidential", response.getAttributes().get(i++).getStringValue());
 
       assertEquals("strings", response.getAttributes().get(i).getKey());
       assertEquals("123,abc,xyz",
-          Strings.join(response.getAttributes().get(i++).getStringValues(), ","));
+          Strings.join(response.getAttributes().get(i).getStringValues(), ","));
     }
   }
 
@@ -1562,7 +1569,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       assertEquals(key + "!", response.getAttributes().get(0).getKey());
       assertTrue(response.getAttributes().get(0).getStringValues().isEmpty());
-      assertTrue(response.getAttributes().get(0).getBooleanValue().booleanValue());
+      assertTrue(response.getAttributes().get(0).getBooleanValue());
     }
   }
 
@@ -1580,7 +1587,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     for (String siteId : Arrays.asList(null, SITE_ID)) {
 
       setBearerToken(siteId);
-      for (String attribute : Arrays.asList(key)) {
+      for (String attribute : List.of(key)) {
         addAttribute(siteId, attribute, null, null);
       }
 
@@ -1753,11 +1760,10 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
   /**
    * POST /documents/{documentId}/attributes. Invalid documentId.
-   * 
-   * @throws ApiException ApiException
+   *
    */
   @Test
-  public void testSetDocumentAttribute01() throws ApiException {
+  public void testSetDocumentAttribute01() {
     // given
     for (String siteId : Arrays.asList(null, SITE_ID)) {
 
