@@ -1931,6 +1931,7 @@
                 | NOTIFICATION    | notificationText    | Notification as Text | Email Text |
                 | NOTIFICATION    | notificationHtml    | Notification as Html | Email HTML Text |
                 | QUEUE    | queueId    | Id of Queue | |
+                | IDP    | mappingId    | Id of Mapping | |
               tags:
               - Document Actions
               parameters:
@@ -8378,6 +8379,7 @@
               - OCR
               - QUEUE
               - WEBHOOK
+              - IDP
             DocumentAction:
               type: object
               properties:
@@ -8661,6 +8663,9 @@
                   type: string
                 tags:
                   description: 'DocumentTagging: Comma-deliminted list of keywords to generate tags for'
+                  type: string
+                mappingId:
+                  description: Id of Mapping
                   type: string
             AddDocumentOcrRequest:
               type: object

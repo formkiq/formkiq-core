@@ -1391,7 +1391,6 @@ public class DocumentActionsProcessorTest implements DbKeys {
    * @throws IOException IOException
    * @throws ValidationException ValidationException
    */
-  @SuppressWarnings("resource")
   @Test
   public void testIdp01() throws IOException, ValidationException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
