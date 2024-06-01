@@ -24,7 +24,6 @@
 package com.formkiq.stacks.dynamodb.attributes;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -44,6 +43,8 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
+
 
 /**
  * DynamoDB implementation for {@link AttributeService}.
@@ -51,7 +52,7 @@ import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 public class AttributeServiceDynamodb implements AttributeService, DbKeys {
 
   /** {@link DynamoDbService}. */
-  private DynamoDbService db;
+  private final DynamoDbService db;
 
   /**
    * constructor.
@@ -67,16 +68,32 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
   public Collection<ValidationError> addAttribute(final String siteId, final String key,
       final AttributeDataType dataType, final AttributeType type) {
 
-    Collection<ValidationError> errors = Collections.emptyList();
+    Collection<ValidationError> errors = validate(siteId, key);
 
-    if (key == null || key.isEmpty()) {
-      errors = Arrays.asList(new ValidationErrorImpl().key("key").error("'key' is required"));
-    } else {
+    if (errors.isEmpty()) {
 
       AttributeRecord a = new AttributeRecord().documentId(key).key(key)
           .type(type != null ? type : AttributeType.STANDARD)
           .dataType(dataType != null ? dataType : AttributeDataType.STRING);
       this.db.putItem(a.getAttributes(siteId));
+    }
+
+    return errors;
+  }
+
+  private Collection<ValidationError> validate(final String siteId, final String key) {
+
+    Collection<ValidationError> errors = Collections.emptyList();
+
+    if (key == null || key.isEmpty()) {
+      errors = Collections
+          .singletonList(new ValidationErrorImpl().key("key").error("'key' is required"));
+    } else {
+      AttributeRecord attribute = getAttribute(siteId, key);
+      if (attribute != null) {
+        errors = Collections.singletonList(
+            new ValidationErrorImpl().key("key").error("attribute '" + key + "' already exists"));
+      }
     }
 
     return errors;
@@ -114,7 +131,7 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
 
     Map<String, AttributeValue> startkey = new PaginationToAttributeValue().apply(token);
     QueryConfig config = new QueryConfig().indexName(DbKeys.GSI1).scanIndexForward(Boolean.TRUE);
-    AttributeValue pk = AttributeValue.fromS("attr#");
+    AttributeValue pk = AttributeValue.fromS(createDatabaseKey(siteId, "attr#"));
     AttributeValue sk = AttributeValue.fromS("attr#");
     QueryResponse response = this.db.queryBeginsWith(config, pk, sk, startkey, limit);
 
@@ -154,7 +171,7 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
     List<Map<String, AttributeValue>> values = this.db.getBatch(new BatchGetConfig(), keys);
 
     return values.stream().map(a -> new AttributeRecord().getFromAttributes(siteId, a))
-        .collect(Collectors.toMap(a -> a.getKey(), a -> a));
+        .collect(Collectors.toMap(AttributeRecord::getKey, a -> a));
   }
 
   @Override
