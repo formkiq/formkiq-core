@@ -23,8 +23,10 @@
  */
 package com.formkiq.stacks.lambda.s3.text;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Token Generator.
@@ -42,10 +44,28 @@ public class TokenGeneratorDefault implements TokenGenerator {
   @Override
   public List<Token> generateTokens(final String text) {
 
-    String[] originalTokens = text.split(getSplitRegex());
+    Pattern pattern = Pattern.compile(getSplitRegex());
+    Matcher matcher = pattern.matcher(text);
 
-    return Arrays.stream(originalTokens)
-        .map(s -> new Token().setOriginal(s).setFormatted(formatText(s))).toList();
+    List<Token> tokens = new ArrayList<>();
+
+    int tokenIndex = 0;
+
+    while (matcher.find()) {
+      int start = matcher.start();
+      int end = matcher.end() - 1; // end is exclusive in matcher, we need inclusive
+      tokens.add(createToken(text, tokenIndex, start));
+      tokenIndex = end + 1;
+    }
+
+    tokens.add(createToken(text, tokenIndex, text.length()));
+
+    return tokens;
+  }
+
+  private Token createToken(final String text, final int start, final int end) {
+    String s = text.substring(start, end);
+    return new Token().setOriginal(s).setFormatted(formatText(s)).setStart(start).setEnd(end);
   }
 
   @Override

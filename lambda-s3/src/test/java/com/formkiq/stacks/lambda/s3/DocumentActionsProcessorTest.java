@@ -1681,6 +1681,61 @@ public class DocumentActionsProcessorTest implements DbKeys {
     }
   }
 
+  /**
+   * Handle Idp with Mapping Action text/plain, Attribute STRING_VALUE.
+   *
+   * @throws IOException IOException
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testIdp08() throws IOException, ValidationException {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String text = """
+          From:
+          DEMO - Sliced Invoices
+          Order Number 12345
+          Invoice Number INV-3337
+          123 Somewhere Street Your City AZ 12345 admin@slicedinvoices.com""";
+
+      for (String validationRegex : Arrays.asList(null, "INV-\\d+")) {
+
+        String documentId = addTextToBucket(siteId, text);
+
+        attributeService.addAttribute(siteId, "invoice", null, null);
+
+        Mapping mapping =
+            createMapping("invoice", "invoice", MappingAttributeLabelMatchingType.FUZZY,
+                MappingAttributeSourceType.CONTENT, null, null, null);
+        mapping.getAttributes().get(0).setValidationRegex(validationRegex);
+        MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
+
+        processRequest(siteId, documentId, mappingRecord);
+
+        // then
+        Action action = actionsService.getActions(siteId, documentId).get(0);
+        assertNull(action.message());
+        assertEquals(ActionStatus.COMPLETE, action.status());
+        assertEquals(ActionType.IDP, action.type());
+        assertNotNull(action.startDate());
+        assertNotNull(action.insertedDate());
+        assertNotNull(action.completedDate());
+
+        List<DocumentAttributeRecord> results =
+            documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
+        assertEquals(1, results.size());
+        DocumentAttributeRecord record = results.get(0);
+        assertEquals("invoice", record.getKey());
+
+        if (validationRegex != null) {
+          assertEquals("INV-3337", record.getStringValue());
+        } else {
+          assertEquals("Number", record.getStringValue());
+        }
+      }
+    }
+  }
+
   private void processRequest(final String siteId, final String documentId,
       final MappingRecord mappingRecord) throws ValidationException, IOException {
     DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");

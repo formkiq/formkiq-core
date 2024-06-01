@@ -180,7 +180,7 @@ public class IdpAction implements DocumentAction {
 
   private List<String> findMappingAttributeValue(final LambdaLogger logger, final String siteId,
       final String documentId, final MappingAttribute mappingAttribute,
-      final TextMatchAlgorithm alg, final String text) throws IOException {
+      final TextMatchAlgorithm alg, final String text) {
 
     String validationRegex = mappingAttribute.getValidationRegex();
     List<String> labelTexts = mappingAttribute.getLabelTexts();
