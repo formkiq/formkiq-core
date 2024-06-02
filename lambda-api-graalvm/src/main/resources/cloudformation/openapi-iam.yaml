@@ -7121,6 +7121,24 @@ Resources:
                   type: "object"
                   additionalProperties:
                     type: object
+                attributes:
+                  type: "object"
+                  additionalProperties:
+                    type: object
+                    properties:
+                      stringValues:
+                        type: "array"
+                        description: "Attribute with string values"
+                        items:
+                          type: "string"
+                      numberValues:
+                        type: "array"
+                        description: "Attribute with number values"
+                        items:
+                          type: "number"
+                      booleanValue:
+                        type: "boolean"
+                        description: "Attribute with boolean value"
             GetDocumentSyncResponse:
               type: "object"
               properties:

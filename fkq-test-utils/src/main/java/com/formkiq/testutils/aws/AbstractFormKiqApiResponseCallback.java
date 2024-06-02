@@ -27,8 +27,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -50,9 +50,9 @@ import com.google.gson.GsonBuilder;
 public abstract class AbstractFormKiqApiResponseCallback implements ExpectationResponseCallback {
 
   /** {@link Context}. */
-  private Context context = new LambdaContextRecorder();
+  private final Context context = new LambdaContextRecorder();
   /** {@link Gson}. */
-  private Gson gson = new GsonBuilder().disableHtmlEscaping().create();
+  private final Gson gson = new GsonBuilder().disableHtmlEscaping().create();
   /** Environment Map. */
   private Map<String, String> environment = null;
 
@@ -73,11 +73,12 @@ public abstract class AbstractFormKiqApiResponseCallback implements ExpectationR
     Map<String, Object> map = this.gson.fromJson(response, Map.class);
     Map<String, String> headerList = (Map<String, String>) map.get("headers");
     List<Header> headers = headerList.entrySet().stream()
-        .map(e -> new Header(e.getKey(), Arrays.asList(e.getValue()))).collect(Collectors.toList());
+        .map(e -> new Header(e.getKey(), Collections.singletonList(e.getValue())))
+        .collect(Collectors.toList());
 
     int statusCode = ((Double) map.get("statusCode")).intValue();
-    return HttpResponse.response().withHeaders(new Headers(headers))
-        .withStatusCode(Integer.valueOf(statusCode)).withBody(map.get("body").toString());
+    return HttpResponse.response().withHeaders(new Headers(headers)).withStatusCode(statusCode)
+        .withBody(map.get("body").toString());
   }
 
   /**
@@ -110,7 +111,7 @@ public abstract class AbstractFormKiqApiResponseCallback implements ExpectationR
     ByteArrayOutputStream outstream = new ByteArrayOutputStream();
     getHandler().handleRequest(is, outstream, this.context);
 
-    String response = new String(outstream.toByteArray(), "UTF-8");
+    String response = outstream.toString(StandardCharsets.UTF_8);
     return createResponse(response);
   }
 

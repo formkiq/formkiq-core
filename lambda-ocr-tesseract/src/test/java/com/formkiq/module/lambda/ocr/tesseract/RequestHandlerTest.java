@@ -34,7 +34,6 @@ import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.util.Arrays;
-import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -56,18 +55,18 @@ import com.formkiq.testutils.aws.LocalStackExtension;
 class RequestHandlerTest {
 
   /** {@link HttpClient}. */
-  private static HttpClient http = HttpClient.newHttpClient();
+  private static final HttpClient HTTP = HttpClient.newHttpClient();
   /** FormKiQ Server. */
   @RegisterExtension
   static FormKiqApiExtension server =
-      new FormKiqApiExtension(null, null, Map.of(), new FormKiQResponseCallback());
+      new FormKiqApiExtension(null, null, null, new FormKiQResponseCallback());
 
   /** {@link ApiClient}. */
-  private ApiClient apiClient =
+  private final ApiClient apiClient =
       Configuration.getDefaultApiClient().setReadTimeout(0).setBasePath(server.getBasePath());
 
   /** {@link ExamineObjectsApi}. */
-  private ExamineObjectsApi examineApi = new ExamineObjectsApi(this.apiClient);
+  private final ExamineObjectsApi examineApi = new ExamineObjectsApi(this.apiClient);
 
   /**
    * Set BearerToken.
@@ -113,7 +112,7 @@ class RequestHandlerTest {
       try (InputStream is = LambdaContextRecorder.class.getResourceAsStream("/form.pdf")) {
 
         // when
-        HttpResponse<String> httpResponse = http.send(
+        HttpResponse<String> httpResponse = HTTP.send(
             HttpRequest.newBuilder(new URI(response.getUploadUrl()))
                 .header("Content-Type", "application/pdf")
                 .method("PUT", BodyPublishers.ofInputStream(() -> is)).build(),
@@ -138,11 +137,10 @@ class RequestHandlerTest {
 
   /**
    * Test missing file.
-   * 
-   * @throws Exception Exception
+   *
    */
   @Test
-  void testExaminePdf02() throws Exception {
+  void testExaminePdf02() {
     // given
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 

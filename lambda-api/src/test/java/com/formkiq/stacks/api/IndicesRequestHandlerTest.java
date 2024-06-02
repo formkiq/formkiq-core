@@ -32,7 +32,6 @@ import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
@@ -74,7 +73,7 @@ public class IndicesRequestHandlerTest {
   private static final FormKiQResponseCallback CALLBACK = new FormKiQResponseCallback();
   /** FormKiQ Server. */
   @RegisterExtension
-  static FormKiqApiExtension server = new FormKiqApiExtension(null, null, Map.of(), CALLBACK);
+  static FormKiqApiExtension server = new FormKiqApiExtension(null, null, null, CALLBACK);
   /** {@link ApiClient}. */
   private final ApiClient client =
       Configuration.getDefaultApiClient().setReadTimeout(0).setBasePath(server.getBasePath());
