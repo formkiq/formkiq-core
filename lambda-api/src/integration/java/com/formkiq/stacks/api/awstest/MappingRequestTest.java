@@ -40,7 +40,10 @@ import com.formkiq.client.model.MappingAttributeSourceType;
 import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import software.amazon.awssdk.utils.IoUtils;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -167,13 +170,13 @@ public class MappingRequestTest extends AbstractAwsIntegrationTest {
   }
 
   /**
-   * Test IDP action.
+   * Test IDP action PDF / OCR.
    *
    * @throws ApiException ApiException
    */
   @Test
   @Timeout(value = TEST_TIMEOUT)
-  void addIdpAction01() throws ApiException, InterruptedException {
+  void addIdpAction01() throws ApiException, InterruptedException, IOException {
     // given
     final String attributeKey = "document_invoice_" + UUID.randomUUID();
 
@@ -181,18 +184,43 @@ public class MappingRequestTest extends AbstractAwsIntegrationTest {
     ApiClient client = apiClients.get(0);
 
     addAttribute(client, null, attributeKey, AttributeDataType.STRING, null);
-    MappingsApi api = new MappingsApi(client);
+    String mappingId = createDocumentInvoiceMapping(client, attributeKey);
 
-    AddMapping addMapping = new AddMapping().name("Document Invoice")
-        .addAttributesItem(new MappingAttribute().attributeKey(attributeKey)
-            .sourceType(MappingAttributeSourceType.CONTENT)
-            .labelMatchingType(MappingAttributeLabelMatchingType.CONTAINS)
-            .validationRegex("INV-\\d+").labelTexts(List.of("invoice", "invoice no")));
+    AddAction actionOcr = new AddAction().type(DocumentActionType.OCR);
+    AddAction actionIdp = new AddAction().type(DocumentActionType.IDP)
+        .parameters(new AddActionParameters().mappingId(mappingId));
 
-    AddMappingResponse addMappingResponse =
-        api.addMapping(new AddMappingRequest().mapping(addMapping), null);
+    // when
+    try (InputStream is = getClass().getResourceAsStream("/invoice.pdf")) {
+      assertNotNull(is);
+      byte[] content = IoUtils.toByteArray(is);
+      String documentId = addDocument(client, null, "document_invoice.txt", content,
+          "application/pdf", List.of(actionOcr, actionIdp), null);
 
-    final String mappingId = addMappingResponse.getMappingId();
+      // then
+      waitForActionsComplete(client, null, documentId);
+
+      assertEquals("INV-3337",
+          getDocumentAttribute(client, null, documentId, attributeKey).getStringValue());
+    }
+  }
+
+  /**
+   * Test IDP action with String content.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  void addIdpAction02() throws ApiException, InterruptedException {
+    // given
+    final String attributeKey = "document_invoice_" + UUID.randomUUID();
+
+    List<ApiClient> apiClients = getApiClients(null);
+    ApiClient client = apiClients.get(0);
+
+    addAttribute(client, null, attributeKey, AttributeDataType.STRING, null);
+    final String mappingId = createDocumentInvoiceMapping(client, attributeKey);
 
     String content = """
         From:
@@ -212,5 +240,21 @@ public class MappingRequestTest extends AbstractAwsIntegrationTest {
 
     assertEquals("INV-3337",
         getDocumentAttribute(client, null, documentId, attributeKey).getStringValue());
+  }
+
+  private String createDocumentInvoiceMapping(final ApiClient client, final String attributeKey)
+      throws ApiException {
+    MappingsApi api = new MappingsApi(client);
+
+    AddMapping addMapping = new AddMapping().name("Document Invoice")
+        .addAttributesItem(new MappingAttribute().attributeKey(attributeKey)
+            .sourceType(MappingAttributeSourceType.CONTENT)
+            .labelMatchingType(MappingAttributeLabelMatchingType.CONTAINS)
+            .validationRegex("INV-\\d+").labelTexts(List.of("invoice", "invoice no")));
+
+    AddMappingResponse addMappingResponse =
+        api.addMapping(new AddMappingRequest().mapping(addMapping), null);
+
+    return addMappingResponse.getMappingId();
   }
 }
