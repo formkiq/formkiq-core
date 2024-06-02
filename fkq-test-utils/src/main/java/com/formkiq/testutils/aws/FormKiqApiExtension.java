@@ -52,6 +52,8 @@ public class FormKiqApiExtension
 
   /** {@link Random}. */
   private static final Random NUM_RAND = new Random();
+  /** {@link FormKiQApiExtensionConfig}. */
+  private final FormKiQApiExtensionConfig config;
 
   /**
    * Generate Random Port.
@@ -65,40 +67,38 @@ public class FormKiqApiExtension
   }
 
   /** {@link AbstractFormKiqApiResponseCallback}. */
-  private AbstractFormKiqApiResponseCallback callback;
+  private final AbstractFormKiqApiResponseCallback callback;
   /** Environment {@link Map}. */
   private Map<String, String> environmentMap;
-  /** {@link Map}. */
-  private Map<String, String> extraEnvironmentMap;
 
   /** {@link ClientAndServer}. */
   private ClientAndServer formkiqServer;
   /** {@link LocalStackExtension}. */
-  private LocalStackExtension localStackExtension;
+  private final LocalStackExtension localStackExtension;
   /** Port to run Test server. */
-  private int port = -1;
+  private final int port;
   /** Is server running. */
   private boolean running = false;
   /** {@link TypesenseExtension}. */
-  private TypesenseExtension typeSenseExtension;
+  private final TypesenseExtension typeSenseExtension;
 
   /**
    * constructor.
    * 
    * @param localstack {@link LocalStackExtension}
    * @param typeSense {@link TypesenseExtension}
-   * @param extraEnvironment {@link Map}
+   * @param extensionConfig {@link FormKiQApiExtensionConfig}
    * @param responseCallback {@link AbstractFormKiqApiResponseCallback}
    */
   public FormKiqApiExtension(final LocalStackExtension localstack,
-      final TypesenseExtension typeSense, final Map<String, String> extraEnvironment,
+      final TypesenseExtension typeSense, final FormKiQApiExtensionConfig extensionConfig,
       final AbstractFormKiqApiResponseCallback responseCallback) {
 
     this.localStackExtension = localstack;
     this.typeSenseExtension = typeSense;
     this.port = generatePort();
     this.callback = responseCallback;
-    this.extraEnvironmentMap = extraEnvironment;
+    this.config = extensionConfig;
   }
 
   @Override
@@ -110,7 +110,7 @@ public class FormKiqApiExtension
 
       this.callback.setEnvironmentMap(this.environmentMap);
 
-      this.formkiqServer = startClientAndServer(Integer.valueOf(this.port));
+      this.formkiqServer = startClientAndServer(this.port);
 
       this.formkiqServer.when(request()).respond(this.callback);
       this.running = true;
@@ -129,14 +129,17 @@ public class FormKiqApiExtension
 
   private Map<String, String> generateMap() {
 
-    Map<String, String> map = new HashMap<>(this.extraEnvironmentMap);
+    Map<String, String> map = new HashMap<>();
+
+    if (this.config != null) {
+      map.putAll(this.config.getEnvironment());
+    }
 
     if (this.localStackExtension != null) {
       map.put("SNS_DOCUMENT_EVENT", this.localStackExtension.getSnsDocumentEvent());
       map.put("SQS_DOCUMENT_EVENT_URL", this.localStackExtension.getSqsDocumentEventUrl());
     }
 
-    // map.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
     map.put("APP_ENVIRONMENT", FORMKIQ_APP_ENVIRONMENT);
     map.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
     map.put("DOCUMENT_VERSIONS_TABLE", DOCUMENTS_VERSION_TABLE);
@@ -147,13 +150,9 @@ public class FormKiqApiExtension
     map.put("OCR_S3_BUCKET", OCR_BUCKET_NAME);
     map.put("AWS_REGION", AWS_REGION.toString());
     map.put("DEBUG", "true");
-    // map.put("SQS_DOCUMENT_FORMATS",
-    // TestServices.getSqsDocumentFormatsQueueUrl(TestServices.getSqsConnection(null)));
     map.put("DISTRIBUTION_BUCKET", "formkiq-distribution-us-east-pro");
     map.put("FORMKIQ_TYPE", "core");
     map.put("USER_AUTHENTICATION", "cognito");
-    // map.put("WEBSOCKET_SQS_URL",
-    // TestServices.getSqsWebsocketQueueUrl(TestServices.getSqsConnection(null)));
 
     if (this.typeSenseExtension != null) {
       map.put("TYPESENSE_HOST", "http://localhost:" + this.typeSenseExtension.getFirstMappedPort());
