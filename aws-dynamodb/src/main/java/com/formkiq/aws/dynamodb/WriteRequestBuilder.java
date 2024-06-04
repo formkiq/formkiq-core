@@ -46,7 +46,7 @@ public class WriteRequestBuilder {
   /** Max Batch Size. */
   private static final int MAX_BATCH_SIZE = 25;
   /** {@link Map} of {@link WriteRequest}. */
-  private Map<String, List<WriteRequest>> items = new HashMap<>();
+  private final Map<String, List<WriteRequest>> items = new HashMap<>();
 
   /**
    * constructor.
