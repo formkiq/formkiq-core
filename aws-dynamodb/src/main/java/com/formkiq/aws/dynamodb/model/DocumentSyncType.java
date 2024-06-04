@@ -30,12 +30,12 @@ package com.formkiq.aws.dynamodb.model;
  */
 public enum DocumentSyncType {
 
-  /** Access Attribute. */
-  ACCESS_ATTRIBUTE,
+  /** Attribute. */
+  ATTRIBUTE,
   /** CONTENT. */
   CONTENT,
   /** METADATA. */
   METADATA,
   /** TAG. */
-  TAG;
+  TAG
 }
