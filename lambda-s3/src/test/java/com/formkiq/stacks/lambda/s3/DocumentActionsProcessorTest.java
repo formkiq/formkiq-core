@@ -1395,33 +1395,35 @@ public class DocumentActionsProcessorTest implements DbKeys {
   public void testIdp01() throws IOException, ValidationException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      String text = IoUtils.toUtf8String(new FileInputStream("src/test/resources/text/text01.txt"));
-      String documentId = addTextToBucket(siteId, text);
+      try (InputStream is = new FileInputStream("src/test/resources/text/text01.txt")) {
+        String text = IoUtils.toUtf8String(is);
+        String documentId = addTextToBucket(siteId, text);
 
-      attributeService.addAttribute(siteId, "invoice", null, null);
+        attributeService.addAttribute(siteId, "invoice", null, null);
 
-      Mapping mapping =
-          createMapping("invoice", "P.O. Number", MappingAttributeLabelMatchingType.FUZZY,
-              MappingAttributeSourceType.CONTENT, null, null, null);
-      MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
+        Mapping mapping =
+            createMapping("invoice", "P.O. Number", MappingAttributeLabelMatchingType.FUZZY,
+                MappingAttributeSourceType.CONTENT, null, null, null);
+        MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-      processRequest(siteId, documentId, mappingRecord);
+        processRequest(siteId, documentId, mappingRecord);
 
-      // then
-      Action action = actionsService.getActions(siteId, documentId).get(0);
-      assertNull(action.message());
-      assertEquals(ActionStatus.COMPLETE, action.status());
-      assertEquals(ActionType.IDP, action.type());
-      assertNotNull(action.startDate());
-      assertNotNull(action.insertedDate());
-      assertNotNull(action.completedDate());
+        // then
+        Action action = actionsService.getActions(siteId, documentId).get(0);
+        assertNull(action.message());
+        assertEquals(ActionStatus.COMPLETE, action.status());
+        assertEquals(ActionType.IDP, action.type());
+        assertNotNull(action.startDate());
+        assertNotNull(action.insertedDate());
+        assertNotNull(action.completedDate());
 
-      List<DocumentAttributeRecord> results =
-          documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
-      assertEquals(1, results.size());
-      DocumentAttributeRecord record = results.get(0);
-      assertEquals("invoice", record.getKey());
-      assertEquals("6200041751", record.getStringValue());
+        List<DocumentAttributeRecord> results =
+            documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
+        assertEquals(1, results.size());
+        DocumentAttributeRecord record = results.get(0);
+        assertEquals("invoice", record.getKey());
+        assertEquals("6200041751", record.getStringValue());
+      }
     }
   }
 

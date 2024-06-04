@@ -33,6 +33,9 @@ import com.formkiq.client.model.SetSitesSchemaRequest;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Fkq Schema Service.
+ */
 public class FkqSchemaService {
 
   /**
