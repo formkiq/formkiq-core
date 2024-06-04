@@ -237,7 +237,7 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
   }
 
   private void addAttribute(final String siteId, final String key) throws ApiException {
-    attributesApi.addAttribute(new AddAttributeRequest().attribute(new AddAttribute().key(key)),
-        siteId);
+    this.attributesApi
+        .addAttribute(new AddAttributeRequest().attribute(new AddAttribute().key(key)), siteId);
   }
 }

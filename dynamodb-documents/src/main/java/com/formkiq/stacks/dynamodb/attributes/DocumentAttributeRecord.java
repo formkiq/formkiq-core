@@ -287,29 +287,13 @@ public class DocumentAttributeRecord implements DynamodbRecord<DocumentAttribute
   @Override
   public String skGsi1() {
 
-    String val;
-
-    switch (this.valueType) {
-      case STRING:
-      case COMPOSITE_STRING:
-        val = this.stringValue;
-        break;
-
-      case NUMBER:
-        val = formatDouble(this.numberValue);
-        break;
-
-      case BOOLEAN:
-        val = this.booleanValue.toString();
-        break;
-
-      case KEY_ONLY:
-        val = "#";
-        break;
-
-      default:
-        throw new IllegalArgumentException("Unexpected value: " + this.valueType);
-    }
+    String val = switch (this.valueType) {
+      case STRING, COMPOSITE_STRING -> this.stringValue;
+      case NUMBER -> formatDouble(this.numberValue);
+      case BOOLEAN -> this.booleanValue.toString();
+      case KEY_ONLY -> "#";
+      default -> throw new IllegalArgumentException("Unexpected value: " + this.valueType);
+    };
 
     return val;
   }

@@ -50,7 +50,7 @@ public class MappingRecordToMap implements Function<MappingRecord, Map<String, O
 
   @Override
   public Map<String, Object> apply(final MappingRecord a) {
-    List<MappingAttribute> attributes = service.getAttributes(a);
+    List<MappingAttribute> attributes = this.service.getAttributes(a);
     return Map.of("name", a.getName(), "attributes", attributes, "description",
         a.getDescription() != null ? a.getDescription() : "");
   }

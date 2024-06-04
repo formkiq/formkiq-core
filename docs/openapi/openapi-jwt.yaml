@@ -7045,6 +7045,26 @@
                   type: object
                   additionalProperties:
                     type: object
+                attributes:
+                  type: object
+                  additionalProperties:
+                    $ref: '#/components/schemas/FulltextAttribute'
+            FulltextAttribute:
+              type: object
+              properties:
+                stringValues:
+                  type: array
+                  description: Attribute with string values
+                  items:
+                    type: string
+                numberValues:
+                  type: array
+                  description: Attribute with number values
+                  items:
+                    type: number
+                booleanValue:
+                  type: boolean
+                  description: Attribute with boolean value
             GetDocumentFulltextResponse:
               type: object
               properties:
@@ -7089,21 +7109,7 @@
                 attributes:
                   type: object
                   additionalProperties:
-                    type: object
-                    properties:
-                      stringValues:
-                        type: array
-                        description: Attribute with string values
-                        items:
-                          type: string
-                      numberValues:
-                        type: array
-                        description: Attribute with number values
-                        items:
-                          type: number
-                      booleanValue:
-                        type: boolean
-                        description: Attribute with boolean value
+                    $ref: '#/components/schemas/FulltextAttribute'
             GetDocumentSyncResponse:
               type: object
               properties:
@@ -8846,14 +8852,66 @@
                   description: Attribute Key
                 eq:
                   $ref: '#/components/schemas/OpaPolicyAttributeEq'
+                gt:
+                  $ref: '#/components/schemas/OpaPolicyAttributeGt'
+                gte:
+                  $ref: '#/components/schemas/OpaPolicyAttributeGte'
+                lt:
+                  $ref: '#/components/schemas/OpaPolicyAttributeLt'
+                lte:
+                  $ref: '#/components/schemas/OpaPolicyAttributeLte'
+                neq:
+                  $ref: '#/components/schemas/OpaPolicyAttributeNeq'
             OpaPolicyAttributeEq:
               type: object
+              description: Attribute EQ criteria
               properties:
-                text:
+                stringValue:
                   type: string
+                  description: The value to compare the Attribute Key value to
+                numberValue:
+                  type: number
+                  description: The value to compare the Attribute Key value to
+                booleanValue:
+                  type: boolean
                   description: The value to compare the Attribute Key value to
                 input:
                   $ref: '#/components/schemas/OpaPolicyAttributeInput'
+            OpaPolicyAttributeGt:
+              type: object
+              description: Attribute greater than criteria
+              properties:
+                numberValue:
+                  type: number
+                  description: The value to compare the Attribute Key value to
+            OpaPolicyAttributeGte:
+              type: object
+              description: Attribute greater than and equals to criteria
+              properties:
+                numberValue:
+                  type: number
+                  description: The value to compare the Attribute Key value to
+            OpaPolicyAttributeLt:
+              type: object
+              description: Attribute less than criteria
+              properties:
+                numberValue:
+                  type: number
+                  description: The value to compare the Attribute Key value to
+            OpaPolicyAttributeLte:
+              type: object
+              description: Attribute less than and equals to criteria
+              properties:
+                numberValue:
+                  type: number
+                  description: The value to compare the Attribute Key value to
+            OpaPolicyAttributeNeq:
+              type: object
+              description: Attribute not equal to criteria
+              properties:
+                stringValue:
+                  type: string
+                  description: The value to compare the Attribute Key value to
             OpaPolicyAttributeInput:
               type: object
               properties:
