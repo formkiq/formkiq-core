@@ -1832,6 +1832,12 @@
                     application/json:
                       schema:
                         $ref: '#/components/schemas/DocumentFulltextResponse'
+                "400":
+                  description: 400 OK
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/ValidationErrorsResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -6310,6 +6316,37 @@
                   description: List of search tags
                   items:
                     $ref: '#/components/schemas/DocumentFulltextTag'
+                attributes:
+                  type: array
+                  description: List of search attributes
+                  items:
+                    $ref: '#/components/schemas/DocumentFulltextAttribute'
+            DocumentFulltextAttribute:
+              required:
+              - key
+              type: object
+              properties:
+                eq:
+                  $ref: '#/components/schemas/DocumentFulltextAttributeEq'
+                eqOr:
+                  type: array
+                  description: Searches for ANY strings that eq
+                  items:
+                    $ref: '#/components/schemas/DocumentFulltextAttributeEq'
+                key:
+                  type: string
+                  description: Tag key to search
+            DocumentFulltextAttributeEq:
+              properties:
+                stringValue:
+                  type: string
+                  description: Search for string value
+                numberValue:
+                  type: number
+                  description: Search for number value
+                booleanValue:
+                  type: boolean
+                  description: Search for boolean value
             DocumentFulltextTag:
               required:
               - key

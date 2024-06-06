@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import com.formkiq.client.api.DocumentFoldersApi;
@@ -59,7 +59,7 @@ public class FoldersRequestTest extends AbstractAwsIntegrationTest {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  @Timeout(value = TEST_TIMEOUT)
   public void testDeleteFolders01() throws Exception {
     // given
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -95,7 +95,7 @@ public class FoldersRequestTest extends AbstractAwsIntegrationTest {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  @Timeout(value = TEST_TIMEOUT)
   public void testGetFolders01() throws Exception {
     // given
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -122,7 +122,7 @@ public class FoldersRequestTest extends AbstractAwsIntegrationTest {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  @Timeout(value = TEST_TIMEOUT)
   public void testPostFolders01() throws Exception {
     // given
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {

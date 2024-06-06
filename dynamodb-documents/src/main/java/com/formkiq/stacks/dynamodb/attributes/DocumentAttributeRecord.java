@@ -287,15 +287,13 @@ public class DocumentAttributeRecord implements DynamodbRecord<DocumentAttribute
   @Override
   public String skGsi1() {
 
-    String val = switch (this.valueType) {
+    return switch (this.valueType) {
       case STRING, COMPOSITE_STRING -> this.stringValue;
       case NUMBER -> formatDouble(this.numberValue);
       case BOOLEAN -> this.booleanValue.toString();
       case KEY_ONLY -> "#";
-      default -> throw new IllegalArgumentException("Unexpected value: " + this.valueType);
     };
 
-    return val;
   }
 
   @Override
@@ -327,8 +325,10 @@ public class DocumentAttributeRecord implements DynamodbRecord<DocumentAttribute
 
   /**
    * Update Value Type.
+   *
+   * @return DocumentAttributeRecord
    */
-  public void updateValueType() {
+  public DocumentAttributeRecord updateValueType() {
     this.valueType = DocumentAttributeValueType.KEY_ONLY;
 
     if (!Strings.isEmpty(this.stringValue)) {
@@ -338,5 +338,7 @@ public class DocumentAttributeRecord implements DynamodbRecord<DocumentAttribute
     } else if (this.booleanValue != null) {
       this.valueType = DocumentAttributeValueType.BOOLEAN;
     }
+
+    return this;
   }
 }
