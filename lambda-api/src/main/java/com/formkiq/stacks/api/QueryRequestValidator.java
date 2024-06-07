@@ -23,13 +23,13 @@
  */
 package com.formkiq.stacks.api;
 
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static software.amazon.awssdk.utils.StringUtils.isEmpty;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import com.formkiq.aws.dynamodb.model.QueryRequest;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
-import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
 import software.amazon.awssdk.utils.StringUtils;
@@ -46,8 +46,9 @@ public class QueryRequestValidator {
   }
 
   private boolean isQueryEmpty(final QueryRequest q) {
-    return q.query().getTag() == null && q.query().getTags() == null && q.query().getMeta() == null
-        && StringUtils.isEmpty(q.query().getText());
+    return q.query().getTag() == null && notNull(q.query().getTags()).isEmpty()
+        && q.query().getAttribute() == null && notNull(q.query().getAttributes()).isEmpty()
+        && q.query().getMeta() == null && StringUtils.isEmpty(q.query().getText());
   }
 
   private void validateMultiTags(final List<SearchTagCriteria> tags,
@@ -102,7 +103,7 @@ public class QueryRequestValidator {
 
     } else {
 
-      List<SearchTagCriteria> tags = Objects.notNull(q.query().getTags());
+      List<SearchTagCriteria> tags = notNull(q.query().getTags());
 
       validateMultiTags(tags, errors);
 
