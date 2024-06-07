@@ -7121,6 +7121,14 @@ Resources:
                   type: "object"
                   additionalProperties:
                     $ref: "#/components/schemas/FulltextAttribute"
+            FulltextAttributeValueType:
+              type: string
+              description: Attribute Value Type
+              enum:
+                - BOOLEAN
+                - KEY_ONLY
+                - NUMBER
+                - STRING
             FulltextAttribute:
               type: "object"
               properties:
@@ -7137,6 +7145,8 @@ Resources:
                 booleanValue:
                   type: "boolean"
                   description: "Attribute with boolean value"
+                valueType:
+                  $ref: "#/components/schemas/FulltextAttributeValueType"
             GetDocumentFulltextResponse:
               type: "object"
               properties:
