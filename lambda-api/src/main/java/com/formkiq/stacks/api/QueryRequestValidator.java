@@ -46,9 +46,16 @@ public class QueryRequestValidator {
   }
 
   private boolean isQueryEmpty(final QueryRequest q) {
-    return q.query().getTag() == null && notNull(q.query().getTags()).isEmpty()
-        && q.query().getAttribute() == null && notNull(q.query().getAttributes()).isEmpty()
-        && q.query().getMeta() == null && StringUtils.isEmpty(q.query().getText());
+    return isTagsEmpty(q) && isAttributesEmpty(q) && q.query().getMeta() == null
+        && StringUtils.isEmpty(q.query().getText());
+  }
+
+  private boolean isAttributesEmpty(final QueryRequest q) {
+    return q.query().getAttribute() == null && notNull(q.query().getAttributes()).isEmpty();
+  }
+
+  private boolean isTagsEmpty(final QueryRequest q) {
+    return q.query().getTag() == null && notNull(q.query().getTags()).isEmpty();
   }
 
   private void validateMultiTags(final List<SearchTagCriteria> tags,
