@@ -113,22 +113,12 @@ public class DocumentsUploadRequestHandler
       final Collection<DocumentAttributeRecord> searchAttributes)
       throws UnsupportedEncodingException, BadException, ValidationException {
 
-    // Date date = item.getInsertedDate();
     String documentId = request.getDocumentId();
-    // String username = item.getUserId();
-
-    // List<DocumentTag> tags = new ArrayList<>();
-    // if (item.containsKey("tags")) {
-    // tags = item.getList("tags").stream().map(new DynamicObjectToDocumentTag(null))
-    // .map(t -> t.setInsertedDate(date)).collect(Collectors.toList());
-    // }
 
     if (tags.isEmpty()) {
       tags.add(new DocumentTag(documentId, "untagged", "true", new Date(),
           authorization.getUsername(), DocumentTagType.SYSTEMDEFINED));
     }
-
-    // validateTagSchema(siteId, request, tags, username, tags);
 
     AddDocumentRequestToPresignedUrls addDocumentRequestToPresignedUrls =
         new AddDocumentRequestToPresignedUrls(awsservice, siteId,
@@ -136,16 +126,6 @@ public class DocumentsUploadRequestHandler
             calculateContentLength(awsservice, event.getQueryStringParameters(), siteId));
 
     Map<String, Object> map = addDocumentRequestToPresignedUrls.apply(request);
-
-    // Map<String, Object> map = generatePresignedUrl(event, awsservice, siteId, request);
-
-    // if (awsservice.debug()) {
-    // logger.log("generated presign url: " + urlstring + " for document " + documentId);
-    // }
-
-    // String value = this.restrictionMaxDocuments.getValue(awsservice, siteId);
-
-    // if (!this.restrictionMaxDocuments.enforced(awsservice, siteId, value)) {
 
     DocumentService service = awsservice.getExtension(DocumentService.class);
 
@@ -155,37 +135,12 @@ public class DocumentsUploadRequestHandler
     SaveDocumentOptions options = new SaveDocumentOptions().saveDocumentDate(true);
     service.saveDocument(siteId, item, tags, searchAttributes, options);
 
-    // for (DocumentItem childDoc : item.getDocuments()) {
-    // childDoc.setBelongsToDocumentId(item.getDocumentId());
-    // options = new SaveDocumentOptions().saveDocumentDate(false);
-    // // service.saveDocument(request, childDoc, null, null, options);
-    // // TODO cleanup
-    // }
-
-    //// List<DynamicObject> documents = tags.getList("documents");
-    //// for (DynamicObject o : notNull(documents)) {
-    //// options = new SaveDocumentOptions().saveDocumentDate(false);
-    // service.saveDocument(request, o, tags, searchAttributes, options);
-    // }
-
     List<Action> actions = request.getActions();
     if (!notNull(actions).isEmpty()) {
       ActionsService actionsService = awsservice.getExtension(ActionsService.class);
-      // List<Action> actions = tags.getList("actions").stream().map(new DynamicObjectToAction())
-      // .collect(Collectors.toList());
       actions.forEach(a -> a.userId(authorization.getUsername()));
       actionsService.saveNewActions(siteId, documentId, actions);
     }
-
-    // if (value != null) {
-    //
-    // DocumentCountService countService = awsservice.getExtension(DocumentCountService.class);
-    // countService.incrementDocumentCount(siteId);
-    // }
-
-    // } else {
-    // throw new BadException("Max Number of Documents reached");
-    // }
 
     return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
   }
@@ -352,18 +307,6 @@ public class DocumentsUploadRequestHandler
 
     notNull(request.getDocuments()).forEach(d -> d.setDocumentId(UUID.randomUUID().toString()));
 
-    // DynamicDocumentItem item = new DynamicDocumentItem(fromBodyToMap(event));
-    // item.setDocumentId(UUID.randomUUID().toString());
-    // item.setUserId(authorization.getUsername());
-    // item.setInsertedDate(new Date());
-
-    // List<DynamicObject> documents = item.getList("documents");
-    // for (DynamicObject o : notNull(documents)) {
-    // o.put("documentId", UUID.randomUUID().toString());
-    // o.put("userId", authorization.getUsername());
-    // }
-
-
     SchemaService schemaService = awsservice.getExtension(SchemaService.class);
 
     String siteId = authorization.getSiteId();
@@ -371,7 +314,6 @@ public class DocumentsUploadRequestHandler
     Schema schema = schemaService.getSitesSchema(siteId, null);
 
     AttributeService attributeService = awsservice.getExtension(AttributeService.class);
-    // attributeService.getAttributes(siteId, attributeKeys);
 
     List<DocumentAttribute> attributes = notNull(request.getAttributes());
 
@@ -393,18 +335,10 @@ public class DocumentsUploadRequestHandler
 
     String maxDocumentCount = validatePost(awsservice, siteId, request);
 
-    // List<DynamicObject> list = item.getList("attributes");
-
-
     Collection<DocumentAttributeRecord> compositeKeys =
         new DocumentAttributeSchema(schema, documentId).apply(searchAttributes);
 
     searchAttributes = Stream.concat(searchAttributes.stream(), compositeKeys.stream()).toList();
-
-    // List<DocumentAttributeRecord> compositeKeys = searchAttributes.stream()
-    // .flatMap(new DocumentAttributeSchema(schema, documentId).stream()).toList();
-    // Collection<DocumentAttributeRecord> searchAttributes =
-    // new DynamicObjectToDocumentAttributeRecord(item.getDocumentId(), schema).apply(list);
 
     ApiRequestHandlerResponse response = buildPresignedResponse(event, authorization, awsservice,
         siteId, request, tags, searchAttributes);
@@ -420,17 +354,6 @@ public class DocumentsUploadRequestHandler
 
   private String validatePost(final AwsServiceCache awsservice, final String siteId,
       final AddDocumentRequest item) throws BadException, ValidationException {
-
-    // boolean isFolder = isFolder(item);
-    //
-    // Collection<ValidationError> errors = Collections.emptyList();
-    // if (!isFolder && !item.hasString("content") && item.getList("documents").isEmpty()
-    // && isEmpty(item.getDeepLinkPath())) {
-    //
-    // errors = Arrays.asList(new ValidationErrorImpl()
-    // .error("either 'content', 'documents', or 'deepLinkPath' are required"));
-    // throw new ValidationException(errors);
-    // }
 
     Collection<ValidationError> errors = this.documentValidator.validate(item.getMetadata());
     if (!errors.isEmpty()) {
@@ -450,62 +373,4 @@ public class DocumentsUploadRequestHandler
 
     return maxDocumentCount;
   }
-
-  // /**
-  // * Validate Document Tags.
-  // *
-  // * @param tags {@link List} {@link DynamicObject}
-  // * @throws ValidationException ValidationException
-  // */
-  // private void validateTags(final List<DynamicObject> tags) throws ValidationException {
-  //
-  // List<String> tagKeys = tags.stream().map(t -> t.getString("key")).collect(Collectors.toList());
-  //
-  // DocumentTagValidator validator = new DocumentTagValidatorImpl();
-  // Collection<ValidationError> errors = validator.validateKeys(tagKeys);
-  //
-  // if (!errors.isEmpty()) {
-  // throw new ValidationException(errors);
-  // }
-  // }
-
-  // /**
-  // * Validate {@link DynamicDocumentItem} against a TagSchema.
-  // *
-  // * @param cacheService {@link AwsServiceCache}
-  // * @param siteId {@link String}
-  // * @param item {@link DynamicDocumentItem}
-  // * @param userId {@link String}
-  // * @param tags {@link List} {@link DocumentTag}
-  // * @throws ValidationException ValidationException
-  // * @throws BadException BadException
-  // */
-  // private void validateTagSchema(final AwsServiceCache cacheService, final String siteId,
-  // final DynamicDocumentItem item, final String userId, final List<DocumentTag> tags)
-  // throws ValidationException, BadException {
-  //
-  // DocumentTagSchemaPlugin plugin = cacheService.getExtension(DocumentTagSchemaPlugin.class);
-  //
-  // if (item.getTagSchemaId() != null) {
-  //
-  // TagSchemaInterface tagSchema = plugin.getTagSchema(siteId, item.getTagSchemaId());
-  //
-  // if (tagSchema == null) {
-  // throw new BadException("TagschemaId " + item.getTagSchemaId() + " not found");
-  // }
-  //
-  // plugin.updateInUse(siteId, tagSchema);
-  //
-  // Collection<ValidationError> errors = new ArrayList<>();
-  // List<DocumentTag> compositeTags = plugin
-  // .addCompositeKeys(tagSchema, siteId, item.getDocumentId(), tags, userId, true, errors)
-  // .stream().map(t -> t).collect(Collectors.toList());
-  //
-  // if (!errors.isEmpty()) {
-  // throw new ValidationException(errors);
-  // }
-  //
-  // tags.addAll(compositeTags);
-  // }
-  // }
 }

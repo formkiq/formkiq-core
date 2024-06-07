@@ -23,15 +23,27 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
+import com.formkiq.aws.services.lambda.ApiResponseStatus;
+import com.formkiq.client.model.AddAttribute;
+import com.formkiq.client.model.AddAttributeRequest;
+import com.formkiq.client.model.AddDocumentAttribute;
 import com.formkiq.client.model.AddDocumentMetadata;
+import com.formkiq.client.model.AttributeSchemaCompositeKey;
+import com.formkiq.client.model.AttributeSchemaOptional;
+import com.formkiq.client.model.DocumentAttribute;
+import com.formkiq.client.model.SchemaAttributes;
+import com.formkiq.client.model.SetSitesSchemaRequest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.objects.Objects;
@@ -113,7 +125,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
       setBearerToken(siteId);
 
-      AddDocumentRequest req = new AddDocumentRequest().deepLinkPath("http://google.com");
+      AddDocumentRequest req = new AddDocumentRequest().deepLinkPath("https://google.com");
 
       // when
       AddDocumentResponse response = this.documentsApi.addDocument(req, null, null);
@@ -122,7 +134,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       String documentId = response.getDocumentId();
 
       GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
-      assertEquals("http://google.com", document.getDeepLinkPath());
+      assertEquals("https://google.com", document.getDeepLinkPath());
     }
   }
 
@@ -182,12 +194,12 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * Save Document with Metadata.
+   * Save Document with Content / Metadata.
    *
    * @throws Exception Exception
    */
   @Test
-  public void testPost5() throws Exception {
+  public void testPost05() throws Exception {
     // given
     String content = "test data";
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -212,6 +224,95 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       assertEquals("11,22", String.join(",", document.getMetadata().get(0).getValues()));
       assertEquals("person", document.getMetadata().get(1).getKey());
       assertEquals("category", document.getMetadata().get(1).getValue());
+
+      assertEquals(content,
+          this.documentsApi.getDocumentContent(documentId, siteId, null, null).getContent());
+    }
+  }
+
+  /**
+   * Add Document with attributes, check composite keys.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  public void testPost06() throws Exception {
+    // given
+    String content0 = "test data";
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+      String attributeKey0 = "category";
+      String attributeKey1 = "documentType";
+
+      for (String attributeKey : Arrays.asList(attributeKey0, attributeKey1)) {
+        this.attributesApi.addAttribute(
+            new AddAttributeRequest().attribute(new AddAttribute().key(attributeKey)), siteId);
+      }
+
+      SetSitesSchemaRequest sitesSchema = new SetSitesSchemaRequest().name("test")
+          .attributes(new SchemaAttributes().addCompositeKeysItem(new AttributeSchemaCompositeKey()
+              .attributeKeys(Arrays.asList(attributeKey0, attributeKey1))));
+      this.schemasApi.setSitesSchema(siteId, sitesSchema);
+
+      AddDocumentRequest req = new AddDocumentRequest().content(content0)
+          .addAttributesItem(new AddDocumentAttribute().key(attributeKey0).stringValue("person"))
+          .addAttributesItem(new AddDocumentAttribute().key(attributeKey1).stringValue("privacy"));
+
+      // when
+      String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+
+      // then
+      List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
+          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+
+      final int expected = 3;
+      assertEquals(expected, attributes.size());
+      assertEquals(attributeKey0 + "#" + attributeKey1, attributes.get(0).getKey());
+      assertEquals("person#privacy", attributes.get(0).getStringValue());
+      assertEquals(attributeKey0, attributes.get(1).getKey());
+      assertEquals("person", attributes.get(1).getStringValue());
+      assertEquals(attributeKey1, attributes.get(2).getKey());
+      assertEquals("privacy", attributes.get(2).getStringValue());
+    }
+  }
+
+  /**
+   * Add Document with invalid schema allowed value.
+   */
+  @Test
+  public void testPost07() throws Exception {
+    // given
+    String content0 = "test data";
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+
+      String attributeKey = "test";
+
+      this.attributesApi.addAttribute(
+          new AddAttributeRequest().attribute(new AddAttribute().key(attributeKey)), siteId);
+
+      SetSitesSchemaRequest sitesSchema = new SetSitesSchemaRequest().name("test")
+          .attributes(new SchemaAttributes().addOptionalItem(new AttributeSchemaOptional()
+              .attributeKey(attributeKey).addAllowedValuesItem("abc")));
+      this.schemasApi.setSitesSchema(siteId, sitesSchema);
+
+      AddDocumentRequest req = new AddDocumentRequest().content(content0)
+          .addAttributesItem(new AddDocumentAttribute().key(attributeKey).stringValue("123"));
+
+      // when
+      try {
+        this.documentsApi.addDocument(req, siteId, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"test\","
+                + "\"error\":\"invalid attribute value 'test', only allowed values are abc\"}]}",
+            e.getResponseBody());
+      }
     }
   }
 }
