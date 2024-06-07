@@ -33,6 +33,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
+
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.PaginationResult;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
@@ -55,9 +57,12 @@ import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.aws.services.lambda.services.CacheService;
+import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.transformers.AddDocumentRequestToDocumentItem;
 import com.formkiq.stacks.api.transformers.AddDocumentRequestToPresignedUrls;
+import com.formkiq.stacks.api.transformers.DocumentAttributeSchema;
 import com.formkiq.stacks.api.transformers.DocumentAttributeToDocumentAttributeRecord;
 import com.formkiq.stacks.api.transformers.PresignedUrlsToS3Bucket;
 import com.formkiq.stacks.api.validators.DocumentEntityValidator;
@@ -69,6 +74,8 @@ import com.formkiq.stacks.dynamodb.DocumentValidatorImpl;
 import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
+import com.formkiq.stacks.dynamodb.schemas.Schema;
+import com.formkiq.stacks.dynamodb.schemas.SchemaService;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.s3.model.S3Exception;
@@ -77,13 +84,10 @@ import software.amazon.awssdk.services.s3.model.S3Exception;
 public class DocumentIdRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
-  /** Extension for FormKiQ config file. */
-  public static final String FORMKIQ_DOC_EXT = ".fkb64";
-
   /** {@link DocumentEntityValidator}. */
-  private DocumentEntityValidator documentEntityValidator = new DocumentEntityValidatorImpl();
+  private final DocumentEntityValidator documentEntityValidator = new DocumentEntityValidatorImpl();
   /** {@link DocumentValidator}. */
-  private DocumentValidator documentValidator = new DocumentValidatorImpl();
+  private final DocumentValidator documentValidator = new DocumentValidatorImpl();
 
   /**
    * constructor.
@@ -173,13 +177,6 @@ public class DocumentIdRequestHandler
     return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(ditem));
   }
 
-  private AttributeValidationAccess getAttributeValidationAccess(
-      final ApiAuthorization authorization, final String siteId) {
-
-    boolean isAdmin = authorization.getPermissions(siteId).contains(ApiPermission.ADMIN);
-    return isAdmin ? AttributeValidationAccess.ADMIN_UPDATE : AttributeValidationAccess.UPDATE;
-  }
-
   @Override
   public String getRequestUrl() {
     return "/documents/{documentId}";
@@ -215,12 +212,8 @@ public class DocumentIdRequestHandler
 
     DocumentService service = awsservice.getExtension(DocumentService.class);
 
-    DocumentAttributeToDocumentAttributeRecord tr =
-        new DocumentAttributeToDocumentAttributeRecord(request.getDocumentId());
-
-    List<DocumentAttribute> attributes = notNull(request.getAttributes());
     List<DocumentAttributeRecord> documentAttributes =
-        attributes.stream().flatMap(a -> tr.apply(a).stream()).toList();
+        getDocumentAttributeRecords(awsservice, request, siteId, documentId);
 
     SaveDocumentOptions options = new SaveDocumentOptions()
         .validationAccess(getAttributeValidationAccess(authorization, siteId));
@@ -232,13 +225,20 @@ public class DocumentIdRequestHandler
     Map<String, Object> uploadUrls = addDocumentRequestToPresignedUrls.apply(request);
     new PresignedUrlsToS3Bucket(request).apply(uploadUrls);
 
-    uploadUrls.put("siteId", siteId != null ? siteId : null);
+    List<Action> actions = request.getActions();
+    if (!notNull(actions).isEmpty()) {
+      ActionsService actionsService = awsservice.getExtension(ActionsService.class);
+      actions.forEach(a -> a.userId(authorization.getUsername()));
+      actionsService.saveNewActions(siteId, documentId, actions);
+    }
+
+    uploadUrls.put("siteId", siteId);
     return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(uploadUrls));
   }
 
   /**
    * Validate Patch Request.
-   * 
+   *
    * @param awsservice {@link AwsServiceCache}
    * @param event {@link ApiGatewayRequestEvent}
    * @param siteId {@link String}
@@ -263,5 +263,40 @@ public class DocumentIdRequestHandler
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }
+  }
+
+  /**
+   * Get Document Attribute Records.
+   * 
+   * @param awsservice {@link AwsServiceCache}
+   * @param request {@link AddDocumentRequest}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @return {@link List} {@link DocumentAttributeRecord}
+   */
+  private List<DocumentAttributeRecord> getDocumentAttributeRecords(
+      final AwsServiceCache awsservice, final AddDocumentRequest request, final String siteId,
+      final String documentId) {
+
+    DocumentAttributeToDocumentAttributeRecord tr =
+        new DocumentAttributeToDocumentAttributeRecord(request.getDocumentId());
+
+    List<DocumentAttribute> attributes = notNull(request.getAttributes());
+    List<DocumentAttributeRecord> documentAttributes =
+        attributes.stream().flatMap(a -> tr.apply(a).stream()).toList();
+
+    SchemaService schemaService = awsservice.getExtension(SchemaService.class);
+    Schema schema = schemaService.getSitesSchema(siteId, null);
+
+    Collection<DocumentAttributeRecord> compositeKeys =
+        new DocumentAttributeSchema(schema, documentId).apply(documentAttributes);
+    return Stream.concat(documentAttributes.stream(), compositeKeys.stream()).toList();
+  }
+
+  private AttributeValidationAccess getAttributeValidationAccess(
+      final ApiAuthorization authorization, final String siteId) {
+
+    boolean isAdmin = authorization.getPermissions(siteId).contains(ApiPermission.ADMIN);
+    return isAdmin ? AttributeValidationAccess.ADMIN_UPDATE : AttributeValidationAccess.UPDATE;
   }
 }
