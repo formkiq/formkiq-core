@@ -474,7 +474,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
       } catch (ApiException e) {
         // then
         assertEquals(SC_BAD_REQUEST.getStatusCode(), e.getCode());
-        assertEquals("{\"errors\":[{\"key\":\"tag/key\",\"error\":\"attribute is required\"}]}",
+        assertEquals("{\"errors\":[{\"key\":\"tag/key\",\"error\":\"tag 'key' is required\"}]}",
             e.getResponseBody());
       }
     }
@@ -859,6 +859,63 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
       documents = notNull(response.getDocuments());
       assertEquals(1, documents.size());
       assertEquals(documentId0, documents.get(0).getDocumentId());
+    }
+  }
+
+  /**
+   * Post search by 'meta' and 'attributes'.
+   *
+   */
+  @Test
+  public void testHandleSearchRequest22() {
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      setBearerToken(siteId);
+
+      DocumentSearchRequest dsq = new DocumentSearchRequest()
+          .query(new DocumentSearch().meta(new DocumentSearchMeta().eq(""))
+              .attribute(new DocumentSearchAttribute().key("category").eq("person")));
+
+      // when
+      try {
+        this.searchApi.documentSearch(dsq, siteId, null, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"error\":\"'meta' cannot be combined with 'tags' or 'attributes'\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * Post search by 'meta' and 'tags'.
+   *
+   */
+  @Test
+  public void testHandleSearchRequest23() {
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      setBearerToken(siteId);
+
+      DocumentSearchRequest dsq = new DocumentSearchRequest().query(new DocumentSearch()
+          .meta(new DocumentSearchMeta().eq("")).tag(new DocumentSearchTag().key("category")));
+
+      // when
+      try {
+        this.searchApi.documentSearch(dsq, siteId, null, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"error\":\"'meta' cannot be combined with 'tags' or 'attributes'\"}]}",
+            e.getResponseBody());
+      }
     }
   }
 }
