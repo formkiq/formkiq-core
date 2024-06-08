@@ -96,38 +96,36 @@ public class QueryRequestValidator {
 
     Collection<ValidationError> errors = new ArrayList<>();
 
-    if (isEmptyRequest(q)) {
+    if (isEmptyRequest(q) || isQueryEmpty(q)) {
 
       errors.add(new ValidationErrorImpl().error("invalid body"));
-
-    } else if (isQueryEmpty(q)) {
-
-      errors.add(new ValidationErrorImpl().error("invalid body"));
-
-    } else if (q.query().getTag() != null && isEmpty(q.query().getTag().key())) {
-
-      errors.add(new ValidationErrorImpl().key("tag/key").error("attribute is required"));
 
     } else {
 
+      boolean isTagsEmpty = isTagsEmpty(q);
+      boolean isAttributesEmpty = isAttributesEmpty(q);
+      boolean isMetaEmpty = q.query().getMeta() == null;
+
+      if (!isMetaEmpty && (!isTagsEmpty || !isAttributesEmpty)) {
+        errors.add(new ValidationErrorImpl()
+            .error("'meta' cannot be combined with 'tags' or 'attributes'"));
+      }
+
       List<SearchTagCriteria> tags = notNull(q.query().getTags());
 
+      validateTag(q.query().getTag(), errors);
+      tags.forEach(tag -> validateTag(tag, errors));
       validateMultiTags(tags, errors);
-
-      for (SearchTagCriteria tag : tags) {
-
-        if (StringUtils.isEmpty(tag.key())) {
-          errors.add(new ValidationErrorImpl().key("tag/key").error("attribute is required"));
-        }
-
-        validateRange(tag, errors);
-      }
-    }
-
-    if (errors.isEmpty()) {
-      validateRange(q.query().getTag(), errors);
     }
 
     return errors;
+  }
+
+  private void validateTag(final SearchTagCriteria tag, final Collection<ValidationError> errors) {
+    if (tag != null && isEmpty(tag.key())) {
+      errors.add(new ValidationErrorImpl().key("tag/key").error("tag 'key' is required"));
+    }
+
+    validateRange(tag, errors);
   }
 }
