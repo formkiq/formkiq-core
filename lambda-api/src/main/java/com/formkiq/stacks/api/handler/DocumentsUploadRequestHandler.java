@@ -25,7 +25,7 @@ package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-import java.io.UnsupportedEncodingException;
+
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -47,7 +47,6 @@ import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
-import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.transformers.AddDocumentRequestToDocumentItem;
@@ -76,15 +75,15 @@ public class DocumentsUploadRequestHandler
   /** Default Duration Hours. */
   private static final int DEFAULT_DURATION_HOURS = 48;
   /** {@link DocumentsRestrictionsMaxContentLength}. */
-  private DocumentsRestrictionsMaxContentLength restrictionMaxContentLength =
+  private final DocumentsRestrictionsMaxContentLength restrictionMaxContentLength =
       new DocumentsRestrictionsMaxContentLength();
   /** {@link DocumentsRestrictionsMaxDocuments}. */
-  private DocumentsRestrictionsMaxDocuments restrictionMaxDocuments =
+  private final DocumentsRestrictionsMaxDocuments restrictionMaxDocuments =
       new DocumentsRestrictionsMaxDocuments();
   /** {@link DocumentEntityValidator}. */
-  private DocumentEntityValidator documentEntityValidator = new DocumentEntityValidatorImpl();
+  private final DocumentEntityValidator documentEntityValidator = new DocumentEntityValidatorImpl();
   /** {@link DocumentValidator}. */
-  private DocumentValidator documentValidator = new DocumentValidatorImpl();
+  private final DocumentValidator documentValidator = new DocumentValidatorImpl();
 
   /**
    * constructor.
@@ -103,7 +102,6 @@ public class DocumentsUploadRequestHandler
    * @param tags {@link List} {@link DocumentTag}
    * @param searchAttributes {@link Collection} {@link DocumentAttributeRecord}
    * @return {@link ApiRequestHandlerResponse}
-   * @throws UnsupportedEncodingException UnsupportedEncodingException
    * @throws BadException BadException
    * @throws ValidationException ValidationException
    */
@@ -111,7 +109,7 @@ public class DocumentsUploadRequestHandler
       final ApiAuthorization authorization, final AwsServiceCache awsservice, final String siteId,
       final AddDocumentRequest request, final List<DocumentTag> tags,
       final Collection<DocumentAttributeRecord> searchAttributes)
-      throws UnsupportedEncodingException, BadException, ValidationException {
+      throws BadException, ValidationException {
 
     String documentId = request.getDocumentId();
 
@@ -125,7 +123,7 @@ public class DocumentsUploadRequestHandler
             caculateDuration(event.getQueryStringParameters()),
             calculateContentLength(awsservice, event.getQueryStringParameters(), siteId));
 
-    Map<String, Object> map = addDocumentRequestToPresignedUrls.apply(request);
+    final Map<String, Object> map = addDocumentRequestToPresignedUrls.apply(request);
 
     DocumentService service = awsservice.getExtension(DocumentService.class);
 
@@ -135,12 +133,9 @@ public class DocumentsUploadRequestHandler
     SaveDocumentOptions options = new SaveDocumentOptions().saveDocumentDate(true);
     service.saveDocument(siteId, item, tags, searchAttributes, options);
 
-    List<Action> actions = request.getActions();
-    if (!notNull(actions).isEmpty()) {
-      ActionsService actionsService = awsservice.getExtension(ActionsService.class);
-      actions.forEach(a -> a.userId(authorization.getUsername()));
-      actionsService.saveNewActions(siteId, documentId, actions);
-    }
+    ActionsService actionsService = awsservice.getExtension(ActionsService.class);
+    notNull(request.getActions()).forEach(a -> a.userId(authorization.getUsername()));
+    actionsService.saveNewActions(siteId, documentId, request.getActions());
 
     return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
   }
@@ -157,8 +152,7 @@ public class DocumentsUploadRequestHandler
         query != null && query.containsKey("duration") ? Integer.valueOf(query.get("duration"))
             : Integer.valueOf(DEFAULT_DURATION_HOURS);
 
-    Duration duration = Duration.ofHours(durationHours.intValue());
-    return duration;
+    return Duration.ofHours(durationHours);
   }
 
   /**
@@ -193,76 +187,13 @@ public class DocumentsUploadRequestHandler
     return contentLength != null ? Optional.of(contentLength) : Optional.empty();
   }
 
-  // /**
-  // * Generate Presigned URL.
-  // *
-  // * @param event {@link ApiGatewayRequestEvent}
-  // * @param awsservice {@link AwsServiceCache}
-  // * @param siteId {@link String}
-  // * @param item {@link AddDocumentRequest}
-  // * @return {@link List}
-  // * @throws BadException BadException
-  // */
-  // private Map<String, Object> generatePresignedUrl(final ApiGatewayRequestEvent event,
-  // final AwsServiceCache awsservice, final String siteId, final AddDocumentRequest item)
-  // throws BadException {
-  //
-  // Map<String, Object> map = new HashMap<>();
-  //
-  // String documentId = item.getDocumentId();
-  // map.put("documentId", documentId);
-  //
-  // String docUrl = generatePresignedUrl(event, awsservice, siteId, documentId);
-  // map.put("url", docUrl);
-  //
-  // List<Map<String, String>> child = new ArrayList<>();
-  //
-  // for (AddDocumentRequest o : notNull(item.getDocuments())) {
-  //
-  // Map<String, String> m = new HashMap<>();
-  //
-  // String docid = o.getDocumentId();
-  // m.put("documentId", docid);
-  //
-  // String url = generatePresignedUrl(event, awsservice, siteId, docid);
-  // m.put("url", url);
-  //
-  // child.add(m);
-  // }
-  //
-  // if (!child.isEmpty()) {
-  // map.put("documents", child);
-  // }
-  //
-  // return map;
-  // }
-
-  // private String generatePresignedUrl(final ApiGatewayRequestEvent event,
-  // final AwsServiceCache awsservice, final String siteId, final String documentId)
-  // throws BadException {
-  //
-  // S3PresignerService s3Service = awsservice.getExtension(S3PresignerService.class);
-  // Map<String, String> query = event.getQueryStringParameters();
-  // String key = !isDefaultSiteId(siteId) ? siteId + "/" + documentId : documentId;
-  // Duration duration = caculateDuration(query);
-  // Optional<Long> contentLength = calculateContentLength(awsservice, query, siteId);
-  //
-  // Map<String, String> map = Map.of("checksum", UUID.randomUUID().toString());
-  // URL url = s3Service.presignPutUrl(awsservice.environment("DOCUMENTS_S3_BUCKET"), key, duration,
-  // contentLength, map);
-  //
-  // return url.toString();
-  // }
-
   @Override
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
     AddDocumentRequest item = new AddDocumentRequest();
-    // item.setInsertedDate(new Date());
     item.setDocumentId(UUID.randomUUID().toString());
-    // item.setUserId(authorization.getUsername());
 
     Map<String, String> query = event.getQueryStringParameters();
 
@@ -294,7 +225,7 @@ public class DocumentsUploadRequestHandler
   public Optional<Boolean> isAuthorized(final AwsServiceCache awsservice, final String method,
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
     boolean access = authorization.getPermissions().contains(ApiPermission.WRITE);
-    return Optional.of(Boolean.valueOf(access));
+    return Optional.of(access);
   }
 
   @Override
