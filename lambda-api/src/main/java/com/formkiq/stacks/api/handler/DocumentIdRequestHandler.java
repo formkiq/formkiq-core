@@ -57,7 +57,6 @@ import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.aws.services.lambda.services.CacheService;
-import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.transformers.AddDocumentRequestToDocumentItem;
@@ -203,7 +202,7 @@ public class DocumentIdRequestHandler
         new AddDocumentRequestToDocumentItem(existingItem, authorization.getUsername(), null)
             .apply(request);
 
-    validatePatch(awsservice, event, siteId, documentId, item);
+    validatePatch(awsservice, siteId, documentId, item);
 
     logger.log("setting userId: " + item.getUserId() + " contentType: " + item.getContentType());
 
@@ -225,12 +224,9 @@ public class DocumentIdRequestHandler
     Map<String, Object> uploadUrls = addDocumentRequestToPresignedUrls.apply(request);
     new PresignedUrlsToS3Bucket(request).apply(uploadUrls);
 
-    List<Action> actions = request.getActions();
-    if (!notNull(actions).isEmpty()) {
-      ActionsService actionsService = awsservice.getExtension(ActionsService.class);
-      actions.forEach(a -> a.userId(authorization.getUsername()));
-      actionsService.saveNewActions(siteId, documentId, actions);
-    }
+    ActionsService actionsService = awsservice.getExtension(ActionsService.class);
+    notNull(request.getActions()).forEach(a -> a.userId(authorization.getUsername()));
+    actionsService.saveNewActions(siteId, documentId, request.getActions());
 
     uploadUrls.put("siteId", siteId);
     return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(uploadUrls));
@@ -240,14 +236,13 @@ public class DocumentIdRequestHandler
    * Validate Patch Request.
    *
    * @param awsservice {@link AwsServiceCache}
-   * @param event {@link ApiGatewayRequestEvent}
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param doc {@link DocumentItem}
    * @throws Exception Exception
    */
-  private void validatePatch(final AwsServiceCache awsservice, final ApiGatewayRequestEvent event,
-      final String siteId, final String documentId, final DocumentItem doc) throws Exception {
+  private void validatePatch(final AwsServiceCache awsservice, final String siteId,
+      final String documentId, final DocumentItem doc) throws Exception {
 
     DocumentService docService = awsservice.getExtension(DocumentService.class);
     DocumentItem item = docService.findDocument(siteId, documentId);

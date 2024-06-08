@@ -24,6 +24,7 @@
 package com.formkiq.module.actions.services;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.fromS;
 import java.text.SimpleDateFormat;
@@ -47,7 +48,6 @@ import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.QueryConfig;
 import com.formkiq.aws.dynamodb.QueryResponseToPagination;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
-import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionIndexComparator;
 import com.formkiq.module.actions.ActionStatus;
@@ -73,11 +73,11 @@ import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
 
   /** {@link DynamoDbService}. */
-  private DynamoDbService db;
+  private final DynamoDbService db;
   /** {@link DynamoDbClient}. */
-  private DynamoDbClient dbClient;
+  private final DynamoDbClient dbClient;
   /** Document Table Name. */
-  private String documentTableName;
+  private final String documentTableName;
 
   /**
    * constructor.
@@ -196,13 +196,12 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
   @Override
   public PaginationResults<Action> getActions(final String siteId, final String documentId,
       final Map<String, AttributeValue> exclusiveStartKey, final int limit) {
-    return queryActions(siteId, documentId, null, exclusiveStartKey, Integer.valueOf(limit));
+    return queryActions(siteId, documentId, null, exclusiveStartKey, limit);
   }
 
   @Override
   public boolean hasActions(final String siteId, final String documentId) {
-    List<Action> actions =
-        queryActions(siteId, documentId, Arrays.asList(PK), null, null).getResults();
+    List<Action> actions = queryActions(siteId, documentId, List.of(PK), null, null).getResults();
     return !actions.isEmpty();
   }
 
@@ -248,7 +247,7 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
     Builder q = QueryRequest.builder().tableName(this.documentTableName).exclusiveStartKey(startKey)
         .keyConditionExpression(expression).expressionAttributeValues(values).limit(limit);
 
-    if (!Objects.notNull(projectionExpression).isEmpty()) {
+    if (!notNull(projectionExpression).isEmpty()) {
 
       Map<String, String> names = new HashMap<>();
       int i = 1;
@@ -326,7 +325,7 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
 
     List<Map<String, AttributeValue>> values = new ArrayList<>();
 
-    for (Action action : actions) {
+    for (Action action : notNull(actions)) {
 
       action.documentId(documentId);
       action.index("" + idx);

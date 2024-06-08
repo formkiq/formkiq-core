@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_BAD_REQUEST;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_PAYMENT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -36,6 +37,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
@@ -73,18 +75,16 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
   /** JUnit Test Timeout. */
   private static final int TEST_TIMEOUT = 10;
 
-  private void addAttribute(final String siteId, final String attribute) throws ApiException {
+  private void addAttribute(final String siteId) throws ApiException {
     AddAttributeRequest req =
-        new AddAttributeRequest().attribute(new AddAttribute().key(attribute));
+        new AddAttributeRequest().attribute(new AddAttribute().key("category"));
     this.attributesApi.addAttribute(req, siteId);
   }
 
-  private String addDocument(final String siteId, final List<AddDocumentTag> tags)
+  private void addDocument(final String siteId, final List<AddDocumentTag> tags)
       throws ApiException {
-
     AddDocumentUploadRequest uploadReq = new AddDocumentUploadRequest().tags(tags);
-
-    return this.documentsApi.addDocumentUpload(uploadReq, siteId, null, null, null).getDocumentId();
+    this.documentsApi.addDocumentUpload(uploadReq, siteId, null, null, null);
   }
 
   private String addDocument(final String siteId, final String tagKey, final String tagValue,
@@ -100,16 +100,14 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
     return this.documentsApi.addDocumentUpload(uploadReq, siteId, null, null, null).getDocumentId();
   }
 
-  private String addDocumentWithAttributes(final String siteId, final String attributeKey,
-      final String attributeValue, final List<String> attributeValues) throws ApiException {
+  private String addDocumentWithAttributes(final String siteId, final String attributeValue)
+      throws ApiException {
 
     AddDocumentUploadRequest uploadReq = new AddDocumentUploadRequest();
 
-    if (attributeKey != null) {
-      AddDocumentAttribute attr = new AddDocumentAttribute().key(attributeKey)
-          .stringValue(attributeValue).stringValues(attributeValues);
-      uploadReq.addAttributesItem(attr);
-    }
+    AddDocumentAttribute attr =
+        new AddDocumentAttribute().key("category").stringValue(attributeValue).stringValues(null);
+    uploadReq.addAttributesItem(attr);
 
     return this.documentsApi.addDocumentUpload(uploadReq, siteId, null, null, null).getDocumentId();
   }
@@ -127,6 +125,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
     AddDocumentUploadRequest uploadReq = new AddDocumentUploadRequest().path(path);
     String documentId =
         this.documentsApi.addDocumentUpload(uploadReq, siteId, null, null, null).getDocumentId();
+    assertNotNull(documentId);
 
     Map<String, Object> data =
         Map.of("documentId", Map.of("S", documentId), "path", Map.of("S", path));
@@ -148,10 +147,9 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
   /**
    * Invalid search.
    *
-   * @throws Exception an error has occurred
    */
   @Test
-  public void testHandleSearchRequest01() throws Exception {
+  public void testHandleSearchRequest01() {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       setBearerToken(siteId);
@@ -187,7 +185,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
           this.searchApi.documentSearch(req, siteId, null, null, null);
 
       // then
-      assertEquals(0, response.getDocuments().size());
+      assertEquals(0, notNull(response.getDocuments()).size());
     }
   }
 
@@ -216,7 +214,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
                 .documentIds(Collections.singletonList(documentId)));
 
         if ("eqOr".equals(op)) {
-          dsq.getQuery().getTag().eq(null).eqOr(List.of("person"));
+          Objects.requireNonNull(dsq.getQuery().getTag()).eq(null).eqOr(List.of("person"));
         }
 
         // when
@@ -224,13 +222,14 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
             this.searchApi.documentSearch(dsq, siteId, null, null, null);
 
         // then
-        List<SearchResultDocument> documents = response.getDocuments();
+        List<SearchResultDocument> documents = notNull(response.getDocuments());
         assertEquals(1, documents.size());
         assertEquals(documentId, documents.get(0).getDocumentId());
         assertEquals("joesmith", documents.get(0).getUserId());
         assertNotNull(documents.get(0).getInsertedDate());
 
         DocumentSearchMatchTag matchedTag = documents.get(0).getMatchedTag();
+        assert matchedTag != null;
         assertEquals("USERDEFINED", matchedTag.getType());
         assertEquals("category", matchedTag.getKey());
         assertEquals("person", matchedTag.getValue());
@@ -260,12 +259,14 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
 
       // then
       List<SearchResultDocument> documents = response.getDocuments();
+      assert documents != null;
       assertEquals(1, documents.size());
       assertEquals(documentId, documents.get(0).getDocumentId());
       assertEquals("joesmith", documents.get(0).getUserId());
       assertNotNull(documents.get(0).getInsertedDate());
 
       DocumentSearchMatchTag matchedTag = documents.get(0).getMatchedTag();
+      assert matchedTag != null;
       assertEquals("USERDEFINED", matchedTag.getType());
       assertEquals("category", matchedTag.getKey());
       assertEquals("xyz", matchedTag.getValue());
@@ -315,12 +316,14 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
 
         // then
         List<SearchResultDocument> documents = response.getDocuments();
+        assert documents != null;
         assertEquals(1, documents.size());
         assertEquals(documentId, documents.get(0).getDocumentId());
         assertEquals("joesmith", documents.get(0).getUserId());
         assertNotNull(documents.get(0).getInsertedDate());
 
         DocumentSearchMatchTag matchedTag = documents.get(0).getMatchedTag();
+        assert matchedTag != null;
         assertEquals("category", matchedTag.getKey());
         assertEquals("person", matchedTag.getValue());
         assertEquals("USERDEFINED", matchedTag.getType());
@@ -329,7 +332,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
         response = query(siteId, "category", eq, eqOr, List.of("123"));
 
         // then
-        documents = response.getDocuments();
+        documents = notNull(response.getDocuments());
         assertEquals(0, documents.size());
       }
     }
@@ -338,10 +341,9 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
   /**
    * Valid POST search by eq tagValue and TOO many DocumentId.
    *
-   * @throws Exception an error has occurred
    */
   @Test
-  public void testHandleSearchRequest07() throws Exception {
+  public void testHandleSearchRequest07() {
     final int count = 101;
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -389,7 +391,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
       DocumentSearchResponse response = query(siteId, tagKey, tagvalue, null, documentIds);
 
       // then
-      List<SearchResultDocument> documents = response.getDocuments();
+      List<SearchResultDocument> documents = notNull(response.getDocuments());
       assertEquals(count, documents.size());
 
       // given not search by documentIds should be limited to 10
@@ -398,7 +400,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
 
       // then
       final int ten = 10;
-      assertEquals(ten, response.getDocuments().size());
+      assertEquals(ten, notNull(response.getDocuments()).size());
     }
   }
 
@@ -421,7 +423,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
           this.searchApi.documentSearch(dsq, siteId, null, null, null);
 
       // then
-      assertEquals(0, response.getDocuments().size());
+      assertEquals(0, notNull(response.getDocuments()).size());
     }
   }
 
@@ -512,10 +514,11 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
           this.searchApi.documentSearch(dsq, siteId, null, null, null);
 
       // then
-      List<SearchResultDocument> documents = response.getDocuments();
+      List<SearchResultDocument> documents = notNull(response.getDocuments());
       assertEquals(count, documents.size());
 
       documents.forEach(doc -> {
+        assertNotNull(doc.getTags());
         assertEquals(1, doc.getTags().size());
         assertEquals(tagvalue1, doc.getTags().get(tagKey1));
       });
@@ -547,14 +550,14 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
             this.searchApi.documentSearch(dsq, siteId, null, null, null);
 
         // then
-        List<SearchResultDocument> documents = response.getDocuments();
+        List<SearchResultDocument> documents = notNull(response.getDocuments());
         assertEquals(1, documents.size());
         assertNotNull(documents.get(0).getInsertedDate());
         assertNotNull(documents.get(0).getLastModifiedDate());
 
         if (folder.isEmpty()) {
           assertEquals("something", documents.get(0).getPath());
-          assertEquals("true", documents.get(0).getFolder().toString());
+          assertEquals(Boolean.TRUE, documents.get(0).getFolder());
           assertNotNull(documents.get(0).getDocumentId());
         } else {
           assertEquals("something/path.txt", documents.get(0).getPath());
@@ -590,17 +593,17 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
           this.searchApi.documentSearch(dsq, siteId, null, null, null);
 
       // then
-      List<SearchResultDocument> documents = response.getDocuments();
+      List<SearchResultDocument> documents = notNull(response.getDocuments());
       assertEquals(2, documents.size());
       assertNotNull(documents.get(0).getInsertedDate());
       assertNotNull(documents.get(0).getLastModifiedDate());
 
       assertEquals("b", documents.get(0).getPath());
-      assertEquals("true", documents.get(0).getFolder().toString());
+      assertEquals(Boolean.TRUE, documents.get(0).getFolder());
       assertNotNull(documents.get(0).getDocumentId());
 
       assertEquals("c", documents.get(1).getPath());
-      assertEquals("true", documents.get(1).getFolder().toString());
+      assertEquals(Boolean.TRUE, documents.get(1).getFolder());
       assertNotNull(documents.get(1).getDocumentId());
 
       // given
@@ -611,7 +614,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
       response = this.searchApi.documentSearch(dsq, siteId, null, null, null);
 
       // then
-      documents = response.getDocuments();
+      documents = notNull(response.getDocuments());
       assertEquals(1, documents.size());
 
       assertEquals("a/test.txt", documents.get(0).getPath());
@@ -629,22 +632,22 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
   @Timeout(value = TEST_TIMEOUT)
   public void testHandleSearchRequest15() throws Exception {
     // given
-    String siteId = null;
-    setBearerToken(siteId);
+    setBearerToken((String) null);
 
     final String text = "My Document.docx";
     final String path = "something/My Document.docx";
 
-    String documentId = saveDocument(siteId, path);
+    String documentId = saveDocument(null, path);
     GetDocumentSyncResponse syncResponse =
-        this.documentsApi.getDocumentSyncs(documentId, siteId, null, null);
+        this.documentsApi.getDocumentSyncs(documentId, null, null, null);
+    assertNotNull(syncResponse.getSyncs());
     assertEquals(1, syncResponse.getSyncs().size());
     assertEquals(DocumentSyncStatus.COMPLETE, syncResponse.getSyncs().get(0).getStatus());
 
     GetDocumentFulltextResponse getResponse = null;
     while (getResponse == null) {
       try {
-        getResponse = this.advancedSearchApi.getDocumentFulltext(documentId, siteId, null);
+        getResponse = this.advancedSearchApi.getDocumentFulltext(documentId, null, null);
       } catch (ApiException e) {
         TimeUnit.SECONDS.sleep(1);
       }
@@ -658,11 +661,10 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
 
     while (documents == null) {
       // when
-      DocumentSearchResponse response =
-          this.searchApi.documentSearch(dsq, siteId, null, null, null);
+      DocumentSearchResponse response = this.searchApi.documentSearch(dsq, null, null, null, null);
 
       // then
-      documents = response.getDocuments();
+      documents = notNull(response.getDocuments());
       if (documents.isEmpty()) {
         documents = null;
         TimeUnit.SECONDS.sleep(1);
@@ -695,7 +697,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
           this.searchApi.documentSearch(dsq, siteId, null, null, null);
 
       // then
-      assertEquals(0, response.getDocuments().size());
+      assertEquals(0, notNull(response.getDocuments()).size());
     }
   }
 
@@ -722,7 +724,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
           this.searchApi.documentSearch(dsq, siteId, null, null, null);
 
       // then
-      List<SearchResultDocument> documents = response.getDocuments();
+      List<SearchResultDocument> documents = notNull(response.getDocuments());
       assertEquals(1, documents.size());
       assertNotNull(documents.get(0).getInsertedDate());
       assertNotNull(documents.get(0).getLastModifiedDate());
@@ -754,7 +756,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
           this.searchApi.documentSearch(dsq, siteId, null, null, null);
 
       // then
-      List<SearchResultDocument> documents = response.getDocuments();
+      List<SearchResultDocument> documents = notNull(response.getDocuments());
       assertEquals(2, documents.size());
       assertEquals(documentId0, documents.get(0).getDocumentId());
       assertEquals(documentId1, documents.get(1).getDocumentId());
@@ -829,10 +831,10 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
       // given
       setBearerToken(siteId);
 
-      addAttribute(siteId, "category");
+      addAttribute(siteId);
 
-      String documentId0 = addDocumentWithAttributes(siteId, "category", "person", null);
-      addDocumentWithAttributes(siteId, "category", "other", null);
+      String documentId0 = addDocumentWithAttributes(siteId, "person");
+      addDocumentWithAttributes(siteId, "other");
 
       DocumentSearchRequest dsq = new DocumentSearchRequest().query(new DocumentSearch()
           .attribute(new DocumentSearchAttribute().key("category").eq("person")));
@@ -842,7 +844,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
           this.searchApi.documentSearch(dsq, siteId, null, null, null);
 
       // then
-      List<SearchResultDocument> documents = response.getDocuments();
+      List<SearchResultDocument> documents = notNull(response.getDocuments());
       assertEquals(1, documents.size());
       assertEquals(documentId0, documents.get(0).getDocumentId());
 
@@ -854,7 +856,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
       response = this.searchApi.documentSearch(dsq, siteId, null, null, null);
 
       // then
-      documents = response.getDocuments();
+      documents = notNull(response.getDocuments());
       assertEquals(1, documents.size());
       assertEquals(documentId0, documents.get(0).getDocumentId());
     }
