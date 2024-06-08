@@ -39,7 +39,6 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -49,10 +48,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TimeZone;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import com.formkiq.aws.dynamodb.BatchGetConfig;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamicObject;
@@ -85,6 +87,10 @@ import com.formkiq.stacks.dynamodb.attributes.AttributeValidatorImpl;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
 import com.formkiq.stacks.dynamodb.attributes.DynamicObjectToDocumentAttributeRecord;
+import com.formkiq.stacks.dynamodb.schemas.Schema;
+import com.formkiq.stacks.dynamodb.schemas.SchemaAttributesCompositeKey;
+import com.formkiq.stacks.dynamodb.schemas.SchemaService;
+import com.formkiq.stacks.dynamodb.schemas.SchemaServiceDynamodb;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
@@ -110,29 +116,31 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   /** Maximum number of Records DynamoDb can be queries for at a time. */
   private static final int MAX_QUERY_RECORDS = 100;
   /** {@link AttributeService}. */
-  private AttributeService attributeService;
+  private final AttributeService attributeService;
   /** {@link AttributeValidator}. */
-  private AttributeValidator attributeValidator;
+  private final AttributeValidator attributeValidator;
   /** {@link DynamoDbClient}. */
-  private DynamoDbClient dbClient;
+  private final DynamoDbClient dbClient;
   /** {@link DynamoDbService}. */
-  private DynamoDbService dbService;
+  private final DynamoDbService dbService;
   /** {@link SimpleDateFormat} in ISO Standard format. */
-  private SimpleDateFormat df = DateUtil.getIsoDateFormatter();
+  private final SimpleDateFormat df = DateUtil.getIsoDateFormatter();
   /** Documents Table Name. */
-  private String documentTableName;
+  private final String documentTableName;
   /** {@link FolderIndexProcessor}. */
-  private FolderIndexProcessor folderIndexProcessor;
+  private final FolderIndexProcessor folderIndexProcessor;
   /** {@link GlobalIndexService}. */
-  private GlobalIndexService indexWriter;
+  private final GlobalIndexService indexWriter;
+  /** {@link SchemaService}. */
+  private final SchemaService schemaService;
   /** Last Short Date. */
   private String lastShortDate = null;
   /** {@link DocumentVersionService}. */
-  private DocumentVersionService versionsService;
+  private final DocumentVersionService versionsService;
   /** {@link SimpleDateFormat} YYYY-mm-dd format. */
-  private SimpleDateFormat yyyymmddFormat;
+  private final SimpleDateFormat yyyymmddFormat;
   /** {@link DateTimeFormatter}. */
-  private DateTimeFormatter yyyymmddFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+  private final DateTimeFormatter yyyymmddFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
   /**
    * constructor.
@@ -157,21 +165,22 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     this.attributeValidator = new AttributeValidatorImpl(this.dbService);
     this.attributeService = new AttributeServiceDynamodb(this.dbService);
     this.yyyymmddFormat = new SimpleDateFormat("yyyy-MM-dd");
+    this.schemaService = new SchemaServiceDynamodb(this.dbService);
 
     TimeZone tz = TimeZone.getTimeZone("UTC");
     this.yyyymmddFormat.setTimeZone(tz);
   }
 
   @Override
-  public void addFolderIndex(final String siteId, final String path, final String userId)
-      throws IOException {
+  public void addFolderIndex(final String siteId, final String path, final String userId) {
 
     Date now = new Date();
 
     List<FolderIndexRecordExtended> list =
         this.folderIndexProcessor.get(siteId, path, "folder", userId, now);
-    List<Map<String, AttributeValue>> folderIndex = list.stream().filter(r -> r.isChanged())
-        .map(r -> r.record().getAttributes(siteId)).collect(Collectors.toList());
+    List<Map<String, AttributeValue>> folderIndex =
+        list.stream().filter(FolderIndexRecordExtended::isChanged)
+            .map(r -> r.record().getAttributes(siteId)).collect(Collectors.toList());
 
     WriteRequestBuilder writeBuilder =
         new WriteRequestBuilder().appends(this.documentTableName, folderIndex);
@@ -202,7 +211,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
           getSaveTagsAttributes(siteId, e.getKey(), e.getValue(), timeToLive);
       items.addAll(attributes);
 
-      tagKeys.addAll(e.getValue().stream().map(t -> t.getKey()).collect(Collectors.toList()));
+      tagKeys.addAll(e.getValue().stream().map(DocumentTag::getKey).toList());
     }
 
     if (!items.isEmpty()) {
@@ -228,21 +237,29 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
    * @param writeBuilder {@link WriteRequestBuilder}
    * @param siteId {@link String}
    * @param documentId {@link String}
-   * @param documentAttributes {@link Collection} {@link DocumentAttributeRecord}
+   * @param documentAttributeRecords {@link Collection} {@link DocumentAttributeRecord}
    * @param isUpdate is document update
    * @param validation {@link AttributeValidation}
    * @param validationAccess {@link AttributeValidationAccess}
    * @throws ValidationException ValidationException
    */
   private void appendDocumentAttributes(final WriteRequestBuilder writeBuilder, final String siteId,
-      final String documentId, final Collection<DocumentAttributeRecord> documentAttributes,
+      final String documentId, final Collection<DocumentAttributeRecord> documentAttributeRecords,
       final boolean isUpdate, final AttributeValidation validation,
       final AttributeValidationAccess validationAccess) throws ValidationException {
 
-    if (documentAttributes != null) {
+    if (documentAttributeRecords != null) {
 
-      Map<String, AttributeRecord> attributeMap = validateDocumentAttributes(siteId, documentId,
-          documentAttributes, isUpdate, validation, validationAccess);
+      Schema schema = getSchame(siteId);
+
+      Collection<DocumentAttributeRecord> documentAttributes =
+          addCompositeKeys(siteId, documentId, documentAttributeRecords, isUpdate, schema);
+
+      // Collection<DocumentAttributeRecord> compositeKeys =
+      // new DocumentAttributeSchema(schema, documentId).apply(documentAttributes);
+
+      Map<String, AttributeRecord> attributeMap = validateDocumentAttributes(schema, siteId,
+          documentId, documentAttributes, isUpdate, validation, validationAccess);
 
       for (AttributeRecord attribute : attributeMap.values()) {
         if (!attribute.isInUse()) {
@@ -254,7 +271,8 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       if (AttributeValidationAccess.ADMIN_UPDATE.equals(validationAccess)
           || AttributeValidationAccess.UPDATE.equals(validationAccess)) {
 
-        List<String> attributeKeys = documentAttributes.stream().map(a -> a.getKey()).toList();
+        List<String> attributeKeys =
+            documentAttributes.stream().map(DocumentAttributeRecord::getKey).toList();
         for (String attributeKey : attributeKeys) {
           deleteDocumentAttribute(siteId, documentId, attributeKey, AttributeValidation.NONE,
               AttributeValidationAccess.NONE);
@@ -270,6 +288,77 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       writeBuilder.appends(this.documentTableName,
           documentAttributes.stream().map(a -> a.getAttributes(siteId)).toList());
     }
+  }
+
+  private Collection<DocumentAttributeRecord> addCompositeKeys(final String siteId,
+      final String documentId, final Collection<DocumentAttributeRecord> documentAttributeRecords,
+      final boolean isUpdate, final Schema schema) {
+
+    Collection<DocumentAttributeRecord> documentAttributes = documentAttributeRecords;
+
+    if (isUpdate && schema != null) {
+
+      Collection<DocumentAttributeRecord> compositeKeys =
+          generateCompositeKeys(schema, siteId, documentId, documentAttributes);
+
+      documentAttributes =
+          Stream.concat(documentAttributes.stream(), compositeKeys.stream()).toList();
+    }
+
+    return documentAttributes;
+  }
+
+  private Collection<DocumentAttributeRecord> generateCompositeKeys(final Schema schema,
+      final String siteId, final String documentId,
+      final Collection<DocumentAttributeRecord> documentAttributes) {
+
+    Set<String> documentAttributeKeys = documentAttributes.stream()
+        .map(DocumentAttributeRecord::getKey).collect(Collectors.toSet());
+
+    List<SchemaAttributesCompositeKey> schemaCompositeKeys =
+        notNull(schema.getAttributes().getCompositeKeys());
+
+    List<SchemaAttributesCompositeKey> matchingCompositeKeys =
+        schemaCompositeKeys.stream().filter(sc -> {
+
+          List<String> attributeKeys = sc.getAttributeKeys();
+          for (String attributeKey : attributeKeys) {
+            if (documentAttributeKeys.contains(attributeKey)) {
+              return true;
+            }
+          }
+
+          return false;
+
+        }).toList();
+
+    List<String> attributesToLoad =
+        matchingCompositeKeys.stream().flatMap(c -> c.getAttributeKeys().stream())
+            .filter(k -> !documentAttributeKeys.contains(k)).toList();
+
+    Collection<DocumentAttributeRecord> existingAttributes =
+        getDocumentAttribute(siteId, documentId, attributesToLoad);
+
+    List<DocumentAttributeRecord> merged =
+        Stream.concat(documentAttributes.stream(), existingAttributes.stream()).toList();
+
+    return new DocumentAttributeSchema(schema, documentId).apply(merged);
+  }
+
+  /**
+   * Get List of Document Attributes.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param attributeKeys {@link Collection} {@link String}
+   * @return {@link Collection} {@link DocumentAttributeRecord}
+   */
+  private Collection<DocumentAttributeRecord> getDocumentAttribute(final String siteId,
+      final String documentId, final Collection<String> attributeKeys) {
+
+    return attributeKeys.stream()
+        .flatMap(attributeKey -> findDocumentAttribute(siteId, documentId, attributeKey).stream())
+        .toList();
   }
 
   /**
@@ -318,9 +407,9 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
     Map<String, AttributeValue> keys = keysGeneric(siteId, PREFIX_DOCS + documentId, null);
     AttributeValue pk = keys.get(PK);
-    AttributeValue sk = null;
+    AttributeValue sk;
 
-    List<Map<String, AttributeValue>> list = queryDocumentAttributes(pk, sk, softDelete);
+    List<Map<String, AttributeValue>> list = queryDocumentAttributes(pk, null, softDelete);
 
     if (softDelete) {
 
@@ -330,7 +419,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     } else {
 
       pk = fromS(SOFT_DELETE + pk.s());
-      list.addAll(queryDocumentAttributes(pk, sk, false));
+      list.addAll(queryDocumentAttributes(pk, null, false));
 
       keys = keysGeneric(siteId, SOFT_DELETE + PREFIX_DOCS, null);
       pk = keys.get(PK);
@@ -352,8 +441,9 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       final AttributeValidationAccess validationAccess) throws ValidationException {
 
     if (!AttributeValidation.NONE.equals(validation)) {
-      Collection<ValidationError> errors =
-          this.attributeValidator.validateDeleteAttribute(siteId, attributeKey, validationAccess);
+      Schema schema = getSchame(siteId);
+      Collection<ValidationError> errors = this.attributeValidator.validateDeleteAttribute(schema,
+          siteId, attributeKey, validationAccess);
       if (!errors.isEmpty()) {
         throw new ValidationException(errors);
       }
@@ -402,7 +492,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
         String key = o.get().getKey();
         String error = "Cannot remove attribute '" + key + "' type OPA";
         throw new ValidationException(
-            Arrays.asList(new ValidationErrorImpl().key(key).error(error)));
+            Collections.singletonList(new ValidationErrorImpl().key(key).error(error)));
       }
     }
 
@@ -417,8 +507,9 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       final String attributeKey, final String attributeValue,
       final AttributeValidationAccess validationAccess) throws ValidationException {
 
-    Collection<ValidationError> errors = this.attributeValidator
-        .validateDeleteAttributeValue(siteId, attributeKey, attributeValue, validationAccess);
+    Schema schema = getSchame(siteId);
+    Collection<ValidationError> errors = this.attributeValidator.validateDeleteAttributeValue(
+        schema, siteId, attributeKey, attributeValue, validationAccess);
 
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
@@ -606,8 +697,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
     QueryRequest q = QueryRequest.builder().tableName(this.documentTableName).indexName(indexName)
         .keyConditionExpression(expression).expressionAttributeValues(values)
-        .scanIndexForward(scanIndexForward).limit(Integer.valueOf(maxresults))
-        .exclusiveStartKey(startkey).build();
+        .scanIndexForward(scanIndexForward).limit(maxresults).exclusiveStartKey(startkey).build();
 
     QueryResponse result = this.dbClient.query(q);
     return new PaginationResults<>(result.items(), new QueryResponseToPagination().apply(result));
@@ -651,10 +741,9 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     PaginationResults<Map<String, AttributeValue>> results =
         find(pk, sk, indexName, token, null, maxresults);
 
-    List<T> list =
-        results.getResults().stream().map(s -> func.apply(s)).collect(Collectors.toList());
+    List<T> list = results.getResults().stream().map(func).collect(Collectors.toList());
 
-    return new PaginationResults<T>(list, results.getToken());
+    return new PaginationResults<>(list, results.getToken());
   }
 
   @Override
@@ -687,8 +776,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
         QueryRequest q = QueryRequest.builder().tableName(this.documentTableName)
             .keyConditionExpression(PK + " = :pk and begins_with(" + SK + ",:sk)")
-            .expressionAttributeValues(values).exclusiveStartKey(startkey)
-            .limit(Integer.valueOf(limit)).build();
+            .expressionAttributeValues(values).exclusiveStartKey(startkey).limit(limit).build();
 
         QueryResponse response = this.dbClient.query(q);
         List<Map<String, AttributeValue>> results = response.items();
@@ -748,7 +836,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     Optional<Map<String, AttributeValue>> result = find(keyMap.get("PK").s(), keyMap.get("SK").s());
 
     AttributeValueToDocumentFormat format = new AttributeValueToDocumentFormat();
-    return result.isPresent() ? Optional.of(format.apply(result.get())) : Optional.empty();
+    return result.map(format);
   }
 
   @Override
@@ -775,8 +863,9 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
           !values.isEmpty() ? values.iterator().next() : Collections.emptyList();
 
       AttributeValueToDocumentItem toDocumentItem = new AttributeValueToDocumentItem();
-      List<DocumentItem> items = result.stream().map(a -> toDocumentItem.apply(Arrays.asList(a)))
-          .collect(Collectors.toList());
+      List<DocumentItem> items =
+          result.stream().map(a -> toDocumentItem.apply(Collections.singletonList(a)))
+              .collect(Collectors.toList());
       items = sortByIds(ids, items);
 
       if (!items.isEmpty()) {
@@ -804,7 +893,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
           findDocumentsBySearchMap(siteId, searchMap, nextToken, 1);
 
       if (next.getResults().isEmpty()) {
-        results = new PaginationResults<DocumentItem>(results.getResults(), null);
+        results = new PaginationResults<>(results.getResults(), null);
       }
     }
 
@@ -847,7 +936,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       qtoken = null;
     }
 
-    return new PaginationResults<DocumentItem>(items, itemsToken);
+    return new PaginationResults<>(items, itemsToken);
   }
 
   @Override
@@ -881,8 +970,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
           !values.isEmpty() ? values.iterator().next() : Collections.emptyList();
 
       AttributeValueToDocumentTag toDocumentTag = new AttributeValueToDocumentTag(siteId);
-      List<DocumentTag> list =
-          result.stream().map(a -> toDocumentTag.apply(a)).collect(Collectors.toList());
+      List<DocumentTag> list = result.stream().map(toDocumentTag).toList();
 
       for (DocumentTag tag : list) {
         tagMap.get(tag.getDocumentId()).add(tag);
@@ -897,8 +985,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       final String tagKey) {
 
     DocumentTag item = null;
-    QueryResponse response =
-        findDocumentTagAttributes(siteId, documentId, tagKey, Integer.valueOf(1));
+    QueryResponse response = findDocumentTagAttributes(siteId, documentId, tagKey, 1);
     List<Map<String, AttributeValue>> items = response.items();
 
     if (!items.isEmpty()) {
@@ -932,8 +1019,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     }
 
     QueryRequest q = req.build();
-    QueryResponse result = this.dbClient.query(q);
-    return result;
+    return this.dbClient.query(q);
   }
 
   @Override
@@ -1113,9 +1199,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
   private Collection<DocumentAttributeRecord> getDocumentAttributes(final DynamicDocumentItem doc) {
     List<DynamicObject> list = doc.getList("attributes");
-    Collection<DocumentAttributeRecord> attributes =
-        new DynamicObjectToDocumentAttributeRecord(doc.getDocumentId(), null).apply(list);
-    return attributes;
+    return new DynamicObjectToDocumentAttributeRecord(doc.getDocumentId(), null).apply(list);
   }
 
   private Date getPreviousInsertedDate(final Map<String, AttributeValue> previous) {
@@ -1279,10 +1363,10 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
    * @return boolean
    */
   private boolean isDocumentUserTagged(final List<DynamicObject> tags) {
-    return tags != null ? tags.stream().filter(t -> {
+    return tags != null && tags.stream().anyMatch(t -> {
       String key = t.getString("key");
       return key != null && !SYSTEM_DEFINED_TAGS.contains(key);
-    }).count() > 0 : false;
+    });
   }
 
   @Override
@@ -1355,8 +1439,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
       QueryResponse response = this.dbService.queryBeginsWith(config, pk, sk, startkey, limit);
 
-      List<Map<String, AttributeValue>> attrs =
-          response.items().stream().collect(Collectors.toList());
+      List<Map<String, AttributeValue>> attrs = response.items().stream().toList();
       list.addAll(attrs);
 
       startkey = response.lastEvaluatedKey();
@@ -1383,7 +1466,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       final int maxresults) {
 
     String expr = GSI1_PK + " = :pk";
-    Map<String, AttributeValue> values = new HashMap<String, AttributeValue>();
+    Map<String, AttributeValue> values = new HashMap<>();
     values.put(":pk", AttributeValue.builder().s(createDatabaseKey(siteId, pk)).build());
 
     Map<String, AttributeValue> startkey = new PaginationToAttributeValue().apply(token);
@@ -1398,8 +1481,8 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     }
 
     QueryRequest q = QueryRequest.builder().tableName(this.documentTableName).indexName(GSI1)
-        .keyConditionExpression(expr).expressionAttributeValues(values)
-        .limit(Integer.valueOf(maxresults)).exclusiveStartKey(startkey).build();
+        .keyConditionExpression(expr).expressionAttributeValues(values).limit(maxresults)
+        .exclusiveStartKey(startkey).build();
 
     QueryResponse result = this.dbClient.query(q);
 
@@ -1410,7 +1493,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
     if (!list.isEmpty()) {
       List<String> documentIds =
-          list.stream().map(s -> s.getDocumentId()).collect(Collectors.toList());
+          list.stream().map(DocumentItem::getDocumentId).collect(Collectors.toList());
 
       list = findDocuments(siteId, documentIds);
     }
@@ -1427,7 +1510,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   private void removeNullMetadata(final DocumentItem document,
       final Map<String, AttributeValue> documentValues) {
     notNull(document.getMetadata()).stream()
-        .filter(m -> m.getValues() == null && isEmpty(m.getValue())).collect(Collectors.toList())
+        .filter(m -> m.getValues() == null && isEmpty(m.getValue())).toList()
         .forEach(m -> documentValues.remove(PREFIX_DOCUMENT_METADATA + m.getKey()));
   }
 
@@ -1470,8 +1553,8 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       }
     });
 
-    deletes.forEach(i -> this.dbClient.deleteItem(i));
-    puts.forEach(i -> this.dbClient.putItem(i));
+    deletes.forEach(this.dbClient::deleteItem);
+    puts.forEach(this.dbClient::putItem);
 
     return !deletes.isEmpty();
   }
@@ -1485,8 +1568,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       QueryResponse response = findDocumentTagAttributes(siteId, documentId, tag, null);
 
       List<Map<String, AttributeValue>> items = response.items();
-      items =
-          items.stream().filter(i -> tag.equals(i.get("tagKey").s())).collect(Collectors.toList());
+      items = items.stream().filter(i -> tag.equals(i.get("tagKey").s())).toList();
 
       items.forEach(i -> {
         Map<String, AttributeValue> key = keysGeneric(i.get("PK").s(), i.get("SK").s());
@@ -1526,8 +1608,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
         QueryResponse response = this.dbService.queryBeginsWith(config,
             fromS(SOFT_DELETE + keys.get(PK).s()), null, startkey, limit);
 
-        List<Map<String, AttributeValue>> attrs =
-            response.items().stream().collect(Collectors.toList());
+        List<Map<String, AttributeValue>> attrs = response.items().stream().toList();
         list.addAll(attrs);
 
         startkey = response.lastEvaluatedKey();
@@ -1678,7 +1759,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
         documentExists, AttributeValidation.FULL, options.getValidationAccess());
 
     if (hasDocumentChanged) {
-      writeBuilder = writeBuilder.appends(documentVersionsTableName, Arrays.asList(previous));
+      writeBuilder = writeBuilder.appends(documentVersionsTableName, List.of(previous));
     }
 
     if (writeBuilder.batchWriteItem(this.dbClient)) {
@@ -1793,7 +1874,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   /**
-   * Generate Tags for {@link DocumentItemWithTags}.
+   * Generate Tags for {@link DocumentTag}.
    * 
    * @param siteId {@link String}
    * @param doc {@link DynamicDocumentItem}
@@ -1926,7 +2007,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       final List<DocumentItem> documents) {
     Map<String, DocumentItem> map = documents.stream()
         .collect(Collectors.toMap(DocumentItem::getDocumentId, Function.identity()));
-    return documentIds.stream().map(id -> map.get(id)).filter(i -> i != null)
+    return documentIds.stream().map(map::get).filter(java.util.Objects::nonNull)
         .collect(Collectors.toList());
   }
 
@@ -2002,10 +2083,11 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     }
   }
 
-  private Map<String, AttributeRecord> validateDocumentAttributes(final String siteId,
-      final String documentId, final Collection<DocumentAttributeRecord> documentAttributes,
-      final boolean isUpdate, final AttributeValidation validation,
-      final AttributeValidationAccess validationAccess) throws ValidationException {
+  private Map<String, AttributeRecord> validateDocumentAttributes(final Schema schema,
+      final String siteId, final String documentId,
+      final Collection<DocumentAttributeRecord> documentAttributes, final boolean isUpdate,
+      final AttributeValidation validation, final AttributeValidationAccess validationAccess)
+      throws ValidationException {
 
     Collection<ValidationError> errors = Collections.emptyList();
 
@@ -2013,18 +2095,17 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
         this.attributeValidator.getAttributeRecordMap(siteId, documentAttributes);
 
     switch (validation) {
-      case FULL:
-        errors = this.attributeValidator.validateFullAttribute(siteId, documentId,
+      case FULL -> {
+        errors = this.attributeValidator.validateFullAttribute(schema, siteId, documentId,
             documentAttributes, attributeRecordMap, isUpdate, validationAccess);
-        break;
-      case PARTIAL:
-        errors = this.attributeValidator.validatePartialAttribute(siteId, documentAttributes,
-            attributeRecordMap, validationAccess);
-        break;
-      case NONE:
-        break;
-      default:
-        throw new IllegalArgumentException("Unexpected value: " + validation);
+      }
+      case PARTIAL -> {
+        errors = this.attributeValidator.validatePartialAttribute(schema, siteId,
+            documentAttributes, attributeRecordMap, validationAccess);
+      }
+      case NONE -> {
+      }
+      default -> throw new IllegalArgumentException("Unexpected value: " + validation);
     }
 
     if (!errors.isEmpty()) {
@@ -2032,5 +2113,9 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     }
 
     return attributeRecordMap;
+  }
+
+  private Schema getSchame(final String siteId) {
+    return this.schemaService.getSitesSchema(siteId, null);
   }
 }

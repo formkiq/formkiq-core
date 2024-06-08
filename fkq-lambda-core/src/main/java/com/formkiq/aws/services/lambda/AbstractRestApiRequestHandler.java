@@ -102,7 +102,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
     Map<String, Object> response = new HashMap<>();
     Map<String, String> jsonheaders = createJsonHeaders();
-    response.put("statusCode", Integer.valueOf(status.getStatusCode()));
+    response.put("statusCode", status.getStatusCode());
 
     if (apiResponse instanceof ApiRedirectResponse) {
       jsonheaders.put("Location", ((ApiRedirectResponse) apiResponse).getRedirectUri());
@@ -225,7 +225,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
   }
 
   /**
-   * Execute {@link ApiRequestHandlerResponseInterceptor}.
+   * Execute {@link ApiRequestHandlerInterceptor}.
    * 
    * @param requestInterceptors {@link ApiRequestHandlerInterceptor}
    * @param event {@link ApiGatewayRequestEvent}
@@ -271,17 +271,15 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
    * @param logger {@link LambdaLogger}
    * @param awsservice {@link AwsServiceCache}
    * @return {@link ApiGatewayRequestEvent}
-   * @throws IOException IOException
    */
   private ApiGatewayRequestEvent getApiGatewayEvent(final String str, final LambdaLogger logger,
-      final AwsServiceCache awsservice) throws IOException {
+      final AwsServiceCache awsservice) {
 
     if (awsservice.debug()) {
       logger.log(str);
     }
 
-    ApiGatewayRequestEvent event = this.gson.fromJson(str, ApiGatewayRequestEvent.class);
-    return event;
+    return this.gson.fromJson(str, ApiGatewayRequestEvent.class);
   }
 
   private List<ApiRequestHandlerInterceptor> getApiRequestHandlerInterceptors(
@@ -404,36 +402,22 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
     hasAccess = isAuthorizedHandler(event, authorization, hasAccess);
 
     if (hasAccess.isEmpty()) {
-      switch (method) {
-        case "head":
-        case "get":
-          hasAccess = checkPermission(ApiPermission.READ, permissions);
-          break;
-
-        case "post":
-        case "patch":
-        case "put":
-          hasAccess = checkPermission(ApiPermission.WRITE, permissions);
-          break;
-
-        case "delete":
-          hasAccess = checkPermission(ApiPermission.DELETE, permissions);
-          break;
-        default:
-          hasAccess = Optional.empty();
-          break;
-      }
+      hasAccess = switch (method) {
+        case "head", "get" -> checkPermission(ApiPermission.READ, permissions);
+        case "post", "patch", "put" -> checkPermission(ApiPermission.WRITE, permissions);
+        case "delete" -> checkPermission(ApiPermission.DELETE, permissions);
+        default -> Optional.empty();
+      };
     }
 
     hasAccess = permissions.contains(ApiPermission.ADMIN) ? Optional.of(Boolean.TRUE) : hasAccess;
 
-    return hasAccess.orElse(Boolean.FALSE).booleanValue();
+    return hasAccess.orElse(Boolean.FALSE);
   }
 
   /**
    * Is caller Authorized to continue.
-   * 
-   * @param awsServiceCache {@link AwsServiceCache}
+   *
    * @param event {@link ApiGatewayRequestEvent}
    * @param authorization {@link ApiAuthorization}
    * @param method {@link String}
@@ -441,8 +425,8 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
    * @return boolean
    * @throws Exception Exception
    */
-  private boolean isAuthorized(final AwsServiceCache awsServiceCache,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization, final String method,
+  private boolean isAuthorized(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final String method,
       final ApiGatewayRequestHandler handler) throws Exception {
     return "options".equals(method) || isAuthorized(event, method, authorization, handler);
   }
@@ -605,7 +589,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
     String resource = event.getResource();
     ApiGatewayRequestHandler handler = findRequestHandler(urlMap, method, resource);
 
-    if (!isAuthorized(getAwsServices(), event, authorization, method, handler)) {
+    if (!isAuthorized(event, authorization, method, handler)) {
       String s = String.format("fkq access denied (%s)", authorization.getAccessSummary());
       throw new ForbiddenException(s);
     }
@@ -687,7 +671,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
       logger.log("response: " + json);
     }
 
-    OutputStreamWriter writer = new OutputStreamWriter(output, "UTF-8");
+    OutputStreamWriter writer = new OutputStreamWriter(output, StandardCharsets.UTF_8);
     writer.write(json);
     writer.close();
   }

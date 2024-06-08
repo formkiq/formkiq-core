@@ -25,6 +25,8 @@ package com.formkiq.stacks.dynamodb.attributes;
 
 import java.util.Collection;
 import java.util.Map;
+
+import com.formkiq.stacks.dynamodb.schemas.Schema;
 import com.formkiq.validation.ValidationError;
 
 /**
@@ -44,30 +46,33 @@ public interface AttributeValidator {
 
   /**
    * Validates Deleting Attribute.
-   * 
+   *
+   * @param schema {@link Schema}
    * @param siteId {@link String}
    * @param attributeKey {@link String}
    * @param validationAccess {@link AttributeValidationAccess}
    * @return {@link Collection} {@link ValidationError}
    */
-  Collection<ValidationError> validateDeleteAttribute(String siteId, String attributeKey,
-      AttributeValidationAccess validationAccess);
+  Collection<ValidationError> validateDeleteAttribute(Schema schema, String siteId,
+      String attributeKey, AttributeValidationAccess validationAccess);
 
   /**
    * Validate Delete Attribute and Value.
-   * 
+   *
+   * @param schema {@link Schema}
    * @param siteId {@link String}
    * @param attributeKey {@link String}
    * @param attributeValue {@link String}
    * @param validationAccess {@link AttributeValidationAccess}
    * @return {@link Collection} {@link ValidationError}
    */
-  Collection<ValidationError> validateDeleteAttributeValue(String siteId, String attributeKey,
-      String attributeValue, AttributeValidationAccess validationAccess);
+  Collection<ValidationError> validateDeleteAttributeValue(Schema schema, String siteId,
+      String attributeKey, String attributeValue, AttributeValidationAccess validationAccess);
 
   /**
    * Validate {@link DocumentAttributeRecord}.
-   * 
+   *
+   * @param schema {@link Schema}
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param documentAttributes {@link Collection} {@link DocumentAttributeRecord}
@@ -76,21 +81,22 @@ public interface AttributeValidator {
    * @param access {@link AttributeValidationAccess}
    * @return {@link Collection} {@link ValidationError}
    */
-  Collection<ValidationError> validateFullAttribute(String siteId, String documentId,
+  Collection<ValidationError> validateFullAttribute(Schema schema, String siteId, String documentId,
       Collection<DocumentAttributeRecord> documentAttributes,
       Map<String, AttributeRecord> attributesMap, boolean isDocumentUpdate,
       AttributeValidationAccess access);
 
   /**
    * Validate {@link DocumentAttributeRecord}.
-   * 
+   *
+   * @param schema {@link Schema}
    * @param siteId {@link String}
    * @param documentAttributes {@link DocumentAttributeRecord}
    * @param attributesMap {@link Map}
    * @param access {@link AttributeValidationAccess}
    * @return {@link Collection} {@link ValidationError}
    */
-  Collection<ValidationError> validatePartialAttribute(String siteId,
+  Collection<ValidationError> validatePartialAttribute(Schema schema, String siteId,
       Collection<DocumentAttributeRecord> documentAttributes,
       Map<String, AttributeRecord> attributesMap, AttributeValidationAccess access);
 }

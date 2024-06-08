@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api.transformers;
+package com.formkiq.stacks.dynamodb;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import java.util.ArrayList;
@@ -44,9 +44,9 @@ public class DocumentAttributeSchema
     implements Function<Collection<DocumentAttributeRecord>, Collection<DocumentAttributeRecord>> {
 
   /** Document Id. */
-  private String docId;
+  private final String docId;
   /** Schema. */
-  private Schema schema;
+  private final Schema schema;
 
   /**
    * constructor.
@@ -107,8 +107,8 @@ public class DocumentAttributeSchema
 
     for (int i = 0; i < compositeKeys.size(); i++) {
 
-      String compositeKey = compositeKeys.get(i).stream().collect(Collectors.joining("#"));
-      String stringValue = compositeValues.get(i).stream().collect(Collectors.joining("#"));
+      String compositeKey = String.join("#", compositeKeys.get(i));
+      String stringValue = String.join("#", compositeValues.get(i));
 
       DocumentAttributeRecord r = new DocumentAttributeRecord();
       r.key(compositeKey);
@@ -136,14 +136,13 @@ public class DocumentAttributeSchema
 
     Collection<DocumentAttributeRecord> compositeKeys = new ArrayList<>();
 
-    List<List<DocumentAttributeRecord>> compositeRecords = schemaAttributes.getAttributeKeys()
-        .stream().filter(attributeKey -> documentAttributeKeys.containsKey(attributeKey))
-        .map(key -> documentAttributeKeys.get(key)).toList();
+    List<List<DocumentAttributeRecord>> compositeRecords =
+        schemaAttributes.getAttributeKeys().stream().filter(documentAttributeKeys::containsKey)
+            .map(documentAttributeKeys::get).toList();
 
     if (schemaAttributes.getAttributeKeys().size() == compositeRecords.size()) {
 
-      int listSize = compositeRecords.stream().map(l -> Integer.valueOf(l.size())).reduce(1,
-          (aa, bb) -> aa.intValue() * bb.intValue());
+      int listSize = compositeRecords.stream().map(List::size).reduce(1, (aa, bb) -> aa * bb);
 
       if (listSize > 0) {
 

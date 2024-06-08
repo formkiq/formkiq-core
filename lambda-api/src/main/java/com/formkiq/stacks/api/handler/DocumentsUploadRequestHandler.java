@@ -51,7 +51,7 @@ import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.transformers.AddDocumentRequestToDocumentItem;
 import com.formkiq.stacks.api.transformers.AddDocumentRequestToPresignedUrls;
-import com.formkiq.stacks.api.transformers.DocumentAttributeSchema;
+import com.formkiq.stacks.dynamodb.DocumentAttributeSchema;
 import com.formkiq.stacks.api.transformers.DocumentAttributeToDocumentAttributeRecord;
 import com.formkiq.stacks.api.transformers.SchemaMissingRequiredAttributes;
 import com.formkiq.stacks.api.validators.DocumentEntityValidator;

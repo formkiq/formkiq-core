@@ -505,4 +505,54 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       assertEquals("privacy", attributes.get(2).getStringValue());
     }
   }
+
+  /**
+   * Add Document with 1 attribute, Update Document with 1 attributes, check composite keys.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  public void testUpdate07() throws Exception {
+    // given
+    String content0 = "test data";
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+      String attributeKey0 = "category";
+      String attributeKey1 = "documentType";
+
+      for (String attributeKey : Arrays.asList(attributeKey0, attributeKey1)) {
+        this.attributesApi.addAttribute(
+            new AddAttributeRequest().attribute(new AddAttribute().key(attributeKey)), siteId);
+      }
+
+      SetSitesSchemaRequest sitesSchema = new SetSitesSchemaRequest().name("test")
+          .attributes(new SchemaAttributes().addCompositeKeysItem(new AttributeSchemaCompositeKey()
+              .attributeKeys(Arrays.asList(attributeKey0, attributeKey1))));
+      this.schemasApi.setSitesSchema(siteId, sitesSchema);
+
+      AddDocumentRequest req = new AddDocumentRequest().content(content0)
+          .addAttributesItem(new AddDocumentAttribute().key(attributeKey0).stringValue("person"));
+      String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+
+      UpdateDocumentRequest updateReq = new UpdateDocumentRequest()
+          .addAttributesItem(new AddDocumentAttribute().key(attributeKey1).stringValue("privacy"));
+
+      // when
+      this.documentsApi.updateDocument(documentId, updateReq, siteId, null);
+
+      // then
+      List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
+          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+
+      final int expected = 3;
+      assertEquals(expected, attributes.size());
+      assertEquals(attributeKey0 + "#" + attributeKey1, attributes.get(0).getKey());
+      assertEquals("person#privacy", attributes.get(0).getStringValue());
+      assertEquals(attributeKey0, attributes.get(1).getKey());
+      assertEquals("person", attributes.get(1).getStringValue());
+      assertEquals(attributeKey1, attributes.get(2).getKey());
+      assertEquals("privacy", attributes.get(2).getStringValue());
+    }
+  }
 }

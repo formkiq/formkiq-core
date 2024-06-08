@@ -25,8 +25,8 @@ package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
@@ -53,6 +53,8 @@ import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidator;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidatorImpl;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
+import com.formkiq.stacks.dynamodb.schemas.Schema;
+import com.formkiq.stacks.dynamodb.schemas.SchemaService;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
@@ -101,7 +103,7 @@ public class DocumentAttributeRequestHandler
     String attributeKey = event.getPathParameters().get("attributeKey");
     String siteId = authorization.getSiteId();
 
-    verifyDocument(awsservice, event, siteId, documentId);
+    verifyDocument(awsservice, siteId, documentId);
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
     List<DocumentAttributeRecord> list =
@@ -140,7 +142,7 @@ public class DocumentAttributeRequestHandler
         fromBodyToObject(event, DocumentAttributeValueRequest.class);
     if (request.getAttribute() == null) {
       throw new ValidationException(
-          Arrays.asList(new ValidationErrorImpl().error("no attribute values found")));
+          Collections.singletonList(new ValidationErrorImpl().error("no attribute values found")));
     }
 
     Collection<DocumentAttributeRecord> documentAttributes =
@@ -164,7 +166,7 @@ public class DocumentAttributeRequestHandler
     String attributeKey = event.getPathParameters().get("attributeKey");
     String siteId = authorization.getSiteId();
 
-    verifyDocument(awsservice, event, siteId, documentId);
+    verifyDocument(awsservice, siteId, documentId);
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
@@ -180,7 +182,9 @@ public class DocumentAttributeRequestHandler
     AttributeValidationAccess attributeValidationAccess =
         getAttributeValidationAccess(authorization, siteId);
 
-    Collection<ValidationError> errors = validator.validatePartialAttribute(siteId,
+    SchemaService schemaService = awsservice.getExtension(SchemaService.class);
+    Schema schema = schemaService.getSitesSchema(siteId, null);
+    Collection<ValidationError> errors = validator.validatePartialAttribute(schema, siteId,
         documentAttributes, attributeRecordMap, attributeValidationAccess);
 
     if (!errors.isEmpty()) {
@@ -197,8 +201,8 @@ public class DocumentAttributeRequestHandler
     return new ApiRequestHandlerResponse(SC_OK, resp);
   }
 
-  private void verifyDocument(final AwsServiceCache awsservice, final ApiGatewayRequestEvent event,
-      final String siteId, final String documentId) throws Exception {
+  private void verifyDocument(final AwsServiceCache awsservice, final String siteId,
+      final String documentId) throws Exception {
     DocumentService ds = awsservice.getExtension(DocumentService.class);
     if (!ds.exists(siteId, documentId)) {
       throw new DocumentNotFoundException(documentId);
