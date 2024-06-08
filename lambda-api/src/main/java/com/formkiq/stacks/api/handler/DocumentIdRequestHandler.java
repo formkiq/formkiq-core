@@ -33,7 +33,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.PaginationResult;
@@ -61,7 +60,6 @@ import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.transformers.AddDocumentRequestToDocumentItem;
 import com.formkiq.stacks.api.transformers.AddDocumentRequestToPresignedUrls;
-import com.formkiq.stacks.api.transformers.DocumentAttributeSchema;
 import com.formkiq.stacks.api.transformers.DocumentAttributeToDocumentAttributeRecord;
 import com.formkiq.stacks.api.transformers.PresignedUrlsToS3Bucket;
 import com.formkiq.stacks.api.validators.DocumentEntityValidator;
@@ -73,8 +71,6 @@ import com.formkiq.stacks.dynamodb.DocumentValidatorImpl;
 import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
-import com.formkiq.stacks.dynamodb.schemas.Schema;
-import com.formkiq.stacks.dynamodb.schemas.SchemaService;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.s3.model.S3Exception;
@@ -280,12 +276,14 @@ public class DocumentIdRequestHandler
     List<DocumentAttributeRecord> documentAttributes =
         attributes.stream().flatMap(a -> tr.apply(a).stream()).toList();
 
-    SchemaService schemaService = awsservice.getExtension(SchemaService.class);
-    Schema schema = schemaService.getSitesSchema(siteId, null);
+    // SchemaService schemaService = awsservice.getExtension(SchemaService.class);
+    // Schema schema = schemaService.getSitesSchema(siteId, null);
 
-    Collection<DocumentAttributeRecord> compositeKeys =
-        new DocumentAttributeSchema(schema, documentId).apply(documentAttributes);
-    return Stream.concat(documentAttributes.stream(), compositeKeys.stream()).toList();
+    // Collection<DocumentAttributeRecord> compositeKeys =
+    // new DocumentAttributeSchema(schema, documentId).apply(documentAttributes);
+
+    // return Stream.concat(documentAttributes.stream(), compositeKeys.stream()).toList();
+    return documentAttributes;
   }
 
   private AttributeValidationAccess getAttributeValidationAccess(

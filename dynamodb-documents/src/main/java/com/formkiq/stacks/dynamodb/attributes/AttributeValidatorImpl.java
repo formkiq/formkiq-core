@@ -36,9 +36,8 @@ import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.stacks.dynamodb.schemas.Schema;
 import com.formkiq.stacks.dynamodb.schemas.SchemaAttributes;
+import com.formkiq.stacks.dynamodb.schemas.SchemaAttributesOptional;
 import com.formkiq.stacks.dynamodb.schemas.SchemaAttributesRequired;
-import com.formkiq.stacks.dynamodb.schemas.SchemaService;
-import com.formkiq.stacks.dynamodb.schemas.SchemaServiceDynamodb;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
 
@@ -48,9 +47,7 @@ import com.formkiq.validation.ValidationErrorImpl;
 public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
 
   /** {@link AttributeService}. */
-  private AttributeService attributeService;
-  /** {@link SchemaService}. */
-  private SchemaService schemaService;
+  private final AttributeService attributeService;
 
   /**
    * constructor.
@@ -59,15 +56,14 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
    */
   public AttributeValidatorImpl(final DynamoDbService dbService) {
     this.attributeService = new AttributeServiceDynamodb(dbService);
-    this.schemaService = new SchemaServiceDynamodb(dbService);
   }
 
   @Override
   public Map<String, AttributeRecord> getAttributeRecordMap(final String siteId,
       final Collection<DocumentAttributeRecord> documentAttributes) {
 
-    List<String> attributeKeys =
-        documentAttributes.stream().filter(a -> !isEmpty(a.getKey())).map(a -> a.getKey()).toList();
+    List<String> attributeKeys = documentAttributes.stream().filter(a -> !isEmpty(a.getKey()))
+        .map(DocumentAttributeRecord::getKey).toList();
 
     return this.attributeService.getAttributes(siteId, attributeKeys);
   }
@@ -211,8 +207,9 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
   }
 
   @Override
-  public Collection<ValidationError> validateDeleteAttribute(final String siteId,
-      final String attributeKey, final AttributeValidationAccess validationAccess) {
+  public Collection<ValidationError> validateDeleteAttribute(final Schema schema,
+      final String siteId, final String attributeKey,
+      final AttributeValidationAccess validationAccess) {
 
     Collection<ValidationError> errors = new ArrayList<>();
 
@@ -225,7 +222,7 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
       validateOpaAttribute(siteId, attributeKey, validationAccess, errors);
 
       if (errors.isEmpty()) {
-        validateRequiredAttribute(siteId, attributeKey, errors);
+        validateRequiredAttribute(schema, attributeKey, errors);
       }
     }
 
@@ -247,8 +244,8 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
   }
 
   @Override
-  public Collection<ValidationError> validateDeleteAttributeValue(final String siteId,
-      final String attributeKey, final String attributeValue,
+  public Collection<ValidationError> validateDeleteAttributeValue(final Schema schema,
+      final String siteId, final String attributeKey, final String attributeValue,
       final AttributeValidationAccess validationAccess) {
 
     Collection<ValidationError> errors = new ArrayList<>();
@@ -268,7 +265,7 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
       validateOpaAttribute(siteId, attributeKey, validationAccess, errors);
 
       if (errors.isEmpty()) {
-        validateRequiredAttribute(siteId, attributeKey, errors);
+        validateRequiredAttribute(schema, attributeKey, errors);
       }
     }
 
@@ -276,7 +273,7 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
   }
 
   @Override
-  public Collection<ValidationError> validateFullAttribute(final String siteId,
+  public Collection<ValidationError> validateFullAttribute(final Schema schema, final String siteId,
       final String documentId, final Collection<DocumentAttributeRecord> documentAttributes,
       final Map<String, AttributeRecord> attributesMap, final boolean isUpdate,
       final AttributeValidationAccess access) {
@@ -292,7 +289,7 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
       if (errors.isEmpty()) {
 
         if (!isUpdate || (isUpdate && !notNull(documentAttributes).isEmpty())) {
-          validateSitesSchema(siteId, documentId, attributesMap, documentAttributes, errors);
+          validateSitesSchema(schema, siteId, attributesMap, documentAttributes, errors);
         }
       }
     }
@@ -300,17 +297,16 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
     return errors;
   }
 
-  private void validateOptionalAttributes(final String siteId, final String documentId,
-      final SchemaAttributes attributes, final Map<String, AttributeRecord> attributesMap,
+  private void validateOptionalAttributes(final SchemaAttributes attributes,
       final Collection<DocumentAttributeRecord> documentAttributes,
       final Collection<ValidationError> errors) {
 
     if (!attributes.isAllowAdditionalAttributes()) {
 
       List<String> requiredKeys =
-          attributes.getRequired().stream().map(a -> a.getAttributeKey()).toList();
+          attributes.getRequired().stream().map(SchemaAttributesRequired::getAttributeKey).toList();
       List<String> optionalKeys =
-          attributes.getOptional().stream().map(a -> a.getAttributeKey()).toList();
+          attributes.getOptional().stream().map(SchemaAttributesOptional::getAttributeKey).toList();
 
       for (DocumentAttributeRecord documentAttribute : documentAttributes) {
 
@@ -327,8 +323,8 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
   }
 
   @Override
-  public Collection<ValidationError> validatePartialAttribute(final String siteId,
-      final Collection<DocumentAttributeRecord> documentAttributes,
+  public Collection<ValidationError> validatePartialAttribute(final Schema schema,
+      final String siteId, final Collection<DocumentAttributeRecord> documentAttributes,
       final Map<String, AttributeRecord> attributesMap, final AttributeValidationAccess access) {
 
     Collection<ValidationError> errors = new ArrayList<>();
@@ -339,12 +335,8 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
       validateAttributeExistsAndDataType(attributesMap, documentAttributes, access, errors);
     }
 
-    if (errors.isEmpty()) {
-      Schema schema = this.schemaService.getSitesSchema(siteId, null);
-
-      if (schema != null) {
-        validateAllowedValues(schema.getAttributes(), documentAttributes, errors);
-      }
+    if (errors.isEmpty() && schema != null) {
+      validateAllowedValues(schema.getAttributes(), documentAttributes, errors);
     }
 
     return errors;
@@ -360,10 +352,8 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
     }
   }
 
-  private void validateRequiredAttribute(final String siteId, final String attributeKey,
+  private void validateRequiredAttribute(final Schema schema, final String attributeKey,
       final Collection<ValidationError> errors) {
-
-    Schema schema = this.schemaService.getSitesSchema(siteId, null);
 
     if (schema != null) {
 
@@ -378,16 +368,14 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
     }
   }
 
-  private void validateRequiredAttributes(final String siteId, final String documentId,
-      final SchemaAttributes attributes, final Map<String, AttributeRecord> attributesMap,
-      final Collection<DocumentAttributeRecord> documentAttributes,
-      final Collection<ValidationError> errors) {
+  private void validateRequiredAttributes(final String siteId, final SchemaAttributes attributes,
+      final Map<String, AttributeRecord> attributesMap, final Collection<ValidationError> errors) {
 
     List<SchemaAttributesRequired> missingRequiredAttributes = notNull(attributes.getRequired())
         .stream().filter(s -> !attributesMap.containsKey(s.getAttributeKey())).toList();
 
     List<String> missingAttributeKeys =
-        missingRequiredAttributes.stream().map(a -> a.getAttributeKey()).toList();
+        missingRequiredAttributes.stream().map(SchemaAttributesRequired::getAttributeKey).toList();
 
     Map<String, AttributeRecord> missingAttributesMap =
         this.attributeService.getAttributes(siteId, missingAttributeKeys);
@@ -406,29 +394,25 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
 
   /**
    * Validate Site Schema.
-   * 
+   *
+   * @param schema {@link Schema}
    * @param siteId {@link String}
-   * @param documentId {@link String}
    * @param attributesMap {@link Map}
    * @param documentAttributes {@link Collection} {@link DocumentAttributeRecord}
    * @param errors {@link Collection} {@link ValidationError}
    */
-  private void validateSitesSchema(final String siteId, final String documentId,
+  private void validateSitesSchema(final Schema schema, final String siteId,
       final Map<String, AttributeRecord> attributesMap,
       final Collection<DocumentAttributeRecord> documentAttributes,
       final Collection<ValidationError> errors) {
 
-    Schema schema = this.schemaService.getSitesSchema(siteId, null);
-
     if (schema != null) {
 
       SchemaAttributes attributes = schema.getAttributes();
-      validateRequiredAttributes(siteId, documentId, attributes, attributesMap, documentAttributes,
-          errors);
+      validateRequiredAttributes(siteId, attributes, attributesMap, errors);
 
       if (errors.isEmpty()) {
-        validateOptionalAttributes(siteId, documentId, attributes, attributesMap,
-            documentAttributes, errors);
+        validateOptionalAttributes(attributes, documentAttributes, errors);
       }
 
       if (errors.isEmpty()) {
