@@ -40,6 +40,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+
+import com.formkiq.client.model.AttributeValueType;
+import com.formkiq.client.model.SearchResultDocumentAttribute;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import com.formkiq.aws.dynamodb.model.DocumentMapToDocument;
@@ -916,6 +919,53 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
             "{\"errors\":[{\"error\":\"'meta' cannot be combined with 'tags' or 'attributes'\"}]}",
             e.getResponseBody());
       }
+    }
+  }
+
+  /**
+   * /search meta 'folder' tags / attributes.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleSearchRequest24() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      setBearerToken(siteId);
+
+      addAttribute(siteId);
+      String path = "test.txt";
+      AddDocumentUploadRequest uploadReq = new AddDocumentUploadRequest().path(path)
+          .addTagsItem(new AddDocumentTag().key("documentType").value("invoice"))
+          .addAttributesItem(new AddDocumentAttribute().key("category").stringValue("document"));
+      this.documentsApi.addDocumentUpload(uploadReq, siteId, null, null, null);
+
+      DocumentSearchRequest dsq = new DocumentSearchRequest()
+          .query(new DocumentSearch()
+              .meta(new DocumentSearchMeta().indexType(IndexTypeEnum.FOLDER).eq("")))
+          .responseFields(
+              new SearchResponseFields().addTagsItem("documentType").addAttributesItem("category"));
+
+      // when
+      DocumentSearchResponse response =
+          this.searchApi.documentSearch(dsq, siteId, null, null, null);
+
+      // then
+      List<SearchResultDocument> documents = notNull(response.getDocuments());
+      assertEquals(1, documents.size());
+
+      SearchResultDocument document = documents.get(0);
+
+      Map<String, Object> tags = notNull(document.getTags());
+      assertEquals("{documentType=invoice}", tags.toString());
+
+      Map<String, SearchResultDocumentAttribute> attributes = notNull(document.getAttributes());
+      assertEquals(1, attributes.size());
+      assertEquals("category", String.join(",", attributes.keySet()));
+
+      SearchResultDocumentAttribute category = attributes.get("category");
+      assertEquals("document", String.join(",", notNull(category.getStringValues())));
+      assertEquals(AttributeValueType.STRING, category.getValueType());
     }
   }
 }
