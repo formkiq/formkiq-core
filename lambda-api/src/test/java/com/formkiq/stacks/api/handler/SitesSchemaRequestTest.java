@@ -33,9 +33,11 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
+import com.formkiq.client.model.SearchResultDocument;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.client.invoker.ApiException;
@@ -59,7 +61,6 @@ import com.formkiq.client.model.DocumentSearchAttribute;
 import com.formkiq.client.model.DocumentSearchRange;
 import com.formkiq.client.model.DocumentSearchRequest;
 import com.formkiq.client.model.DocumentSearchResponse;
-import com.formkiq.client.model.GetDocumentAttributesResponse;
 import com.formkiq.client.model.GetDocumentResponse;
 import com.formkiq.client.model.GetDocumentUrlResponse;
 import com.formkiq.client.model.GetSitesSchemaResponse;
@@ -471,26 +472,25 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // then
       String documentId = response.getDocumentId();
-      GetDocumentAttributesResponse attributes =
-          this.documentAttributesApi.getDocumentAttributes(documentId, siteId, null, null);
+      List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
+          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
 
       int i = 0;
       final int expected = 4;
-      assertEquals(expected, attributes.getAttributes().size());
+      assertEquals(expected, attributes.size());
 
-      assertEquals("flag", attributes.getAttributes().get(i).getKey());
-      assertTrue(attributes.getAttributes().get(i++).getBooleanValue());
+      assertEquals("flag", attributes.get(i).getKey());
+      assertEquals(Boolean.TRUE, attributes.get(i++).getBooleanValue());
 
-      assertEquals("keyonly", attributes.getAttributes().get(i).getKey());
-      assertNull(attributes.getAttributes().get(i++).getStringValue());
+      assertEquals("keyonly", attributes.get(i).getKey());
+      assertNull(attributes.get(i++).getStringValue());
 
-      assertEquals("num", attributes.getAttributes().get(i).getKey());
-      assertEquals("111.11,222.22", String.join(",", attributes.getAttributes().get(i++)
-          .getNumberValues().stream().map(n -> formatDouble(n.doubleValue())).toList()));
+      assertEquals("num", attributes.get(i).getKey());
+      assertEquals("111.11,222.22", String.join(",", notNull(attributes.get(i++).getNumberValues())
+          .stream().map(n -> formatDouble(n.doubleValue())).toList()));
 
-      assertEquals("strings", attributes.getAttributes().get(i).getKey());
-      assertEquals("111,222",
-          String.join(",", attributes.getAttributes().get(i).getStringValues()));
+      assertEquals("strings", attributes.get(i).getKey());
+      assertEquals("111,222", String.join(",", notNull(attributes.get(i).getStringValues())));
     }
   }
 
@@ -536,10 +536,10 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // then
       String documentId = response.getDocumentId();
-      GetDocumentAttributesResponse attributes =
-          this.documentAttributesApi.getDocumentAttributes(documentId, siteId, null, null);
+      List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
+          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
       final int expected = 4;
-      assertEquals(expected, attributes.getAttributes().size());
+      assertEquals(expected, attributes.size());
 
       // given
       AddDocumentUploadRequest ureq1 = new AddDocumentUploadRequest().path("sample.txt")
@@ -818,8 +818,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       // then
       assertEquals("attribute 'strings' removed from document '" + documentId + "'",
           response.getMessage());
-      List<DocumentAttribute> attributes = this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null).getAttributes();
+      List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
+          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
       assertEquals(0, attributes.size());
     }
   }
@@ -919,8 +919,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       assertEquals(
           "attribute value '111' removed from attribute 'strings', document '" + documentId + "'",
           response.getMessage());
-      List<DocumentAttribute> attributes = this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null).getAttributes();
+      List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
+          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
       assertEquals(0, attributes.size());
     }
   }
@@ -958,8 +958,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       assertEquals(
           "attribute value '111' removed from attribute 'strings', document '" + documentId + "'",
           response.getMessage());
-      List<DocumentAttribute> attributes = this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null).getAttributes();
+      List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
+          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
       assertEquals(0, attributes.size());
     }
   }
@@ -1048,8 +1048,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
           siteId);
 
       // then
-      List<DocumentAttribute> attributes = this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null).getAttributes();
+      List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
+          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
       assertEquals(1, attributes.size());
       assertEquals(attributeKey, attributes.get(0).getKey());
       assertEquals("123", attributes.get(0).getStringValue());
@@ -1093,8 +1093,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       // then
       assertEquals("Updated attribute 'category' on document '" + documentId + "'",
           response.getMessage());
-      List<DocumentAttribute> attributes = this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null).getAttributes();
+      List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
+          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
       assertEquals(1, attributes.size());
       assertEquals("category", attributes.get(0).getKey());
       assertEquals("123", attributes.get(0).getStringValue());
@@ -1180,8 +1180,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       // then
       assertEquals("Updated attribute 'strings' on document '" + documentId + "'",
           response.getMessage());
-      List<DocumentAttribute> attributes = this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null).getAttributes();
+      List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
+          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
       assertEquals(1, attributes.size());
       assertEquals("strings", attributes.get(0).getKey());
       assertEquals("4444", attributes.get(0).getStringValue());
@@ -1231,7 +1231,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       DocumentSearchResponse response0 =
           this.searchApi.documentSearch(sreq0, siteId, null, null, null);
-      assertEquals(1, response0.getDocuments().size());
+      assertEquals(1, notNull(response0.getDocuments()).size());
 
       // invalid search
       DocumentSearchRequest sreq1 = new DocumentSearchRequest().query(new DocumentSearch()
@@ -1240,7 +1240,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       DocumentSearchResponse response1 =
           this.searchApi.documentSearch(sreq1, siteId, null, null, null);
-      assertEquals(0, response1.getDocuments().size());
+      assertEquals(0, notNull(response1.getDocuments()).size());
 
       // wrong attribute order
       DocumentSearchRequest sreq2 = new DocumentSearchRequest().query(new DocumentSearch()
@@ -1249,7 +1249,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       DocumentSearchResponse response2 =
           this.searchApi.documentSearch(sreq2, siteId, null, null, null);
-      assertEquals(1, response2.getDocuments().size());
+      assertEquals(1, notNull(response2.getDocuments()).size());
     }
   }
 
@@ -1296,7 +1296,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       DocumentSearchResponse response0 =
           this.searchApi.documentSearch(sreq0, siteId, null, null, null);
-      assertEquals(1, response0.getDocuments().size());
+      assertEquals(1, notNull(response0.getDocuments()).size());
 
       // invalid search
       DocumentSearchRequest sreq1 = new DocumentSearchRequest().query(new DocumentSearch()
@@ -1305,7 +1305,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       DocumentSearchResponse response1 =
           this.searchApi.documentSearch(sreq1, siteId, null, null, null);
-      assertEquals(0, response1.getDocuments().size());
+      assertEquals(0, notNull(response1.getDocuments()).size());
 
       // begingsWith as first element
       DocumentSearchRequest sreq2 = new DocumentSearchRequest().query(new DocumentSearch()
@@ -1365,19 +1365,17 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       // then
       final int expected = 3;
       int i = 0;
-      assertEquals(expected, response0.getDocuments().size());
+      List<SearchResultDocument> documents = notNull(response0.getDocuments());
+      assertEquals(expected, documents.size());
 
-      assertEquals("category#date", response0.getDocuments().get(i).getMatchedAttribute().getKey());
-      assertEquals("person#2024-01-04",
-          response0.getDocuments().get(i++).getMatchedAttribute().getStringValue());
+      assertEquals("category#date", documents.get(i).getMatchedAttribute().getKey());
+      assertEquals("person#2024-01-04", documents.get(i++).getMatchedAttribute().getStringValue());
 
-      assertEquals("category#date", response0.getDocuments().get(i).getMatchedAttribute().getKey());
-      assertEquals("person#2024-01-05",
-          response0.getDocuments().get(i++).getMatchedAttribute().getStringValue());
+      assertEquals("category#date", documents.get(i).getMatchedAttribute().getKey());
+      assertEquals("person#2024-01-05", documents.get(i++).getMatchedAttribute().getStringValue());
 
-      assertEquals("category#date", response0.getDocuments().get(i).getMatchedAttribute().getKey());
-      assertEquals("person#2024-01-10",
-          response0.getDocuments().get(i).getMatchedAttribute().getStringValue());
+      assertEquals("category#date", documents.get(i).getMatchedAttribute().getKey());
+      assertEquals("person#2024-01-10", documents.get(i).getMatchedAttribute().getStringValue());
 
       // when - invalid search
       DocumentSearchRequest sreq1 = new DocumentSearchRequest().query(new DocumentSearch()
@@ -1492,19 +1490,24 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       // then
       final int expected = 3;
       int i = 0;
-      assertEquals(expected, response0.getDocuments().size());
+      assertEquals(expected, notNull(response0.getDocuments()).size());
 
-      assertEquals("category#date", response0.getDocuments().get(i).getMatchedAttribute().getKey());
+      assertEquals("category#date",
+          Objects.requireNonNull(response0.getDocuments().get(i).getMatchedAttribute()).getKey());
       assertEquals("person#000000000000100.1200",
-          response0.getDocuments().get(i++).getMatchedAttribute().getStringValue());
+          Objects.requireNonNull(response0.getDocuments().get(i++).getMatchedAttribute())
+              .getStringValue());
 
-      assertEquals("category#date", response0.getDocuments().get(i).getMatchedAttribute().getKey());
+      assertEquals("category#date",
+          Objects.requireNonNull(response0.getDocuments().get(i).getMatchedAttribute()).getKey());
       assertEquals("person#000000000000150.1400",
-          response0.getDocuments().get(i++).getMatchedAttribute().getStringValue());
+          Objects.requireNonNull(response0.getDocuments().get(i++).getMatchedAttribute())
+              .getStringValue());
 
-      assertEquals("category#date", response0.getDocuments().get(i).getMatchedAttribute().getKey());
-      assertEquals("person#000000000000200.0000",
-          response0.getDocuments().get(i).getMatchedAttribute().getStringValue());
+      assertEquals("category#date",
+          Objects.requireNonNull(response0.getDocuments().get(i).getMatchedAttribute()).getKey());
+      assertEquals("person#000000000000200.0000", Objects
+          .requireNonNull(response0.getDocuments().get(i).getMatchedAttribute()).getStringValue());
     }
   }
 
@@ -1614,7 +1617,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       DocumentSearchResponse response0 =
           this.searchApi.documentSearch(sreq0, siteId, null, null, null);
-      assertEquals(1, response0.getDocuments().size());
+      assertEquals(1, notNull(response0.getDocuments()).size());
     }
   }
 
@@ -1717,7 +1720,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       DocumentSearchResponse response0 =
           this.searchApi.documentSearch(sreq0, siteId, null, null, null);
-      assertEquals(1, response0.getDocuments().size());
+      assertEquals(1, notNull(response0.getDocuments()).size());
       assertEquals(documentId0, response0.getDocuments().get(0).getDocumentId());
     }
   }
@@ -1754,8 +1757,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       // then
       assertEquals("set attributes on documentId '" + documentId + "'", response.getMessage());
 
-      List<DocumentAttribute> attributes = this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null).getAttributes();
+      List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
+          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
       assertEquals(1, attributes.size());
       assertEquals("strings", attributes.get(0).getKey());
       assertEquals("category", attributes.get(0).getStringValue());
@@ -1800,6 +1803,69 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * PUT /documents/{documentId}/attributes Add attributes - test composite keys generated.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testSetDocumentAttribute03() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+
+      for (String attribute : List.of("strings", "category", "documentType")) {
+        addAttribute(siteId, attribute, null);
+      }
+
+      AttributeSchemaCompositeKey ckey0 =
+          new AttributeSchemaCompositeKey().attributeKeys(List.of("strings", "category"));
+      AttributeSchemaCompositeKey ckey1 =
+          new AttributeSchemaCompositeKey().attributeKeys(List.of("strings", "documentType"));
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe").attributes(
+          new SchemaAttributes().addCompositeKeysItem(ckey0).addCompositeKeysItem(ckey1));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      AddDocumentRequest areq = new AddDocumentRequest().content("adasd")
+          .addAttributesItem(
+              new AddDocumentAttribute().key("strings").stringValues(List.of("category", "1234")))
+          .addAttributesItem(new AddDocumentAttribute().key("documentType").stringValue("invoice"));
+      String documentId = this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
+      assertEquals(3, notNull(this.documentAttributesApi
+          .getDocumentAttributes(documentId, siteId, null, null).getAttributes()).size());
+
+      // when
+      SetDocumentAttributesRequest attrReq = new SetDocumentAttributesRequest()
+          .addAttributesItem(
+              new AddDocumentAttribute().key("strings").stringValues(List.of("category", "1234")))
+          .addAttributesItem(new AddDocumentAttribute().key("documentType").stringValue("invoice"))
+          .addAttributesItem(new AddDocumentAttribute().key("category").stringValue("doc"));
+      this.documentAttributesApi.setDocumentAttributes(documentId, attrReq, siteId);
+
+      // then
+      List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
+          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+
+      final int expected = 5;
+      int i = 0;
+      assertEquals(expected, attributes.size());
+      assertEquals("category", attributes.get(i).getKey());
+      assertEquals("doc", attributes.get(i++).getStringValue());
+      assertEquals("documentType", attributes.get(i).getKey());
+      assertEquals("invoice", attributes.get(i++).getStringValue());
+      assertEquals("strings", attributes.get(i).getKey());
+      assertEquals("1234,category",
+          String.join(",", notNull(attributes.get(i++).getStringValues())));
+      assertEquals("strings#category", attributes.get(i).getKey());
+      assertEquals("1234#doc,category#doc",
+          String.join(",", notNull(attributes.get(i++).getStringValues())));
+      assertEquals("strings#documentType", attributes.get(i).getKey());
+      assertEquals("1234#invoice,category#invoice",
+          String.join(",", notNull(attributes.get(i).getStringValues())));
+    }
+  }
+
+  /**
    * PUT /sites/{siteId}/schema/document with required attribute.
    *
    * @throws ApiException an error has occurred
@@ -1825,9 +1891,10 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       GetSitesSchemaResponse schema = this.schemasApi.getSitesSchema(siteId, null);
       assertEquals("joe", schema.getName());
-      assertEquals(1, schema.getVersion().intValue());
-      assertEquals(key, schema.getAttributes().getRequired().get(0).getAttributeKey());
-      assertTrue(schema.getAttributes().getRequired().get(0).getAllowedValues().isEmpty());
+      assertEquals(1, Objects.requireNonNull(schema.getVersion()).intValue());
+      assertNotNull(schema.getAttributes());
+      assertEquals(key, notNull(schema.getAttributes().getRequired()).get(0).getAttributeKey());
+      assertTrue(notNull(schema.getAttributes().getRequired().get(0).getAllowedValues()).isEmpty());
 
       req =
           new SetSitesSchemaRequest().name("joe").attributes(new SchemaAttributes().addRequiredItem(
@@ -1841,16 +1908,18 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       schema = this.schemasApi.getSitesSchema(siteId, null);
       assertEquals("joe", schema.getName());
-      assertEquals(2, schema.getVersion().intValue());
-      assertEquals(key, schema.getAttributes().getRequired().get(0).getAttributeKey());
-      assertEquals("123",
-          String.join(",", schema.getAttributes().getRequired().get(0).getAllowedValues()));
+      assertEquals(2, Objects.requireNonNull(schema.getVersion()).intValue());
+      assertNotNull(schema.getAttributes());
+      assertEquals(key, notNull(schema.getAttributes().getRequired()).get(0).getAttributeKey());
+      assertEquals("123", String.join(",",
+          notNull(schema.getAttributes().getRequired().get(0).getAllowedValues())));
 
       schema = this.schemasApi.getSitesSchema(siteId, "1");
       assertEquals("joe", schema.getName());
-      assertEquals(1, schema.getVersion().intValue());
-      assertEquals(key, schema.getAttributes().getRequired().get(0).getAttributeKey());
-      assertTrue(schema.getAttributes().getRequired().get(0).getAllowedValues().isEmpty());
+      assertEquals(1, Objects.requireNonNull(schema.getVersion()).intValue());
+      assertNotNull(schema.getAttributes());
+      assertEquals(key, notNull(schema.getAttributes().getRequired()).get(0).getAttributeKey());
+      assertTrue(notNull(schema.getAttributes().getRequired().get(0).getAllowedValues()).isEmpty());
     }
   }
 
@@ -2019,6 +2088,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       assertEquals("Sites Schema set", response.getMessage());
 
       // given
+      assertNotNull(req.getAttributes());
       req.getAttributes().setAllowAdditionalAttributes(Boolean.FALSE);
 
       // when
@@ -2209,10 +2279,3 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
     }
   }
 }
-
-// DELETE /documents/{documentId}/attributes/{attributeKey}/{attributeValue} - required attribute,
-// single value
-
-// PATCH /documents after sites schema is updated?? What happens? remains tied to version it was
-// created by
-// reindex...???
