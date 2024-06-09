@@ -26,8 +26,8 @@ package com.formkiq.stacks.api.handler;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_CREATED;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -82,7 +82,7 @@ public class DocumentAttributesRequestHandler
 
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
-    verifyDocument(awsservice, event, siteId, documentId);
+    verifyDocument(awsservice, siteId, documentId);
 
     PaginationResults<DocumentAttributeRecord> results =
         documentService.findDocumentAttributes(siteId, documentId, ptoken, limit);
@@ -113,7 +113,7 @@ public class DocumentAttributesRequestHandler
     DocumentAttributesRequest request = fromBodyToObject(event, DocumentAttributesRequest.class);
     if (request.getAttributes() == null) {
       throw new ValidationException(
-          Arrays.asList(new ValidationErrorImpl().error("no attributes found")));
+          Collections.singletonList(new ValidationErrorImpl().error("no attributes found")));
     }
 
     return request.getAttributes().stream()
@@ -133,7 +133,7 @@ public class DocumentAttributesRequestHandler
 
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
-    verifyDocument(awsservice, event, siteId, documentId);
+    verifyDocument(awsservice, siteId, documentId);
 
     List<DocumentAttributeRecord> attributes = getDocumentAttributesFromRequest(event, documentId);
 
@@ -164,7 +164,7 @@ public class DocumentAttributesRequestHandler
 
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
-    verifyDocument(awsservice, event, siteId, documentId);
+    verifyDocument(awsservice, siteId, documentId);
 
     List<DocumentAttributeRecord> attributes = getDocumentAttributesFromRequest(event, documentId);
 
@@ -180,8 +180,8 @@ public class DocumentAttributesRequestHandler
     return new ApiRequestHandlerResponse(SC_CREATED, resp);
   }
 
-  private void verifyDocument(final AwsServiceCache awsservice, final ApiGatewayRequestEvent event,
-      final String siteId, final String documentId) throws Exception {
+  private void verifyDocument(final AwsServiceCache awsservice, final String siteId,
+      final String documentId) throws Exception {
     DocumentService ds = awsservice.getExtension(DocumentService.class);
     if (!ds.exists(siteId, documentId)) {
       throw new DocumentNotFoundException(documentId);

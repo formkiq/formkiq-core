@@ -207,8 +207,7 @@ public class DocumentIdRequestHandler
 
     DocumentService service = awsservice.getExtension(DocumentService.class);
 
-    List<DocumentAttributeRecord> documentAttributes =
-        getDocumentAttributeRecords(awsservice, request, siteId, documentId);
+    List<DocumentAttributeRecord> documentAttributes = getDocumentAttributeRecords(request);
 
     SaveDocumentOptions options = new SaveDocumentOptions()
         .validationAccess(getAttributeValidationAccess(authorization, siteId));
@@ -259,31 +258,17 @@ public class DocumentIdRequestHandler
   /**
    * Get Document Attribute Records.
    * 
-   * @param awsservice {@link AwsServiceCache}
    * @param request {@link AddDocumentRequest}
-   * @param siteId {@link String}
-   * @param documentId {@link String}
    * @return {@link List} {@link DocumentAttributeRecord}
    */
   private List<DocumentAttributeRecord> getDocumentAttributeRecords(
-      final AwsServiceCache awsservice, final AddDocumentRequest request, final String siteId,
-      final String documentId) {
+      final AddDocumentRequest request) {
 
     DocumentAttributeToDocumentAttributeRecord tr =
         new DocumentAttributeToDocumentAttributeRecord(request.getDocumentId());
 
     List<DocumentAttribute> attributes = notNull(request.getAttributes());
-    List<DocumentAttributeRecord> documentAttributes =
-        attributes.stream().flatMap(a -> tr.apply(a).stream()).toList();
-
-    // SchemaService schemaService = awsservice.getExtension(SchemaService.class);
-    // Schema schema = schemaService.getSitesSchema(siteId, null);
-
-    // Collection<DocumentAttributeRecord> compositeKeys =
-    // new DocumentAttributeSchema(schema, documentId).apply(documentAttributes);
-
-    // return Stream.concat(documentAttributes.stream(), compositeKeys.stream()).toList();
-    return documentAttributes;
+    return attributes.stream().flatMap(a -> tr.apply(a).stream()).toList();
   }
 
   private AttributeValidationAccess getAttributeValidationAccess(

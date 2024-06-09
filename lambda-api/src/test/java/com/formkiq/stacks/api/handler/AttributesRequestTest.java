@@ -1595,19 +1595,19 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       AddDocumentAttributesRequest req = new AddDocumentAttributesRequest().addAttributesItem(
           new AddDocumentAttribute().key(key).stringValues(Arrays.asList("abc", "xyz", "123")));
-      this.documentAttributesApi.addDocumentAttributes(documentId, req, siteId, null);
 
-      // when
-      GetDocumentAttributesResponse response =
-          this.documentAttributesApi.getDocumentAttributes(documentId, siteId, null, null);
-
-      // then
-      final int expected = 1;
-      assertEquals(expected, response.getAttributes().size());
-
-      assertEquals(key, response.getAttributes().get(0).getKey());
-      assertEquals("123,555,abc,xyz",
-          Strings.join(response.getAttributes().get(0).getStringValues(), ","));
+      try {
+        // when
+        this.documentAttributesApi.addDocumentAttributes(documentId, req, siteId, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"security\","
+                + "\"error\":\"document attribute 'security' already exists\"}]}",
+            e.getResponseBody());
+      }
     }
   }
 
