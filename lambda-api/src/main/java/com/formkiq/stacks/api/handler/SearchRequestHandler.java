@@ -100,10 +100,10 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
 
     Map<String, Collection<DocumentTag>> map = Collections.emptyMap();
 
-    if (responseFields != null && !Objects.notNull(responseFields.getTags()).isEmpty()) {
+    if (responseFields != null && !notNull(responseFields.getTags()).isEmpty()) {
 
       Set<String> documentIds =
-          documents.stream().map(d -> d.getDocumentId()).collect(Collectors.toSet());
+          documents.stream().map(DynamicDocumentItem::getDocumentId).collect(Collectors.toSet());
 
       map = documentService.findDocumentsTags(siteId, documentIds, responseFields.getTags());
     }
@@ -115,7 +115,7 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
   public Optional<Boolean> isAuthorized(final AwsServiceCache awsservice, final String method,
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
     boolean access = authorization.getPermissions().contains(ApiPermission.READ);
-    return Optional.of(Boolean.valueOf(access));
+    return Optional.of(access);
   }
 
   private boolean isEnterpriseFeature(final AwsServiceCache serviceCache, final QueryRequest q) {
@@ -142,7 +142,7 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
 
       documents.forEach(doc -> {
 
-        Collection<DocumentTag> tags = Objects.notNull(responseTags.get(doc.getDocumentId()));
+        Collection<DocumentTag> tags = notNull(responseTags.get(doc.getDocumentId()));
 
         Map<String, Object> map = new HashMap<>();
 
@@ -164,7 +164,7 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    ApiRequestHandlerResponse response = null;
+    ApiRequestHandlerResponse response;
 
     QueryRequest q = fromBodyToObject(event, QueryRequest.class);
 
@@ -213,6 +213,8 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
           getResponseTags(documentService, siteId, q.responseFields(), documents);
       mergeResponseTags(documents, responseTags);
 
+
+
       Map<String, Object> map = new HashMap<>();
       map.put("documents", documents);
       map.put("previous", current.getPrevious());
@@ -245,7 +247,7 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
       throws IOException, BadException, ValidationException {
 
     String text = q.query().getText();
-    PaginationResults<DynamicDocumentItem> results = null;
+    PaginationResults<DynamicDocumentItem> results;
 
     if (!isEmpty(text)) {
 

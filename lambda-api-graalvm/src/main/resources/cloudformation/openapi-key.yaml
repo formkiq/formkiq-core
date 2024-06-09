@@ -6418,20 +6418,23 @@ Resources:
                   type: "array"
                   items:
                     type: "string"
-            SearchResponseAttributeField:
+            SearchResultDocumentAttribute:
               properties:
-                key:
-                  type: "string"
-                  description: "Attribute key"
-                stringValue:
-                  type: "string"
-                  description: "Attribute with string value"
-                numberValue:
-                  type: "number"
-                  description: "Attribute with number value"
+                stringValues:
+                  type: "array"
+                  description: "Attribute with string values"
+                  items:
+                    type: "string"
+                numberValues:
+                  type: "array"
+                  description: "Attribute with number values"
+                  items:
+                    type: "number"
                 booleanValue:
                   type: "boolean"
                   description: "Attribute with boolean value"
+                valueType:
+                  $ref: "#/components/schemas/AttributeValueType"
             DocumentSearchMeta:
               type: "object"
               properties:
@@ -7121,7 +7124,7 @@ Resources:
                   type: "object"
                   additionalProperties:
                     $ref: "#/components/schemas/FulltextAttribute"
-            FulltextAttributeValueType:
+            AttributeValueType:
               type: string
               description: Attribute Value Type
               enum:
@@ -7146,7 +7149,7 @@ Resources:
                   type: "boolean"
                   description: "Attribute with boolean value"
                 valueType:
-                  $ref: "#/components/schemas/FulltextAttributeValueType"
+                  $ref: "#/components/schemas/AttributeValueType"
             GetDocumentFulltextResponse:
               type: "object"
               properties:
@@ -7438,11 +7441,10 @@ Resources:
                 tags:
                   type: "object"
                   additionalProperties: true
-                responseAttributes:
-                  type: "array"
-                  description: "List of document response attributes"
-                  items:
-                    $ref: "#/components/schemas/SearchResponseAttributeField"
+                attributes:
+                  type: "object"
+                  additionalProperties:
+                    $ref: "#/components/schemas/SearchResultDocumentAttribute"
                 metadata:
                   type: "array"
                   description: "List of document Metadata"
