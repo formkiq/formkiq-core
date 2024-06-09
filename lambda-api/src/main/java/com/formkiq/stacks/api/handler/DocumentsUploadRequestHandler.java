@@ -62,6 +62,7 @@ import com.formkiq.stacks.dynamodb.DocumentValidator;
 import com.formkiq.stacks.dynamodb.DocumentValidatorImpl;
 import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
+import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.schemas.Schema;
 import com.formkiq.stacks.dynamodb.schemas.SchemaService;
@@ -90,102 +91,6 @@ public class DocumentsUploadRequestHandler
    *
    */
   public DocumentsUploadRequestHandler() {}
-
-  /**
-   * Build Presigned Url Response.
-   * 
-   * @param event {@link ApiGatewayRequestEvent}
-   * @param authorization {@link ApiAuthorization}
-   * @param awsservice {@link AwsServiceCache}
-   * @param siteId {@link String}
-   * @param request {@link AddDocumentRequest}
-   * @param tags {@link List} {@link DocumentTag}
-   * @param searchAttributes {@link Collection} {@link DocumentAttributeRecord}
-   * @return {@link ApiRequestHandlerResponse}
-   * @throws BadException BadException
-   * @throws ValidationException ValidationException
-   */
-  private ApiRequestHandlerResponse buildPresignedResponse(final ApiGatewayRequestEvent event,
-      final ApiAuthorization authorization, final AwsServiceCache awsservice, final String siteId,
-      final AddDocumentRequest request, final List<DocumentTag> tags,
-      final Collection<DocumentAttributeRecord> searchAttributes)
-      throws BadException, ValidationException {
-
-    String documentId = request.getDocumentId();
-
-    if (tags.isEmpty()) {
-      tags.add(new DocumentTag(documentId, "untagged", "true", new Date(),
-          authorization.getUsername(), DocumentTagType.SYSTEMDEFINED));
-    }
-
-    AddDocumentRequestToPresignedUrls addDocumentRequestToPresignedUrls =
-        new AddDocumentRequestToPresignedUrls(awsservice, siteId,
-            caculateDuration(event.getQueryStringParameters()),
-            calculateContentLength(awsservice, event.getQueryStringParameters(), siteId));
-
-    final Map<String, Object> map = addDocumentRequestToPresignedUrls.apply(request);
-
-    DocumentService service = awsservice.getExtension(DocumentService.class);
-
-    DocumentItem item =
-        new AddDocumentRequestToDocumentItem(null, authorization.getUsername(), null)
-            .apply(request);
-    SaveDocumentOptions options = new SaveDocumentOptions().saveDocumentDate(true);
-    service.saveDocument(siteId, item, tags, searchAttributes, options);
-
-    ActionsService actionsService = awsservice.getExtension(ActionsService.class);
-    notNull(request.getActions()).forEach(a -> a.userId(authorization.getUsername()));
-    actionsService.saveNewActions(siteId, documentId, request.getActions());
-
-    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
-  }
-
-  /**
-   * Calculate Duration.
-   * 
-   * @param query {@link Map}
-   * @return {@link Duration}
-   */
-  private Duration caculateDuration(final Map<String, String> query) {
-
-    Integer durationHours =
-        query != null && query.containsKey("duration") ? Integer.valueOf(query.get("duration"))
-            : Integer.valueOf(DEFAULT_DURATION_HOURS);
-
-    return Duration.ofHours(durationHours);
-  }
-
-  /**
-   * Calculate Content Length.
-   * 
-   * @param awsservice {@link AwsServiceCache}
-   * @param query {@link Map}
-   * @param siteId {@link String}
-   * @return {@link Optional} {@link Long}
-   * @throws BadException BadException
-   */
-  private Optional<Long> calculateContentLength(final AwsServiceCache awsservice,
-      final Map<String, String> query, final String siteId) throws BadException {
-
-    Long contentLength = query != null && query.containsKey("contentLength")
-        ? Long.valueOf(query.get("contentLength"))
-        : null;
-
-    String value = this.restrictionMaxContentLength.getValue(awsservice, siteId);
-
-    if (value != null
-        && this.restrictionMaxContentLength.enforced(awsservice, siteId, value, contentLength)) {
-
-      if (contentLength == null) {
-        throw new BadException("'contentLength' is required");
-      }
-
-      String maxContentLengthBytes = this.restrictionMaxContentLength.getValue(awsservice, siteId);
-      throw new BadException("'contentLength' cannot exceed " + maxContentLengthBytes + " bytes");
-    }
-
-    return contentLength != null ? Optional.of(contentLength) : Optional.empty();
-  }
 
   @Override
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
@@ -303,5 +208,112 @@ public class DocumentsUploadRequestHandler
     }
 
     return maxDocumentCount;
+  }
+
+  /**
+   * Build Presigned Url Response.
+   *
+   * @param event {@link ApiGatewayRequestEvent}
+   * @param authorization {@link ApiAuthorization}
+   * @param awsservice {@link AwsServiceCache}
+   * @param siteId {@link String}
+   * @param request {@link AddDocumentRequest}
+   * @param tags {@link List} {@link DocumentTag}
+   * @param searchAttributes {@link Collection} {@link DocumentAttributeRecord}
+   * @return {@link ApiRequestHandlerResponse}
+   * @throws BadException BadException
+   * @throws ValidationException ValidationException
+   */
+  private ApiRequestHandlerResponse buildPresignedResponse(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice, final String siteId,
+      final AddDocumentRequest request, final List<DocumentTag> tags,
+      final Collection<DocumentAttributeRecord> searchAttributes)
+      throws BadException, ValidationException {
+
+    String documentId = request.getDocumentId();
+
+    if (tags.isEmpty()) {
+      tags.add(new DocumentTag(documentId, "untagged", "true", new Date(),
+          authorization.getUsername(), DocumentTagType.SYSTEMDEFINED));
+    }
+
+    AddDocumentRequestToPresignedUrls addDocumentRequestToPresignedUrls =
+        new AddDocumentRequestToPresignedUrls(awsservice, siteId,
+            caculateDuration(event.getQueryStringParameters()),
+            calculateContentLength(awsservice, event.getQueryStringParameters(), siteId));
+
+    final Map<String, Object> map = addDocumentRequestToPresignedUrls.apply(request);
+
+    DocumentService service = awsservice.getExtension(DocumentService.class);
+
+    DocumentItem item =
+        new AddDocumentRequestToDocumentItem(null, authorization.getUsername(), null)
+            .apply(request);
+
+    AttributeValidationAccess validationAccess =
+        getAttributeValidationAccess(authorization, siteId);
+    SaveDocumentOptions options =
+        new SaveDocumentOptions().saveDocumentDate(true).validationAccess(validationAccess);
+    service.saveDocument(siteId, item, tags, searchAttributes, options);
+
+    ActionsService actionsService = awsservice.getExtension(ActionsService.class);
+    notNull(request.getActions()).forEach(a -> a.userId(authorization.getUsername()));
+    actionsService.saveNewActions(siteId, documentId, request.getActions());
+
+    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
+  }
+
+  /**
+   * Calculate Duration.
+   *
+   * @param query {@link Map}
+   * @return {@link Duration}
+   */
+  private Duration caculateDuration(final Map<String, String> query) {
+
+    Integer durationHours =
+        query != null && query.containsKey("duration") ? Integer.valueOf(query.get("duration"))
+            : Integer.valueOf(DEFAULT_DURATION_HOURS);
+
+    return Duration.ofHours(durationHours);
+  }
+
+  /**
+   * Calculate Content Length.
+   *
+   * @param awsservice {@link AwsServiceCache}
+   * @param query {@link Map}
+   * @param siteId {@link String}
+   * @return {@link Optional} {@link Long}
+   * @throws BadException BadException
+   */
+  private Optional<Long> calculateContentLength(final AwsServiceCache awsservice,
+      final Map<String, String> query, final String siteId) throws BadException {
+
+    Long contentLength = query != null && query.containsKey("contentLength")
+        ? Long.valueOf(query.get("contentLength"))
+        : null;
+
+    String value = this.restrictionMaxContentLength.getValue(awsservice, siteId);
+
+    if (value != null
+        && this.restrictionMaxContentLength.enforced(awsservice, siteId, value, contentLength)) {
+
+      if (contentLength == null) {
+        throw new BadException("'contentLength' is required");
+      }
+
+      String maxContentLengthBytes = this.restrictionMaxContentLength.getValue(awsservice, siteId);
+      throw new BadException("'contentLength' cannot exceed " + maxContentLengthBytes + " bytes");
+    }
+
+    return contentLength != null ? Optional.of(contentLength) : Optional.empty();
+  }
+
+  private AttributeValidationAccess getAttributeValidationAccess(
+      final ApiAuthorization authorization, final String siteId) {
+
+    boolean isAdmin = authorization.getPermissions(siteId).contains(ApiPermission.ADMIN);
+    return isAdmin ? AttributeValidationAccess.ADMIN_CREATE : AttributeValidationAccess.CREATE;
   }
 }

@@ -471,15 +471,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       String attributeKey0 = "category";
       String attributeKey1 = "documentType";
 
-      for (String attributeKey : Arrays.asList(attributeKey0, attributeKey1)) {
-        this.attributesApi.addAttribute(
-            new AddAttributeRequest().attribute(new AddAttribute().key(attributeKey)), siteId);
-      }
-
-      SetSitesSchemaRequest sitesSchema = new SetSitesSchemaRequest().name("test")
-          .attributes(new SchemaAttributes().addCompositeKeysItem(new AttributeSchemaCompositeKey()
-              .attributeKeys(Arrays.asList(attributeKey0, attributeKey1))));
-      this.schemasApi.setSitesSchema(siteId, sitesSchema);
+      createSiteSchema(siteId, attributeKey0, attributeKey1);
 
       AddDocumentRequest req = new AddDocumentRequest().content(content0);
       String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
@@ -506,6 +498,34 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
     }
   }
 
+  private void createSiteSchema(final String siteId, final String attributeKey0,
+      final String attributeKey1) throws ApiException {
+
+    List<String> list = Arrays.asList("userId", "playerId", attributeKey0, attributeKey1);
+
+    for (String attributeKey : list) {
+      this.attributesApi.addAttribute(
+          new AddAttributeRequest().attribute(new AddAttribute().key(attributeKey)), siteId);
+    }
+
+    AttributeSchemaCompositeKey compositeKey0 = new AttributeSchemaCompositeKey()
+        .attributeKeys(Arrays.asList(attributeKey0, attributeKey1));
+
+    AttributeSchemaCompositeKey compositeKey1 =
+        new AttributeSchemaCompositeKey().attributeKeys(Arrays.asList("userId", "playerId"));
+
+    AttributeSchemaCompositeKey compositeKey2 = new AttributeSchemaCompositeKey()
+        .attributeKeys(Arrays.asList("userId", "playerId", attributeKey0, attributeKey1));
+
+    AttributeSchemaCompositeKey compositeKey3 = new AttributeSchemaCompositeKey()
+        .attributeKeys(Arrays.asList("userId", attributeKey0, attributeKey1));
+
+    SetSitesSchemaRequest sitesSchema =
+        new SetSitesSchemaRequest().name("test").attributes(new SchemaAttributes()
+            .compositeKeys(List.of(compositeKey0, compositeKey1, compositeKey2, compositeKey3)));
+    this.schemasApi.setSitesSchema(siteId, sitesSchema);
+  }
+
   /**
    * Add Document with 1 attribute, Update Document with 1 attributes, check composite keys.
    *
@@ -521,22 +541,15 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       String attributeKey0 = "category";
       String attributeKey1 = "documentType";
 
-      for (String attributeKey : Arrays.asList(attributeKey0, attributeKey1)) {
-        this.attributesApi.addAttribute(
-            new AddAttributeRequest().attribute(new AddAttribute().key(attributeKey)), siteId);
-      }
-
-      SetSitesSchemaRequest sitesSchema = new SetSitesSchemaRequest().name("test")
-          .attributes(new SchemaAttributes().addCompositeKeysItem(new AttributeSchemaCompositeKey()
-              .attributeKeys(Arrays.asList(attributeKey0, attributeKey1))));
-      this.schemasApi.setSitesSchema(siteId, sitesSchema);
+      createSiteSchema(siteId, attributeKey0, attributeKey1);
 
       AddDocumentRequest req = new AddDocumentRequest().content(content0)
           .addAttributesItem(new AddDocumentAttribute().key(attributeKey0).stringValue("person"));
       String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
 
       UpdateDocumentRequest updateReq = new UpdateDocumentRequest()
-          .addAttributesItem(new AddDocumentAttribute().key(attributeKey1).stringValue("privacy"));
+          .addAttributesItem(new AddDocumentAttribute().key(attributeKey1).stringValue("privacy"))
+          .addAttributesItem(new AddDocumentAttribute().key("userId").stringValue("123"));
 
       // when
       this.documentsApi.updateDocument(documentId, updateReq, siteId, null);
@@ -545,14 +558,19 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
           .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
 
-      final int expected = 3;
+      final int expected = 5;
+      int i = 0;
       assertEquals(expected, attributes.size());
-      assertEquals(attributeKey0 + "#" + attributeKey1, attributes.get(0).getKey());
-      assertEquals("person#privacy", attributes.get(0).getStringValue());
-      assertEquals(attributeKey0, attributes.get(1).getKey());
-      assertEquals("person", attributes.get(1).getStringValue());
-      assertEquals(attributeKey1, attributes.get(2).getKey());
-      assertEquals("privacy", attributes.get(2).getStringValue());
+      assertEquals(attributeKey0 + "#" + attributeKey1, attributes.get(i).getKey());
+      assertEquals("person#privacy", attributes.get(i++).getStringValue());
+      assertEquals(attributeKey0, attributes.get(i).getKey());
+      assertEquals("person", attributes.get(i++).getStringValue());
+      assertEquals(attributeKey1, attributes.get(i).getKey());
+      assertEquals("privacy", attributes.get(i++).getStringValue());
+      assertEquals("userId", attributes.get(i).getKey());
+      assertEquals("123", attributes.get(i++).getStringValue());
+      assertEquals("userId#" + attributeKey0 + "#" + attributeKey1, attributes.get(i).getKey());
+      assertEquals("123#person#privacy", attributes.get(i).getStringValue());
     }
   }
 }

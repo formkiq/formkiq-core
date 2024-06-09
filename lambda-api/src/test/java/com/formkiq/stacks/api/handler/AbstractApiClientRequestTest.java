@@ -25,13 +25,12 @@ package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.services.lambda.ApiAuthorizationBuilder.COGNITO_READ_SUFFIX;
-import java.net.URISyntaxException;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
 import com.formkiq.client.api.MappingsApi;
-import com.formkiq.testutils.aws.FormKiQApiExtensionConfig;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -94,14 +93,9 @@ public abstract class AbstractApiClientRequestTest {
   /** FormKiQ Server. */
   @RegisterExtension
   @Order(2)
-  static FormKiqApiExtension server =
-      new FormKiqApiExtension(localstack, typeSense, new FormKiQApiExtensionConfig() {
-        @Override
-        public Map<String, String> getEnvironment() {
-          return Map.of("DOCUMENT_VERSIONS_PLUGIN",
-              DocumentVersionServiceNoVersioning.class.getName());
-        }
-      }, new FormKiQResponseCallback());
+  static FormKiqApiExtension server = new FormKiqApiExtension(localstack, typeSense,
+      () -> Map.of("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName()),
+      new FormKiQResponseCallback());
 
   /** 500 Milliseconds. */
   private static final long SLEEP = 500L;
@@ -158,9 +152,8 @@ public abstract class AbstractApiClientRequestTest {
    * 
    * @return {@link List} {@link Message}
    * @throws InterruptedException InterruptedException
-   * @throws URISyntaxException URISyntaxException
    */
-  public List<Message> getSqsMessages() throws InterruptedException, URISyntaxException {
+  public List<Message> getSqsMessages() throws InterruptedException {
 
     String sqsDocumentEventUrl = localstack.getSqsDocumentEventUrl();
 

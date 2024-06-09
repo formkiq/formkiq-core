@@ -253,10 +253,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       Schema schema = getSchame(siteId);
 
       Collection<DocumentAttributeRecord> documentAttributes =
-          addCompositeKeys(siteId, documentId, documentAttributeRecords, isUpdate, schema);
-
-      // Collection<DocumentAttributeRecord> compositeKeys =
-      // new DocumentAttributeSchema(schema, documentId).apply(documentAttributes);
+          addCompositeKeys(siteId, documentId, documentAttributeRecords, schema);
 
       Map<String, AttributeRecord> attributeMap = validateDocumentAttributes(schema, siteId,
           documentId, documentAttributes, isUpdate, validation, validationAccess);
@@ -292,11 +289,11 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
   private Collection<DocumentAttributeRecord> addCompositeKeys(final String siteId,
       final String documentId, final Collection<DocumentAttributeRecord> documentAttributeRecords,
-      final boolean isUpdate, final Schema schema) {
+      final Schema schema) {
 
     Collection<DocumentAttributeRecord> documentAttributes = documentAttributeRecords;
 
-    if (isUpdate && schema != null) {
+    if (schema != null) {
 
       Collection<DocumentAttributeRecord> compositeKeys =
           generateCompositeKeys(schema, siteId, documentId, documentAttributes);
@@ -796,8 +793,13 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   @Override
   public List<DocumentAttributeRecord> findDocumentAttribute(final String siteId,
       final String documentId, final String attributeKey) {
-
     final int limit = 100;
+    return findDocumentAttribute(siteId, documentId, attributeKey, limit);
+  }
+
+  private List<DocumentAttributeRecord> findDocumentAttribute(final String siteId,
+      final String documentId, final String attributeKey, final int limit) {
+
     DocumentAttributeRecord r =
         new DocumentAttributeRecord().documentId(documentId).key(attributeKey);
 
@@ -2089,23 +2091,30 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       final AttributeValidation validation, final AttributeValidationAccess validationAccess)
       throws ValidationException {
 
-    Collection<ValidationError> errors = Collections.emptyList();
+    Map<String, AttributeRecord> attributeRecordMap = Collections.emptyMap();
+    Collection<ValidationError> errors = new ArrayList<>();
 
-    Map<String, AttributeRecord> attributeRecordMap =
-        this.attributeValidator.getAttributeRecordMap(siteId, documentAttributes);
+    validateDocumentAttributesExist(siteId, documentId, documentAttributes, validationAccess,
+        errors);
 
-    switch (validation) {
-      case FULL -> {
-        errors = this.attributeValidator.validateFullAttribute(schema, siteId, documentId,
-            documentAttributes, attributeRecordMap, isUpdate, validationAccess);
+    if (errors.isEmpty()) {
+
+      attributeRecordMap =
+          this.attributeValidator.getAttributeRecordMap(siteId, documentAttributes);
+
+      switch (validation) {
+        case FULL -> {
+          errors = this.attributeValidator.validateFullAttribute(schema, siteId, documentId,
+              documentAttributes, attributeRecordMap, isUpdate, validationAccess);
+        }
+        case PARTIAL -> {
+          errors = this.attributeValidator.validatePartialAttribute(schema, siteId,
+              documentAttributes, attributeRecordMap, validationAccess);
+        }
+        case NONE -> {
+        }
+        default -> throw new IllegalArgumentException("Unexpected value: " + validation);
       }
-      case PARTIAL -> {
-        errors = this.attributeValidator.validatePartialAttribute(schema, siteId,
-            documentAttributes, attributeRecordMap, validationAccess);
-      }
-      case NONE -> {
-      }
-      default -> throw new IllegalArgumentException("Unexpected value: " + validation);
     }
 
     if (!errors.isEmpty()) {
@@ -2113,6 +2122,36 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     }
 
     return attributeRecordMap;
+  }
+
+  /**
+   * Validate Document Attributes Exist when creating new ones.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param documentAttributes {@link Collection} {@link DocumentAttributeRecord}
+   * @param validationAccess {@link AttributeValidationAccess}
+   * @param errors {@link Collection} {@link ValidationError}
+   */
+  private void validateDocumentAttributesExist(final String siteId, final String documentId,
+      final Collection<DocumentAttributeRecord> documentAttributes,
+      final AttributeValidationAccess validationAccess, final Collection<ValidationError> errors) {
+
+    if (AttributeValidationAccess.CREATE.equals(validationAccess)
+        || AttributeValidationAccess.ADMIN_CREATE.equals(validationAccess)) {
+
+      Set<String> keys =
+          documentAttributes.stream().map(da -> da.getKey()).collect(Collectors.toSet());
+      keys.forEach(key -> {
+        List<DocumentAttributeRecord> documentAttribute =
+            findDocumentAttribute(siteId, documentId, key, 1);
+        if (!documentAttribute.isEmpty()) {
+          errors.add(new ValidationErrorImpl().key(key)
+              .error("document attribute '" + key + "' already exists"));
+        }
+      });
+
+    }
   }
 
   private Schema getSchame(final String siteId) {
