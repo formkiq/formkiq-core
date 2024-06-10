@@ -9109,6 +9109,9 @@ Resources:
               properties:
                 type:
                   $ref: "#/components/schemas/OpaPolicyItemType"
+                policy:
+                  type: "string"
+                  description: "OPA Policy in REGO format"
                 allRoles:
                   items:
                     type: "string"
