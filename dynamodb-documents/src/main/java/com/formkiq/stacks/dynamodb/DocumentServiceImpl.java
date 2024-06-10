@@ -89,6 +89,7 @@ import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
 import com.formkiq.stacks.dynamodb.attributes.DynamicObjectToDocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.schemas.Schema;
 import com.formkiq.stacks.dynamodb.schemas.SchemaAttributesCompositeKey;
+import com.formkiq.stacks.dynamodb.schemas.SchemaMissingRequiredAttributes;
 import com.formkiq.stacks.dynamodb.schemas.SchemaService;
 import com.formkiq.stacks.dynamodb.schemas.SchemaServiceDynamodb;
 import com.formkiq.validation.ValidationError;
@@ -252,8 +253,12 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
       Schema schema = getSchame(siteId);
 
-      Collection<DocumentAttributeRecord> documentAttributes =
-          addCompositeKeys(siteId, documentId, documentAttributeRecords, schema);
+      Collection<DocumentAttributeRecord> documentAttributes = addCompositeAndRequiredKeys(siteId,
+          documentId, documentAttributeRecords, schema, validationAccess);
+
+      Date date = new Date();
+      documentAttributeRecords.stream().filter(a -> a.getInsertedDate() == null)
+          .forEach(a -> a.setInsertedDate(date));
 
       Map<String, AttributeRecord> attributeMap = validateDocumentAttributes(schema, siteId,
           documentId, documentAttributes, isUpdate, validation, validationAccess);
@@ -291,13 +296,32 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     }
   }
 
-  private Collection<DocumentAttributeRecord> addCompositeKeys(final String siteId,
+  private Collection<DocumentAttributeRecord> addMissingRequired(final Schema schema,
+      final String siteId, final String documentId,
+      final Collection<DocumentAttributeRecord> documentAttributes) {
+
+    return new SchemaMissingRequiredAttributes(attributeService, schema, siteId, documentId)
+        .apply(documentAttributes);
+  }
+
+  private Collection<DocumentAttributeRecord> addCompositeAndRequiredKeys(final String siteId,
       final String documentId, final Collection<DocumentAttributeRecord> documentAttributeRecords,
-      final Schema schema) {
+      final Schema schema, final AttributeValidationAccess validationAccess) {
 
     Collection<DocumentAttributeRecord> documentAttributes = documentAttributeRecords;
 
     if (schema != null) {
+
+      if (AttributeValidationAccess.ADMIN_CREATE.equals(validationAccess)
+          || AttributeValidationAccess.CREATE.equals(validationAccess)) {
+        Collection<DocumentAttributeRecord> missingRequired =
+            addMissingRequired(schema, siteId, documentId, documentAttributes);
+
+        if (!missingRequired.isEmpty()) {
+          documentAttributes =
+              Stream.concat(documentAttributes.stream(), missingRequired.stream()).toList();
+        }
+      }
 
       Collection<DocumentAttributeRecord> compositeKeys =
           generateCompositeKeys(schema, siteId, documentId, documentAttributes);

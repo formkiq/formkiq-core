@@ -65,6 +65,11 @@ public class DocumentAttributeRecordToMap
         lastValues.remove("documentId");
         lastValues.remove("valueType");
 
+        if (lastValues.containsKey("inserteddate")) {
+          lastValues.put("insertedDate", lastValues.get("inserteddate"));
+          lastValues.remove("inserteddate");
+        }
+
         c.add(lastValues);
 
         last = a;

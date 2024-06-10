@@ -34,7 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Stream;
+
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
@@ -51,9 +51,7 @@ import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.transformers.AddDocumentRequestToDocumentItem;
 import com.formkiq.stacks.api.transformers.AddDocumentRequestToPresignedUrls;
-import com.formkiq.stacks.dynamodb.DocumentAttributeSchema;
 import com.formkiq.stacks.api.transformers.DocumentAttributeToDocumentAttributeRecord;
-import com.formkiq.stacks.api.transformers.SchemaMissingRequiredAttributes;
 import com.formkiq.stacks.api.validators.DocumentEntityValidator;
 import com.formkiq.stacks.api.validators.DocumentEntityValidatorImpl;
 import com.formkiq.stacks.dynamodb.DocumentCountService;
@@ -61,11 +59,8 @@ import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentValidator;
 import com.formkiq.stacks.dynamodb.DocumentValidatorImpl;
 import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
-import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
-import com.formkiq.stacks.dynamodb.schemas.Schema;
-import com.formkiq.stacks.dynamodb.schemas.SchemaService;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
 
@@ -143,41 +138,24 @@ public class DocumentsUploadRequestHandler
 
     notNull(request.getDocuments()).forEach(d -> d.setDocumentId(UUID.randomUUID().toString()));
 
-    SchemaService schemaService = awsservice.getExtension(SchemaService.class);
-
     String siteId = authorization.getSiteId();
     String documentId = request.getDocumentId();
-    Schema schema = schemaService.getSitesSchema(siteId, null);
-
-    AttributeService attributeService = awsservice.getExtension(AttributeService.class);
 
     List<DocumentAttribute> attributes = notNull(request.getAttributes());
 
     DocumentAttributeToDocumentAttributeRecord tr =
         new DocumentAttributeToDocumentAttributeRecord(documentId);
 
-    List<DocumentAttributeRecord> searchAttributes =
+    List<DocumentAttributeRecord> documentAttributes =
         attributes.stream().flatMap(a -> tr.apply(a).stream()).toList();
-
-    Collection<DocumentAttributeRecord> missingRequiredAttributes =
-        new SchemaMissingRequiredAttributes(attributeService, schema, siteId, documentId)
-            .apply(searchAttributes);
-
-    searchAttributes =
-        Stream.concat(searchAttributes.stream(), missingRequiredAttributes.stream()).toList();
 
     List<DocumentTag> tags =
         this.documentEntityValidator.validate(authorization, awsservice, siteId, request, false);
 
     String maxDocumentCount = validatePost(awsservice, siteId, request);
 
-    Collection<DocumentAttributeRecord> compositeKeys =
-        new DocumentAttributeSchema(schema, documentId).apply(searchAttributes);
-
-    searchAttributes = Stream.concat(searchAttributes.stream(), compositeKeys.stream()).toList();
-
     ApiRequestHandlerResponse response = buildPresignedResponse(event, authorization, awsservice,
-        siteId, request, tags, searchAttributes);
+        siteId, request, tags, documentAttributes);
 
     if (maxDocumentCount != null) {
 
@@ -219,7 +197,7 @@ public class DocumentsUploadRequestHandler
    * @param siteId {@link String}
    * @param request {@link AddDocumentRequest}
    * @param tags {@link List} {@link DocumentTag}
-   * @param searchAttributes {@link Collection} {@link DocumentAttributeRecord}
+   * @param documentAttributes {@link Collection} {@link DocumentAttributeRecord}
    * @return {@link ApiRequestHandlerResponse}
    * @throws BadException BadException
    * @throws ValidationException ValidationException
@@ -227,7 +205,7 @@ public class DocumentsUploadRequestHandler
   private ApiRequestHandlerResponse buildPresignedResponse(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice, final String siteId,
       final AddDocumentRequest request, final List<DocumentTag> tags,
-      final Collection<DocumentAttributeRecord> searchAttributes)
+      final Collection<DocumentAttributeRecord> documentAttributes)
       throws BadException, ValidationException {
 
     String documentId = request.getDocumentId();
@@ -254,7 +232,7 @@ public class DocumentsUploadRequestHandler
         getAttributeValidationAccess(authorization, siteId);
     SaveDocumentOptions options =
         new SaveDocumentOptions().saveDocumentDate(true).validationAccess(validationAccess);
-    service.saveDocument(siteId, item, tags, searchAttributes, options);
+    service.saveDocument(siteId, item, tags, documentAttributes, options);
 
     ActionsService actionsService = awsservice.getExtension(ActionsService.class);
     notNull(request.getActions()).forEach(a -> a.userId(authorization.getUsername()));

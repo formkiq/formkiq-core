@@ -21,12 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api.transformers;
+package com.formkiq.stacks.dynamodb.schemas;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -38,8 +37,6 @@ import com.formkiq.stacks.dynamodb.attributes.AttributeDataType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
-import com.formkiq.stacks.dynamodb.schemas.Schema;
-import com.formkiq.stacks.dynamodb.schemas.SchemaAttributesRequired;
 
 /**
  * Generates a {@link Collection} of missing required {@link DocumentAttributeRecord}.
@@ -48,13 +45,13 @@ public class SchemaMissingRequiredAttributes
     implements Function<Collection<DocumentAttributeRecord>, Collection<DocumentAttributeRecord>> {
 
   /** Document Id. */
-  private String docId;
+  private final String docId;
   /** Schema. */
-  private Schema schema;
+  private final Schema schema;
   /** {@link AttributeService}. */
-  private AttributeService service;
+  private final AttributeService service;
   /** SiteId. */
-  private String site;
+  private final String site;
 
   /**
    * constructor.
@@ -78,7 +75,8 @@ public class SchemaMissingRequiredAttributes
     List<DocumentAttributeRecord> missingAttributes = Collections.emptyList();
 
     if (this.schema != null) {
-      Set<String> keys = c.stream().map(a -> a.getKey()).collect(Collectors.toSet());
+      Set<String> keys =
+          c.stream().map(DocumentAttributeRecord::getKey).collect(Collectors.toSet());
 
       List<SchemaAttributesRequired> requiredAttributes = this.schema.getAttributes().getRequired()
           .stream().filter(a -> !keys.contains(a.getAttributeKey())).toList();
@@ -86,7 +84,7 @@ public class SchemaMissingRequiredAttributes
       if (!requiredAttributes.isEmpty()) {
 
         List<String> attributeKeys =
-            requiredAttributes.stream().map(a -> a.getAttributeKey()).toList();
+            requiredAttributes.stream().map(SchemaAttributesRequired::getAttributeKey).toList();
 
         Map<String, AttributeRecord> attributeMap =
             this.service.getAttributes(this.site, attributeKeys);
@@ -126,7 +124,7 @@ public class SchemaMissingRequiredAttributes
 
     List<String> values =
         !notNull(attribute.getDefaultValues()).isEmpty() ? attribute.getDefaultValues()
-            : Arrays.asList(attribute.getDefaultValue());
+            : Collections.singletonList(attribute.getDefaultValue());
 
     for (String value : values) {
 

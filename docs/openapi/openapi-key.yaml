@@ -6442,6 +6442,9 @@
                   description: Attribute with boolean value
                 valueType:
                   $ref: '#/components/schemas/AttributeValueType'
+                insertedDate:
+                  type: string
+                  description: Inserted Timestamp
             DocumentSearchMeta:
               type: object
               properties:
@@ -6994,6 +6997,9 @@
                 booleanValue:
                   type: boolean
                   description: Attribute with boolean value
+                insertedDate:
+                  type: string
+                  description: Inserted Timestamp
             DocumentTag:
               type: object
               properties:
@@ -9878,18 +9884,16 @@
                   description: Message response
           securitySchemes:
             ApiAuthorization:
-              type: apiKey
-              name: Authorization
-              in: header
-              x-amazon-apigateway-authtype: Custom API Key
+              type: oauth2
+              flows: {}
               x-amazon-apigateway-authorizer:
+                type: jwt
+                jwtConfiguration:
+                  issuer:
+                    Fn::Sub: https://cognito-idp.${AWS::Region}.amazonaws.com/${CognitoUserPool}
+                  audience:
+                  - Fn::Sub: ${CognitoUserPoolClient}
                 identitySource: $request.header.Authorization
-                authorizerUri:
-                  Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ApiKeyAuthorizer.Arn}/invocations
-                authorizerResultTtlInSeconds: 300
-                authorizerPayloadFormatVersion: "2.0"
-                enableSimpleResponses: true
-                type: request
           x-amazon-apigateway-integrations:
             lambdaApi200:
               uri:
