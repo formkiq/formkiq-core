@@ -6477,6 +6477,9 @@ Resources:
                   description: "Attribute with boolean value"
                 valueType:
                   $ref: "#/components/schemas/AttributeValueType"
+                insertedDate:
+                  type: "string"
+                  description: "Inserted Timestamp"
             DocumentSearchMeta:
               type: "object"
               properties:
@@ -7029,6 +7032,9 @@ Resources:
                 booleanValue:
                   type: "boolean"
                   description: "Attribute with boolean value"
+                insertedDate:
+                  type: "string"
+                  description: "Inserted Timestamp"
             DocumentTag:
               type: "object"
               properties:

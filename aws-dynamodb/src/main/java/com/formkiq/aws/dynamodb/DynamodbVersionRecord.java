@@ -23,11 +23,8 @@
  */
 package com.formkiq.aws.dynamodb;
 
-import com.formkiq.aws.dynamodb.objects.DateUtil;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,16 +60,6 @@ public interface DynamodbVersionRecord<T> extends DynamodbRecord<T> {
    * @return {@link String}
    */
   String skVersion();
-
-  /**
-   * Get Inserted Date {@link String}.
-   * 
-   * @return {@link String}
-   */
-  default String getInsertedDate() {
-    SimpleDateFormat df = DateUtil.getIsoDateFormatter();
-    return df.format(new Date());
-  }
 
   /**
    * Update Attributes to Version.

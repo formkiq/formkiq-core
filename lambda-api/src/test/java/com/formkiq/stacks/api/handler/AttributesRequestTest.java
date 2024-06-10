@@ -1495,30 +1495,87 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       assertEquals(expected, Objects.requireNonNull(response.getAttributes()).size());
 
       int i = 0;
-      assertEquals("flag", response.getAttributes().get(i).getKey());
-      assertEquals(Boolean.TRUE, response.getAttributes().get(i++).getBooleanValue());
+      assertAttributeValues(response.getAttributes().get(i++), "flag", null, null, null, null,
+          Boolean.TRUE);
+      assertAttributeValues(response.getAttributes().get(i++), "keyonly", null, null, null, null,
+          null);
+      assertAttributeValues(response.getAttributes().get(i++), "nums", null, null, null,
+          "100,123,200", null);
+      assertAttributeValues(response.getAttributes().get(i++), "other", null, null, "100", null,
+          null);
+      assertAttributeValues(response.getAttributes().get(i++), "security", "confidential", null,
+          null, null, null);
+      assertAttributeValues(response.getAttributes().get(i), "strings", null, "123,abc,xyz", null,
+          null, null);
 
-      assertEquals("keyonly", response.getAttributes().get(i).getKey());
-      assertNull(response.getAttributes().get(i).getStringValue());
-      assertNull(response.getAttributes().get(i).getNumberValue());
-      assertNull(response.getAttributes().get(i++).getBooleanValue());
 
-      assertEquals("nums", response.getAttributes().get(i).getKey());
-      assertEquals("100,123,200",
-          Strings.join(notNull(response.getAttributes().get(i++).getNumberValues()).stream()
-              .map(n -> formatDouble(n.doubleValue())).toList(), ","));
+      // assertEquals("keyonly", response.getAttributes().get(i).getKey());
+      // assertNotNull(response.getAttributes().get(i).getInsertedDate());
+      // assertNull(response.getAttributes().get(i).getStringValue());
+      // assertNull(response.getAttributes().get(i).getNumberValue());
+      // assertNull(response.getAttributes().get(i++).getBooleanValue());
 
-      assertEquals("other", response.getAttributes().get(i).getKey());
-      assertEquals("100", formatDouble(Objects
-          .requireNonNull(response.getAttributes().get(i++).getNumberValue()).doubleValue()));
+      // assertEquals("nums", response.getAttributes().get(i).getKey());
+      // assertNotNull(response.getAttributes().get(i).getInsertedDate());
+      // assertEquals("100,123,200",
+      // Strings.join(notNull(response.getAttributes().get(i++).getNumberValues()).stream()
+      // .map(n -> formatDouble(n.doubleValue())).toList(), ","));
 
-      assertEquals("security", response.getAttributes().get(i).getKey());
-      assertEquals("confidential", response.getAttributes().get(i++).getStringValue());
+      // assertEquals("other", response.getAttributes().get(i).getKey());
+      // assertNotNull(response.getAttributes().get(i).getInsertedDate());
+      // assertEquals("100", formatDouble(Objects
+      // .requireNonNull(response.getAttributes().get(i++).getNumberValue()).doubleValue()));
 
-      assertEquals("strings", response.getAttributes().get(i).getKey());
-      assertEquals("123,abc,xyz", Strings
-          .join(Objects.requireNonNull(response.getAttributes().get(i).getStringValues()), ","));
+      // assertEquals("security", response.getAttributes().get(i).getKey());
+      // assertNotNull(response.getAttributes().get(i).getInsertedDate());
+      // assertEquals("confidential", response.getAttributes().get(i++).getStringValue());
+
+      // assertEquals("strings", response.getAttributes().get(i).getKey());
+      // assertNotNull(response.getAttributes().get(i).getInsertedDate());
+      // assertEquals("123,abc,xyz", Strings
+      // .join(Objects.requireNonNull(response.getAttributes().get(i).getStringValues()), ","));
     }
+  }
+
+  private static void assertAttributeValues(final DocumentAttribute attribute, final String key,
+      final String stringValue, final String stringValues, final String numberValue,
+      final String numberValues, final Boolean booleanValue) {
+
+    assertNotNull(attribute);
+    assertEquals(key, attribute.getKey());
+
+    if (stringValue != null) {
+      assertEquals(stringValue, attribute.getStringValue());
+    } else {
+      assertNull(attribute.getStringValue());
+    }
+
+    if (stringValues != null) {
+      assertEquals(stringValues, Strings.join(notNull(attribute.getStringValues()), ","));
+    } else {
+      assertTrue(notNull(attribute.getStringValues()).isEmpty());
+    }
+
+    if (numberValues != null) {
+      assertEquals(numberValues, Strings.join(notNull(attribute.getNumberValues()).stream()
+          .map(n -> formatDouble(n.doubleValue())).toList(), ","));
+    } else {
+      assertTrue(notNull(attribute.getNumberValues()).isEmpty());
+    }
+
+    if (numberValue != null && attribute.getNumberValue() != null) {
+      assertEquals(numberValue, formatDouble(attribute.getNumberValue().doubleValue()));
+    } else {
+      assertNull(attribute.getNumberValue());
+    }
+
+    if (booleanValue != null) {
+      assertEquals(booleanValue, attribute.getBooleanValue());
+    } else {
+      assertNull(attribute.getBooleanValue());
+    }
+
+    assertNotNull(attribute.getInsertedDate());
   }
 
   /**

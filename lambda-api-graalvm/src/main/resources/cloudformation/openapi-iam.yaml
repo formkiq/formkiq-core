@@ -5,14 +5,14 @@
 ---
 Resources:
 
-  DocumentsIamApi:
+  DocumentsHttpApi:
     Properties:
       #@overlay/match missing_ok=True
       Body:
         openapi: "3.0.1"
         info:
           title:
-            Fn::Sub: "${AWS::StackName} IAM API - ${AppEnvironment}"
+            Fn::Sub: "${AWS::StackName} OAuth API - ${AppEnvironment}"
           contact:
             name: FormKiQ
             url: https://formkiq.com
@@ -6477,6 +6477,9 @@ Resources:
                   description: "Attribute with boolean value"
                 valueType:
                   $ref: "#/components/schemas/AttributeValueType"
+                insertedDate:
+                  type: "string"
+                  description: "Inserted Timestamp"
             DocumentSearchMeta:
               type: "object"
               properties:
@@ -7029,6 +7032,9 @@ Resources:
                 booleanValue:
                   type: "boolean"
                   description: "Attribute with boolean value"
+                insertedDate:
+                  type: "string"
+                  description: "Inserted Timestamp"
             DocumentTag:
               type: "object"
               properties:
@@ -9962,10 +9968,16 @@ Resources:
                   description: "Message response"
           securitySchemes:
             ApiAuthorization:
-              type: apiKey
-              name: Authorization
-              in: header
-              x-amazon-apigateway-authtype: awsSigv4
+              type: oauth2
+              flows: {}
+              x-amazon-apigateway-authorizer:
+                type: jwt
+                jwtConfiguration:
+                  issuer:
+                    Fn::Sub: https://cognito-idp.${AWS::Region}.amazonaws.com/${CognitoUserPool}
+                  audience:
+                  - Fn::Sub: "${CognitoUserPoolClient}"
+                identitySource: "$request.header.Authorization"
           x-amazon-apigateway-integrations:
             lambdaApi200:
               uri:

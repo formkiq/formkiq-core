@@ -26,10 +26,15 @@ package com.formkiq.stacks.dynamodb.attributes;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.objects.Objects.formatDouble;
 import static com.formkiq.stacks.dynamodb.attributes.AttributeRecord.ATTR;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamodbVersionRecord;
+import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.graalvm.annotations.Reflectable;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -43,6 +48,8 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 public class DocumentAttributeRecord
     implements DynamodbVersionRecord<DocumentAttributeRecord>, DbKeys {
 
+  /** {@link SimpleDateFormat}. */
+  private final SimpleDateFormat df = DateUtil.getIsoDateFormatter();
   /** Boolean value. */
   @Reflectable
   private Boolean booleanValue;
@@ -61,6 +68,9 @@ public class DocumentAttributeRecord
   /** Type of Attribute. */
   @Reflectable
   private DocumentAttributeValueType valueType;
+  /** Inserted Date. */
+  @Reflectable
+  private Date insertedDate;
 
   /**
    * constructor.
@@ -102,6 +112,10 @@ public class DocumentAttributeRecord
       map.put("stringValue", fromS(this.stringValue));
     }
 
+    if (this.insertedDate != null) {
+      map.put("inserteddate", AttributeValue.fromS(df.format(this.insertedDate)));
+    }
+
     return map;
   }
 
@@ -128,6 +142,15 @@ public class DocumentAttributeRecord
       if (attrs.containsKey("numberValue")) {
         record.numberValue(nn(attrs, "numberValue"));
       }
+
+      if (attrs.containsKey("inserteddate")) {
+        try {
+          record = record.setInsertedDate(df.parse(ss(attrs, "inserteddate")));
+        } catch (ParseException e) {
+          // ignore
+        }
+      }
+
     }
 
     return record;
@@ -340,6 +363,26 @@ public class DocumentAttributeRecord
       this.valueType = DocumentAttributeValueType.BOOLEAN;
     }
 
+    return this;
+  }
+
+  /**
+   * Get Inserted Date.
+   *
+   * @return {@link Date}
+   */
+  public Date getInsertedDate() {
+    return this.insertedDate;
+  }
+
+  /**
+   * Set Inserted Date.
+   *
+   * @param date {@link Date}
+   * @return {@link DocumentAttributeRecord}
+   */
+  public DocumentAttributeRecord setInsertedDate(final Date date) {
+    this.insertedDate = date;
     return this;
   }
 
