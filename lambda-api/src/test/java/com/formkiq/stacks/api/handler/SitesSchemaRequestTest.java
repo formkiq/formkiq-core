@@ -1831,7 +1831,9 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
               new AddDocumentAttribute().key("strings").stringValues(List.of("category", "1234")))
           .addAttributesItem(new AddDocumentAttribute().key("documentType").stringValue("invoice"));
       String documentId = this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
-      assertEquals(3, notNull(this.documentAttributesApi
+
+      final int expected3 = 3;
+      assertEquals(expected3, notNull(this.documentAttributesApi
           .getDocumentAttributes(documentId, siteId, null, null).getAttributes()).size());
 
       // when

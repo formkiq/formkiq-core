@@ -1418,30 +1418,30 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       a = this.documentAttributesApi.getDocumentAttribute(documentId, "other", siteId)
           .getAttribute();
-      assertEquals("other", a.getKey());
+      assertEquals("other", Objects.requireNonNull(a).getKey());
       assertEquals("100", formatDouble(Objects.requireNonNull(a.getNumberValue()).doubleValue()));
 
       a = this.documentAttributesApi.getDocumentAttribute(documentId, "flag", siteId)
           .getAttribute();
-      assertEquals("flag", a.getKey());
+      assertEquals("flag", Objects.requireNonNull(a).getKey());
       assertEquals(Boolean.TRUE, a.getBooleanValue());
 
       a = this.documentAttributesApi.getDocumentAttribute(documentId, "keyonly", siteId)
           .getAttribute();
-      assertEquals("keyonly", a.getKey());
+      assertEquals("keyonly", Objects.requireNonNull(a).getKey());
       assertNull(a.getBooleanValue());
       assertNull(a.getStringValue());
       assertNull(a.getNumberValue());
 
       a = this.documentAttributesApi.getDocumentAttribute(documentId, "nums", siteId)
           .getAttribute();
-      assertEquals("nums", a.getKey());
+      assertEquals("nums", Objects.requireNonNull(a).getKey());
       assertEquals("100,123,200", Strings.join(Objects.requireNonNull(a.getNumberValues()).stream()
           .map(n -> formatDouble(n.doubleValue())).toList(), ","));
 
       a = this.documentAttributesApi.getDocumentAttribute(documentId, "strings", siteId)
           .getAttribute();
-      assertEquals("strings", a.getKey());
+      assertEquals("strings", Objects.requireNonNull(a).getKey());
       assertEquals("123,abc,xyz", Strings.join(Objects.requireNonNull(a.getStringValues()), ","));
     }
   }

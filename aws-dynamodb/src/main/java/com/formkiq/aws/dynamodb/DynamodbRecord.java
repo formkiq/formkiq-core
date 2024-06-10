@@ -28,7 +28,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
  * 
- * DynamoDB Keys.
+ * DynamoDB Record.
  * 
  * @param <T> Type of DynamodbRecord
  *

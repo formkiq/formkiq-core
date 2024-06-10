@@ -103,22 +103,12 @@ public interface DocumentService extends DocumentTagLoader {
    * @param attributeKey {@link String}
    * @param validation {@link AttributeValidation}
    * @param validationAccess {@link AttributeValidationAccess}
-   * @return boolean
+   * @return {@link List} {@link DocumentAttributeRecord}
    * @throws ValidationException ValidationException
    */
-  boolean deleteDocumentAttribute(String siteId, String documentId, String attributeKey,
-      AttributeValidation validation, AttributeValidationAccess validationAccess)
-      throws ValidationException;
-
-  /**
-   * Delete Document Attributes.
-   * 
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @return boolean
-   * @throws ValidationException ValidationException
-   */
-  boolean deleteDocumentAttributes(String siteId, String documentId) throws ValidationException;
+  List<DocumentAttributeRecord> deleteDocumentAttribute(String siteId, String documentId,
+      String attributeKey, AttributeValidation validation,
+      AttributeValidationAccess validationAccess) throws ValidationException;
 
   /**
    * Delete Document Attribute Value.
