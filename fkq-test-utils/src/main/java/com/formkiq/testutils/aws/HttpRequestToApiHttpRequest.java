@@ -25,11 +25,12 @@ package com.formkiq.testutils.aws;
 
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -43,9 +44,9 @@ import org.mockserver.model.HttpRequest;
 public class HttpRequestToApiHttpRequest implements Function<HttpRequest, ApiHttpRequest> {
 
   /** {@link List} {@link String}. */
-  private List<String[]> resourceSplits;
+  private final List<String[]> resourceSplits;
   /** {@link Collection} {@link String}. */
-  private Collection<String> resourceUrls;
+  private final Collection<String> resourceUrls;
 
   /**
    * constructor.
@@ -54,7 +55,7 @@ public class HttpRequestToApiHttpRequest implements Function<HttpRequest, ApiHtt
    */
   public HttpRequestToApiHttpRequest(final Collection<String> resources) {
     this.resourceUrls = resources;
-    this.resourceSplits = resources.stream().filter(r -> r != null).map(r -> r.split("/"))
+    this.resourceSplits = resources.stream().filter(Objects::nonNull).map(r -> r.split("/"))
         .collect(Collectors.toList());
   }
 
@@ -81,7 +82,7 @@ public class HttpRequestToApiHttpRequest implements Function<HttpRequest, ApiHtt
         httpRequest.getQueryStringParameterList().stream().collect(Collectors.toMap(
             p -> decode(p.getName().getValue()), p -> decode(p.getValues().get(0).getValue())));
 
-    String group = decoder.getGroups().stream().collect(Collectors.joining(" "));
+    String group = String.join(" ", decoder.getGroups());
 
     return new ApiHttpRequest().httpMethod(httpRequest.getMethod().getValue()).resource(resource)
         .path(path).pathParameters(pathParameters).queryParameters(queryParameters)
@@ -119,18 +120,29 @@ public class HttpRequestToApiHttpRequest implements Function<HttpRequest, ApiHtt
             }
 
             return match;
-          }).collect(Collectors.toList());
+          }).toList();
 
-      o = matches.size() == 1
-          ? Optional.of(Arrays.asList(matches.get(0)).stream().collect(Collectors.joining("/")))
-          : Optional.empty();
+      if (matches.size() > 1) {
+
+        Optional<String[]> oo =
+            matches.stream().filter(m -> m[m.length - 1].equals(s[s.length - 1])).findFirst();
+
+        if (oo.isPresent()) {
+          matches = new ArrayList<>();
+          matches.add(oo.get());
+        } else {
+          matches = matches.stream().filter(m -> !m[m.length - 1].startsWith("{")).toList();
+        }
+      }
+
+      o = matches.size() == 1 ? Optional.of(String.join("/", matches.get(0))) : Optional.empty();
     }
 
     return o.orElse(null);
   }
 
   /**
-   * Generate {@link ApiGatewayRequestEvent} resource.
+   * Generate Path parameters.
    *
    * @param resource {@link String}
    * @param path {@link String}

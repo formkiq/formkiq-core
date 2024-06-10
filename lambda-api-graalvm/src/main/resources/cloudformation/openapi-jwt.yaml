@@ -2237,6 +2237,37 @@ Resources:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /documents/{documentId}/attributes/{attributeKey}/versions:
+            get:
+              operationId: GetDocumentAttributeVersions
+              summary: Get document attribute's versions
+              description: Get a listing of a document's attribute versions; ONLY available with FormKiQ Pro and Enterprise
+              tags:
+              - Document Attributes
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/attributeKeyParam'
+              - $ref: '#/components/parameters/limitParam'
+              - $ref: '#/components/parameters/nextParam'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetDocumentAttributeVersionsResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /folders:
             get:
               operationId: GetFolderDocuments
@@ -5910,6 +5941,17 @@ Resources:
                 isBase64:
                   type: "boolean"
                   description: "Is the content Base64-encoded?"
+            GetDocumentAttributeVersionsResponse:
+              type: "object"
+              properties:
+                next:
+                  type: "string"
+                  description: "Next page of results token"
+                attributes:
+                  type: "array"
+                  description: "List of document attribute versions"
+                  items:
+                    $ref: "#/components/schemas/DocumentAttribute"
             GetDocumentVersionsResponse:
               type: "object"
               properties:

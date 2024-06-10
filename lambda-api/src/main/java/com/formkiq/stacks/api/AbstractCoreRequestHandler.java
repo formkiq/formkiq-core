@@ -64,6 +64,7 @@ import com.formkiq.stacks.api.handler.ConfigurationApiKeyRequestHandler;
 import com.formkiq.stacks.api.handler.ConfigurationApiKeysRequestHandler;
 import com.formkiq.stacks.api.handler.ConfigurationRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentAttributeRequestHandler;
+import com.formkiq.stacks.api.handler.DocumentAttributeVersionsRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentAttributesRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentAttributesValueRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentIdContentRequestHandler;
@@ -250,9 +251,8 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
 
     addAttributeRequestHandlers();
     addMappingRequestHandlers();
+    addVersionsRequestHandlers();
 
-    addRequestHandler(new DocumentVersionsRequestHandler());
-    addRequestHandler(new DocumentVersionsKeyRequestHandler());
     addRequestHandler(new DocumentPermissionsRequestHandler());
     addRequestHandler(new DocumentPermissionsKeyRequestHandler());
     addRequestHandler(new DocumentTagsRequestHandler());
@@ -320,6 +320,12 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
   private static void addMappingRequestHandlers() {
     addRequestHandler(new MappingsRequestHandler());
     addRequestHandler(new MappingsIdRequestHandler());
+  }
+
+  private static void addVersionsRequestHandlers() {
+    addRequestHandler(new DocumentVersionsRequestHandler());
+    addRequestHandler(new DocumentAttributeVersionsRequestHandler());
+    addRequestHandler(new DocumentVersionsKeyRequestHandler());
   }
 
   /**
