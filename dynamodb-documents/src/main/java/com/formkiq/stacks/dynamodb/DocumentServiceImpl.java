@@ -258,11 +258,9 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       Map<String, AttributeRecord> attributeMap = validateDocumentAttributes(schema, siteId,
           documentId, documentAttributes, isUpdate, validation, validationAccess);
 
-      for (AttributeRecord attribute : attributeMap.values()) {
-        if (!attribute.isInUse()) {
-          this.attributeService.setInUse(siteId, attribute.getKey());
-        }
-      }
+      // update Attributes to In-Use
+      attributeMap.values().stream().filter(a -> !a.isInUse())
+          .forEach(a -> this.attributeService.setInUse(siteId, a.getKey()));
 
       // when updating attributes remove existing attribute keys
       if (AttributeValidationAccess.ADMIN_UPDATE.equals(validationAccess)
@@ -270,16 +268,22 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
         List<String> attributeKeys =
             documentAttributes.stream().map(DocumentAttributeRecord::getKey).toList();
+
         for (String attributeKey : attributeKeys) {
-          deleteDocumentAttribute(siteId, documentId, attributeKey, AttributeValidation.NONE,
-              AttributeValidationAccess.NONE);
+          List<DocumentAttributeRecord> deletedValues = deleteDocumentAttribute(siteId, documentId,
+              attributeKey, AttributeValidation.NONE, AttributeValidationAccess.NONE);
+
+          this.versionsService.addRecords(dbClient, siteId, deletedValues);
         }
       }
 
       // when setting attributes remove existing attribute
       if (AttributeValidationAccess.ADMIN_SET.equals(validationAccess)
           || AttributeValidationAccess.SET.equals(validationAccess)) {
-        deleteDocumentAttributes(siteId, documentId, validationAccess);
+
+        List<DocumentAttributeRecord> deletedValues =
+            deleteDocumentAttributes(siteId, documentId, validationAccess);
+        this.versionsService.addRecords(dbClient, siteId, deletedValues);
       }
 
       writeBuilder.appends(this.documentTableName,
@@ -433,8 +437,8 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
-  public boolean deleteDocumentAttribute(final String siteId, final String documentId,
-      final String attributeKey, final AttributeValidation validation,
+  public List<DocumentAttributeRecord> deleteDocumentAttribute(final String siteId,
+      final String documentId, final String attributeKey, final AttributeValidation validation,
       final AttributeValidationAccess validationAccess) throws ValidationException {
 
     if (!AttributeValidation.NONE.equals(validation)) {
@@ -446,28 +450,19 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       }
     }
 
-    final int limit = 100;
-    DocumentAttributeRecord r =
-        new DocumentAttributeRecord().documentId(documentId).key(attributeKey);
+    List<DocumentAttributeRecord> documentAttributes =
+        findDocumentAttribute(siteId, documentId, attributeKey);
 
-    QueryConfig config = new QueryConfig();
-    QueryResponse response = this.dbService.queryBeginsWith(config, r.fromS(r.pk(siteId)),
-        r.fromS(ATTR + attributeKey + "#"), null, limit);
+    List<Map<String, AttributeValue>> keys = documentAttributes.stream()
+        .map(a -> Map.of(PK, a.fromS(a.pk(siteId)), SK, a.fromS(a.sk()))).toList();
+    this.dbService.deleteItems(keys);
 
-    List<Map<String, AttributeValue>> keys =
-        response.items().stream().map(a -> Map.of(PK, a.get(PK), SK, a.get(SK))).toList();
-
-    return this.dbService.deleteItems(keys);
+    return documentAttributes;
   }
 
-  @Override
-  public boolean deleteDocumentAttributes(final String siteId, final String documentId)
+  private List<DocumentAttributeRecord> deleteDocumentAttributes(final String siteId,
+      final String documentId, final AttributeValidationAccess validationAccess)
       throws ValidationException {
-    return deleteDocumentAttributes(siteId, documentId, null);
-  }
-
-  private boolean deleteDocumentAttributes(final String siteId, final String documentId,
-      final AttributeValidationAccess validationAccess) throws ValidationException {
 
     final int limit = 100;
     DocumentAttributeRecord r = new DocumentAttributeRecord().documentId(documentId);
@@ -476,7 +471,11 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     QueryResponse response =
         this.dbService.queryBeginsWith(config, r.fromS(r.pk(siteId)), r.fromS(ATTR), null, limit);
 
+    List<DocumentAttributeRecord> documentAttributes = response.items().stream()
+        .map(a -> new DocumentAttributeRecord().getFromAttributes(siteId, a)).toList();
+
     if (AttributeValidationAccess.SET.equals(validationAccess)) {
+
       List<String> attributeKeys = response.items().stream().map(a -> a.get("key").s()).toList();
 
       Map<String, AttributeRecord> attributes =
@@ -485,7 +484,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       Optional<AttributeRecord> o =
           attributes.values().stream().filter(a -> AttributeType.OPA.equals(a.getType())).findAny();
 
-      if (!o.isEmpty()) {
+      if (o.isPresent()) {
         String key = o.get().getKey();
         String error = "Cannot remove attribute '" + key + "' type OPA";
         throw new ValidationException(
@@ -496,7 +495,8 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     List<Map<String, AttributeValue>> keys =
         response.items().stream().map(a -> Map.of(PK, a.get(PK), SK, a.get(SK))).toList();
 
-    return this.dbService.deleteItems(keys);
+    this.dbService.deleteItems(keys);
+    return documentAttributes;
   }
 
   @Override

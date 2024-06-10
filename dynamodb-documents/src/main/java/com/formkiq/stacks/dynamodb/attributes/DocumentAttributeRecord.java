@@ -29,7 +29,7 @@ import static com.formkiq.stacks.dynamodb.attributes.AttributeRecord.ATTR;
 import java.util.HashMap;
 import java.util.Map;
 import com.formkiq.aws.dynamodb.DbKeys;
-import com.formkiq.aws.dynamodb.DynamodbRecord;
+import com.formkiq.aws.dynamodb.DynamodbVersionRecord;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.graalvm.annotations.Reflectable;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -40,7 +40,8 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
  *
  */
 @Reflectable
-public class DocumentAttributeRecord implements DynamodbRecord<DocumentAttributeRecord>, DbKeys {
+public class DocumentAttributeRecord
+    implements DynamodbVersionRecord<DocumentAttributeRecord>, DbKeys {
 
   /** Boolean value. */
   @Reflectable
@@ -68,28 +69,6 @@ public class DocumentAttributeRecord implements DynamodbRecord<DocumentAttribute
 
   }
 
-  /**
-   * Set Boolean Value.
-   * 
-   * @param value {@link Boolean}
-   * @return {@link DocumentAttributeRecord}
-   */
-  public DocumentAttributeRecord booleanValue(final Boolean value) {
-    this.booleanValue = value;
-    return this;
-  }
-
-  /**
-   * Set Document Id.
-   * 
-   * @param document {@link String}
-   * @return {@link DocumentAttributeRecord}
-   */
-  public DocumentAttributeRecord documentId(final String document) {
-    this.documentId = document;
-    return this;
-  }
-
   @Override
   public Map<String, AttributeValue> getAttributes(final String siteId) {
 
@@ -101,15 +80,6 @@ public class DocumentAttributeRecord implements DynamodbRecord<DocumentAttribute
     map.put(DbKeys.GSI1_SK, fromS(skGsi1()));
 
     return map;
-  }
-
-  /**
-   * Get Boolean Value.
-   * 
-   * @return {@link Boolean}
-   */
-  public Boolean getBooleanValue() {
-    return this.booleanValue;
   }
 
   @Override
@@ -133,15 +103,6 @@ public class DocumentAttributeRecord implements DynamodbRecord<DocumentAttribute
     }
 
     return map;
-  }
-
-  /**
-   * Get Document Id.
-   * 
-   * @return {@link String}
-   */
-  public String getDocumentId() {
-    return this.documentId;
   }
 
   @Override
@@ -170,64 +131,6 @@ public class DocumentAttributeRecord implements DynamodbRecord<DocumentAttribute
     }
 
     return record;
-  }
-
-  /**
-   * Get Attribute Key.
-   * 
-   * @return {@link String}
-   */
-  public String getKey() {
-    return this.key;
-  }
-
-  /**
-   * Get Number Value.
-   * 
-   * @return {@link Double}
-   */
-  public Double getNumberValue() {
-    return this.numberValue;
-  }
-
-  /**
-   * Get String value.
-   * 
-   * @return {@link String}
-   */
-  public String getStringValue() {
-    return this.stringValue;
-  }
-
-  /**
-   * Get Attribute Value Type.
-   * 
-   * @return {@link DocumentAttributeValueType}
-   */
-  public DocumentAttributeValueType getValueType() {
-    return this.valueType;
-  }
-
-  /**
-   * Set Key.
-   * 
-   * @param attributeKey {@link String}
-   * @return {@link DocumentAttributeRecord}
-   */
-  public DocumentAttributeRecord key(final String attributeKey) {
-    this.key = attributeKey;
-    return this;
-  }
-
-  /**
-   * Set Number Value.
-   * 
-   * @param value {@link Double}
-   * @return {@link DocumentAttributeRecord}
-   */
-  public DocumentAttributeRecord numberValue(final Double value) {
-    this.numberValue = value;
-    return this;
   }
 
   @Override
@@ -302,8 +205,41 @@ public class DocumentAttributeRecord implements DynamodbRecord<DocumentAttribute
   }
 
   /**
+   * Set Attribute Type.
+   *
+   * @param attributeType {@link DocumentAttributeValueType}
+   * @return {@link DocumentAttributeRecord}
+   */
+  public DocumentAttributeRecord valueType(final DocumentAttributeValueType attributeType) {
+    this.valueType = attributeType;
+    return this;
+  }
+
+  /**
+   * Set Key.
+   *
+   * @param attributeKey {@link String}
+   * @return {@link DocumentAttributeRecord}
+   */
+  public DocumentAttributeRecord key(final String attributeKey) {
+    this.key = attributeKey;
+    return this;
+  }
+
+  /**
+   * Set Document Id.
+   *
+   * @param document {@link String}
+   * @return {@link DocumentAttributeRecord}
+   */
+  public DocumentAttributeRecord documentId(final String document) {
+    this.documentId = document;
+    return this;
+  }
+
+  /**
    * Set String value.
-   * 
+   *
    * @param value {@link String}
    * @return {@link DocumentAttributeRecord}
    */
@@ -313,14 +249,79 @@ public class DocumentAttributeRecord implements DynamodbRecord<DocumentAttribute
   }
 
   /**
-   * Set Attribute Type.
-   * 
-   * @param attributeType {@link DocumentAttributeValueType}
+   * Set Boolean Value.
+   *
+   * @param value {@link Boolean}
    * @return {@link DocumentAttributeRecord}
    */
-  public DocumentAttributeRecord valueType(final DocumentAttributeValueType attributeType) {
-    this.valueType = attributeType;
+  public DocumentAttributeRecord booleanValue(final Boolean value) {
+    this.booleanValue = value;
     return this;
+  }
+
+  /**
+   * Set Number Value.
+   *
+   * @param value {@link Double}
+   * @return {@link DocumentAttributeRecord}
+   */
+  public DocumentAttributeRecord numberValue(final Double value) {
+    this.numberValue = value;
+    return this;
+  }
+
+  /**
+   * Get Boolean Value.
+   *
+   * @return {@link Boolean}
+   */
+  public Boolean getBooleanValue() {
+    return this.booleanValue;
+  }
+
+  /**
+   * Get Document Id.
+   *
+   * @return {@link String}
+   */
+  public String getDocumentId() {
+    return this.documentId;
+  }
+
+  /**
+   * Get Attribute Key.
+   *
+   * @return {@link String}
+   */
+  public String getKey() {
+    return this.key;
+  }
+
+  /**
+   * Get Number Value.
+   *
+   * @return {@link Double}
+   */
+  public Double getNumberValue() {
+    return this.numberValue;
+  }
+
+  /**
+   * Get String value.
+   *
+   * @return {@link String}
+   */
+  public String getStringValue() {
+    return this.stringValue;
+  }
+
+  /**
+   * Get Attribute Value Type.
+   *
+   * @return {@link DocumentAttributeValueType}
+   */
+  public DocumentAttributeValueType getValueType() {
+    return this.valueType;
   }
 
   /**
@@ -340,5 +341,15 @@ public class DocumentAttributeRecord implements DynamodbRecord<DocumentAttribute
     }
 
     return this;
+  }
+
+  @Override
+  public String pkVersion(final String siteId) {
+    return pk(siteId);
+  }
+
+  @Override
+  public String skVersion() {
+    return ATTR + this.key + "#" + getInsertedDate();
   }
 }

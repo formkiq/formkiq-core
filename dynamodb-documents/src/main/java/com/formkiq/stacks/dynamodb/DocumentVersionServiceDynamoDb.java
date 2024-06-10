@@ -30,12 +30,14 @@ import static com.formkiq.aws.dynamodb.DbKeys.TAG_DELIMINATOR;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static software.amazon.awssdk.utils.StringUtils.isEmpty;
 import java.text.SimpleDateFormat;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
+import com.formkiq.aws.dynamodb.DynamodbVersionRecord;
 import com.formkiq.aws.dynamodb.QueryConfig;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.graalvm.annotations.Reflectable;
@@ -54,7 +56,7 @@ public class DocumentVersionServiceDynamoDb implements DocumentVersionService {
   /** The Default maximum results returned. */
   private static final int MAX_RESULTS = 100;
   /** {@link SimpleDateFormat} in ISO Standard format. */
-  private SimpleDateFormat df = DateUtil.getIsoDateFormatter();
+  private final SimpleDateFormat df = DateUtil.getIsoDateFormatter();
   /** DynamoDB Document Versions Table Name. */
   private String tableName = null;
 
@@ -107,12 +109,6 @@ public class DocumentVersionServiceDynamoDb implements DocumentVersionService {
     return this.tableName;
   }
 
-  private String getSk(final Map<String, AttributeValue> previous, final String version) {
-    String sk = previous.get(SK).s() + TAG_DELIMINATOR + this.df.format(new Date())
-        + TAG_DELIMINATOR + "v" + version;
-    return sk;
-  }
-
   @Override
   public String getVersionId(final DynamoDbConnectionBuilder connection, final String siteId,
       final String documentId, final String versionKey) {
@@ -154,5 +150,22 @@ public class DocumentVersionServiceDynamoDb implements DocumentVersionService {
 
     String sk = getSk(current, current.get(VERSION_ATTRIBUTE).s());
     current.put(SK, AttributeValue.fromS(sk));
+  }
+
+  @Override
+  public void addRecords(final DynamoDbClient client, final String siteId,
+      final Collection<? extends DynamodbVersionRecord<?>> records) {
+
+    List<Map<String, AttributeValue>> attrs =
+        records.stream().map(r -> r.getAttributes(siteId)).toList();
+
+    DynamoDbService db = new DynamoDbServiceImpl(client, getDocumentVersionsTableName());
+    db.putItems(attrs);
+  }
+
+  private String getSk(final Map<String, AttributeValue> previous, final String version) {
+    String sk = previous.get(SK).s() + TAG_DELIMINATOR + this.df.format(new Date())
+        + TAG_DELIMINATOR + "v" + version;
+    return sk;
   }
 }
