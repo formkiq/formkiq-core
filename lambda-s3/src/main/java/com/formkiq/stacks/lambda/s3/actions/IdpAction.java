@@ -162,16 +162,16 @@ public class IdpAction implements DocumentAction {
   private DocumentAttributeRecord createDocumentAttribute(final String siteId,
       final String documentId, final String attributeKey, final String matchValue) {
 
-    DocumentAttributeRecord r =
-        new DocumentAttributeRecord().documentId(documentId).key(attributeKey);
+    DocumentAttributeRecord r = new DocumentAttributeRecord().setDocumentId(documentId)
+        .setKey(attributeKey).setUserId("System");
 
     AttributeRecord attribute = this.attributeService.getAttribute(siteId, attributeKey);
     switch (attribute.getDataType()) {
-      case STRING -> r.valueType(DocumentAttributeValueType.STRING).stringValue(matchValue);
-      case NUMBER ->
-        r.valueType(DocumentAttributeValueType.NUMBER).numberValue(Double.valueOf(matchValue));
-      case BOOLEAN ->
-        r.valueType(DocumentAttributeValueType.BOOLEAN).booleanValue(Boolean.valueOf(matchValue));
+      case STRING -> r.setValueType(DocumentAttributeValueType.STRING).setStringValue(matchValue);
+      case NUMBER -> r.setValueType(DocumentAttributeValueType.NUMBER)
+          .setNumberValue(Double.valueOf(matchValue));
+      case BOOLEAN -> r.setValueType(DocumentAttributeValueType.BOOLEAN)
+          .setBooleanValue(Boolean.valueOf(matchValue));
       default ->
         throw new IllegalArgumentException("Unsupported data type: " + attribute.getDataType());
     }

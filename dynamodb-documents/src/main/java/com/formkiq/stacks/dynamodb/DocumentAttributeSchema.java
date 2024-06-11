@@ -111,10 +111,10 @@ public class DocumentAttributeSchema
       String stringValue = String.join("#", compositeValues.get(i));
 
       DocumentAttributeRecord r = new DocumentAttributeRecord();
-      r.key(compositeKey);
-      r.documentId(this.docId);
-      r.valueType(DocumentAttributeValueType.COMPOSITE_STRING);
-      r.stringValue(stringValue);
+      r.setKey(compositeKey);
+      r.setDocumentId(this.docId);
+      r.setValueType(DocumentAttributeValueType.COMPOSITE_STRING);
+      r.setStringValue(stringValue);
       records.add(r);
     }
 

@@ -23,21 +23,22 @@
  */
 package com.formkiq.stacks.dynamodb.attributes;
 
-import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
-import static com.formkiq.aws.dynamodb.objects.Objects.formatDouble;
-import static com.formkiq.stacks.dynamodb.attributes.AttributeRecord.ATTR;
-
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamodbVersionRecord;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.graalvm.annotations.Reflectable;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
+import static com.formkiq.aws.dynamodb.objects.Objects.formatDouble;
+import static com.formkiq.stacks.dynamodb.attributes.AttributeRecord.ATTR;
 
 /**
  * 
@@ -53,7 +54,7 @@ public class DocumentAttributeRecord
   /** Boolean value. */
   @Reflectable
   private Boolean booleanValue;
-  /** Queue Document Id. */
+  /** Attribute Document Id. */
   @Reflectable
   private String documentId;
   /** Key of Attribute. */
@@ -71,12 +72,33 @@ public class DocumentAttributeRecord
   /** Inserted Date. */
   @Reflectable
   private Date insertedDate;
+  /** Attribute Document Id. */
+  @Reflectable
+  private String userId;
 
   /**
    * constructor.
    */
-  public DocumentAttributeRecord() {
+  public DocumentAttributeRecord() {}
 
+  /**
+   * Get User Id.
+   * 
+   * @return String
+   */
+  public String getUserId() {
+    return this.userId;
+  }
+
+  /**
+   * Set User Id.
+   * 
+   * @param user {@link String}
+   * @return DocumentAttributeRecord
+   */
+  public DocumentAttributeRecord setUserId(final String user) {
+    this.userId = user;
+    return this;
   }
 
   @Override
@@ -99,6 +121,7 @@ public class DocumentAttributeRecord
     map.put("key", fromS(this.key));
     map.put("valueType", fromS(this.valueType.name()));
     map.put("documentId", fromS(this.documentId));
+    map.put("userId", fromS(this.userId));
 
     if (this.booleanValue != null) {
       map.put("booleanValue", AttributeValue.fromBool(this.booleanValue));
@@ -127,20 +150,20 @@ public class DocumentAttributeRecord
 
     if (!attrs.isEmpty()) {
 
-      record =
-          new DocumentAttributeRecord().documentId(ss(attrs, "documentId")).key(ss(attrs, "key"))
-              .valueType(DocumentAttributeValueType.valueOf(ss(attrs, "valueType")));
+      record = new DocumentAttributeRecord().setUserId(ss(attrs, "userId"))
+          .setDocumentId(ss(attrs, "documentId")).setKey(ss(attrs, "key"))
+          .setValueType(DocumentAttributeValueType.valueOf(ss(attrs, "valueType")));
 
       if (attrs.containsKey("stringValue")) {
-        record.stringValue(ss(attrs, "stringValue"));
+        record.setStringValue(ss(attrs, "stringValue"));
       }
 
       if (attrs.containsKey("booleanValue")) {
-        record.booleanValue(bb(attrs, "booleanValue"));
+        record.setBooleanValue(bb(attrs, "booleanValue"));
       }
 
       if (attrs.containsKey("numberValue")) {
-        record.numberValue(nn(attrs, "numberValue"));
+        record.setNumberValue(nn(attrs, "numberValue"));
       }
 
       if (attrs.containsKey("inserteddate")) {
@@ -233,9 +256,18 @@ public class DocumentAttributeRecord
    * @param attributeType {@link DocumentAttributeValueType}
    * @return {@link DocumentAttributeRecord}
    */
-  public DocumentAttributeRecord valueType(final DocumentAttributeValueType attributeType) {
+  public DocumentAttributeRecord setValueType(final DocumentAttributeValueType attributeType) {
     this.valueType = attributeType;
     return this;
+  }
+
+  /**
+   * Get Attribute Value Type.
+   *
+   * @return {@link DocumentAttributeValueType}
+   */
+  public DocumentAttributeValueType getValueType() {
+    return this.valueType;
   }
 
   /**
@@ -244,9 +276,18 @@ public class DocumentAttributeRecord
    * @param attributeKey {@link String}
    * @return {@link DocumentAttributeRecord}
    */
-  public DocumentAttributeRecord key(final String attributeKey) {
+  public DocumentAttributeRecord setKey(final String attributeKey) {
     this.key = attributeKey;
     return this;
+  }
+
+  /**
+   * Get Attribute Key.
+   *
+   * @return {@link String}
+   */
+  public String getKey() {
+    return this.key;
   }
 
   /**
@@ -255,9 +296,18 @@ public class DocumentAttributeRecord
    * @param document {@link String}
    * @return {@link DocumentAttributeRecord}
    */
-  public DocumentAttributeRecord documentId(final String document) {
+  public DocumentAttributeRecord setDocumentId(final String document) {
     this.documentId = document;
     return this;
+  }
+
+  /**
+   * Get Document Id.
+   *
+   * @return {@link String}
+   */
+  public String getDocumentId() {
+    return this.documentId;
   }
 
   /**
@@ -266,9 +316,18 @@ public class DocumentAttributeRecord
    * @param value {@link String}
    * @return {@link DocumentAttributeRecord}
    */
-  public DocumentAttributeRecord stringValue(final String value) {
+  public DocumentAttributeRecord setStringValue(final String value) {
     this.stringValue = value;
     return this;
+  }
+
+  /**
+   * Get String value.
+   *
+   * @return {@link String}
+   */
+  public String getStringValue() {
+    return this.stringValue;
   }
 
   /**
@@ -277,19 +336,8 @@ public class DocumentAttributeRecord
    * @param value {@link Boolean}
    * @return {@link DocumentAttributeRecord}
    */
-  public DocumentAttributeRecord booleanValue(final Boolean value) {
+  public DocumentAttributeRecord setBooleanValue(final Boolean value) {
     this.booleanValue = value;
-    return this;
-  }
-
-  /**
-   * Set Number Value.
-   *
-   * @param value {@link Double}
-   * @return {@link DocumentAttributeRecord}
-   */
-  public DocumentAttributeRecord numberValue(final Double value) {
-    this.numberValue = value;
     return this;
   }
 
@@ -303,21 +351,14 @@ public class DocumentAttributeRecord
   }
 
   /**
-   * Get Document Id.
+   * Set Number Value.
    *
-   * @return {@link String}
+   * @param value {@link Double}
+   * @return {@link DocumentAttributeRecord}
    */
-  public String getDocumentId() {
-    return this.documentId;
-  }
-
-  /**
-   * Get Attribute Key.
-   *
-   * @return {@link String}
-   */
-  public String getKey() {
-    return this.key;
+  public DocumentAttributeRecord setNumberValue(final Double value) {
+    this.numberValue = value;
+    return this;
   }
 
   /**
@@ -327,24 +368,6 @@ public class DocumentAttributeRecord
    */
   public Double getNumberValue() {
     return this.numberValue;
-  }
-
-  /**
-   * Get String value.
-   *
-   * @return {@link String}
-   */
-  public String getStringValue() {
-    return this.stringValue;
-  }
-
-  /**
-   * Get Attribute Value Type.
-   *
-   * @return {@link DocumentAttributeValueType}
-   */
-  public DocumentAttributeValueType getValueType() {
-    return this.valueType;
   }
 
   /**
@@ -366,6 +389,16 @@ public class DocumentAttributeRecord
     return this;
   }
 
+  @Override
+  public String pkVersion(final String siteId) {
+    return pk(siteId);
+  }
+
+  @Override
+  public String skVersion() {
+    return ATTR + this.key + "#" + getInsertedDate();
+  }
+
   /**
    * Get Inserted Date.
    *
@@ -384,15 +417,5 @@ public class DocumentAttributeRecord
   public DocumentAttributeRecord setInsertedDate(final Date date) {
     this.insertedDate = date;
     return this;
-  }
-
-  @Override
-  public String pkVersion(final String siteId) {
-    return pk(siteId);
-  }
-
-  @Override
-  public String skVersion() {
-    return ATTR + this.key + "#" + getInsertedDate();
   }
 }

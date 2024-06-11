@@ -135,7 +135,8 @@ public class DocumentAttributeRequestHandler
   }
 
   private Collection<DocumentAttributeRecord> getDocumentAttributesFromRequest(
-      final ApiGatewayRequestEvent event, final String documentId, final String attributeKey)
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
+      final String documentId, final String attributeKey)
       throws BadException, IOException, ValidationException {
 
     DocumentAttributeValueRequest request =
@@ -146,8 +147,9 @@ public class DocumentAttributeRequestHandler
     }
 
     Collection<DocumentAttributeRecord> documentAttributes =
-        new DocumentAttributeToDocumentAttributeRecord(documentId).apply(request.getAttribute());
-    documentAttributes.forEach(a -> a.key(attributeKey));
+        new DocumentAttributeToDocumentAttributeRecord(documentId, authorization.getUsername())
+            .apply(request.getAttribute());
+    documentAttributes.forEach(a -> a.setKey(attributeKey));
 
     return documentAttributes;
   }
@@ -171,7 +173,7 @@ public class DocumentAttributeRequestHandler
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
     Collection<DocumentAttributeRecord> documentAttributes =
-        getDocumentAttributesFromRequest(event, documentId, attributeKey);
+        getDocumentAttributesFromRequest(event, authorization, documentId, attributeKey);
 
     DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
     AttributeValidator validator = new AttributeValidatorImpl(db);

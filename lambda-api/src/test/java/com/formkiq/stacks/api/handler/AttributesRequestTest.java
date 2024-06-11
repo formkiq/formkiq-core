@@ -276,6 +276,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
           this.documentAttributesApi.getDocumentAttribute(documentId, key, siteId);
       assertEquals("confidential",
           Objects.requireNonNull(response.getAttribute()).getStringValue());
+      assertEquals("joesmith", Objects.requireNonNull(response.getAttribute()).getUserId());
     }
   }
 
@@ -300,7 +301,8 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
         fail();
       } catch (ApiException e) {
         // then
-        assertEquals("{\"errors\":[{\"error\":\"'key' is missing from attribute\"}]}",
+        assertEquals(
+            "{\"errors\":[{\"key\":\"key\",\"error\":\"'key' is missing from attribute\"}]}",
             e.getResponseBody());
       }
     }
@@ -354,7 +356,8 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
         fail();
       } catch (ApiException e) {
         // then
-        assertEquals("{\"errors\":[{\"error\":\"'key' is missing from attribute\"}]}",
+        assertEquals(
+            "{\"errors\":[{\"key\":\"key\",\"error\":\"'key' is missing from attribute\"}]}",
             e.getResponseBody());
       }
     }
@@ -1507,33 +1510,6 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
           null, null, null);
       assertAttributeValues(response.getAttributes().get(i), "strings", null, "123,abc,xyz", null,
           null, null);
-
-
-      // assertEquals("keyonly", response.getAttributes().get(i).getKey());
-      // assertNotNull(response.getAttributes().get(i).getInsertedDate());
-      // assertNull(response.getAttributes().get(i).getStringValue());
-      // assertNull(response.getAttributes().get(i).getNumberValue());
-      // assertNull(response.getAttributes().get(i++).getBooleanValue());
-
-      // assertEquals("nums", response.getAttributes().get(i).getKey());
-      // assertNotNull(response.getAttributes().get(i).getInsertedDate());
-      // assertEquals("100,123,200",
-      // Strings.join(notNull(response.getAttributes().get(i++).getNumberValues()).stream()
-      // .map(n -> formatDouble(n.doubleValue())).toList(), ","));
-
-      // assertEquals("other", response.getAttributes().get(i).getKey());
-      // assertNotNull(response.getAttributes().get(i).getInsertedDate());
-      // assertEquals("100", formatDouble(Objects
-      // .requireNonNull(response.getAttributes().get(i++).getNumberValue()).doubleValue()));
-
-      // assertEquals("security", response.getAttributes().get(i).getKey());
-      // assertNotNull(response.getAttributes().get(i).getInsertedDate());
-      // assertEquals("confidential", response.getAttributes().get(i++).getStringValue());
-
-      // assertEquals("strings", response.getAttributes().get(i).getKey());
-      // assertNotNull(response.getAttributes().get(i).getInsertedDate());
-      // assertEquals("123,abc,xyz", Strings
-      // .join(Objects.requireNonNull(response.getAttributes().get(i).getStringValues()), ","));
     }
   }
 
@@ -1543,6 +1519,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
     assertNotNull(attribute);
     assertEquals(key, attribute.getKey());
+    assertEquals("joesmith", attribute.getUserId());
 
     if (stringValue != null) {
       assertEquals(stringValue, attribute.getStringValue());

@@ -28,17 +28,15 @@ import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_CREATED;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-import java.text.SimpleDateFormat;
+
 import java.time.ZonedDateTime;
 import java.time.zone.ZoneRulesException;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TimeZone;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
@@ -72,19 +70,11 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 public class DocumentsRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
-  /** {@link SimpleDateFormat}. */
-  private SimpleDateFormat df;
-
   /**
    * constructor.
    *
    */
-  public DocumentsRequestHandler() {
-    this.df = new SimpleDateFormat("yyyy-MM-dd");
-
-    TimeZone tz = TimeZone.getTimeZone("UTC");
-    this.df.setTimeZone(tz);
-  }
+  public DocumentsRequestHandler() {}
 
   @Override
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
@@ -95,7 +85,7 @@ public class DocumentsRequestHandler
 
     String siteId = authorization.getSiteId();
 
-    ApiPagination current = null;
+    ApiPagination current;
     Map<String, Object> map = new HashMap<>();
 
     if (isSoftDelete(event)) {
@@ -245,13 +235,13 @@ public class DocumentsRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    ApiMapResponse apiMapResponse = null;
+    ApiMapResponse apiMapResponse;
     DocumentsUploadRequestHandler handler = new DocumentsUploadRequestHandler();
 
     String siteId = authorization.getSiteId();
     AddDocumentRequest request = fromBodyToObject(event, AddDocumentRequest.class);
 
-    validatePost(awsservice, siteId, request);
+    validatePost(request);
 
     if (isFolder(request)) {
 
@@ -262,8 +252,8 @@ public class DocumentsRequestHandler
         apiMapResponse = new ApiMapResponse(Map.of("message", "folder created"));
 
       } else {
-        throw new ValidationException(
-            Arrays.asList(new ValidationErrorImpl().key("folder").error("already exists")));
+        throw new ValidationException(Collections
+            .singletonList(new ValidationErrorImpl().key("folder").error("already exists")));
       }
 
     } else {
@@ -297,7 +287,7 @@ public class DocumentsRequestHandler
       final DocumentService documentService, final String dateString, final String tz)
       throws BadException {
 
-    ZonedDateTime date = null;
+    ZonedDateTime date;
 
     if (dateString != null) {
       try {
@@ -331,16 +321,14 @@ public class DocumentsRequestHandler
     return date;
   }
 
-  private void validatePost(final AwsServiceCache awsservice, final String siteId,
-      final AddDocumentRequest item) throws ValidationException {
+  private void validatePost(final AddDocumentRequest item) throws ValidationException {
 
     boolean isFolder = isFolder(item);
 
-    Collection<ValidationError> errors = Collections.emptyList();
     if (!isFolder && isEmpty(item.getContent()) && notNull(item.getDocuments()).isEmpty()
         && isEmpty(item.getDeepLinkPath())) {
 
-      errors = Arrays.asList(new ValidationErrorImpl()
+      Collection<ValidationError> errors = Collections.singletonList(new ValidationErrorImpl()
           .error("either 'content', 'documents', or 'deepLinkPath' are required"));
       throw new ValidationException(errors);
     }

@@ -347,7 +347,12 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
 
     for (DocumentAttributeRecord a : searchAttributes) {
       if (Strings.isEmpty(a.getKey())) {
-        errors.add(new ValidationErrorImpl().error("'key' is missing from attribute"));
+        errors.add(new ValidationErrorImpl().key("key").error("'key' is missing from attribute"));
+      }
+
+      if (Strings.isEmpty(a.getUserId())) {
+        errors.add(
+            new ValidationErrorImpl().key("userId").error("'userId' is missing from attribute"));
       }
     }
   }

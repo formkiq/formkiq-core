@@ -144,7 +144,7 @@ public class DocumentsUploadRequestHandler
     List<DocumentAttribute> attributes = notNull(request.getAttributes());
 
     DocumentAttributeToDocumentAttributeRecord tr =
-        new DocumentAttributeToDocumentAttributeRecord(documentId);
+        new DocumentAttributeToDocumentAttributeRecord(documentId, authorization.getUsername());
 
     List<DocumentAttributeRecord> documentAttributes =
         attributes.stream().flatMap(a -> tr.apply(a).stream()).toList();

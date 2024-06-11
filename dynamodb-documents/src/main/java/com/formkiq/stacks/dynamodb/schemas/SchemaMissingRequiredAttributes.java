@@ -134,9 +134,9 @@ public class SchemaMissingRequiredAttributes
       Double numberValue =
           AttributeDataType.NUMBER.equals(dataType) ? convertToDouble(value) : null;
 
-      DocumentAttributeRecord a =
-          new DocumentAttributeRecord().key(attributeKey).documentId(documentId)
-              .stringValue(stringValue).booleanValue(booleanValue).numberValue(numberValue);
+      DocumentAttributeRecord a = new DocumentAttributeRecord().setKey(attributeKey)
+          .setDocumentId(documentId).setStringValue(stringValue).setBooleanValue(booleanValue)
+          .setNumberValue(numberValue);
       a.updateValueType();
 
       records.add(a);
