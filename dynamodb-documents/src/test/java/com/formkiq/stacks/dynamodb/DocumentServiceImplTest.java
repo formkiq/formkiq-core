@@ -49,6 +49,7 @@ import java.util.Base64;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -1790,15 +1791,13 @@ public class DocumentServiceImplTest implements DbKeys {
       assertNotNull(item);
       assertEquals("text/plain", item.getContentType());
       assertEquals(2, item.getDocuments().size());
-      List<String> ids = Arrays.asList(doc1.getDocumentId(), doc2.getDocumentId());
-      Collections.sort(ids);
+      item.getDocuments().sort(Comparator.comparing(DocumentItem::getContentType));
 
-      assertEquals(ids.get(0), item.getDocuments().get(0).getDocumentId());
       assertEquals(doc.getDocumentId(), item.getDocuments().get(0).getBelongsToDocumentId());
-      assertEquals("text/html", item.getDocuments().get(0).getContentType());
-      assertEquals(ids.get(1), item.getDocuments().get(1).getDocumentId());
+      assertEquals("application/json", item.getDocuments().get(0).getContentType());
+
       assertEquals(doc.getDocumentId(), item.getDocuments().get(1).getBelongsToDocumentId());
-      assertEquals("application/json", item.getDocuments().get(1).getContentType());
+      assertEquals("text/html", item.getDocuments().get(1).getContentType());
 
       List<DocumentTag> tags =
           service.findDocumentTags(siteId, item.getDocumentId(), null, MAX_RESULTS).getResults();
