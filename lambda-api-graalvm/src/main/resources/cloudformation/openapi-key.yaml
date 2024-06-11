@@ -7035,6 +7035,9 @@ Resources:
                 insertedDate:
                   type: "string"
                   description: "Inserted Timestamp"
+                userId:
+                  type: "string"
+                  description: "User who added attribute"
             DocumentTag:
               type: "object"
               properties:

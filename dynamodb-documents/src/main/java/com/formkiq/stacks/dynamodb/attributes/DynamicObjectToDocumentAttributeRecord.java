@@ -45,23 +45,27 @@ import com.formkiq.stacks.dynamodb.schemas.SchemaAttributesCompositeKey;
 public class DynamicObjectToDocumentAttributeRecord
     implements Function<Collection<DynamicObject>, Collection<DocumentAttributeRecord>> {
 
+  /** {@link String}. */
+  private final String user;
   /** Document Id. */
-  private String attributeDocumentId;
+  private final String attributeDocumentId;
   /** {@link Schema}. */
-  private Schema schema;
+  private final Schema schema;
 
   /**
    * constructor.
    * 
    * @param documentId {@link String}
+   * @param userId {@link String}
    * @param documentSchema {@link Schema}
    * @deprecated Schema isnot needed.
    */
   @Deprecated
-  public DynamicObjectToDocumentAttributeRecord(final String documentId,
+  public DynamicObjectToDocumentAttributeRecord(final String documentId, final String userId,
       final Schema documentSchema) {
     this.attributeDocumentId = documentId;
     this.schema = documentSchema;
+    this.user = userId;
   }
 
   private void addToList(final Collection<DocumentAttributeRecord> list,
@@ -69,12 +73,13 @@ public class DynamicObjectToDocumentAttributeRecord
       final Boolean boolValue, final Double numberValue) {
 
     DocumentAttributeRecord a = new DocumentAttributeRecord();
-    a.key(key);
-    a.documentId(this.attributeDocumentId);
-    a.stringValue(stringValue);
-    a.booleanValue(boolValue);
-    a.numberValue(numberValue);
-    a.valueType(valueType);
+    a.setKey(key);
+    a.setDocumentId(this.attributeDocumentId);
+    a.setStringValue(stringValue);
+    a.setBooleanValue(boolValue);
+    a.setNumberValue(numberValue);
+    a.setValueType(valueType);
+    a.setUserId(this.user);
 
     list.add(a);
   }
@@ -128,14 +133,13 @@ public class DynamicObjectToDocumentAttributeRecord
 
     Collection<DocumentAttributeRecord> compositeKeys = new ArrayList<>();
 
-    List<List<DocumentAttributeRecord>> compositeRecords = schemaAttributes.getAttributeKeys()
-        .stream().filter(attributeKey -> documentAttributeKeys.containsKey(attributeKey))
-        .map(key -> documentAttributeKeys.get(key)).toList();
+    List<List<DocumentAttributeRecord>> compositeRecords =
+        schemaAttributes.getAttributeKeys().stream().filter(documentAttributeKeys::containsKey)
+            .map(documentAttributeKeys::get).toList();
 
     if (schemaAttributes.getAttributeKeys().size() == compositeRecords.size()) {
 
-      int listSize = compositeRecords.stream().map(l -> Integer.valueOf(l.size())).reduce(1,
-          (aa, bb) -> aa.intValue() * bb.intValue());
+      int listSize = compositeRecords.stream().map(List::size).reduce(1, (aa, bb) -> aa * bb);
 
       if (listSize > 0) {
 
@@ -195,14 +199,15 @@ public class DynamicObjectToDocumentAttributeRecord
 
     for (int i = 0; i < compositeKeys.size(); i++) {
 
-      String compositeKey = compositeKeys.get(i).stream().collect(Collectors.joining("#"));
-      String stringValue = compositeValues.get(i).stream().collect(Collectors.joining("#"));
+      String compositeKey = String.join("#", compositeKeys.get(i));
+      String stringValue = String.join("#", compositeValues.get(i));
 
       DocumentAttributeRecord r = new DocumentAttributeRecord();
-      r.key(compositeKey);
-      r.documentId(this.attributeDocumentId);
-      r.valueType(DocumentAttributeValueType.COMPOSITE_STRING);
-      r.stringValue(stringValue);
+      r.setKey(compositeKey);
+      r.setDocumentId(this.attributeDocumentId);
+      r.setValueType(DocumentAttributeValueType.COMPOSITE_STRING);
+      r.setStringValue(stringValue);
+      r.setUserId(this.user);
       records.add(r);
     }
 
@@ -268,5 +273,4 @@ public class DynamicObjectToDocumentAttributeRecord
 
     return list;
   }
-
 }

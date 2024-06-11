@@ -309,6 +309,8 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       final Schema schema, final AttributeValidationAccess validationAccess) {
 
     Collection<DocumentAttributeRecord> documentAttributes = documentAttributeRecords;
+    String userId =
+        !documentAttributes.isEmpty() ? documentAttributes.iterator().next().getUserId() : "System";
 
     if (schema != null) {
 
@@ -329,6 +331,9 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       documentAttributes =
           Stream.concat(documentAttributes.stream(), compositeKeys.stream()).toList();
     }
+
+    documentAttributes.stream().filter(a -> a.getUserId() == null)
+        .forEach(a -> a.setUserId(userId));
 
     return documentAttributes;
   }
@@ -489,7 +494,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       throws ValidationException {
 
     final int limit = 100;
-    DocumentAttributeRecord r = new DocumentAttributeRecord().documentId(documentId);
+    DocumentAttributeRecord r = new DocumentAttributeRecord().setDocumentId(documentId);
 
     QueryConfig config = new QueryConfig();
     QueryResponse response =
@@ -536,8 +541,9 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       throw new ValidationException(errors);
     }
 
-    DocumentAttributeRecord r = new DocumentAttributeRecord().documentId(documentId)
-        .key(attributeKey).stringValue(attributeValue).valueType(DocumentAttributeValueType.STRING);
+    DocumentAttributeRecord r =
+        new DocumentAttributeRecord().setDocumentId(documentId).setKey(attributeKey)
+            .setStringValue(attributeValue).setValueType(DocumentAttributeValueType.STRING);
     return this.dbService.deleteItem(Map.of(PK, r.fromS(r.pk(siteId)), SK, r.fromS(r.sk())));
   }
 
@@ -825,7 +831,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       final String documentId, final String attributeKey, final int limit) {
 
     DocumentAttributeRecord r =
-        new DocumentAttributeRecord().documentId(documentId).key(attributeKey);
+        new DocumentAttributeRecord().setDocumentId(documentId).setKey(attributeKey);
 
     String sk = ATTR + attributeKey + "#";
     QueryConfig config = new QueryConfig().scanIndexForward(Boolean.TRUE);
@@ -841,7 +847,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   public PaginationResults<DocumentAttributeRecord> findDocumentAttributes(final String siteId,
       final String documentId, final PaginationMapToken token, final int limit) {
 
-    DocumentAttributeRecord r = new DocumentAttributeRecord().documentId(documentId);
+    DocumentAttributeRecord r = new DocumentAttributeRecord().setDocumentId(documentId);
     Map<String, AttributeValue> startkey = new PaginationToAttributeValue().apply(token);
 
     QueryConfig config = new QueryConfig().scanIndexForward(Boolean.TRUE);
@@ -1225,7 +1231,8 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
   private Collection<DocumentAttributeRecord> getDocumentAttributes(final DynamicDocumentItem doc) {
     List<DynamicObject> list = doc.getList("attributes");
-    return new DynamicObjectToDocumentAttributeRecord(doc.getDocumentId(), null).apply(list);
+    return new DynamicObjectToDocumentAttributeRecord(doc.getDocumentId(), doc.getUserId(), null)
+        .apply(list);
   }
 
   private Date getPreviousInsertedDate(final Map<String, AttributeValue> previous) {

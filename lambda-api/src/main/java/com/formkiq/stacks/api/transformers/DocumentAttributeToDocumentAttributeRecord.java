@@ -38,42 +38,30 @@ import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
 public class DocumentAttributeToDocumentAttributeRecord
     implements Function<DocumentAttribute, Collection<DocumentAttributeRecord>> {
 
+  /** User Identifier. */
+  private final String user;
   /** Document Id. */
-  private String docId;
+  private final String docId;
 
   /**
    * constructor.
    * 
    * @param documentId {@link String}
+   * @param userId {@link String}
    */
-  public DocumentAttributeToDocumentAttributeRecord(final String documentId) {
+  public DocumentAttributeToDocumentAttributeRecord(final String documentId, final String userId) {
     this.docId = documentId;
-  }
-
-  private void addToList(final Collection<DocumentAttributeRecord> list,
-      final DocumentAttributeValueType valueType, final String key, final String stringValue,
-      final Boolean boolValue, final Double numberValue) {
-
-    DocumentAttributeRecord a = new DocumentAttributeRecord();
-    a.key(key);
-    a.documentId(this.docId);
-    a.stringValue(stringValue);
-    a.booleanValue(boolValue);
-    a.numberValue(numberValue);
-    a.valueType(valueType);
-
-    list.add(a);
+    this.user = userId;
   }
 
   @Override
   public Collection<DocumentAttributeRecord> apply(final DocumentAttribute a) {
-    Collection<DocumentAttributeRecord> c = buildAttributeRecords(a);
-    return c;
+    return buildAttributeRecords(a);
   }
 
   /**
    * Build {@link Collection} {@link DocumentAttributeRecord} from {@link DocumentAttribute}.
-   * 
+   *
    * @param a {@link DocumentAttribute}
    * @return {@link Collection} {@link DocumentAttributeRecord}
    */
@@ -112,5 +100,21 @@ public class DocumentAttributeToDocumentAttributeRecord
       addToList(c, DocumentAttributeValueType.KEY_ONLY, key, null, null, null);
     }
     return c;
+  }
+
+  private void addToList(final Collection<DocumentAttributeRecord> list,
+      final DocumentAttributeValueType valueType, final String key, final String stringValue,
+      final Boolean boolValue, final Double numberValue) {
+
+    DocumentAttributeRecord a = new DocumentAttributeRecord();
+    a.setKey(key);
+    a.setDocumentId(this.docId);
+    a.setStringValue(stringValue);
+    a.setBooleanValue(boolValue);
+    a.setNumberValue(numberValue);
+    a.setValueType(valueType);
+    a.setUserId(this.user);
+
+    list.add(a);
   }
 }

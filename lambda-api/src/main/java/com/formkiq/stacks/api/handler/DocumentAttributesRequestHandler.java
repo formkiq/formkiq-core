@@ -107,8 +107,8 @@ public class DocumentAttributesRequestHandler
   }
 
   private List<DocumentAttributeRecord> getDocumentAttributesFromRequest(
-      final ApiGatewayRequestEvent event, final String documentId)
-      throws BadException, IOException, ValidationException {
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
+      final String documentId) throws BadException, IOException, ValidationException {
 
     DocumentAttributesRequest request = fromBodyToObject(event, DocumentAttributesRequest.class);
     if (request.getAttributes() == null) {
@@ -116,8 +116,9 @@ public class DocumentAttributesRequestHandler
           Collections.singletonList(new ValidationErrorImpl().error("no attributes found")));
     }
 
-    return request.getAttributes().stream()
-        .flatMap(a -> new DocumentAttributeToDocumentAttributeRecord(documentId).apply(a).stream())
+    return request.getAttributes().stream().flatMap(
+        a -> new DocumentAttributeToDocumentAttributeRecord(documentId, authorization.getUsername())
+            .apply(a).stream())
         .toList();
   }
 
@@ -135,7 +136,8 @@ public class DocumentAttributesRequestHandler
     String documentId = event.getPathParameters().get("documentId");
     verifyDocument(awsservice, siteId, documentId);
 
-    List<DocumentAttributeRecord> attributes = getDocumentAttributesFromRequest(event, documentId);
+    List<DocumentAttributeRecord> attributes =
+        getDocumentAttributesFromRequest(event, authorization, documentId);
 
     AttributeValidationAccess validationAccess = getAttributeValidationAccess(authorization, siteId,
         AttributeValidationAccess.ADMIN_CREATE, AttributeValidationAccess.CREATE);
@@ -166,7 +168,8 @@ public class DocumentAttributesRequestHandler
     String documentId = event.getPathParameters().get("documentId");
     verifyDocument(awsservice, siteId, documentId);
 
-    List<DocumentAttributeRecord> attributes = getDocumentAttributesFromRequest(event, documentId);
+    List<DocumentAttributeRecord> attributes =
+        getDocumentAttributesFromRequest(event, authorization, documentId);
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
 

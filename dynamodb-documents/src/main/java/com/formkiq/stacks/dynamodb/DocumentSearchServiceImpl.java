@@ -180,7 +180,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
       for (DynamicDocumentItem item : results) {
 
         DocumentAttributeRecord sr = new DocumentAttributeRecord();
-        sr.documentId(item.getDocumentId());
+        sr.setDocumentId(item.getDocumentId());
 
         Map<String, Object> attributeFields = new HashMap<>();
 
@@ -189,7 +189,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
           QueryConfig config = new QueryConfig().scanIndexForward(Boolean.TRUE)
               .projectionExpression("valueType,stringValue,numberValue,booleanValue");
 
-          sr.key(key);
+          sr.setKey(key);
           AttributeValue pk = sr.fromS(sr.pk(siteId));
           AttributeValue sk = sr.fromS(ATTR + key + "#");
           QueryResponse response = this.db.queryBeginsWith(config, pk, sk, null, limit);
@@ -725,8 +725,8 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
       final DocumentAttributeRecord sr, final QueryConfig config,
       final Map<String, AttributeValue> startkey, final int limit) {
 
-    sr.valueType(DocumentAttributeValueType.STRING);
-    sr.stringValue(search.getEq());
+    sr.setValueType(DocumentAttributeValueType.STRING);
+    sr.setStringValue(search.getEq());
 
     config.indexName(GSI1);
     AttributeValue pk = AttributeValue.fromS(sr.pkGsi1(siteId));
@@ -752,8 +752,9 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
     for (String documentId : documentIds) {
 
       List<Map<String, AttributeValue>> keyList = eqs.stream().map(eq -> {
-        DocumentAttributeRecord sr = new DocumentAttributeRecord().key(key)
-            .valueType(DocumentAttributeValueType.STRING).stringValue(eq).documentId(documentId);
+        DocumentAttributeRecord sr = new DocumentAttributeRecord().setKey(key)
+            .setValueType(DocumentAttributeValueType.STRING).setStringValue(eq)
+            .setDocumentId(documentId);
         return Map.of(PK, sr.fromS(sr.pk(siteId)), SK, sr.fromS(sr.sk()));
       }).toList();
       keys.addAll(keyList);
@@ -783,14 +784,14 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
       final SearchAttributeCriteria search, final Collection<String> documentIds) {
 
     String key = search.getKey();
-    DocumentAttributeRecord sr = new DocumentAttributeRecord().key(key);
+    DocumentAttributeRecord sr = new DocumentAttributeRecord().setKey(key);
     QueryConfig config = new QueryConfig();
 
     List<Map<String, AttributeValue>> list = new ArrayList<>();
 
     for (String documentId : documentIds) {
 
-      sr.documentId(documentId);
+      sr.setDocumentId(documentId);
 
       AttributeValue pk = sr.fromS(sr.pk(siteId));
       String sk = search.getBeginsWith() != null ? ATTR + key + "#" + search.getBeginsWith()
@@ -841,7 +842,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
 
     validate(search);
 
-    DocumentAttributeRecord sr = new DocumentAttributeRecord().key(search.getKey());
+    DocumentAttributeRecord sr = new DocumentAttributeRecord().setKey(search.getKey());
     Map<String, AttributeValue> startkey = new PaginationToAttributeValue().apply(token);
 
     QueryConfig config = new QueryConfig().scanIndexForward(Boolean.TRUE);
