@@ -35,6 +35,7 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -95,7 +96,7 @@ class OcrTesseractProcessorTest {
   private static S3Service s3;
 
   @BeforeAll
-  public static void beforeAll() throws Exception {
+  public static void beforeAll() {
 
     Map<String, String> map = Map.of("AWS_REGION", AWS_REGION.toString(), "DOCUMENTS_TABLE",
         DOCUMENTS_TABLE, "DOCUMENTS_S3_BUCKET", BUCKET_NAME, "OCR_S3_BUCKET", OCR_BUCKET_NAME,
@@ -119,7 +120,7 @@ class OcrTesseractProcessorTest {
   }
 
   /** {@link Context}. */
-  private Context context = new LambdaContextRecorder();
+  private final Context context = new LambdaContextRecorder();
 
   /**
    * Test S3 File doesn't exist.
@@ -134,8 +135,8 @@ class OcrTesseractProcessorTest {
       String documentId = UUID.randomUUID().toString();
       String jobId = UUID.randomUUID().toString();
 
-      List<Action> actions = Arrays
-          .asList(new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
+      List<Action> actions = Collections.singletonList(
+          new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
       Ocr ocr = new Ocr().documentId(documentId).jobId(jobId).engine(OcrEngine.TESSERACT)
@@ -145,7 +146,8 @@ class OcrTesseractProcessorTest {
       SqsMessageRecord record =
           new SqsMessageRecord().eventSource("aws:sqs").body(GSON.toJson(Map.of("siteId", siteId,
               "documentId", documentId, "jobId", jobId, "contentType", MimeType.MIME_JPEG)));
-      SqsMessageRecords records = new SqsMessageRecords().records(Arrays.asList(record));
+      SqsMessageRecords records =
+          new SqsMessageRecords().records(Collections.singletonList(record));
 
       String json = GSON.toJson(records);
       InputStream is = new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8));
@@ -175,8 +177,8 @@ class OcrTesseractProcessorTest {
       String documentId = UUID.randomUUID().toString();
       String jobId = UUID.randomUUID().toString();
 
-      List<Action> actions = Arrays
-          .asList(new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
+      List<Action> actions = Collections.singletonList(
+          new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
       String documentS3Key = createS3Key(siteId, documentId);
@@ -190,7 +192,8 @@ class OcrTesseractProcessorTest {
       SqsMessageRecord record = new SqsMessageRecord().eventSource("aws:sqs")
           .body(GSON.toJson(Map.of("siteId", siteId, "documentId", documentId, "jobId", jobId,
               "contentType", MimeType.MIME_JPEG.getContentType())));
-      SqsMessageRecords records = new SqsMessageRecords().records(Arrays.asList(record));
+      SqsMessageRecords records =
+          new SqsMessageRecords().records(Collections.singletonList(record));
 
       String json = GSON.toJson(records);
       InputStream is = new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8));
@@ -223,8 +226,8 @@ class OcrTesseractProcessorTest {
       String documentId = UUID.randomUUID().toString();
       String jobId = UUID.randomUUID().toString();
 
-      List<Action> actions = Arrays
-          .asList(new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
+      List<Action> actions = Collections.singletonList(
+          new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
       Ocr ocr = new Ocr().documentId(documentId).jobId(jobId).engine(OcrEngine.TESSERACT)
@@ -234,7 +237,8 @@ class OcrTesseractProcessorTest {
       SqsMessageRecord record =
           new SqsMessageRecord().eventSource("aws:sqs").body(GSON.toJson(Map.of("siteId", siteId,
               "documentId", documentId, "jobId", jobId, "contentType", MimeType.MIME_DOCX)));
-      SqsMessageRecords records = new SqsMessageRecords().records(Arrays.asList(record));
+      SqsMessageRecords records =
+          new SqsMessageRecords().records(Collections.singletonList(record));
 
       String json = GSON.toJson(records);
       InputStream is = new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8));
@@ -264,8 +268,8 @@ class OcrTesseractProcessorTest {
       String documentId = UUID.randomUUID().toString();
       String jobId = UUID.randomUUID().toString();
 
-      List<Action> actions = Arrays
-          .asList(new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
+      List<Action> actions = Collections.singletonList(
+          new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
       String documentS3Key = createS3Key(siteId, documentId);
@@ -281,7 +285,8 @@ class OcrTesseractProcessorTest {
       SqsMessageRecord record = new SqsMessageRecord().eventSource("aws:sqs")
           .body(GSON.toJson(Map.of("siteId", siteId, "documentId", documentId, "jobId", jobId,
               "contentType", MimeType.MIME_DOCX.getContentType())));
-      SqsMessageRecords records = new SqsMessageRecords().records(Arrays.asList(record));
+      SqsMessageRecords records =
+          new SqsMessageRecords().records(Collections.singletonList(record));
 
       String json = GSON.toJson(records);
       InputStream is = new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8));
@@ -315,8 +320,8 @@ class OcrTesseractProcessorTest {
       String documentId = UUID.randomUUID().toString();
       String jobId = UUID.randomUUID().toString();
 
-      List<Action> actions = Arrays
-          .asList(new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
+      List<Action> actions = Collections.singletonList(
+          new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
       String documentS3Key = createS3Key(siteId, documentId);
@@ -332,7 +337,8 @@ class OcrTesseractProcessorTest {
       SqsMessageRecord record = new SqsMessageRecord().eventSource("aws:sqs")
           .body(GSON.toJson(Map.of("siteId", siteId, "documentId", documentId, "jobId", jobId,
               "contentType", MimeType.MIME_DOC.getContentType())));
-      SqsMessageRecords records = new SqsMessageRecords().records(Arrays.asList(record));
+      SqsMessageRecords records =
+          new SqsMessageRecords().records(Collections.singletonList(record));
 
       String json = GSON.toJson(records);
       InputStream is = new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8));
@@ -366,8 +372,8 @@ class OcrTesseractProcessorTest {
       String documentId = UUID.randomUUID().toString();
       String jobId = UUID.randomUUID().toString();
 
-      List<Action> actions = Arrays
-          .asList(new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
+      List<Action> actions = Collections.singletonList(
+          new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
       String documentS3Key = createS3Key(siteId, documentId);
@@ -382,7 +388,8 @@ class OcrTesseractProcessorTest {
       SqsMessageRecord record = new SqsMessageRecord().eventSource("aws:sqs")
           .body(GSON.toJson(Map.of("siteId", siteId, "documentId", documentId, "jobId", jobId,
               "contentType", MimeType.MIME_PDF.getContentType())));
-      SqsMessageRecords records = new SqsMessageRecords().records(Arrays.asList(record));
+      SqsMessageRecords records =
+          new SqsMessageRecords().records(Collections.singletonList(record));
 
       String json = GSON.toJson(records);
       InputStream is = new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8));
@@ -415,8 +422,8 @@ class OcrTesseractProcessorTest {
       String documentId = UUID.randomUUID().toString();
       String jobId = UUID.randomUUID().toString();
 
-      List<Action> actions = Arrays
-          .asList(new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
+      List<Action> actions = Collections.singletonList(
+          new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
       String documentS3Key = createS3Key(siteId, documentId);
@@ -431,7 +438,8 @@ class OcrTesseractProcessorTest {
       SqsMessageRecord record = new SqsMessageRecord().eventSource("aws:sqs")
           .body(GSON.toJson(Map.of("siteId", siteId, "documentId", documentId, "jobId", jobId,
               "contentType", MimeType.MIME_PDF.getContentType())));
-      SqsMessageRecords records = new SqsMessageRecords().records(Arrays.asList(record));
+      SqsMessageRecords records =
+          new SqsMessageRecords().records(Collections.singletonList(record));
 
       String json = GSON.toJson(records);
       InputStream is = new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8));
@@ -466,8 +474,8 @@ class OcrTesseractProcessorTest {
       String documentId = UUID.randomUUID().toString();
       String jobId = UUID.randomUUID().toString();
 
-      List<Action> actions = Arrays
-          .asList(new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
+      List<Action> actions = Collections.singletonList(
+          new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
       String documentS3Key = createS3Key(siteId, documentId);
@@ -482,9 +490,10 @@ class OcrTesseractProcessorTest {
 
       SqsMessageRecord record = new SqsMessageRecord().eventSource("aws:sqs")
           .body(GSON.toJson(Map.of("siteId", siteId, "documentId", documentId, "jobId", jobId,
-              "request", Map.of("ocrNumberOfPages", Integer.valueOf(ocrNumberOfPages)),
-              "contentType", MimeType.MIME_TIF.getContentType())));
-      SqsMessageRecords records = new SqsMessageRecords().records(Arrays.asList(record));
+              "request", Map.of("ocrNumberOfPages", ocrNumberOfPages), "contentType",
+              MimeType.MIME_TIF.getContentType())));
+      SqsMessageRecords records =
+          new SqsMessageRecords().records(Collections.singletonList(record));
 
       String json = GSON.toJson(records);
       InputStream is = new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8));
@@ -520,8 +529,8 @@ class OcrTesseractProcessorTest {
       String documentId = UUID.randomUUID().toString();
       String jobId = UUID.randomUUID().toString();
 
-      List<Action> actions = Arrays
-          .asList(new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
+      List<Action> actions = Collections.singletonList(
+          new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
       String documentS3Key = createS3Key(siteId, documentId);
@@ -536,9 +545,10 @@ class OcrTesseractProcessorTest {
 
       SqsMessageRecord record = new SqsMessageRecord().eventSource("aws:sqs")
           .body(GSON.toJson(Map.of("siteId", siteId, "documentId", documentId, "jobId", jobId,
-              "request", Map.of("ocrNumberOfPages", Integer.valueOf(ocrNumberOfPages)),
-              "contentType", MimeType.MIME_PDF.getContentType())));
-      SqsMessageRecords records = new SqsMessageRecords().records(Arrays.asList(record));
+              "request", Map.of("ocrNumberOfPages", ocrNumberOfPages), "contentType",
+              MimeType.MIME_PDF.getContentType())));
+      SqsMessageRecords records =
+          new SqsMessageRecords().records(Collections.singletonList(record));
 
       String json = GSON.toJson(records);
       InputStream is = new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8));
