@@ -1938,7 +1938,7 @@ Resources:
                 | -------- | ------- | ------- | ------- |
                 | OCR  | ocrParseTypes | Ocr Parsing strategy to use | TEXT, FORMS, TABLES |
                 | OCR | ocrEngine     | Ocr Engine to use | tesseract or textract |
-                | OCR | ocrExportToCsv     | Convert OCR result to CSV (textract table only) | true |
+                | OCR | ocrOutputType     | Convert OCR result to an Output format (textract table only) | true |
                 | OCR | ocrNumberOfPages  | Number of pages to OCR (from start) | -1 |
                 | OCR    | addPdfDetectedCharactersAsText | PDF Documents convert images to text | true or false |
                 | FULLTEXT    | characterMax    | Maximum number of characters to add to Fulltext destination | -1 |
@@ -8821,6 +8821,11 @@ Resources:
               enum:
                 - TESSERACT
                 - TEXTRACT
+            OcrOutputType:
+              type: string
+              description: OCR Engine output format (textract table only)
+              enum:
+                - CSV
             AddActionParameters:
               type: "object"
               properties:
@@ -8829,9 +8834,8 @@ Resources:
                   description: "OCR: Parse types - TEXT, FORMS, TABLES"
                 ocrEngine:
                   $ref: "#/components/schemas/OcrEngine"
-                ocrExportToCsv:
-                  type: string
-                  description: "Convert OCR result to CSV (textract table only)"
+                ocrOutputType:
+                  $ref: "#/components/schemas/OcrOutputType"
                 ocrNumberOfPages:
                   type: "string"
                   description: "Number of pages to OCR (from start) (-1 all)"
@@ -8896,9 +8900,8 @@ Resources:
                 ocrNumberOfPages:
                   type: "string"
                   description: "Number of pages to OCR (from start) (-1 all)"
-                ocrExportToCsv:
-                  type: boolean
-                  description: Whether to Export to CSV
+                ocrOutputType:
+                  $ref: "#/components/schemas/OcrOutputType"
             SetDocumentOcrRequest:
               required:
               - "content"

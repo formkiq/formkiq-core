@@ -46,6 +46,7 @@ import com.formkiq.client.model.AddMappingRequest;
 import com.formkiq.client.model.MappingAttribute;
 import com.formkiq.client.model.MappingAttributeLabelMatchingType;
 import com.formkiq.client.model.MappingAttributeSourceType;
+import com.formkiq.client.model.OcrOutputType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import com.formkiq.aws.dynamodb.DynamicObject;
@@ -180,7 +181,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       AddDocumentActionsRequest req = new AddDocumentActionsRequest().actions(Arrays.asList(
           new AddAction().type(DocumentActionType.OCR)
               .parameters(new AddActionParameters().addPdfDetectedCharactersAsText("true")
-                  .ocrExportToCsv("true").ocrParseTypes("text")),
+                  .ocrOutputType(OcrOutputType.CSV).ocrParseTypes("text")),
           new AddAction().type(DocumentActionType.WEBHOOK)
               .parameters(new AddActionParameters().url("https://localhost"))));
 
@@ -200,7 +201,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
 
       assertEquals(ActionType.OCR, actions.get(i).type());
       assertEquals(ActionStatus.PENDING, actions.get(i).status());
-      assertEquals("{ocrParseTypes=text, ocrExportToCsv=true, addPdfDetectedCharactersAsText=true}",
+      assertEquals("{ocrParseTypes=text, ocrOutputType=CSV, addPdfDetectedCharactersAsText=true}",
           actions.get(i++).parameters().toString());
 
       assertEquals(ActionType.WEBHOOK, actions.get(i).type());
