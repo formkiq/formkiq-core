@@ -8142,7 +8142,7 @@
                     $ref: '#/components/schemas/RuleConditionMust'
             RuleConditionCriterion:
               type: string
-              description: Rule condition attribute (deprecated, use Criterion)
+              description: Rule condition attribute
               enum:
               - TEXT
               - CONTENT_TYPE
