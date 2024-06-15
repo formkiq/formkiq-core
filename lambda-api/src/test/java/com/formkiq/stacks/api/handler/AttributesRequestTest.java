@@ -254,6 +254,33 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * POST /attributes reserved key.
+   *
+   */
+  @Test
+  public void testAddAttributes03() {
+    // given
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+
+      setBearerToken(siteId);
+      AddAttributeRequest req =
+          new AddAttributeRequest().attribute(new AddAttribute().key("publication"));
+
+      // when
+      try {
+        this.attributesApi.addAttribute(req, siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(
+            "{\"errors\":[{\"key\":\"key\","
+                + "\"error\":\"'publication' is a reserved attribute name\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
    * POST /documents.
    * 
    * @throws ApiException ApiException

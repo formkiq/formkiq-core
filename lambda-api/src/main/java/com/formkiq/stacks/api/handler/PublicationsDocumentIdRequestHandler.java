@@ -38,7 +38,8 @@ import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.useractivity.UserActivityPlugin;
 import com.formkiq.stacks.dynamodb.DocumentService;
-import com.formkiq.stacks.dynamodb.documents.DocumentPublishRecord;
+import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
+import com.formkiq.stacks.dynamodb.documents.DocumentAttributePublicationValue;
 
 import java.net.URL;
 import java.time.Duration;
@@ -48,15 +49,15 @@ import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_TEMPORARY_REDIRECT;
 
-/** {@link ApiGatewayRequestHandler} for "/published/documents/{documentId}". */
-public class DocumentIdPublishRequestHandler
+/** {@link ApiGatewayRequestHandler} for "/publications/{documentId}". */
+public class PublicationsDocumentIdRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
   /**
    * constructor.
    *
    */
-  public DocumentIdPublishRequestHandler() {}
+  public PublicationsDocumentIdRequestHandler() {}
 
   @Override
   public ApiRequestHandlerResponse delete(final LambdaLogger logger,
@@ -83,18 +84,20 @@ public class DocumentIdPublishRequestHandler
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
-    DocumentPublishRecord item = documentService.findPublishDocument(siteId, documentId);
+    DocumentAttributeRecord item = documentService.findPublishDocument(siteId, documentId);
     throwIfNull(item, new DocumentNotFoundException(documentId));
 
+    DocumentAttributePublicationValue publicationValue = item.getPublicationValue();
     String s3key = createS3Key(siteId, documentId);
-    String s3VersionKey = item.getS3version();
+    String s3VersionKey = publicationValue.getS3version();
 
     String contentType =
-        item.getContentType() != null ? item.getContentType() : "application/octet-stream";
+        publicationValue.getContentType() != null ? publicationValue.getContentType()
+            : "application/octet-stream";
 
     PresignGetUrlConfig config =
-        new PresignGetUrlConfig().contentDispositionByPath(item.getPath(), false).contentType(s3key)
-            .contentType(contentType);
+        new PresignGetUrlConfig().contentDispositionByPath(publicationValue.getPath(), false)
+            .contentType(s3key).contentType(contentType);
 
     S3PresignerService s3Service = awsservice.getExtension(S3PresignerService.class);
     Duration duration = Duration.ofHours(1);
@@ -113,6 +116,6 @@ public class DocumentIdPublishRequestHandler
 
   @Override
   public String getRequestUrl() {
-    return "/published/documents/{documentId}";
+    return "/publications/{documentId}";
   }
 }

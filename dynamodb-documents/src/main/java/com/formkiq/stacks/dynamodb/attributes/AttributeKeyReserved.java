@@ -23,20 +23,43 @@
  */
 package com.formkiq.stacks.dynamodb.attributes;
 
+import java.util.Arrays;
+import java.util.Optional;
+
 /**
- * Attribute Search Type.
+ * Reserved Attribute Keys.
  */
-public enum DocumentAttributeValueType {
-  /** Boolean. */
-  BOOLEAN,
-  /** Composite String. */
-  COMPOSITE_STRING,
-  /** Key Only. */
-  KEY_ONLY,
-  /** Number. */
-  NUMBER,
-  /** String. */
-  STRING,
+public enum AttributeKeyReserved {
   /** Publication. */
-  PUBLICATION;
+  PUBLICATION("Publication"),
+  /** Malware Scan Result. */
+  MALWARE_SCAN_RESULT("MalwareScanResult");
+
+  /** Key Name. */
+  private final String key;
+
+  AttributeKeyReserved(final String reservedKey) {
+    this.key = reservedKey;
+  }
+
+  /**
+   * Find {@link AttributeKeyReserved}.
+   * 
+   * @param key {@link AttributeKeyReserved}
+   * @return {@link AttributeKeyReserved}
+   */
+  public static AttributeKeyReserved find(final String key) {
+    Optional<AttributeKeyReserved> a =
+        Arrays.stream(values()).filter(v -> v.getKey().equalsIgnoreCase(key)).findFirst();
+    return a.orElse(null);
+  }
+
+  /**
+   * Get Key Name.
+   * 
+   * @return String
+   */
+  public String getKey() {
+    return this.key;
+  }
 }

@@ -89,6 +89,15 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
       errors = Collections
           .singletonList(new ValidationErrorImpl().key("key").error("'key' is required"));
     } else {
+
+      AttributeKeyReserved r = AttributeKeyReserved.find(key);
+      if (r != null) {
+        errors = Collections.singletonList(new ValidationErrorImpl().key("key")
+            .error("'" + key + "' is a reserved attribute name"));
+      }
+    }
+
+    if (errors.isEmpty()) {
       AttributeRecord attribute = getAttribute(siteId, key);
       if (attribute != null) {
         errors = Collections.singletonList(
