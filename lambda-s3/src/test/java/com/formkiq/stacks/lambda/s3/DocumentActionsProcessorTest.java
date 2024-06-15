@@ -53,7 +53,7 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import com.formkiq.stacks.dynamodb.documents.DocumentPublishRecord;
+import com.formkiq.stacks.dynamodb.documents.DocumentAttributePublicationValue;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -1807,12 +1807,13 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertEquals(ActionType.PUBLISH, action.type());
       assertEquals(ActionStatus.COMPLETE, action.status());
 
-      DocumentPublishRecord pd = documentService.findPublishDocument(siteId, documentId);
+      DocumentAttributeRecord pd = documentService.findPublishDocument(siteId, documentId);
+      DocumentAttributePublicationValue pv = pd.getPublicationValue();
       assertEquals(documentId, pd.getDocumentId());
-      assertEquals("text/plain", pd.getContentType());
-      assertEquals(documentId, pd.getPath());
+      assertEquals("text/plain", pv.getContentType());
+      assertEquals(documentId, pv.getPath());
       assertEquals("joe", pd.getUserId());
-      assertNotNull(pd.getS3version());
+      assertNotNull(pv.getS3version());
     }
   }
 }

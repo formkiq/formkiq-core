@@ -76,6 +76,7 @@ import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.objects.Strings;
+import com.formkiq.stacks.dynamodb.attributes.AttributeKeyReserved;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeServiceDynamodb;
@@ -87,7 +88,7 @@ import com.formkiq.stacks.dynamodb.attributes.AttributeValidatorImpl;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
 import com.formkiq.stacks.dynamodb.attributes.DynamicObjectToDocumentAttributeRecord;
-import com.formkiq.stacks.dynamodb.documents.DocumentPublishRecord;
+import com.formkiq.stacks.dynamodb.documents.DocumentAttributePublicationValue;
 import com.formkiq.stacks.dynamodb.schemas.Schema;
 import com.formkiq.stacks.dynamodb.schemas.SchemaAttributesCompositeKey;
 import com.formkiq.stacks.dynamodb.schemas.SchemaMissingRequiredAttributes;
@@ -626,7 +627,9 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
   @Override
   public boolean deletePublishDocument(final String siteId, final String documentId) {
-    DocumentPublishRecord r = new DocumentPublishRecord().setDocumentId(documentId);
+
+    DocumentAttributeRecord r = new DocumentAttributeRecord().setDocumentId(documentId)
+        .setKey(AttributeKeyReserved.PUBLICATION.getKey()).updateValueType();
     Map<String, AttributeValue> attributes = r.getAttributes(siteId);
     return this.dbService.deleteItem(Map.of(PK, attributes.get(PK), SK, attributes.get(SK)));
   }
@@ -1096,8 +1099,10 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
-  public DocumentPublishRecord findPublishDocument(final String siteId, final String documentId) {
-    DocumentPublishRecord r = new DocumentPublishRecord().setDocumentId(documentId);
+  public DocumentAttributeRecord findPublishDocument(final String siteId, final String documentId) {
+    DocumentAttributeRecord r = new DocumentAttributeRecord().setDocumentId(documentId)
+        .setKey(AttributeKeyReserved.PUBLICATION.getKey())
+        .setValueType(DocumentAttributeValueType.PUBLICATION);
     Map<String, AttributeValue> a = this.dbService.get(r.fromS(r.pk(siteId)), r.fromS(r.sk()));
 
     if (!a.isEmpty()) {
@@ -1481,9 +1486,12 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   @Override
   public void publishDocument(final String siteId, final String documentId, final String s3version,
       final String path, final String contentType, final String userId) {
-    DocumentPublishRecord r =
-        new DocumentPublishRecord().setDocumentId(documentId).setContentType(contentType)
-            .setPath(path).setUserId(userId).setS3version(s3version).setInsertedDate(new Date());
+    DocumentAttributePublicationValue val = new DocumentAttributePublicationValue().setPath(path)
+        .setS3version(s3version).setContentType(contentType);
+    DocumentAttributeRecord r = new DocumentAttributeRecord().setDocumentId(documentId)
+        .setKey(AttributeKeyReserved.PUBLICATION.getKey()).setUserId(userId)
+        .setInsertedDate(new Date()).setPublicationValue(val);
+    r.updateValueType();
     this.dbService.putItem(r.getAttributes(siteId));
   }
 

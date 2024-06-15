@@ -28,6 +28,7 @@ import com.formkiq.aws.dynamodb.DynamodbVersionRecord;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.graalvm.annotations.Reflectable;
+import com.formkiq.stacks.dynamodb.documents.DocumentAttributePublicationValue;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.text.ParseException;
@@ -52,34 +53,49 @@ public class DocumentAttributeRecord
   /** {@link SimpleDateFormat}. */
   private final SimpleDateFormat df = DateUtil.getIsoDateFormatter();
   /** Boolean value. */
-  @Reflectable
   private Boolean booleanValue;
   /** Attribute Document Id. */
-  @Reflectable
   private String documentId;
   /** Key of Attribute. */
-  @Reflectable
   private String key;
   /** Number value. */
-  @Reflectable
   private Double numberValue;
   /** String valueAttribute. */
-  @Reflectable
   private String stringValue;
   /** Type of Attribute. */
-  @Reflectable
   private DocumentAttributeValueType valueType;
   /** Inserted Date. */
-  @Reflectable
   private Date insertedDate;
   /** Attribute Document Id. */
-  @Reflectable
   private String userId;
+  /** {@link DocumentAttributePublicationValue}. */
+  private DocumentAttributePublicationValue publicationValue;
 
   /**
    * constructor.
    */
   public DocumentAttributeRecord() {}
+
+  /**
+   * Get Publication Value.
+   * 
+   * @return DocumentAttributePublicationValue
+   */
+  public DocumentAttributePublicationValue getPublicationValue() {
+    return this.publicationValue;
+  }
+
+  /**
+   * Set Publication Value.
+   * 
+   * @param value {@link DocumentAttributePublicationValue}
+   * @return DocumentAttributeRecord
+   */
+  public DocumentAttributeRecord setPublicationValue(
+      final DocumentAttributePublicationValue value) {
+    this.publicationValue = value;
+    return this;
+  }
 
   /**
    * Get User Id.
@@ -139,6 +155,15 @@ public class DocumentAttributeRecord
       map.put("inserteddate", AttributeValue.fromS(df.format(this.insertedDate)));
     }
 
+    if (this.publicationValue != null) {
+
+      Map<String, AttributeValue> publicationMap = new HashMap<>();
+      publicationMap.put("path", fromS(this.publicationValue.getPath()));
+      publicationMap.put("s3Version", fromS(this.publicationValue.getS3version()));
+      publicationMap.put("contentType", fromS(this.publicationValue.getContentType()));
+      map.put("publication", AttributeValue.fromM(publicationMap));
+    }
+
     return map;
   }
 
@@ -164,6 +189,17 @@ public class DocumentAttributeRecord
 
       if (attrs.containsKey("numberValue")) {
         record.setNumberValue(nn(attrs, "numberValue"));
+      }
+
+      if (attrs.containsKey("publication")) {
+        DocumentAttributePublicationValue p = new DocumentAttributePublicationValue();
+
+        Map<String, AttributeValue> publication = attrs.get("publication").m();
+        p.setPath(publication.get("path").s());
+        p.setContentType(publication.get("contentType").s());
+        p.setS3version(publication.get("s3Version").s());
+
+        record.setPublicationValue(p);
       }
 
       if (attrs.containsKey("inserteddate")) {
@@ -224,6 +260,7 @@ public class DocumentAttributeRecord
         break;
 
       case KEY_ONLY:
+      case PUBLICATION:
         break;
 
       default:
@@ -240,7 +277,7 @@ public class DocumentAttributeRecord
       case STRING, COMPOSITE_STRING -> this.stringValue;
       case NUMBER -> formatDouble(this.numberValue);
       case BOOLEAN -> this.booleanValue.toString();
-      case KEY_ONLY -> "#";
+      case KEY_ONLY, PUBLICATION -> "#";
     };
 
   }
@@ -248,6 +285,15 @@ public class DocumentAttributeRecord
   @Override
   public String skGsi2() {
     return null;
+  }
+
+  /**
+   * Get Attribute Value Type.
+   *
+   * @return {@link DocumentAttributeValueType}
+   */
+  public DocumentAttributeValueType getValueType() {
+    return this.valueType;
   }
 
   /**
@@ -262,12 +308,12 @@ public class DocumentAttributeRecord
   }
 
   /**
-   * Get Attribute Value Type.
+   * Get Attribute Key.
    *
-   * @return {@link DocumentAttributeValueType}
+   * @return {@link String}
    */
-  public DocumentAttributeValueType getValueType() {
-    return this.valueType;
+  public String getKey() {
+    return this.key;
   }
 
   /**
@@ -282,12 +328,12 @@ public class DocumentAttributeRecord
   }
 
   /**
-   * Get Attribute Key.
+   * Get Document Id.
    *
    * @return {@link String}
    */
-  public String getKey() {
-    return this.key;
+  public String getDocumentId() {
+    return this.documentId;
   }
 
   /**
@@ -302,12 +348,12 @@ public class DocumentAttributeRecord
   }
 
   /**
-   * Get Document Id.
+   * Get String value.
    *
    * @return {@link String}
    */
-  public String getDocumentId() {
-    return this.documentId;
+  public String getStringValue() {
+    return this.stringValue;
   }
 
   /**
@@ -322,12 +368,12 @@ public class DocumentAttributeRecord
   }
 
   /**
-   * Get String value.
+   * Get Boolean Value.
    *
-   * @return {@link String}
+   * @return {@link Boolean}
    */
-  public String getStringValue() {
-    return this.stringValue;
+  public Boolean getBooleanValue() {
+    return this.booleanValue;
   }
 
   /**
@@ -342,12 +388,12 @@ public class DocumentAttributeRecord
   }
 
   /**
-   * Get Boolean Value.
+   * Get Number Value.
    *
-   * @return {@link Boolean}
+   * @return {@link Double}
    */
-  public Boolean getBooleanValue() {
-    return this.booleanValue;
+  public Double getNumberValue() {
+    return this.numberValue;
   }
 
   /**
@@ -359,15 +405,6 @@ public class DocumentAttributeRecord
   public DocumentAttributeRecord setNumberValue(final Double value) {
     this.numberValue = value;
     return this;
-  }
-
-  /**
-   * Get Number Value.
-   *
-   * @return {@link Double}
-   */
-  public Double getNumberValue() {
-    return this.numberValue;
   }
 
   /**
@@ -384,6 +421,8 @@ public class DocumentAttributeRecord
       this.valueType = DocumentAttributeValueType.NUMBER;
     } else if (this.booleanValue != null) {
       this.valueType = DocumentAttributeValueType.BOOLEAN;
+    } else if (this.publicationValue != null) {
+      this.valueType = DocumentAttributeValueType.PUBLICATION;
     }
 
     return this;
