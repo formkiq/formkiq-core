@@ -87,6 +87,7 @@ import com.formkiq.stacks.dynamodb.attributes.AttributeValidatorImpl;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
 import com.formkiq.stacks.dynamodb.attributes.DynamicObjectToDocumentAttributeRecord;
+import com.formkiq.stacks.dynamodb.documents.DocumentPublishRecord;
 import com.formkiq.stacks.dynamodb.schemas.Schema;
 import com.formkiq.stacks.dynamodb.schemas.SchemaAttributesCompositeKey;
 import com.formkiq.stacks.dynamodb.schemas.SchemaMissingRequiredAttributes;
@@ -132,10 +133,10 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   private final FolderIndexProcessor folderIndexProcessor;
   /** {@link GlobalIndexService}. */
   private final GlobalIndexService indexWriter;
-  /** {@link SchemaService}. */
-  private final SchemaService schemaService;
   /** Last Short Date. */
   private String lastShortDate = null;
+  /** {@link SchemaService}. */
+  private final SchemaService schemaService;
   /** {@link DocumentVersionService}. */
   private final DocumentVersionService versionsService;
   /** {@link SimpleDateFormat} YYYY-mm-dd format. */
@@ -172,6 +173,40 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     this.yyyymmddFormat.setTimeZone(tz);
   }
 
+  private Collection<DocumentAttributeRecord> addCompositeAndRequiredKeys(final String siteId,
+      final String documentId, final Collection<DocumentAttributeRecord> documentAttributeRecords,
+      final Schema schema, final AttributeValidationAccess validationAccess) {
+
+    Collection<DocumentAttributeRecord> documentAttributes = documentAttributeRecords;
+    String userId =
+        !documentAttributes.isEmpty() ? documentAttributes.iterator().next().getUserId() : "System";
+
+    if (schema != null) {
+
+      if (AttributeValidationAccess.ADMIN_CREATE.equals(validationAccess)
+          || AttributeValidationAccess.CREATE.equals(validationAccess)) {
+        Collection<DocumentAttributeRecord> missingRequired =
+            addMissingRequired(schema, siteId, documentId, documentAttributes);
+
+        if (!missingRequired.isEmpty()) {
+          documentAttributes =
+              Stream.concat(documentAttributes.stream(), missingRequired.stream()).toList();
+        }
+      }
+
+      Collection<DocumentAttributeRecord> compositeKeys =
+          generateCompositeKeys(schema, siteId, documentId, documentAttributes);
+
+      documentAttributes =
+          Stream.concat(documentAttributes.stream(), compositeKeys.stream()).toList();
+    }
+
+    documentAttributes.stream().filter(a -> a.getUserId() == null)
+        .forEach(a -> a.setUserId(userId));
+
+    return documentAttributes;
+  }
+
   @Override
   public void addFolderIndex(final String siteId, final String path, final String userId) {
 
@@ -198,6 +233,14 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
         addS(pkvalues, PREFIX_DOCUMENT_METADATA + m.getKey(), m.getValue());
       }
     });
+  }
+
+  private Collection<DocumentAttributeRecord> addMissingRequired(final Schema schema,
+      final String siteId, final String documentId,
+      final Collection<DocumentAttributeRecord> documentAttributes) {
+
+    return new SchemaMissingRequiredAttributes(attributeService, schema, siteId, documentId)
+        .apply(documentAttributes);
   }
 
   @Override
@@ -234,7 +277,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
   /**
    * Append Search Attributes.
-   * 
+   *
    * @param writeBuilder {@link WriteRequestBuilder}
    * @param siteId {@link String}
    * @param documentId {@link String}
@@ -296,104 +339,9 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     }
   }
 
-  private Collection<DocumentAttributeRecord> addMissingRequired(final Schema schema,
-      final String siteId, final String documentId,
-      final Collection<DocumentAttributeRecord> documentAttributes) {
-
-    return new SchemaMissingRequiredAttributes(attributeService, schema, siteId, documentId)
-        .apply(documentAttributes);
-  }
-
-  private Collection<DocumentAttributeRecord> addCompositeAndRequiredKeys(final String siteId,
-      final String documentId, final Collection<DocumentAttributeRecord> documentAttributeRecords,
-      final Schema schema, final AttributeValidationAccess validationAccess) {
-
-    Collection<DocumentAttributeRecord> documentAttributes = documentAttributeRecords;
-    String userId =
-        !documentAttributes.isEmpty() ? documentAttributes.iterator().next().getUserId() : "System";
-
-    if (schema != null) {
-
-      if (AttributeValidationAccess.ADMIN_CREATE.equals(validationAccess)
-          || AttributeValidationAccess.CREATE.equals(validationAccess)) {
-        Collection<DocumentAttributeRecord> missingRequired =
-            addMissingRequired(schema, siteId, documentId, documentAttributes);
-
-        if (!missingRequired.isEmpty()) {
-          documentAttributes =
-              Stream.concat(documentAttributes.stream(), missingRequired.stream()).toList();
-        }
-      }
-
-      Collection<DocumentAttributeRecord> compositeKeys =
-          generateCompositeKeys(schema, siteId, documentId, documentAttributes);
-
-      documentAttributes =
-          Stream.concat(documentAttributes.stream(), compositeKeys.stream()).toList();
-    }
-
-    documentAttributes.stream().filter(a -> a.getUserId() == null)
-        .forEach(a -> a.setUserId(userId));
-
-    return documentAttributes;
-  }
-
-  private Collection<DocumentAttributeRecord> generateCompositeKeys(final Schema schema,
-      final String siteId, final String documentId,
-      final Collection<DocumentAttributeRecord> documentAttributes) {
-
-    Set<String> documentAttributeKeys = documentAttributes.stream()
-        .map(DocumentAttributeRecord::getKey).collect(Collectors.toSet());
-
-    List<SchemaAttributesCompositeKey> schemaCompositeKeys =
-        notNull(schema.getAttributes().getCompositeKeys());
-
-    List<SchemaAttributesCompositeKey> matchingCompositeKeys =
-        schemaCompositeKeys.stream().filter(sc -> {
-
-          List<String> attributeKeys = sc.getAttributeKeys();
-          for (String attributeKey : attributeKeys) {
-            if (documentAttributeKeys.contains(attributeKey)) {
-              return true;
-            }
-          }
-
-          return false;
-
-        }).toList();
-
-    List<String> attributesToLoad =
-        matchingCompositeKeys.stream().flatMap(c -> c.getAttributeKeys().stream())
-            .filter(k -> !documentAttributeKeys.contains(k)).toList();
-
-    Collection<DocumentAttributeRecord> existingAttributes =
-        getDocumentAttribute(siteId, documentId, attributesToLoad);
-
-    List<DocumentAttributeRecord> merged =
-        Stream.concat(documentAttributes.stream(), existingAttributes.stream()).toList();
-
-    return new DocumentAttributeSchema(schema, documentId).apply(merged);
-  }
-
-  /**
-   * Get List of Document Attributes.
-   * 
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param attributeKeys {@link Collection} {@link String}
-   * @return {@link Collection} {@link DocumentAttributeRecord}
-   */
-  private Collection<DocumentAttributeRecord> getDocumentAttribute(final String siteId,
-      final String documentId, final Collection<String> attributeKeys) {
-
-    return attributeKeys.stream()
-        .flatMap(attributeKey -> findDocumentAttribute(siteId, documentId, attributeKey).stream())
-        .toList();
-  }
-
   /**
    * Build DynamoDB Search Map.
-   * 
+   *
    * @param siteId {@link String}
    * @param pk {@link String}
    * @param skMin {@link String}
@@ -412,7 +360,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
   /**
    * Delete Record.
-   * 
+   *
    * @param key {@link Map}
    * @return {@link DeleteItemResponse}
    */
@@ -596,7 +544,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
   /**
    * Delete Folder Index.
-   * 
+   *
    * @param siteId {@link String}
    * @param item {@link DocumentItem}
    */
@@ -618,7 +566,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
   /**
    * Delete Document Row by Parition / Sort Key. param dbClient {@link DynamoDbClient}
-   * 
+   *
    * @param key DocumentDb Key {@link Map}
    * @return boolean
    */
@@ -677,6 +625,13 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
+  public boolean deletePublishDocument(final String siteId, final String documentId) {
+    DocumentPublishRecord r = new DocumentPublishRecord().setDocumentId(documentId);
+    Map<String, AttributeValue> attributes = r.getAttributes(siteId);
+    return this.dbService.deleteItem(Map.of(PK, attributes.get(PK), SK, attributes.get(SK)));
+  }
+
+  @Override
   public boolean exists(final String siteId, final String documentId) {
     Map<String, AttributeValue> keys = keysDocument(siteId, documentId);
     return this.dbService.exists(keys.get(PK), keys.get(SK));
@@ -684,7 +639,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
   /**
    * Get Record.
-   * 
+   *
    * @param pk {@link String}
    * @param sk {@link String}
    * @return {@link Optional} {@link Map} {@link AttributeValue}
@@ -701,7 +656,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
   /**
    * Get Records.
-   * 
+   *
    * @param pk {@link String}
    * @param sk {@link String}
    * @param indexName {@link String}
@@ -732,7 +687,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
   /**
    * Get Record and transform to object.
-   * 
+   *
    * @param <T> Type of object
    * @param keys {@link Map} {@link AttributeValue}
    * @param token {@link PaginationMapToken}
@@ -748,7 +703,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
   /**
    * Get Record and transform to object.
-   * 
+   *
    * @param <T> Type of object
    * @param pkKey {@link String}
    * @param skKey {@link String}
@@ -934,7 +889,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
   /**
    * Find Documents using the Search Map.
-   * 
+   *
    * @param siteId DynamoDB PK siteId
    * @param searchMap {@link List}
    * @param token {@link PaginationMapToken}
@@ -1029,12 +984,12 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
   /**
    * Find Document Tag {@link AttributeValue}.
-   * 
+   *
    * @param siteId DynamoDB PK siteId
    * @param documentId {@link String}
    * @param tagKey {@link String}
    * @param maxresults {@link Integer}
-   * 
+   *
    * @return {@link QueryResponse}
    */
   private QueryResponse findDocumentTagAttributes(final String siteId, final String documentId,
@@ -1141,6 +1096,20 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
+  public DocumentPublishRecord findPublishDocument(final String siteId, final String documentId) {
+    DocumentPublishRecord r = new DocumentPublishRecord().setDocumentId(documentId);
+    Map<String, AttributeValue> a = this.dbService.get(r.fromS(r.pk(siteId)), r.fromS(r.sk()));
+
+    if (!a.isEmpty()) {
+      r = r.getFromAttributes(siteId, a);
+    } else {
+      r = null;
+    }
+
+    return r;
+  }
+
+  @Override
   public PaginationResults<DocumentItem> findSoftDeletedDocuments(final String siteId,
       final Map<String, AttributeValue> startkey, final int limit) {
 
@@ -1156,9 +1125,46 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     return new PaginationResults<>(items, new QueryResponseToPagination().apply(result));
   }
 
+  private Collection<DocumentAttributeRecord> generateCompositeKeys(final Schema schema,
+      final String siteId, final String documentId,
+      final Collection<DocumentAttributeRecord> documentAttributes) {
+
+    Set<String> documentAttributeKeys = documentAttributes.stream()
+        .map(DocumentAttributeRecord::getKey).collect(Collectors.toSet());
+
+    List<SchemaAttributesCompositeKey> schemaCompositeKeys =
+        notNull(schema.getAttributes().getCompositeKeys());
+
+    List<SchemaAttributesCompositeKey> matchingCompositeKeys =
+        schemaCompositeKeys.stream().filter(sc -> {
+
+          List<String> attributeKeys = sc.getAttributeKeys();
+          for (String attributeKey : attributeKeys) {
+            if (documentAttributeKeys.contains(attributeKey)) {
+              return true;
+            }
+          }
+
+          return false;
+
+        }).toList();
+
+    List<String> attributesToLoad =
+        matchingCompositeKeys.stream().flatMap(c -> c.getAttributeKeys().stream())
+            .filter(k -> !documentAttributeKeys.contains(k)).toList();
+
+    Collection<DocumentAttributeRecord> existingAttributes =
+        getDocumentAttribute(siteId, documentId, attributesToLoad);
+
+    List<DocumentAttributeRecord> merged =
+        Stream.concat(documentAttributes.stream(), existingAttributes.stream()).toList();
+
+    return new DocumentAttributeSchema(schema, documentId).apply(merged);
+  }
+
   /**
    * Generate DynamoDB PK(s)/SK(s) to search.
-   * 
+   *
    * @param siteId DynamoDB PK siteId
    * @param date {@link ZonedDateTime}
    * @param token {@link PaginationMapToken}
@@ -1206,7 +1212,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
   /**
    * Get Batch Keys.
-   * 
+   *
    * @param keys {@link List} {@link Map} {@link AttributeValue}
    * @param config {@link BatchGetConfig}
    * @return {@link Map}
@@ -1220,13 +1226,29 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
   /**
    * Get {@link Date} or Now.
-   * 
+   *
    * @param date {@link Date}
    * @param defaultDate {@link Date}
    * @return {@link Date}
    */
   private Date getDateOrNow(final Date date, final Date defaultDate) {
     return date != null ? date : defaultDate;
+  }
+
+  /**
+   * Get List of Document Attributes.
+   *
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param attributeKeys {@link Collection} {@link String}
+   * @return {@link Collection} {@link DocumentAttributeRecord}
+   */
+  private Collection<DocumentAttributeRecord> getDocumentAttribute(final String siteId,
+      final String documentId, final Collection<String> attributeKeys) {
+
+    return attributeKeys.stream()
+        .flatMap(attributeKey -> findDocumentAttribute(siteId, documentId, attributeKey).stream())
+        .toList();
   }
 
   private Collection<DocumentAttributeRecord> getDocumentAttributes(final DynamicDocumentItem doc) {
@@ -1252,7 +1274,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
   /**
    * Save {@link DocumentItemDynamoDb}.
-   * 
+   *
    * @param keys {@link Map}
    * @param siteId DynamoDB PK siteId
    * @param document {@link DocumentItem}
@@ -1335,7 +1357,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
   /**
    * Generate Save Tags DynamoDb Keys.
-   * 
+   *
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param tags {@link Collection} {@link DocumentTag}
@@ -1361,9 +1383,13 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     return items;
   }
 
+  private Schema getSchame(final String siteId) {
+    return this.schemaService.getSitesSchema(siteId, null);
+  }
+
   /**
    * Has current changed from previous.
-   * 
+   *
    * @param previous {@link Map}
    * @param current {@link Map}
    * @return boolean
@@ -1391,7 +1417,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
   /**
    * Is {@link List} {@link DynamicObject} contain a non generated tag.
-   * 
+   *
    * @param tags {@link List} {@link DynamicObject}
    * @return boolean
    */
@@ -1427,7 +1453,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   /**
    * Checks the {@link Map} of {@link AttributeValue} if the PK in the map matches DateKey. If they
    * do NOT match and map is NOT null. Then we are pagination on the NEXT Day.
-   * 
+   *
    * @param siteId DynamoDB PK siteId
    * @param dateKey (yyyy-MM-dd) format
    * @param map {@link Map}
@@ -1440,7 +1466,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
   /**
    * Is Document Path Changed.
-   * 
+   *
    * @param previous {@link Map}
    * @param current {@link Map}
    * @return boolean
@@ -1452,9 +1478,18 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     return !path1.equals(path0) && !"".equals(path0);
   }
 
+  @Override
+  public void publishDocument(final String siteId, final String documentId, final String s3version,
+      final String path, final String contentType, final String userId) {
+    DocumentPublishRecord r =
+        new DocumentPublishRecord().setDocumentId(documentId).setContentType(contentType)
+            .setPath(path).setUserId(userId).setS3version(s3version).setInsertedDate(new Date());
+    this.dbService.putItem(r.getAttributes(siteId));
+  }
+
   /**
    * Query For Document Attributes.
-   * 
+   *
    * @param pk {@link AttributeValue}
    * @param sk {@link AttributeValue}
    * @param softDelete boolean
@@ -1485,7 +1520,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
   /**
    * Query Documents by Primary Key.
-   * 
+   *
    * @param siteId DynamoDB PK siteId
    * @param pk {@link String}
    * @param skMin {@link String}
@@ -1536,7 +1571,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
   /**
    * Remove Null Metadata.
-   * 
+   *
    * @param document {@link DocumentItem}
    * @param documentValues {@link Map}
    */
@@ -1671,7 +1706,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
   /**
    * Save Record.
-   * 
+   *
    * @param values {@link Map} {@link AttributeValue}
    * @return {@link Map} {@link AttributeValue}
    */
@@ -1684,7 +1719,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
   /**
    * Save Child Documents.
-   * 
+   *
    * @param siteId {@link String}
    * @param doc {@link DynamicDocumentItem}
    * @param item {@link DocumentItem}
@@ -1735,7 +1770,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
   /**
    * Save Document.
-   * 
+   *
    * @param keys {@link Map}
    * @param siteId {@link String}
    * @param document {@link DocumentItem}
@@ -1859,7 +1894,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
   /**
    * Save Document Date record, if it already doesn't exist.
-   * 
+   *
    * @param document {@link DocumentItem}
    */
   private void saveDocumentDate(final DocumentItem document) {
@@ -1908,7 +1943,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
   /**
    * Generate Tags for {@link DocumentTag}.
-   * 
+   *
    * @param siteId {@link String}
    * @param doc {@link DynamicDocumentItem}
    * @param date {@link Date}
@@ -2022,7 +2057,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
   /**
    * Set Last Short Date.
-   * 
+   *
    * @param date {@link String}
    */
   public void setLastShortDate(final String date) {
@@ -2031,7 +2066,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
   /**
    * Sort {@link DocumentItem} to match DocumentIds {@link List}.
-   * 
+   *
    * @param documentIds {@link List} {@link String}
    * @param documents {@link List} {@link DocumentItem}
    * @return {@link List} {@link DocumentItem}
@@ -2047,7 +2082,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   /**
    * Because Document checksum are set in the DocumentsS3Update.class, the correct checksum maybe in
    * the previous loaded document.
-   * 
+   *
    * @param document {@link DocumentItem}
    * @param previous {@link Map}
    */
@@ -2157,7 +2192,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
   /**
    * Validate Document Attributes Exist when creating new ones.
-   * 
+   *
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param documentAttributes {@link Collection} {@link DocumentAttributeRecord}
@@ -2183,9 +2218,5 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       });
 
     }
-  }
-
-  private Schema getSchame(final String siteId) {
-    return this.schemaService.getSitesSchema(siteId, null);
   }
 }

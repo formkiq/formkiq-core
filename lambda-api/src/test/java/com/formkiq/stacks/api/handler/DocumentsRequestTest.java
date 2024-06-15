@@ -25,6 +25,7 @@ package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -34,16 +35,30 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
+import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
+import com.formkiq.aws.s3.S3ObjectMetadata;
+import com.formkiq.aws.s3.S3Service;
+import com.formkiq.aws.s3.S3ServiceExtension;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
+import com.formkiq.client.invoker.ApiResponse;
 import com.formkiq.client.model.AddAttribute;
 import com.formkiq.client.model.AddAttributeRequest;
+import com.formkiq.client.model.AddChildDocumentResponse;
 import com.formkiq.client.model.AddDocumentAttribute;
 import com.formkiq.client.model.AddDocumentMetadata;
 import com.formkiq.client.model.AttributeSchemaCompositeKey;
 import com.formkiq.client.model.AttributeSchemaOptional;
+import com.formkiq.client.model.ChildDocument;
 import com.formkiq.client.model.DocumentAttribute;
+import com.formkiq.client.model.DocumentMetadata;
+import com.formkiq.client.model.DocumentTag;
 import com.formkiq.client.model.SchemaAttributes;
 import com.formkiq.client.model.SetSitesSchemaRequest;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
+import com.formkiq.stacks.dynamodb.DocumentVersionService;
+import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.objects.Objects;
@@ -53,7 +68,6 @@ import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AddDocumentResponse;
 import com.formkiq.client.model.AddDocumentTag;
 import com.formkiq.client.model.GetDocumentResponse;
-import com.formkiq.client.model.GetDocumentTagsResponse;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 
@@ -164,27 +178,30 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       // then
       assertNotNull(response.getUploadUrl());
 
-      assertEquals(1, response.getDocuments().size());
-      assertNull(response.getDocuments().get(0).getUploadUrl());
+      List<AddChildDocumentResponse> documents = notNull(response.getDocuments());
+      assertEquals(1, documents.size());
+      assertNull(documents.get(0).getUploadUrl());
 
       String documentId = response.getDocumentId();
-      String childDocumentId = response.getDocuments().get(0).getDocumentId();
+      String childDocumentId = documents.get(0).getDocumentId();
 
-      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
-      assertEquals(1, document.getDocuments().size());
-      assertEquals(childDocumentId, document.getDocuments().get(0).getDocumentId());
-      assertEquals("application/json", document.getDocuments().get(0).getContentType());
-      assertEquals(documentId, document.getDocuments().get(0).getBelongsToDocumentId());
+      List<ChildDocument> documents1 =
+          notNull(this.documentsApi.getDocument(documentId, siteId, null).getDocuments());
+      assertEquals(1, documents1.size());
+      assertEquals(childDocumentId, documents1.get(0).getDocumentId());
+      assertEquals("application/json", documents1.get(0).getContentType());
+      assertEquals(documentId, documents1.get(0).getBelongsToDocumentId());
 
-      GetDocumentTagsResponse tags =
-          this.tagsApi.getDocumentTags(documentId, siteId, null, null, null, null);
+      List<DocumentTag> tags = notNull(
+          this.tagsApi.getDocumentTags(documentId, siteId, null, null, null, null).getTags());
 
-      assertEquals(1, tags.getTags().size());
-      assertEquals("formName", tags.getTags().get(0).getKey());
-      assertEquals("Job Application Form", tags.getTags().get(0).getValue());
+      assertEquals(1, tags.size());
+      assertEquals("formName", tags.get(0).getKey());
+      assertEquals("Job Application Form", tags.get(0).getValue());
 
-      tags = this.tagsApi.getDocumentTags(childDocumentId, siteId, null, null, null, null);
-      assertEquals(0, tags.getTags().size());
+      tags = notNull(
+          this.tagsApi.getDocumentTags(childDocumentId, siteId, null, null, null, null).getTags());
+      assertEquals(0, tags.size());
 
       GetDocumentResponse childDocument =
           this.documentsApi.getDocument(childDocumentId, null, null);
@@ -219,11 +236,12 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
       GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
       assertNotNull(document);
-      assertEquals(2, document.getMetadata().size());
-      assertEquals("playerId", document.getMetadata().get(0).getKey());
-      assertEquals("11,22", String.join(",", document.getMetadata().get(0).getValues()));
-      assertEquals("person", document.getMetadata().get(1).getKey());
-      assertEquals("category", document.getMetadata().get(1).getValue());
+      List<DocumentMetadata> metadata = notNull(document.getMetadata());
+      assertEquals(2, metadata.size());
+      assertEquals("playerId", metadata.get(0).getKey());
+      assertEquals("11,22", String.join(",", notNull(metadata.get(0).getValues())));
+      assertEquals("person", metadata.get(1).getKey());
+      assertEquals("category", metadata.get(1).getValue());
 
       assertEquals(content,
           this.documentsApi.getDocumentContent(documentId, siteId, null, null).getContent());
@@ -311,6 +329,97 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
         assertEquals(
             "{\"errors\":[{\"key\":\"test\","
                 + "\"error\":\"invalid attribute value 'test', only allowed values are abc\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * Test Publish no published document.
+   * 
+   * @throws ApiException ApiException
+   */
+  @Test
+  void testPublish01() throws ApiException {
+    // given
+    String content0 = "test data 1";
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+      String path = UUID.randomUUID() + ".txt";
+
+      AddDocumentRequest req =
+          new AddDocumentRequest().path(path).content(content0).contentType("text/plain");
+      String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+
+      // when
+      try {
+        documentsApi.getPublishedDocumentContentWithHttpInfo(documentId, siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
+        assertEquals("{\"message\":\"Document " + documentId + " not found.\"}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * Test Publish document.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  void testPublish02() throws ApiException {
+    // given
+    String content0 = "test data 1";
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+      String path = UUID.randomUUID() + ".txt";
+
+      AddDocumentRequest req =
+          new AddDocumentRequest().path(path).content(content0).contentType("text/plain");
+      String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+
+      AwsServiceCache awsServices = getAwsServices();
+      awsServices.register(S3Service.class, new S3ServiceExtension());
+      awsServices.register(DocumentService.class, new DocumentServiceExtension());
+      awsServices.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
+
+      S3Service s3 = awsServices.getExtension(S3Service.class);
+      S3ObjectMetadata objectMetadata = s3.getObjectMetadata(BUCKET_NAME,
+          SiteIdKeyGenerator.createS3Key(siteId, documentId), null);
+      String s3version = objectMetadata.getVersionId();
+
+      DocumentService service = awsServices.getExtension(DocumentService.class);
+      service.publishDocument(siteId, documentId, s3version, path, "text/plain", "joe");
+
+      // when
+      ApiResponse<Void> response =
+          documentsApi.getPublishedDocumentContentWithHttpInfo(documentId, siteId);
+
+      // then
+      assertEquals(ApiResponseStatus.SC_OK.getStatusCode(), response.getStatusCode());
+
+      assertEquals("attachment; filename=\"" + path + "\"",
+          String.join(",", response.getHeaders().get("content-disposition")));
+      assertEquals("text/plain", String.join(",", response.getHeaders().get("content-type")));
+
+      // when
+      documentsApi.deletePublishedDocumentContent(documentId, siteId);
+
+      // then
+      try {
+        documentsApi.getPublishedDocumentContentWithHttpInfo(documentId, siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
+        assertEquals("{\"message\":\"Document " + documentId + " not found.\"}",
             e.getResponseBody());
       }
     }

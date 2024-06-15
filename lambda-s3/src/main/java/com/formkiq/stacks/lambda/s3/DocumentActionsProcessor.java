@@ -391,6 +391,12 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
         updateComplete = true;
       }
 
+      case PUBLISH -> {
+        DocumentAction da = new PublishAction(serviceCache);
+        da.run(logger, siteId, documentId, actions, action);
+        updateComplete = true;
+      }
+
       default -> throw new IOException("Unhandled Action Type: " + action.type());
     }
 
