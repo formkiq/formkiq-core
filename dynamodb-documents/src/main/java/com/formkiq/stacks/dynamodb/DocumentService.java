@@ -40,6 +40,7 @@ import com.formkiq.plugins.tagschema.DocumentTagLoader;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidation;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
+import com.formkiq.stacks.dynamodb.documents.DocumentPublishRecord;
 import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
@@ -528,4 +529,34 @@ public interface DocumentService extends DocumentTagLoader {
   void updateDocument(String siteId, String documentId, Map<String, AttributeValue> attributes,
       boolean updateVersioning);
 
+  /**
+   * Publish Document.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param s3version {@link String}
+   * @param path {@link String}
+   * @param contentType {@link String}
+   * @param userId {@link String}
+   */
+  void publishDocument(String siteId, String documentId, String s3version, String path,
+      String contentType, String userId);
+
+  /**
+   * Get Publish Document.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @return DocumentPublishRecord
+   */
+  DocumentPublishRecord findPublishDocument(String siteId, String documentId);
+
+  /**
+   * Delete Publish Document.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @return boolean
+   */
+  boolean deletePublishDocument(String siteId, String documentId);
 }

@@ -5429,6 +5429,43 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/ocrObjectsLambdaApi200'
+          /published/documents/{documentId}:
+            get:
+              operationId: GetPublishedDocumentContent
+              summary: Get published document's contents
+              description: Get a published document's contents. Certain content types, text/*, application/json, and application/x-www-form-urlencoded. return the  "content" field, while all other content types return a 'contentUrl' for retrieving the content.
+              tags:
+              - Documents
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              responses:
+                "307":
+                  description: Temporary Redirect
+                  headers:
+                    Location:
+                      schema:
+                        type: string
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+            delete:
+              operationId: DeletePublishedDocumentContent
+              summary: Delete published document's contents
+              description: Delete a published document's contents. Certain content types, text/*, application/json, and application/x-www-form-urlencoded. return the  "content" field, while all other content types return a 'contentUrl' for retrieving the content.
+              tags:
+              - Documents
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              responses:
+                "200":
+                  $ref: '#/components/responses/200CorsDeleteResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
         components:
           headers:
             AccessControlAllowOrigin:
@@ -8360,7 +8397,6 @@
               - NUMBER
               - BOOLEAN
               - KEY_ONLY
-              - COMPOSITE_STRING
             AddAttributeRequest:
               required:
               - attribute
@@ -8504,6 +8540,7 @@
               - QUEUE
               - WEBHOOK
               - IDP
+              - PUBLISH
             DocumentAction:
               type: object
               properties:

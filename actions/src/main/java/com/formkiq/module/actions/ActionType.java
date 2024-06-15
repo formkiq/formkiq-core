@@ -47,5 +47,7 @@ public enum ActionType {
   /** Queue. */
   QUEUE,
   /** WebHook. */
-  WEBHOOK;
+  WEBHOOK,
+  /** Publish. */
+  PUBLISH
 }

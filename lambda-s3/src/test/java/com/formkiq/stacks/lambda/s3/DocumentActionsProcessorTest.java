@@ -52,6 +52,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+
+import com.formkiq.stacks.dynamodb.documents.DocumentPublishRecord;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -1768,5 +1770,49 @@ public class DocumentActionsProcessorTest implements DbKeys {
         .setDefaultValue(value).setDefaultValues(values).setMetadataField(metadataField);
 
     return new Mapping().setName("test").setAttributes(Collections.singletonList(a0));
+  }
+
+  /**
+   * Handle Publish Action.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  public void testPublishAction01() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String documentId = UUID.randomUUID().toString();
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      item.setContentType("text/plain");
+      documentService.saveDocument(siteId, item, null);
+
+      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
+      String content = "this is some data";
+      s3Service.putObject(BUCKET_NAME, s3Key, content.getBytes(StandardCharsets.UTF_8),
+          "text/plain");
+
+      List<Action> actions =
+          Collections.singletonList(new Action().type(ActionType.PUBLISH).userId("joe"));
+      actionsService.saveNewActions(siteId, documentId, actions);
+
+      Map<String, Object> map =
+          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
+              documentId, "default", siteId != null ? siteId : "default");
+
+      // when
+      processor.handleRequest(map, this.context);
+
+      // then
+      Action action = actionsService.getActions(siteId, documentId).get(0);
+      assertEquals(ActionType.PUBLISH, action.type());
+      assertEquals(ActionStatus.COMPLETE, action.status());
+
+      DocumentPublishRecord pd = documentService.findPublishDocument(siteId, documentId);
+      assertEquals(documentId, pd.getDocumentId());
+      assertEquals("text/plain", pd.getContentType());
+      assertEquals(documentId, pd.getPath());
+      assertEquals("joe", pd.getUserId());
+      assertNotNull(pd.getS3version());
+    }
   }
 }

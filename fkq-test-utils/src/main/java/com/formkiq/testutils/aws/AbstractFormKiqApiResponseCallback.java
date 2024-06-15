@@ -78,7 +78,7 @@ public abstract class AbstractFormKiqApiResponseCallback implements ExpectationR
 
     int statusCode = ((Double) map.get("statusCode")).intValue();
     return HttpResponse.response().withHeaders(new Headers(headers)).withStatusCode(statusCode)
-        .withBody(map.get("body").toString());
+        .withBody((String) map.get("body"));
   }
 
   /**
