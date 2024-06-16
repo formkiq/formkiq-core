@@ -53,6 +53,8 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import com.formkiq.stacks.dynamodb.attributes.AttributeKeyReserved;
+import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.documents.DocumentAttributePublicationValue;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterAll;
@@ -1814,6 +1816,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertEquals(documentId, pv.getPath());
       assertEquals("joe", pd.getUserId());
       assertNotNull(pv.getS3version());
+
+      AttributeRecord attribute =
+          attributeService.getAttribute(siteId, AttributeKeyReserved.PUBLICATION.getKey());
+      assertNotNull(attribute);
     }
   }
 }

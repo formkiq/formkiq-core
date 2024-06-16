@@ -45,7 +45,7 @@ import software.amazon.awssdk.services.s3.presigner.model.UploadPartPresignReque
 public class S3PresignerService {
 
   /** {@link S3ConnectionBuilder}. */
-  private S3PresignerConnectionBuilder builder;
+  private final S3PresignerConnectionBuilder builder;
 
   /**
    * Constructor.
@@ -79,9 +79,7 @@ public class S3PresignerService {
           .signatureDuration(duration).getObjectRequest(getObjectRequest).build();
 
       PresignedGetObjectRequest req = signer.presignGetObject(getRequest);
-      URL url = req.url();
-
-      return url;
+      return req.url();
     }
   }
 

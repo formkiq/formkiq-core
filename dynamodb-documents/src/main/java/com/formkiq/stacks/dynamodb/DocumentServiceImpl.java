@@ -76,6 +76,7 @@ import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.objects.Strings;
+import com.formkiq.stacks.dynamodb.attributes.AttributeDataType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeKeyReserved;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
@@ -1486,13 +1487,23 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   @Override
   public void publishDocument(final String siteId, final String documentId, final String s3version,
       final String path, final String contentType, final String userId) {
+
     DocumentAttributePublicationValue val = new DocumentAttributePublicationValue().setPath(path)
         .setS3version(s3version).setContentType(contentType);
+
     DocumentAttributeRecord r = new DocumentAttributeRecord().setDocumentId(documentId)
         .setKey(AttributeKeyReserved.PUBLICATION.getKey()).setUserId(userId)
         .setInsertedDate(new Date()).setPublicationValue(val);
     r.updateValueType();
+
     this.dbService.putItem(r.getAttributes(siteId));
+
+    AttributeRecord a = new AttributeRecord().documentId(AttributeKeyReserved.PUBLICATION.getKey())
+        .key(AttributeKeyReserved.PUBLICATION.getKey()).type(AttributeType.STANDARD)
+        .dataType(AttributeDataType.PUBLICATIONS);
+    if (!this.dbService.exists(a.fromS(a.pk(siteId)), a.fromS(a.sk()))) {
+      this.dbService.putItem(a.getAttributes(siteId));
+    }
   }
 
   /**

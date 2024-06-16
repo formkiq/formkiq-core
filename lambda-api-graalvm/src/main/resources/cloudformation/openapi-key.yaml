@@ -7220,6 +7220,7 @@ Resources:
                 - KEY_ONLY
                 - NUMBER
                 - STRING
+                - PUBLICATION
             FulltextAttribute:
               type: "object"
               properties:
@@ -8477,6 +8478,7 @@ Resources:
                 - NUMBER
                 - BOOLEAN
                 - KEY_ONLY
+                - PUBLICATION
                 
             AddAttributeRequest:
               required:
