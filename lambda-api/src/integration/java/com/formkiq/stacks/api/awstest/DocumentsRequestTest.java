@@ -26,6 +26,7 @@ package com.formkiq.stacks.api.awstest;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENTS;
+import static com.formkiq.testutils.aws.FkqDocumentService.waitForActionsComplete;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContent;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentTag;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -54,6 +55,12 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import com.formkiq.client.api.AttributesApi;
+import com.formkiq.client.invoker.ApiResponse;
+import com.formkiq.client.model.AddAction;
+import com.formkiq.client.model.DocumentActionType;
+import com.formkiq.client.model.GetAttributeResponse;
+import com.formkiq.stacks.dynamodb.attributes.AttributeKeyReserved;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -909,6 +916,46 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
         assertEquals("person", document.getMetadata().get(1).getKey());
         assertEquals("category", document.getMetadata().get(1).getValue());
       }
+    }
+  }
+
+  /**
+   * Test Publish Document.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  void testPublishDocument() throws ApiException, InterruptedException {
+    // given
+    String content = "test data";
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      ApiClient client = getApiClients(siteId).get(0);
+
+      DocumentsApi api = new DocumentsApi(client);
+      String path = UUID.randomUUID() + ".txt";
+
+      // when
+      AddDocumentRequest req = new AddDocumentRequest().contentType("text/plain").path(path)
+          .content(content).addActionsItem(new AddAction().type(DocumentActionType.PUBLISH));
+      String documentId = api.addDocument(req, siteId, null).getDocumentId();
+
+      // then
+      waitForDocumentContent(client, siteId, documentId, content);
+      waitForActionsComplete(client, siteId, documentId);
+
+      ApiResponse<Void> response = api.getPublishedDocumentContentWithHttpInfo(documentId, siteId);
+
+      String location = notNull(response.getHeaders()).get("content-disposition").get(0);
+      assertEquals("attachment; filename=\"" + path + "\"", location);
+
+      String contentType = notNull(response.getHeaders()).get("content-type").get(0);
+      assertEquals("text/plain", contentType);
+
+      // check attribute exists
+      AttributesApi attributesApi = new AttributesApi(client);
+      GetAttributeResponse attribute =
+          attributesApi.getAttribute(AttributeKeyReserved.PUBLICATION.getKey(), siteId);
+      assertNotNull(attribute);
     }
   }
 }
