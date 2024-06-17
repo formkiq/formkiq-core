@@ -26,6 +26,7 @@ package com.formkiq.stacks.lambda.s3;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -34,6 +35,8 @@ import com.formkiq.validation.ValidationException;
 
 import java.io.IOException;
 import java.util.List;
+
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 
 /**
  * Publish {@link DocumentAction}.
@@ -61,12 +64,16 @@ public class PublishAction implements DocumentAction {
   @Override
   public void run(final LambdaLogger logger, final String siteId, final String documentId,
       final List<Action> actions, final Action action) throws IOException, ValidationException {
+
     DocumentItem item = this.documentService.findDocument(siteId, documentId);
 
     String s3key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
     String s3version =
         this.s3.getObjectMetadata(this.documentsS3Bucket, s3key, null).getVersionId();
-    this.documentService.publishDocument(siteId, documentId, s3version, item.getPath(),
-        item.getContentType(), action.userId());
+    String contentType = !isEmpty(item.getContentType()) ? item.getContentType()
+        : MimeType.MIME_OCTET_STREAM.getContentType();
+
+    this.documentService.publishDocument(siteId, documentId, s3version, item.getPath(), contentType,
+        action.userId());
   }
 }

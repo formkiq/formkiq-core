@@ -99,6 +99,18 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       assertNotNull(responseNoSiteId.getDocumentId());
       assertNotNull(responseSiteId.getDocumentId());
       assertEquals(siteId, responseSiteId.getSiteId());
+
+      GetDocumentResponse noSite =
+          this.documentsApi.getDocument(responseNoSiteId.getDocumentId(), siteId, null);
+      assertEquals("application/pdf", noSite.getContentType());
+      assertNotNull(noSite.getPath());
+      assertNotNull(noSite.getDocumentId());
+
+      GetDocumentResponse site =
+          this.documentsApi.getDocument(responseSiteId.getDocumentId(), siteId, null);
+      assertEquals("application/pdf", site.getContentType());
+      assertNotNull(site.getPath());
+      assertNotNull(site.getDocumentId());
     }
   }
 
