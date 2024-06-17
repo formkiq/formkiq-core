@@ -550,6 +550,8 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
       if (debug) {
         logger.log("metadata: " + resp.getMetadata());
         logger.log("item checksum: " + item.getChecksum());
+        logger.log("item content-type: " + item.getContentType());
+        logger.log("content-type: " + contentType);
       }
 
       if (isChecksumChanged) {
