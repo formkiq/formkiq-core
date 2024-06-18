@@ -23,9 +23,12 @@
  */
 package com.formkiq.stacks.dynamodb.attributes;
 
+import com.formkiq.graalvm.annotations.Reflectable;
+
 /**
  * Attribute Type.
  */
+@Reflectable
 public enum AttributeType {
   /** OPA. */
   OPA,
