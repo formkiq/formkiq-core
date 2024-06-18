@@ -23,15 +23,16 @@
  */
 package com.formkiq.stacks.api.awstest;
 
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_FORBIDDEN;
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_UNAUTHORIZED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
-import java.util.Arrays;
+
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import com.formkiq.client.api.DocumentsApi;
@@ -62,7 +63,7 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  @Timeout(value = TEST_TIMEOUT)
   public void testGetGroups01() throws Exception {
 
     // given
@@ -76,10 +77,11 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
       GetGroupsResponse response = userApi.getGroups(null, null);
 
       // then
-      assertFalse(response.getGroups().isEmpty());
+      List<Group> groups = notNull(response.getGroups());
+      assertFalse(groups.isEmpty());
 
-      Optional<Group> o = response.getGroups().stream()
-          .filter(g -> g.getName().equalsIgnoreCase("admins")).findFirst();
+      Optional<Group> o =
+          groups.stream().filter(g -> "admins".equalsIgnoreCase(g.getName())).findFirst();
       assertFalse(o.isEmpty());
 
       assertNotNull(o.get().getDescription());
@@ -94,7 +96,7 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  @Timeout(value = TEST_TIMEOUT)
   public void testGetGroupUsers01() throws Exception {
 
     // given
@@ -109,9 +111,10 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
       GetUsersInGroupResponse response = userApi.getUsersInGroup(groupName, null, null);
 
       // then
-      assertFalse(response.getUsers().isEmpty());
+      List<User> users = notNull(response.getUsers());
+      assertFalse(users.isEmpty());
 
-      User user = response.getUsers().get(0);
+      User user = users.get(0);
 
       assertNotNull(user.getUsername());
       assertNotNull(user.getUserStatus());
@@ -122,14 +125,13 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
 
   /**
    * Test 'authentication_only' cognito group.
-   * 
-   * @throws ApiException ApiException
+   *
    */
   @Test
-  public void testAuthenticationOnly() throws ApiException {
+  public void testAuthenticationOnly() {
     // given
     String username = "noaccess1@formkiq.com";
-    addAndLoginCognito(username, Arrays.asList("authentication_only"));
+    addAndLoginCognito(username, List.of("authentication_only"));
 
     ApiClient jwtClient = getApiClientForUser(username, USER_PASSWORD);
 
@@ -141,7 +143,7 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
       fail();
     } catch (ApiException e) {
       // then
-      assertEquals(SC_FORBIDDEN.getStatusCode(), e.getCode());
+      assertEquals(SC_UNAUTHORIZED.getStatusCode(), e.getCode());
     }
   }
 }

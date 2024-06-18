@@ -39,5 +39,5 @@ public enum AttributeDataType {
   /** {@link String}. */
   STRING,
   /** Publication. */
-  PUBLICATIONS;
+  PUBLICATION
 }
