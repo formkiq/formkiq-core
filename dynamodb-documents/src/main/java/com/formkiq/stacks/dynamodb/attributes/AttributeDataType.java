@@ -23,9 +23,12 @@
  */
 package com.formkiq.stacks.dynamodb.attributes;
 
+import com.formkiq.graalvm.annotations.Reflectable;
+
 /**
  * Attribute Data Type.
  */
+@Reflectable
 public enum AttributeDataType {
   /** {@link Boolean}. */
   BOOLEAN,
