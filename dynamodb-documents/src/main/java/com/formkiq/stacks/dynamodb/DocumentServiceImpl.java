@@ -1500,7 +1500,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
     AttributeRecord a = new AttributeRecord().documentId(AttributeKeyReserved.PUBLICATION.getKey())
         .key(AttributeKeyReserved.PUBLICATION.getKey()).type(AttributeType.STANDARD)
-        .dataType(AttributeDataType.PUBLICATIONS);
+        .dataType(AttributeDataType.PUBLICATION);
     if (!this.dbService.exists(a.fromS(a.pk(siteId)), a.fromS(a.sk()))) {
       this.dbService.putItem(a.getAttributes(siteId));
     }

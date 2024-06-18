@@ -25,6 +25,7 @@ package com.formkiq.stacks.api.awstest;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_UNAUTHORIZED;
 import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENTS;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForActionsComplete;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContent;
@@ -120,8 +121,6 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
   private static final int STATUS_BAD_REQUEST = 400;
   /** 201 Created. */
   private static final int STATUS_CREATED = 201;
-  /** 403 Forbidden. */
-  private static final int STATUS_FORBIDDEN = 403;
   /** 404 Not Found. */
   private static final int STATUS_NOT_FOUND = 404;
   /** 200 OK. */
@@ -268,7 +267,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
       fail();
     } catch (ApiException e) {
       // then
-      assertEquals(STATUS_FORBIDDEN, e.getCode());
+      assertEquals(SC_UNAUTHORIZED.getStatusCode(), e.getCode());
       assertEquals("{\"message\":\"fkq access denied to siteId (finance)\"}", e.getResponseBody());
     }
   }
@@ -300,7 +299,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
     try {
       api.getDocuments(siteId, null, null, date, null, null, null, null);
     } catch (ApiException e) {
-      assertEquals(STATUS_FORBIDDEN, e.getCode());
+      assertEquals(SC_UNAUTHORIZED.getStatusCode(), e.getCode());
       assertEquals("{\"message\":\"fkq access denied to siteId (finance)\"}", e.getResponseBody());
     }
   }
@@ -569,7 +568,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
       api.addDocument(req, siteId, null);
     } catch (ApiException e) {
       // then
-      assertEquals(STATUS_FORBIDDEN, e.getCode());
+      assertEquals(SC_UNAUTHORIZED.getStatusCode(), e.getCode());
       assertEquals("{\"message\":\"fkq access denied to siteId (finance)\"}", e.getResponseBody());
     }
   }
