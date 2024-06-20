@@ -299,7 +299,7 @@ Resources:
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             put:
               operationId: SetSitesSchema
               description: Sets Sites schema

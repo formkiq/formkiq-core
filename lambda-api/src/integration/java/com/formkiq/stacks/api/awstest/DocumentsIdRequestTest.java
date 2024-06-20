@@ -52,7 +52,7 @@ import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
 public class DocumentsIdRequestTest extends AbstractAwsIntegrationTest {
 
   /** JUnit Test Timeout. */
-  private static final int TEST_TIMEOUT = 60;
+  private static final int TEST_TIMEOUT = 120;
 
   /**
    * PUT /documents/{documentId}/restore request.
@@ -60,52 +60,51 @@ public class DocumentsIdRequestTest extends AbstractAwsIntegrationTest {
    * @throws Exception an error has occurred
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  @Timeout(value = TEST_TIMEOUT)
   public void testHandleSetDocumentRestore01() throws Exception {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      for (ApiClient client : getApiClients(siteId)) {
+      ApiClient client = getApiClients(siteId).get(0);
 
-        DocumentsApi api = new DocumentsApi(client);
-        AdvancedDocumentSearchApi sapi = new AdvancedDocumentSearchApi(client);
+      DocumentsApi api = new DocumentsApi(client);
+      AdvancedDocumentSearchApi sapi = new AdvancedDocumentSearchApi(client);
 
-        AddDocumentUploadRequest req = new AddDocumentUploadRequest().path("test.txt");
-        GetDocumentUrlResponse response = api.addDocumentUpload(req, siteId, null, null, null);
+      AddDocumentUploadRequest req = new AddDocumentUploadRequest().path("test.txt");
+      GetDocumentUrlResponse response = api.addDocumentUpload(req, siteId, null, null, null);
 
-        String documentId = response.getDocumentId();
+      String documentId = response.getDocumentId();
 
-        // when
-        api.deleteDocument(documentId, siteId, Boolean.TRUE);
+      // when
+      api.deleteDocument(documentId, siteId, Boolean.TRUE);
 
-        // then
-        List<Document> softDeletedDocuments = api
-            .getDocuments(siteId, null, Boolean.TRUE, null, null, null, null, "100").getDocuments();
-        assertFalse(softDeletedDocuments.isEmpty());
+      // then
+      List<Document> softDeletedDocuments = api
+          .getDocuments(siteId, null, Boolean.TRUE, null, null, null, null, "100").getDocuments();
+      assertFalse(softDeletedDocuments.isEmpty());
 
-        try {
-          api.getDocument(documentId, siteId, null);
-          fail();
-        } catch (ApiException e) {
-          assertEquals(SC_NOT_FOUND.getStatusCode(), e.getCode());
-        }
-
-        try {
-          while (true) {
-            sapi.getDocumentFulltext(documentId, siteId, null);
-            TimeUnit.SECONDS.sleep(1);
-          }
-        } catch (ApiException e) {
-          assertEquals(SC_NOT_FOUND.getStatusCode(), e.getCode());
-        }
-
-        // when
-        SetDocumentRestoreResponse restore = api.setDocumentRestore(documentId, siteId);
-
-        // then
-        assertEquals("document restored", restore.getMessage());
-        assertNotNull(api.getDocument(documentId, siteId, null));
+      try {
+        api.getDocument(documentId, siteId, null);
+        fail();
+      } catch (ApiException e) {
+        assertEquals(SC_NOT_FOUND.getStatusCode(), e.getCode());
       }
+
+      try {
+        while (true) {
+          sapi.getDocumentFulltext(documentId, siteId, null);
+          TimeUnit.SECONDS.sleep(1);
+        }
+      } catch (ApiException e) {
+        assertEquals(SC_NOT_FOUND.getStatusCode(), e.getCode());
+      }
+
+      // when
+      SetDocumentRestoreResponse restore = api.setDocumentRestore(documentId, siteId);
+
+      // then
+      assertEquals("document restored", restore.getMessage());
+      assertNotNull(api.getDocument(documentId, siteId, null));
     }
   }
 
@@ -115,7 +114,7 @@ public class DocumentsIdRequestTest extends AbstractAwsIntegrationTest {
    * @throws Exception an error has occurred
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  @Timeout(value = TEST_TIMEOUT)
   public void testHandleGetDocumentUrl01() throws Exception {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {

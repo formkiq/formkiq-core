@@ -73,7 +73,6 @@ import software.amazon.awssdk.services.sns.SnsClient;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.CreateQueueRequest;
 import software.amazon.awssdk.services.sqs.model.CreateQueueResponse;
-import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName;
 import software.amazon.awssdk.services.sqs.model.SetQueueAttributesRequest;
 
@@ -114,34 +113,41 @@ public class AwsResourceTest extends AbstractAwsTest {
   private static String assertSnsMessage(final String queueUrl, final String type)
       throws InterruptedException {
 
-    List<Message> receiveMessages = getSqsService().receiveMessages(queueUrl).messages();
-    while (receiveMessages.size() != 1) {
-      Thread.sleep(SLEEP);
-      receiveMessages = getSqsService().receiveMessages(queueUrl).messages();
-    }
-
-    assertEquals(1, receiveMessages.size());
-    String body = receiveMessages.get(0).body();
-
+    List<Map<String, String>> receiveMessages;
     Gson gson = new GsonBuilder().create();
-    Map<String, String> map = gson.fromJson(body, Map.class);
-    String message = map.get("Message");
-    map = gson.fromJson(message, Map.class);
 
-    assertNotNull(map.get("documentId"));
-    assertNotNull(map.get("type"));
+    do {
 
-    if (type.equals(map.get("type"))) {
+      receiveMessages = getSqsService().receiveMessages(queueUrl).messages().stream().map(m -> {
+        String body = m.body();
+        Map<String, String> map = gson.fromJson(body, Map.class);
+        String message = map.get("Message");
+        Map<String, String> snsMessage = gson.fromJson(message, Map.class);
+        return snsMessage;
+      }).filter(m -> type.equals(m.get("type"))).toList();
+
+      if (receiveMessages.size() != 1) {
+        TimeUnit.SECONDS.sleep(1);
+      }
+
+    } while (receiveMessages.size() != 1);
+
+    Map<String, String> message = receiveMessages.get(0);
+
+    assertNotNull(message.get("documentId"));
+    assertNotNull(message.get("type"));
+
+    if (type.equals(message.get("type"))) {
 
       if (!"delete".equals(type)) {
-        assertNotNull(map.get("userId"));
+        assertNotNull(message.get("userId"));
       }
 
     } else {
       assertSnsMessage(queueUrl, type);
     }
 
-    return map.get("documentId");
+    return message.get("documentId");
   }
 
   /** {@link Gson}. */
