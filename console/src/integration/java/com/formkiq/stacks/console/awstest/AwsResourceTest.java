@@ -201,7 +201,7 @@ public class AwsResourceTest {
    */
   @Test
   public void testSsmParameters() {
-    assertEquals("v3.5.1",
+    assertEquals("v3.6.0",
         ssmService.getParameterValue("/formkiq/" + appenvironment + "/console/version"));
     assertTrue(ssmService.getParameterValue("/formkiq/" + appenvironment + "/s3/Console")
         .contains(appenvironment + "-console-"));
