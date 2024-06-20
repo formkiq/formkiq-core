@@ -119,7 +119,7 @@ public class DocumentAttributesRequestTest extends AbstractAwsIntegrationTest {
       final String documentId, final String key) throws ApiException {
     // given
     SetDocumentAttributesRequest setReq = new SetDocumentAttributesRequest().addAttributesItem(
-        new AddDocumentAttribute().key("test2").stringValues(Arrays.asList("123", "abc")));
+        new AddDocumentAttribute().key(key).stringValues(Arrays.asList("123", "abc")));
 
     // when
     SetResponse setResponse = api.setDocumentAttributes(documentId, setReq, siteId);
@@ -169,8 +169,8 @@ public class DocumentAttributesRequestTest extends AbstractAwsIntegrationTest {
 
       List<ApiClient> apiClients = getApiClients(siteId);
 
-      final String key1 = "test";
-      final String key2 = "test2";
+      final String key1 = "test_" + UUID.randomUUID();
+      final String key2 = "test2_" + UUID.randomUUID();
       final String value = "val";
 
       AttributesApi attributeApi = new AttributesApi(apiClients.get(0));

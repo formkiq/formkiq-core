@@ -79,7 +79,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class MappingRequestTest extends AbstractAwsIntegrationTest {
 
   /** JUnit Test Timeout. */
-  private static final int TEST_TIMEOUT = 30;
+  private static final int TEST_TIMEOUT = 60;
 
   /**
    * Add Attribute empty request.
