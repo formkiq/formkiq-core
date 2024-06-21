@@ -30,7 +30,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -47,15 +46,9 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.transformers.DocumentAttributeRecordToMap;
 import com.formkiq.stacks.api.transformers.DocumentAttributeToDocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.DocumentService;
-import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidation;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
-import com.formkiq.stacks.dynamodb.attributes.AttributeValidator;
-import com.formkiq.stacks.dynamodb.attributes.AttributeValidatorImpl;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
-import com.formkiq.stacks.dynamodb.schemas.Schema;
-import com.formkiq.stacks.dynamodb.schemas.SchemaService;
-import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
 
@@ -175,28 +168,11 @@ public class DocumentAttributeRequestHandler
     Collection<DocumentAttributeRecord> documentAttributes =
         getDocumentAttributesFromRequest(event, authorization, documentId, attributeKey);
 
-    DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
-    AttributeValidator validator = new AttributeValidatorImpl(db);
-
-    Map<String, AttributeRecord> attributeRecordMap =
-        validator.getAttributeRecordMap(siteId, documentAttributes);
-
-    AttributeValidationAccess attributeValidationAccess =
+    AttributeValidationAccess validationAccess =
         getAttributeValidationAccess(authorization, siteId);
 
-    SchemaService schemaService = awsservice.getExtension(SchemaService.class);
-    Schema schema = schemaService.getSitesSchema(siteId, null);
-    Collection<ValidationError> errors = validator.validatePartialAttribute(schema, siteId,
-        documentAttributes, attributeRecordMap, attributeValidationAccess);
-
-    if (!errors.isEmpty()) {
-      throw new ValidationException(errors);
-    }
-
-    documentService.deleteDocumentAttribute(siteId, documentId, attributeKey,
-        AttributeValidation.NONE, AttributeValidationAccess.NONE);
     documentService.saveDocumentAttributes(siteId, documentId, documentAttributes, true,
-        AttributeValidation.NONE, attributeValidationAccess);
+        AttributeValidation.PARTIAL, validationAccess);
 
     ApiResponse resp = new ApiMessageResponse(
         "Updated attribute '" + attributeKey + "' on document '" + documentId + "'");
