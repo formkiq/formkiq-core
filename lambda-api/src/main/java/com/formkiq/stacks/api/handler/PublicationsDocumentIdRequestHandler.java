@@ -38,8 +38,7 @@ import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.useractivity.UserActivityPlugin;
 import com.formkiq.stacks.dynamodb.DocumentService;
-import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
-import com.formkiq.stacks.dynamodb.documents.DocumentAttributePublicationValue;
+import com.formkiq.stacks.dynamodb.documents.DocumentPublicationRecord;
 
 import java.net.URL;
 import java.time.Duration;
@@ -84,20 +83,19 @@ public class PublicationsDocumentIdRequestHandler
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
-    DocumentAttributeRecord item = documentService.findPublishDocument(siteId, documentId);
+    DocumentPublicationRecord item = documentService.findPublishDocument(siteId, documentId);
     throwIfNull(item, new DocumentNotFoundException(documentId));
 
-    DocumentAttributePublicationValue publicationValue = item.getPublicationValue();
+    // DocumentPublicationRecord publicationValue = item.getPublicationValue();
     String s3key = createS3Key(siteId, documentId);
-    String s3VersionKey = publicationValue.getS3version();
+    String s3VersionKey = item.getS3version();
 
     String contentType =
-        publicationValue.getContentType() != null ? publicationValue.getContentType()
-            : "application/octet-stream";
+        item.getContentType() != null ? item.getContentType() : "application/octet-stream";
 
     PresignGetUrlConfig config =
-        new PresignGetUrlConfig().contentDispositionByPath(publicationValue.getPath(), false)
-            .contentType(s3key).contentType(contentType);
+        new PresignGetUrlConfig().contentDispositionByPath(item.getPath(), false).contentType(s3key)
+            .contentType(contentType);
 
     S3PresignerService s3Service = awsservice.getExtension(S3PresignerService.class);
     Duration duration = Duration.ofHours(1);
