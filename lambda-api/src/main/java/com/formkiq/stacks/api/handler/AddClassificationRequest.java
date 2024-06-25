@@ -21,24 +21,46 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb.attributes;
+package com.formkiq.stacks.api.handler;
+
+import com.formkiq.aws.services.lambda.exceptions.BadException;
+import com.formkiq.graalvm.annotations.Reflectable;
+import com.formkiq.stacks.dynamodb.schemas.Schema;
 
 /**
- * Attribute Search Type.
+ * Add Classification Reequest.
  */
-public enum DocumentAttributeValueType {
-  /** Boolean. */
-  BOOLEAN,
-  /** Composite String. */
-  COMPOSITE_STRING,
-  /** Key Only. */
-  KEY_ONLY,
-  /** Number. */
-  NUMBER,
-  /** String. */
-  STRING,
-  /** Publication. */
-  PUBLICATION,
-  /** Classification. */
-  CLASSIFICATION
+@Reflectable
+public class AddClassificationRequest {
+  /** {@link Schema} classification. */
+  private Schema classification;
+
+  /**
+   * constructor.
+   */
+  public AddClassificationRequest() {}
+
+  /**
+   * Get {@link Schema} classification.
+   * 
+   * @return {@link Schema}
+   */
+  public Schema getClassification() throws BadException {
+    if (this.classification == null) {
+      throw new BadException("invalid request body");
+    }
+    return this.classification;
+  }
+
+  /**
+   * Set {@link Schema} Classification.
+   * 
+   * @param schema {@link Schema}
+   * @return AddClassificationRequest
+   */
+  public AddClassificationRequest setClassification(final Schema schema) {
+    this.classification = schema;
+    return this;
+  }
+
 }

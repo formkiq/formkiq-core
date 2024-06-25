@@ -46,8 +46,8 @@ public class SchemaMissingRequiredAttributes
 
   /** Document Id. */
   private final String docId;
-  /** Schema. */
-  private final Schema schema;
+  /** {@link SchemaAttributes}. */
+  private final SchemaAttributes attributes;
   /** {@link AttributeService}. */
   private final AttributeService service;
   /** SiteId. */
@@ -57,14 +57,14 @@ public class SchemaMissingRequiredAttributes
    * constructor.
    * 
    * @param attributeService {@link AttributeService}
-   * @param documentSchema {@link Schema}
+   * @param schemaAttributes {@link SchemaAttributes}
    * @param siteId {@link String}
    * @param documentId {@link String}
    */
   public SchemaMissingRequiredAttributes(final AttributeService attributeService,
-      final Schema documentSchema, final String siteId, final String documentId) {
+      final SchemaAttributes schemaAttributes, final String siteId, final String documentId) {
     this.docId = documentId;
-    this.schema = documentSchema;
+    this.attributes = schemaAttributes;
     this.service = attributeService;
     this.site = siteId;
   }
@@ -74,12 +74,12 @@ public class SchemaMissingRequiredAttributes
 
     List<DocumentAttributeRecord> missingAttributes = Collections.emptyList();
 
-    if (this.schema != null) {
+    if (attributes != null) {
       Set<String> keys =
           c.stream().map(DocumentAttributeRecord::getKey).collect(Collectors.toSet());
 
-      List<SchemaAttributesRequired> requiredAttributes = this.schema.getAttributes().getRequired()
-          .stream().filter(a -> !keys.contains(a.getAttributeKey())).toList();
+      List<SchemaAttributesRequired> requiredAttributes = this.attributes.getRequired().stream()
+          .filter(a -> !keys.contains(a.getAttributeKey())).toList();
 
       if (!requiredAttributes.isEmpty()) {
 
@@ -144,5 +144,4 @@ public class SchemaMissingRequiredAttributes
 
     return records;
   }
-
 }

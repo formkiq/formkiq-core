@@ -23,28 +23,34 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-import java.util.Collection;
-import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.formkiq.aws.dynamodb.PaginationMapToken;
+import com.formkiq.aws.dynamodb.PaginationResults;
+import com.formkiq.aws.dynamodb.PaginationToAttributeValue;
 import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
+import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
-import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
+import com.formkiq.aws.services.lambda.services.CacheService;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.stacks.dynamodb.schemas.ClassificationRecord;
 import com.formkiq.stacks.dynamodb.schemas.Schema;
 import com.formkiq.stacks.dynamodb.schemas.SchemaService;
-import com.formkiq.stacks.dynamodb.schemas.SitesSchemaRecord;
-import com.formkiq.validation.ValidationError;
-import com.formkiq.validation.ValidationException;
 import com.google.gson.Gson;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
-/** {@link ApiGatewayRequestHandler} for "/sites/{siteId}/schema/document". */
-public class SitesSchemaRequestHandler
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
+
+/** {@link ApiGatewayRequestHandler} for "/sites/{siteId}/classifications". */
+public class SitesClassificationRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
   /** {@link Gson}. */
@@ -55,44 +61,41 @@ public class SitesSchemaRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsServices) throws Exception {
 
-    String siteId = authorization.getSiteId();
-    Integer version = getVersion(event);
-    SchemaService service = awsServices.getExtension(SchemaService.class);
-    SitesSchemaRecord record = service.getSitesSchemaRecord(siteId, version);
+    CacheService cacheService = awsServices.getExtension(CacheService.class);
+    ApiPagination pagination = getPagination(cacheService, event);
+    PaginationMapToken token = pagination != null ? pagination.getStartkey() : null;
+    Map<String, AttributeValue> startkey = new PaginationToAttributeValue().apply(token);
 
-    if (record == null) {
-      throw new NotFoundException("Sites Schema not found");
+    int limit = getLimit(logger, event);
+    String siteId = authorization.getSiteId();
+
+    SchemaService service = awsServices.getExtension(SchemaService.class);
+    PaginationResults<ClassificationRecord> results =
+        service.findAllClassifications(siteId, startkey, limit);
+
+    List<?> data = results.getResults().stream().map(c -> Map.of("name", c.getName(), "userId",
+        c.getUserId(), "insertedDate", c.getInsertedDate())).toList();
+
+    ApiPagination current =
+        createPagination(cacheService, event, pagination, results.getToken(), limit);
+
+    Map<String, Object> m = new HashMap<>();
+    m.put("classifications", data);
+
+    if (current.hasNext()) {
+      m.put("next", current.getNext());
     }
 
-    String json = record.getSchema();
-    Schema schema = this.gson.fromJson(json, Schema.class);
-
-    Map<String, Object> map = Map.of("name", schema.getName(), "version", record.getVersion(),
-        "attributes", schema.getAttributes());
-    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
+    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(m));
   }
 
   @Override
   public String getRequestUrl() {
-    return "/sites/{siteId}/schema/document";
-  }
-
-  private Integer getVersion(final ApiGatewayRequestEvent event) {
-    String version = event.getQueryStringParameter("version");
-
-    Integer result;
-
-    try {
-      result = Integer.parseInt(version);
-    } catch (NumberFormatException e) {
-      result = null;
-    }
-
-    return result;
+    return "/sites/{siteId}/classifications";
   }
 
   @Override
-  public ApiRequestHandlerResponse put(final LambdaLogger logger,
+  public ApiRequestHandlerResponse post(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorization authorizer,
       final AwsServiceCache awsServices) throws Exception {
 
@@ -100,15 +103,12 @@ public class SitesSchemaRequestHandler
 
     String siteId = authorizer.getSiteId();
 
-    Schema schema = fromBodyToObject(event, Schema.class);
-    Collection<ValidationError> errors =
-        service.setSitesSchema(siteId, schema.getName(), this.gson.toJson(schema), schema);
-
-    if (!errors.isEmpty()) {
-      throw new ValidationException(errors);
-    }
+    AddClassificationRequest request = fromBodyToObject(event, AddClassificationRequest.class);
+    Schema schema = request.getClassification();
+    ClassificationRecord classification = service.setClassification(siteId, null, schema.getName(),
+        this.gson.toJson(schema), schema, authorizer.getUsername());
 
     return new ApiRequestHandlerResponse(SC_OK,
-        new ApiMapResponse(Map.of("message", "Sites Schema set")));
+        new ApiMapResponse(Map.of("classificationId", classification.getDocumentId())));
   }
 }

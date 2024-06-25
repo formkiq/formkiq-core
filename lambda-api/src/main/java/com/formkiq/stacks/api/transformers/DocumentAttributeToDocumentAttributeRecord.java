@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.function.Function;
 import com.formkiq.stacks.api.handler.DocumentAttribute;
+import com.formkiq.stacks.dynamodb.attributes.AttributeKeyReserved;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
 
@@ -68,37 +69,46 @@ public class DocumentAttributeToDocumentAttributeRecord
   private Collection<DocumentAttributeRecord> buildAttributeRecords(final DocumentAttribute a) {
     Collection<DocumentAttributeRecord> c = new ArrayList<>();
 
-    boolean used = false;
-    String key = a.getKey();
+    if (a != null) {
+      boolean used = false;
+      String key = a.getKey();
 
-    if (!isEmpty(a.getStringValue())) {
-      used = true;
-      addToList(c, DocumentAttributeValueType.STRING, key, a.getStringValue(), null, null);
+      if (!isEmpty(a.getClassificationId())) {
+        used = true;
+        addToList(c, DocumentAttributeValueType.CLASSIFICATION,
+            AttributeKeyReserved.CLASSIFICATION.getKey(), a.getClassificationId(), null, null);
+      }
+
+      if (!isEmpty(a.getStringValue())) {
+        used = true;
+        addToList(c, DocumentAttributeValueType.STRING, key, a.getStringValue(), null, null);
+      }
+
+      if (a.getNumberValue() != null) {
+        used = true;
+        addToList(c, DocumentAttributeValueType.NUMBER, key, null, null, a.getNumberValue());
+      }
+
+      if (a.getBooleanValue() != null) {
+        used = true;
+        addToList(c, DocumentAttributeValueType.BOOLEAN, key, null, a.getBooleanValue(), null);
+      }
+
+      for (String stringValue : notNull(a.getStringValues())) {
+        used = true;
+        addToList(c, DocumentAttributeValueType.STRING, key, stringValue, null, null);
+      }
+
+      for (Double numberValue : notNull(a.getNumberValues())) {
+        used = true;
+        addToList(c, DocumentAttributeValueType.NUMBER, key, null, null, numberValue);
+      }
+
+      if (!used) {
+        addToList(c, DocumentAttributeValueType.KEY_ONLY, key, null, null, null);
+      }
     }
 
-    if (a.getNumberValue() != null) {
-      used = true;
-      addToList(c, DocumentAttributeValueType.NUMBER, key, null, null, a.getNumberValue());
-    }
-
-    if (a.getBooleanValue() != null) {
-      used = true;
-      addToList(c, DocumentAttributeValueType.BOOLEAN, key, null, a.getBooleanValue(), null);
-    }
-
-    for (String stringValue : notNull(a.getStringValues())) {
-      used = true;
-      addToList(c, DocumentAttributeValueType.STRING, key, stringValue, null, null);
-    }
-
-    for (Double numberValue : notNull(a.getNumberValues())) {
-      used = true;
-      addToList(c, DocumentAttributeValueType.NUMBER, key, null, null, numberValue);
-    }
-
-    if (!used) {
-      addToList(c, DocumentAttributeValueType.KEY_ONLY, key, null, null, null);
-    }
     return c;
   }
 

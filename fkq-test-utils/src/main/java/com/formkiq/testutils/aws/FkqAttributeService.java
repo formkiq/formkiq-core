@@ -28,9 +28,14 @@ import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAttribute;
 import com.formkiq.client.model.AddAttributeRequest;
+import com.formkiq.client.model.AddDocumentAttribute;
+import com.formkiq.client.model.AddDocumentAttributeStandard;
 import com.formkiq.client.model.Attribute;
 import com.formkiq.client.model.AttributeDataType;
 import com.formkiq.client.model.AttributeType;
+
+import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * 
@@ -74,5 +79,57 @@ public class FkqAttributeService {
       final String attributeKey) throws ApiException {
     AttributesApi attributesApi = new AttributesApi(client);
     return attributesApi.getAttribute(attributeKey, siteId).getAttribute();
+  }
+
+  /**
+   * Create String {@link AddDocumentAttribute}.
+   * 
+   * @param key {@link String}
+   * @param stringValue {@link String}
+   * @return {@link AddDocumentAttribute}
+   */
+  public static AddDocumentAttribute createStringAttribute(final String key,
+      final String stringValue) {
+    return new AddDocumentAttribute(
+        new AddDocumentAttributeStandard().key(key).stringValue(stringValue));
+  }
+
+  /**
+   * Create Strings {@link AddDocumentAttribute}.
+   * 
+   * @param key {@link String}
+   * @param stringValues {@link List} {@link String}
+   * @return {@link AddDocumentAttribute}
+   */
+  public static AddDocumentAttribute createStringsAttribute(final String key,
+      final List<String> stringValues) {
+    return new AddDocumentAttribute(
+        new AddDocumentAttributeStandard().key(key).stringValues(stringValues));
+  }
+
+  /**
+   * Create Number {@link AddDocumentAttribute}.
+   * 
+   * @param key {@link String}
+   * @param numberValue {@link BigDecimal}
+   * @return {@link AddDocumentAttribute}
+   */
+  public static AddDocumentAttribute createNumberAttribute(final String key,
+      final BigDecimal numberValue) {
+    return new AddDocumentAttribute(
+        new AddDocumentAttributeStandard().key(key).numberValue(numberValue));
+  }
+
+  /**
+   * Create Numbers {@link AddDocumentAttribute}.
+   * 
+   * @param key {@link String}
+   * @param numberValues {@link List} {@link BigDecimal}
+   * @return {@link AddDocumentAttribute}
+   */
+  public static AddDocumentAttribute createNumbersAttribute(final String key,
+      final List<BigDecimal> numberValues) {
+    return new AddDocumentAttribute(
+        new AddDocumentAttributeStandard().key(key).numberValues(numberValues));
   }
 }

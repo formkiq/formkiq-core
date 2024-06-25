@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_CREATED;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.io.IOException;
@@ -116,10 +117,17 @@ public class DocumentAttributesRequestHandler
           Collections.singletonList(new ValidationErrorImpl().error("no attributes found")));
     }
 
-    return request.getAttributes().stream().flatMap(
+    List<DocumentAttributeRecord> records = request.getAttributes().stream().flatMap(
         a -> new DocumentAttributeToDocumentAttributeRecord(documentId, authorization.getUsername())
             .apply(a).stream())
         .toList();
+
+    if (notNull(records).isEmpty()) {
+      throw new ValidationException(
+          Collections.singletonList(new ValidationErrorImpl().error("no attributes found")));
+    }
+
+    return records;
   }
 
   @Override

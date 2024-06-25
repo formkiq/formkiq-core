@@ -32,6 +32,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+
+import com.formkiq.client.model.AddDocumentAttributeStandard;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import com.formkiq.client.api.AttributesApi;
@@ -78,8 +80,8 @@ public class DocumentAttributesRequestTest extends AbstractAwsIntegrationTest {
 
   private AddDocumentAttributesRequest addAttributeToDocument(final String key,
       final String value) {
-    return new AddDocumentAttributesRequest()
-        .addAttributesItem(new AddDocumentAttribute().key(key).addStringValuesItem(value));
+    return new AddDocumentAttributesRequest().addAttributesItem(new AddDocumentAttribute(
+        new AddDocumentAttributeStandard().key(key).addStringValuesItem(value)));
   }
 
   private String createDocument(final ApiClient apiClient, final String siteId)
@@ -118,8 +120,9 @@ public class DocumentAttributesRequestTest extends AbstractAwsIntegrationTest {
   private void setDocumentAttributes(final DocumentAttributesApi api, final String siteId,
       final String documentId, final String key) throws ApiException {
     // given
-    SetDocumentAttributesRequest setReq = new SetDocumentAttributesRequest().addAttributesItem(
-        new AddDocumentAttribute().key(key).stringValues(Arrays.asList("123", "abc")));
+    SetDocumentAttributesRequest setReq =
+        new SetDocumentAttributesRequest().addAttributesItem(new AddDocumentAttribute(
+            new AddDocumentAttributeStandard().key(key).stringValues(Arrays.asList("123", "abc"))));
 
     // when
     SetResponse setResponse = api.setDocumentAttributes(documentId, setReq, siteId);

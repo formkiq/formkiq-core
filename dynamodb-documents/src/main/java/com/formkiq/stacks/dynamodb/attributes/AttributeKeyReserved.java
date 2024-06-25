@@ -32,6 +32,8 @@ import java.util.Optional;
 public enum AttributeKeyReserved {
   /** Publication. */
   PUBLICATION("Publication"),
+  /** Classification. */
+  CLASSIFICATION("Classification"),
   /** Malware Scan Result. */
   MALWARE_SCAN_RESULT("MalwareScanResult");
 

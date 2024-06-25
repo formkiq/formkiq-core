@@ -25,7 +25,12 @@ package com.formkiq.stacks.dynamodb.schemas;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+
+import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.validation.ValidationError;
+import com.formkiq.validation.ValidationException;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
  * Services for Schema.
@@ -55,9 +60,9 @@ public interface SchemaService {
    * 
    * @param siteId {@link String}
    * @param attributeKeys {@link List} {@link String}
-   * @return {@link SiteSchemaCompositeKeyRecord}
+   * @return {@link SchemaCompositeKeyRecord}
    */
-  SiteSchemaCompositeKeyRecord getCompositeKey(String siteId, List<String> attributeKeys);
+  SchemaCompositeKeyRecord getCompositeKey(String siteId, List<String> attributeKeys);
 
   /**
    * Set Sites Schema.
@@ -70,4 +75,56 @@ public interface SchemaService {
    */
   Collection<ValidationError> setSitesSchema(String siteId, String name, String schemaJson,
       Schema schema);
+
+  /**
+   * Find {@link ClassificationRecord}.
+   * 
+   * @param siteId {@link String}
+   * @param startkey {@link Map}
+   * @param limit int
+   * @return PaginationResults
+   */
+  PaginationResults<ClassificationRecord> findAllClassifications(String siteId,
+      Map<String, AttributeValue> startkey, int limit);
+
+  /**
+   * Add Classification.
+   * 
+   * @param siteId {@link String}
+   * @param classificationId {@link String}
+   * @param name {@link String}
+   * @param schemaJson {@link String}
+   * @param schema {@link Schema}
+   * @param userId {@link String}
+   * @return ClassificationRecord
+   * @throws ValidationException ValidationException
+   */
+  ClassificationRecord setClassification(String siteId, String classificationId, String name,
+      String schemaJson, Schema schema, String userId) throws ValidationException;
+
+  /**
+   * Find Classification.
+   * 
+   * @param siteId {@link String}
+   * @param classificationId {@link String}
+   * @return {@link ClassificationRecord}
+   */
+  ClassificationRecord findClassification(String siteId, String classificationId);
+
+  /**
+   * Delete Classification.
+   * 
+   * @param siteId {@link String}
+   * @param classificationId {@link String}
+   * @return boolean
+   */
+  boolean deleteClassification(String siteId, String classificationId);
+
+  /**
+   * Get Schema.
+   * 
+   * @param classification {@link ClassificationRecord}
+   * @return Schema
+   */
+  Schema getSchema(ClassificationRecord classification);
 }
