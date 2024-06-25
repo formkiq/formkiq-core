@@ -102,7 +102,7 @@ public class DocumentAttributeRequestHandler
     List<DocumentAttributeRecord> list =
         documentService.findDocumentAttribute(siteId, documentId, attributeKey);
 
-    Collection<Map<String, Object>> map = new DocumentAttributeRecordToMap().apply(list);
+    Collection<Map<String, Object>> map = new DocumentAttributeRecordToMap(true).apply(list);
 
     if (map.isEmpty()) {
       throw new NotFoundException(

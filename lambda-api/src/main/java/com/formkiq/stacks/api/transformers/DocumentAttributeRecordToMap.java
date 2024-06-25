@@ -38,6 +38,18 @@ import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 public class DocumentAttributeRecordToMap
     implements Function<Collection<DocumentAttributeRecord>, Collection<Map<String, Object>>> {
 
+  /** Whether Keys should be unique. */
+  private final boolean uniqueKeys;
+
+  /**
+   * constructor.
+   * 
+   * @param uniqueAttributeKeys boolean
+   */
+  public DocumentAttributeRecordToMap(final boolean uniqueAttributeKeys) {
+    this.uniqueKeys = uniqueAttributeKeys;
+  }
+
   @Override
   public Collection<Map<String, Object>> apply(
       final Collection<DocumentAttributeRecord> attributes) {
@@ -48,7 +60,7 @@ public class DocumentAttributeRecordToMap
 
     for (DocumentAttributeRecord a : attributes) {
 
-      if (lastValues != null && last != null && last.getKey().equals(a.getKey())) {
+      if (uniqueKeys && lastValues != null && last != null && last.getKey().equals(a.getKey())) {
 
         if (!isEmpty(a.getStringValue())) {
 

@@ -89,7 +89,7 @@ public class DocumentAttributesRequestHandler
         documentService.findDocumentAttributes(siteId, documentId, ptoken, limit);
 
     Collection<Map<String, Object>> list =
-        new DocumentAttributeRecordToMap().apply(results.getResults());
+        new DocumentAttributeRecordToMap(true).apply(results.getResults());
 
     ApiPagination current =
         createPagination(cacheService, event, pagination, results.getToken(), limit);
