@@ -278,7 +278,6 @@ Resources:
               - Schemas
               parameters:
               - $ref: '#/components/parameters/siteIdPathParam'
-              - $ref: '#/components/parameters/versionParam'
               responses:
                 '200':
                   description: "200 OK"
@@ -9858,9 +9857,6 @@ Resources:
                   type: "string"
                 attributes:
                   $ref: "#/components/schemas/SchemaAttributes"
-                version:
-                  description: "Version of schema"
-                  type: "integer"
             GetClassificationResponse:
               type: "object"
               properties:

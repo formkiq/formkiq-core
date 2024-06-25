@@ -56,9 +56,8 @@ public class SitesSchemaRequestHandler
       final AwsServiceCache awsServices) throws Exception {
 
     String siteId = authorization.getSiteId();
-    Integer version = getVersion(event);
     SchemaService service = awsServices.getExtension(SchemaService.class);
-    SitesSchemaRecord record = service.getSitesSchemaRecord(siteId, version);
+    SitesSchemaRecord record = service.getSitesSchemaRecord(siteId);
 
     if (record == null) {
       throw new NotFoundException("Sites Schema not found");
@@ -67,8 +66,8 @@ public class SitesSchemaRequestHandler
     String json = record.getSchema();
     Schema schema = this.gson.fromJson(json, Schema.class);
 
-    Map<String, Object> map = Map.of("name", schema.getName(), "version", record.getVersion(),
-        "attributes", schema.getAttributes());
+    Map<String, Object> map =
+        Map.of("name", schema.getName(), "attributes", schema.getAttributes());
     return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
   }
 

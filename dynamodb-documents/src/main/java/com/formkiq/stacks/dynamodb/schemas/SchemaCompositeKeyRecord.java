@@ -43,7 +43,8 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 public class SchemaCompositeKeyRecord implements DynamodbRecord<SchemaCompositeKeyRecord> {
 
   /** SK Prefix. */
-  public static final String PREFIX_SK = "key#";
+  public static final String GSI_SK = "key#";
+  /** Composite Key. */
   public static final String SK = "compositeKey#";
 
   /** {@link List} {@link String}. */
@@ -140,7 +141,7 @@ public class SchemaCompositeKeyRecord implements DynamodbRecord<SchemaCompositeK
 
     List<String> s = new ArrayList<>(this.keys);
     Collections.sort(s);
-    return PREFIX_SK + String.join("#", s);
+    return GSI_SK + String.join("#", s);
   }
 
   @Override
@@ -160,11 +161,11 @@ public class SchemaCompositeKeyRecord implements DynamodbRecord<SchemaCompositeK
   /**
    * Set DocumentId.
    * 
-   * @param documentId {@link String}
+   * @param id {@link String}
    * @return SiteSchemaCompositeKeyRecord
    */
-  public SchemaCompositeKeyRecord setDocumentId(final String documentId) {
-    this.documentId = documentId;
+  public SchemaCompositeKeyRecord setDocumentId(final String id) {
+    this.documentId = id;
     return this;
   }
 }

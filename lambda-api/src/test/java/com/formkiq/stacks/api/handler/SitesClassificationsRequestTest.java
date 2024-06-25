@@ -647,8 +647,8 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
     }
   }
 
-  private @Nullable String addDocument(String siteId, List<AddDocumentAttribute> attributes)
-      throws ApiException {
+  private @Nullable String addDocument(final String siteId,
+      final List<AddDocumentAttribute> attributes) throws ApiException {
     AddDocumentRequest areq = new AddDocumentRequest().content("adasd").attributes(attributes);
     return this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
   }

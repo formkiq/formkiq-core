@@ -1413,7 +1413,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   private Schema getSchame(final String siteId) {
-    return this.schemaService.getSitesSchema(siteId, null);
+    return this.schemaService.getSitesSchema(siteId);
   }
 
   /**

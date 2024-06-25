@@ -41,19 +41,17 @@ public interface SchemaService {
    * Get Sites Schema.
    * 
    * @param siteId {@link String}
-   * @param version {@link Integer}
    * @return {@link SitesSchemaRecord}
    */
-  Schema getSitesSchema(String siteId, Integer version);
+  Schema getSitesSchema(String siteId);
 
   /**
    * Get Sites Schema.
    * 
    * @param siteId {@link String}
-   * @param version {@link Integer}
    * @return {@link SitesSchemaRecord}
    */
-  SitesSchemaRecord getSitesSchemaRecord(String siteId, Integer version);
+  SitesSchemaRecord getSitesSchemaRecord(String siteId);
 
   /**
    * Get Composite Key.

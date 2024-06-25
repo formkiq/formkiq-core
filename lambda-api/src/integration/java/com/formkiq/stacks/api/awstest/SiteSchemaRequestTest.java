@@ -70,7 +70,7 @@ public class SiteSchemaRequestTest extends AbstractAwsIntegrationTest {
 
         // when
         try {
-          schemasApi.getSitesSchema(siteId, null);
+          schemasApi.getSitesSchema(siteId);
           fail();
         } catch (ApiException e) {
           // then
