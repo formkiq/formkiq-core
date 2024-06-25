@@ -35,6 +35,7 @@ import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
 import com.formkiq.stacks.dynamodb.schemas.Schema;
+import com.formkiq.stacks.dynamodb.schemas.SchemaAttributes;
 import com.formkiq.stacks.dynamodb.schemas.SchemaAttributesCompositeKey;
 
 /**
@@ -46,17 +47,17 @@ public class DocumentAttributeSchema
   /** Document Id. */
   private final String docId;
   /** Schema. */
-  private final Schema schema;
+  private final SchemaAttributes attributes;
 
   /**
    * constructor.
    * 
-   * @param documentSchema {@link Schema}
+   * @param schemaAttributes {@link SchemaAttributes}
    * @param documentId {@link String}
    */
-  public DocumentAttributeSchema(final Schema documentSchema, final String documentId) {
+  public DocumentAttributeSchema(final SchemaAttributes schemaAttributes, final String documentId) {
     this.docId = documentId;
-    this.schema = documentSchema;
+    this.attributes = schemaAttributes;
   }
 
   @Override
@@ -64,7 +65,7 @@ public class DocumentAttributeSchema
 
     Collection<DocumentAttributeRecord> compositeKeys = Collections.emptyList();
 
-    if (this.schema != null) {
+    if (this.attributes != null) {
       compositeKeys = createCompositeKeys(c);
     }
 
@@ -80,12 +81,13 @@ public class DocumentAttributeSchema
   private Collection<DocumentAttributeRecord> createCompositeKeys(
       final Collection<DocumentAttributeRecord> list) {
 
-    Map<String, List<DocumentAttributeRecord>> documentAttributeKeys =
-        list.stream().collect(Collectors.groupingBy(DocumentAttributeRecord::getKey));
+    Map<String, List<DocumentAttributeRecord>> documentAttributeKeys = list.stream()
+        .filter(a -> !DocumentAttributeValueType.CLASSIFICATION.equals(a.getValueType()))
+        .collect(Collectors.groupingBy(DocumentAttributeRecord::getKey));
 
     Collection<DocumentAttributeRecord> compositeKeys = new ArrayList<>();
 
-    notNull(this.schema.getAttributes().getCompositeKeys()).forEach(a -> {
+    notNull(attributes.getCompositeKeys()).forEach(a -> {
       Collection<DocumentAttributeRecord> keys = createCompositeKeys(a, documentAttributeKeys);
       compositeKeys.addAll(keys);
     });

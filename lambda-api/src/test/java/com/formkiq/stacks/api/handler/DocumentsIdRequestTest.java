@@ -35,6 +35,7 @@ import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.model.AddAttribute;
 import com.formkiq.client.model.AddAttributeRequest;
 import com.formkiq.client.model.AddDocumentAttribute;
+import com.formkiq.client.model.AddDocumentAttributeStandard;
 import com.formkiq.client.model.AttributeSchemaCompositeKey;
 import com.formkiq.client.model.AttributeSchemaOptional;
 import com.formkiq.client.model.DocumentAction;
@@ -398,8 +399,8 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       AddDocumentRequest req = new AddDocumentRequest().content(content0);
       String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
 
-      UpdateDocumentRequest updateReq = new UpdateDocumentRequest()
-          .addAttributesItem(new AddDocumentAttribute().key(attributeKey));
+      UpdateDocumentRequest updateReq = new UpdateDocumentRequest().addAttributesItem(
+          new AddDocumentAttribute(new AddDocumentAttributeStandard().key(attributeKey)));
 
       // when
       try {
@@ -438,8 +439,9 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       AddDocumentRequest req = new AddDocumentRequest().content(content0);
       String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
 
-      UpdateDocumentRequest updateReq = new UpdateDocumentRequest()
-          .addAttributesItem(new AddDocumentAttribute().key(attributeKey).stringValue("123"));
+      UpdateDocumentRequest updateReq =
+          new UpdateDocumentRequest().addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key(attributeKey).stringValue("123")));
 
       // when
       try {
@@ -477,8 +479,10 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
 
       UpdateDocumentRequest updateReq = new UpdateDocumentRequest()
-          .addAttributesItem(new AddDocumentAttribute().key(attributeKey0).stringValue("person"))
-          .addAttributesItem(new AddDocumentAttribute().key(attributeKey1).stringValue("privacy"));
+          .addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key(attributeKey0).stringValue("person")))
+          .addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key(attributeKey1).stringValue("privacy")));
 
       // when
       this.documentsApi.updateDocument(documentId, updateReq, siteId, null);
@@ -543,13 +547,16 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       createSiteSchema(siteId, attributeKey0, attributeKey1);
 
-      AddDocumentRequest req = new AddDocumentRequest().content(content0)
-          .addAttributesItem(new AddDocumentAttribute().key(attributeKey0).stringValue("person"));
+      AddDocumentRequest req =
+          new AddDocumentRequest().content(content0).addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key(attributeKey0).stringValue("person")));
       String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
 
       UpdateDocumentRequest updateReq = new UpdateDocumentRequest()
-          .addAttributesItem(new AddDocumentAttribute().key(attributeKey1).stringValue("privacy"))
-          .addAttributesItem(new AddDocumentAttribute().key("userId").stringValue("123"));
+          .addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key(attributeKey1).stringValue("privacy")))
+          .addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key("userId").stringValue("123")));
 
       // when
       this.documentsApi.updateDocument(documentId, updateReq, siteId, null);

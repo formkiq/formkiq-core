@@ -25,7 +25,6 @@ package com.formkiq.stacks.api.handler;
 
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.graalvm.annotations.Reflectable;
-import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 
 /**
  * Add Case.
@@ -33,8 +32,8 @@ import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 @Reflectable
 public class AddAttributeRequest {
 
-  /** {@link AttributeRecord}. */
-  private AttributeRecord attribute;
+  /** {@link AddAttribute}. */
+  private AddAttribute attribute;
 
   /**
    * constructor.
@@ -44,21 +43,21 @@ public class AddAttributeRequest {
   /**
    * Set Attribute.
    * 
-   * @param attributeRecord {@link AttributeRecord}
+   * @param addAttribute {@link AddAttribute}
    * @return {@link AddAttributeRequest}
    */
-  public AddAttributeRequest attribute(final AttributeRecord attributeRecord) {
-    this.attribute = attributeRecord;
+  public AddAttributeRequest attribute(final AddAttribute addAttribute) {
+    this.attribute = addAttribute;
     return this;
   }
 
   /**
    * Get Attribute.
    * 
-   * @return {@link AttributeRecord}
+   * @return {@link AddAttribute}
    * @throws BadException BadException
    */
-  public AttributeRecord getAttribute() throws BadException {
+  public AddAttribute getAttribute() throws BadException {
 
     if (this.attribute == null) {
       throw new BadException("invalid request body");

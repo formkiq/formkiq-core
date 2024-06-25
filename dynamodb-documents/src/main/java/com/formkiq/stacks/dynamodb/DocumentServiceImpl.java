@@ -91,6 +91,7 @@ import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
 import com.formkiq.stacks.dynamodb.attributes.DynamicObjectToDocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.documents.DocumentAttributePublicationValue;
 import com.formkiq.stacks.dynamodb.schemas.Schema;
+import com.formkiq.stacks.dynamodb.schemas.SchemaAttributes;
 import com.formkiq.stacks.dynamodb.schemas.SchemaAttributesCompositeKey;
 import com.formkiq.stacks.dynamodb.schemas.SchemaMissingRequiredAttributes;
 import com.formkiq.stacks.dynamodb.schemas.SchemaService;
@@ -177,18 +178,20 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
   private Collection<DocumentAttributeRecord> addCompositeAndRequiredKeys(final String siteId,
       final String documentId, final Collection<DocumentAttributeRecord> documentAttributeRecords,
-      final Schema schema, final AttributeValidationAccess validationAccess) {
+      final List<SchemaAttributes> schemaAttributes,
+      final AttributeValidationAccess validationAccess) {
 
     Collection<DocumentAttributeRecord> documentAttributes = documentAttributeRecords;
     String userId =
         !documentAttributes.isEmpty() ? documentAttributes.iterator().next().getUserId() : "System";
 
-    if (schema != null) {
+    for (SchemaAttributes schemaAttribute : notNull(schemaAttributes)) {
 
       if (AttributeValidationAccess.ADMIN_CREATE.equals(validationAccess)
           || AttributeValidationAccess.CREATE.equals(validationAccess)) {
+
         Collection<DocumentAttributeRecord> missingRequired =
-            addMissingRequired(schema, siteId, documentId, documentAttributes);
+            addMissingRequired(schemaAttribute, siteId, documentId, documentAttributes);
 
         if (!missingRequired.isEmpty()) {
           documentAttributes =
@@ -197,7 +200,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       }
 
       Collection<DocumentAttributeRecord> compositeKeys =
-          generateCompositeKeys(schema, siteId, documentId, documentAttributes);
+          generateCompositeKeys(schemaAttribute, siteId, documentId, documentAttributes);
 
       documentAttributes =
           Stream.concat(documentAttributes.stream(), compositeKeys.stream()).toList();
@@ -237,12 +240,12 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     });
   }
 
-  private Collection<DocumentAttributeRecord> addMissingRequired(final Schema schema,
-      final String siteId, final String documentId,
+  private Collection<DocumentAttributeRecord> addMissingRequired(
+      final SchemaAttributes schemaAttributes, final String siteId, final String documentId,
       final Collection<DocumentAttributeRecord> documentAttributes) {
 
-    return new SchemaMissingRequiredAttributes(attributeService, schema, siteId, documentId)
-        .apply(documentAttributes);
+    return new SchemaMissingRequiredAttributes(attributeService, schemaAttributes, siteId,
+        documentId).apply(documentAttributes);
   }
 
   @Override
@@ -296,17 +299,18 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
     if (documentAttributeRecords != null) {
 
-      Schema schema = getSchame(siteId);
+      List<SchemaAttributes> schemaAttributes =
+          getSchemaAttributes(siteId, documentAttributeRecords);
 
       Collection<DocumentAttributeRecord> documentAttributes = addCompositeAndRequiredKeys(siteId,
-          documentId, documentAttributeRecords, schema, validationAccess);
+          documentId, documentAttributeRecords, schemaAttributes, validationAccess);
 
       Date date = new Date();
       documentAttributeRecords.stream().filter(a -> a.getInsertedDate() == null)
           .forEach(a -> a.setInsertedDate(date));
 
-      Map<String, AttributeRecord> attributeMap = validateDocumentAttributes(schema, siteId,
-          documentId, documentAttributes, isUpdate, validation, validationAccess);
+      Map<String, AttributeRecord> attributeMap = validateDocumentAttributes(schemaAttributes,
+          siteId, documentId, documentAttributes, isUpdate, validation, validationAccess);
 
       // update Attributes to In-Use
       attributeMap.values().stream().filter(a -> !a.isInUse())
@@ -339,6 +343,25 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       writeBuilder.appends(this.documentTableName,
           documentAttributes.stream().map(a -> a.getAttributes(siteId)).toList());
     }
+  }
+
+  private List<SchemaAttributes> getSchemaAttributes(final String siteId,
+      final Collection<DocumentAttributeRecord> documentAttributeRecords) {
+
+    List<Schema> schemas = documentAttributeRecords.stream()
+        .filter(a -> DocumentAttributeValueType.CLASSIFICATION.equals(a.getValueType()))
+        .map(a -> this.schemaService.findClassification(siteId, a.getStringValue()))
+        .map(this.schemaService::getSchema).toList();
+
+    if (schemas.isEmpty()) {
+      Schema schema = getSchame(siteId);
+
+      if (schema != null) {
+        schemas = List.of(schema);
+      }
+    }
+
+    return schemas.stream().map(Schema::getAttributes).toList();
   }
 
   /**
@@ -1131,15 +1154,15 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     return new PaginationResults<>(items, new QueryResponseToPagination().apply(result));
   }
 
-  private Collection<DocumentAttributeRecord> generateCompositeKeys(final Schema schema,
-      final String siteId, final String documentId,
+  private Collection<DocumentAttributeRecord> generateCompositeKeys(
+      final SchemaAttributes schemaAttributes, final String siteId, final String documentId,
       final Collection<DocumentAttributeRecord> documentAttributes) {
 
     Set<String> documentAttributeKeys = documentAttributes.stream()
         .map(DocumentAttributeRecord::getKey).collect(Collectors.toSet());
 
     List<SchemaAttributesCompositeKey> schemaCompositeKeys =
-        notNull(schema.getAttributes().getCompositeKeys());
+        notNull(schemaAttributes.getCompositeKeys());
 
     List<SchemaAttributesCompositeKey> matchingCompositeKeys =
         schemaCompositeKeys.stream().filter(sc -> {
@@ -1165,7 +1188,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     List<DocumentAttributeRecord> merged =
         Stream.concat(documentAttributes.stream(), existingAttributes.stream()).toList();
 
-    return new DocumentAttributeSchema(schema, documentId).apply(merged);
+    return new DocumentAttributeSchema(schemaAttributes, documentId).apply(merged);
   }
 
   /**
@@ -2170,8 +2193,8 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     }
   }
 
-  private Map<String, AttributeRecord> validateDocumentAttributes(final Schema schema,
-      final String siteId, final String documentId,
+  private Map<String, AttributeRecord> validateDocumentAttributes(
+      final List<SchemaAttributes> schemaAttributes, final String siteId, final String documentId,
       final Collection<DocumentAttributeRecord> documentAttributes, final boolean isUpdate,
       final AttributeValidation validation, final AttributeValidationAccess validationAccess)
       throws ValidationException {
@@ -2189,11 +2212,11 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
       switch (validation) {
         case FULL -> {
-          errors = this.attributeValidator.validateFullAttribute(schema, siteId, documentId,
-              documentAttributes, attributeRecordMap, isUpdate, validationAccess);
+          errors = this.attributeValidator.validateFullAttribute(schemaAttributes, siteId,
+              documentId, documentAttributes, attributeRecordMap, isUpdate, validationAccess);
         }
         case PARTIAL -> {
-          errors = this.attributeValidator.validatePartialAttribute(schema, siteId,
+          errors = this.attributeValidator.validatePartialAttribute(schemaAttributes, siteId,
               documentAttributes, attributeRecordMap, validationAccess);
         }
         case NONE -> {
@@ -2225,8 +2248,8 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     if (AttributeValidationAccess.CREATE.equals(validationAccess)
         || AttributeValidationAccess.ADMIN_CREATE.equals(validationAccess)) {
 
-      Set<String> keys =
-          documentAttributes.stream().map(da -> da.getKey()).collect(Collectors.toSet());
+      Set<String> keys = documentAttributes.stream().map(DocumentAttributeRecord::getKey)
+          .collect(Collectors.toSet());
       keys.forEach(key -> {
         List<DocumentAttributeRecord> documentAttribute =
             findDocumentAttribute(siteId, documentId, key, 1);

@@ -29,6 +29,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamodbRecord;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -38,18 +40,21 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
  * Site Schemas object.
  *
  */
-public class SiteSchemaCompositeKeyRecord implements DynamodbRecord<SiteSchemaCompositeKeyRecord> {
+public class SchemaCompositeKeyRecord implements DynamodbRecord<SchemaCompositeKeyRecord> {
 
   /** SK Prefix. */
   public static final String PREFIX_SK = "key#";
+  public static final String SK = "compositeKey#";
 
   /** {@link List} {@link String}. */
   private List<String> keys;
+  /** Document Id. */
+  private String documentId;
 
   /**
    * constructor.
    */
-  public SiteSchemaCompositeKeyRecord() {
+  public SchemaCompositeKeyRecord() {
 
   }
 
@@ -60,21 +65,23 @@ public class SiteSchemaCompositeKeyRecord implements DynamodbRecord<SiteSchemaCo
 
     map.put(DbKeys.PK, fromS(pk(siteId)));
     map.put(DbKeys.SK, fromS(sk()));
+    map.put(DbKeys.GSI1_PK, fromS(pkGsi1(siteId)));
+    map.put(DbKeys.GSI1_SK, fromS(skGsi1()));
 
     return map;
   }
 
   @Override
   public Map<String, AttributeValue> getDataAttributes() {
-    return Map.of("keys", AttributeValue.fromL(this.keys.stream().map(a -> fromS(a)).toList()));
+    return Map.of("keys", AttributeValue.fromL(this.keys.stream().map(this::fromS).toList()));
   }
 
   @Override
-  public SiteSchemaCompositeKeyRecord getFromAttributes(final String siteId,
+  public SchemaCompositeKeyRecord getFromAttributes(final String siteId,
       final Map<String, AttributeValue> attrs) {
 
     if (!attrs.isEmpty()) {
-      this.keys = attrs.get("keys").l().stream().map(a -> a.s()).toList();
+      this.keys = attrs.get("keys").l().stream().map(AttributeValue::s).toList();
     }
 
     return this;
@@ -93,21 +100,26 @@ public class SiteSchemaCompositeKeyRecord implements DynamodbRecord<SiteSchemaCo
    * Set Composite Keys.
    * 
    * @param compositeKeys {@link List} {@link String}
-   * @return {@link SiteSchemaCompositeKeyRecord}
+   * @return {@link SchemaCompositeKeyRecord}
    */
-  public SiteSchemaCompositeKeyRecord keys(final List<String> compositeKeys) {
+  public SchemaCompositeKeyRecord keys(final List<String> compositeKeys) {
     this.keys = compositeKeys;
     return this;
   }
 
   @Override
   public String pk(final String siteId) {
-    return createDatabaseKey(siteId, "schemas#compositeKey");
+
+    if (this.documentId != null) {
+      return createDatabaseKey(siteId, "schemas#" + this.documentId);
+    } else {
+      return createDatabaseKey(siteId, "schemas");
+    }
   }
 
   @Override
   public String pkGsi1(final String siteId) {
-    return null;
+    return createDatabaseKey(siteId, "schemas#compositeKey");
   }
 
   @Override
@@ -117,6 +129,11 @@ public class SiteSchemaCompositeKeyRecord implements DynamodbRecord<SiteSchemaCo
 
   @Override
   public String sk() {
+    return SK + UUID.randomUUID();
+  }
+
+  @Override
+  public String skGsi1() {
     if (this.keys == null) {
       throw new IllegalArgumentException("'keys' is required");
     }
@@ -127,12 +144,27 @@ public class SiteSchemaCompositeKeyRecord implements DynamodbRecord<SiteSchemaCo
   }
 
   @Override
-  public String skGsi1() {
+  public String skGsi2() {
     return null;
   }
 
-  @Override
-  public String skGsi2() {
-    return null;
+  /**
+   * Get Document Id.
+   * 
+   * @return String
+   */
+  public String getDocumentId() {
+    return this.documentId;
+  }
+
+  /**
+   * Set DocumentId.
+   * 
+   * @param documentId {@link String}
+   * @return SiteSchemaCompositeKeyRecord
+   */
+  public SchemaCompositeKeyRecord setDocumentId(final String documentId) {
+    this.documentId = documentId;
+    return this;
   }
 }

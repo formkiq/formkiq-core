@@ -45,6 +45,7 @@ import com.formkiq.client.model.AddAttribute;
 import com.formkiq.client.model.AddAttributeRequest;
 import com.formkiq.client.model.AddChildDocumentResponse;
 import com.formkiq.client.model.AddDocumentAttribute;
+import com.formkiq.client.model.AddDocumentAttributeStandard;
 import com.formkiq.client.model.AddDocumentMetadata;
 import com.formkiq.client.model.AttributeSchemaCompositeKey;
 import com.formkiq.client.model.AttributeSchemaOptional;
@@ -286,8 +287,10 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       this.schemasApi.setSitesSchema(siteId, sitesSchema);
 
       AddDocumentRequest req = new AddDocumentRequest().content(content0)
-          .addAttributesItem(new AddDocumentAttribute().key(attributeKey0).stringValue("person"))
-          .addAttributesItem(new AddDocumentAttribute().key(attributeKey1).stringValue("privacy"));
+          .addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key(attributeKey0).stringValue("person")))
+          .addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key(attributeKey1).stringValue("privacy")));
 
       // when
       String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
@@ -328,8 +331,9 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
               .attributeKey(attributeKey).addAllowedValuesItem("abc")));
       this.schemasApi.setSitesSchema(siteId, sitesSchema);
 
-      AddDocumentRequest req = new AddDocumentRequest().content(content0)
-          .addAttributesItem(new AddDocumentAttribute().key(attributeKey).stringValue("123"));
+      AddDocumentRequest req =
+          new AddDocumentRequest().content(content0).addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key(attributeKey).stringValue("123")));
 
       // when
       try {

@@ -119,6 +119,8 @@ import com.formkiq.stacks.api.handler.RulesetsRuleIdRequestHandler;
 import com.formkiq.stacks.api.handler.RulesetsRuleRequestHandler;
 import com.formkiq.stacks.api.handler.SearchFulltextRequestHandler;
 import com.formkiq.stacks.api.handler.SearchRequestHandler;
+import com.formkiq.stacks.api.handler.SitesClassificationIdRequestHandler;
+import com.formkiq.stacks.api.handler.SitesClassificationRequestHandler;
 import com.formkiq.stacks.api.handler.SitesOpenSearchIndexRequestHandler;
 import com.formkiq.stacks.api.handler.SitesRequestHandler;
 import com.formkiq.stacks.api.handler.SitesSchemaRequestHandler;
@@ -296,7 +298,13 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRulesetsEndpoints();
     addDocumentAttributeEndpoints();
 
+    addSchemaEndpoints();
+  }
+
+  private static void addSchemaEndpoints() {
     addRequestHandler(new SitesSchemaRequestHandler());
+    addRequestHandler(new SitesClassificationRequestHandler());
+    addRequestHandler(new SitesClassificationIdRequestHandler());
   }
 
   private static void addSystemEndpoints() {

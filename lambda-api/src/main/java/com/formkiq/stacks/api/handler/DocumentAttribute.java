@@ -44,12 +44,34 @@ public class DocumentAttribute {
   private String stringValue;
   /** String valueAttribute. */
   private List<String> stringValues;
+  /** {@link String} Classification Id. */
+  private String classificationId;
 
   /**
    * constructor.
    */
   public DocumentAttribute() {
 
+  }
+
+  /**
+   * Get Classification Id.
+   * 
+   * @return String
+   */
+  public String getClassificationId() {
+    return this.classificationId;
+  }
+
+  /**
+   * Set Classification Id.
+   * 
+   * @param attributeClassificationId {@link String}
+   * @return DocumentAttribute
+   */
+  public DocumentAttribute setClassificationId(final String attributeClassificationId) {
+    this.classificationId = attributeClassificationId;
+    return this;
   }
 
   /**

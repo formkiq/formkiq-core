@@ -195,7 +195,10 @@ public class DynamoDbServiceImpl implements DynamoDbService {
 
   @Override
   public List<Map<String, AttributeValue>> getBatch(final BatchGetConfig config,
-      final List<Map<String, AttributeValue>> keys) {
+      final List<Map<String, AttributeValue>> attributes) {
+
+    List<Map<String, AttributeValue>> keys =
+        attributes.stream().map(a -> Map.of(PK, a.get(PK), SK, a.get(SK))).toList();
 
     List<Map<String, AttributeValue>> list = Collections.emptyList();
 

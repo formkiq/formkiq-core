@@ -78,7 +78,7 @@ import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
 import com.formkiq.stacks.dynamodb.schemas.SchemaService;
 import com.formkiq.stacks.dynamodb.schemas.SchemaServiceDynamodb;
-import com.formkiq.stacks.dynamodb.schemas.SiteSchemaCompositeKeyRecord;
+import com.formkiq.stacks.dynamodb.schemas.SchemaCompositeKeyRecord;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
@@ -228,7 +228,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
     Map<String, SearchAttributeCriteria> map = attributes.stream()
         .collect(Collectors.toMap(SearchAttributeCriteria::getKey, Function.identity()));
 
-    SiteSchemaCompositeKeyRecord compositeKey = validateSearchAttributeCriteria(siteId, attributes);
+    SchemaCompositeKeyRecord compositeKey = validateSearchAttributeCriteria(siteId, attributes);
     List<String> compositeKeys = compositeKey != null ? compositeKey.getKeys()
         : query.getAttributes().stream().map(SearchAttributeCriteria::getKey).toList();
 
@@ -1210,10 +1210,10 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
     }
   }
 
-  private SiteSchemaCompositeKeyRecord validateSearchAttributeCriteria(final String siteId,
+  private SchemaCompositeKeyRecord validateSearchAttributeCriteria(final String siteId,
       final List<SearchAttributeCriteria> attributes) throws ValidationException {
 
-    SiteSchemaCompositeKeyRecord compositeKey = null;
+    SchemaCompositeKeyRecord compositeKey = null;
     List<ValidationError> errors = new ArrayList<>();
 
     if (attributes.size() > 1) {

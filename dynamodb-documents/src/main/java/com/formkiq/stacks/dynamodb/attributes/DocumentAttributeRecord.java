@@ -246,25 +246,12 @@ public class DocumentAttributeRecord
     String sk = ATTR + this.key + "#";
 
     switch (this.valueType) {
-      case STRING:
-      case COMPOSITE_STRING:
-        sk += this.stringValue;
-        break;
-
-      case BOOLEAN:
-        sk += this.booleanValue;
-        break;
-
-      case NUMBER:
-        sk += formatDouble(this.numberValue);
-        break;
-
-      case KEY_ONLY:
-      case PUBLICATION:
-        break;
-
-      default:
-        throw new IllegalArgumentException("Unexpected value: " + this.valueType);
+      case STRING, COMPOSITE_STRING, CLASSIFICATION -> sk += this.stringValue;
+      case BOOLEAN -> sk += this.booleanValue;
+      case NUMBER -> sk += formatDouble(this.numberValue);
+      case KEY_ONLY, PUBLICATION -> {
+      }
+      default -> throw new IllegalArgumentException("Unexpected value: " + this.valueType);
     }
 
     return sk;
@@ -277,6 +264,7 @@ public class DocumentAttributeRecord
       case STRING, COMPOSITE_STRING -> this.stringValue;
       case NUMBER -> formatDouble(this.numberValue);
       case BOOLEAN -> this.booleanValue.toString();
+      case CLASSIFICATION -> this.stringValue;
       case KEY_ONLY, PUBLICATION -> "#";
     };
 

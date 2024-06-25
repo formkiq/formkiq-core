@@ -99,12 +99,12 @@ public abstract class AbstractApiClientRequestTest {
 
   /** 500 Milliseconds. */
   private static final long SLEEP = 500L;
-  /** Time out. */
-  private static final int TIMEOUT = 30000;
+  // /** Time out. */
+  // private static final int TIMEOUT = 30000;
 
   /** {@link ApiClient}. */
-  protected ApiClient client =
-      Configuration.getDefaultApiClient().setReadTimeout(TIMEOUT).setBasePath(server.getBasePath());
+  protected ApiClient client = Configuration.getDefaultApiClient()
+      /* .setReadTimeout(TIMEOUT) */.setBasePath(server.getBasePath());
   /** {@link DocumentActionsApi}. */
   protected DocumentActionsApi documentActionsApi = new DocumentActionsApi(this.client);
   /** {@link DocumentsApi}. */

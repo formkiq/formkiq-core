@@ -41,6 +41,7 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import com.formkiq.client.model.AddDocumentAttributeStandard;
 import com.formkiq.client.model.AttributeValueType;
 import com.formkiq.client.model.SearchResultDocumentAttribute;
 import org.junit.jupiter.api.Test;
@@ -108,8 +109,8 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
 
     AddDocumentUploadRequest uploadReq = new AddDocumentUploadRequest();
 
-    AddDocumentAttribute attr =
-        new AddDocumentAttribute().key("category").stringValue(attributeValue).stringValues(null);
+    AddDocumentAttribute attr = new AddDocumentAttribute(new AddDocumentAttributeStandard()
+        .key("category").stringValue(attributeValue).stringValues(null));
     uploadReq.addAttributesItem(attr);
 
     return this.documentsApi.addDocumentUpload(uploadReq, siteId, null, null, null).getDocumentId();
@@ -937,7 +938,8 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
       String path = "test.txt";
       AddDocumentUploadRequest uploadReq = new AddDocumentUploadRequest().path(path)
           .addTagsItem(new AddDocumentTag().key("documentType").value("invoice"))
-          .addAttributesItem(new AddDocumentAttribute().key("category").stringValue("document"));
+          .addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key("category").stringValue("document")));
       this.documentsApi.addDocumentUpload(uploadReq, siteId, null, null, null);
 
       DocumentSearchRequest dsq = new DocumentSearchRequest()

@@ -94,10 +94,12 @@ public class AttributesRequestHandler
     String siteId = authorizer.getSiteId();
 
     AddAttributeRequest addAttribute = fromBodyToObject(event, AddAttributeRequest.class);
-    String key = addAttribute.getAttribute().getKey();
 
-    AttributeDataType dataType = addAttribute.getAttribute().getDataType();
-    AttributeType type = addAttribute.getAttribute().getType();
+    AddAttribute attribute = addAttribute.getAttribute();
+
+    String key = attribute.getKey();
+    AttributeDataType dataType = attribute.getDataType();
+    AttributeType type = attribute.getType();
 
     Collection<ValidationError> errors = service.addAttribute(siteId, key, dataType, type);
 

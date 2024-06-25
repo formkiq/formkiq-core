@@ -98,7 +98,7 @@ public class AttributeRecord implements DynamodbRecord<AttributeRecord> {
   public Map<String, AttributeValue> getDataAttributes() {
     return Map.of("documentId", fromS(this.documentId), "dataType", fromS(this.dataType.name()),
         "type", fromS(this.type.name()), "key", fromS(this.key), "isInUse",
-        AttributeValue.fromBool(Boolean.valueOf(this.inUse)));
+        AttributeValue.fromBool(this.inUse));
   }
 
   /**
@@ -128,8 +128,7 @@ public class AttributeRecord implements DynamodbRecord<AttributeRecord> {
     if (!attrs.isEmpty()) {
       record = new AttributeRecord().documentId(ss(attrs, "documentId")).key(ss(attrs, "key"))
           .type(AttributeType.valueOf(ss(attrs, "type")))
-          .dataType(AttributeDataType.valueOf(ss(attrs, "dataType")))
-          .inUse(bb(attrs, "isInUse").booleanValue());
+          .dataType(AttributeDataType.valueOf(ss(attrs, "dataType"))).inUse(bb(attrs, "isInUse"));
     }
 
     return record;
