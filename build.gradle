@@ -26,7 +26,7 @@ def getCmdParam() {
 repositories { mavenCentral() }
 
 allprojects {
-  version = '1.14.1'
+  version = '1.14.2'
   ext.awsCognitoVersion = '1.5.3'
   group = 'com.formkiq.stacks'
   
