@@ -8649,9 +8649,6 @@ Resources:
                   description: "Attribute Key"
                 dataType:
                   $ref: "#/components/schemas/AttributeDataType"
-                inUse:
-                  type: "boolean"
-                  description: "Whether the Attribute is in use"
 
             AttributeType:
               type: string

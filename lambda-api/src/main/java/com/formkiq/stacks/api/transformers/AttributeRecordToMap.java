@@ -34,7 +34,7 @@ public class AttributeRecordToMap implements Function<AttributeRecord, Map<Strin
 
   @Override
   public Map<String, Object> apply(final AttributeRecord a) {
-    return Map.of("key", a.getKey(), "type", a.getType().name(), "inUse",
-        Boolean.valueOf(a.isInUse()), "dataType", a.getDataType().name());
+    return Map.of("key", a.getKey(), "type", a.getType().name(), "dataType",
+        a.getDataType().name());
   }
 }

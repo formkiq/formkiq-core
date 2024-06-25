@@ -92,13 +92,4 @@ public interface AttributeService {
    * @param type {@link AttributeType}
    */
   void setAttributeType(String siteId, String key, AttributeType type);
-
-
-  /**
-   * Set {@link AttributeRecord} in use.
-   * 
-   * @param siteId {@link String}'
-   * @param key {@link String}
-   */
-  void setInUse(String siteId, String key);
 }

@@ -118,9 +118,12 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
 
     if (!dbKey.isEmpty()) {
 
-      r = r.getFromAttributes(siteId, dbKey);
+      QueryConfig config = new QueryConfig().indexName(GSI1);
+      DocumentAttributeRecord dar = new DocumentAttributeRecord().setKey(key);
+      AttributeValue pk = dar.fromS(dar.pkGsi1(siteId));
 
-      if (!r.isInUse()) {
+      QueryResponse response = this.db.queryBeginsWith(config, pk, null, null, 1);
+      if (response.items().isEmpty()) {
         deleted = this.db.deleteItem(Map.of(PK, dbKey.get(PK), SK, dbKey.get(SK)));
       } else {
         errors.add(new ValidationErrorImpl().error("attribute 'key' is in use, cannot be deleted"));
@@ -189,16 +192,6 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
 
     Map<String, AttributeValueUpdate> attributes = Map.of("type",
         AttributeValueUpdate.builder().value(AttributeValue.fromS(type.name())).build());
-    this.db.updateItem(r.fromS(r.pk(siteId)), r.fromS(r.sk()), attributes);
-  }
-
-  @Override
-  public void setInUse(final String siteId, final String key) {
-
-    AttributeRecord r = new AttributeRecord().key(key).documentId(key);
-
-    Map<String, AttributeValueUpdate> attributes = Map.of("isInUse",
-        AttributeValueUpdate.builder().value(AttributeValue.fromBool(Boolean.TRUE)).build());
     this.db.updateItem(r.fromS(r.pk(siteId)), r.fromS(r.sk()), attributes);
   }
 }
