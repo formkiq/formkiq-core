@@ -994,7 +994,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.schemasApi.getSitesSchema(siteId, null);
+        this.schemasApi.getSitesSchema(siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -1920,9 +1920,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       // then
       assertEquals("Sites Schema set", response.getMessage());
 
-      GetSitesSchemaResponse schema = this.schemasApi.getSitesSchema(siteId, null);
+      GetSitesSchemaResponse schema = this.schemasApi.getSitesSchema(siteId);
       assertEquals("joe", schema.getName());
-      assertEquals(1, Objects.requireNonNull(schema.getVersion()).intValue());
       assertNotNull(schema.getAttributes());
       assertEquals(key, notNull(schema.getAttributes().getRequired()).get(0).getAttributeKey());
       assertTrue(notNull(schema.getAttributes().getRequired().get(0).getAllowedValues()).isEmpty());
@@ -1937,20 +1936,12 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       // then
       assertEquals("Sites Schema set", response.getMessage());
 
-      schema = this.schemasApi.getSitesSchema(siteId, null);
+      schema = this.schemasApi.getSitesSchema(siteId);
       assertEquals("joe", schema.getName());
-      assertEquals(2, Objects.requireNonNull(schema.getVersion()).intValue());
       assertNotNull(schema.getAttributes());
       assertEquals(key, notNull(schema.getAttributes().getRequired()).get(0).getAttributeKey());
       assertEquals("123", String.join(",",
           notNull(schema.getAttributes().getRequired().get(0).getAllowedValues())));
-
-      schema = this.schemasApi.getSitesSchema(siteId, "1");
-      assertEquals("joe", schema.getName());
-      assertEquals(1, Objects.requireNonNull(schema.getVersion()).intValue());
-      assertNotNull(schema.getAttributes());
-      assertEquals(key, notNull(schema.getAttributes().getRequired()).get(0).getAttributeKey());
-      assertTrue(notNull(schema.getAttributes().getRequired().get(0).getAllowedValues()).isEmpty());
     }
   }
 
@@ -2085,7 +2076,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       // then
       assertEquals("Sites Schema set", response.getMessage());
 
-      GetSitesSchemaResponse schema = this.schemasApi.getSitesSchema(siteId, null);
+      GetSitesSchemaResponse schema = this.schemasApi.getSitesSchema(siteId);
       assertEquals("joe", schema.getName());
     }
   }

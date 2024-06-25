@@ -76,10 +76,10 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
   }
 
   @Override
-  public Schema getSitesSchema(final String siteId, final Integer version) {
+  public Schema getSitesSchema(final String siteId) {
 
     Schema schema = null;
-    SitesSchemaRecord record = getSitesSchemaRecord(siteId, version);
+    SitesSchemaRecord record = getSitesSchemaRecord(siteId);
 
     if (record != null) {
       schema = gson.fromJson(record.getSchema(), Schema.class);
@@ -89,23 +89,12 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
   }
 
   @Override
-  public SitesSchemaRecord getSitesSchemaRecord(final String siteId, final Integer version) {
+  public SitesSchemaRecord getSitesSchemaRecord(final String siteId) {
 
     SitesSchemaRecord r = new SitesSchemaRecord();
     AttributeValue pk = r.fromS(r.pk(siteId));
-    Map<String, AttributeValue> attr;
-
-    if (version == null) {
-      AttributeValue sk = r.fromS(SitesSchemaRecord.PREFIX_SK);
-      QueryConfig config = new QueryConfig().scanIndexForward(Boolean.FALSE);
-      QueryResponse response = this.db.queryBeginsWith(config, pk, sk, null, 1);
-      attr = response.items().size() == 1 ? response.items().get(0) : Collections.emptyMap();
-
-    } else {
-
-      r.version(version);
-      attr = this.db.get(r.fromS(r.pk(siteId)), r.fromS(r.sk()));
-    }
+    AttributeValue sk = r.fromS(r.sk());
+    Map<String, AttributeValue> attr = this.db.get(pk, sk);
 
     if (!attr.isEmpty()) {
       r = r.getFromAttributes(siteId, attr);
@@ -148,10 +137,7 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
 
     if (errors.isEmpty()) {
 
-      SitesSchemaRecord schemaRecord = getSitesSchemaRecord(siteId, null);
-      int version = schemaRecord != null ? schemaRecord.getVersion() + 1 : 1;
-
-      SitesSchemaRecord r = new SitesSchemaRecord().name(name).schema(schemaJson).version(version);
+      SitesSchemaRecord r = new SitesSchemaRecord().name(name).schema(schemaJson);
 
       List<SchemaCompositeKeyRecord> compositeKeys =
           createCompositeKeys(schema.getAttributes().getCompositeKeys());
@@ -215,7 +201,6 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
     list.add(r.getAttributes(siteId));
     list.addAll(compositeKeys.stream().map(a -> a.getAttributes(siteId)).toList());
 
-    System.out.println("!! PUT: " + list);
     this.db.putItems(list);
 
     return r;
