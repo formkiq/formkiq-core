@@ -25,10 +25,8 @@ package com.formkiq.stacks.dynamodb;
 
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -90,35 +88,10 @@ class AttributeServiceDynamoDbTest implements DbKeys {
   }
 
   /**
-   * Delete attribute in use.
-   */
-  @Test
-  void testDelete02() {
-    // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-
-      String key = "category";
-      service.addAttribute(siteId, key, AttributeDataType.STRING, AttributeType.STANDARD);
-      AttributeRecord record = service.getAttribute(siteId, key);
-      assertNotNull(record);
-      service.setInUse(siteId, key);
-
-      // when
-      Collection<ValidationError> errors = service.deleteAttribute(siteId, key);
-
-      // then
-      assertEquals(1, errors.size());
-      assertEquals("attribute 'key' is in use, cannot be deleted",
-          errors.iterator().next().error());
-      assertNotNull(service.getAttribute(siteId, key));
-    }
-  }
-
-  /**
    * Delete invalid attribute.
    */
   @Test
-  void testDelete03() {
+  void testDelete02() {
     // given
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
@@ -152,28 +125,6 @@ class AttributeServiceDynamoDbTest implements DbKeys {
       // then
       record = service.getAttribute(siteId, key);
       assertEquals(AttributeType.OPA, record.getType());
-    }
-  }
-
-  /**
-   * Attribute Set In Use.
-   */
-  @Test
-  void testSetInUse01() {
-    // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-
-      String key = "category";
-      service.addAttribute(siteId, key, AttributeDataType.STRING, AttributeType.STANDARD);
-      AttributeRecord record = service.getAttribute(siteId, key);
-      assertFalse(record.isInUse());
-
-      // when
-      service.setInUse(siteId, key);
-
-      // then
-      record = service.getAttribute(siteId, key);
-      assertTrue(record.isInUse());
     }
   }
 }

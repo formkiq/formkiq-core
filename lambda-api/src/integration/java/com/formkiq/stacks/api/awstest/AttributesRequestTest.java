@@ -131,7 +131,6 @@ public class AttributesRequestTest extends AbstractAwsIntegrationTest {
         assertEquals(key, attribute1.getKey());
         assertEquals(AttributeType.STANDARD, attribute1.getType());
         assertEquals(AttributeDataType.STRING, attribute1.getDataType());
-        assertEquals(Boolean.FALSE, attribute1.getInUse());
 
         List<Attribute> attributes =
             attributesApi.getAttributes(siteId, null, "100").getAttributes();
@@ -141,7 +140,6 @@ public class AttributesRequestTest extends AbstractAwsIntegrationTest {
         assertNotNull(attribute2.getKey());
         assertNotNull(attribute2.getType());
         assertNotNull(attribute2.getDataType());
-        assertNotNull(attribute2.getInUse());
       }
     }
   }
@@ -178,7 +176,6 @@ public class AttributesRequestTest extends AbstractAwsIntegrationTest {
         assertEquals(key, attribute1.getKey());
         assertEquals(AttributeType.OPA, attribute1.getType());
         assertEquals(AttributeDataType.NUMBER, attribute1.getDataType());
-        assertEquals(Boolean.FALSE, attribute1.getInUse());
 
         // when
         DeleteResponse deleteResponse = attributesApi.deleteAttribute(key, siteId);

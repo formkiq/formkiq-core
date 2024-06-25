@@ -245,14 +245,12 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       assertEquals(key, attribute.getKey());
       assertEquals(AttributeType.STANDARD, attribute.getType());
       assertEquals(AttributeDataType.STRING, attribute.getDataType());
-      assertEquals(Boolean.FALSE, attribute.getInUse());
 
       attribute = this.attributesApi.getAttribute(key, siteId).getAttribute();
       assertNotNull(attribute);
       assertEquals(key, attribute.getKey());
       assertEquals(AttributeType.STANDARD, attribute.getType());
       assertEquals(AttributeDataType.STRING, attribute.getDataType());
-      assertEquals(Boolean.FALSE, attribute.getInUse());
 
       try {
         this.attributesApi.addAttribute(req, siteId);
@@ -637,7 +635,6 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       assertEquals("security", attribute.getKey());
       assertEquals(AttributeDataType.STRING, attribute.getDataType());
       assertEquals(AttributeType.STANDARD, attribute.getType());
-      assertEquals(Boolean.TRUE, attribute.getInUse());
     }
   }
 

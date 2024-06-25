@@ -309,12 +309,8 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       documentAttributeRecords.stream().filter(a -> a.getInsertedDate() == null)
           .forEach(a -> a.setInsertedDate(date));
 
-      Map<String, AttributeRecord> attributeMap = validateDocumentAttributes(schemaAttributes,
-          siteId, documentId, documentAttributes, isUpdate, validation, validationAccess);
-
-      // update Attributes to In-Use
-      attributeMap.values().stream().filter(a -> !a.isInUse())
-          .forEach(a -> this.attributeService.setInUse(siteId, a.getKey()));
+      validateDocumentAttributes(schemaAttributes, siteId, documentId, documentAttributes, isUpdate,
+          validation, validationAccess);
 
       // when updating attributes remove existing attribute keys
       if (AttributeValidationAccess.ADMIN_UPDATE.equals(validationAccess)
