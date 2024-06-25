@@ -89,7 +89,7 @@ import com.formkiq.stacks.dynamodb.attributes.AttributeValidatorImpl;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
 import com.formkiq.stacks.dynamodb.attributes.DynamicObjectToDocumentAttributeRecord;
-import com.formkiq.stacks.dynamodb.documents.DocumentAttributePublicationValue;
+import com.formkiq.stacks.dynamodb.documents.DocumentPublicationRecord;
 import com.formkiq.stacks.dynamodb.schemas.Schema;
 import com.formkiq.stacks.dynamodb.schemas.SchemaAttributes;
 import com.formkiq.stacks.dynamodb.schemas.SchemaAttributesCompositeKey;
@@ -652,10 +652,18 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   @Override
   public boolean deletePublishDocument(final String siteId, final String documentId) {
 
-    DocumentAttributeRecord r = new DocumentAttributeRecord().setDocumentId(documentId)
+    DocumentPublicationRecord r0 = new DocumentPublicationRecord().setDocumentId(documentId);
+
+    DocumentAttributeRecord r1 = new DocumentAttributeRecord().setDocumentId(documentId)
         .setKey(AttributeKeyReserved.PUBLICATION.getKey()).updateValueType();
-    Map<String, AttributeValue> attributes = r.getAttributes(siteId);
-    return this.dbService.deleteItem(Map.of(PK, attributes.get(PK), SK, attributes.get(SK)));
+
+    Map<String, AttributeValue> attributes0 = r0.getAttributes(siteId);
+    Map<String, AttributeValue> attributes1 = r1.getAttributes(siteId);
+
+    Map<String, AttributeValue> keys0 = Map.of(PK, attributes0.get(PK), SK, attributes0.get(SK));
+    Map<String, AttributeValue> keys1 = Map.of(PK, attributes1.get(PK), SK, attributes1.get(SK));
+
+    return this.dbService.deleteItems(List.of(keys0, keys1));
   }
 
   @Override
@@ -1123,10 +1131,9 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
-  public DocumentAttributeRecord findPublishDocument(final String siteId, final String documentId) {
-    DocumentAttributeRecord r = new DocumentAttributeRecord().setDocumentId(documentId)
-        .setKey(AttributeKeyReserved.PUBLICATION.getKey())
-        .setValueType(DocumentAttributeValueType.PUBLICATION);
+  public DocumentPublicationRecord findPublishDocument(final String siteId,
+      final String documentId) {
+    DocumentPublicationRecord r = new DocumentPublicationRecord().setDocumentId(documentId);
     Map<String, AttributeValue> a = this.dbService.get(r.fromS(r.pk(siteId)), r.fromS(r.sk()));
 
     if (!a.isEmpty()) {
@@ -1511,19 +1518,21 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   public void publishDocument(final String siteId, final String documentId, final String s3version,
       final String path, final String contentType, final String userId) {
 
-    DocumentAttributePublicationValue val = new DocumentAttributePublicationValue().setPath(path)
-        .setS3version(s3version).setContentType(contentType);
+    DocumentPublicationRecord val =
+        new DocumentPublicationRecord().setPath(path).setS3version(s3version)
+            .setContentType(contentType).setDocumentId(documentId).setUserId(userId);
 
     DocumentAttributeRecord r = new DocumentAttributeRecord().setDocumentId(documentId)
         .setKey(AttributeKeyReserved.PUBLICATION.getKey()).setUserId(userId)
-        .setInsertedDate(new Date()).setPublicationValue(val);
-    r.updateValueType();
+        .setStringValue(documentId).setInsertedDate(new Date())
+        .setValueType(DocumentAttributeValueType.PUBLICATION);
 
-    this.dbService.putItem(r.getAttributes(siteId));
+    this.dbService.putItems(List.of(r.getAttributes(siteId), val.getAttributes(siteId)));
 
     AttributeRecord a = new AttributeRecord().documentId(AttributeKeyReserved.PUBLICATION.getKey())
         .key(AttributeKeyReserved.PUBLICATION.getKey()).type(AttributeType.STANDARD)
         .dataType(AttributeDataType.PUBLICATION);
+
     if (!this.dbService.exists(a.fromS(a.pk(siteId)), a.fromS(a.sk()))) {
       this.dbService.putItem(a.getAttributes(siteId));
     }

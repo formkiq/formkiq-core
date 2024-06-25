@@ -40,6 +40,7 @@ import com.formkiq.plugins.tagschema.DocumentTagLoader;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidation;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
+import com.formkiq.stacks.dynamodb.documents.DocumentPublicationRecord;
 import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
@@ -546,9 +547,9 @@ public interface DocumentService extends DocumentTagLoader {
    *
    * @param siteId {@link String}
    * @param documentId {@link String}
-   * @return DocumentPublishRecord
+   * @return DocumentPublicationRecord
    */
-  DocumentAttributeRecord findPublishDocument(String siteId, String documentId);
+  DocumentPublicationRecord findPublishDocument(String siteId, String documentId);
 
   /**
    * Delete Publish Document.

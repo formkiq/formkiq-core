@@ -28,7 +28,6 @@ import com.formkiq.aws.dynamodb.DynamodbVersionRecord;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.graalvm.annotations.Reflectable;
-import com.formkiq.stacks.dynamodb.documents.DocumentAttributePublicationValue;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.text.ParseException;
@@ -68,34 +67,11 @@ public class DocumentAttributeRecord
   private Date insertedDate;
   /** Attribute Document Id. */
   private String userId;
-  /** {@link DocumentAttributePublicationValue}. */
-  private DocumentAttributePublicationValue publicationValue;
 
   /**
    * constructor.
    */
   public DocumentAttributeRecord() {}
-
-  /**
-   * Get Publication Value.
-   * 
-   * @return DocumentAttributePublicationValue
-   */
-  public DocumentAttributePublicationValue getPublicationValue() {
-    return this.publicationValue;
-  }
-
-  /**
-   * Set Publication Value.
-   * 
-   * @param value {@link DocumentAttributePublicationValue}
-   * @return DocumentAttributeRecord
-   */
-  public DocumentAttributeRecord setPublicationValue(
-      final DocumentAttributePublicationValue value) {
-    this.publicationValue = value;
-    return this;
-  }
 
   /**
    * Get User Id.
@@ -155,15 +131,6 @@ public class DocumentAttributeRecord
       map.put("inserteddate", AttributeValue.fromS(df.format(this.insertedDate)));
     }
 
-    if (this.publicationValue != null) {
-
-      Map<String, AttributeValue> publicationMap = new HashMap<>();
-      publicationMap.put("path", fromS(this.publicationValue.getPath()));
-      publicationMap.put("s3Version", fromS(this.publicationValue.getS3version()));
-      publicationMap.put("contentType", fromS(this.publicationValue.getContentType()));
-      map.put("publication", AttributeValue.fromM(publicationMap));
-    }
-
     return map;
   }
 
@@ -189,17 +156,6 @@ public class DocumentAttributeRecord
 
       if (attrs.containsKey("numberValue")) {
         record.setNumberValue(nn(attrs, "numberValue"));
-      }
-
-      if (attrs.containsKey("publication")) {
-        DocumentAttributePublicationValue p = new DocumentAttributePublicationValue();
-
-        Map<String, AttributeValue> publication = attrs.get("publication").m();
-        p.setPath(publication.get("path").s());
-        p.setContentType(publication.get("contentType").s());
-        p.setS3version(publication.get("s3Version").s());
-
-        record.setPublicationValue(p);
       }
 
       if (attrs.containsKey("inserteddate")) {
@@ -264,8 +220,8 @@ public class DocumentAttributeRecord
       case STRING, COMPOSITE_STRING -> this.stringValue;
       case NUMBER -> formatDouble(this.numberValue);
       case BOOLEAN -> this.booleanValue.toString();
-      case CLASSIFICATION -> this.stringValue;
-      case KEY_ONLY, PUBLICATION -> "#";
+      case CLASSIFICATION, PUBLICATION -> this.stringValue;
+      case KEY_ONLY -> "#";
     };
 
   }
@@ -409,8 +365,6 @@ public class DocumentAttributeRecord
       this.valueType = DocumentAttributeValueType.NUMBER;
     } else if (this.booleanValue != null) {
       this.valueType = DocumentAttributeValueType.BOOLEAN;
-    } else if (this.publicationValue != null) {
-      this.valueType = DocumentAttributeValueType.PUBLICATION;
     }
 
     return this;

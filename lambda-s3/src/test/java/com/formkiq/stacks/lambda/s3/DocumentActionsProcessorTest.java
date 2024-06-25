@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.lambda.s3;
 
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.stacks.dynamodb.ConfigService.CHATGPT_API_KEY;
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
 import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFileAsMap;
@@ -53,9 +54,14 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.dynamodb.model.SearchAttributeCriteria;
+import com.formkiq.aws.dynamodb.model.SearchQuery;
+import com.formkiq.stacks.dynamodb.DocumentSearchService;
+import com.formkiq.stacks.dynamodb.DocumentSearchServiceImpl;
 import com.formkiq.stacks.dynamodb.attributes.AttributeKeyReserved;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
-import com.formkiq.stacks.dynamodb.documents.DocumentAttributePublicationValue;
+import com.formkiq.stacks.dynamodb.documents.DocumentPublicationRecord;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -170,6 +176,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
   private static ConfigService configService;
   /** {@link DocumentService}. */
   private static DocumentService documentService;
+  /** {@link DocumentSearchService}. */
+  private static DocumentSearchService documentSearchService;
   /** {@link ClientAndServer}. */
   private static ClientAndServer mockServer;
   /** {@link DocumentActionsProcessor}. */
@@ -210,6 +218,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
     actionsService = new ActionsServiceDynamoDb(dbBuilder, DOCUMENTS_TABLE);
     mappingService = new MappingServiceDynamodb(db);
     attributeService = new AttributeServiceDynamodb(db);
+    documentSearchService =
+        new DocumentSearchServiceImpl(dbBuilder, documentService, DOCUMENTS_TABLE, null);
     createMockServer();
 
     s3Service = new S3Service(TestServices.getS3Connection(null));
@@ -1809,17 +1819,23 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertEquals(ActionType.PUBLISH, action.type());
       assertEquals(ActionStatus.COMPLETE, action.status());
 
-      DocumentAttributeRecord pd = documentService.findPublishDocument(siteId, documentId);
-      DocumentAttributePublicationValue pv = pd.getPublicationValue();
-      assertEquals(documentId, pd.getDocumentId());
+      DocumentPublicationRecord pv = documentService.findPublishDocument(siteId, documentId);
+      assertEquals(documentId, pv.getDocumentId());
       assertEquals("text/plain", pv.getContentType());
       assertEquals(documentId, pv.getPath());
-      assertEquals("joe", pd.getUserId());
+      assertEquals("joe", pv.getUserId());
       assertNotNull(pv.getS3version());
 
       AttributeRecord attribute =
           attributeService.getAttribute(siteId, AttributeKeyReserved.PUBLICATION.getKey());
       assertNotNull(attribute);
+
+      SearchAttributeCriteria attr =
+          new SearchAttributeCriteria().key(AttributeKeyReserved.PUBLICATION.getKey());
+      SearchQuery req = new SearchQuery().attribute(attr);
+      List<DynamicDocumentItem> docs =
+          notNull(documentSearchService.search(siteId, req, null, null, 2).getResults());
+      assertEquals(1, docs.size());
     }
   }
 }
