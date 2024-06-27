@@ -23,38 +23,6 @@
  */
 package com.formkiq.stacks.dynamodb;
 
-import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
-import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
-import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
-import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
-import static com.formkiq.aws.dynamodb.objects.Strings.isUuid;
-import static com.formkiq.aws.dynamodb.objects.Strings.removeQuotes;
-import static com.formkiq.stacks.dynamodb.attributes.AttributeRecord.ATTR;
-import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.fromS;
-import java.io.IOException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.TimeZone;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 import com.formkiq.aws.dynamodb.BatchGetConfig;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamicObject;
@@ -114,6 +82,39 @@ import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest.Builder;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 import software.amazon.awssdk.services.dynamodb.model.ReturnValue;
+
+import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.TimeZone;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
+import static com.formkiq.aws.dynamodb.objects.Strings.isUuid;
+import static com.formkiq.aws.dynamodb.objects.Strings.removeQuotes;
+import static com.formkiq.stacks.dynamodb.attributes.AttributeRecord.ATTR;
+import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.fromS;
 
 /** Implementation of the {@link DocumentService}. */
 public class DocumentServiceImpl implements DocumentService, DbKeys {
@@ -1831,6 +1832,9 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       final Collection<DocumentAttributeRecord> attributes, final SaveDocumentOptions options)
       throws ValidationException {
 
+    updatePathFromDeepLink(document);
+    validate(document);
+
     boolean documentExists = exists(siteId, document.getDocumentId());
 
     Map<String, AttributeValue> previous =
@@ -1903,7 +1907,6 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       final Collection<DocumentAttributeRecord> documentAttributes,
       final SaveDocumentOptions options) throws ValidationException {
 
-    updatePathFromDeepLink(document);
     Map<String, AttributeValue> keys = keysDocument(siteId, document.getDocumentId());
     saveDocument(keys, siteId, document, tags, documentAttributes, options);
 
@@ -2045,8 +2048,6 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     item.setBelongsToDocumentId(doc.getBelongsToDocumentId());
     item.setTagSchemaId(doc.getTagSchemaId());
     item.setMetadata(doc.getMetadata());
-
-    updatePathFromDeepLink(item);
 
     List<DocumentTag> tags = saveDocumentItemGenerateTags(siteId, doc, date, username);
     Collection<DocumentAttributeRecord> attributes = getDocumentAttributes(doc);
@@ -2198,6 +2199,28 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     }
   }
 
+  /**
+   * Validate {@link DocumentItem}.
+   *
+   * @param document {@link DocumentItem}
+   */
+  private void validate(final DocumentItem document) throws ValidationException {
+
+    Collection<ValidationError> errors = Collections.emptyList();
+
+    if (!isEmpty(document.getDeepLinkPath())) {
+
+      if (!Strings.isUrl(document.getDeepLinkPath())) {
+        errors = List.of(new ValidationErrorImpl().key("deepLinkPath")
+            .error("DeepLinkPath '" + document.getDeepLinkPath() + "' is not a valid URL"));
+      }
+    }
+
+    if (!errors.isEmpty()) {
+      throw new ValidationException(errors);
+    }
+  }
+
   private Map<String, AttributeRecord> validateDocumentAttributes(
       final List<SchemaAttributes> schemaAttributes, final String siteId, final String documentId,
       final Collection<DocumentAttributeRecord> documentAttributes, final boolean isUpdate,
@@ -2263,7 +2286,6 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
               .error("document attribute '" + key + "' already exists"));
         }
       });
-
     }
   }
 }

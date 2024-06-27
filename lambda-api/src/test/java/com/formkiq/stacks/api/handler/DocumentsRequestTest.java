@@ -23,6 +23,47 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
+import com.formkiq.aws.dynamodb.objects.Objects;
+import com.formkiq.aws.s3.S3ObjectMetadata;
+import com.formkiq.aws.s3.S3Service;
+import com.formkiq.aws.s3.S3ServiceExtension;
+import com.formkiq.aws.services.lambda.ApiResponseStatus;
+import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.invoker.ApiResponse;
+import com.formkiq.client.model.AddAttribute;
+import com.formkiq.client.model.AddAttributeRequest;
+import com.formkiq.client.model.AddChildDocument;
+import com.formkiq.client.model.AddChildDocumentResponse;
+import com.formkiq.client.model.AddDocumentAttribute;
+import com.formkiq.client.model.AddDocumentAttributeStandard;
+import com.formkiq.client.model.AddDocumentMetadata;
+import com.formkiq.client.model.AddDocumentRequest;
+import com.formkiq.client.model.AddDocumentResponse;
+import com.formkiq.client.model.AddDocumentTag;
+import com.formkiq.client.model.AttributeSchemaCompositeKey;
+import com.formkiq.client.model.AttributeSchemaOptional;
+import com.formkiq.client.model.ChildDocument;
+import com.formkiq.client.model.DocumentAttribute;
+import com.formkiq.client.model.DocumentMetadata;
+import com.formkiq.client.model.DocumentTag;
+import com.formkiq.client.model.GetDocumentResponse;
+import com.formkiq.client.model.SchemaAttributes;
+import com.formkiq.client.model.SetSitesSchemaRequest;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
+import com.formkiq.stacks.dynamodb.DocumentVersionService;
+import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
+import com.formkiq.testutils.aws.DynamoDbExtension;
+import com.formkiq.testutils.aws.LocalStackExtension;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.UUID;
+
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
@@ -31,46 +72,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
-
-import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
-import com.formkiq.aws.s3.S3ObjectMetadata;
-import com.formkiq.aws.s3.S3Service;
-import com.formkiq.aws.s3.S3ServiceExtension;
-import com.formkiq.aws.services.lambda.ApiResponseStatus;
-import com.formkiq.client.invoker.ApiResponse;
-import com.formkiq.client.model.AddAttribute;
-import com.formkiq.client.model.AddAttributeRequest;
-import com.formkiq.client.model.AddChildDocumentResponse;
-import com.formkiq.client.model.AddDocumentAttribute;
-import com.formkiq.client.model.AddDocumentAttributeStandard;
-import com.formkiq.client.model.AddDocumentMetadata;
-import com.formkiq.client.model.AttributeSchemaCompositeKey;
-import com.formkiq.client.model.AttributeSchemaOptional;
-import com.formkiq.client.model.ChildDocument;
-import com.formkiq.client.model.DocumentAttribute;
-import com.formkiq.client.model.DocumentMetadata;
-import com.formkiq.client.model.DocumentTag;
-import com.formkiq.client.model.SchemaAttributes;
-import com.formkiq.client.model.SetSitesSchemaRequest;
-import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.dynamodb.DocumentService;
-import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
-import com.formkiq.stacks.dynamodb.DocumentVersionService;
-import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import com.formkiq.aws.dynamodb.objects.Objects;
-import com.formkiq.client.invoker.ApiException;
-import com.formkiq.client.model.AddChildDocument;
-import com.formkiq.client.model.AddDocumentRequest;
-import com.formkiq.client.model.AddDocumentResponse;
-import com.formkiq.client.model.AddDocumentTag;
-import com.formkiq.client.model.GetDocumentResponse;
-import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.LocalStackExtension;
 
 /** Unit Tests for request POST /documents. */
 @ExtendWith(DynamoDbExtension.class)
@@ -346,6 +347,35 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
             "{\"errors\":[{\"key\":\"test\","
                 + "\"error\":\"invalid attribute value 'test', only allowed values are abc\"}]}",
             e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * Save invalid deep link.
+   *
+   */
+  @Test
+  public void testPost08() {
+    // given
+    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+
+      for (String deepLinkPath : Arrays.asList("askdjaskd", "s3:/ajksdjasdsjasad", "s3/asd")) {
+
+        AddDocumentRequest req = new AddDocumentRequest().deepLinkPath(deepLinkPath);
+
+        // when
+        try {
+          this.documentsApi.addDocument(req, null, null);
+          fail();
+        } catch (ApiException e) {
+          // then
+          assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+          assertEquals("{\"errors\":[{\"key\":\"deepLinkPath\"," + "\"error\":\"DeepLinkPath '"
+              + deepLinkPath + "' is not a valid URL\"}]}", e.getResponseBody());
+        }
       }
     }
   }
