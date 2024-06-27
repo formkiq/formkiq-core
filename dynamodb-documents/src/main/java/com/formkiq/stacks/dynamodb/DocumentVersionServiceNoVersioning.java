@@ -24,6 +24,7 @@
 package com.formkiq.stacks.dynamodb;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamodbVersionRecord;
@@ -74,8 +75,9 @@ public class DocumentVersionServiceNoVersioning implements DocumentVersionServic
   }
 
   @Override
-  public void addRecords(final DynamoDbClient client, final String siteId,
-      final Collection<? extends DynamodbVersionRecord<?>> records) {
+  public List<Map<String, AttributeValue>> addRecords(final DynamoDbClient client,
+      final String siteId, final Collection<? extends DynamodbVersionRecord<?>> records) {
     // empty
+    return null;
   }
 }

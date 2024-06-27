@@ -29,11 +29,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.formkiq.aws.dynamodb.DbKeys.GSI1_PK;
-import static com.formkiq.aws.dynamodb.DbKeys.GSI1_SK;
-import static com.formkiq.aws.dynamodb.DbKeys.GSI2_PK;
-import static com.formkiq.aws.dynamodb.DbKeys.GSI2_SK;
-import static com.formkiq.aws.dynamodb.DbKeys.PK;
 import static com.formkiq.aws.dynamodb.DbKeys.SK;
 
 /**
@@ -44,15 +39,7 @@ import static com.formkiq.aws.dynamodb.DbKeys.SK;
 public interface DynamodbVersionRecord<T> extends DynamodbRecord<T> {
 
   /** Archive Key Prefix. */
-  String ARCHIVE_KEY_PREFIX = "Archive";
-
-  /**
-   * Get DynamoDb versioning PK.
-   *
-   * @param siteId {@link String}
-   * @return {@link String}
-   */
-  String pkVersion(String siteId);
+  String ARCHIVE_KEY_PREFIX = "archive#";
 
   /**
    * Get DynamoDb versioning SK.
@@ -65,23 +52,20 @@ public interface DynamodbVersionRecord<T> extends DynamodbRecord<T> {
    * Update Attributes to Version.
    * 
    * @param siteId {@link String}
-   * @param attrs {@link Map}
    * @return {@link Map}
    */
-  default Map<String, AttributeValue> updateAttributesToVersioned(final String siteId,
-      final Map<String, AttributeValue> attrs) {
+  default Map<String, AttributeValue> getVersionedAttributes(final String siteId) {
 
-    Map<String, AttributeValue> updated = new HashMap<>(attrs);
+    Map<String, AttributeValue> attrs = new HashMap<>(getAttributes(siteId));
 
-    for (String key : List.of(PK, SK, GSI1_PK, GSI1_SK, GSI2_PK, GSI2_SK)) {
+    for (String key : List.of(SK)) {
       if (attrs.containsKey(key)) {
-        updated.put(ARCHIVE_KEY_PREFIX + key, attrs.get(key));
+        attrs.put(ARCHIVE_KEY_PREFIX + key, attrs.get(key));
       }
     }
 
-    updated.put(PK, AttributeValue.fromS(pkVersion(siteId)));
-    updated.put(SK, AttributeValue.fromS(skVersion()));
+    attrs.put(SK, AttributeValue.fromS(skVersion()));
 
-    return updated;
+    return attrs;
   }
 }

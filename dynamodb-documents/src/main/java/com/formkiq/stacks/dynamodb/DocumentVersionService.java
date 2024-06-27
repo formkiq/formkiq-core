@@ -24,6 +24,7 @@
 package com.formkiq.stacks.dynamodb;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamodbVersionRecord;
@@ -97,11 +98,12 @@ public interface DocumentVersionService {
 
   /**
    * Add Versioning {@link DynamodbVersionRecord} records.
-   * 
+   *
    * @param client {@link DynamoDbClient}
    * @param siteId {@link String}
    * @param records {@link Collection} {@link DynamodbVersionRecord}
+   * @return List
    */
-  void addRecords(DynamoDbClient client, String siteId,
+  List<Map<String, AttributeValue>> addRecords(DynamoDbClient client, String siteId,
       Collection<? extends DynamodbVersionRecord<?>> records);
 }
