@@ -33,6 +33,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -41,6 +43,9 @@ import java.util.stream.Collectors;
  *
  */
 public class Strings {
+  /** Scheme Authority. */
+  private static final String SCHEME_AUTHORITY = "://";
+
   private static String findMatch(final Collection<String> resourceUrls,
       final List<String[]> resourceSplits, final String path) {
 
@@ -121,10 +126,33 @@ public class Strings {
    */
   public static String getFilename(final String path) {
 
-    String name = getUri(path);
-    int pos = name.lastIndexOf("/");
-    name = pos > -1 ? name.substring(pos + 1) : name;
+    String name = path;
+
+    if (isUrl(name)) {
+
+      int protocolPos = name.indexOf(SCHEME_AUTHORITY);
+      String protocol = name.substring(0, protocolPos);
+
+      int pos = protocolPos + SCHEME_AUTHORITY.length();
+      name = name.substring(pos);
+
+      pos = name.lastIndexOf("/");
+      name = pos > -1 ? name.substring(pos + 1) : "s3".equalsIgnoreCase(protocol) ? name : "";
+
+    } else {
+
+      int pos = name.lastIndexOf("/");
+      name = pos > -1 ? name.substring(pos + 1) : name;
+    }
+
     return name;
+  }
+
+  public static boolean isUrl(final String s) {
+    String regex = "^[a-zA-Z][a-zA-Z0-9]+" + SCHEME_AUTHORITY + "[a-zA-Z]+.*$";
+    Pattern pattern = Pattern.compile(regex);
+    Matcher matcher = pattern.matcher(s);
+    return matcher.matches();
   }
 
   private static String getUri(final String path) {

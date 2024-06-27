@@ -147,7 +147,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       // given
       setBearerToken(siteId);
 
-      AddDocumentUploadRequest req = new AddDocumentUploadRequest().deepLinkPath("test.txt");
+      AddDocumentUploadRequest req = new AddDocumentUploadRequest().deepLinkPath("s3://test.txt");
       GetDocumentUrlResponse response =
           this.documentsApi.addDocumentUpload(req, siteId, null, null, null);
       String documentId = response.getDocumentId();
@@ -156,7 +156,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
 
       // then
-      assertEquals("test.txt", document.getDeepLinkPath());
+      assertEquals("s3://test.txt", document.getDeepLinkPath());
       assertEquals("test.txt", document.getPath());
     }
   }

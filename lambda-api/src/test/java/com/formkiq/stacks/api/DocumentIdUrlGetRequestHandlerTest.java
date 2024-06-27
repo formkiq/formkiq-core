@@ -55,7 +55,7 @@ import com.github.dockerjava.zerodep.shaded.org.apache.hc.core5.http.impl.bootst
 public class DocumentIdUrlGetRequestHandlerTest extends AbstractRequestHandler {
 
   /** {@link HttpServer}. */
-  private HttpService http = new HttpServiceJdk11();
+  private final HttpService http = new HttpServiceJdk11();
 
   /**
    * /documents/{documentId}/url request.
