@@ -153,19 +153,20 @@ public class DocumentVersionServiceDynamoDb implements DocumentVersionService {
   }
 
   @Override
-  public void addRecords(final DynamoDbClient client, final String siteId,
-      final Collection<? extends DynamodbVersionRecord<?>> records) {
+  public List<Map<String, AttributeValue>> addRecords(final DynamoDbClient client,
+      final String siteId, final Collection<? extends DynamodbVersionRecord<?>> records) {
 
     List<Map<String, AttributeValue>> attrs =
-        records.stream().map(r -> r.getAttributes(siteId)).toList();
+        records.stream().map(r -> r.getVersionedAttributes(siteId)).toList();
 
     DynamoDbService db = new DynamoDbServiceImpl(client, getDocumentVersionsTableName());
     db.putItems(attrs);
+
+    return attrs;
   }
 
   private String getSk(final Map<String, AttributeValue> previous, final String version) {
-    String sk = previous.get(SK).s() + TAG_DELIMINATOR + this.df.format(new Date())
-        + TAG_DELIMINATOR + "v" + version;
-    return sk;
+    return previous.get(SK).s() + TAG_DELIMINATOR + this.df.format(new Date()) + TAG_DELIMINATOR
+        + "v" + version;
   }
 }

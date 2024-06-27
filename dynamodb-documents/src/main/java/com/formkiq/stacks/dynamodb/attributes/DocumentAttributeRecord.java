@@ -201,16 +201,22 @@ public class DocumentAttributeRecord
 
     String sk = ATTR + this.key + "#";
 
+    sk = getSkValue(sk);
+
+    return sk;
+  }
+
+  private String getSkValue(final String sk) {
+    String val = sk;
     switch (this.valueType) {
-      case STRING, COMPOSITE_STRING, CLASSIFICATION -> sk += this.stringValue;
-      case BOOLEAN -> sk += this.booleanValue;
-      case NUMBER -> sk += formatDouble(this.numberValue);
+      case STRING, COMPOSITE_STRING, CLASSIFICATION -> val += this.stringValue;
+      case BOOLEAN -> val += this.booleanValue;
+      case NUMBER -> val += formatDouble(this.numberValue);
       case KEY_ONLY, PUBLICATION -> {
       }
       default -> throw new IllegalArgumentException("Unexpected value: " + this.valueType);
     }
-
-    return sk;
+    return val;
   }
 
   @Override
@@ -371,13 +377,9 @@ public class DocumentAttributeRecord
   }
 
   @Override
-  public String pkVersion(final String siteId) {
-    return pk(siteId);
-  }
-
-  @Override
   public String skVersion() {
-    return ATTR + this.key + "#" + getInsertedDate();
+    String sk = ATTR + this.key + "#" + this.df.format(getInsertedDate()) + "#";
+    return getSkValue(sk);
   }
 
   /**
