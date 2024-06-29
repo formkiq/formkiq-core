@@ -4287,6 +4287,7 @@ Resources:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /groups/{groupName}:
             delete:
               operationId: DeleteGroup
               summary: Delete Group

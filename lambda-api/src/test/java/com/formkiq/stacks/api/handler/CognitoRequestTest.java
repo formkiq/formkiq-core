@@ -264,4 +264,26 @@ public class CognitoRequestTest extends AbstractApiClientRequestTest {
           e.getResponseBody());
     }
   }
+
+  /**
+   * DELETE /groups/{groupName} only allowed by admin.
+   *
+   */
+  @Test
+  public void testDeleteGroup01() {
+    // given
+    setBearerToken("security");
+
+    // when
+    try {
+      this.userManagementApi.deleteGroup("test");
+      fail();
+    } catch (ApiException e) {
+      // then
+      assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
+      assertEquals(
+          "{\"message\":\"fkq access denied " + "(groups: security (DELETE,READ,WRITE))\"}",
+          e.getResponseBody());
+    }
+  }
 }
