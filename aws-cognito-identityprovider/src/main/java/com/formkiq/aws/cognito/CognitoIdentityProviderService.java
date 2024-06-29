@@ -54,6 +54,7 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.Authenticat
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ChallengeNameType;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.CreateGroupRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.CreateGroupResponse;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.DeleteGroupRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.GetUserRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.GetUserResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ListGroupsRequest;
@@ -385,5 +386,16 @@ public class CognitoIdentityProviderService {
     AdminResetUserPasswordRequest req = AdminResetUserPasswordRequest.builder()
         .userPoolId(this.userPoolId).username(username).build();
     this.cognitoProvider.adminResetUserPassword(req);
+  }
+
+  /**
+   * Delete Group.
+   * 
+   * @param groupName {@link String}
+   */
+  public void deleteGroup(final String groupName) {
+    DeleteGroupRequest req =
+        DeleteGroupRequest.builder().userPoolId(this.userPoolId).groupName(groupName).build();
+    this.cognitoProvider.deleteGroup(req);
   }
 }

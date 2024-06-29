@@ -110,4 +110,20 @@ public class GroupsRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
 
     return result;
   }
+
+  @Override
+  public ApiRequestHandlerResponse delete(final LambdaLogger logger,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
+      final AwsServiceCache awsservice) throws Exception {
+
+    AddGroupRequest request = fromBodyToObject(event, AddGroupRequest.class);
+
+    CognitoIdentityProviderService service =
+        awsservice.getExtension(CognitoIdentityProviderService.class);
+    service.deleteGroup(request.getGroupName());
+
+    ApiMapResponse resp =
+        new ApiMapResponse(Map.of("message", "Group " + request.getGroupName() + " deleted"));
+    return new ApiRequestHandlerResponse(SC_OK, resp);
+  }
 }

@@ -4259,6 +4259,32 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+            delete:
+              operationId: DeleteGroup
+              summary: Delete Group
+              description: Delete Group
+              tags:
+              - User Management
+              parameters:
+              - $ref: '#/components/parameters/groupNamePath'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DeleteResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /groups/{groupName}/users:
             get:
               operationId: GetUsersInGroup
