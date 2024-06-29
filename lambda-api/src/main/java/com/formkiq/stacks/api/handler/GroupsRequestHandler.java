@@ -64,13 +64,13 @@ public class GroupsRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
         awsservice.getExtension(CognitoIdentityProviderService.class);
 
     SimpleDateFormat df = DateUtil.getIsoDateFormatter();
-    ListGroupsResponse response = service.listGroups(token, Integer.valueOf(limit));
+    ListGroupsResponse response = service.listGroups(token, limit);
 
-    List<Map<String, String>> groups = response.groups().stream().map(g -> {
-      return Map.of("name", g.groupName(), "description",
-          g.description() != null ? g.description() : "", "insertedDate",
-          toString(df, g.creationDate()), "lastModifiedDate", toString(df, g.lastModifiedDate()));
-    }).collect(Collectors.toList());
+    List<Map<String, String>> groups = response.groups().stream()
+        .map(g -> Map.of("name", g.groupName(), "description",
+            g.description() != null ? g.description() : "", "insertedDate",
+            toString(df, g.creationDate()), "lastModifiedDate", toString(df, g.lastModifiedDate())))
+        .collect(Collectors.toList());
 
     Map<String, Object> map = new HashMap<>();
     map.put("groups", groups);
@@ -83,6 +83,22 @@ public class GroupsRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
   @Override
   public String getRequestUrl() {
     return URL;
+  }
+
+  @Override
+  public ApiRequestHandlerResponse post(final LambdaLogger logger,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
+      final AwsServiceCache awsservice) throws Exception {
+
+    AddGroupRequest request = fromBodyToObject(event, AddGroupRequest.class);
+
+    CognitoIdentityProviderService service =
+        awsservice.getExtension(CognitoIdentityProviderService.class);
+    service.addGroup(request.getGroupName());
+
+    ApiMapResponse resp =
+        new ApiMapResponse(Map.of("message", "Group " + request.getGroupName() + " created"));
+    return new ApiRequestHandlerResponse(SC_OK, resp);
   }
 
   private String toString(final SimpleDateFormat df, final Instant date) {

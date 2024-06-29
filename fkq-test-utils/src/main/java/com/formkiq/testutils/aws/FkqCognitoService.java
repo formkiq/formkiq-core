@@ -104,7 +104,7 @@ public class FkqCognitoService {
     UserType userType = null;
     if (!this.service.isUserExists(email)) {
       String tempPassword = "!" + password + "!";
-      userType = this.service.addUser(email, tempPassword);
+      userType = this.service.addUser(email, tempPassword, Boolean.TRUE);
       this.service.loginWithNewPassword(email, tempPassword, password);
     }
     return userType;
