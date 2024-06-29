@@ -68,6 +68,7 @@ import com.formkiq.stacks.api.handler.DocumentAttributeVersionsRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentAttributesRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentAttributesValueRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentIdContentRequestHandler;
+import com.formkiq.stacks.api.handler.GroupRequestHandler;
 import com.formkiq.stacks.api.handler.GroupsUserRequestHandler;
 import com.formkiq.stacks.api.handler.PublicationsDocumentIdRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentIdRequestHandler;
@@ -365,6 +366,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
 
   private static void addGroupUsersEndpoints() {
     addRequestHandler(new GroupsRequestHandler());
+    addRequestHandler(new GroupRequestHandler());
     addRequestHandler(new GroupsUsersRequestHandler());
     addRequestHandler(new GroupsUserRequestHandler());
     addRequestHandler(new UsersRequestHandler());

@@ -33,23 +33,17 @@ import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.api.transformers.GroupsResponseToMap;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.ListGroupsResponse;
 
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
-/** {@link ApiGatewayRequestHandler} for "/groups". */
-public class GroupsRequestHandler implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
+/** {@link ApiGatewayRequestHandler} for "/groups/{groupName}". */
+public class GroupRequestHandler implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
-  /** Default Limit. */
-  private static final int DEFAULT_LIMIT = 10;
-  /** {@link GroupsRequestHandler} URL. */
-  public static final String URL = "/groups";
+  /** {@link GroupRequestHandler} URL. */
+  public static final String URL = "/groups/{groupName}";
 
   @Override
   public Optional<Boolean> isAuthorized(final AwsServiceCache awsServiceCache, final String method,
@@ -59,48 +53,21 @@ public class GroupsRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
   }
 
   @Override
-  public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
-
-    String token = event.getQueryStringParameter("next");
-    String limitS = event.getQueryStringParameter("limit");
-    int limit = limitS != null ? Integer.parseInt(limitS) : DEFAULT_LIMIT;
-
-    CognitoIdentityProviderService service =
-        awsservice.getExtension(CognitoIdentityProviderService.class);
-
-    ListGroupsResponse response = service.listGroups(token, limit);
-
-    List<Map<String, Object>> groups =
-        response.groups().stream().map(new GroupsResponseToMap()).toList();
-
-    Map<String, Object> map = new HashMap<>();
-    map.put("groups", groups);
-    map.put("next", response.nextToken());
-
-    ApiMapResponse resp = new ApiMapResponse(map);
-    return new ApiRequestHandlerResponse(SC_OK, resp);
-  }
-
-  @Override
   public String getRequestUrl() {
     return URL;
   }
 
   @Override
-  public ApiRequestHandlerResponse post(final LambdaLogger logger,
+  public ApiRequestHandlerResponse delete(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    AddGroupRequest request = fromBodyToObject(event, AddGroupRequest.class);
-
+    String groupName = event.getPathParameters().get("groupName");
     CognitoIdentityProviderService service =
         awsservice.getExtension(CognitoIdentityProviderService.class);
-    service.addGroup(request.getGroupName());
+    service.deleteGroup(groupName);
 
-    ApiMapResponse resp =
-        new ApiMapResponse(Map.of("message", "Group " + request.getGroupName() + " created"));
+    ApiMapResponse resp = new ApiMapResponse(Map.of("message", "Group " + groupName + " deleted"));
     return new ApiRequestHandlerResponse(SC_OK, resp);
   }
 }
