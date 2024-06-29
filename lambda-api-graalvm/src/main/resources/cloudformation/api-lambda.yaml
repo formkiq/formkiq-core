@@ -307,6 +307,7 @@ Resources:
               - cognito-idp:ListGroups
               - cognito-idp:ListUsersInGroup
               - cognito-idp:CreateGroup
+              - cognito-idp:DeleteGroup
               Resource:
               - Fn::Sub: "arn:${Partition}:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${CognitoUserPool}"
             - Effect: Allow
