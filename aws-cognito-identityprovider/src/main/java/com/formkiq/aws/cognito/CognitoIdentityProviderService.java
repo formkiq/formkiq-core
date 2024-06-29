@@ -115,9 +115,9 @@ public class CognitoIdentityProviderService {
 
     AdminCreateUserRequest cognitoRequest = AdminCreateUserRequest.builder()
         .userPoolId(this.userPoolId).username(username).temporaryPassword(temporaryPassword)
-        .userAttributes(Arrays
-            .asList(AttributeType.builder().name("username").value(username).build(), AttributeType
-                .builder().name("email_verified").value(String.valueOf(emailVerified)).build()))
+        .userAttributes(Arrays.asList(AttributeType.builder().name("email").value(username).build(),
+            AttributeType.builder().name("email_verified").value(String.valueOf(emailVerified))
+                .build()))
         .build();
 
     AdminCreateUserResponse createUserResult = this.cognitoProvider.adminCreateUser(cognitoRequest);

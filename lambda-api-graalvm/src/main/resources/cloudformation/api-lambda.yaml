@@ -306,6 +306,7 @@ Resources:
               Action:
               - cognito-idp:ListGroups
               - cognito-idp:ListUsersInGroup
+              - cognito-idp:CreateGroup
               Resource:
               - Fn::Sub: "arn:${Partition}:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${CognitoUserPool}"
             - Effect: Allow

@@ -31,7 +31,7 @@ import com.formkiq.graalvm.annotations.Reflectable;
 @Reflectable
 public class AddGroup {
   /** Group Name. */
-  private String groupName;
+  private String name;
 
   /**
    * constructor.
@@ -43,8 +43,8 @@ public class AddGroup {
    * 
    * @return String
    */
-  public String getGroupName() {
-    return this.groupName;
+  public String getName() {
+    return this.name;
   }
 
   /**
@@ -53,8 +53,8 @@ public class AddGroup {
    * @param name {@link String}
    * @return AddGroup
    */
-  public AddGroup setGroupName(final String name) {
-    this.groupName = name;
+  public AddGroup setName(final String name) {
+    this.name = name;
     return this;
   }
 }
