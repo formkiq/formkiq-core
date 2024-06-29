@@ -68,6 +68,7 @@ import com.formkiq.stacks.api.handler.DocumentAttributeVersionsRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentAttributesRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentAttributesValueRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentIdContentRequestHandler;
+import com.formkiq.stacks.api.handler.GroupsUserRequestHandler;
 import com.formkiq.stacks.api.handler.PublicationsDocumentIdRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentIdRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentIdRestoreRequestHandler;
@@ -129,6 +130,9 @@ import com.formkiq.stacks.api.handler.TagSchemasRequestHandler;
 import com.formkiq.stacks.api.handler.UpdateDocumentMatchingRequestHandler;
 import com.formkiq.stacks.api.handler.UserActivitiesDocumentIdRequestHandler;
 import com.formkiq.stacks.api.handler.UserActivitiesRequestHandler;
+import com.formkiq.stacks.api.handler.UserOperationRequestHandler;
+import com.formkiq.stacks.api.handler.UserRequestHandler;
+import com.formkiq.stacks.api.handler.UsersRequestHandler;
 import com.formkiq.stacks.api.handler.VersionRequestHandler;
 import com.formkiq.stacks.api.handler.WebhooksIdRequestHandler;
 import com.formkiq.stacks.api.handler.WebhooksRequestHandler;
@@ -361,6 +365,10 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
   private static void addGroupUsersEndpoints() {
     addRequestHandler(new GroupsRequestHandler());
     addRequestHandler(new GroupsUsersRequestHandler());
+    addRequestHandler(new GroupsUserRequestHandler());
+    addRequestHandler(new UsersRequestHandler());
+    addRequestHandler(new UserRequestHandler());
+    addRequestHandler(new UserOperationRequestHandler());
   }
 
   private static void addWorkflowEndpoints() {

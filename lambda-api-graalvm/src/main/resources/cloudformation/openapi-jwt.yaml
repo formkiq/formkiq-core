@@ -145,14 +145,11 @@ Resources:
                   description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
                     application/json:
                       schema:
@@ -173,14 +170,11 @@ Resources:
                   description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
                     application/json:
                       schema:
@@ -203,14 +197,11 @@ Resources:
                   description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
                     application/json:
                       schema:
@@ -238,14 +229,11 @@ Resources:
                   description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
                     application/json:
                       schema:
@@ -283,14 +271,11 @@ Resources:
                   description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
                     application/json:
                       schema:
@@ -353,14 +338,11 @@ Resources:
                   description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
                     application/json:
                       schema:
@@ -388,9 +370,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -422,14 +404,11 @@ Resources:
                   description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
                     application/json:
                       schema:
@@ -518,14 +497,11 @@ Resources:
                   description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
                     application/json:
                       schema:
@@ -594,14 +570,11 @@ Resources:
                   description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
                     application/json:
                       schema:
@@ -686,14 +659,11 @@ Resources:
                   description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
                     application/json:
                       schema:
@@ -716,14 +686,11 @@ Resources:
                   description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
                     application/json:
                       schema:
@@ -746,14 +713,11 @@ Resources:
                   description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
                     application/json:
                       schema:
@@ -875,14 +839,11 @@ Resources:
                   description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
                     application/json:
                       schema:
@@ -1159,7 +1120,7 @@ Resources:
                       $ref: '#/components/schemas/AddDocumentAttributesRequest'
               responses:
                 '201':
-                  $ref: '#/components/responses/200CorsAddResponse'
+                  $ref: '#/components/responses/201CorsAddResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -1297,9 +1258,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -1436,9 +1397,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -1529,14 +1490,11 @@ Resources:
                   description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
                     application/json:
                       schema:
@@ -1569,9 +1527,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -1604,9 +1562,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -1654,9 +1612,9 @@ Resources:
                   description: 201 CREATED
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -1685,9 +1643,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -1713,9 +1671,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -1776,14 +1734,11 @@ Resources:
                   description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
                     application/json:
                       schema:
@@ -1846,14 +1801,11 @@ Resources:
                   description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
                     application/json:
                       schema:
@@ -1970,9 +1922,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -2004,9 +1956,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -2046,9 +1998,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -2077,9 +2029,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -2135,9 +2087,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -2170,9 +2122,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -2210,9 +2162,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -2246,9 +2198,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -2282,9 +2234,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -2332,9 +2284,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -2365,9 +2317,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -2421,9 +2373,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -2452,9 +2404,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -2485,9 +2437,9 @@ Resources:
                   description: 201 CREATED
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -2514,9 +2466,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -2543,9 +2495,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -2610,9 +2562,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -2640,9 +2592,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -2672,9 +2624,9 @@ Resources:
                   description: 201 CREATED
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -2685,9 +2637,9 @@ Resources:
                   description: 400 BAD REQUEST
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -2713,9 +2665,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -2740,14 +2692,11 @@ Resources:
                   description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
                     application/json:
                       schema:
@@ -2776,9 +2725,9 @@ Resources:
                   description: 20) OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -2789,9 +2738,9 @@ Resources:
                   description: 400 BAD REQUEST
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -2822,9 +2771,9 @@ Resources:
                   description: 20) OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -2835,9 +2784,9 @@ Resources:
                   description: 400 BAD REQUEST
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -2865,9 +2814,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -2894,9 +2843,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -2926,9 +2875,9 @@ Resources:
                   description: 201 CREATED
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -2939,9 +2888,9 @@ Resources:
                   description: 400 BAD REQUEST
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -2967,9 +2916,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -2994,14 +2943,11 @@ Resources:
                   description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
                     application/json:
                       schema:
@@ -3027,9 +2973,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -3055,9 +3001,9 @@ Resources:
                   description: 200 CREATED
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -3068,9 +3014,9 @@ Resources:
                   description: 400 BAD REQUEST
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -3101,9 +3047,9 @@ Resources:
                   description: 201 CREATED
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -3114,9 +3060,9 @@ Resources:
                   description: 400 BAD REQUEST
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -3143,9 +3089,9 @@ Resources:
                   description: 200 CREATED
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -3156,9 +3102,9 @@ Resources:
                   description: 400 BAD REQUEST
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -3191,9 +3137,9 @@ Resources:
                   description: 201 CREATED
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -3204,9 +3150,9 @@ Resources:
                   description: 400 BAD REQUEST
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -3238,14 +3184,11 @@ Resources:
                   description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
                     application/json:
                       schema:
@@ -3273,9 +3216,9 @@ Resources:
                   description: 201 CREATED
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -3286,9 +3229,9 @@ Resources:
                   description: 400 BAD REQUEST
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -3314,9 +3257,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -3365,9 +3308,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -3394,9 +3337,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -3421,9 +3364,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -3454,9 +3397,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -3487,9 +3430,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -3520,9 +3463,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -3589,9 +3532,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -3624,9 +3567,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -3654,9 +3597,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -3692,9 +3635,9 @@ Resources:
                   description: 201 CREATED
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -3724,9 +3667,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -3756,9 +3699,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -3783,14 +3726,11 @@ Resources:
                   description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
                     application/json:
                       schema:
@@ -3818,9 +3758,9 @@ Resources:
                   description: 201 CREATED
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -3846,14 +3786,11 @@ Resources:
                   description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
                     application/json:
                       schema:
@@ -3915,9 +3852,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -3979,9 +3916,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -4012,9 +3949,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -4040,9 +3977,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -4071,9 +4008,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -4105,9 +4042,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -4151,9 +4088,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -4191,9 +4128,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -4224,9 +4161,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -4256,9 +4193,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -4281,9 +4218,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -4295,8 +4232,8 @@ Resources:
           /groups:
             get:
               operationId: GetGroups
-              description: Returns the list of user groups configured in the application
-              summary: Get configured system group(s)
+              description: Returns the list of user groups
+              summary: Get list of user group(s)
               parameters:
               - $ref: '#/components/parameters/limitParam'
               - $ref: '#/components/parameters/nextParam'
@@ -4307,18 +4244,45 @@ Resources:
                   description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
                     application/json:
                       schema:
                         "$ref": "#/components/schemas/GetGroupsResponse"
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+            post:
+              operationId: AddGroup
+              description: Add a new group
+              summary: Add a group
+              tags:
+              - User Management
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/AddGroupRequest'
+              responses:
+                '200':
+                  description: "200 OK"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        "$ref": "#/components/schemas/AddResponse"
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -4329,12 +4293,7 @@ Resources:
               description: Returns the list of users in a group
               summary: Get users in a group
               parameters:
-              - name: groupName
-                in: path
-                required: true
-                description: "Fetch documents inserted on a certain date (yyyy-MM-dd)"
-                schema:
-                  type: "string"
+              - $ref: '#/components/parameters/groupNamePath'
               - $ref: '#/components/parameters/limitParam'
               - $ref: '#/components/parameters/nextParam'
               tags:
@@ -4344,18 +4303,243 @@ Resources:
                   description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
                     application/json:
                       schema:
                         "$ref": "#/components/schemas/GetUsersInGroupResponse"
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+            post:
+              operationId: AddUserToGroup
+              description: Adds a user to a group
+              summary: Add User to a group
+              parameters:
+              - $ref: '#/components/parameters/groupNamePath'
+              tags:
+              - User Management
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/AddUserRequest'
+              responses:
+                '200':
+                  description: "200 OK"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        "$ref": "#/components/schemas/AddResponse"
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /groups/{groupName}/users/{username}:
+            delete:
+              operationId: RemoveUsernameFromGroup
+              summary: Remove Username From Group
+              description: Remove Username From Group
+              tags:
+              - User Management
+              parameters:
+              - $ref: '#/components/parameters/groupNamePath'
+              - $ref: '#/components/parameters/usernamePath'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DeleteResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /users:
+            get:
+              operationId: GetUsers
+              description: Returns the list of users
+              summary: Get list of user(s)
+              parameters:
+              - $ref: '#/components/parameters/limitParam'
+              - $ref: '#/components/parameters/nextParam'
+              tags:
+              - User Management
+              responses:
+                '200':
+                  description: "200 OK"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        "$ref": "#/components/schemas/GetUsersResponse"
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+            post:
+              operationId: AddUser
+              description: Adds a user
+              summary: Add User
+              tags:
+              - User Management
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/AddUserRequest'
+              responses:
+                '200':
+                  description: "200 OK"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        "$ref": "#/components/schemas/AddUserResponse"
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /users/{username}:
+            get:
+              operationId: GetUser
+              description: Returns a user
+              summary: Get a user
+              parameters:
+              - $ref: '#/components/parameters/usernamePath'
+              tags:
+              - User Management
+              responses:
+                '200':
+                  description: "200 OK"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        "$ref": "#/components/schemas/GetUserResponse"
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+            delete:
+              operationId: DeleteUsername
+              summary: Delete Username
+              description: Delete Username
+              tags:
+              - User Management
+              parameters:
+              - $ref: '#/components/parameters/usernamePath'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DeleteResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
+          /users/{username}/groups:
+            get:
+              operationId: GetListOfUserGroups
+              description: Returns a list of group user belongs to
+              summary: Returns a list of group user belongs to
+              parameters:
+              - $ref: '#/components/parameters/usernamePath'
+              - $ref: '#/components/parameters/limitParam'
+              - $ref: '#/components/parameters/nextParam'
+              tags:
+              - User Management
+              responses:
+                '200':
+                  description: "200 OK"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        "$ref": "#/components/schemas/GetUserGroupsResponse"
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /users/{username}/{userOperation}:
+            put:
+              operationId: SetUserOperation
+              description: Set User Operation (disable, enable, reset-password)
+              summary: Set User Operation
+              parameters:
+              - $ref: '#/components/parameters/usernamePath'
+              - $ref: '#/components/parameters/usernameOperationPath'
+              tags:
+              - User Management
+              responses:
+                '200':
+                  description: "200 OK"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        "$ref": "#/components/schemas/GetUserResponse"
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -4380,14 +4564,11 @@ Resources:
                   description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
                     application/json:
                       schema:
@@ -4415,9 +4596,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -4443,14 +4624,11 @@ Resources:
                   description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
                     application/json:
                       schema:
@@ -4479,9 +4657,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -4506,9 +4684,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -4540,14 +4718,11 @@ Resources:
                   description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
                     application/json:
                       schema:
@@ -4601,14 +4776,11 @@ Resources:
                   description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
                     application/json:
                       schema:
@@ -4638,9 +4810,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -4666,9 +4838,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -4701,14 +4873,11 @@ Resources:
                   description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
                     application/json:
                       schema:
@@ -4734,9 +4903,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -4763,14 +4932,11 @@ Resources:
                   description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
                     application/json:
                       schema:
@@ -4800,9 +4966,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -4828,9 +4994,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -4863,14 +5029,11 @@ Resources:
                   description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
                     application/json:
                       schema:
@@ -4896,9 +5059,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -4930,14 +5093,11 @@ Resources:
                   description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
                     application/json:
                       schema:
@@ -4966,9 +5126,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -5000,14 +5160,11 @@ Resources:
                   description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
                     application/json:
                       schema:
@@ -5036,9 +5193,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -5065,14 +5222,11 @@ Resources:
                   description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
                     application/json:
                       schema:
@@ -5101,9 +5255,9 @@ Resources:
                   description: 201 CREATED
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -5135,14 +5289,11 @@ Resources:
                   description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
                     application/json:
                       schema:
@@ -5172,9 +5323,9 @@ Resources:
                   description: 200 CREATED
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -5205,9 +5356,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -5238,14 +5389,11 @@ Resources:
                   description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
                     application/json:
                       schema:
@@ -5274,9 +5422,9 @@ Resources:
                   description: 201 CREATED
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -5308,14 +5456,11 @@ Resources:
                   description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
                     application/json:
                       schema:
@@ -5345,9 +5490,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -5378,9 +5523,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -5408,14 +5553,11 @@ Resources:
                   description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
                     application/json:
                       schema:
@@ -5445,9 +5587,9 @@ Resources:
                   description: 201 CREATED
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -5480,14 +5622,11 @@ Resources:
                   description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
                     application/json:
                       schema:
@@ -5518,9 +5657,9 @@ Resources:
                   description: 200 CREATED
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -5552,9 +5691,9 @@ Resources:
                   description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
@@ -5580,14 +5719,11 @@ Resources:
                   description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
                     application/json:
                       schema:
@@ -5614,14 +5750,11 @@ Resources:
                   description: "201 OK"
                   headers:
                     Access-Control-Allow-Origin:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
                     Access-Control-Allow-Methods:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
-                      schema:
-                        type: "string"
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
                     application/json:
                       schema:
@@ -5682,18 +5815,15 @@ Resources:
               schema:
                 type: string
           responses:
-            200CorsAddResponse:
+            201CorsAddResponse:
               description: 200 OK
               headers:
                 Access-Control-Allow-Origin:
-                  schema:
-                    type: string
+                   $ref: '#/components/headers/AccessControlAllowOrigin'
                 Access-Control-Allow-Methods:
-                  schema:
-                    type: string
+                   $ref: '#/components/headers/AccessControlAllowMethods'
                 Access-Control-Allow-Headers:
-                  schema:
-                    type: string
+                  $ref: '#/components/headers/AccessControlAllowHeaders'
               content:
                 application/json:
                   schema:
@@ -5702,14 +5832,11 @@ Resources:
               description: 200 OK
               headers:
                 Access-Control-Allow-Origin:
-                  schema:
-                    type: string
+                   $ref: '#/components/headers/AccessControlAllowOrigin'
                 Access-Control-Allow-Methods:
-                  schema:
-                    type: string
+                   $ref: '#/components/headers/AccessControlAllowMethods'
                 Access-Control-Allow-Headers:
-                  schema:
-                    type: string
+                  $ref: '#/components/headers/AccessControlAllowHeaders'
               content:
                 application/json:
                   schema:
@@ -5718,14 +5845,11 @@ Resources:
               description: 200 OK
               headers:
                 Access-Control-Allow-Origin:
-                  schema:
-                    type: string
+                   $ref: '#/components/headers/AccessControlAllowOrigin'
                 Access-Control-Allow-Methods:
-                  schema:
-                    type: string
+                   $ref: '#/components/headers/AccessControlAllowMethods'
                 Access-Control-Allow-Headers:
-                  schema:
-                    type: string
+                  $ref: '#/components/headers/AccessControlAllowHeaders'
               content:
                 application/json:
                   schema:
@@ -5734,16 +5858,38 @@ Resources:
               description: 200 OK
               headers:
                 Access-Control-Allow-Origin:
-                  schema:
-                    type: string
+                   $ref: '#/components/headers/AccessControlAllowOrigin'
                 Access-Control-Allow-Methods:
-                  schema:
-                    type: string
+                   $ref: '#/components/headers/AccessControlAllowMethods'
                 Access-Control-Allow-Headers:
-                  schema:
-                    type: string
+                  $ref: '#/components/headers/AccessControlAllowHeaders'
               content: {}
           parameters:
+            usernamePath:
+              name: username
+              in: path
+              description: Username
+              required: true
+              schema:
+                type: string
+            usernameOperationPath:
+              name: userOperation
+              in: path
+              description: Username Operation
+              required: true
+              schema:
+                type: string
+                enum:
+                  - DISABLE
+                  - ENABLE
+                  - RESET_PASSWORD
+            groupNamePath:
+              name: groupName
+              in: path
+              description: Group Name
+              required: true
+              schema:
+                type: string
             versionKeyPath:
               name: versionKey
               in: path
@@ -9475,6 +9621,38 @@ Resources:
                   description: "List of users"
                   items:
                     $ref: "#/components/schemas/User"
+            AddGroupRequest:
+              required:
+              - "group"
+              type: "object"
+              properties:
+                group:
+                  $ref: "#/components/schemas/AddGroup"
+            AddGroup:
+              type: "object"
+              properties:
+                name:
+                  type: "string"
+                  description: "Name of Group"
+            AddUserRequest:
+              required:
+              - "user"
+              type: "object"
+              properties:
+                user:
+                  $ref: "#/components/schemas/AddUser"
+            AddUser:
+              type: "object"
+              properties:
+                username:
+                  type: "string"
+                  description: "Username of user"
+            AddUserResponse:
+              type: "object"
+              properties:
+                userId:
+                  type: "string"
+                  description: "User Identifier"
             User:
               type: "object"
               properties:
@@ -9501,6 +9679,33 @@ Resources:
                   description: "List of groups"
                   items:
                     $ref: "#/components/schemas/Group"
+            GetUserResponse:
+              type: object
+              properties:
+                user:
+                  $ref: "#/components/schemas/User"
+            GetUserGroupsResponse:
+              type: object
+              properties:
+                next:
+                  type: "string"
+                  description: "Next page of results token"
+                groups:
+                  type: "array"
+                  description: "List of groups"
+                  items:
+                    $ref: "#/components/schemas/Group"
+            GetUsersResponse:
+              type: object
+              properties:
+                next:
+                  type: "string"
+                  description: "Next page of results token"
+                users:
+                  type: "array"
+                  description: "List of users"
+                  items:
+                    $ref: "#/components/schemas/User"
             Group:
               type: "object"
               properties:
