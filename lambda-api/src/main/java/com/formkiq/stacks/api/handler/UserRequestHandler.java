@@ -30,6 +30,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
+import com.formkiq.aws.services.lambda.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.transformers.UsersResponseToMap;
@@ -38,6 +39,7 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersRe
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
@@ -91,5 +93,12 @@ public class UserRequestHandler implements ApiGatewayRequestHandler, ApiGatewayR
   @Override
   public String getRequestUrl() {
     return URL;
+  }
+
+  @Override
+  public Optional<Boolean> isAuthorized(final AwsServiceCache awsServiceCache, final String method,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
+    boolean access = authorization.getPermissions().contains(ApiPermission.ADMIN);
+    return Optional.of(access);
   }
 }

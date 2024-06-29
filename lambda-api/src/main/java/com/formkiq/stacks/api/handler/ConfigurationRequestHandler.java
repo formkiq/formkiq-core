@@ -80,10 +80,7 @@ public class ConfigurationRequestHandler
 
   private void checkPermissions(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization) throws UnauthorizedException {
-    String siteId = event.getPathParameters().get("siteId");
-    if (!authorization.getPermissions(siteId).contains(ApiPermission.ADMIN)) {
-      throw new UnauthorizedException("user is unauthorized");
-    }
+    checkPermission(event, authorization, ApiPermission.ADMIN);
   }
 
   @Override

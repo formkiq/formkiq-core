@@ -26,6 +26,7 @@ package com.formkiq.aws.services.lambda;
 import java.util.Optional;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
+import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 
 /**
@@ -266,5 +267,14 @@ public interface ApiGatewayRequestHandler {
       ApiAuthorization authorization, AwsServiceCache awsServices) throws Exception {
     throw new NotFoundException(
         event.getHttpMethod() + " for " + event.getResource() + " not found");
+  }
+
+  default void checkPermission(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final ApiPermission permission)
+      throws UnauthorizedException {
+    String siteId = event.getPathParameters().get("siteId");
+    if (!authorization.getPermissions(siteId).contains(permission)) {
+      throw new UnauthorizedException("user is unauthorized");
+    }
   }
 }

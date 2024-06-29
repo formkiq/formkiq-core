@@ -33,30 +33,32 @@ import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.api.transformers.UsersResponseToMap;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersResponse;
+import com.formkiq.stacks.api.transformers.GroupsResponseToMap;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminListGroupsForUserResponse;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_CREATED;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
-/** {@link ApiGatewayRequestHandler} for "/users". */
-public class UsersRequestHandler implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
+/** {@link ApiGatewayRequestHandler} for "/users/{username}/groups". */
+public class UserGroupsRequestHandler
+    implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
   /** Default Limit. */
   private static final int DEFAULT_LIMIT = 10;
-  /** {@link UsersRequestHandler} URL. */
-  public static final String URL = "/users";
+
+  /** {@link UserGroupsRequestHandler} URL. */
+  public static final String URL = "/users/{username}/groups";
 
   @Override
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
+
+    String username = event.getQueryStringParameter("username");
 
     String token = event.getQueryStringParameter("next");
     String limitS = event.getQueryStringParameter("limit");
@@ -65,36 +67,18 @@ public class UsersRequestHandler implements ApiGatewayRequestHandler, ApiGateway
     CognitoIdentityProviderService service =
         awsservice.getExtension(CognitoIdentityProviderService.class);
 
-    ListUsersResponse response = service.listUsers(token, limit);
+    AdminListGroupsForUserResponse response = service.listGroups(username, token, limit);
 
-    List<Map<String, Object>> users =
-        response.users().stream().map(new UsersResponseToMap()).toList();
+    List<Map<String, Object>> groups =
+        response.groups().stream().map(new GroupsResponseToMap()).toList();
 
     Map<String, Object> map = new HashMap<>();
-    map.put("users", users);
-    map.put("next", response.paginationToken());
+    map.put("groups", groups);
+    map.put("next", response.nextToken());
 
     ApiMapResponse resp = new ApiMapResponse(map);
     return new ApiRequestHandlerResponse(SC_OK, resp);
-  }
 
-  @Override
-  public ApiRequestHandlerResponse post(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
-
-    CognitoIdentityProviderService service =
-        awsservice.getExtension(CognitoIdentityProviderService.class);
-
-    AddUserRequest request = fromBodyToObject(event, AddUserRequest.class);
-
-    String username = request.getUser().getUsername();
-    String temporaryPassword = UUID.randomUUID() + UUID.randomUUID().toString();
-    service.addUser(username, temporaryPassword, Boolean.FALSE);
-
-    ApiMapResponse resp =
-        new ApiMapResponse(Map.of("message", "user '" + username + " has been created"));
-    return new ApiRequestHandlerResponse(SC_CREATED, resp);
   }
 
   @Override

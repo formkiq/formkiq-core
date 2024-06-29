@@ -40,6 +40,8 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUse
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminInitiateAuthRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminInitiateAuthResponse;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminListGroupsForUserRequest;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminListGroupsForUserResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminRemoveUserFromGroupRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminResetUserPasswordRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminRespondToAuthChallengeRequest;
@@ -234,6 +236,21 @@ public class CognitoIdentityProviderService {
   public ListGroupsResponse listGroups(final String token, final Integer limit) {
     return this.cognitoProvider.listGroups(ListGroupsRequest.builder().userPoolId(this.userPoolId)
         .nextToken(token).limit(limit).build());
+  }
+
+  /**
+   * List Groups for a user.
+   *
+   * @param username {@link String}
+   * @param token {@link String}
+   * @param limit {@link Integer}
+   * @return AdminListGroupsForUserResponse
+   */
+  public AdminListGroupsForUserResponse listGroups(final String username, final String token,
+      final Integer limit) {
+    AdminListGroupsForUserRequest req = AdminListGroupsForUserRequest.builder()
+        .userPoolId(this.userPoolId).username(username).nextToken(token).limit(limit).build();
+    return this.cognitoProvider.adminListGroupsForUser(req);
   }
 
   /**

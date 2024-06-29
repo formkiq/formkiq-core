@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.formkiq.client.api.MappingsApi;
+import com.formkiq.client.api.UserManagementApi;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -134,6 +135,8 @@ public abstract class AbstractApiClientRequestTest {
       new AdvancedDocumentSearchApi(this.client);
   /** {@link MappingsApi}. */
   protected MappingsApi mappingsApi = new MappingsApi(this.client);
+  /** {@link UserManagementApi}. */
+  protected UserManagementApi userManagementApi = new UserManagementApi(this.client);
 
   /**
    * Convert JSON to Object.

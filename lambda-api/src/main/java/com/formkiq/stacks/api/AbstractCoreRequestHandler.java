@@ -130,6 +130,7 @@ import com.formkiq.stacks.api.handler.TagSchemasRequestHandler;
 import com.formkiq.stacks.api.handler.UpdateDocumentMatchingRequestHandler;
 import com.formkiq.stacks.api.handler.UserActivitiesDocumentIdRequestHandler;
 import com.formkiq.stacks.api.handler.UserActivitiesRequestHandler;
+import com.formkiq.stacks.api.handler.UserGroupsRequestHandler;
 import com.formkiq.stacks.api.handler.UserOperationRequestHandler;
 import com.formkiq.stacks.api.handler.UserRequestHandler;
 import com.formkiq.stacks.api.handler.UsersRequestHandler;
@@ -369,6 +370,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new UsersRequestHandler());
     addRequestHandler(new UserRequestHandler());
     addRequestHandler(new UserOperationRequestHandler());
+    addRequestHandler(new UserGroupsRequestHandler());
   }
 
   private static void addWorkflowEndpoints() {
