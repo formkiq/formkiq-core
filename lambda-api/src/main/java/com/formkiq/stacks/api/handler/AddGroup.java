@@ -50,11 +50,11 @@ public class AddGroup {
   /**
    * Set Group Name.
    * 
-   * @param name {@link String}
+   * @param groupName {@link String}
    * @return AddGroup
    */
-  public AddGroup setName(final String name) {
-    this.name = name;
+  public AddGroup setName(final String groupName) {
+    this.name = groupName;
     return this;
   }
 }
