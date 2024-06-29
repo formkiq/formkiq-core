@@ -66,9 +66,9 @@ public class AddGroupRequest {
    * @throws BadException BadException
    */
   public String getGroupName() throws BadException {
-    String groupName = getGroup().getGroupName();
+    String groupName = getGroup().getName();
     if (isEmpty(groupName)) {
-      throw new BadException("invalid 'groupName''");
+      throw new BadException("invalid 'groupName'");
     }
 
     return groupName;
