@@ -31,6 +31,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.cognito.CognitoIdentityProviderService;
@@ -40,6 +41,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
+import com.formkiq.aws.services.lambda.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersInGroupResponse;
@@ -67,14 +69,13 @@ public class GroupsUsersRequestHandler
         awsservice.getExtension(CognitoIdentityProviderService.class);
 
     SimpleDateFormat df = DateUtil.getIsoDateFormatter();
-    ListUsersInGroupResponse response =
-        service.listUsersInGroup(groupName, token, Integer.valueOf(limit));
+    ListUsersInGroupResponse response = service.listUsersInGroup(groupName, token, limit);
 
-    List<Map<String, String>> users = response.users().stream().map(u -> {
-      return Map.of("username", u.username(), "userStatus", u.userStatusAsString(), "insertedDate",
-          toString(df, u.userCreateDate()), "lastModifiedDate",
-          toString(df, u.userLastModifiedDate()));
-    }).collect(Collectors.toList());
+    List<Map<String, String>> users = response.users().stream()
+        .map(u -> Map.of("username", u.username(), "userStatus", u.userStatusAsString(),
+            "insertedDate", toString(df, u.userCreateDate()), "lastModifiedDate",
+            toString(df, u.userLastModifiedDate())))
+        .collect(Collectors.toList());
 
     Map<String, Object> map = new HashMap<>();
     map.put("users", users);
@@ -116,5 +117,12 @@ public class GroupsUsersRequestHandler
     }
 
     return result;
+  }
+
+  @Override
+  public Optional<Boolean> isAuthorized(final AwsServiceCache awsServiceCache, final String method,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
+    boolean access = authorization.getPermissions().contains(ApiPermission.ADMIN);
+    return Optional.of(access);
   }
 }
