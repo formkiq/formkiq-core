@@ -4428,7 +4428,7 @@
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/AddUserResponse'
+                        $ref: '#/components/schemas/AddResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -9588,12 +9588,6 @@
                 username:
                   type: string
                   description: Username of user
-            AddUserResponse:
-              type: object
-              properties:
-                userId:
-                  type: string
-                  description: User Identifier
             User:
               type: object
               properties:

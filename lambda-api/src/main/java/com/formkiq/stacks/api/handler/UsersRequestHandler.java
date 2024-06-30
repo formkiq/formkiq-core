@@ -93,7 +93,7 @@ public class UsersRequestHandler implements ApiGatewayRequestHandler, ApiGateway
     service.addUser(username, temporaryPassword, Boolean.FALSE);
 
     ApiMapResponse resp =
-        new ApiMapResponse(Map.of("message", "user '" + username + " has been created"));
+        new ApiMapResponse(Map.of("message", "user '" + username + "' has been created"));
     return new ApiRequestHandlerResponse(SC_CREATED, resp);
   }
 
