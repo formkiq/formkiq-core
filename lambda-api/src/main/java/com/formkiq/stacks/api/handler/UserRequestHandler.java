@@ -54,7 +54,7 @@ public class UserRequestHandler implements ApiGatewayRequestHandler, ApiGatewayR
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    String username = event.getQueryStringParameter("username");
+    String username = event.getPathParameters().get("username");
 
     CognitoIdentityProviderService service =
         awsservice.getExtension(CognitoIdentityProviderService.class);
@@ -82,7 +82,7 @@ public class UserRequestHandler implements ApiGatewayRequestHandler, ApiGatewayR
     CognitoIdentityProviderService service =
         awsservice.getExtension(CognitoIdentityProviderService.class);
 
-    String username = event.getQueryStringParameter("username");
+    String username = event.getPathParameters().get("username");
     service.deleteUser(username);
 
     ApiMapResponse resp =
