@@ -4538,7 +4538,7 @@
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/GetUserResponse'
+                        $ref: '#/components/schemas/SetResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:

@@ -55,8 +55,8 @@ public class UserOperationRequestHandler
     CognitoIdentityProviderService service =
         awsservice.getExtension(CognitoIdentityProviderService.class);
 
-    String username = event.getQueryStringParameter("username");
-    String operation = event.getQueryStringParameter("userOperation").toLowerCase();
+    String username = event.getPathParameters().get("username");
+    String operation = event.getPathParameters().get("userOperation").toLowerCase();
 
     String msg;
 
