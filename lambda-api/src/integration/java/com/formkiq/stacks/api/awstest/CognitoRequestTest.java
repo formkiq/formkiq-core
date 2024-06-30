@@ -30,9 +30,19 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
+import com.formkiq.aws.services.lambda.ApiResponseStatus;
+import com.formkiq.client.model.AddGroup;
+import com.formkiq.client.model.AddGroupRequest;
+import com.formkiq.client.model.AddResponse;
+import com.formkiq.client.model.AddUser;
+import com.formkiq.client.model.AddUserRequest;
+import com.formkiq.client.model.DeleteResponse;
+import com.formkiq.client.model.SetResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import com.formkiq.client.api.DocumentsApi;
@@ -57,9 +67,39 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
   /** JUnit Test Timeout. */
   private static final int TEST_TIMEOUT = 20;
 
+  private static void deleteGroup(final UserManagementApi userApi, final String groupName)
+      throws ApiException {
+    DeleteResponse deleteResponse = userApi.deleteGroup(groupName);
+    assertEquals("Group " + groupName + " deleted", deleteResponse.getMessage());
+  }
+
+  private static void addGroup(final UserManagementApi userApi, final String groupName)
+      throws ApiException {
+    // given
+    AddGroupRequest req = new AddGroupRequest().group(new AddGroup().name(groupName));
+
+    // when
+    AddResponse response = userApi.addGroup(req);
+
+    // then
+    assertEquals("Group " + groupName + " created", response.getMessage());
+  }
+
+  private static void addUser(final UserManagementApi userApi, final String email)
+      throws ApiException {
+    // given
+    AddUserRequest req = new AddUserRequest().user(new AddUser().username(email));
+
+    // when
+    AddResponse response = userApi.addUser(req);
+
+    // then
+    assertEquals("user '" + email + "' has been created", response.getMessage());
+  }
+
   /**
    * Test GET /groups.
-   * 
+   *
    * @throws Exception Exception
    */
   @Test
@@ -92,7 +132,7 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
 
   /**
    * Test GET /groups/{groupName}/users.
-   * 
+   *
    * @throws Exception Exception
    */
   @Test
@@ -100,12 +140,12 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
   public void testGetGroupUsers01() throws Exception {
 
     // given
+    String groupName = "Admins";
     List<ApiClient> clients = getApiClients(null);
 
-    for (ApiClient client : clients) {
+    for (ApiClient client : getAdminClients(clients)) {
 
       UserManagementApi userApi = new UserManagementApi(client);
-      String groupName = "Admins";
 
       // when
       GetUsersInGroupResponse response = userApi.getUsersInGroup(groupName, null, null);
@@ -121,6 +161,109 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
       assertNotNull(user.getInsertedDate());
       assertNotNull(user.getLastModifiedDate());
     }
+
+    // given
+    UserManagementApi userApi = new UserManagementApi(clients.get(2));
+
+    // when
+    try {
+      userApi.getUsersInGroup(groupName, null, null);
+      fail();
+    } catch (ApiException e) {
+      // then
+      assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
+    }
+  }
+
+  private List<ApiClient> getAdminClients(final List<ApiClient> clients) {
+    return Arrays.asList(clients.get(0), clients.get(1));
+  }
+
+  /**
+   * Test POST /groups.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  public void testAddGroupAndUser01() throws Exception {
+
+    // given
+    List<ApiClient> clients = getApiClients(null);
+    for (ApiClient client : getAdminClients(clients)) {
+
+      UserManagementApi userApi = new UserManagementApi(client);
+      String groupName = "test_" + UUID.randomUUID();
+      String email = groupName + "@formkiq.com";
+
+      // when
+      addUser(userApi, email);
+      addGroup(userApi, groupName);
+      addUserToGroup(userApi, email, groupName);
+
+      // then
+      List<User> usersInGroup = notNull(userApi.getUsersInGroup(groupName, null, null).getUsers());
+      assertEquals(1, usersInGroup.size());
+      assertNotNull(usersInGroup.get(0).getUsername());
+
+      List<Group> groups = notNull(userApi.getListOfUserGroups(email, null, null).getGroups());
+      assertEquals(1, groups.size());
+      assertEquals(groupName, groups.get(0).getName());
+
+      // when
+      disableUser(userApi, email);
+      enableUser(userApi, email);
+      removeUserFromGroup(userApi, email, groupName);
+
+      // then
+      deleteUser(userApi, email);
+      deleteGroup(userApi, groupName);
+    }
+
+    // given
+    UserManagementApi userApi = new UserManagementApi(clients.get(2));
+    String groupName = "test_" + UUID.randomUUID();
+    AddGroupRequest req = new AddGroupRequest().group(new AddGroup().name(groupName));
+
+    // when
+    try {
+      userApi.addGroup(req);
+      fail();
+    } catch (ApiException e) {
+      // then
+      assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
+    }
+  }
+
+  private void enableUser(final UserManagementApi userApi, final String email) throws ApiException {
+    SetResponse enable = userApi.setUserOperation(email, "enable");
+    assertEquals("user '" + email + "' has been enabled", enable.getMessage());
+  }
+
+  private static void disableUser(final UserManagementApi userApi, final String email)
+      throws ApiException {
+    SetResponse disable = userApi.setUserOperation(email, "disable");
+    assertEquals("user '" + email + "' has been disabled", disable.getMessage());
+  }
+
+  private void removeUserFromGroup(final UserManagementApi userApi, final String email,
+      final String groupName) throws ApiException {
+    DeleteResponse deleteResponse = userApi.removeUsernameFromGroup(groupName, email);
+    assertEquals("user '" + email + "' removed from group '" + groupName + "'",
+        deleteResponse.getMessage());
+  }
+
+  private void addUserToGroup(final UserManagementApi userApi, final String email,
+      final String groupName) throws ApiException {
+    AddUserRequest req = new AddUserRequest().user(new AddUser().username(email));
+    AddResponse addResponse = userApi.addUserToGroup(groupName, req);
+    assertEquals("user '" + email + "' added to group '" + groupName + "'",
+        addResponse.getMessage());
+  }
+
+  private void deleteUser(final UserManagementApi userApi, final String email) throws ApiException {
+    DeleteResponse deleteResponse = userApi.deleteUsername(email);
+    assertEquals("user '" + email + "' has been deleted", deleteResponse.getMessage());
   }
 
   /**

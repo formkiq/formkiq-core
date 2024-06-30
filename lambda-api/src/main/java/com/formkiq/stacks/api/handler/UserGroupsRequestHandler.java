@@ -58,7 +58,7 @@ public class UserGroupsRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    String username = event.getQueryStringParameter("username");
+    String username = event.getPathParameters().get("username");
 
     String token = event.getQueryStringParameter("next");
     String limitS = event.getQueryStringParameter("limit");
