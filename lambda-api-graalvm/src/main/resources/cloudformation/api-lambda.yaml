@@ -316,6 +316,7 @@ Resources:
               - cognito-idp:AdminRemoveUserFromGroup
               - cognito-idp:AdminResetUserPassword
               - cognito-idp:AdminGetUser
+              - cognito-idp:AdminListGroupsForUser
               Resource:
               - Fn::Sub: "arn:${Partition}:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${CognitoUserPool}"
             - Effect: Allow

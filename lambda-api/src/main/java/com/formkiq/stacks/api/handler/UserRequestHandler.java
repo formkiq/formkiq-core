@@ -86,7 +86,7 @@ public class UserRequestHandler implements ApiGatewayRequestHandler, ApiGatewayR
     service.deleteUser(username);
 
     ApiMapResponse resp =
-        new ApiMapResponse(Map.of("message", "user '" + username + " has been deleted"));
+        new ApiMapResponse(Map.of("message", "user '" + username + "' has been deleted"));
     return new ApiRequestHandlerResponse(SC_OK, resp);
   }
 
