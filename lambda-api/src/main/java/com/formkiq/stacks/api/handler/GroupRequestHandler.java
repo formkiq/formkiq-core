@@ -49,11 +49,11 @@ public class GroupRequestHandler implements ApiGatewayRequestHandler, ApiGateway
 
   @Override
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
-                                       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-                                       final AwsServiceCache awsservice) throws Exception {
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
+      final AwsServiceCache awsservice) throws Exception {
 
     CognitoIdentityProviderService service =
-            awsservice.getExtension(CognitoIdentityProviderService.class);
+        awsservice.getExtension(CognitoIdentityProviderService.class);
 
     String groupName = event.getPathParameters().get("groupName");
     GetGroupResponse response = service.getGroup(groupName);
