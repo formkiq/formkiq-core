@@ -28,6 +28,7 @@ import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_UNAUTHORIZED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.Arrays;
@@ -110,7 +111,7 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
     // given
     List<ApiClient> clients = getApiClients(null);
 
-    for (ApiClient client : clients) {
+    for (ApiClient client : getAdminClients(clients)) {
 
       UserManagementApi userApi = new UserManagementApi(client);
 
@@ -124,8 +125,22 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
       User user = users.get(0);
       assertNotNull(user.getUsername());
       assertNotNull(user.getUserStatus());
+      assertNotNull(user.getEmail());
+      assertTrue(user.getEnabled());
       assertNotNull(user.getInsertedDate());
       assertNotNull(user.getLastModifiedDate());
+    }
+
+    // given
+    UserManagementApi userApi = new UserManagementApi(clients.get(2));
+
+    // when
+    try {
+      userApi.getUsers(null, null);
+      fail();
+    } catch (ApiException e) {
+      // then
+      assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
     }
   }
 

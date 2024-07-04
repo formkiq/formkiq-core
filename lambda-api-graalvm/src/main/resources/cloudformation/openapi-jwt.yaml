@@ -9680,6 +9680,12 @@ Resources:
                 username:
                   type: "string"
                   description: "Username of user"
+                email:
+                  type: "string"
+                  description: "Email of user"
+                enabled:
+                  type: "boolean"
+                  description: "whether the user is enabled"
                 userStatus:
                   type: "string"
                   description: "Status of user"

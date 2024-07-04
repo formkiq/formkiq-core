@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api.transformers;
 
 import com.formkiq.aws.dynamodb.objects.DateUtil;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AttributeType;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UserType;
 
 import java.text.SimpleDateFormat;
@@ -41,11 +42,14 @@ public class UsersResponseToMap implements Function<UserType, Map<String, Object
   private final SimpleDateFormat df = DateUtil.getIsoDateFormatter();
 
   @Override
-  public Map<String, Object> apply(final UserType u) {
+  public Map<String, Object> apply(final UserType ut) {
 
-    return Map.of("username", u.username(), "userStatus", u.userStatus().name(), "enabled",
-        String.valueOf(u.enabled()), "insertedDate", toString(u.userCreateDate()),
-        "lastModifiedDate", toString(u.userLastModifiedDate()));
+    String email = ut.attributes().stream().filter(u -> "email".equalsIgnoreCase(u.name()))
+        .map(AttributeType::value).findAny().orElse("");
+
+    return Map.of("username", ut.username(), "email", email, "userStatus", ut.userStatus().name(),
+        "enabled", ut.enabled(), "insertedDate", toString(ut.userCreateDate()), "lastModifiedDate",
+        toString(ut.userLastModifiedDate()));
   }
 
   private String toString(final Instant date) {
