@@ -32,6 +32,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
+import com.formkiq.client.model.AddApiKeyRequest;
+import com.formkiq.client.model.AddApiKeyResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -104,17 +106,18 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
         UUID.randomUUID().toString())) {
 
       for (ApiClient client : Arrays.asList(apiClients.get(0), apiClients.get(1))) {
-        com.formkiq.client.model.AddApiKeyRequest apiReq =
-            new com.formkiq.client.model.AddApiKeyRequest().name(name);
+        AddApiKeyRequest apiReq = new AddApiKeyRequest().name(name);
 
         SystemManagementApi api = new SystemManagementApi(client);
 
         // when
-        api.addApiKey(siteId, apiReq);
+        AddApiKeyResponse response = api.addApiKey(siteId, apiReq);
 
         // then
         GetApiKeysResponse apiKeys = api.getApiKeys(siteId);
         assertFalse(notNull(apiKeys.getApiKeys()).isEmpty());
+
+        api.deleteApiKey(siteId, response.getApiKey());
       }
     }
 

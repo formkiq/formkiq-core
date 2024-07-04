@@ -305,6 +305,7 @@ Resources:
             - Effect: Allow
               Action:
               - cognito-idp:ListGroups
+              - cognito-idp:ListUsers
               - cognito-idp:ListUsersInGroup
               - cognito-idp:CreateGroup
               - cognito-idp:DeleteGroup

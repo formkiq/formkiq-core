@@ -42,6 +42,7 @@ import com.formkiq.client.model.AddResponse;
 import com.formkiq.client.model.AddUser;
 import com.formkiq.client.model.AddUserRequest;
 import com.formkiq.client.model.DeleteResponse;
+import com.formkiq.client.model.GetUsersResponse;
 import com.formkiq.client.model.SetResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -95,6 +96,37 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
 
     // then
     assertEquals("user '" + email + "' has been created", response.getMessage());
+  }
+
+  /**
+   * Test GET /users.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  public void testGetUsers01() throws Exception {
+
+    // given
+    List<ApiClient> clients = getApiClients(null);
+
+    for (ApiClient client : clients) {
+
+      UserManagementApi userApi = new UserManagementApi(client);
+
+      // when
+      GetUsersResponse response = userApi.getUsers(null, null);
+
+      // then
+      List<User> users = notNull(response.getUsers());
+      assertFalse(users.isEmpty());
+
+      User user = users.get(0);
+      assertNotNull(user.getUsername());
+      assertNotNull(user.getUserStatus());
+      assertNotNull(user.getInsertedDate());
+      assertNotNull(user.getLastModifiedDate());
+    }
   }
 
   /**
