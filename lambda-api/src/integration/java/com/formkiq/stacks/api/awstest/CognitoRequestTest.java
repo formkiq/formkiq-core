@@ -23,6 +23,32 @@
  */
 package com.formkiq.stacks.api.awstest;
 
+import com.formkiq.aws.services.lambda.ApiResponseStatus;
+import com.formkiq.client.api.DocumentsApi;
+import com.formkiq.client.api.UserManagementApi;
+import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.model.AddGroup;
+import com.formkiq.client.model.AddGroupRequest;
+import com.formkiq.client.model.AddResponse;
+import com.formkiq.client.model.AddUser;
+import com.formkiq.client.model.AddUserRequest;
+import com.formkiq.client.model.DeleteResponse;
+import com.formkiq.client.model.GetGroupsResponse;
+import com.formkiq.client.model.GetUsersInGroupResponse;
+import com.formkiq.client.model.GetUsersResponse;
+import com.formkiq.client.model.Group;
+import com.formkiq.client.model.SetResponse;
+import com.formkiq.client.model.User;
+import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_UNAUTHORIZED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -30,32 +56,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
-import com.formkiq.aws.services.lambda.ApiResponseStatus;
-import com.formkiq.client.model.AddGroup;
-import com.formkiq.client.model.AddGroupRequest;
-import com.formkiq.client.model.AddResponse;
-import com.formkiq.client.model.AddUser;
-import com.formkiq.client.model.AddUserRequest;
-import com.formkiq.client.model.DeleteResponse;
-import com.formkiq.client.model.GetUsersResponse;
-import com.formkiq.client.model.SetResponse;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
-import com.formkiq.client.api.DocumentsApi;
-import com.formkiq.client.api.UserManagementApi;
-import com.formkiq.client.invoker.ApiClient;
-import com.formkiq.client.invoker.ApiException;
-import com.formkiq.client.model.GetGroupsResponse;
-import com.formkiq.client.model.GetUsersInGroupResponse;
-import com.formkiq.client.model.Group;
-import com.formkiq.client.model.User;
-import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
 
 /**
  * Process Urls.
@@ -174,6 +174,12 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
       assertNotNull(o.get().getDescription());
       assertNotNull(o.get().getInsertedDate());
       assertNotNull(o.get().getLastModifiedDate());
+
+      Group group = userApi.getGroup(o.get().getName()).getGroup();
+      assertNotNull(group);
+      assertNotNull(group.getDescription());
+      assertNotNull(group.getInsertedDate());
+      assertNotNull(group.getLastModifiedDate());
     }
   }
 
