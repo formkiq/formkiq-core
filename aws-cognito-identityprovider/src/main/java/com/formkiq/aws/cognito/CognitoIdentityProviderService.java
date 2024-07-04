@@ -197,6 +197,18 @@ public class CognitoIdentityProviderService {
   }
 
   /**
+   * Get Group.
+   *
+   * @param groupName {@link String}.
+   * @return {@link GetGroupResponse}
+   */
+  public GetGroupResponse getGroup(final String groupName) {
+    GetGroupRequest req =
+        GetGroupRequest.builder().userPoolId(this.userPoolId).groupName(groupName).build();
+    return this.cognitoProvider.getGroup(req);
+  }
+
+  /**
    * Get User.
    * 
    * @param token {@link AuthenticationResultType}.
@@ -205,18 +217,6 @@ public class CognitoIdentityProviderService {
   public GetUserResponse getUser(final AuthenticationResultType token) {
     GetUserRequest req = GetUserRequest.builder().accessToken(token.accessToken()).build();
     return this.cognitoProvider.getUser(req);
-  }
-
-  /**
-   * Get Group.
-   *
-   * @param groupName {@link String}.
-   * @return {@link GetGroupResponse}
-   */
-  public GetGroupResponse getGroup(final String groupName) {
-    GetGroupRequest req = GetGroupRequest.builder().userPoolId(this.userPoolId).groupName(groupName
-    ).build();
-    return this.cognitoProvider.getGroup(req);
   }
 
   /**
