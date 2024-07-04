@@ -57,6 +57,8 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.ChallengeNa
 import software.amazon.awssdk.services.cognitoidentityprovider.model.CreateGroupRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.CreateGroupResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.DeleteGroupRequest;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.GetGroupRequest;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.GetGroupResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.GetUserRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.GetUserResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ListGroupsRequest;
@@ -203,6 +205,18 @@ public class CognitoIdentityProviderService {
   public GetUserResponse getUser(final AuthenticationResultType token) {
     GetUserRequest req = GetUserRequest.builder().accessToken(token.accessToken()).build();
     return this.cognitoProvider.getUser(req);
+  }
+
+  /**
+   * Get Group.
+   *
+   * @param groupName {@link String}.
+   * @return {@link GetGroupResponse}
+   */
+  public GetGroupResponse getGroup(final String groupName) {
+    GetGroupRequest req = GetGroupRequest.builder().userPoolId(this.userPoolId).groupName(groupName
+    ).build();
+    return this.cognitoProvider.getGroup(req);
   }
 
   /**

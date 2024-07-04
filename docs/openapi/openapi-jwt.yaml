@@ -4260,6 +4260,32 @@
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /groups/{groupName}:
+            get:
+              operationId: GetGroup
+              description: Returns a user group
+              summary: Get a user group
+              parameters:
+              - $ref: '#/components/parameters/groupNamePath'
+              tags:
+              - User Management
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetGroupResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
             delete:
               operationId: DeleteGroup
               summary: Delete Group
@@ -9620,6 +9646,11 @@
                   description: List of groups
                   items:
                     $ref: '#/components/schemas/Group'
+            GetGroupResponse:
+              type: object
+              properties:
+                group:
+                  $ref: '#/components/schemas/Group'
             GetUserResponse:
               type: object
               properties:

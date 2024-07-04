@@ -33,6 +33,8 @@ import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.stacks.api.transformers.GroupsResponseToMap;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.GetGroupResponse;
 
 import java.util.Map;
 import java.util.Optional;
@@ -44,6 +46,22 @@ public class GroupRequestHandler implements ApiGatewayRequestHandler, ApiGateway
 
   /** {@link GroupRequestHandler} URL. */
   public static final String URL = "/groups/{groupName}";
+
+  @Override
+  public ApiRequestHandlerResponse get(final LambdaLogger logger,
+                                       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
+                                       final AwsServiceCache awsservice) throws Exception {
+
+    CognitoIdentityProviderService service =
+            awsservice.getExtension(CognitoIdentityProviderService.class);
+
+    String groupName = event.getPathParameters().get("groupName");
+    GetGroupResponse response = service.getGroup(groupName);
+
+    Map<String, Object> group = new GroupsResponseToMap().apply(response.group());
+    ApiMapResponse resp = new ApiMapResponse(Map.of("group", group));
+    return new ApiRequestHandlerResponse(SC_OK, resp);
+  }
 
   @Override
   public Optional<Boolean> isAuthorized(final AwsServiceCache awsServiceCache, final String method,
