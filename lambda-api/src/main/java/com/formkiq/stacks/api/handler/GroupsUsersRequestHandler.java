@@ -68,7 +68,8 @@ public class GroupsUsersRequestHandler
 
     ListUsersInGroupResponse response = service.listUsersInGroup(groupName, token, limit);
 
-    List<Map<String, Object>> users = response.users().stream().map(new UsersResponseToMap()).toList();
+    List<Map<String, Object>> users =
+        response.users().stream().map(new UsersResponseToMap()).toList();
 
     Map<String, Object> map = new HashMap<>();
     map.put("users", users);
