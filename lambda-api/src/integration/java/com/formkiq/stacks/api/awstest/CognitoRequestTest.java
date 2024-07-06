@@ -54,7 +54,6 @@ import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_UNAUTHORIZED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /**
@@ -126,7 +125,7 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
       assertNotNull(user.getUsername());
       assertNotNull(user.getUserStatus());
       assertNotNull(user.getEmail());
-      assertTrue(user.getEnabled());
+      assertEquals(Boolean.TRUE, user.getEnabled());
       assertNotNull(user.getInsertedDate());
       assertNotNull(user.getLastModifiedDate());
     }
@@ -210,6 +209,7 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
       User user = users.get(0);
 
       assertNotNull(user.getUsername());
+      assertNotNull(user.getEmail());
       assertNotNull(user.getUserStatus());
       assertNotNull(user.getInsertedDate());
       assertNotNull(user.getLastModifiedDate());
@@ -258,6 +258,7 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
       List<User> usersInGroup = notNull(userApi.getUsersInGroup(groupName, null, null).getUsers());
       assertEquals(1, usersInGroup.size());
       assertNotNull(usersInGroup.get(0).getUsername());
+      assertNotNull(usersInGroup.get(0).getEmail());
 
       List<Group> groups = notNull(userApi.getListOfUserGroups(email, null, null).getGroups());
       assertEquals(1, groups.size());
