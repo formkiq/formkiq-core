@@ -32,11 +32,28 @@ import com.formkiq.graalvm.annotations.Reflectable;
 public class AddGroup {
   /** Group Name. */
   private String name;
+  /** Group Description. */
+  private String description;
 
   /**
    * constructor.
    */
   public AddGroup() {}
+
+  public String getDescription() {
+    return this.description;
+  }
+
+  /**
+   * Set Description.
+   * 
+   * @param groupDescription {@link String}
+   * @return AddGroup
+   */
+  public AddGroup setDescription(final String groupDescription) {
+    this.description = groupDescription;
+    return this;
+  }
 
   /**
    * Get Group Name.

@@ -9687,6 +9687,9 @@ Resources:
                 name:
                   type: "string"
                   description: "Name of Group"
+                description:
+                  type: "string"
+                  description: "Description of Group"
             AddUserRequest:
               required:
               - "user"

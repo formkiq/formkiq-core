@@ -99,11 +99,12 @@ public class CognitoIdentityProviderService {
    * Add Cognito Group.
    * 
    * @param groupName {@link String}
+   * @param groupDescription {@link String}
    * @return {@link CreateGroupResponse}
    */
-  public CreateGroupResponse addGroup(final String groupName) {
-    CreateGroupRequest req =
-        CreateGroupRequest.builder().userPoolId(this.userPoolId).groupName(groupName).build();
+  public CreateGroupResponse addGroup(final String groupName, final String groupDescription) {
+    CreateGroupRequest req = CreateGroupRequest.builder().userPoolId(this.userPoolId)
+        .groupName(groupName).description(groupDescription).build();
     return this.cognitoProvider.createGroup(req);
   }
 

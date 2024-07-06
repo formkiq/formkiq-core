@@ -101,7 +101,7 @@ public abstract class AbstractAwsIntegrationTest {
         if (!groupName.startsWith(DEFAULT_SITE_ID) && !"authentication_only".equals(groupName)) {
 
           try {
-            getCognito().addGroup(groupName);
+            getCognito().addGroup(groupName, null);
           } catch (GroupExistsException e) {
             // ignore group already exists
           }

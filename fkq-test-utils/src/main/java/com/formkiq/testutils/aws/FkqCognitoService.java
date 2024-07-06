@@ -88,9 +88,10 @@ public class FkqCognitoService {
    * Add Cognito Group.
    * 
    * @param groupname {@link String}
+   * @param groupDescription {@link String}
    */
-  public void addGroup(final String groupname) {
-    this.service.addGroup(groupname);
+  public void addGroup(final String groupname, final String groupDescription) {
+    this.service.addGroup(groupname, groupDescription);
   }
 
   /**
