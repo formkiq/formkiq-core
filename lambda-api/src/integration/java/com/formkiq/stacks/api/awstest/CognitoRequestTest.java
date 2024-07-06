@@ -74,10 +74,11 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
     assertEquals("Group " + groupName + " deleted", deleteResponse.getMessage());
   }
 
-  private static void addGroup(final UserManagementApi userApi, final String groupName)
-      throws ApiException {
+  private static void addGroup(final UserManagementApi userApi, final String groupName,
+      final String groupDescription) throws ApiException {
     // given
-    AddGroupRequest req = new AddGroupRequest().group(new AddGroup().name(groupName));
+    AddGroupRequest req =
+        new AddGroupRequest().group(new AddGroup().name(groupName).description(groupDescription));
 
     // when
     AddResponse response = userApi.addGroup(req);
@@ -251,7 +252,7 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
 
       // when
       addUser(userApi, email);
-      addGroup(userApi, groupName);
+      addGroup(userApi, groupName, "some desc");
       addUserToGroup(userApi, email, groupName);
 
       // then

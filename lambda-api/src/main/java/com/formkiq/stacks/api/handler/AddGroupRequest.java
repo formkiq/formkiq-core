@@ -81,11 +81,6 @@ public class AddGroupRequest {
    * @throws BadException BadException
    */
   public String getGroupDescription() throws BadException {
-    String groupDescription = getGroup().getDescription();
-    if (isEmpty(groupDescription)) {
-      throw new BadException("invalid 'groupDescription'");
-    }
-
-    return groupDescription;
+    return getGroup().getDescription();
   }
 }
