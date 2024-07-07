@@ -25,100 +25,87 @@ package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.services.lambda.ApiAuthorizationBuilder.COGNITO_READ_SUFFIX;
-import java.net.URISyntaxException;
+
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import com.formkiq.client.api.MappingsApi;
+import com.formkiq.client.api.UserManagementApi;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import com.formkiq.aws.dynamodb.DynamoDbService;
-import com.formkiq.aws.dynamodb.DynamoDbServiceExtension;
+import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
+import com.formkiq.aws.s3.S3AwsServiceRegistry;
+import com.formkiq.aws.sqs.SqsAwsServiceRegistry;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.aws.sqs.SqsServiceExtension;
+import com.formkiq.aws.ssm.SsmAwsServiceRegistry;
+import com.formkiq.client.api.AdvancedDocumentSearchApi;
+import com.formkiq.client.api.AttributesApi;
 import com.formkiq.client.api.DocumentActionsApi;
+import com.formkiq.client.api.DocumentAttributesApi;
 import com.formkiq.client.api.DocumentFoldersApi;
 import com.formkiq.client.api.DocumentSearchApi;
 import com.formkiq.client.api.DocumentTagsApi;
 import com.formkiq.client.api.DocumentWorkflowsApi;
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.api.RulesetsApi;
+import com.formkiq.client.api.SchemasApi;
 import com.formkiq.client.api.SystemManagementApi;
 import com.formkiq.client.api.UserActivitiesApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.invoker.Configuration;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
-import com.formkiq.module.actions.services.ActionsService;
-import com.formkiq.module.actions.services.ActionsServiceExtension;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.dynamodb.ConfigService;
-import com.formkiq.stacks.dynamodb.ConfigServiceExtension;
-import com.formkiq.stacks.dynamodb.DocumentSearchService;
-import com.formkiq.stacks.dynamodb.DocumentSearchServiceExtension;
-import com.formkiq.stacks.dynamodb.DocumentService;
-import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
-import com.formkiq.stacks.dynamodb.DocumentVersionService;
-import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
+import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
-import com.formkiq.testutils.aws.AbstractFormKiqApiResponseCallback;
+import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.FormKiqApiExtension;
 import com.formkiq.testutils.aws.JwtTokenEncoder;
 import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.testutils.aws.TestServices;
+import com.formkiq.testutils.aws.TypesenseExtension;
 import com.formkiq.validation.ValidationException;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.services.sqs.model.Message;
 
 /**
  * Abstract Request Test using {@link ApiClient}.
  */
+@ExtendWith(DynamoDbExtension.class)
+@ExtendWith(LocalStackExtension.class)
 public abstract class AbstractApiClientRequestTest {
 
+  /** {@link LocalStackExtension}. */
+  @RegisterExtension
+  @Order(0)
+  static LocalStackExtension localstack = new LocalStackExtension();
+
+  /** {@link TypesenseExtension}. */
+  @RegisterExtension
+  @Order(1)
+  static TypesenseExtension typeSense = new TypesenseExtension();
   /** FormKiQ Server. */
   @RegisterExtension
-  static FormKiqApiExtension server = new FormKiqApiExtension(generateCallback());
+  @Order(2)
+  static FormKiqApiExtension server = new FormKiqApiExtension(localstack, typeSense,
+      () -> Map.of("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName()),
+      new FormKiQResponseCallback());
 
   /** 500 Milliseconds. */
   private static final long SLEEP = 500L;
-  /** Time out. */
-  private static final int TIMEOUT = 30000;
-
-  /**
-   * Get Generate Callback.
-   * 
-   * @return {@link AbstractFormKiqApiResponseCallback}
-   */
-  private static AbstractFormKiqApiResponseCallback generateCallback() {
-    int port = AbstractFormKiqApiResponseCallback.generatePort();
-    return new FormKiQResponseCallback(port);
-  }
-
-  /**
-   * Get {@link AwsServiceCache}.
-   * 
-   * @return {@link AwsServiceCache}
-   */
-  public static AwsServiceCache getAwsServices() {
-    AwsServiceCache awsServiceCache = LocalStackExtension.getAwsServiceCache();
-
-    Map<String, String> environment = new HashMap<>(awsServiceCache.environment());
-    environment.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
-    awsServiceCache.environment(environment);
-
-    awsServiceCache.register(SqsService.class, new SqsServiceExtension());
-    awsServiceCache.register(ActionsService.class, new ActionsServiceExtension());
-    awsServiceCache.register(DynamoDbService.class, new DynamoDbServiceExtension());
-    awsServiceCache.register(ConfigService.class, new ConfigServiceExtension());
-    awsServiceCache.register(DocumentService.class, new DocumentServiceExtension());
-    awsServiceCache.register(DocumentSearchService.class, new DocumentSearchServiceExtension());
-    awsServiceCache.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
-
-    return awsServiceCache;
-  }
+  // /** Time out. */
+  // private static final int TIMEOUT = 30000;
 
   /** {@link ApiClient}. */
-  protected ApiClient client =
-      Configuration.getDefaultApiClient().setReadTimeout(TIMEOUT).setBasePath(server.getBasePath());
+  protected ApiClient client = Configuration.getDefaultApiClient()
+      /* .setReadTimeout(TIMEOUT) */.setBasePath(server.getBasePath());
   /** {@link DocumentActionsApi}. */
   protected DocumentActionsApi documentActionsApi = new DocumentActionsApi(this.client);
   /** {@link DocumentsApi}. */
@@ -137,6 +124,19 @@ public abstract class AbstractApiClientRequestTest {
   protected DocumentWorkflowsApi workflowApi = new DocumentWorkflowsApi(this.client);
   /** {@link DocumentSearchApi}. */
   protected DocumentSearchApi searchApi = new DocumentSearchApi(this.client);
+  /** {@link AttributesApi}. */
+  protected AttributesApi attributesApi = new AttributesApi(this.client);
+  /** {@link DocumentAttributesApi}. */
+  protected DocumentAttributesApi documentAttributesApi = new DocumentAttributesApi(this.client);
+  /** {@link SchemasApi}. */
+  protected SchemasApi schemasApi = new SchemasApi(this.client);
+  /** {@link AdvancedDocumentSearchApi}. */
+  protected AdvancedDocumentSearchApi advancedSearchApi =
+      new AdvancedDocumentSearchApi(this.client);
+  /** {@link MappingsApi}. */
+  protected MappingsApi mappingsApi = new MappingsApi(this.client);
+  /** {@link UserManagementApi}. */
+  protected UserManagementApi userManagementApi = new UserManagementApi(this.client);
 
   /**
    * Convert JSON to Object.
@@ -155,13 +155,14 @@ public abstract class AbstractApiClientRequestTest {
    * 
    * @return {@link List} {@link Message}
    * @throws InterruptedException InterruptedException
-   * @throws URISyntaxException URISyntaxException
    */
-  public List<Message> getSqsMessages() throws InterruptedException, URISyntaxException {
+  public List<Message> getSqsMessages() throws InterruptedException {
 
-    String sqsDocumentEventUrl =
-        server.getCallback().getMapEnvironment().get("SQS_DOCUMENT_EVENT_URL");
-    SqsService sqsService = getAwsServices().getExtension(SqsService.class);
+    String sqsDocumentEventUrl = localstack.getSqsDocumentEventUrl();
+
+    AwsServiceCache awsServices = getAwsServices();
+    awsServices.register(SqsService.class, new SqsServiceExtension());
+    SqsService sqsService = awsServices.getExtension(SqsService.class);
 
     List<Message> msgs = sqsService.receiveMessages(sqsDocumentEventUrl).messages();
     while (msgs.isEmpty()) {
@@ -187,8 +188,7 @@ public abstract class AbstractApiClientRequestTest {
     Gson gson = new GsonBuilder().create();
 
     Map<String, Object> map = gson.fromJson(e.getResponseBody(), Map.class);
-    Collection<Map<String, Object>> errors = (Collection<Map<String, Object>>) map.get("errors");
-    return errors;
+    return (Collection<Map<String, Object>>) map.get("errors");
   }
 
   /**
@@ -224,5 +224,21 @@ public abstract class AbstractApiClientRequestTest {
   public void setBearerToken(final String[] groups) {
     String jwt = JwtTokenEncoder.encodeCognito(groups, "joesmith");
     this.client.addDefaultHeader("Authorization", jwt);
+  }
+
+  /**
+   * Get {@link AwsServiceCache}.
+   * 
+   * @return {@link AwsServiceCache}
+   */
+  public AwsServiceCache getAwsServices() {
+
+    AwsCredentials creds = AwsBasicCredentials.create("aaa", "bbb");
+    StaticCredentialsProvider credentialsProvider = StaticCredentialsProvider.create(creds);
+
+    return new AwsServiceCacheBuilder(server.getEnvironmentMap(), TestServices.getEndpointMap(),
+        credentialsProvider).addService(new DynamoDbAwsServiceRegistry())
+        .addService(new S3AwsServiceRegistry()).addService(new SsmAwsServiceRegistry())
+        .addService(new SqsAwsServiceRegistry()).build();
   }
 }

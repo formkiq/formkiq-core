@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
@@ -62,7 +62,7 @@ public class ConfigurationRequestTest extends AbstractAwsIntegrationTest {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  @Timeout(value = TEST_TIMEOUT)
   public void testGetConfiguration01() throws Exception {
     // given
     String siteId = SiteIdKeyGenerator.DEFAULT_SITE_ID;
@@ -103,7 +103,7 @@ public class ConfigurationRequestTest extends AbstractAwsIntegrationTest {
     // given
     String siteId = SiteIdKeyGenerator.DEFAULT_SITE_ID;
     String chatGptApiKey = "1239123123";
-    addAndLoginCognito(FINANCE_EMAIL, Arrays.asList("default_read"));
+    addAndLoginCognito(FINANCE_EMAIL, List.of("default_read"));
 
     List<ApiClient> apiClients = getApiClients(siteId);
     SystemManagementApi api = new SystemManagementApi(apiClients.get(0));
@@ -126,7 +126,7 @@ public class ConfigurationRequestTest extends AbstractAwsIntegrationTest {
       api.updateConfiguration(siteId, req);
       fail();
     } catch (ApiException e) {
-      assertEquals(ApiResponseStatus.SC_FORBIDDEN.getStatusCode(), e.getCode());
+      assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
     }
 
   }
@@ -137,7 +137,7 @@ public class ConfigurationRequestTest extends AbstractAwsIntegrationTest {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  @Timeout(value = TEST_TIMEOUT)
   public void testPatchConfiguration02() throws Exception {
     // given
     final int expected = 3;

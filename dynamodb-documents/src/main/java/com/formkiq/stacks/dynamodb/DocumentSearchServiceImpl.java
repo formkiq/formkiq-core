@@ -36,10 +36,12 @@ import static com.formkiq.aws.dynamodb.DbKeys.PREFIX_TAGS;
 import static com.formkiq.aws.dynamodb.DbKeys.SK;
 import static com.formkiq.aws.dynamodb.DbKeys.TAG_DELIMINATOR;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
+import static com.formkiq.aws.dynamodb.objects.Objects.last;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
+import static com.formkiq.stacks.dynamodb.attributes.AttributeRecord.ATTR;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -48,23 +50,38 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import com.formkiq.aws.dynamodb.BatchGetConfig;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.PaginationToAttributeValue;
+import com.formkiq.aws.dynamodb.QueryConfig;
 import com.formkiq.aws.dynamodb.QueryResponseToPagination;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.dynamodb.model.SearchAttributeCriteria;
 import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
+import com.formkiq.aws.dynamodb.model.SearchResponseFields;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteriaRange;
 import com.formkiq.aws.dynamodb.objects.Objects;
+import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
+import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
+import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
+import com.formkiq.stacks.dynamodb.schemas.SchemaService;
+import com.formkiq.stacks.dynamodb.schemas.SchemaServiceDynamodb;
+import com.formkiq.stacks.dynamodb.schemas.SchemaCompositeKeyRecord;
+import com.formkiq.validation.ValidationError;
+import com.formkiq.validation.ValidationErrorImpl;
+import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.BatchGetItemRequest;
@@ -81,16 +98,20 @@ import software.amazon.awssdk.utils.StringUtils;
  */
 public class DocumentSearchServiceImpl implements DocumentSearchService {
 
+  /** {@link DynamoDbService}. */
+  private final DynamoDbService db;
   /** {@link DynamoDbClient}. */
-  private DynamoDbClient dbClient;
+  private final DynamoDbClient dbClient;
   /** {@link DocumentService}. */
-  private DocumentService docService;
+  private final DocumentService docService;
   /** Documents Table Name. */
-  private String documentTableName;
+  private final String documentTableName;
   /** {@link FolderIndexProcessor}. */
-  private FolderIndexProcessor folderIndexProcesor;
+  private final FolderIndexProcessor folderIndexProcesor;
+  /** {@link SchemaService}. */
+  private final SchemaService schemaService;
   /** {@link DocumentTagSchemaPlugin}. */
-  private DocumentTagSchemaPlugin tagSchemaPlugin;
+  private final DocumentTagSchemaPlugin tagSchemaPlugin;
 
   /**
    * constructor.
@@ -108,12 +129,149 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
     this.docService = documentService;
     this.tagSchemaPlugin = plugin;
 
+
     if (documentsTable == null) {
       throw new IllegalArgumentException("Table name is null");
     }
 
     this.documentTableName = documentsTable;
+    this.db = new DynamoDbServiceImpl(connection, documentsTable);
     this.folderIndexProcesor = new FolderIndexProcessorImpl(connection, documentsTable);
+    this.schemaService = new SchemaServiceDynamodb(this.db);
+  }
+
+  private void addMatchAttributes(final List<Map<String, AttributeValue>> items,
+      final List<DynamicDocumentItem> results) {
+
+    List<Map<String, AttributeValue>> keys = items.stream()
+        .map(r -> Map.of(DbKeys.PK, r.get(DbKeys.PK), DbKeys.SK, r.get(DbKeys.SK))).toList();
+
+    BatchGetConfig config = new BatchGetConfig();
+    List<Map<String, AttributeValue>> attributes = this.db.getBatch(config, keys);
+
+    Map<String, List<Map<String, AttributeValue>>> matchedTags =
+        attributes.stream().collect(Collectors.groupingBy(r -> r.get("documentId").s()));
+
+    results.forEach(r -> {
+
+      List<Map<String, AttributeValue>> attributeMatches = matchedTags.get(r.getDocumentId());
+      Map<String, AttributeValue> attributeMatch = attributeMatches.get(0);
+
+      Map<String, Object> values = getAttributeValuesMap(attributeMatch);
+      r.put("matchedAttribute", values);
+    });
+  }
+
+  /**
+   * Add Response Fields to {@link DynamicDocumentItem}.
+   * 
+   * @param siteId {@link String}
+   * @param results {@link List} {@link DynamicDocumentItem}
+   * @param searchResponseFields {@link SearchResponseFields}
+   */
+  private void addResponseFields(final String siteId, final List<DynamicDocumentItem> results,
+      final SearchResponseFields searchResponseFields) {
+
+    final int limit = 10;
+    if (searchResponseFields != null) {
+
+      List<String> attributes = Objects.notNull(searchResponseFields.getAttributes());
+
+      for (DynamicDocumentItem item : results) {
+
+        DocumentAttributeRecord sr = new DocumentAttributeRecord();
+        sr.setDocumentId(item.getDocumentId());
+
+        Map<String, Object> attributeFields = new HashMap<>();
+
+        for (String key : attributes) {
+
+          QueryConfig config = new QueryConfig().scanIndexForward(Boolean.TRUE)
+              .projectionExpression("valueType,stringValue,numberValue,booleanValue");
+
+          sr.setKey(key);
+          AttributeValue pk = sr.fromS(sr.pk(siteId));
+          AttributeValue sk = sr.fromS(ATTR + key + "#");
+          QueryResponse response = this.db.queryBeginsWith(config, pk, sk, null, limit);
+
+          if (!response.items().isEmpty()) {
+
+            List<DocumentAttributeRecord> records = response.items().stream()
+                .map(a -> new DocumentAttributeRecord().getFromAttributes(siteId, a)).toList();
+
+            List<String> stringValues =
+                records.stream().map(DocumentAttributeRecord::getStringValue).toList();
+            List<Double> numberValues =
+                records.stream().map(DocumentAttributeRecord::getNumberValue).toList();
+            Boolean booleanValue = records.get(0).getBooleanValue();
+            DocumentAttributeValueType valueType = records.get(0).getValueType();
+
+            Map<String, Object> values = new HashMap<>();
+            values.put("stringValues", stringValues);
+            values.put("numberValues", numberValues);
+            values.put("booleanValue", booleanValue);
+            values.put("valueType", valueType);
+
+            attributeFields.put(key, values);
+          }
+        }
+
+        item.put("attributes", attributeFields);
+      }
+    }
+  }
+
+  private SearchAttributeCriteria createAttributesCriteria(final String siteId,
+      final SearchQuery query) throws ValidationException {
+
+    List<SearchAttributeCriteria> attributes = query.getAttributes();
+    Map<String, SearchAttributeCriteria> map = attributes.stream()
+        .collect(Collectors.toMap(SearchAttributeCriteria::getKey, Function.identity()));
+
+    SchemaCompositeKeyRecord compositeKey = validateSearchAttributeCriteria(siteId, attributes);
+    List<String> compositeKeys = compositeKey != null ? compositeKey.getKeys()
+        : query.getAttributes().stream().map(SearchAttributeCriteria::getKey).toList();
+
+    String attributeKey = String.join("#", compositeKeys);
+
+    String eq = compositeKeys.stream().map(map::get).map(SearchAttributeCriteria::getEq)
+        .filter(java.util.Objects::nonNull).collect(Collectors.joining("#"));
+
+    String lastKey = last(compositeKeys);
+    SearchAttributeCriteria last = map.get(lastKey);
+    String beginsWith = last.getBeginsWith();
+    SearchTagCriteriaRange range = last.getRange();
+
+    if (!isEmpty(beginsWith) && !isEmpty(eq)) {
+      beginsWith = eq + "#" + beginsWith;
+      eq = null;
+    }
+
+    if (range != null) {
+
+      boolean number = "number".equalsIgnoreCase(range.getType());
+
+      String start = range.getStart();
+      String end = range.getEnd();
+
+      if (number) {
+
+        try {
+          start = Objects.formatDouble(Double.valueOf(range.getStart()), Objects.DOUBLE_FORMAT);
+          end = Objects.formatDouble(Double.valueOf(range.getEnd()), Objects.DOUBLE_FORMAT);
+        } catch (NumberFormatException e) {
+          start = range.getStart();
+          end = range.getEnd();
+        }
+      }
+
+      range.start(eq + "#" + start);
+      range.end(eq + "#" + end);
+      eq = null;
+    }
+
+    return new SearchAttributeCriteria().key(attributeKey).eq(eq).beginsWith(beginsWith)
+        .range(range);
   }
 
   private QueryRequest createQueryRequest(final String index, final String expression,
@@ -121,12 +279,10 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
       final int maxresults, final Boolean scanIndexForward, final String projectionExpression) {
     Map<String, AttributeValue> startkey = new PaginationToAttributeValue().apply(token);
 
-    QueryRequest q = QueryRequest.builder().tableName(this.documentTableName).indexName(index)
+    return QueryRequest.builder().tableName(this.documentTableName).indexName(index)
         .keyConditionExpression(expression).expressionAttributeValues(values)
         .projectionExpression(projectionExpression).exclusiveStartKey(startkey)
-        .scanIndexForward(scanIndexForward).limit(Integer.valueOf(maxresults)).build();
-
-    return q;
+        .scanIndexForward(scanIndexForward).limit(maxresults).build();
   }
 
   /**
@@ -187,10 +343,38 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
 
         return result;
 
-      }).collect(Collectors.toMap(x -> x.getKey(), x -> x.getValue()));
+      }).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     return map;
+  }
+
+  /**
+   * Find Document that match tagKey & tagValue.
+   *
+   * @param siteId DynamoDB siteId.
+   * @param query {@link SearchQuery}
+   * @param key {@link String}
+   * @param range {@link List} {@link String}
+   * @param token {@link PaginationMapToken}
+   * @param maxresults int
+   * @param projectionExpression {@link String}
+   * @return {@link PaginationResults}
+   */
+  private PaginationResults<DynamicDocumentItem> findDocumentsTagRange(final String siteId,
+      final SearchQuery query, final String key, final SearchTagCriteriaRange range,
+      final PaginationMapToken token, final int maxresults, final String projectionExpression) {
+
+    String expression = GSI2_PK + " = :pk and " + GSI2_SK + " between :start and :end";
+    Map<String, AttributeValue> values = new HashMap<>();
+    values.put(":pk", AttributeValue.fromS(createDatabaseKey(siteId, PREFIX_TAG + key)));
+    values.put(":start", AttributeValue.fromS(range.getStart()));
+    values.put(":end", AttributeValue.fromS(range.getEnd()));
+
+    QueryRequest q = createQueryRequest(GSI2, expression, values, token, maxresults, Boolean.TRUE,
+        projectionExpression);
+
+    return searchForDocuments(q, siteId, query);
   }
 
   /**
@@ -262,39 +446,11 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
 
     String expression = GSI2_PK + " = :pk and begins_with(" + GSI2_SK + ", :sk)";
 
-    Map<String, AttributeValue> values = new HashMap<String, AttributeValue>();
+    Map<String, AttributeValue> values = new HashMap<>();
     values.put(":pk", AttributeValue.fromS(createDatabaseKey(siteId, PREFIX_TAG + key)));
     values.put(":sk", AttributeValue.fromS(value));
 
     QueryRequest q = createQueryRequest(GSI2, expression, values, token, maxresults, Boolean.FALSE,
-        projectionExpression);
-
-    return searchForDocuments(q, siteId, query);
-  }
-
-  /**
-   * Find Document that match tagKey & tagValue.
-   *
-   * @param siteId DynamoDB siteId.
-   * @param query {@link SearchQuery}
-   * @param key {@link String}
-   * @param range {@link List} {@link String}
-   * @param token {@link PaginationMapToken}
-   * @param maxresults int
-   * @param projectionExpression {@link String}
-   * @return {@link PaginationResults}
-   */
-  private PaginationResults<DynamicDocumentItem> findDocumentsTagRange(final String siteId,
-      final SearchQuery query, final String key, final SearchTagCriteriaRange range,
-      final PaginationMapToken token, final int maxresults, final String projectionExpression) {
-
-    String expression = GSI2_PK + " = :pk and " + GSI2_SK + " between :start and :end";
-    Map<String, AttributeValue> values = new HashMap<String, AttributeValue>();
-    values.put(":pk", AttributeValue.fromS(createDatabaseKey(siteId, PREFIX_TAG + key)));
-    values.put(":start", AttributeValue.fromS(range.getStart()));
-    values.put(":end", AttributeValue.fromS(range.getEnd()));
-
-    QueryRequest q = createQueryRequest(GSI2, expression, values, token, maxresults, Boolean.TRUE,
         projectionExpression);
 
     return searchForDocuments(q, siteId, query);
@@ -306,19 +462,18 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
    * @param siteId DynamoDB siteId Key
    * @param query {@link SearchQuery}
    * @param key {@link String}
-   * @param value {@link String}
    * @param token {@link PaginationMapToken}
    * @param maxresults int
    * @param projectionExpression {@link String}
    * @return {@link PaginationResults}
    */
   private PaginationResults<DynamicDocumentItem> findDocumentsWithTag(final String siteId,
-      final SearchQuery query, final String key, final String value, final PaginationMapToken token,
+      final SearchQuery query, final String key, final PaginationMapToken token,
       final int maxresults, final String projectionExpression) {
 
     String expression = GSI2_PK + " = :pk";
 
-    Map<String, AttributeValue> values = new HashMap<String, AttributeValue>();
+    Map<String, AttributeValue> values = new HashMap<>();
     values.put(":pk",
         AttributeValue.builder().s(createDatabaseKey(siteId, PREFIX_TAG + key)).build());
 
@@ -345,11 +500,12 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
 
     String expression = GSI1_PK + " = :pk";
 
-    Map<String, AttributeValue> values = new HashMap<String, AttributeValue>();
+    Map<String, AttributeValue> values = new HashMap<>();
     values.put(":pk", AttributeValue.builder()
         .s(createDatabaseKey(siteId, PREFIX_TAG + key + TAG_DELIMINATOR + value)).build());
     QueryRequest q = createQueryRequest(GSI1, expression, values, token, maxresults, Boolean.FALSE,
         projectionExpression);
+
     return searchForDocuments(q, siteId, query);
   }
 
@@ -375,7 +531,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
       list.addAll(result.getResults());
     }
 
-    return new PaginationResults<DynamicDocumentItem>(list, null);
+    return new PaginationResults<>(list, null);
   }
 
   @Override
@@ -390,6 +546,36 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
     }
 
     return searchByMeta(siteId, value, null, token, maxresults);
+  }
+
+  private Map<String, Object> getAttributeValuesMap(
+      final Map<String, AttributeValue> attributeMatch) {
+
+    DocumentAttributeValueType type =
+        DocumentAttributeValueType.valueOf(attributeMatch.get("valueType").s());
+
+    Map<String, Object> values = new HashMap<>();
+    values.put("key", attributeMatch.get("key").s());
+
+    switch (type) {
+      case BOOLEAN:
+        values.put("booleanValue", attributeMatch.get("booleanValue").bool());
+        break;
+
+      case NUMBER:
+        Double value = Double.valueOf(attributeMatch.get("numberValue").n());
+        values.put("numberValue", value);
+        break;
+
+      case STRING:
+      case COMPOSITE_STRING:
+        values.put("stringValue", attributeMatch.get("stringValue").s());
+        break;
+
+      default:
+        break;
+    }
+    return values;
   }
 
   private String getFolderMetaDataKey(final String siteId, final SearchMetaCriteria meta) {
@@ -415,7 +601,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
 
   private String getMetaDataKey(final String siteId, final SearchMetaCriteria meta) {
 
-    String value = null;
+    String value;
 
     if ("folder".equals(meta.indexType())) {
       value = getFolderMetaDataKey(siteId, meta);
@@ -433,8 +619,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
    * @return {@link String}
    */
   protected String getSearchKey(final SearchTagCriteria search) {
-    String key = search.key();
-    return key;
+    return search.key();
   }
 
   /**
@@ -450,10 +635,11 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
 
   @Override
   public PaginationResults<DynamicDocumentItem> search(final String siteId, final SearchQuery query,
-      final PaginationMapToken token, final int maxresults) {
+      final SearchResponseFields searchResponseFields, final PaginationMapToken token,
+      final int maxresults) throws ValidationException {
 
-    SearchMetaCriteria meta = query.meta();
-    PaginationResults<DynamicDocumentItem> results = null;
+    SearchMetaCriteria meta = query.getMeta();
+    PaginationResults<DynamicDocumentItem> results;
 
     if (meta != null) {
 
@@ -466,7 +652,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
           DocumentItem item = this.docService.findDocument(siteId, documentId);
 
           DynamicDocumentItem result = new DocumentItemToDynamicDocumentItem().apply(item);
-          results = new PaginationResults<>(Arrays.asList(result), null);
+          results = new PaginationResults<>(Collections.singletonList(result), null);
 
         } catch (IOException e) {
           results = new PaginationResults<>(Collections.emptyList(), null);
@@ -474,30 +660,258 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
 
       } else {
         updateFolderMetaData(meta);
-        results = searchByMeta(siteId, query, meta, token, maxresults);
+        results = searchByMeta(siteId, meta, token, maxresults);
       }
 
+    } else if (query.getAttribute() != null || !notNull(query.getAttributes()).isEmpty()) {
+
+      SearchAttributeCriteria search = query.getAttribute();
+
+      if (!notNull(query.getAttributes()).isEmpty()) {
+
+        Collection<String> list = query.getAttributes().stream()
+            .map(SearchAttributeCriteria::getKey).collect(Collectors.toSet());
+
+        if (list.size() != query.getAttributes().size()) {
+          throw new ValidationException(Collections
+              .singletonList(new ValidationErrorImpl().error("duplicate attributes in query")));
+        }
+
+        search = createAttributesCriteria(siteId, query);
+      }
+
+      results = searchByAttribute(siteId, query, search, token, maxresults);
+
     } else {
-      SearchTagCriteria search = query.tag();
+
+      SearchTagCriteria search = query.getTag();
       results = searchByTag(siteId, query, search, token, maxresults, null);
     }
 
+    addResponseFields(siteId, results.getResults(), searchResponseFields);
     return results;
+  }
+
+  private QueryResponse searchAttributeBeginsWith(final String siteId,
+      final SearchAttributeCriteria search, final DocumentAttributeRecord sr,
+      final QueryConfig config, final Map<String, AttributeValue> startkey, final int limit) {
+
+    config.indexName(GSI1);
+    AttributeValue pk = AttributeValue.fromS(sr.pkGsi1(siteId));
+    AttributeValue sk = AttributeValue.fromS(search.getBeginsWith());
+
+    return this.db.queryBeginsWith(config, pk, sk, startkey, limit);
+  }
+
+  private List<Map<String, AttributeValue>> searchAttributeDocumentIds(final String siteId,
+      final SearchQuery query, final SearchAttributeCriteria search) {
+
+    List<Map<String, AttributeValue>> list;
+    Collection<String> documentIds = query.getDocumentIds();
+
+    if (!Strings.isEmpty(search.getEq()) || !Objects.isEmpty(search.getEqOr())) {
+
+      list = searchAttributeEqDocumentIds(siteId, search, documentIds);
+
+    } else {
+
+      list = searchAttributeOtherDocumentIds(siteId, search, documentIds);
+    }
+
+    return list;
+  }
+
+  private QueryResponse searchAttributeEq(final String siteId, final SearchAttributeCriteria search,
+      final DocumentAttributeRecord sr, final QueryConfig config,
+      final Map<String, AttributeValue> startkey, final int limit) {
+
+    sr.setValueType(DocumentAttributeValueType.STRING);
+    sr.setStringValue(search.getEq());
+
+    config.indexName(GSI1);
+    AttributeValue pk = AttributeValue.fromS(sr.pkGsi1(siteId));
+    AttributeValue sk = AttributeValue.fromS(sr.skGsi1());
+
+    return this.db.query(config, pk, sk, startkey, limit);
+  }
+
+  private List<Map<String, AttributeValue>> searchAttributeEqDocumentIds(final String siteId,
+      final SearchAttributeCriteria search, final Collection<String> documentIds) {
+
+    List<String> eqs = new ArrayList<>();
+    if (!Strings.isEmpty(search.getEq())) {
+      eqs.add(search.getEq());
+    }
+
+    eqs.addAll(Objects.notNull(search.getEqOr()));
+
+    List<Map<String, AttributeValue>> keys = new ArrayList<>();
+
+    String key = search.getKey();
+
+    for (String documentId : documentIds) {
+
+      List<Map<String, AttributeValue>> keyList = eqs.stream().map(eq -> {
+        DocumentAttributeRecord sr = new DocumentAttributeRecord().setKey(key)
+            .setValueType(DocumentAttributeValueType.STRING).setStringValue(eq)
+            .setDocumentId(documentId);
+        return Map.of(PK, sr.fromS(sr.pk(siteId)), SK, sr.fromS(sr.sk()));
+      }).toList();
+      keys.addAll(keyList);
+    }
+
+    return this.db.getBatch(new BatchGetConfig(), keys);
+  }
+
+  private List<Map<String, AttributeValue>> searchAttributeEqOr(final String siteId,
+      final SearchAttributeCriteria search, final DocumentAttributeRecord sr,
+      final QueryConfig config, final int limit) {
+
+    List<Map<String, AttributeValue>> list = new ArrayList<>();
+
+    Collection<String> eqOr = search.getEqOr();
+    for (String eq : eqOr) {
+      search.eq(eq);
+      List<Map<String, AttributeValue>> items =
+          searchAttributeEq(siteId, search, sr, config, null, limit).items();
+      list.addAll(items);
+    }
+
+    return list;
+  }
+
+  private List<Map<String, AttributeValue>> searchAttributeOtherDocumentIds(final String siteId,
+      final SearchAttributeCriteria search, final Collection<String> documentIds) {
+
+    String key = search.getKey();
+    DocumentAttributeRecord sr = new DocumentAttributeRecord().setKey(key);
+    QueryConfig config = new QueryConfig();
+
+    List<Map<String, AttributeValue>> list = new ArrayList<>();
+
+    for (String documentId : documentIds) {
+
+      sr.setDocumentId(documentId);
+
+      AttributeValue pk = sr.fromS(sr.pk(siteId));
+      String sk = search.getBeginsWith() != null ? ATTR + key + "#" + search.getBeginsWith()
+          : ATTR + key + "#";
+
+      QueryResponse response = this.db.queryBeginsWith(config, pk, sr.fromS(sk), null, 1);
+      list.addAll(response.items());
+    }
+
+    if (search.getRange() != null) {
+
+      String start = search.getRange().getStart();
+      String end = search.getRange().getEnd();
+
+      list = list.stream().filter(a -> {
+
+        boolean match = false;
+
+        if (a.containsKey("stringValue")) {
+          String s = a.get("stringValue").s();
+          match = start.compareTo(s) <= 0 && s.compareTo(end) <= 0;
+        }
+
+        return match;
+      }).toList();
+    }
+
+    return list;
+  }
+
+  private QueryResponse searchAttributeRange(final String siteId,
+      final SearchAttributeCriteria search, final DocumentAttributeRecord sr,
+      final QueryConfig config, final Map<String, AttributeValue> startkey, final int limit) {
+
+    SearchTagCriteriaRange range = search.getRange();
+
+    config.indexName(GSI1);
+    AttributeValue pk = AttributeValue.fromS(sr.pkGsi1(siteId));
+    AttributeValue sk0 = AttributeValue.fromS(range.getStart());
+    AttributeValue sk1 = range.getEnd() != null ? AttributeValue.fromS(range.getEnd()) : null;
+
+    return this.db.between(config, pk, sk0, sk1, startkey, limit);
+  }
+
+  private PaginationResults<DynamicDocumentItem> searchByAttribute(final String siteId,
+      final SearchQuery query, final SearchAttributeCriteria search, final PaginationMapToken token,
+      final int limit) throws ValidationException {
+
+    validate(search);
+
+    DocumentAttributeRecord sr = new DocumentAttributeRecord().setKey(search.getKey());
+    Map<String, AttributeValue> startkey = new PaginationToAttributeValue().apply(token);
+
+    QueryConfig config = new QueryConfig().scanIndexForward(Boolean.TRUE);
+
+    QueryResponse response = null;
+    PaginationMapToken pagination = null;
+    List<Map<String, AttributeValue>> items;
+
+    if (!Objects.isEmpty(query.getDocumentIds())) {
+
+      items = searchAttributeDocumentIds(siteId, query, search);
+
+    } else if (!Strings.isEmpty(search.getEq())) {
+
+      response = searchAttributeEq(siteId, search, sr, config, startkey, limit);
+      items = response.items();
+
+    } else if (!Objects.isEmpty(search.getEqOr())) {
+
+      items = searchAttributeEqOr(siteId, search, sr, config, limit);
+
+    } else if (search.getRange() != null) {
+
+      response = searchAttributeRange(siteId, search, sr, config, startkey, limit);
+      items = response.items();
+
+    } else if (search.getBeginsWith() != null) {
+
+      response = searchAttributeBeginsWith(siteId, search, sr, config, startkey, limit);
+      items = response.items();
+
+    } else {
+
+      config.indexName(GSI1);
+      AttributeValue pk = AttributeValue.fromS(sr.pkGsi1(siteId));
+      response = this.db.query(config, pk, startkey, limit);
+      items = response.items();
+    }
+
+    if (response != null) {
+      pagination = new QueryResponseToPagination().apply(response);
+    }
+
+    List<String> documentIds =
+        items.stream().map(i -> i.get("documentId").s()).distinct().collect(Collectors.toList());
+
+    List<DocumentItem> list = this.docService.findDocuments(siteId, documentIds);
+
+    List<DynamicDocumentItem> results =
+        list != null ? list.stream().map(l -> new DocumentItemToDynamicDocumentItem().apply(l))
+            .collect(Collectors.toList()) : Collections.emptyList();
+
+    addMatchAttributes(items, results);
+    // addResponseFields(siteId, results, searchResponseFields);
+
+    return new PaginationResults<>(results, pagination);
   }
 
   /**
    * Perform Meta Data search.
    * 
    * @param siteId {@link String}
-   * @param query {@link SearchQuery}
    * @param meta {@link SearchMetaCriteria}
    * @param token {@link PaginationMapToken}
    * @param maxresults int
    * @return {@link PaginationResults}
    */
   private PaginationResults<DynamicDocumentItem> searchByMeta(final String siteId,
-      final SearchQuery query, final SearchMetaCriteria meta, final PaginationMapToken token,
-      final int maxresults) {
+      final SearchMetaCriteria meta, final PaginationMapToken token, final int maxresults) {
 
     String value = getMetaDataKey(siteId, meta);
     return searchByMeta(siteId, value, meta.indexFilterBeginsWith(), token, maxresults);
@@ -507,12 +921,12 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
       final String value, final String indexFilterBeginsWith, final PaginationMapToken token,
       final int maxresults) {
 
-    PaginationResults<DynamicDocumentItem> result = null;
+    PaginationResults<DynamicDocumentItem> result;
 
     if (value != null) {
 
       String expression = PK + " = :pk";
-      Map<String, AttributeValue> values = new HashMap<String, AttributeValue>();
+      Map<String, AttributeValue> values = new HashMap<>();
       values.put(":pk", AttributeValue.builder().s(createDatabaseKey(siteId, value)).build());
 
       if (indexFilterBeginsWith != null) {
@@ -544,11 +958,11 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
 
     String key = getSearchKey(search);
 
-    PaginationResults<DynamicDocumentItem> result = null;
+    PaginationResults<DynamicDocumentItem> result;
 
-    Collection<String> documentIds = query.documentIds();
+    Collection<String> documentIds = query.getDocumentIds();
 
-    if (!Objects.notNull(documentIds).isEmpty()) {
+    if (!Objects.isEmpty(documentIds)) {
 
       Map<String, Map<String, AttributeValue>> docs = findDocumentsTags(siteId, documentIds, key);
 
@@ -572,7 +986,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
 
     } else {
 
-      if (!Objects.notNull(search.eqOr()).isEmpty()) {
+      if (!Objects.isEmpty(search.eqOr())) {
         result = findDocumentsWithTagAndValues(siteId, query, key, search.eqOr(), maxresults,
             projectionExpression);
       } else if (search.eq() != null) {
@@ -585,8 +999,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
         result = findDocumentsTagRange(siteId, query, key, search.range(), token, maxresults,
             projectionExpression);
       } else {
-        result =
-            findDocumentsWithTag(siteId, query, key, null, token, maxresults, projectionExpression);
+        result = findDocumentsWithTag(siteId, query, key, token, maxresults, projectionExpression);
       }
     }
 
@@ -614,7 +1027,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
    * @param q {@link QueryRequest}
    * @param siteId DynamoDB PK siteId
    * @param query {@link SearchQuery}
-   * @return {@link PaginationResults} {@link DocumentItemSearchResult}
+   * @return {@link PaginationResults} {@link DynamicDocumentItem}
    */
   private PaginationResults<DynamicDocumentItem> searchForDocuments(final QueryRequest q,
       final String siteId, final SearchQuery query) {
@@ -627,7 +1040,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
 
     Map<String, DocumentTag> tags = transformToDocumentTagMap(result);
 
-    PaginationResults<DynamicDocumentItem> ret = null;
+    PaginationResults<DynamicDocumentItem> ret;
 
     if (projectionExpression == null || !"documentId".equals(projectionExpression)) {
 
@@ -642,7 +1055,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
         DocumentTag tag = tags.get(r.getDocumentId());
         r.put("matchedTag", new DocumentTagToDynamicDocumentTag().apply(tag));
 
-        if (!notNull(query.tags()).isEmpty()) {
+        if (!notNull(query.getTags()).isEmpty()) {
           updateToMatchedTags(query, r);
         }
       });
@@ -665,7 +1078,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
    *
    * @param q {@link QueryRequest}
    * @param siteId DynamoDB PK siteId
-   * @return {@link PaginationResults} {@link DocumentItemSearchResult}
+   * @return {@link PaginationResults} {@link DynamicDocumentItem}
    */
   private PaginationResults<DynamicDocumentItem> searchForMetaDocuments(final QueryRequest q,
       final String siteId) {
@@ -763,7 +1176,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
 
     List<DynamicDocumentItem> matchedTags = new ArrayList<>();
 
-    List<SearchTagCriteria> tags = query.tags();
+    List<SearchTagCriteria> tags = query.getTags();
     for (SearchTagCriteria c : tags) {
       DynamicDocumentItem tag = new DynamicDocumentItem(new HashMap<>());
       tag.put("key", c.key());
@@ -774,5 +1187,66 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
 
     r.put("matchedTags", matchedTags);
     r.remove("matchedTag");
+  }
+
+  private void validate(final SearchAttributeCriteria search) throws ValidationException {
+
+    Collection<ValidationError> errors = new ArrayList<>();
+
+    SearchTagCriteriaRange range = search.getRange();
+
+    if (range != null) {
+      if (Strings.isEmpty(range.getStart())) {
+        errors.add(new ValidationErrorImpl().key("start").error("'start' is required"));
+      }
+
+      if (Strings.isEmpty(range.getEnd())) {
+        errors.add(new ValidationErrorImpl().key("end").error("'end' is required"));
+      }
+    }
+
+    if (!errors.isEmpty()) {
+      throw new ValidationException(errors);
+    }
+  }
+
+  private SchemaCompositeKeyRecord validateSearchAttributeCriteria(final String siteId,
+      final List<SearchAttributeCriteria> attributes) throws ValidationException {
+
+    SchemaCompositeKeyRecord compositeKey = null;
+    List<ValidationError> errors = new ArrayList<>();
+
+    if (attributes.size() > 1) {
+      List<String> attributeKeys =
+          attributes.stream().map(SearchAttributeCriteria::getKey).toList();
+
+      compositeKey = this.schemaService.getCompositeKey(siteId, attributeKeys);
+      if (compositeKey == null) {
+        errors.add(new ValidationErrorImpl().error(
+            "no composite key found for attributes '" + String.join(",", attributeKeys) + "'"));
+      }
+    }
+
+    for (int i = 0; i < attributes.size() - 1; i++) {
+
+      SearchAttributeCriteria c = attributes.get(i);
+
+      if (!isEmpty(c.getBeginsWith())) {
+        errors.add(new ValidationErrorImpl().key("beginsWith")
+            .error("'beginsWith' can only be used on last attribute in list"));
+      } else if (c.getRange() != null) {
+        errors.add(new ValidationErrorImpl().key("range")
+            .error("'range' can only be used on last attribute in list"));
+      } else if (!notNull(c.getEqOr()).isEmpty()) {
+        errors.add(new ValidationErrorImpl().key("range")
+            .error("'eqOr' is not supported with composite keys"));
+      }
+    }
+
+    if (!errors.isEmpty()) {
+      throw new ValidationException(errors);
+    }
+
+    return compositeKey;
   }
 }

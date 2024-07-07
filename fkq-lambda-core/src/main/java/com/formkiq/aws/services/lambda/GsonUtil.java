@@ -34,7 +34,8 @@ public final class GsonUtil {
 
   /** {@link Gson}. */
   private static final Gson GSON =
-      new GsonBuilder().disableHtmlEscaping().setDateFormat(DATE_FORMAT).create();
+      new GsonBuilder().disableHtmlEscaping().setDateFormat(DATE_FORMAT)
+          .registerTypeAdapterFactory(new CaseInsensitiveEnumTypeAdapterFactory()).create();
 
   /** private constructor. */
   private GsonUtil() {}

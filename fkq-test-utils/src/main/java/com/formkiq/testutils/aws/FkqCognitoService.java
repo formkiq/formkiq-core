@@ -88,9 +88,10 @@ public class FkqCognitoService {
    * Add Cognito Group.
    * 
    * @param groupname {@link String}
+   * @param groupDescription {@link String}
    */
-  public void addGroup(final String groupname) {
-    this.service.addGroup(groupname);
+  public void addGroup(final String groupname, final String groupDescription) {
+    this.service.addGroup(groupname, groupDescription);
   }
 
   /**
@@ -104,7 +105,7 @@ public class FkqCognitoService {
     UserType userType = null;
     if (!this.service.isUserExists(email)) {
       String tempPassword = "!" + password + "!";
-      userType = this.service.addUser(email, tempPassword);
+      userType = this.service.addUser(email, tempPassword, Boolean.TRUE);
       this.service.loginWithNewPassword(email, tempPassword, password);
     }
     return userType;

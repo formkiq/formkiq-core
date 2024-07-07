@@ -38,6 +38,8 @@ public enum ActionType {
   DOCUMENTTAGGING,
   /** Full Text. */
   FULLTEXT,
+  /** Intelligent Document Processing. */
+  IDP,
   /** Notification Action. */
   NOTIFICATION,
   /** OCR. */
@@ -45,5 +47,7 @@ public enum ActionType {
   /** Queue. */
   QUEUE,
   /** WebHook. */
-  WEBHOOK;
+  WEBHOOK,
+  /** Publish. */
+  PUBLISH
 }

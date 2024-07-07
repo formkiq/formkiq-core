@@ -45,7 +45,6 @@ import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
-import com.formkiq.aws.dynamodb.DocumentAccessAttributesRecord;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.DynamoDbService;
@@ -66,7 +65,7 @@ import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.s3.S3ServiceExtension;
 import com.formkiq.aws.sns.SnsAwsServiceRegistry;
-import com.formkiq.aws.ssm.SmsAwsServiceRegistry;
+import com.formkiq.aws.ssm.SsmAwsServiceRegistry;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceExtension;
 import com.formkiq.graalvm.annotations.Reflectable;
@@ -101,6 +100,9 @@ import com.formkiq.stacks.dynamodb.FolderIndexProcessor;
 import com.formkiq.stacks.dynamodb.FolderIndexProcessorExtension;
 import com.formkiq.stacks.dynamodb.apimodels.MatchDocumentTag;
 import com.formkiq.stacks.dynamodb.apimodels.UpdateMatchingDocumentTagsRequest;
+import com.formkiq.stacks.dynamodb.attributes.AttributeService;
+import com.formkiq.stacks.dynamodb.attributes.AttributeServiceExtension;
+import com.formkiq.validation.ValidationException;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
@@ -117,13 +119,8 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
   /** {@link ActionsService}. */
   private static ActionsService actionsService;
-
-  /** {@link DynamoDbService}. */
-  private static DynamoDbService db;
-
   /** {@link String}. */
   private static String documentsBucket;
-
   /** {@link FolderIndexProcessor}. */
   private static FolderIndexProcessor folderIndexProcesor;
 
@@ -147,7 +144,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
       serviceCache = new AwsServiceCacheBuilder(System.getenv(), Map.of(),
           EnvironmentVariableCredentialsProvider.create())
           .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
-              new SnsAwsServiceRegistry(), new SmsAwsServiceRegistry())
+              new SnsAwsServiceRegistry(), new SsmAwsServiceRegistry())
           .build();
 
       initialize(serviceCache);
@@ -205,6 +202,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     awsServiceCache.register(DocumentTagSchemaPlugin.class,
         new DocumentTagSchemaPluginExtension(null));
     awsServiceCache.register(DynamoDbService.class, new DynamoDbServiceExtension());
+    awsServiceCache.register(AttributeService.class, new AttributeServiceExtension());
 
     documentsBucket = awsServiceCache.environment("DOCUMENTS_S3_BUCKET");
     syncService = awsServiceCache.getExtension(DocumentSyncService.class);
@@ -212,7 +210,6 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     service = awsServiceCache.getExtension(DocumentService.class);
     actionsService = awsServiceCache.getExtension(ActionsService.class);
     s3 = awsServiceCache.getExtension(S3Service.class);
-    db = awsServiceCache.getExtension(DynamoDbService.class);
 
     snsDocumentEvent = awsServiceCache.environment("SNS_DOCUMENT_EVENT");
     notificationService = awsServiceCache.getExtension(ActionsNotificationService.class);
@@ -315,7 +312,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
   private DynamicDocumentItem createDocument(final LambdaLogger logger, final String siteId,
       final DynamicDocumentItem loadedDoc, final Date date, final boolean hasContent,
-      final DocumentItem existingDocument) {
+      final DocumentItem existingDocument) throws ValidationException {
 
     DynamicDocumentItem doc = new DynamicDocumentItem(loadedDoc);
 
@@ -342,8 +339,6 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     saveDocumentSync(siteId, doc, existingDocument);
 
     saveDocumentActions(siteId, doc);
-
-    saveDocumentAccessAttributes(siteId, loadedDoc);
 
     return doc;
   }
@@ -541,10 +536,11 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
    * @param date {@link Date}
    * @throws IOException IOException
    * @throws InterruptedException InterruptedException
+   * @throws ValidationException ValidationException
    */
   private void processDefaultFile(final LambdaLogger logger, final String siteId,
       final String bucket, final String s3Key, final Date date)
-      throws IOException, InterruptedException {
+      throws IOException, InterruptedException, ValidationException {
 
     DynamicDocumentItem loadDocument = loadDocument(logger, bucket, siteId, s3Key);
 
@@ -736,46 +732,6 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
       service.addTags(siteId, tagMap, null);
 
     } while (token != null);
-  }
-
-  @SuppressWarnings("unchecked")
-  private void saveDocumentAccessAttributes(final String siteId,
-      final DynamicDocumentItem loadedDoc) {
-
-    if (loadedDoc.containsKey("accessAttributes")) {
-
-      List<Map<String, Object>> attributes =
-          (List<Map<String, Object>>) loadedDoc.get("accessAttributes");
-
-      if (!attributes.isEmpty()) {
-
-        DocumentAccessAttributesRecord ar =
-            new DocumentAccessAttributesRecord().documentId(loadedDoc.getDocumentId());
-
-        attributes.forEach(a -> {
-
-          String key = a.get("key").toString();
-          String stringValue = a.containsKey("stringValue") ? (String) a.get("stringValue") : null;
-          Double numberValue = a.containsKey("numberValue") ? (Double) a.get("numberValue") : null;
-          Boolean booleanValue =
-              a.containsKey("booleanValue") ? (Boolean) a.get("booleanValue") : null;
-
-          if (stringValue != null && !stringValue.isEmpty()) {
-            ar.addStringValue(key, stringValue);
-          }
-
-          if (numberValue != null) {
-            ar.addNumberValue(key, numberValue);
-          }
-
-          if (booleanValue != null) {
-            ar.addBooleanValue(key, booleanValue);
-          }
-        });
-
-        db.putItem(ar.getAttributes(siteId));
-      }
-    }
   }
 
   /**

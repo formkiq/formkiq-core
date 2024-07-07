@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api.awstest;
 
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -30,7 +31,9 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
+
+import com.formkiq.client.model.AddApiKeyRequest;
+import com.formkiq.client.model.AddApiKeyResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -90,7 +93,7 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  @Timeout(value = TEST_TIMEOUT)
   public void testApiKey01() throws Exception {
     // given
     String name = "My API";
@@ -103,17 +106,18 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
         UUID.randomUUID().toString())) {
 
       for (ApiClient client : Arrays.asList(apiClients.get(0), apiClients.get(1))) {
-        com.formkiq.client.model.AddApiKeyRequest apiReq =
-            new com.formkiq.client.model.AddApiKeyRequest().name(name);
+        AddApiKeyRequest apiReq = new AddApiKeyRequest().name(name);
 
         SystemManagementApi api = new SystemManagementApi(client);
 
         // when
-        api.addApiKey(siteId, apiReq);
+        AddApiKeyResponse response = api.addApiKey(siteId, apiReq);
 
         // then
         GetApiKeysResponse apiKeys = api.getApiKeys(siteId);
-        assertFalse(apiKeys.getApiKeys().isEmpty());
+        assertFalse(notNull(apiKeys.getApiKeys()).isEmpty());
+
+        api.deleteApiKey(siteId, response.getApiKey());
       }
     }
 
@@ -134,14 +138,13 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
 
   /**
    * Test GET /configuration/apiKeys as readuser user.
-   * 
-   * @throws Exception Exception
+   *
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
-  public void testApiKey02() throws Exception {
+  @Timeout(value = TEST_TIMEOUT)
+  public void testApiKey02() {
     // given
-    addAndLoginCognito(FINANCE_EMAIL, Arrays.asList("finance"));
+    addAndLoginCognito(FINANCE_EMAIL, List.of("finance"));
 
     AuthenticationResultType token = getCognito().login(FINANCE_EMAIL, USER_PASSWORD);
 
@@ -156,7 +159,7 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
       fail();
     } catch (ApiException e) {
       assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
-      assertEquals("{\"message\":\"user is unauthorized\"}", e.getResponseBody());
+      assertEquals("{\"message\":\"fkq access denied to siteId (default)\"}", e.getResponseBody());
     }
   }
 
@@ -166,7 +169,7 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  @Timeout(value = TEST_TIMEOUT)
   public void testApiKey03() throws Exception {
     // given
     String name = "My Read API";
@@ -176,7 +179,7 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
     com.formkiq.client.model.AddApiKeyRequest req = new com.formkiq.client.model.AddApiKeyRequest()
         .name(name).addPermissionsItem(PermissionsEnum.READ);
 
-    for (String siteId : Arrays.asList("default")) {
+    for (String siteId : List.of("default")) {
 
       // when
       this.jwtApiClient.addDefaultHeader("Authorization", token.accessToken());

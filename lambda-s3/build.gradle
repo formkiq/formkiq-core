@@ -28,6 +28,7 @@ dependencies {
 	implementation project(':document-events')
 	implementation project(':actions')
 	implementation project(':fkq-lambda-services')
+	implementation project(':fkq-validation')
 	implementation project(':typesense')
 	implementation project(':http')
 	implementation project(':http-sigv4')
@@ -42,6 +43,7 @@ dependencies {
 	
 	testImplementation project(':aws-sqs')	
 	testImplementation project(':fkq-test-utils')
+	testImplementation project(':fkq-validation')
     testImplementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.14.0'
 
 	testImplementation group: 'software.amazon.awssdk', name: 'dynamodb', version: '2.23.12'

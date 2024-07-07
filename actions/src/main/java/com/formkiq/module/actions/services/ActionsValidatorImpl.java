@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Map;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.model.MappingRecord;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionType;
@@ -57,7 +58,7 @@ public class ActionsValidatorImpl implements ActionsValidator {
   /** Notification Email. */
   private static final String NOTIFICATION_EMAIL = "NotificationEmail";
   /** {@link DynamoDbService}. */
-  private DynamoDbService db;
+  private final DynamoDbService db;
 
   /**
    * constructor.
@@ -69,9 +70,7 @@ public class ActionsValidatorImpl implements ActionsValidator {
   }
 
   private Map<String, String> getParameters(final Action action) {
-    Map<String, String> parameters =
-        action.parameters() != null ? action.parameters() : Collections.emptyMap();
-    return parameters;
+    return action.parameters() != null ? action.parameters() : Collections.emptyMap();
   }
 
   private boolean hasValue(final Map<String, String> parameters, final String key) {
@@ -162,6 +161,24 @@ public class ActionsValidatorImpl implements ActionsValidator {
     }
   }
 
+  private void validateIdp(final String siteId, final Action action,
+      final Collection<ValidationError> errors) {
+
+    Map<String, String> parameters = getParameters(action);
+
+    if (!hasValue(parameters, "mappingId")) {
+      errors.add(new ValidationErrorImpl().key("mappingId").error("'mappingId' is required"));
+
+    } else {
+      String mappingId = parameters.get("mappingId");
+      MappingRecord m = new MappingRecord().setDocumentId(mappingId);
+
+      if (!this.db.exists(m.fromS(m.pk(siteId)), m.fromS(m.sk()))) {
+        errors.add(new ValidationErrorImpl().key("mappingId").error("'mappingId' does not exist"));
+      }
+    }
+  }
+
   @Override
   public Collection<ValidationError> validation(final String siteId, final Action action,
       final DynamicObject configs) {
@@ -193,6 +210,8 @@ public class ActionsValidatorImpl implements ActionsValidator {
           validateNotificationEmail(configs, action, errors);
         } else if (ActionType.QUEUE.equals(action.type())) {
           validateQueue(siteId, action, errors);
+        } else if (ActionType.IDP.equals(action.type())) {
+          validateIdp(siteId, action, errors);
         }
       }
     }

@@ -169,20 +169,8 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
 
         if (siteId != null) {
           assertTrue(resp.getUrl().contains("/testbucket/" + siteId));
-          assertTrue(getLogger().containsString("generated presign url: "
-              + TestServices.getEndpointOverride(Service.S3).toString() + "/testbucket/" + siteId));
         } else {
           assertFalse(resp.getUrl().contains("/testbucket/default"));
-          assertTrue(getLogger().containsString("generated presign url: "
-              + TestServices.getEndpointOverride(Service.S3).toString() + "/testbucket/"));
-        }
-
-        assertTrue(getLogger().containsString("saving document: "));
-
-        if (path != null) {
-          assertTrue(getLogger().containsString(" on path /bleh/test.txt"));
-        } else {
-          assertTrue(getLogger().containsString(" on path " + null));
         }
       }
     }
@@ -310,11 +298,6 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
     assertEquals("200.0", String.valueOf(m.get("statusCode")));
     ApiUrlResponse resp = expectResponse(response);
     assertTrue(resp.getUrl().contains("content-length"));
-
-    assertTrue(getLogger().containsString("generated presign url: "
-        + TestServices.getEndpointOverride(Service.S3).toString() + "/testbucket/"));
-    assertTrue(getLogger().containsString("saving document: "));
-    assertTrue(getLogger().containsString(" on path " + null));
   }
 
   /**
@@ -427,12 +410,8 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
 
       if (siteId != null) {
         assertTrue(resp.getUrl().contains("/testbucket/" + siteId));
-        assertTrue(getLogger().containsString("generated presign url: "
-            + TestServices.getEndpointOverride(Service.S3).toString() + "/testbucket/" + siteId));
       } else {
         assertFalse(resp.getUrl().contains("/testbucket/default"));
-        assertTrue(getLogger().containsString("generated presign url: "
-            + TestServices.getEndpointOverride(Service.S3).toString() + "/testbucket/"));
       }
 
       String documentId = resp.getDocumentId();
@@ -570,7 +549,7 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
 
         // then
         Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
-        assertEquals("403.0", String.valueOf(m.get("statusCode")));
+        assertEquals("401.0", String.valueOf(m.get("statusCode")));
 
         String body = String.valueOf(m.get("body"));
         assertTrue(body.contains("\"message\":\"fkq access denied (groups:"));

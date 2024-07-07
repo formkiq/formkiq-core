@@ -27,6 +27,7 @@ import static com.formkiq.testutils.aws.FkqDocumentService.addDocument;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForActions;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContent;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.io.InputStream;
@@ -42,6 +43,7 @@ import com.formkiq.client.api.DocumentOcrApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAction;
+import com.formkiq.client.model.AddActionParameters;
 import com.formkiq.client.model.AddDocumentActionsRequest;
 import com.formkiq.client.model.AddDocumentActionsResponse;
 import com.formkiq.client.model.AddDocumentOcrRequest;
@@ -50,6 +52,7 @@ import com.formkiq.client.model.DocumentActionStatus;
 import com.formkiq.client.model.DocumentActionType;
 import com.formkiq.client.model.GetDocumentActionsResponse;
 import com.formkiq.client.model.GetDocumentOcrResponse;
+import com.formkiq.client.model.OcrEngine;
 import com.formkiq.stacks.client.models.DocumentOcr;
 import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
 import software.amazon.awssdk.utils.IoUtils;
@@ -196,5 +199,48 @@ public class DocumentsDocumentIdOcrRequestTest extends AbstractAwsIntegrationTes
     try (InputStream is = getClass().getResourceAsStream(name)) {
       return IoUtils.toByteArray(is);
     }
+  }
+
+  /**
+   * Test OCR PDF Document only first 2 pages.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  public void testAddOcr03() throws Exception {
+    String siteId = null;
+    ApiClient client = getApiClients(siteId).get(0);
+
+    byte[] content = toBytes("/multipage_example.pdf");
+    String documentId =
+        addDocument(client, siteId, "multipage_example.pdf", content, "application/pdf", null);
+    waitForDocumentContent(client, siteId, documentId);
+
+    DocumentActionsApi actionsApi = new DocumentActionsApi(client);
+    AddDocumentActionsRequest req = new AddDocumentActionsRequest()
+        .actions(Arrays.asList(new AddAction().type(DocumentActionType.OCR).parameters(
+            new AddActionParameters().ocrEngine(OcrEngine.TESSERACT).ocrNumberOfPages("2"))));
+
+    // when
+    AddDocumentActionsResponse response = actionsApi.addDocumentActions(documentId, siteId, req);
+
+    // then
+    assertEquals("Actions saved", response.getMessage());
+    waitForActions(client, siteId, documentId, Arrays.asList(DocumentActionStatus.COMPLETE));
+
+    DocumentOcrApi api = new DocumentOcrApi(client);
+    GetDocumentOcrResponse documentOcr = api.getDocumentOcr(documentId, siteId, null, null, null);
+
+    String text = documentOcr.getData();
+    assertTrue(text.contains("Your Company"));
+    assertTrue(text.contains("2/9"));
+    assertFalse(text.contains("3/9"));
+    assertFalse(text.contains("Current process"));
+
+    GetDocumentActionsResponse actions =
+        actionsApi.getDocumentActions(documentId, siteId, null, null, null);
+    assertEquals(1, actions.getActions().size());
+    assertEquals("COMPLETE", actions.getActions().get(0).getStatus().name());
   }
 }

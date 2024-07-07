@@ -39,6 +39,10 @@ public class OcrRequest {
   private boolean addPdfDetectedCharactersAsText = false;
   /** {@link String}. */
   private String ocrEngine;
+  /** {@link OcrOutputType}. */
+  private OcrOutputType ocrOutputType;
+  /** Number of OCR Pages. */
+  private String ocrNumberOfPages;
   /** Parse Types. */
   private List<String> parseTypes;
 
@@ -56,6 +60,15 @@ public class OcrRequest {
    */
   public String getOcrEngine() {
     return this.ocrEngine;
+  }
+
+  /**
+   * Get Ocr Number of Pages.
+   * 
+   * @return {@link String}
+   */
+  public String getOcrNumberOfPages() {
+    return this.ocrNumberOfPages;
   }
 
   /**
@@ -77,6 +90,15 @@ public class OcrRequest {
   }
 
   /**
+   * Get {@link OcrOutputType}.
+   * 
+   * @return OcrOutputType
+   */
+  public OcrOutputType getOcrOutputType() {
+    return this.ocrOutputType;
+  }
+
+  /**
    * Set AddPdfDetectedCharactersAsText.
    * 
    * @param bool boolean
@@ -93,6 +115,28 @@ public class OcrRequest {
    */
   public OcrRequest setOcrEngine(final String engine) {
     this.ocrEngine = engine;
+    return this;
+  }
+
+  /**
+   * Set ocrExportToCsv.
+   * 
+   * @param outputType {@link OcrOutputType}
+   * @return {@link OcrRequest}
+   */
+  public OcrRequest setOcrOutputType(final OcrOutputType outputType) {
+    this.ocrOutputType = outputType;
+    return this;
+  }
+
+  /**
+   * Set Number of OCR Pages.
+   * 
+   * @param numberOfPages {@link String}
+   * @return {@link OcrRequest}
+   */
+  public OcrRequest setOcrNumberOfPages(final String numberOfPages) {
+    this.ocrNumberOfPages = numberOfPages;
     return this;
   }
 

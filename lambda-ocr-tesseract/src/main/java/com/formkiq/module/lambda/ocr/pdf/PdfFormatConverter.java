@@ -48,11 +48,17 @@ public class PdfFormatConverter implements FormatConverter {
 
   @Override
   public FormatConverterResult convert(final AwsServiceCache awsServices,
-      final OcrSqsMessage sqsMessage, final File file) throws IOException {
+      final OcrSqsMessage sqsMessage, final MimeType mineType, final File file) throws IOException {
 
     StringBuilder sb = new StringBuilder();
 
+    int numberOfPages = getOcrNumberOfPages(sqsMessage);
+
     PDFTextStripper pdfTextStripper = new PDFTextStripper();
+    if (numberOfPages > 0) {
+      pdfTextStripper.setStartPage(0);
+      pdfTextStripper.setEndPage(numberOfPages);
+    }
 
     try (PDDocument document = Loader.loadPDF(file)) {
 
@@ -82,6 +88,16 @@ public class PdfFormatConverter implements FormatConverter {
 
       String text = sb.toString();
       return new FormatConverterResult().text(text).status(OcrScanStatus.SUCCESSFUL);
+    }
+  }
+
+  private int getOcrNumberOfPages(final OcrSqsMessage sqsMessage) {
+    try {
+      String numberOfPages =
+          sqsMessage.request() != null ? sqsMessage.request().getOcrNumberOfPages() : "-1";
+      return Integer.parseInt(numberOfPages);
+    } catch (NumberFormatException e) {
+      return -1;
     }
   }
 

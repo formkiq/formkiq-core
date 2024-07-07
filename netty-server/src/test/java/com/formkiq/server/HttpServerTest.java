@@ -39,9 +39,11 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.model.AddDocumentRequest;
@@ -60,9 +62,16 @@ import io.netty.handler.codec.http.HttpResponseStatus;
  */
 @ExtendWith(DynamoDbExtension.class)
 @ExtendWith(MinioExtension.class)
-@ExtendWith(TypesenseExtension.class)
-@ExtendWith(NettyExtension.class)
 public class HttpServerTest {
+
+  /** {@link TypesenseExtension}. */
+  @RegisterExtension
+  @Order(1)
+  static TypesenseExtension typesenseExtension = new TypesenseExtension();
+  /** {@link NettyExtension}. */
+  @RegisterExtension
+  @Order(2)
+  static NettyExtension nettyExtension = new NettyExtension(typesenseExtension);
 
   /** Http Server Port. */
   private static final int BASE_HTTP_SERVER_PORT = 8080;

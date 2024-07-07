@@ -53,6 +53,17 @@ public class NettyExtension implements BeforeAllCallback, AfterAllCallback {
   private static final int MILLISECOND_FACTOR = 1000;
   /** {@link Thread}. */
   private Thread serverThread;
+  /** {@link TypesenseExtension}. */
+  private TypesenseExtension typesense;
+
+  /**
+   * constructor.
+   * 
+   * @param typesenseExtension {@link TypesenseExtension}
+   */
+  public NettyExtension(final TypesenseExtension typesenseExtension) {
+    this.typesense = typesenseExtension;
+  }
 
   @Override
   public void afterAll(final ExtensionContext context) throws IOException {
@@ -72,7 +83,7 @@ public class NettyExtension implements BeforeAllCallback, AfterAllCallback {
     params.add("--admin-username=" + ADMIN_USERNAME);
     params.add("--admin-password=" + ADMIN_PASSWORD);
     params.add("--api-key=" + API_KEY);
-    params.add("--typesense-host=http://localhost:" + TypesenseExtension.getMappedPort());
+    params.add("--typesense-host=http://localhost:" + this.typesense.getFirstMappedPort());
     params.add("--typesense-api-key=" + TypesenseExtension.API_KEY);
 
     this.serverThread = new Thread(() -> {

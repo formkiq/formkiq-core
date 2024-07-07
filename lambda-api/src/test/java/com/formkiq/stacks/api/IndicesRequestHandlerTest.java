@@ -24,7 +24,6 @@
 package com.formkiq.stacks.api;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
-import static com.formkiq.module.http.HttpResponseStatus.STATUS_FORBIDDEN;
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -32,7 +31,10 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
+
+import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -56,7 +58,6 @@ import com.formkiq.stacks.dynamodb.DocumentSearchServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
-import com.formkiq.testutils.aws.AbstractFormKiqApiResponseCallback;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.formkiq.testutils.aws.FormKiqApiExtension;
@@ -69,16 +70,15 @@ import com.formkiq.testutils.aws.LocalStackExtension;
 public class IndicesRequestHandlerTest {
 
   /** {@link FormKiQResponseCallback}. */
-  private static final FormKiQResponseCallback CALLBACK =
-      new FormKiQResponseCallback(AbstractFormKiqApiResponseCallback.generatePort());
+  private static final FormKiQResponseCallback CALLBACK = new FormKiQResponseCallback();
   /** FormKiQ Server. */
   @RegisterExtension
-  static FormKiqApiExtension server = new FormKiqApiExtension(CALLBACK);
+  static FormKiqApiExtension server = new FormKiqApiExtension(null, null, null, CALLBACK);
   /** {@link ApiClient}. */
-  private ApiClient client =
+  private final ApiClient client =
       Configuration.getDefaultApiClient().setReadTimeout(0).setBasePath(server.getBasePath());
   /** {@link CustomIndexApi}. */
-  private CustomIndexApi indexApi = new CustomIndexApi(this.client);
+  private final CustomIndexApi indexApi = new CustomIndexApi(this.client);
   /** {@link DocumentService}. */
   private static DocumentService documentService;
   /** {@link DocumentSearchService}. */
@@ -126,7 +126,8 @@ public class IndicesRequestHandlerTest {
       documentService.deleteDocument(siteId, item.getDocumentId(), false);
 
       SearchQuery q = new SearchQuery().meta(new SearchMetaCriteria().folder("x"));
-      PaginationResults<DynamicDocumentItem> results = dss.search(siteId, q, null, MAX_RESULTS);
+      PaginationResults<DynamicDocumentItem> results =
+          dss.search(siteId, q, null, null, MAX_RESULTS);
       assertEquals(1, results.getResults().size());
       DynamicDocumentItem folder = results.getResults().get(0);
       String indexKey = folder.get("indexKey").toString();
@@ -137,7 +138,7 @@ public class IndicesRequestHandlerTest {
       // then
       assertEquals("Folder deleted", response.getMessage());
 
-      results = dss.search(siteId, q, null, MAX_RESULTS);
+      results = dss.search(siteId, q, null, null, MAX_RESULTS);
       assertEquals(0, results.getResults().size());
     }
   }
@@ -160,7 +161,8 @@ public class IndicesRequestHandlerTest {
       documentService.saveDocument(siteId, item, null);
 
       SearchQuery q = new SearchQuery().meta(new SearchMetaCriteria().folder("x"));
-      PaginationResults<DynamicDocumentItem> results = dss.search(siteId, q, null, MAX_RESULTS);
+      PaginationResults<DynamicDocumentItem> results =
+          dss.search(siteId, q, null, null, MAX_RESULTS);
       assertEquals(1, results.getResults().size());
       DynamicDocumentItem folder = results.getResults().get(0);
       String indexKey = folder.get("indexKey").toString();
@@ -174,7 +176,7 @@ public class IndicesRequestHandlerTest {
         assertEquals("{\"message\":\"Folder not empty\"}", e.getResponseBody());
       }
 
-      results = dss.search(siteId, q, null, MAX_RESULTS);
+      results = dss.search(siteId, q, null, null, MAX_RESULTS);
       assertEquals(1, results.getResults().size());
     }
   }
@@ -182,10 +184,9 @@ public class IndicesRequestHandlerTest {
   /**
    * DELETE /indices/{type}/{key} request, invalid key.
    *
-   * @throws Exception an error has occurred
    */
   @Test
-  public void testHandleDelete03() throws Exception {
+  public void testHandleDelete03() {
 
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
       // given
@@ -221,9 +222,10 @@ public class IndicesRequestHandlerTest {
       String tagKey = "category";
       String tagValue = "person";
       DocumentTag tag = new DocumentTag(item.getDocumentId(), tagKey, tagValue, new Date(), "joe");
-      documentService.saveDocument(siteId, item, Arrays.asList(tag));
+      documentService.saveDocument(siteId, item, List.of(tag));
 
-      PaginationResults<DynamicDocumentItem> results = dss.search(siteId, q, null, MAX_RESULTS);
+      PaginationResults<DynamicDocumentItem> results =
+          dss.search(siteId, q, null, null, MAX_RESULTS);
       assertEquals(1, results.getResults().size());
 
       String indexKey = "category";
@@ -234,7 +236,7 @@ public class IndicesRequestHandlerTest {
       // then
       assertEquals("Folder deleted", deleteIndex.getMessage());
 
-      results = dss.search(siteId, q, null, MAX_RESULTS);
+      results = dss.search(siteId, q, null, null, MAX_RESULTS);
       assertEquals(0, results.getResults().size());
     }
   }
@@ -243,10 +245,9 @@ public class IndicesRequestHandlerTest {
   /**
    * DELETE /indices/{type}/{key} request, invalid type.
    *
-   * @throws Exception an error has occurred
    */
   @Test
-  public void testHandleDelete05() throws Exception {
+  public void testHandleDelete05() {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
@@ -282,7 +283,8 @@ public class IndicesRequestHandlerTest {
       documentService.deleteDocument(siteId, item.getDocumentId(), false);
 
       SearchQuery q = new SearchQuery().meta(new SearchMetaCriteria().folder("x"));
-      PaginationResults<DynamicDocumentItem> results = dss.search(siteId, q, null, MAX_RESULTS);
+      PaginationResults<DynamicDocumentItem> results =
+          dss.search(siteId, q, null, null, MAX_RESULTS);
       assertEquals(1, results.getResults().size());
       DynamicDocumentItem folder = results.getResults().get(0);
       String indexKey = folder.get("indexKey").toString();
@@ -293,10 +295,10 @@ public class IndicesRequestHandlerTest {
         fail();
       } catch (ApiException e) {
         // then
-        assertEquals(STATUS_FORBIDDEN, e.getCode());
+        assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
       }
 
-      results = dss.search(siteId, q, null, MAX_RESULTS);
+      results = dss.search(siteId, q, null, null, MAX_RESULTS);
       assertEquals(1, results.getResults().size());
     }
   }

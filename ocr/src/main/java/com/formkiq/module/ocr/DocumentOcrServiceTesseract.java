@@ -64,15 +64,15 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
   /** Content Type APPLICATION/JSON. */
   private static final String APPLICATION_JSON = "application/json";
   /** {@link DynamoDbService}. */
-  private DynamoDbService db;
+  private final DynamoDbService db;
   /** {@link String}. */
-  private String documentsBucket;
+  private final String documentsBucket;
   /** {@link Gson}. */
-  private Gson gson = new GsonBuilder().disableHtmlEscaping().create();
+  private final Gson gson = new GsonBuilder().disableHtmlEscaping().create();
   /** OCR S3 Bucket. */
-  private String ocrBucket;
+  private final String ocrBucket;
   /** {@link S3Service}. */
-  private S3Service s3;
+  private final S3Service s3;
 
 
   /**
@@ -127,10 +127,9 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
     } else {
 
       String documentS3toConvert = null;
-      // String documentS3toConvert = updateS3ObjectIfNecessary(s3key, contentType);
 
       if (awsservice.debug()) {
-        String msg = String.format("converting document %s in bucket by user %s", s3key,
+        String msg = String.format("converting document %s in bucket %s by user %s", s3key,
             this.documentsBucket, userId);
         logger.log(msg);
       }
@@ -140,7 +139,8 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
 
       Ocr ocr = new Ocr().documentId(documentId).jobId(jobId).engine(getOcrEngine(request))
           .status(OcrScanStatus.REQUESTED).contentType(APPLICATION_JSON).userId(userId)
-          .addPdfDetectedCharactersAsText(request.isAddPdfDetectedCharactersAsText());
+          .addPdfDetectedCharactersAsText(request.isAddPdfDetectedCharactersAsText())
+          .ocrOutputType(request.getOcrOutputType());
 
       save(siteId, ocr);
     }
@@ -222,7 +222,7 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
 
     List<String> s3Keys =
         list.contents().stream().filter(f -> !f.key().contains(".s3_access_check"))
-            .map(f -> f.key()).sorted(new S3KeysNaturalComparator()).collect(Collectors.toList());
+            .map(S3Object::key).sorted(new S3KeysNaturalComparator()).collect(Collectors.toList());
 
     return s3Keys;
   }
@@ -242,8 +242,7 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
 
   @Override
   public String getS3Key(final String siteId, final String documentId, final String jobId) {
-    String s3key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
-    return s3key;
+    return SiteIdKeyGenerator.createS3Key(siteId, documentId);
   }
 
   /**
@@ -354,40 +353,4 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
 
     updateOcrScanStatus(awsservice, siteId, documentId, status);
   }
-
-  // /**
-  // * Is {@link S3Object} a PDF, if so check if it's a PDF Portfolio.
-  // *
-  // * @param s3Key {@link String}
-  // * @param contentType {@link String}
-  // * @return {@link String}
-  // */
-  // private String updateS3ObjectIfNecessary(final String s3Key, final String contentType) {
-  //
-  // String key = s3Key;
-  //
-  // if (contentType.contains("application/pdf")) {
-  //
-  // try (InputStream is = this.s3.getContentAsInputStream(this.documentsBucket, key)) {
-  //
-  // try (PdfDocument doc = new PdfDocument(new PdfReader(is))) {
-  //
-  // if (PdfPortfolio.isPdfPortfolio(doc)) {
-  //
-  // ByteArrayOutputStream os = new ByteArrayOutputStream();
-  // PdfPortfolio.mergePdfPortfolios(doc, os);
-  //
-  // key = PREFIX_TEMP_FILES + key;
-  // this.s3.putObject(this.ocrBucket, key, os.toByteArray(), "application/pdf");
-  // }
-  // }
-  //
-  // } catch (IOException e) {
-  // key = s3Key;
-  // }
-  // }
-  //
-  // return key;
-  // }
-
 }

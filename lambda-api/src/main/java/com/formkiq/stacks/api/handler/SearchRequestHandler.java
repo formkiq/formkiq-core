@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_PAYMENT;
 import static software.amazon.awssdk.utils.StringUtils.isEmpty;
@@ -41,6 +42,7 @@ import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.dynamodb.model.QueryRequest;
 import com.formkiq.aws.dynamodb.model.SearchResponseFields;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.services.lambda.ApiAuthorization;
@@ -57,7 +59,6 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.typesense.TypeSenseService;
 import com.formkiq.module.typesense.TypeSenseServiceImpl;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
-import com.formkiq.stacks.api.QueryRequest;
 import com.formkiq.stacks.api.QueryRequestValidator;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
@@ -99,12 +100,12 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
 
     Map<String, Collection<DocumentTag>> map = Collections.emptyMap();
 
-    if (responseFields != null && !Objects.notNull(responseFields.tags()).isEmpty()) {
+    if (responseFields != null && !notNull(responseFields.getTags()).isEmpty()) {
 
       Set<String> documentIds =
-          documents.stream().map(d -> d.getDocumentId()).collect(Collectors.toSet());
+          documents.stream().map(DynamicDocumentItem::getDocumentId).collect(Collectors.toSet());
 
-      map = documentService.findDocumentsTags(siteId, documentIds, responseFields.tags());
+      map = documentService.findDocumentsTags(siteId, documentIds, responseFields.getTags());
     }
 
     return map;
@@ -114,13 +115,18 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
   public Optional<Boolean> isAuthorized(final AwsServiceCache awsservice, final String method,
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
     boolean access = authorization.getPermissions().contains(ApiPermission.READ);
-    return Optional.of(Boolean.valueOf(access));
+    return Optional.of(access);
   }
 
   private boolean isEnterpriseFeature(final AwsServiceCache serviceCache, final QueryRequest q) {
 
-    return q.query().tag() == null && q.query().meta() == null && isEmpty(q.query().text())
+    return isTagOrAttribute(q) && q.query().getMeta() == null && isEmpty(q.query().getText())
         && !serviceCache.getExtension(DocumentTagSchemaPlugin.class).isActive();
+  }
+
+  private boolean isTagOrAttribute(final QueryRequest q) {
+    return notNull(q.query().getAttributes()).isEmpty() && q.query().getAttribute() == null
+        && q.query().getTag() == null;
   }
 
   /**
@@ -136,7 +142,7 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
 
       documents.forEach(doc -> {
 
-        Collection<DocumentTag> tags = Objects.notNull(responseTags.get(doc.getDocumentId()));
+        Collection<DocumentTag> tags = notNull(responseTags.get(doc.getDocumentId()));
 
         Map<String, Object> map = new HashMap<>();
 
@@ -158,7 +164,7 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    ApiRequestHandlerResponse response = null;
+    ApiRequestHandlerResponse response;
 
     QueryRequest q = fromBodyToObject(event, QueryRequest.class);
 
@@ -179,7 +185,8 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
       int limit = pagination != null ? pagination.getLimit() : getLimit(logger, event);
       PaginationMapToken ptoken = pagination != null ? pagination.getStartkey() : null;
 
-      Collection<String> documentIds = q.query().documentIds();
+      Collection<String> documentIds = q.query().getDocumentIds();
+
       if (!Objects.isEmpty(documentIds)) {
         if (documentIds.size() > MAX_DOCUMENT_IDS) {
           throw new BadException("Maximum number of DocumentIds is " + MAX_DOCUMENT_IDS);
@@ -206,6 +213,8 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
           getResponseTags(documentService, siteId, q.responseFields(), documents);
       mergeResponseTags(documents, responseTags);
 
+
+
       Map<String, Object> map = new HashMap<>();
       map.put("documents", documents);
       map.put("previous", current.getPrevious());
@@ -230,13 +239,15 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
    * @return {@link PaginationResults} {@link DynamicDocumentItem}
    * @throws IOException IOException
    * @throws BadException BadException
+   * @throws ValidationException ValidationException
    */
   private PaginationResults<DynamicDocumentItem> query(final AwsServiceCache awsservice,
       final DocumentSearchService documentSearchService, final String siteId, final QueryRequest q,
-      final PaginationMapToken ptoken, final int limit) throws IOException, BadException {
+      final PaginationMapToken ptoken, final int limit)
+      throws IOException, BadException, ValidationException {
 
-    String text = q.query().text();
-    PaginationResults<DynamicDocumentItem> results = null;
+    String text = q.query().getText();
+    PaginationResults<DynamicDocumentItem> results;
 
     if (!isEmpty(text)) {
 
@@ -264,7 +275,7 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
 
     } else {
 
-      results = documentSearchService.search(siteId, q.query(), ptoken, limit);
+      results = documentSearchService.search(siteId, q.query(), q.responseFields(), ptoken, limit);
     }
 
     return results;
@@ -277,8 +288,8 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
       throw new ValidationException(errors);
     }
 
-    if (q.query() != null && q.query().tags() != null && q.query().tags().size() == 1) {
-      q.query().tag(q.query().tags().get(0));
+    if (q.query() != null && q.query().getTags() != null && q.query().getTags().size() == 1) {
+      q.query().tag(q.query().getTags().get(0));
     }
   }
 }

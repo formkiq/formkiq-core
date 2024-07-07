@@ -123,15 +123,16 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
 
   /**
    * Add or Update Document.
-   * 
+   *
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param data {@link Map}
    * @param userId {@link String}
    * @param s3VersionChanged boolean
+   * @return HttpResponse
    * @throws IOException IOException
    */
-  public void addOrUpdate(final String siteId, final String documentId,
+  public HttpResponse<String> addOrUpdate(final String siteId, final String documentId,
       final Map<String, Object> data, final String userId, final boolean s3VersionChanged)
       throws IOException {
 
@@ -147,6 +148,8 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
     } else {
       addDocumentSync(response, siteId, documentId, userId, s3VersionChanged, true);
     }
+
+    return response;
   }
 
   /**

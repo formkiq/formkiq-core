@@ -23,8 +23,11 @@
  */
 package com.formkiq.stacks.dynamodb;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.DynamodbVersionRecord;
 import com.formkiq.graalvm.annotations.Reflectable;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -69,5 +72,12 @@ public class DocumentVersionServiceNoVersioning implements DocumentVersionServic
   public void revertDocumentVersionAttributes(final Map<String, AttributeValue> previous,
       final Map<String, AttributeValue> current) {
     // empty
+  }
+
+  @Override
+  public List<Map<String, AttributeValue>> addRecords(final DynamoDbClient client,
+      final String siteId, final Collection<? extends DynamodbVersionRecord<?>> records) {
+    // empty
+    return null;
   }
 }

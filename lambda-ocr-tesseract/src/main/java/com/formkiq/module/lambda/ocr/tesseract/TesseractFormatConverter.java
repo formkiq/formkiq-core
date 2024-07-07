@@ -32,10 +32,17 @@ import static com.formkiq.aws.dynamodb.objects.MimeType.MIME_PNG;
 import static com.formkiq.aws.dynamodb.objects.MimeType.MIME_TIF;
 import static com.formkiq.aws.dynamodb.objects.MimeType.MIME_TIFF;
 import static com.formkiq.aws.dynamodb.objects.MimeType.MIME_WEBP;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.ImageInputStream;
+import org.apache.pdfbox.text.PDFTextStripper;
 import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.ocr.FormatConverter;
@@ -67,17 +74,83 @@ public class TesseractFormatConverter implements FormatConverter {
 
   @Override
   public FormatConverterResult convert(final AwsServiceCache awsServices,
-      final OcrSqsMessage sqsMessage, final File file) throws IOException {
+      final OcrSqsMessage sqsMessage, final MimeType mimeType, final File file) throws IOException {
+
+    String text = null;
+
+    int numberOfPages = getOcrNumberOfPages(sqsMessage);
+
+    if (numberOfPages > 0 && isSupportMimeType(mimeType)) {
+
+      if (MimeType.MIME_PDF.equals(mimeType)) {
+
+        PDFTextStripper s = new PDFTextStripper();
+        s.setStartPage(0);
+        s.setEndPage(numberOfPages);
+
+      } else {
+
+        text = getTiffText(file, numberOfPages);
+      }
+
+    } else {
+
+      try {
+        text = this.tesseract.doOcr(file);
+      } catch (TesseractException e) {
+        throw new IOException(e);
+      }
+    }
+
+    return new FormatConverterResult().text(text).status(OcrScanStatus.SUCCESSFUL);
+  }
+
+  private int getOcrNumberOfPages(final OcrSqsMessage sqsMessage) {
     try {
-      String text = this.tesseract.doOcr(file);
-      return new FormatConverterResult().text(text).status(OcrScanStatus.SUCCESSFUL);
-    } catch (TesseractException e) {
-      throw new IOException(e);
+      String numberOfPages =
+          sqsMessage.request() != null ? sqsMessage.request().getOcrNumberOfPages() : "-1";
+      return Integer.parseInt(numberOfPages);
+    } catch (NumberFormatException e) {
+      return -1;
+    }
+  }
+
+  private String getTiffText(final File file, final int numberOfPages) throws IOException {
+
+    try (ImageInputStream iis = ImageIO.createImageInputStream(file)) {
+
+      Iterator<ImageReader> readers = ImageIO.getImageReaders(iis);
+
+      if (!readers.hasNext()) {
+        throw new IOException("No image reader found for the specified format");
+      }
+
+      ImageReader reader = readers.next();
+      reader.setInput(iis);
+
+      try {
+
+        List<String> texts = new ArrayList<>();
+        for (int i = 0; i < numberOfPages; i++) {
+          BufferedImage image = reader.read(i);
+          texts.add(this.tesseract.doOcr(image));
+        }
+
+        return String.join("\n", texts);
+
+      } catch (TesseractException e) {
+        throw new IOException(e);
+      }
     }
   }
 
   @Override
   public boolean isSupported(final OcrSqsMessage sqsMessage, final MimeType mineType) {
     return SUPPORTED.contains(mineType);
+  }
+
+  private boolean isSupportMimeType(final MimeType mt) {
+    return MimeType.MIME_TIF.equals(mt) || MimeType.MIME_TIFF.equals(mt)
+        || MimeType.MIME_PDF.equals(mt);
   }
 }

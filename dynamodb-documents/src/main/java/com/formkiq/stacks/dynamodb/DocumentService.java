@@ -37,16 +37,21 @@ import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.plugins.tagschema.DocumentTagLoader;
+import com.formkiq.stacks.dynamodb.attributes.AttributeValidation;
+import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
+import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
+import com.formkiq.stacks.dynamodb.documents.DocumentPublicationRecord;
+import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /** Services for Querying, Updating Documents. */
 public interface DocumentService extends DocumentTagLoader {
 
-  /** Soft Deleted Prefix. */
-  String SOFT_DELETE = "softdelete#";
-
   /** The Default maximum results returned. */
   int MAX_RESULTS = 10;
+
+  /** Soft Deleted Prefix. */
+  String SOFT_DELETE = "softdelete#";
 
   /** System Defined Tags. */
   Set<String> SYSTEM_DEFINED_TAGS =
@@ -56,10 +61,11 @@ public interface DocumentService extends DocumentTagLoader {
    * Add Folder Index.
    * 
    * @param siteId {@link String}
-   * @param item {@link DocumentItem}
+   * @param path {@link String}
+   * @param userId {@link String}
    * @throws IOException IOException
    */
-  void addFolderIndex(String siteId, DocumentItem item) throws IOException;
+  void addFolderIndex(String siteId, String path, String userId) throws IOException;
 
   /**
    * Add Tags to {@link Collection} of Documents.
@@ -89,6 +95,35 @@ public interface DocumentService extends DocumentTagLoader {
    * @return boolean whether a document was deleted
    */
   boolean deleteDocument(String siteId, String documentId, boolean softDelete);
+
+  /**
+   * Delete Document Attribute.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param attributeKey {@link String}
+   * @param validation {@link AttributeValidation}
+   * @param validationAccess {@link AttributeValidationAccess}
+   * @return {@link List} {@link DocumentAttributeRecord}
+   * @throws ValidationException ValidationException
+   */
+  List<DocumentAttributeRecord> deleteDocumentAttribute(String siteId, String documentId,
+      String attributeKey, AttributeValidation validation,
+      AttributeValidationAccess validationAccess) throws ValidationException;
+
+  /**
+   * Delete Document Attribute Value.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param attributeKey {@link String}
+   * @param attributeValue {@link String}
+   * @param validationAccess {@link AttributeValidationAccess}
+   * @return boolean
+   * @throws ValidationException ValidationException
+   */
+  boolean deleteDocumentAttributeValue(String siteId, String documentId, String attributeKey,
+      String attributeValue, AttributeValidationAccess validationAccess) throws ValidationException;
 
   /**
    * Delete Document Format.
@@ -198,6 +233,29 @@ public interface DocumentService extends DocumentTagLoader {
    */
   PaginationResult<DocumentItem> findDocument(String siteId, String documentId,
       boolean includeChildDocuments, PaginationMapToken token, int limit);
+
+  /**
+   * Find Document Attribute.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param attributeKey {@link String}
+   * @return {@link List} {@link DocumentAttributeRecord}
+   */
+  List<DocumentAttributeRecord> findDocumentAttribute(String siteId, String documentId,
+      String attributeKey);
+
+  /**
+   * Find {@link DocumentAttributeRecord}.
+   * 
+   * @param siteId Optional Grouping siteId
+   * @param documentId {@link String}
+   * @param pagination {@link PaginationMapToken}
+   * @param limit int
+   * @return {@link PaginationResults} {@link DocumentAttributeRecord}
+   */
+  PaginationResults<DocumentAttributeRecord> findDocumentAttributes(String siteId,
+      String documentId, PaginationMapToken pagination, int limit);
 
   /**
    * Get Document Format.
@@ -351,10 +409,10 @@ public interface DocumentService extends DocumentTagLoader {
    * Is Folder Exists.
    * 
    * @param siteId {@link String}
-   * @param item {@link DocumentItem}
+   * @param path {@link String}
    * @return boolean
    */
-  boolean isFolderExists(String siteId, DocumentItem item);
+  boolean isFolderExists(String siteId, String path);
 
   /**
    * Remove Tag from Document.
@@ -391,8 +449,10 @@ public interface DocumentService extends DocumentTagLoader {
    * @param siteId Optional Grouping siteId
    * @param document {@link DocumentItem}
    * @param tags {@link Collection} {@link DocumentTag}
+   * @throws ValidationException ValidationException
    */
-  void saveDocument(String siteId, DocumentItem document, Collection<DocumentTag> tags);
+  void saveDocument(String siteId, DocumentItem document, Collection<DocumentTag> tags)
+      throws ValidationException;
 
   /**
    * Save Document and Tags.
@@ -400,10 +460,29 @@ public interface DocumentService extends DocumentTagLoader {
    * @param siteId Optional Grouping siteId
    * @param document {@link DocumentItem}
    * @param tags {@link Collection} {@link DocumentTag}
+   * @param documentAttributes {@link Collection} {@link DocumentAttributeRecord}
    * @param options {@link SaveDocumentOptions}
+   * @throws ValidationException ValidationException
    */
   void saveDocument(String siteId, DocumentItem document, Collection<DocumentTag> tags,
-      SaveDocumentOptions options);
+      Collection<DocumentAttributeRecord> documentAttributes, SaveDocumentOptions options)
+      throws ValidationException;
+
+  /**
+   * Save Document Attributes.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param attributes {@link Collection} {@link DocumentAttributeRecord}
+   * @param isUpdate boolean
+   * @param validation {@link AttributeValidation}
+   * @param validationAccess {@link AttributeValidationAccess}
+   * @throws ValidationException ValidationException
+   */
+  void saveDocumentAttributes(String siteId, String documentId,
+      Collection<DocumentAttributeRecord> attributes, boolean isUpdate,
+      AttributeValidation validation, AttributeValidationAccess validationAccess)
+      throws ValidationException;
 
   /**
    * Save Document Format.
@@ -420,8 +499,10 @@ public interface DocumentService extends DocumentTagLoader {
    * @param siteId {@link String}
    * @param doc {@link DynamicDocumentItem}
    * @return {@link DocumentItem}
+   * @throws ValidationException ValidationException
    */
-  DocumentItem saveDocumentItemWithTag(String siteId, DynamicDocumentItem doc);
+  DocumentItem saveDocumentItemWithTag(String siteId, DynamicDocumentItem doc)
+      throws ValidationException;
 
   /**
    * Save Preset.
@@ -448,4 +529,34 @@ public interface DocumentService extends DocumentTagLoader {
   void updateDocument(String siteId, String documentId, Map<String, AttributeValue> attributes,
       boolean updateVersioning);
 
+  /**
+   * Publish Document.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param s3version {@link String}
+   * @param path {@link String}
+   * @param contentType {@link String}
+   * @param userId {@link String}
+   */
+  void publishDocument(String siteId, String documentId, String s3version, String path,
+      String contentType, String userId);
+
+  /**
+   * Get Publish Document.
+   *
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @return DocumentPublicationRecord
+   */
+  DocumentPublicationRecord findPublishDocument(String siteId, String documentId);
+
+  /**
+   * Delete Publish Document.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @return boolean
+   */
+  boolean deletePublishDocument(String siteId, String documentId);
 }

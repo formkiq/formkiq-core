@@ -23,12 +23,13 @@
  */
 package com.formkiq.stacks.api;
 
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static software.amazon.awssdk.utils.StringUtils.isEmpty;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import com.formkiq.aws.dynamodb.model.QueryRequest;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
-import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
 import software.amazon.awssdk.utils.StringUtils;
@@ -45,8 +46,16 @@ public class QueryRequestValidator {
   }
 
   private boolean isQueryEmpty(final QueryRequest q) {
-    return q.query().tag() == null && q.query().tags() == null && q.query().meta() == null
-        && StringUtils.isEmpty(q.query().text());
+    return isTagsEmpty(q) && isAttributesEmpty(q) && q.query().getMeta() == null
+        && StringUtils.isEmpty(q.query().getText());
+  }
+
+  private boolean isAttributesEmpty(final QueryRequest q) {
+    return q.query().getAttribute() == null && notNull(q.query().getAttributes()).isEmpty();
+  }
+
+  private boolean isTagsEmpty(final QueryRequest q) {
+    return q.query().getTag() == null && notNull(q.query().getTags()).isEmpty();
   }
 
   private void validateMultiTags(final List<SearchTagCriteria> tags,
@@ -87,38 +96,36 @@ public class QueryRequestValidator {
 
     Collection<ValidationError> errors = new ArrayList<>();
 
-    if (isEmptyRequest(q)) {
+    if (isEmptyRequest(q) || isQueryEmpty(q)) {
 
       errors.add(new ValidationErrorImpl().error("invalid body"));
-
-    } else if (isQueryEmpty(q)) {
-
-      errors.add(new ValidationErrorImpl().error("invalid body"));
-
-    } else if (q.query().tag() != null && isEmpty(q.query().tag().key())) {
-
-      errors.add(new ValidationErrorImpl().key("tag/key").error("attribute is required"));
 
     } else {
 
-      List<SearchTagCriteria> tags = Objects.notNull(q.query().tags());
+      boolean isTagsEmpty = isTagsEmpty(q);
+      boolean isAttributesEmpty = isAttributesEmpty(q);
+      boolean isMetaEmpty = q.query().getMeta() == null;
 
-      validateMultiTags(tags, errors);
-
-      for (SearchTagCriteria tag : tags) {
-
-        if (StringUtils.isEmpty(tag.key())) {
-          errors.add(new ValidationErrorImpl().key("tag/key").error("attribute is required"));
-        }
-
-        validateRange(tag, errors);
+      if (!isMetaEmpty && (!isTagsEmpty || !isAttributesEmpty)) {
+        errors.add(new ValidationErrorImpl()
+            .error("'meta' cannot be combined with 'tags' or 'attributes'"));
       }
-    }
 
-    if (errors.isEmpty()) {
-      validateRange(q.query().tag(), errors);
+      List<SearchTagCriteria> tags = notNull(q.query().getTags());
+
+      validateTag(q.query().getTag(), errors);
+      tags.forEach(tag -> validateTag(tag, errors));
+      validateMultiTags(tags, errors);
     }
 
     return errors;
+  }
+
+  private void validateTag(final SearchTagCriteria tag, final Collection<ValidationError> errors) {
+    if (tag != null && isEmpty(tag.key())) {
+      errors.add(new ValidationErrorImpl().key("tag/key").error("tag 'key' is required"));
+    }
+
+    validateRange(tag, errors);
   }
 }

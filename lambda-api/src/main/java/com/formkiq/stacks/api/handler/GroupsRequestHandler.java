@@ -23,25 +23,25 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-import java.text.SimpleDateFormat;
-import java.time.Instant;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.cognito.CognitoIdentityProviderService;
-import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
+import com.formkiq.aws.services.lambda.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.stacks.api.transformers.GroupsResponseToMap;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ListGroupsResponse;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
 /** {@link ApiGatewayRequestHandler} for "/groups". */
 public class GroupsRequestHandler implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
@@ -50,6 +50,13 @@ public class GroupsRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
   private static final int DEFAULT_LIMIT = 10;
   /** {@link GroupsRequestHandler} URL. */
   public static final String URL = "/groups";
+
+  @Override
+  public Optional<Boolean> isAuthorized(final AwsServiceCache awsServiceCache, final String method,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
+    boolean access = authorization.getPermissions().contains(ApiPermission.ADMIN);
+    return !"get".equalsIgnoreCase(method) ? Optional.of(access) : Optional.empty();
+  }
 
   @Override
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
@@ -63,14 +70,10 @@ public class GroupsRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
     CognitoIdentityProviderService service =
         awsservice.getExtension(CognitoIdentityProviderService.class);
 
-    SimpleDateFormat df = DateUtil.getIsoDateFormatter();
-    ListGroupsResponse response = service.listGroups(token, Integer.valueOf(limit));
+    ListGroupsResponse response = service.listGroups(token, limit);
 
-    List<Map<String, String>> groups = response.groups().stream().map(g -> {
-      return Map.of("name", g.groupName(), "description",
-          g.description() != null ? g.description() : "", "insertedDate",
-          toString(df, g.creationDate()), "lastModifiedDate", toString(df, g.lastModifiedDate()));
-    }).collect(Collectors.toList());
+    List<Map<String, Object>> groups =
+        response.groups().stream().map(new GroupsResponseToMap()).toList();
 
     Map<String, Object> map = new HashMap<>();
     map.put("groups", groups);
@@ -85,13 +88,19 @@ public class GroupsRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
     return URL;
   }
 
-  private String toString(final SimpleDateFormat df, final Instant date) {
-    String result = "";
+  @Override
+  public ApiRequestHandlerResponse post(final LambdaLogger logger,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
+      final AwsServiceCache awsservice) throws Exception {
 
-    if (date != null) {
-      result = df.format(Date.from(date));
-    }
+    AddGroupRequest request = fromBodyToObject(event, AddGroupRequest.class);
 
-    return result;
+    CognitoIdentityProviderService service =
+        awsservice.getExtension(CognitoIdentityProviderService.class);
+    service.addGroup(request.getGroupName(), request.getGroupDescription());
+
+    ApiMapResponse resp =
+        new ApiMapResponse(Map.of("message", "Group " + request.getGroupName() + " created"));
+    return new ApiRequestHandlerResponse(SC_OK, resp);
   }
 }

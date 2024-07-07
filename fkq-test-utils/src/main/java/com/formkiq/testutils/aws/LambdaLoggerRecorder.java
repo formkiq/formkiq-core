@@ -36,12 +36,13 @@ import com.amazonaws.services.lambda.runtime.LambdaLogger;
 public class LambdaLoggerRecorder implements LambdaLogger {
 
   /** List of {@link String} Messages recorded. */
-  private List<String> recordedMessages = new ArrayList<>();
+  private final List<String> recordedMessages = new ArrayList<>();
   /** List of byte[] Messages recorded. */
-  private List<byte[]> recordedByteMessages = new ArrayList<>();
+  private final List<byte[]> recordedByteMessages = new ArrayList<>();
 
   @Override
   public void log(final String message) {
+    System.out.print(message + System.lineSeparator());
     this.recordedMessages.add(message);
   }
 
@@ -75,6 +76,6 @@ public class LambdaLoggerRecorder implements LambdaLogger {
    * @return boolean
    */
   public boolean containsString(final String s) {
-    return this.recordedMessages.stream().filter(m -> m.contains(s)).findFirst().isPresent();
+    return this.recordedMessages.stream().anyMatch(m -> m.contains(s));
   }
 }

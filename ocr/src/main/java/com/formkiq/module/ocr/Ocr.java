@@ -46,7 +46,7 @@ public class Ocr implements DynamodbRecord<Ocr>, DbKeys {
   /** Content Type. */
   private String contentType;
   /** {@link SimpleDateFormat} in ISO Standard format. */
-  private SimpleDateFormat df = DateUtil.getIsoDateFormatter();
+  private final SimpleDateFormat df = DateUtil.getIsoDateFormatter();
   /** Document Id. */
   private String documentId;
   /** {@link OcrEngine}. */
@@ -55,6 +55,8 @@ public class Ocr implements DynamodbRecord<Ocr>, DbKeys {
   private Date insertedDate;
   /** Job Id. */
   private String jobId;
+  /** Ocr Output Type. */
+  private OcrOutputType ocrOutputType;
   /** {@link OcrScanStatus}. */
   private OcrScanStatus status;
   /** UserId. */
@@ -167,6 +169,10 @@ public class Ocr implements DynamodbRecord<Ocr>, DbKeys {
     addS(pkvalues, "addPdfDetectedCharactersAsText",
         addPdfDetectedCharactersAsText() ? "true" : "false");
 
+    if (ocrOutputType != null) {
+      addS(pkvalues, "ocrOutputType", ocrOutputType().name());
+    }
+
     return pkvalues;
   }
 
@@ -192,6 +198,10 @@ public class Ocr implements DynamodbRecord<Ocr>, DbKeys {
     if (attrs.containsKey("addPdfDetectedCharactersAsText")) {
       ocr.addPdfDetectedCharactersAsText(
           "true".equals(attrs.get("addPdfDetectedCharactersAsText").s()));
+    }
+
+    if (attrs.containsKey("ocrOutputType")) {
+      ocr.ocrOutputType(OcrOutputType.valueOf(ss(attrs, "ocrOutputType")));
     }
 
     if (attrs.containsKey("insertedDate")) {
@@ -242,6 +252,26 @@ public class Ocr implements DynamodbRecord<Ocr>, DbKeys {
    */
   public Ocr jobId(final String id) {
     this.jobId = id;
+    return this;
+  }
+
+  /**
+   * Get ocrOutputType.
+   *
+   * @return OcrOutputType
+   */
+  public OcrOutputType ocrOutputType() {
+    return this.ocrOutputType;
+  }
+
+  /**
+   * Set ocrOutputType.
+   * 
+   * @param outputType {@link OcrOutputType}
+   * @return {@link Ocr}
+   */
+  public Ocr ocrOutputType(final OcrOutputType outputType) {
+    this.ocrOutputType = outputType;
     return this;
   }
 

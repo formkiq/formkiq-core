@@ -40,6 +40,20 @@ import software.amazon.awssdk.services.dynamodb.model.UpdateItemResponse;
 public interface DynamoDbService {
 
   /**
+   * Query Between values.
+   * 
+   * @param config {@link QueryConfig}
+   * @param pk {@link AttributeValue}
+   * @param skStart {@link AttributeValue}
+   * @param skEnd {@link AttributeValue}
+   * @param exclusiveStartKey {@link Map}
+   * @param limit int
+   * @return {@link QueryResponse}
+   */
+  QueryResponse between(QueryConfig config, AttributeValue pk, AttributeValue skStart,
+      AttributeValue skEnd, Map<String, AttributeValue> exclusiveStartKey, int limit);
+
+  /**
    * Delete DynamoDb Record.
    * 
    * @param pk {@link AttributeValue}
@@ -65,7 +79,16 @@ public interface DynamoDbService {
   boolean deleteItems(Collection<Map<String, AttributeValue>> attrs);
 
   /**
-   * Whether Database Record Exists.
+   * Delete all records that beginsWith SK.
+   * 
+   * @param pk {@link AttributeValue}
+   * @param sk {@link AttributeValue}
+   * @return boolean
+   */
+  boolean deleteItemsBeginsWith(AttributeValue pk, AttributeValue sk);
+
+  /**
+   * Whether Database Record Exist.
    * 
    * @param pk {@link AttributeValue}
    * @param sk {@link AttributeValue}
@@ -152,6 +175,19 @@ public interface DynamoDbService {
    */
   @Deprecated
   QueryResponse query(AttributeValue pk, Map<String, AttributeValue> exclusiveStartKey, int limit);
+
+  /**
+   * Query DynamoDB Records.
+   * 
+   * @param config {@link QueryConfig}
+   * @param pk {@link AttributeValue}
+   * @param sk {@link AttributeValue}
+   * @param exclusiveStartKey {@link Map}
+   * @param limit int
+   * @return {@link QueryResponse}
+   */
+  QueryResponse query(QueryConfig config, AttributeValue pk, AttributeValue sk,
+      Map<String, AttributeValue> exclusiveStartKey, int limit);
 
   /**
    * Query DynamoDB Records.

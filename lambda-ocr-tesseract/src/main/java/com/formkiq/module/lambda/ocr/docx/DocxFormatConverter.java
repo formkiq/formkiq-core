@@ -48,7 +48,7 @@ public class DocxFormatConverter implements FormatConverter {
 
   @Override
   public FormatConverterResult convert(final AwsServiceCache awsServices,
-      final OcrSqsMessage sqsMessage, final File file) throws IOException {
+      final OcrSqsMessage sqsMessage, final MimeType mineType, final File file) throws IOException {
 
     try {
 

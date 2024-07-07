@@ -23,14 +23,18 @@
  */
 package com.formkiq.aws.dynamodb.objects;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.SecureRandom;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -39,6 +43,9 @@ import java.util.stream.Collectors;
  *
  */
 public class Strings {
+  /** Scheme Authority. */
+  private static final String SCHEME_AUTHORITY = "://";
+
   private static String findMatch(final Collection<String> resourceUrls,
       final List<String[]> resourceSplits, final String path) {
 
@@ -60,11 +67,9 @@ public class Strings {
             }
 
             return match;
-          }).collect(Collectors.toList());
+          }).toList();
 
-      o = matches.size() == 1
-          ? Optional.of(Arrays.asList(matches.get(0)).stream().collect(Collectors.joining("/")))
-          : Optional.empty();
+      o = matches.size() == 1 ? Optional.of(String.join("/", matches.get(0))) : Optional.empty();
     }
 
     return o.orElse(null);
@@ -79,7 +84,7 @@ public class Strings {
    */
   public static String findUrlMatch(final Collection<String> strs, final String s) {
     List<String[]> resourceSplits =
-        strs.stream().filter(r -> r != null).map(r -> r.split("/")).collect(Collectors.toList());
+        strs.stream().filter(Objects::nonNull).map(r -> r.split("/")).collect(Collectors.toList());
 
     return findMatch(strs, resourceSplits, s);
   }
@@ -110,8 +115,7 @@ public class Strings {
    */
   public static String getExtension(final String filename) {
     int pos = filename.lastIndexOf(".");
-    String ext = pos > -1 ? filename.substring(pos + 1) : "";
-    return ext;
+    return pos > -1 ? filename.substring(pos + 1) : "";
   }
 
   /**
@@ -122,15 +126,38 @@ public class Strings {
    */
   public static String getFilename(final String path) {
 
-    String name = getUri(path);
-    int pos = name.lastIndexOf("/");
-    name = pos > -1 ? name.substring(pos + 1) : name;
+    String name = path;
+
+    if (isUrl(name)) {
+
+      int protocolPos = name.indexOf(SCHEME_AUTHORITY);
+      String protocol = name.substring(0, protocolPos);
+
+      int pos = protocolPos + SCHEME_AUTHORITY.length();
+      name = name.substring(pos);
+
+      pos = name.lastIndexOf("/");
+      name = pos > -1 ? name.substring(pos + 1) : "s3".equalsIgnoreCase(protocol) ? name : "";
+
+    } else {
+
+      int pos = name.lastIndexOf("/");
+      name = pos > -1 ? name.substring(pos + 1) : name;
+    }
+
     return name;
+  }
+
+  public static boolean isUrl(final String s) {
+    String regex = "^[a-zA-Z][a-zA-Z0-9]+" + SCHEME_AUTHORITY + "[a-zA-Z]+.*$";
+    Pattern pattern = Pattern.compile(regex);
+    Matcher matcher = pattern.matcher(s);
+    return matcher.matches();
   }
 
   private static String getUri(final String path) {
 
-    String name = null;
+    String name;
 
     try {
       URI u = new URI(path);
@@ -149,7 +176,7 @@ public class Strings {
    * @return boolean
    */
   public static boolean isEmpty(final CharSequence cs) {
-    return cs == null || cs.length() == 0;
+    return cs == null || cs.isEmpty();
   }
 
   /**
@@ -184,7 +211,7 @@ public class Strings {
    * @return {@link String}
    */
   public static String removeEndingPunctuation(final String s) {
-    return s.replaceAll("[!\\.,?]$", "");
+    return s.replaceAll("[!.,?]$", "");
   }
 
   /**
@@ -195,5 +222,18 @@ public class Strings {
    */
   public static String removeQuotes(final String s) {
     return s.replaceAll("^['\"]|['\"]$", "");
+  }
+
+  /**
+   * Convert {@link Exception} to {@link String}.
+   * 
+   * @param e {@link Exception}
+   * @return {@link String}
+   */
+  public static String toString(final Exception e) {
+    StringWriter sw = new StringWriter();
+    PrintWriter pw = new PrintWriter(sw);
+    e.printStackTrace(pw);
+    return sw.toString();
   }
 }

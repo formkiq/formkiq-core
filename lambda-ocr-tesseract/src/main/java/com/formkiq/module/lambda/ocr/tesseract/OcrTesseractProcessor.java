@@ -260,7 +260,7 @@ public class OcrTesseractProcessor extends AbstractRestApiRequestHandler {
 
       try {
 
-        FormatConverterResult result = fc.get().convert(serviceCache, sqsMessage, file);
+        FormatConverterResult result = fc.get().convert(serviceCache, sqsMessage, mt, file);
 
         if (result.text() != null) {
 

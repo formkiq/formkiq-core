@@ -32,6 +32,12 @@ import com.formkiq.graalvm.annotations.Reflectable;
 @Reflectable
 public class SearchQuery {
 
+  /** {@link SearchAttributeCriteria}. */
+  @Reflectable
+  private SearchAttributeCriteria attribute;
+  /** {@link List} {@link SearchAttributeCriteria}. */
+  @Reflectable
+  private List<SearchAttributeCriteria> attributes;
   /** Collection of Document Ids use {@link SearchTagCriteria} against. */
   @Reflectable
   private Collection<String> documentIds;
@@ -52,12 +58,25 @@ public class SearchQuery {
   public SearchQuery() {}
 
   /**
-   * Get Document Ids.
+   * Set {@link SearchAttributeCriteria}.
    * 
-   * @return {@link Collection} {@link String}
+   * @param searchAttribute {@link SearchAttributeCriteria}
+   * @return {@link SearchQuery}
    */
-  public Collection<String> documentIds() {
-    return this.documentIds;
+  public SearchQuery attribute(final SearchAttributeCriteria searchAttribute) {
+    this.attribute = searchAttribute;
+    return this;
+  }
+
+  /**
+   * Set Attributes.
+   * 
+   * @param searchAttributes {@link List} {@link SearchAttributeCriteria}
+   * @return {@link SearchQuery}
+   */
+  public SearchQuery attributes(final List<SearchAttributeCriteria> searchAttributes) {
+    this.attributes = searchAttributes;
+    return this;
   }
 
   /**
@@ -72,12 +91,66 @@ public class SearchQuery {
   }
 
   /**
+   * Get {@link SearchAttributeCriteria}.
+   * 
+   * @return {@link SearchAttributeCriteria}
+   */
+  public SearchAttributeCriteria getAttribute() {
+    return this.attribute;
+  }
+
+  /**
+   * Get {@link List} {@link SearchAttributeCriteria}.
+   * 
+   * @return {@link List} {@link SearchAttributeCriteria}
+   */
+  public List<SearchAttributeCriteria> getAttributes() {
+    return this.attributes;
+  }
+
+  /**
+   * Get Document Ids.
+   * 
+   * @return {@link Collection} {@link String}
+   */
+  public Collection<String> getDocumentIds() {
+    return this.documentIds;
+  }
+
+  /**
    * Get {@link Map}.
    *
    * @return {@link Map}
    */
-  public SearchMetaCriteria meta() {
+  public SearchMetaCriteria getMeta() {
     return this.meta;
+  }
+
+  /**
+   * Get {@link SearchTagCriteria}.
+   *
+   * @return {@link SearchTagCriteria}
+   */
+  public SearchTagCriteria getTag() {
+    return this.tag;
+  }
+
+  /**
+   * Get {@link List} {@link SearchTagCriteria}.
+   * 
+   * @return {@link List} {@link SearchTagCriteria}
+   */
+  public List<SearchTagCriteria> getTags() {
+    return this.tags;
+  }
+
+  /**
+   * Get {@link String}.
+   *
+   * @return {@link String}
+   */
+  public String getText() {
+    return this.text;
   }
 
   /**
@@ -92,15 +165,6 @@ public class SearchQuery {
   }
 
   /**
-   * Get {@link SearchTagCriteria}.
-   *
-   * @return {@link SearchTagCriteria}
-   */
-  public SearchTagCriteria tag() {
-    return this.tag;
-  }
-
-  /**
    * Set {@link SearchTagCriteria}.
    *
    * @param searchtag {@link SearchTagCriteria}
@@ -112,15 +176,6 @@ public class SearchQuery {
   }
 
   /**
-   * Get {@link List} {@link SearchTagCriteria}.
-   * 
-   * @return {@link List} {@link SearchTagCriteria}
-   */
-  public List<SearchTagCriteria> tags() {
-    return this.tags;
-  }
-
-  /**
    * Set {@link List} {@link SearchTagCriteria}.
    * 
    * @param list {@link List} {@link SearchTagCriteria}
@@ -129,15 +184,6 @@ public class SearchQuery {
   public SearchQuery tags(final List<SearchTagCriteria> list) {
     this.tags = list;
     return this;
-  }
-
-  /**
-   * Get {@link String}.
-   *
-   * @return {@link String}
-   */
-  public String text() {
-    return this.text;
   }
 
   /**

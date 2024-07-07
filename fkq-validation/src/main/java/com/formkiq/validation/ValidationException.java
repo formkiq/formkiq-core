@@ -24,6 +24,7 @@
 package com.formkiq.validation;
 
 import java.util.Collection;
+import java.util.stream.Collectors;
 
 /** {@link Exception} that will return a 400 error. */
 public class ValidationException extends Exception {
@@ -31,7 +32,7 @@ public class ValidationException extends Exception {
   /** serialVersionUID. */
   private static final long serialVersionUID = -3307615320614370509L;
   /** {@link ValidationError}. */
-  private Collection<ValidationError> errors;
+  private final Collection<ValidationError> errors;
 
   /**
    * constructor.
@@ -39,7 +40,7 @@ public class ValidationException extends Exception {
    * @param validationErrors {@link Collection} {@link ValidationError}
    */
   public ValidationException(final Collection<ValidationError> validationErrors) {
-    super("validation errors");
+    super(validationErrors.stream().map(ValidationError::error).collect(Collectors.joining(",")));
     this.errors = validationErrors;
   }
 

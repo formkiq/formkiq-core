@@ -33,23 +33,22 @@ import org.junit.jupiter.api.Test;
 
 /**
  * 
- * Unit Test for {@link ApiAuthorizer}.
+ * Unit Test for {@link ApiAuthorization}.
  *
  */
 class ApiAuthorizationBuilderTest {
 
   /**
    * Get {@link ApiGatewayRequestEvent}.
-   * 
+   *
    * @param group {@link String}
-   * @param permissions {@link String}
    * @return {@link ApiGatewayRequestEvent}
    */
-  private ApiGatewayRequestEvent getApiKeyJwtEvent(final String group, final String permissions) {
+  private ApiGatewayRequestEvent getApiKeyJwtEvent(final String group) {
     ApiGatewayRequestEvent event = new ApiGatewayRequestEvent();
     ApiGatewayRequestContext content = new ApiGatewayRequestContext();
     content.setAuthorizer(
-        Map.of("apiKeyClaims", Map.of("permissions", permissions, "cognito:groups", group)));
+        Map.of("apiKeyClaims", Map.of("permissions", "read,write", "cognito:groups", group)));
     event.setRequestContext(content);
     return event;
   }
@@ -102,16 +101,16 @@ class ApiAuthorizationBuilderTest {
     assertEquals("default", api0.getSiteId());
     assertEquals("default", String.join(",", api0.getSiteIds()));
     assertEquals("READ,WRITE,DELETE",
-        api0.getPermissions().stream().map(p -> p.name()).collect(Collectors.joining(",")));
+        api0.getPermissions().stream().map(Enum::name).collect(Collectors.joining(",")));
     assertEquals("groups: default (DELETE,READ,WRITE)", api0.getAccessSummary());
-    assertEquals("default", api0.getRoles().stream().collect(Collectors.joining(",")));
+    assertEquals("default", String.join(",", api0.getRoles()));
 
     assertEquals("finance", api1.getSiteId());
     assertEquals("finance", String.join(",", api1.getSiteIds()));
     assertEquals("READ,WRITE,DELETE",
-        api1.getPermissions().stream().map(p -> p.name()).collect(Collectors.joining(",")));
+        api1.getPermissions().stream().map(Enum::name).collect(Collectors.joining(",")));
     assertEquals("groups: finance (DELETE,READ,WRITE)", api1.getAccessSummary());
-    assertEquals("finance", api1.getRoles().stream().collect(Collectors.joining(",")));
+    assertEquals("finance", String.join(",", api1.getRoles()));
   }
 
   /**
@@ -133,16 +132,16 @@ class ApiAuthorizationBuilderTest {
     assertEquals("default", api0.getSiteId());
     assertEquals("default", String.join(",", api0.getSiteIds()));
     assertEquals("READ",
-        api0.getPermissions().stream().map(p -> p.name()).collect(Collectors.joining(",")));
+        api0.getPermissions().stream().map(Enum::name).collect(Collectors.joining(",")));
     assertEquals("groups: default (READ)", api0.getAccessSummary());
-    assertEquals("default_read", api0.getRoles().stream().collect(Collectors.joining(",")));
+    assertEquals("default_read", String.join(",", api0.getRoles()));
 
     assertEquals("finance", api1.getSiteId());
     assertEquals("finance", String.join(",", api1.getSiteIds()));
     assertEquals("READ",
-        api1.getPermissions().stream().map(p -> p.name()).collect(Collectors.joining(",")));
+        api1.getPermissions().stream().map(Enum::name).collect(Collectors.joining(",")));
     assertEquals("groups: finance (READ)", api1.getAccessSummary());
-    assertEquals("finance_read", api1.getRoles().stream().collect(Collectors.joining(",")));
+    assertEquals("finance_read", String.join(",", api1.getRoles()));
   }
 
   /**
@@ -163,17 +162,17 @@ class ApiAuthorizationBuilderTest {
     // then
     assertEquals("default", api0.getSiteId());
     assertEquals("default", String.join(",", api0.getSiteIds()));
-    assertEquals("ADMIN,DELETE,READ,WRITE", api0.getPermissions().stream().map(p -> p.name())
-        .sorted().collect(Collectors.joining(",")));
+    assertEquals("ADMIN,DELETE,READ,WRITE",
+        api0.getPermissions().stream().map(Enum::name).sorted().collect(Collectors.joining(",")));
     assertEquals("groups: default (ADMIN,DELETE,READ,WRITE)", api0.getAccessSummary());
-    assertEquals("default,Admins", api0.getRoles().stream().collect(Collectors.joining(",")));
+    assertEquals("default,Admins", String.join(",", api0.getRoles()));
 
     assertEquals("finance", api1.getSiteId());
     assertEquals("finance", String.join(",", api1.getSiteIds()));
-    assertEquals("ADMIN,DELETE,READ,WRITE", api1.getPermissions().stream().map(p -> p.name())
-        .sorted().collect(Collectors.joining(",")));
+    assertEquals("ADMIN,DELETE,READ,WRITE",
+        api1.getPermissions().stream().map(Enum::name).sorted().collect(Collectors.joining(",")));
     assertEquals("groups: finance (ADMIN,DELETE,READ,WRITE)", api1.getAccessSummary());
-    assertEquals("Admins,finance", api1.getRoles().stream().collect(Collectors.joining(",")));
+    assertEquals("Admins,finance", String.join(",", api1.getRoles()));
   }
 
   /**
@@ -194,17 +193,17 @@ class ApiAuthorizationBuilderTest {
     // then
     assertEquals("default", api0.getSiteId());
     assertEquals("default", String.join(",", api0.getSiteIds()));
-    assertEquals("ADMIN,DELETE,READ,WRITE", api0.getPermissions().stream().map(p -> p.name())
-        .sorted().collect(Collectors.joining(",")));
+    assertEquals("ADMIN,DELETE,READ,WRITE",
+        api0.getPermissions().stream().map(Enum::name).sorted().collect(Collectors.joining(",")));
     assertEquals("groups: default (ADMIN,DELETE,READ,WRITE)", api0.getAccessSummary());
-    assertEquals("default,admins", api0.getRoles().stream().collect(Collectors.joining(",")));
+    assertEquals("default,admins", String.join(",", api0.getRoles()));
 
     assertEquals("finance", api1.getSiteId());
     assertEquals("finance", String.join(",", api1.getSiteIds()));
-    assertEquals("ADMIN,DELETE,READ,WRITE", api1.getPermissions().stream().map(p -> p.name())
-        .sorted().collect(Collectors.joining(",")));
+    assertEquals("ADMIN,DELETE,READ,WRITE",
+        api1.getPermissions().stream().map(Enum::name).sorted().collect(Collectors.joining(",")));
     assertEquals("groups: finance (ADMIN,DELETE,READ,WRITE)", api1.getAccessSummary());
-    assertEquals("admins,finance", api1.getRoles().stream().collect(Collectors.joining(",")));
+    assertEquals("admins,finance", String.join(",", api1.getRoles()));
   }
 
   /**
@@ -229,19 +228,19 @@ class ApiAuthorizationBuilderTest {
     // then
     assertEquals("other", api0.getSiteId());
     assertEquals("default,other", String.join(",", api0.getSiteIds()));
-    assertEquals("DELETE,READ,WRITE", api0.getPermissions().stream().map(p -> p.name()).sorted()
-        .collect(Collectors.joining(",")));
+    assertEquals("DELETE,READ,WRITE",
+        api0.getPermissions().stream().map(Enum::name).sorted().collect(Collectors.joining(",")));
     assertEquals("groups: default (DELETE,READ,WRITE), other (DELETE,READ,WRITE)",
         api0.getAccessSummary());
-    assertEquals("default,other", api0.getRoles().stream().collect(Collectors.joining(",")));
+    assertEquals("default,other", String.join(",", api0.getRoles()));
 
     assertEquals("other", api1.getSiteId());
     assertEquals("finance,other", String.join(",", api1.getSiteIds()));
-    assertEquals("DELETE,READ,WRITE", api1.getPermissions().stream().map(p -> p.name()).sorted()
-        .collect(Collectors.joining(",")));
+    assertEquals("DELETE,READ,WRITE",
+        api1.getPermissions().stream().map(Enum::name).sorted().collect(Collectors.joining(",")));
     assertEquals("groups: finance (DELETE,READ,WRITE), other (DELETE,READ,WRITE)",
         api1.getAccessSummary());
-    assertEquals("other,finance", api1.getRoles().stream().collect(Collectors.joining(",")));
+    assertEquals("other,finance", String.join(",", api1.getRoles()));
   }
 
   /**
@@ -261,14 +260,14 @@ class ApiAuthorizationBuilderTest {
     assertNull(api.getSiteId());
     assertEquals("default,other", String.join(",", api.getSiteIds()));
     assertEquals("READ",
-        api.getPermissions().stream().map(p -> p.name()).collect(Collectors.joining(",")));
-    assertEquals("DELETE,READ,WRITE", api.getPermissions("default").stream().map(p -> p.name())
+        api.getPermissions().stream().map(Enum::name).collect(Collectors.joining(",")));
+    assertEquals("DELETE,READ,WRITE", api.getPermissions("default").stream().map(Enum::name)
         .sorted().collect(Collectors.joining(",")));
-    assertEquals("DELETE,READ,WRITE", api.getPermissions("other").stream().map(p -> p.name())
-        .sorted().collect(Collectors.joining(",")));
+    assertEquals("DELETE,READ,WRITE", api.getPermissions("other").stream().map(Enum::name).sorted()
+        .collect(Collectors.joining(",")));
     assertEquals("groups: default (DELETE,READ,WRITE), other (DELETE,READ,WRITE)",
         api.getAccessSummary());
-    assertEquals("default,other", api.getRoles().stream().collect(Collectors.joining(",")));
+    assertEquals("default,other", String.join(",", api.getRoles()));
   }
 
   /**
@@ -290,10 +289,10 @@ class ApiAuthorizationBuilderTest {
       // then
       assertEquals("default", api0.getSiteId());
       assertEquals("default", String.join(",", api0.getSiteIds()));
-      assertEquals("ADMIN,DELETE,READ,WRITE", api0.getPermissions().stream().map(p -> p.name())
-          .sorted().collect(Collectors.joining(",")));
+      assertEquals("ADMIN,DELETE,READ,WRITE",
+          api0.getPermissions().stream().map(Enum::name).sorted().collect(Collectors.joining(",")));
       assertEquals("groups: default (ADMIN,DELETE,READ,WRITE)", api0.getAccessSummary());
-      assertEquals("", api0.getRoles().stream().collect(Collectors.joining(",")));
+      assertEquals("", String.join(",", api0.getRoles()));
 
       // given
       ApiGatewayRequestEvent event1 = getUserArnEvent(userArn);
@@ -305,10 +304,10 @@ class ApiAuthorizationBuilderTest {
       // then
       assertEquals("finance", api1.getSiteId());
       assertEquals("finance", String.join(",", api1.getSiteIds()));
-      assertEquals("ADMIN,DELETE,READ,WRITE", api1.getPermissions().stream().map(p -> p.name())
-          .sorted().collect(Collectors.joining(",")));
+      assertEquals("ADMIN,DELETE,READ,WRITE",
+          api1.getPermissions().stream().map(Enum::name).sorted().collect(Collectors.joining(",")));
       assertEquals("groups: finance (ADMIN,DELETE,READ,WRITE)", api1.getAccessSummary());
-      assertEquals("", api1.getRoles().stream().collect(Collectors.joining(",")));
+      assertEquals("", String.join(",", api1.getRoles()));
     }
   }
 
@@ -329,9 +328,9 @@ class ApiAuthorizationBuilderTest {
     assertNull(api.getSiteId());
     assertEquals("", String.join(",", api.getSiteIds()));
     assertEquals("",
-        api.getPermissions().stream().map(p -> p.name()).collect(Collectors.joining(",")));
+        api.getPermissions().stream().map(Enum::name).collect(Collectors.joining(",")));
     assertEquals("no groups", api.getAccessSummary());
-    assertEquals("", api.getRoles().stream().collect(Collectors.joining(",")));
+    assertEquals("", String.join(",", api.getRoles()));
   }
 
   /**
@@ -351,11 +350,11 @@ class ApiAuthorizationBuilderTest {
     // then
     assertEquals("finance", api0.getSiteId());
     assertEquals("finance,other", String.join(",", api0.getSiteIds()));
-    assertEquals("DELETE,READ,WRITE", api0.getPermissions().stream().map(p -> p.name()).sorted()
-        .collect(Collectors.joining(",")));
+    assertEquals("DELETE,READ,WRITE",
+        api0.getPermissions().stream().map(Enum::name).sorted().collect(Collectors.joining(",")));
     assertEquals("groups: finance (DELETE,READ,WRITE), other (DELETE,READ,WRITE)",
         api0.getAccessSummary());
-    assertEquals("other,finance", api0.getRoles().stream().collect(Collectors.joining(",")));
+    assertEquals("other,finance", String.join(",", api0.getRoles()));
   }
 
   /**
@@ -377,17 +376,17 @@ class ApiAuthorizationBuilderTest {
     // then
     assertEquals("default", api0.getSiteId());
     assertEquals("default", String.join(",", api0.getSiteIds()));
-    assertEquals("DELETE,READ,WRITE", api0.getPermissions().stream().map(p -> p.name())
+    assertEquals("DELETE,READ,WRITE", api0.getPermissions().stream().map(Enum::name)
         .sorted(String::compareTo).collect(Collectors.joining(",")));
     assertEquals("groups: default (DELETE,READ,WRITE)", api0.getAccessSummary());
-    assertEquals("default,default_read", api0.getRoles().stream().collect(Collectors.joining(",")));
+    assertEquals("default,default_read", String.join(",", api0.getRoles()));
 
     assertEquals("finance", api1.getSiteId());
     assertEquals("finance", String.join(",", api1.getSiteIds()));
-    assertEquals("DELETE,READ,WRITE", api1.getPermissions().stream().map(p -> p.name()).sorted()
-        .collect(Collectors.joining(",")));
+    assertEquals("DELETE,READ,WRITE",
+        api1.getPermissions().stream().map(Enum::name).sorted().collect(Collectors.joining(",")));
     assertEquals("groups: finance (DELETE,READ,WRITE)", api1.getAccessSummary());
-    assertEquals("finance,finance_read", api1.getRoles().stream().collect(Collectors.joining(",")));
+    assertEquals("finance,finance_read", String.join(",", api1.getRoles()));
   }
 
   /**
@@ -396,8 +395,8 @@ class ApiAuthorizationBuilderTest {
   @Test
   void testApiAuthorizer11() throws Exception {
     // given
-    ApiGatewayRequestEvent event0 = getApiKeyJwtEvent("default", "read,write");
-    ApiGatewayRequestEvent event1 = getApiKeyJwtEvent("finance", "read,write");
+    ApiGatewayRequestEvent event0 = getApiKeyJwtEvent("default");
+    ApiGatewayRequestEvent event1 = getApiKeyJwtEvent("finance");
 
     // when
     final ApiAuthorization api0 = new ApiAuthorizationBuilder().build(event0);
@@ -407,16 +406,16 @@ class ApiAuthorizationBuilderTest {
     assertEquals("default", api0.getSiteId());
     assertEquals("default", String.join(",", api0.getSiteIds()));
     assertEquals("READ,WRITE",
-        api0.getPermissions().stream().map(p -> p.name()).collect(Collectors.joining(",")));
+        api0.getPermissions().stream().map(Enum::name).collect(Collectors.joining(",")));
     assertEquals("groups: default (READ,WRITE)", api0.getAccessSummary());
-    assertEquals("default", api0.getRoles().stream().collect(Collectors.joining(",")));
+    assertEquals("default", String.join(",", api0.getRoles()));
 
     assertEquals("finance", api1.getSiteId());
     assertEquals("finance", String.join(",", api1.getSiteIds()));
     assertEquals("READ,WRITE",
-        api1.getPermissions().stream().map(p -> p.name()).collect(Collectors.joining(",")));
+        api1.getPermissions().stream().map(Enum::name).collect(Collectors.joining(",")));
     assertEquals("groups: finance (READ,WRITE)", api1.getAccessSummary());
-    assertEquals("finance", api1.getRoles().stream().collect(Collectors.joining(",")));
+    assertEquals("finance", String.join(",", api1.getRoles()));
   }
 
   /**
@@ -435,9 +434,9 @@ class ApiAuthorizationBuilderTest {
     assertNull(api0.getSiteId());
     assertEquals("", String.join(",", api0.getSiteIds()));
     assertEquals("",
-        api0.getPermissions().stream().map(p -> p.name()).collect(Collectors.joining(",")));
+        api0.getPermissions().stream().map(Enum::name).collect(Collectors.joining(",")));
     assertEquals("no groups", api0.getAccessSummary());
-    assertEquals("authentication_only", api0.getRoles().stream().collect(Collectors.joining(",")));
+    assertEquals("authentication_only", String.join(",", api0.getRoles()));
   }
 
   /**
@@ -456,10 +455,9 @@ class ApiAuthorizationBuilderTest {
     assertEquals("finance", api0.getSiteId());
     assertEquals("finance", String.join(",", api0.getSiteIds()));
     assertEquals("READ,WRITE,DELETE",
-        api0.getPermissions().stream().map(p -> p.name()).collect(Collectors.joining(",")));
+        api0.getPermissions().stream().map(Enum::name).collect(Collectors.joining(",")));
     assertEquals("groups: finance (DELETE,READ,WRITE)", api0.getAccessSummary());
-    assertEquals("authentication_only,finance",
-        api0.getRoles().stream().collect(Collectors.joining(",")));
+    assertEquals("authentication_only,finance", String.join(",", api0.getRoles()));
   }
 
   /**
@@ -478,9 +476,9 @@ class ApiAuthorizationBuilderTest {
     assertEquals("default", api0.getSiteId());
     assertEquals("default", String.join(",", api0.getSiteIds()));
     assertEquals("READ,WRITE,DELETE,ADMIN",
-        api0.getPermissions().stream().map(p -> p.name()).collect(Collectors.joining(",")));
+        api0.getPermissions().stream().map(Enum::name).collect(Collectors.joining(",")));
     assertEquals("groups: default (ADMIN,DELETE,READ,WRITE)", api0.getAccessSummary());
-    assertEquals("Admins", api0.getRoles().stream().collect(Collectors.joining(",")));
+    assertEquals("Admins", String.join(",", api0.getRoles()));
   }
 
   /**
@@ -499,9 +497,9 @@ class ApiAuthorizationBuilderTest {
     assertNull(api0.getSiteId());
     assertEquals("", String.join(",", api0.getSiteIds()));
     assertEquals("",
-        api0.getPermissions().stream().map(p -> p.name()).collect(Collectors.joining(",")));
+        api0.getPermissions().stream().map(Enum::name).collect(Collectors.joining(",")));
     assertEquals("no groups", api0.getAccessSummary());
-    assertEquals("", api0.getRoles().stream().collect(Collectors.joining(",")));
+    assertEquals("", String.join(",", api0.getRoles()));
   }
 
   /**
@@ -519,16 +517,77 @@ class ApiAuthorizationBuilderTest {
     // then
     assertNull(api.getSiteId());
     assertEquals("default,sample", String.join(",", api.getSiteIds()));
-    assertEquals("ADMIN,DELETE,READ,WRITE", api.getPermissions("default").stream()
-        .map(p -> p.name()).sorted().collect(Collectors.joining(",")));
-    assertEquals("ADMIN,DELETE,READ,WRITE", api.getPermissions("sample").stream().map(p -> p.name())
+    assertEquals("ADMIN,DELETE,READ,WRITE", api.getPermissions("default").stream().map(Enum::name)
         .sorted().collect(Collectors.joining(",")));
-    assertEquals("ADMIN,DELETE,READ,WRITE", api.getPermissions("another").stream()
-        .map(p -> p.name()).sorted().collect(Collectors.joining(",")));
+    assertEquals("ADMIN,DELETE,READ,WRITE", api.getPermissions("sample").stream().map(Enum::name)
+        .sorted().collect(Collectors.joining(",")));
+    assertEquals("ADMIN,DELETE,READ,WRITE", api.getPermissions("another").stream().map(Enum::name)
+        .sorted().collect(Collectors.joining(",")));
     assertEquals("ADMIN,DELETE,READ,WRITE",
-        api.getPermissions().stream().map(p -> p.name()).sorted().collect(Collectors.joining(",")));
+        api.getPermissions().stream().map(Enum::name).sorted().collect(Collectors.joining(",")));
     assertEquals("groups: default (ADMIN,DELETE,READ,WRITE), sample (ADMIN,DELETE,READ,WRITE)",
         api.getAccessSummary());
-    assertEquals("default,Admins,sample", api.getRoles().stream().collect(Collectors.joining(",")));
+    assertEquals("default,Admins,sample", String.join(",", api.getRoles()));
+  }
+
+  /**
+   * multiple group with path parameter.
+   */
+  @Test
+  void testApiAuthorizer17() throws Exception {
+    // given
+    String s = "[finance other]";
+
+    ApiGatewayRequestEvent event = getJwtEvent(s);
+    event.setPathParameters(Map.of("siteId", "finance"));
+
+    // when
+    final ApiAuthorization api0 = new ApiAuthorizationBuilder().build(event);
+
+    // then
+    assertEquals("finance", api0.getSiteId());
+    assertEquals("finance,other", String.join(",", api0.getSiteIds()));
+    assertEquals("DELETE,READ,WRITE",
+        api0.getPermissions().stream().map(Enum::name).sorted().collect(Collectors.joining(",")));
+    assertEquals("groups: finance (DELETE,READ,WRITE), other (DELETE,READ,WRITE)",
+        api0.getAccessSummary());
+    assertEquals("other,finance", String.join(",", api0.getRoles()));
+  }
+
+  /**
+   * Multiple SiteId access with 'siteId' path parameter.
+   */
+  @Test
+  void testApiAuthorizer18() throws Exception {
+    // given
+    String s0 = "[default other]";
+    String s1 = "[finance other]";
+
+    ApiGatewayRequestEvent event0 = getJwtEvent(s0);
+    event0.setPathParameters(Map.of("siteId", "other"));
+
+    ApiGatewayRequestEvent event1 = getJwtEvent(s1);
+    event1.setPathParameters(Map.of("siteId", "other"));
+
+    // when
+    final ApiAuthorization api0 = new ApiAuthorizationBuilder().build(event0);
+    final ApiAuthorization api1 = new ApiAuthorizationBuilder().build(event1);
+
+    // then
+    assertEquals("other", api0.getSiteId());
+    assertEquals("default,other", String.join(",", api0.getSiteIds()));
+    assertEquals("DELETE,READ,WRITE",
+        api0.getPermissions().stream().map(Enum::name).sorted().collect(Collectors.joining(",")));
+    assertEquals("groups: default (DELETE,READ,WRITE), other (DELETE,READ,WRITE)",
+        api0.getAccessSummary());
+    assertEquals("default,other", String.join(",", api0.getRoles()));
+
+    assertEquals("other", api1.getSiteId());
+    assertEquals("finance,other", String.join(",", api1.getSiteIds()));
+    assertEquals("DELETE,READ,WRITE",
+        api1.getPermissions().stream().map(Enum::name).sorted().collect(Collectors.joining(",")));
+    assertEquals("groups: finance (DELETE,READ,WRITE), other (DELETE,READ,WRITE)",
+        api1.getAccessSummary());
+    assertEquals("other,finance", String.join(",", api1.getRoles()));
   }
 }

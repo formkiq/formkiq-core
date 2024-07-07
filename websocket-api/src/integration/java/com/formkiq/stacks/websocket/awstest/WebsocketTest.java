@@ -92,7 +92,7 @@ public class WebsocketTest extends AbstractAwsIntegrationTest {
     getCognito().addUser(USER_EMAIL, USER_PASSWORD);
 
     try {
-      getCognito().addGroup(GROUP);
+      getCognito().addGroup(GROUP, null);
     } catch (GroupExistsException e) {
       // ignore
     }

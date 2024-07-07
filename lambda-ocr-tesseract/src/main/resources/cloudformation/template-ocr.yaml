@@ -197,6 +197,8 @@ Resources:
             - dynamodb:PutItem
             - dynamodb:Query
             - dynamodb:UpdateItem
+            - dynamodb:BatchGetItem
+            - dynamodb:BatchWriteItem
             Resource:
             - Fn::Sub: "arn:${Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"
           - Effect: Allow

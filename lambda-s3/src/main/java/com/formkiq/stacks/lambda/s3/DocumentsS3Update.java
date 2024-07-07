@@ -59,7 +59,7 @@ import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.s3.S3ServiceExtension;
 import com.formkiq.aws.sns.SnsAwsServiceRegistry;
-import com.formkiq.aws.ssm.SmsAwsServiceRegistry;
+import com.formkiq.aws.ssm.SsmAwsServiceRegistry;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceExtension;
 import com.formkiq.graalvm.annotations.Reflectable;
@@ -123,7 +123,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
       serviceCache = new AwsServiceCacheBuilder(System.getenv(), Map.of(),
           EnvironmentVariableCredentialsProvider.create())
           .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
-              new SnsAwsServiceRegistry(), new SmsAwsServiceRegistry())
+              new SnsAwsServiceRegistry(), new SsmAwsServiceRegistry())
           .build();
 
       initialize(serviceCache);
@@ -550,6 +550,8 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
       if (debug) {
         logger.log("metadata: " + resp.getMetadata());
         logger.log("item checksum: " + item.getChecksum());
+        logger.log("item content-type: " + item.getContentType());
+        logger.log("content-type: " + contentType);
       }
 
       if (isChecksumChanged) {

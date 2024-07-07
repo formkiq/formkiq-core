@@ -81,6 +81,18 @@ public class DynamicObject extends HashMap<String, Object> {
   }
 
   /**
+   * Get {@link List} {@link Double} Value.
+   * 
+   * @param key {@link String}
+   * @return {@link Double}
+   */
+  @SuppressWarnings("unchecked")
+  public List<Double> getDoubleList(final String key) {
+    Object obj = getOrDefault(key, null);
+    return obj != null ? (List<Double>) obj : null;
+  }
+
+  /**
    * Get {@link List} {@link DynamicObject} Value.
    * 
    * @param key {@link String}

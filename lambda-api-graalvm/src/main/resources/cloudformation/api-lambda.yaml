@@ -305,7 +305,20 @@ Resources:
             - Effect: Allow
               Action:
               - cognito-idp:ListGroups
+              - cognito-idp:ListUsers
+              - cognito-idp:GetGroup
               - cognito-idp:ListUsersInGroup
+              - cognito-idp:CreateGroup
+              - cognito-idp:DeleteGroup
+              - cognito-idp:AdminCreateUser
+              - cognito-idp:AdminDeleteUser
+              - cognito-idp:AdminAddUserToGroup
+              - cognito-idp:AdminDisableUser
+              - cognito-idp:AdminEnableUser
+              - cognito-idp:AdminRemoveUserFromGroup
+              - cognito-idp:AdminResetUserPassword
+              - cognito-idp:AdminGetUser
+              - cognito-idp:AdminListGroupsForUser
               Resource:
               - Fn::Sub: "arn:${Partition}:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${CognitoUserPool}"
             - Effect: Allow

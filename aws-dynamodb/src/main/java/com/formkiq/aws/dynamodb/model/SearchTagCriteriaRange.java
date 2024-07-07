@@ -29,12 +29,12 @@ import com.formkiq.graalvm.annotations.Reflectable;
 @Reflectable
 public class SearchTagCriteriaRange {
 
-  /** Start. */
-  @Reflectable
+  /** End. */
   private String end;
   /** Start. */
-  @Reflectable
   private String start;
+  /** Type. */
+  private String type;
 
   /** constructor. */
   public SearchTagCriteriaRange() {}
@@ -76,6 +76,26 @@ public class SearchTagCriteriaRange {
    */
   public SearchTagCriteriaRange start(final String rangeStart) {
     this.start = rangeStart;
+    return this;
+  }
+
+  /**
+   * Get Range Type.
+   * 
+   * @return {@link String}
+   */
+  public String getType() {
+    return this.type;
+  }
+
+  /**
+   * Set Range Type.
+   * 
+   * @param rangeType {@link String}
+   * @return {@link SearchTagCriteriaRange}
+   */
+  public SearchTagCriteriaRange type(final String rangeType) {
+    this.type = rangeType;
     return this;
   }
 }

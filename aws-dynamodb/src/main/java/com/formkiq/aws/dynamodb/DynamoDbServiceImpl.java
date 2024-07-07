@@ -31,12 +31,13 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
+
 import com.formkiq.aws.dynamodb.objects.Strings;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
-import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.DeleteRequest;
@@ -59,9 +60,9 @@ import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 public class DynamoDbServiceImpl implements DynamoDbService {
 
   /** {@link DynamoDbClient}. */
-  private DynamoDbClient dbClient;
+  private final DynamoDbClient dbClient;
   /** Table Name. */
-  private String tableName;
+  private final String tableName;
 
   /**
    * constructor.
@@ -92,6 +93,28 @@ public class DynamoDbServiceImpl implements DynamoDbService {
 
     this.dbClient = connection.build();
     this.tableName = dynamoDbTableName;
+  }
+
+  @Override
+  public QueryResponse between(final QueryConfig config, final AttributeValue pk,
+      final AttributeValue skStart, final AttributeValue skEnd,
+      final Map<String, AttributeValue> startkey, final int limit) {
+
+    String gsi = Strings.isEmpty(config.indexName()) ? "" : config.indexName();
+
+    String expression = gsi + PK + " = :pk and " + gsi + SK + " between :start and :end";
+    Map<String, AttributeValue> values = new HashMap<>();
+    values.put(":pk", pk);
+    values.put(":start", skStart);
+    values.put(":end", skEnd);
+
+    QueryRequest q =
+        QueryRequest.builder().tableName(this.tableName).keyConditionExpression(expression)
+            .expressionAttributeValues(values).scanIndexForward(config.isScanIndexForward())
+            .projectionExpression(config.projectionExpression()).indexName(config.indexName())
+            .exclusiveStartKey(startkey).limit(limit).build();
+
+    return this.dbClient.query(q);
   }
 
   @Override
@@ -126,6 +149,28 @@ public class DynamoDbServiceImpl implements DynamoDbService {
   }
 
   @Override
+  public boolean deleteItemsBeginsWith(final AttributeValue pk, final AttributeValue sk) {
+
+    final int limit = 100;
+    Map<String, AttributeValue> startkey = null;
+    List<Map<String, AttributeValue>> list = new ArrayList<>();
+    QueryConfig config = new QueryConfig().projectionExpression("PK,SK");
+
+    do {
+
+      QueryResponse response = queryBeginsWith(config, pk, sk, startkey, limit);
+
+      List<Map<String, AttributeValue>> attrs = response.items().stream().toList();
+      list.addAll(attrs);
+
+      startkey = response.lastEvaluatedKey();
+
+    } while (startkey != null && !startkey.isEmpty());
+
+    return deleteItems(list);
+  }
+
+  @Override
   public boolean exists(final AttributeValue pk, final AttributeValue sk) {
     GetItemRequest r = GetItemRequest.builder().key(Map.of(PK, pk, SK, sk))
         .tableName(this.tableName).projectionExpression("PK").consistentRead(Boolean.TRUE).build();
@@ -150,7 +195,10 @@ public class DynamoDbServiceImpl implements DynamoDbService {
 
   @Override
   public List<Map<String, AttributeValue>> getBatch(final BatchGetConfig config,
-      final List<Map<String, AttributeValue>> keys) {
+      final List<Map<String, AttributeValue>> attributes) {
+
+    List<Map<String, AttributeValue>> keys =
+        attributes.stream().map(a -> Map.of(PK, a.get(PK), SK, a.get(SK))).toList();
 
     List<Map<String, AttributeValue>> list = Collections.emptyList();
 
@@ -165,9 +213,9 @@ public class DynamoDbServiceImpl implements DynamoDbService {
       list = batchReadItems.get(this.tableName);
 
       Map<String, Map<String, AttributeValue>> data =
-          list.stream().collect(Collectors.toMap(l -> getKey(l), l -> l));
+          list.stream().collect(Collectors.toMap(this::getKey, l -> l));
 
-      list = keys.stream().map(k -> data.get(getKey(k))).filter(k -> k != null)
+      list = keys.stream().map(k -> data.get(getKey(k))).filter(Objects::nonNull)
           .collect(Collectors.toList());
     }
 
@@ -242,11 +290,11 @@ public class DynamoDbServiceImpl implements DynamoDbService {
   public void putItems(final List<Map<String, AttributeValue>> attrs) {
 
     if (!attrs.isEmpty()) {
-      Map<String, Collection<WriteRequest>> items =
-          new AttributeValuesToWriteRequests(this.tableName).apply(attrs);
-
-      BatchWriteItemRequest batch = BatchWriteItemRequest.builder().requestItems(items).build();
-      this.dbClient.batchWriteItem(batch);
+      WriteRequestBuilder builder = new WriteRequestBuilder();
+      for (Map<String, AttributeValue> attr : attrs) {
+        builder.append(this.tableName, attr);
+      }
+      builder.batchWriteItem(this.dbClient);
     }
   }
 
@@ -259,16 +307,35 @@ public class DynamoDbServiceImpl implements DynamoDbService {
 
   @Override
   public QueryResponse query(final QueryConfig config, final AttributeValue pk,
+      final AttributeValue sk, final Map<String, AttributeValue> exclusiveStartKey,
+      final int limit) {
+
+    String gsi = Strings.isEmpty(config.indexName()) ? "" : config.indexName();
+    String expression = gsi + PK + " = :pk and " + gsi + SK + " = :sk";
+    Map<String, AttributeValue> values = Map.of(":pk", pk, ":sk", sk);
+
+    QueryRequest q = QueryRequest.builder().tableName(this.tableName).indexName(config.indexName())
+        .expressionAttributeNames(config.expressionAttributeNames())
+        .keyConditionExpression(expression).projectionExpression(config.projectionExpression())
+        .expressionAttributeValues(values).scanIndexForward(config.isScanIndexForward())
+        .exclusiveStartKey(exclusiveStartKey).limit(limit).build();
+
+    return this.dbClient.query(q);
+  }
+
+  @Override
+  public QueryResponse query(final QueryConfig config, final AttributeValue pk,
       final Map<String, AttributeValue> exclusiveStartKey, final int limit) {
 
-    String expression = PK + " = :pk";
+    String gsi = Strings.isEmpty(config.indexName()) ? "" : config.indexName();
+    String expression = gsi + PK + " = :pk";
     Map<String, AttributeValue> values = Map.of(":pk", pk);
 
     QueryRequest q = QueryRequest.builder().tableName(this.tableName).indexName(config.indexName())
         .expressionAttributeNames(config.expressionAttributeNames())
         .keyConditionExpression(expression).projectionExpression(config.projectionExpression())
         .expressionAttributeValues(values).scanIndexForward(config.isScanIndexForward())
-        .exclusiveStartKey(exclusiveStartKey).limit(Integer.valueOf(limit)).build();
+        .exclusiveStartKey(exclusiveStartKey).limit(limit).build();
 
     return this.dbClient.query(q);
   }
@@ -292,10 +359,9 @@ public class DynamoDbServiceImpl implements DynamoDbService {
         QueryRequest.builder().tableName(this.tableName).keyConditionExpression(expression)
             .expressionAttributeValues(values).scanIndexForward(config.isScanIndexForward())
             .projectionExpression(config.projectionExpression()).indexName(config.indexName())
-            .exclusiveStartKey(exclusiveStartKey).limit(Integer.valueOf(limit)).build();
+            .exclusiveStartKey(exclusiveStartKey).limit(limit).build();
 
-    QueryResponse response = this.dbClient.query(q);
-    return response;
+    return this.dbClient.query(q);
   }
 
   @Override
@@ -308,7 +374,7 @@ public class DynamoDbServiceImpl implements DynamoDbService {
     QueryRequest q =
         QueryRequest.builder().tableName(this.tableName).keyConditionExpression(expression)
             .expressionAttributeValues(values).scanIndexForward(Boolean.FALSE).indexName(indexName)
-            .exclusiveStartKey(exclusiveStartKey).limit(Integer.valueOf(limit)).build();
+            .exclusiveStartKey(exclusiveStartKey).limit(limit).build();
 
     return this.dbClient.query(q);
   }
@@ -331,9 +397,8 @@ public class DynamoDbServiceImpl implements DynamoDbService {
       final Map<String, AttributeValue> updateValues) {
 
     Map<String, AttributeValueUpdate> values = new HashMap<>();
-    updateValues.forEach((key, value) -> {
-      values.put(key, AttributeValueUpdate.builder().value(value).build());
-    });
+    updateValues.forEach(
+        (key, value) -> values.put(key, AttributeValueUpdate.builder().value(value).build()));
 
     return updateItem(pk, sk, values);
   }

@@ -44,7 +44,7 @@ public class Objects {
 
   /**
    * Format {@link Double}.
-   *
+   * 
    * @param val {@link Double}
    * @return {@link String}
    */
@@ -64,7 +64,7 @@ public class Objects {
 
   /**
    * Format {@link Double} using a {@link String} format.
-   *
+   * 
    * @param val {@link Double}
    * @param format {@link String}
    * @return {@link String}
@@ -75,7 +75,7 @@ public class Objects {
 
   /**
    * Format {@link Double} using a {@link String} format.
-   *
+   * 
    * @param val int
    * @param format {@link String}
    * @return {@link String}
@@ -86,7 +86,7 @@ public class Objects {
 
   /**
    * Is {@link Collection} empty.
-   *
+   * 
    * @param c {@link Collection}
    * @return boolean
    */

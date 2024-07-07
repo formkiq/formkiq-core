@@ -23,25 +23,26 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-import java.text.SimpleDateFormat;
-import java.time.Instant;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.cognito.CognitoIdentityProviderService;
-import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
+import com.formkiq.aws.services.lambda.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.stacks.api.transformers.UsersResponseToMap;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersInGroupResponse;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_CREATED;
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
 /** {@link ApiGatewayRequestHandler} for "/groups/{groupName}/users". */
 public class GroupsUsersRequestHandler
@@ -65,15 +66,10 @@ public class GroupsUsersRequestHandler
     CognitoIdentityProviderService service =
         awsservice.getExtension(CognitoIdentityProviderService.class);
 
-    SimpleDateFormat df = DateUtil.getIsoDateFormatter();
-    ListUsersInGroupResponse response =
-        service.listUsersInGroup(groupName, token, Integer.valueOf(limit));
+    ListUsersInGroupResponse response = service.listUsersInGroup(groupName, token, limit);
 
-    List<Map<String, String>> users = response.users().stream().map(u -> {
-      return Map.of("username", u.username(), "userStatus", u.userStatusAsString(), "insertedDate",
-          toString(df, u.userCreateDate()), "lastModifiedDate",
-          toString(df, u.userLastModifiedDate()));
-    }).collect(Collectors.toList());
+    List<Map<String, Object>> users =
+        response.users().stream().map(new UsersResponseToMap()).toList();
 
     Map<String, Object> map = new HashMap<>();
     map.put("users", users);
@@ -84,17 +80,33 @@ public class GroupsUsersRequestHandler
   }
 
   @Override
+  public ApiRequestHandlerResponse post(final LambdaLogger logger,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
+      final AwsServiceCache awsservice) throws Exception {
+
+    String groupName = event.getPathParameters().get("groupName");
+
+    AddUserRequest request = fromBodyToObject(event, AddUserRequest.class);
+    String username = request.getUsername();
+
+    CognitoIdentityProviderService service =
+        awsservice.getExtension(CognitoIdentityProviderService.class);
+    service.addUserToGroup(username, groupName);
+
+    String msg = "user '" + username + "' added to group '" + groupName + "'";
+    ApiMapResponse resp = new ApiMapResponse(Map.of("message", msg));
+    return new ApiRequestHandlerResponse(SC_CREATED, resp);
+  }
+
+  @Override
   public String getRequestUrl() {
     return URL;
   }
 
-  private String toString(final SimpleDateFormat df, final Instant date) {
-    String result = "";
-
-    if (date != null) {
-      result = df.format(Date.from(date));
-    }
-
-    return result;
+  @Override
+  public Optional<Boolean> isAuthorized(final AwsServiceCache awsServiceCache, final String method,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
+    boolean access = authorization.getPermissions().contains(ApiPermission.ADMIN);
+    return Optional.of(access);
   }
 }

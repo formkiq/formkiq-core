@@ -30,6 +30,9 @@ import com.formkiq.graalvm.annotations.Reflectable;
 @Reflectable
 public class SearchResponseFields {
 
+  /** Response Attributes. */
+  @Reflectable
+  private List<String> attributes;
   /** Response Tags. */
   @Reflectable
   private List<String> tags;
@@ -38,11 +41,31 @@ public class SearchResponseFields {
   public SearchResponseFields() {}
 
   /**
+   * Set Response Attributes.
+   *
+   * @param responseAttributes {@link SearchTagCriteria}
+   * @return {@link SearchResponseFields}
+   */
+  public SearchResponseFields attributes(final List<String> responseAttributes) {
+    this.attributes = responseAttributes;
+    return this;
+  }
+
+  /**
    * Get Response Tags.
    *
    * @return {@link List}
    */
-  public List<String> tags() {
+  public List<String> getAttributes() {
+    return this.attributes;
+  }
+
+  /**
+   * Get Response Tags.
+   *
+   * @return {@link List}
+   */
+  public List<String> getTags() {
     return this.tags;
   }
 

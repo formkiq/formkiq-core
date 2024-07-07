@@ -47,7 +47,7 @@ public class DocumentTagSchemaPluginEmpty implements DocumentTagSchemaPlugin {
 
   @Override
   public SearchTagCriteria createMultiTagSearch(final SearchQuery query) {
-    return query.tag();
+    return query.getTag();
   }
 
   @Override

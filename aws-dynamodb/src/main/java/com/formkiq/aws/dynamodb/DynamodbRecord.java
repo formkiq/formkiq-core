@@ -28,7 +28,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
  * 
- * DynamoDB Keys.
+ * DynamoDB Record.
  * 
  * @param <T> Type of DynamodbRecord
  *
@@ -148,5 +148,17 @@ public interface DynamodbRecord<T> {
   default String ss(final Map<String, AttributeValue> attrs, final String key) {
     AttributeValue av = attrs.get(key);
     return av != null ? av.s() : null;
+  }
+
+  /**
+   * Convert {@link Map} {@link AttributeValue}.
+   * 
+   * @param attrs {@link Map} {@link AttributeValue}
+   * @param key {@link Double}
+   * @return {@link String}
+   */
+  default int toInt(final Map<String, AttributeValue> attrs, final String key) {
+    AttributeValue av = attrs.get(key);
+    return av != null ? Integer.parseInt(av.n()) : -1;
   }
 }

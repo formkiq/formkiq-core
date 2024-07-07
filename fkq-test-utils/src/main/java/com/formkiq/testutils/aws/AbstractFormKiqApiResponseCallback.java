@@ -26,13 +26,11 @@ package com.formkiq.testutils.aws;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
-import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.stream.Collectors;
 import org.mockserver.mock.action.ExpectationResponseCallback;
 import org.mockserver.model.Header;
@@ -51,23 +49,17 @@ import com.google.gson.GsonBuilder;
  */
 public abstract class AbstractFormKiqApiResponseCallback implements ExpectationResponseCallback {
 
-  /** {@link Random}. */
-  private static final Random NUM_RAND = new Random();
   /** {@link Context}. */
-  private Context context = new LambdaContextRecorder();
+  private final Context context = new LambdaContextRecorder();
   /** {@link Gson}. */
-  private Gson gson = new GsonBuilder().disableHtmlEscaping().create();
-  /** Port to run Test server. */
-  private int port = -1;
+  private final Gson gson = new GsonBuilder().disableHtmlEscaping().create();
+  /** Environment Map. */
+  private Map<String, String> environment = null;
 
   /**
    * constructor.
-   * 
-   * @param serverPort int
    */
-  public AbstractFormKiqApiResponseCallback(final int serverPort) {
-    this.port = serverPort;
-  }
+  public AbstractFormKiqApiResponseCallback() {}
 
   /**
    * Create {@link HttpResponse} from {@link String} response.
@@ -81,22 +73,12 @@ public abstract class AbstractFormKiqApiResponseCallback implements ExpectationR
     Map<String, Object> map = this.gson.fromJson(response, Map.class);
     Map<String, String> headerList = (Map<String, String>) map.get("headers");
     List<Header> headers = headerList.entrySet().stream()
-        .map(e -> new Header(e.getKey(), Arrays.asList(e.getValue()))).collect(Collectors.toList());
+        .map(e -> new Header(e.getKey(), Collections.singletonList(e.getValue())))
+        .collect(Collectors.toList());
 
     int statusCode = ((Double) map.get("statusCode")).intValue();
-    return HttpResponse.response().withHeaders(new Headers(headers))
-        .withStatusCode(Integer.valueOf(statusCode)).withBody(map.get("body").toString());
-  }
-
-  /**
-   * Generate Random Port.
-   * 
-   * @return int
-   */
-  public static int generatePort() {
-    final int topPort = 8000;
-    final int bottomPort = 5000;
-    return NUM_RAND.nextInt(topPort - bottomPort) + bottomPort;
+    return HttpResponse.response().withHeaders(new Headers(headers)).withStatusCode(statusCode)
+        .withBody((String) map.get("body"));
   }
 
   /**
@@ -107,14 +89,6 @@ public abstract class AbstractFormKiqApiResponseCallback implements ExpectationR
   public abstract RequestStreamHandler getHandler();
 
   /**
-   * Get Lambda {@link Map} environment.
-   * 
-   * @return {@link Map}
-   * @throws URISyntaxException URISyntaxException
-   */
-  public abstract Map<String, String> getMapEnvironment() throws URISyntaxException;
-
-  /**
    * Get Resource Urls.
    * 
    * @return {@link Collection} {@link String}
@@ -122,21 +96,12 @@ public abstract class AbstractFormKiqApiResponseCallback implements ExpectationR
   public abstract Collection<String> getResourceUrls();
 
   /**
-   * Get Server Port.
-   * 
-   * @return int
-   */
-  public int getServerPort() {
-    return this.port;
-  }
-
-  /**
    * Handle transforming {@link HttpRequest} to {@link HttpResponse}.
    */
   @Override
   public HttpResponse handle(final HttpRequest httpRequest) throws Exception {
 
-    initHandler();
+    initHandler(this.environment);
 
     ApiHttpRequest event = new HttpRequestToApiHttpRequest(getResourceUrls()).apply(httpRequest);
 
@@ -146,12 +111,26 @@ public abstract class AbstractFormKiqApiResponseCallback implements ExpectationR
     ByteArrayOutputStream outstream = new ByteArrayOutputStream();
     getHandler().handleRequest(is, outstream, this.context);
 
-    String response = new String(outstream.toByteArray(), "UTF-8");
+    String response = outstream.toString(StandardCharsets.UTF_8);
     return createResponse(response);
   }
 
   /**
    * Initialize Handler.
+   * 
+   * @param environmentMap {@link Map}
+   * 
    */
-  public abstract void initHandler();
+  public abstract void initHandler(Map<String, String> environmentMap);
+
+  /**
+   * Sets Environment Map.
+   * 
+   * @param environmentMap {@link Map}
+   */
+  public void setEnvironmentMap(final Map<String, String> environmentMap) {
+    this.environment = environmentMap;
+  }
+
+
 }

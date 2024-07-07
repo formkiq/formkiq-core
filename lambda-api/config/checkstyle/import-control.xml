@@ -98,6 +98,10 @@
 
 			</subpackage>
 
+			<subpackage name="transformers">
+				<allow pkg="java.text" />
+			</subpackage>
+
 			<subpackage name="util">
 				<allow pkg="java.lang.reflect" />
 			</subpackage>

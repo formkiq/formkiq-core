@@ -38,12 +38,13 @@ public interface FormatConverter {
    * 
    * @param awsServices {@link AwsServiceCache}
    * @param sqsMessage {@link OcrSqsMessage}
+   * @param mineType {@link MimeType}
    * @param file {@link File}
    * @return {@link FormatConverterResult}
    * @throws IOException IOException
    */
-  FormatConverterResult convert(AwsServiceCache awsServices, OcrSqsMessage sqsMessage, File file)
-      throws IOException;
+  FormatConverterResult convert(AwsServiceCache awsServices, OcrSqsMessage sqsMessage,
+      MimeType mineType, File file) throws IOException;
 
   /**
    * Is {@link MimeType} supported in converter.

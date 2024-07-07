@@ -24,7 +24,6 @@
 package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_FORBIDDEN;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_PAYMENT;
 import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENTS;
 import static com.formkiq.stacks.dynamodb.ConfigService.MAX_WEBHOOKS;
@@ -40,23 +39,25 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.ssm.SsmService;
+import com.formkiq.aws.ssm.SsmServiceExtension;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.GetSitesResponse;
 import com.formkiq.client.model.GetVersionResponse;
 import com.formkiq.client.model.SetOpenSearchIndexRequest;
 import com.formkiq.client.model.Site;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.ConfigService;
-import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.stacks.dynamodb.ConfigServiceExtension;
 
 /** Unit Tests for request /sites. */
-@ExtendWith(DynamoDbExtension.class)
-@ExtendWith(LocalStackExtension.class)
+// @ExtendWith(DynamoDbExtension.class)
+// @ExtendWith(LocalStackExtension.class)
 public class SitesRequestTest extends AbstractApiClientRequestTest {
 
   /** {@link ConfigService}. */
@@ -71,8 +72,13 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
    */
   @BeforeEach
   public void beforeEach() {
-    config = getAwsServices().getExtension(ConfigService.class);
-    ssm = getAwsServices().getExtension(SsmService.class);
+    AwsServiceCache awsServices = getAwsServices();
+
+    awsServices.register(ConfigService.class, new ConfigServiceExtension());
+    awsServices.register(SsmService.class, new SsmServiceExtension());
+
+    config = awsServices.getExtension(ConfigService.class);
+    ssm = awsServices.getExtension(SsmService.class);
   }
 
   /**
@@ -127,9 +133,8 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testHandleGetSites01() throws Exception {
     // given
-    String siteId = null;
     setBearerToken(new String[] {"default", "Admins", "finance"});
-    config.save(siteId, new DynamicObject(Map.of("chatGptApiKey", "somevalue")));
+    config.save(null, new DynamicObject(Map.of("chatGptApiKey", "somevalue")));
 
     ssm.putParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/maildomain", "tryformkiq.com");
 
@@ -143,7 +148,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     assertEquals(DEFAULT_SITE_ID, sites.get(0).getSiteId());
     assertEquals("READ_WRITE", sites.get(0).getPermission().toString());
     assertEquals("ADMIN,DELETE,READ,WRITE",
-        sites.get(0).getPermissions().stream().map(p -> p.name()).collect(Collectors.joining(",")));
+        sites.get(0).getPermissions().stream().map(Enum::name).collect(Collectors.joining(",")));
     assertNotNull(sites.get(0).getUploadEmail());
 
     String uploadEmail = sites.get(0).getUploadEmail();
@@ -249,8 +254,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     String siteId = "finance";
     setBearerToken(siteId);
 
-    ConfigService configService = getAwsServices().getExtension(ConfigService.class);
-    configService.save(siteId, new DynamicObject(Map.of(MAX_DOCUMENTS, "5", MAX_WEBHOOKS, "10")));
+    config.save(siteId, new DynamicObject(Map.of(MAX_DOCUMENTS, "5", MAX_WEBHOOKS, "10")));
 
     // when
     GetSitesResponse response = this.systemApi.getSites();
@@ -266,10 +270,9 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
   /**
    * Get /sites with 'authentication_only' role.
    *
-   * @throws Exception an error has occurred
    */
   @Test
-  public void testHandleGetSites05() throws Exception {
+  public void testHandleGetSites05() {
     // given
     String siteId = "authentication_only";
     setBearerToken(siteId);
@@ -280,7 +283,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
       fail();
     } catch (ApiException e) {
       // then
-      assertEquals(SC_FORBIDDEN.getStatusCode(), e.getCode());
+      assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
     }
   }
 

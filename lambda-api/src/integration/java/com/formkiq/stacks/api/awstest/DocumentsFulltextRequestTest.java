@@ -63,7 +63,7 @@ public class DocumentsFulltextRequestTest extends AbstractAwsIntegrationTest {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  @Timeout(value = TEST_TIMEOUT)
   public void testAddFulltextPdf01a() throws Exception {
     // given
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {

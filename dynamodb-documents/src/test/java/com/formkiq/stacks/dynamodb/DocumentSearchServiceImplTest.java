@@ -30,6 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.time.ZonedDateTime;
@@ -52,6 +53,7 @@ import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.dynamodb.model.SearchAttributeCriteria;
 import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
@@ -59,6 +61,7 @@ import com.formkiq.aws.dynamodb.model.SearchTagCriteriaRange;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
+import com.formkiq.validation.ValidationException;
 
 /** Unit Tests for {@link DocumentSearchServiceImpl}. */
 @ExtendWith(DynamoDbExtension.class)
@@ -94,8 +97,10 @@ public class DocumentSearchServiceImplTest {
    * @param tagKey {@link String}
    * @param tagValue {@link String}
    * @return {@link String}
+   * @throws ValidationException ValidationException
    */
-  private String createDocument(final String siteId, final String tagKey, final String tagValue) {
+  private String createDocument(final String siteId, final String tagKey, final String tagValue)
+      throws ValidationException {
     ZonedDateTime now = ZonedDateTime.now();
     DocumentItem doc = createDocument(UUID.randomUUID().toString(), now, "text/plain", "test.txt");
     Collection<DocumentTag> tags = Arrays
@@ -153,7 +158,11 @@ public class DocumentSearchServiceImplTest {
     items.forEach(item -> {
       Collection<DocumentTag> tags = Arrays.asList(
           new DocumentTag(item.getDocumentId(), "status", "active", new Date(), "testuser"));
-      this.service.saveDocument(prefix, item, tags);
+      try {
+        this.service.saveDocument(prefix, item, tags);
+      } catch (ValidationException e) {
+        throw new RuntimeException(e);
+      }
     });
 
     return items;
@@ -193,9 +202,13 @@ public class DocumentSearchServiceImplTest {
     return doc;
   }
 
-  /** Search by 'eq' Tag Key & Value. */
+  /**
+   * Search by 'eq' Tag Key & Value.
+   * 
+   * @throws ValidationException ValidationException
+   */
   @Test
-  public void testSearch01() {
+  public void testSearch01() throws ValidationException {
     for (String prefix : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       createTestData("finance");
@@ -209,7 +222,7 @@ public class DocumentSearchServiceImplTest {
 
       // when
       PaginationResults<DynamicDocumentItem> results =
-          this.searchService.search(prefix, q, startkey, MAX_RESULTS);
+          this.searchService.search(prefix, q, null, startkey, MAX_RESULTS);
 
       // then
       assertEquals(MAX_RESULTS, results.getResults().size());
@@ -228,9 +241,13 @@ public class DocumentSearchServiceImplTest {
     }
   }
 
-  /** Search by Tag Key & Invalid Value. */
+  /**
+   * Search by Tag Key & Invalid Value.
+   * 
+   * @throws ValidationException ValidationException
+   */
   @Test
-  public void testSearch02() {
+  public void testSearch02() throws ValidationException {
     for (String prefix : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       createTestData(prefix);
@@ -243,7 +260,7 @@ public class DocumentSearchServiceImplTest {
 
       // when
       PaginationResults<DynamicDocumentItem> results =
-          this.searchService.search(prefix, q, startkey, MAX_RESULTS);
+          this.searchService.search(prefix, q, null, startkey, MAX_RESULTS);
 
       // then
       assertEquals(0, results.getResults().size());
@@ -251,9 +268,13 @@ public class DocumentSearchServiceImplTest {
     }
   }
 
-  /** Search by 'beginsWith' Tag Key & Value. */
+  /**
+   * Search by 'beginsWith' Tag Key & Value.
+   * 
+   * @throws ValidationException ValidationException
+   */
   @Test
-  public void testSearch03() {
+  public void testSearch03() throws ValidationException {
     for (String prefix : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       createTestData(prefix);
@@ -265,7 +286,7 @@ public class DocumentSearchServiceImplTest {
 
       // when
       PaginationResults<DynamicDocumentItem> results =
-          this.searchService.search(prefix, q, startkey, MAX_RESULTS);
+          this.searchService.search(prefix, q, null, startkey, MAX_RESULTS);
 
       // then
       assertEquals(MAX_RESULTS, results.getResults().size());
@@ -282,9 +303,13 @@ public class DocumentSearchServiceImplTest {
     }
   }
 
-  /** Search by 'eq' Tag Key & Value & paginating. */
+  /**
+   * Search by 'eq' Tag Key & Value & paginating.
+   * 
+   * @throws ValidationException ValidationException
+   */
   @Test
-  public void testSearch04() {
+  public void testSearch04() throws ValidationException {
     for (String prefix : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       createTestData("finance");
@@ -300,7 +325,7 @@ public class DocumentSearchServiceImplTest {
 
       // when
       PaginationResults<DynamicDocumentItem> results =
-          this.searchService.search(prefix, q, startkey, limit);
+          this.searchService.search(prefix, q, null, startkey, limit);
 
       // then
       assertEquals(1, results.getResults().size());
@@ -311,7 +336,7 @@ public class DocumentSearchServiceImplTest {
 
       // when
       PaginationResults<DynamicDocumentItem> results2 =
-          this.searchService.search(prefix, q, startkey, limit);
+          this.searchService.search(prefix, q, null, startkey, limit);
 
       // then
       assertEquals(1, results.getResults().size());
@@ -322,9 +347,13 @@ public class DocumentSearchServiceImplTest {
     }
   }
 
-  /** Search multi-value tag 'eq' Tag Key & Value. */
+  /**
+   * Search multi-value tag 'eq' Tag Key & Value.
+   * 
+   * @throws ValidationException ValidationException
+   */
   @Test
-  public void testSearch05() {
+  public void testSearch05() throws ValidationException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       createTestData("finance");
@@ -344,7 +373,7 @@ public class DocumentSearchServiceImplTest {
 
       // when
       PaginationResults<DynamicDocumentItem> results =
-          this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+          this.searchService.search(siteId, q, null, startkey, MAX_RESULTS);
 
       // then
       assertEquals(1, results.getResults().size());
@@ -361,9 +390,13 @@ public class DocumentSearchServiceImplTest {
     }
   }
 
-  /** Search for tag 'eq' with DocumentId. */
+  /**
+   * Search for tag 'eq' with DocumentId.
+   * 
+   * @throws ValidationException ValidationException
+   */
   @Test
-  public void testSearch06() {
+  public void testSearch06() throws ValidationException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       DynamicDocumentItem doc0 = createTestDocumentWithTags(Map.of("category", "person"), true);
@@ -373,8 +406,8 @@ public class DocumentSearchServiceImplTest {
       this.service.saveDocumentItemWithTag(siteId, doc1);
       this.service.saveDocumentItemWithTag(siteId, doc2);
 
-      SearchTagCriteria c = new SearchTagCriteria("category").eq("thing");
-      SearchQuery q = new SearchQuery().tag(c);
+      SearchTagCriteria c0 = new SearchTagCriteria("category").eq("thing");
+      SearchQuery q = new SearchQuery().tag(c0);
       q.documentsIds(
           Arrays.asList(doc0.getDocumentId(), doc1.getDocumentId(), doc2.getDocumentId()));
 
@@ -382,7 +415,7 @@ public class DocumentSearchServiceImplTest {
 
       // when - wrong document id
       PaginationResults<DynamicDocumentItem> results =
-          this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+          this.searchService.search(siteId, q, null, startkey, MAX_RESULTS);
 
       // then
       assertEquals(1, results.getResults().size());
@@ -400,17 +433,31 @@ public class DocumentSearchServiceImplTest {
       });
 
       // given
+      q = new SearchQuery().tag(new SearchTagCriteria("nocategory"));
+
+      // when
+      results = this.searchService.search(siteId, q, null, startkey, MAX_RESULTS);
+
+      // then
+      assertEquals(1, results.getResults().size());
+      assertEquals(doc2.getDocumentId(), results.getResults().get(0).getDocumentId());
+
+      // given
       q.documentsIds(Arrays.asList("123"));
       // when
-      results = this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+      results = this.searchService.search(siteId, q, null, startkey, MAX_RESULTS);
       // then
       assertEquals(0, results.getResults().size());
     }
   }
 
-  /** Search for tag with DocumentId. */
+  /**
+   * Search for tag with DocumentId.
+   * 
+   * @throws ValidationException ValidationException
+   */
   @Test
-  public void testSearch07() {
+  public void testSearch07() throws ValidationException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given - tag only
       PaginationMapToken startkey = null;
@@ -426,7 +473,7 @@ public class DocumentSearchServiceImplTest {
 
       // when
       PaginationResults<DynamicDocumentItem> results =
-          this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+          this.searchService.search(siteId, q, null, startkey, MAX_RESULTS);
       // then
       assertEquals(2, results.getResults().size());
 
@@ -443,9 +490,13 @@ public class DocumentSearchServiceImplTest {
     }
   }
 
-  /** Search for wrong eq with DocumentId. */
+  /**
+   * Search for wrong eq with DocumentId.
+   * 
+   * @throws ValidationException ValidationException
+   */
   @Test
-  public void testSearch08() {
+  public void testSearch08() throws ValidationException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given - wrong value
       PaginationMapToken startkey = null;
@@ -461,15 +512,19 @@ public class DocumentSearchServiceImplTest {
 
       // when
       PaginationResults<DynamicDocumentItem> results =
-          this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+          this.searchService.search(siteId, q, null, startkey, MAX_RESULTS);
       // then
       assertEquals(0, results.getResults().size());
     }
   }
 
-  /** Search for tag 'beginsWith' with DocumentId. */
+  /**
+   * Search for tag 'beginsWith' with DocumentId.
+   * 
+   * @throws ValidationException ValidationException
+   */
   @Test
-  public void testSearch09() {
+  public void testSearch09() throws ValidationException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       DynamicDocumentItem doc0 = createTestDocumentWithTags(Map.of("category", "person"), true);
@@ -487,7 +542,7 @@ public class DocumentSearchServiceImplTest {
 
       // when - wrong document id
       PaginationResults<DynamicDocumentItem> results =
-          this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+          this.searchService.search(siteId, q, null, startkey, MAX_RESULTS);
 
       // then
       assertEquals(1, results.getResults().size());
@@ -506,9 +561,13 @@ public class DocumentSearchServiceImplTest {
     }
   }
 
-  /** Search for 100 DocumentIds. */
+  /**
+   * Search for 100 DocumentIds.
+   * 
+   * @throws ValidationException ValidationException
+   */
   @Test
-  public void testSearch10() {
+  public void testSearch10() throws ValidationException {
     // given
     String siteId = null;
     final int count = 100;
@@ -528,15 +587,19 @@ public class DocumentSearchServiceImplTest {
 
     // when - wrong document id
     PaginationResults<DynamicDocumentItem> results =
-        this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+        this.searchService.search(siteId, q, null, startkey, MAX_RESULTS);
 
     // then
     assertEquals(count, results.getResults().size());
   }
 
-  /** Search for tag 'eq' with DocumentId & values. */
+  /**
+   * Search for tag 'eq' with DocumentId & values.
+   * 
+   * @throws ValidationException ValidationException
+   */
   @Test
-  public void testSearch11() {
+  public void testSearch11() throws ValidationException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       DynamicDocumentItem doc0 = createTestDocumentWithTags(Map.of("category", "person"), true);
@@ -556,7 +619,7 @@ public class DocumentSearchServiceImplTest {
 
       // when - wrong document id
       PaginationResults<DynamicDocumentItem> results =
-          this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+          this.searchService.search(siteId, q, null, startkey, MAX_RESULTS);
 
       // then
       assertEquals(1, results.getResults().size());
@@ -576,15 +639,19 @@ public class DocumentSearchServiceImplTest {
       // given
       q.documentsIds(Arrays.asList("123"));
       // when
-      results = this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+      results = this.searchService.search(siteId, q, null, startkey, MAX_RESULTS);
       // then
       assertEquals(0, results.getResults().size());
     }
   }
 
-  /** Search for tag 'eqOr' with DocumentId & values. */
+  /**
+   * Search for tag 'eqOr' with DocumentId & values.
+   * 
+   * @throws ValidationException ValidationException
+   */
   @Test
-  public void testSearch12() {
+  public void testSearch12() throws ValidationException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       DynamicDocumentItem doc0 = createTestDocumentWithTags(Map.of("category", "person"), true);
@@ -615,7 +682,7 @@ public class DocumentSearchServiceImplTest {
 
       // when - wrong document id
       PaginationResults<DynamicDocumentItem> results =
-          this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+          this.searchService.search(siteId, q, null, startkey, MAX_RESULTS);
 
       // then
       List<DynamicDocumentItem> list = results.getResults();
@@ -641,16 +708,20 @@ public class DocumentSearchServiceImplTest {
       // given
       q.documentsIds(Arrays.asList("123"));
       // when
-      results = this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+      results = this.searchService.search(siteId, q, null, startkey, MAX_RESULTS);
       // then
       list = results.getResults();
       assertEquals(0, list.size());
     }
   }
 
-  /** Search for tag 'eqOr'. */
+  /**
+   * Search for tag 'eqOr'.
+   * 
+   * @throws ValidationException ValidationException
+   */
   @Test
-  public void testSearch13() {
+  public void testSearch13() throws ValidationException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       DynamicDocumentItem doc0 = createTestDocumentWithTags(Map.of("category", "person"), true);
@@ -670,7 +741,7 @@ public class DocumentSearchServiceImplTest {
 
       // when - wrong document id
       PaginationResults<DynamicDocumentItem> results =
-          this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+          this.searchService.search(siteId, q, null, startkey, MAX_RESULTS);
 
       // then
       List<DynamicDocumentItem> list = results.getResults();
@@ -692,9 +763,13 @@ public class DocumentSearchServiceImplTest {
     }
   }
 
-  /** Search for meta "folder" data. */
+  /**
+   * Search for meta "folder" data.
+   * 
+   * @throws ValidationException ValidationException
+   */
   @Test
-  public void testSearch14() {
+  public void testSearch14() throws ValidationException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       DocumentItem doc0 = new DocumentItemDynamoDb(UUID.randomUUID().toString(), new Date(), "joe");
@@ -719,7 +794,7 @@ public class DocumentSearchServiceImplTest {
 
       // when
       PaginationResults<DynamicDocumentItem> results =
-          this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+          this.searchService.search(siteId, q, null, startkey, MAX_RESULTS);
 
       // then
       final int expected = 3;
@@ -740,7 +815,7 @@ public class DocumentSearchServiceImplTest {
       q = new SearchQuery().meta(new SearchMetaCriteria().folder(folder));
 
       // when
-      results = this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+      results = this.searchService.search(siteId, q, null, startkey, MAX_RESULTS);
 
       // then
       list = results.getResults();
@@ -755,7 +830,7 @@ public class DocumentSearchServiceImplTest {
       q = new SearchQuery().meta(new SearchMetaCriteria().folder(folder));
 
       // when
-      results = this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+      results = this.searchService.search(siteId, q, null, startkey, MAX_RESULTS);
 
       // then
       list = results.getResults();
@@ -765,9 +840,13 @@ public class DocumentSearchServiceImplTest {
     }
   }
 
-  /** Add and Delete Document. */
+  /**
+   * Add and Delete Document.
+   * 
+   * @throws ValidationException ValidationException
+   */
   @Test
-  public void testSearch15() {
+  public void testSearch15() throws ValidationException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       DocumentItem doc0 = new DocumentItemDynamoDb(UUID.randomUUID().toString(), new Date(), "joe");
@@ -780,10 +859,10 @@ public class DocumentSearchServiceImplTest {
 
       // when
       PaginationResults<DynamicDocumentItem> results0 =
-          this.searchService.search(siteId, q0, startkey, MAX_RESULTS);
+          this.searchService.search(siteId, q0, null, startkey, MAX_RESULTS);
 
       PaginationResults<DynamicDocumentItem> results1 =
-          this.searchService.search(siteId, q1, startkey, MAX_RESULTS);
+          this.searchService.search(siteId, q1, null, startkey, MAX_RESULTS);
 
       // then
       List<DynamicDocumentItem> list0 = results0.getResults();
@@ -802,19 +881,23 @@ public class DocumentSearchServiceImplTest {
       this.service.deleteDocument(siteId, doc0.getDocumentId(), false);
 
       // then
-      results0 = this.searchService.search(siteId, q0, startkey, MAX_RESULTS);
+      results0 = this.searchService.search(siteId, q0, null, startkey, MAX_RESULTS);
       list0 = results0.getResults();
       assertEquals(1, list0.size());
       assertEquals("sample", list0.get(0).getPath());
 
-      results1 = this.searchService.search(siteId, q1, startkey, MAX_RESULTS);
+      results1 = this.searchService.search(siteId, q1, null, startkey, MAX_RESULTS);
       assertEquals(0, results1.getResults().size());
     }
   }
 
-  /** Search for meta "folder" different cases data. */
+  /**
+   * Search for meta "folder" different cases data.
+   * 
+   * @throws ValidationException ValidationException
+   */
   @Test
-  public void testSearch16() {
+  public void testSearch16() throws ValidationException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       DocumentItem doc0 = new DocumentItemDynamoDb(UUID.randomUUID().toString(), new Date(), "joe");
@@ -835,7 +918,7 @@ public class DocumentSearchServiceImplTest {
 
       // when
       PaginationResults<DynamicDocumentItem> results =
-          this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+          this.searchService.search(siteId, q, null, startkey, MAX_RESULTS);
 
       // then
       final int expected = 3;
@@ -851,9 +934,13 @@ public class DocumentSearchServiceImplTest {
     }
   }
 
-  /** Save document twice and change path make sure only 1 result. */
+  /**
+   * Save document twice and change path make sure only 1 result.
+   * 
+   * @throws ValidationException ValidationException
+   */
   @Test
-  public void testSearch17() {
+  public void testSearch17() throws ValidationException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       DocumentItem doc0 = new DocumentItemDynamoDb(UUID.randomUUID().toString(), new Date(), "joe");
@@ -870,7 +957,7 @@ public class DocumentSearchServiceImplTest {
 
       // when
       PaginationResults<DynamicDocumentItem> results =
-          this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+          this.searchService.search(siteId, q, null, startkey, MAX_RESULTS);
 
       // then
       List<DynamicDocumentItem> list = results.getResults();
@@ -879,15 +966,19 @@ public class DocumentSearchServiceImplTest {
       assertEquals("c", list.get(1).getPath());
 
       meta.folder("a/b");
-      results = this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+      results = this.searchService.search(siteId, q, null, startkey, MAX_RESULTS);
       list = results.getResults();
       assertEquals(0, list.size());
     }
   }
 
-  /** Save document and search by path. */
+  /**
+   * Save document and search by path.
+   * 
+   * @throws ValidationException ValidationException
+   */
   @Test
-  public void testSearch18() {
+  public void testSearch18() throws ValidationException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String path = "/a/b/test2.pdf";
@@ -901,7 +992,7 @@ public class DocumentSearchServiceImplTest {
 
       // when
       PaginationResults<DynamicDocumentItem> results =
-          this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+          this.searchService.search(siteId, q, null, startkey, MAX_RESULTS);
 
       // then
       List<DynamicDocumentItem> list = results.getResults();
@@ -914,16 +1005,20 @@ public class DocumentSearchServiceImplTest {
       q = new SearchQuery().meta(meta.path(path));
 
       // when
-      results = this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+      results = this.searchService.search(siteId, q, null, startkey, MAX_RESULTS);
 
       // then
       assertEquals(0, results.getResults().size());
     }
   }
 
-  /** Search by 'eq' / 'beginsWith' Tag Key & Value. */
+  /**
+   * Search by 'eq' / 'beginsWith' Tag Key & Value.
+   * 
+   * @throws ValidationException ValidationException
+   */
   @Test
-  public void testSearchForDocumentIds01() {
+  public void testSearchForDocumentIds01() throws ValidationException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       PaginationMapToken startkey = null;
@@ -956,9 +1051,13 @@ public class DocumentSearchServiceImplTest {
     }
   }
 
-  /** Search by 'between' Tag Key & Value. */
+  /**
+   * Search by 'between' Tag Key & Value.
+   * 
+   * @throws ValidationException ValidationException
+   */
   @Test
-  public void testSearch19() {
+  public void testSearch19() throws ValidationException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       final String documentId0 = createDocument(siteId, "date", "2024-03-19T02:45:04+0000");
@@ -971,12 +1070,35 @@ public class DocumentSearchServiceImplTest {
 
       // when
       PaginationResults<DynamicDocumentItem> results =
-          this.searchService.search(siteId, q, null, MAX_RESULTS);
+          this.searchService.search(siteId, q, null, null, MAX_RESULTS);
 
       // then
       assertEquals(2, results.getResults().size());
       assertEquals(documentId0, results.getResults().get(0).getDocumentId());
       assertEquals(documentId1, results.getResults().get(1).getDocumentId());
+    }
+  }
+
+  /**
+   * Search by duplicate attributes.
+   * 
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testSearch20() throws ValidationException {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      SearchAttributeCriteria a0 = new SearchAttributeCriteria().key("category").eq("person");
+      SearchQuery q = new SearchQuery().attributes(Arrays.asList(a0, a0));
+
+      // when
+      try {
+        this.searchService.search(siteId, q, null, null, MAX_RESULTS);
+        fail();
+      } catch (ValidationException e) {
+        // then
+        assertEquals("duplicate attributes in query", e.errors().iterator().next().error());
+      }
     }
   }
 }
