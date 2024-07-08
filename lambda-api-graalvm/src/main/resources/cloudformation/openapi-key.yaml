@@ -4539,7 +4539,7 @@ Resources:
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /users/{username}/groups:
             get:
               operationId: GetListOfUserGroups
