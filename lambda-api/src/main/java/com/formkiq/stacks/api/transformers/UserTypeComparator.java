@@ -34,6 +34,6 @@ import java.util.Comparator;
 public class UserTypeComparator implements Comparator<UserType>, Serializable {
   @Override
   public int compare(final UserType o1, final UserType o2) {
-    return o1.username().compareTo(o2.username());
+    return o2.username().compareTo(o1.username());
   }
 }
