@@ -89,7 +89,7 @@ public class UsersRequestHandler implements ApiGatewayRequestHandler, ApiGateway
     AddUserRequest request = fromBodyToObject(event, AddUserRequest.class);
 
     String username = request.getUser().getUsername();
-    service.addUser(username);
+    service.addUser(username, Boolean.TRUE);
 
     ApiMapResponse resp =
         new ApiMapResponse(Map.of("message", "user '" + username + "' has been created"));
