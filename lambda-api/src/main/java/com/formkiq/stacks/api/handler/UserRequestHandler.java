@@ -33,6 +33,7 @@ import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.stacks.api.transformers.UserTypeComparator;
 import com.formkiq.stacks.api.transformers.UsersResponseToMap;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersResponse;
 
@@ -64,8 +65,8 @@ public class UserRequestHandler implements ApiGatewayRequestHandler, ApiGatewayR
     Map<String, Object> map = new HashMap<>();
 
     if (!response.users().isEmpty()) {
-      List<Map<String, Object>> users =
-          response.users().stream().map(new UsersResponseToMap()).toList();
+      List<Map<String, Object>> users = response.users().stream().sorted(new UserTypeComparator())
+          .map(new UsersResponseToMap()).toList();
 
       map.put("user", users.get(0));
     }
