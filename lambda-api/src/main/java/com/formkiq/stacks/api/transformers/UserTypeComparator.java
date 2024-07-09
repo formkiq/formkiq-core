@@ -34,6 +34,13 @@ import java.util.Comparator;
 public class UserTypeComparator implements Comparator<UserType>, Serializable {
   @Override
   public int compare(final UserType o1, final UserType o2) {
-    return o2.username().compareTo(o1.username());
+    String u1 = getUserName(o1);
+    String u2 = getUserName(o2);
+    return u1.compareTo(u2);
+  }
+
+  private String getUserName(final UserType ut) {
+    int pos = ut.username().indexOf("@");
+    return pos > -1 ? ut.username().substring(0, pos) : ut.username();
   }
 }
