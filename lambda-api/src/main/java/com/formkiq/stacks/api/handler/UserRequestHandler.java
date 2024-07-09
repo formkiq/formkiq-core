@@ -65,8 +65,8 @@ public class UserRequestHandler implements ApiGatewayRequestHandler, ApiGatewayR
     Map<String, Object> map = new HashMap<>();
 
     if (!response.users().isEmpty()) {
-      List<Map<String, Object>> users = response.users().stream().sorted(new UserTypeComparator())
-          .map(new UsersResponseToMap()).toList();
+      List<Map<String, Object>> users = response.users().stream().map(new UsersResponseToMap())
+          .sorted(new UserTypeComparator()).toList();
 
       map.put("user", users.get(0));
     }

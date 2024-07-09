@@ -27,20 +27,22 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.UserType;
 
 import java.io.Serializable;
 import java.util.Comparator;
+import java.util.Map;
 
 /**
  * {@link Comparator} for {@link UserType}.
  */
-public class UserTypeComparator implements Comparator<UserType>, Serializable {
+public class UserTypeComparator implements Comparator<Map<String, Object>>, Serializable {
   @Override
-  public int compare(final UserType o1, final UserType o2) {
+  public int compare(final Map<String, Object> o1, final Map<String, Object> o2) {
     String u1 = getUserName(o1);
     String u2 = getUserName(o2);
     return u1.compareTo(u2);
   }
 
-  private String getUserName(final UserType ut) {
-    int pos = ut.username().indexOf("@");
-    return pos > -1 ? ut.username().substring(0, pos) : ut.username();
+  private String getUserName(final Map<String, Object> ut) {
+    String username = (String) ut.get("email");
+    int pos = username.indexOf("@");
+    return pos > -1 ? username.substring(0, pos) : username;
   }
 }
