@@ -33,6 +33,7 @@ import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.stacks.api.transformers.UserTypeComparator;
 import com.formkiq.stacks.api.transformers.UsersResponseToMap;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersResponse;
 
@@ -40,7 +41,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_CREATED;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
@@ -67,8 +67,8 @@ public class UsersRequestHandler implements ApiGatewayRequestHandler, ApiGateway
 
     ListUsersResponse response = service.listUsers(token, limit);
 
-    List<Map<String, Object>> users =
-        response.users().stream().map(new UsersResponseToMap()).toList();
+    List<Map<String, Object>> users = response.users().stream().map(new UsersResponseToMap())
+        .sorted(new UserTypeComparator()).toList();
 
     Map<String, Object> map = new HashMap<>();
     map.put("users", users);
@@ -89,8 +89,7 @@ public class UsersRequestHandler implements ApiGatewayRequestHandler, ApiGateway
     AddUserRequest request = fromBodyToObject(event, AddUserRequest.class);
 
     String username = request.getUser().getUsername();
-    String temporaryPassword = UUID.randomUUID() + UUID.randomUUID().toString();
-    service.addUser(username, temporaryPassword, Boolean.FALSE);
+    service.addUser(username, Boolean.TRUE);
 
     ApiMapResponse resp =
         new ApiMapResponse(Map.of("message", "user '" + username + "' has been created"));

@@ -33,6 +33,7 @@ import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.stacks.api.transformers.GroupNameComparator;
 import com.formkiq.stacks.api.transformers.GroupsResponseToMap;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminListGroupsForUserResponse;
 
@@ -69,8 +70,8 @@ public class UserGroupsRequestHandler
 
     AdminListGroupsForUserResponse response = service.listGroups(username, token, limit);
 
-    List<Map<String, Object>> groups =
-        response.groups().stream().map(new GroupsResponseToMap()).toList();
+    List<Map<String, Object>> groups = response.groups().stream().sorted(new GroupNameComparator())
+        .map(new GroupsResponseToMap()).toList();
 
     Map<String, Object> map = new HashMap<>();
     map.put("groups", groups);

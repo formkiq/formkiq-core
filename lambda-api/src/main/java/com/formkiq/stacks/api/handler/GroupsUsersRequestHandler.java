@@ -33,6 +33,7 @@ import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.stacks.api.transformers.UserTypeComparator;
 import com.formkiq.stacks.api.transformers.UsersResponseToMap;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersInGroupResponse;
 
@@ -68,8 +69,8 @@ public class GroupsUsersRequestHandler
 
     ListUsersInGroupResponse response = service.listUsersInGroup(groupName, token, limit);
 
-    List<Map<String, Object>> users =
-        response.users().stream().map(new UsersResponseToMap()).toList();
+    List<Map<String, Object>> users = response.users().stream().map(new UsersResponseToMap())
+        .sorted(new UserTypeComparator()).toList();
 
     Map<String, Object> map = new HashMap<>();
     map.put("users", users);

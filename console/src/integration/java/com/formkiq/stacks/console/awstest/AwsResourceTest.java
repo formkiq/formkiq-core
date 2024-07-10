@@ -74,7 +74,7 @@ public class AwsResourceTest {
 
   /**
    * beforeclass.
-   * 
+   *
    * @throws IOException IOException
    */
   @BeforeAll
@@ -100,7 +100,7 @@ public class AwsResourceTest {
 
   /**
    * Test Console Available.
-   * 
+   *
    * @throws IOException IOException
    * @throws URISyntaxException URISyntaxException
    * @throws InterruptedException InterruptedException
@@ -125,7 +125,7 @@ public class AwsResourceTest {
 
   /**
    * Test Logging into console.
-   * 
+   *
    * @throws URISyntaxException URISyntaxException
    * @throws InterruptedException InterruptedException
    * @throws IOException IOException
@@ -201,7 +201,7 @@ public class AwsResourceTest {
    */
   @Test
   public void testSsmParameters() {
-    assertEquals("v3.6.0",
+    assertEquals("v3.6.1",
         ssmService.getParameterValue("/formkiq/" + appenvironment + "/console/version"));
     assertTrue(ssmService.getParameterValue("/formkiq/" + appenvironment + "/s3/Console")
         .contains(appenvironment + "-console-"));

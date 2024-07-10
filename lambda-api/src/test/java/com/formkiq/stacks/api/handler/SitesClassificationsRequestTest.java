@@ -517,18 +517,35 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
 
       String classificationId = addClassification(siteId, attr0);
 
-      AddDocumentAttribute attribute = createStringAttribute("invoiceNumber", "INV-001");
+      AddDocumentAttribute attribute0 = createStringAttribute("invoiceNumber", "INV-001");
       AddDocumentAttributeClassification classification =
           new AddDocumentAttributeClassification().classificationId(classificationId);
 
       // when
-      String documentId =
-          addDocument(siteId, List.of(new AddDocumentAttribute(classification), attribute));
+      try {
+        addDocument(siteId, List.of(new AddDocumentAttribute(classification), attribute0));
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"other\",\"error\":\"missing required attribute 'other'\"}]}",
+            e.getResponseBody());
+      }
+
+      // given
+      AddDocumentAttribute attribute1 = createStringAttribute("other", "thing");
+
+      // when
+      String documentId = addDocument(siteId,
+          List.of(new AddDocumentAttribute(classification), attribute0, attribute1));
 
       // then
       List<DocumentAttribute> documentAttributes = notNull(this.documentAttributesApi
           .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
-      assertEquals(2, documentAttributes.size());
+
+      final int expected = 3;
+      assertEquals(expected, documentAttributes.size());
 
       assertEquals("Classification", documentAttributes.get(0).getKey());
       assertEquals(classificationId, documentAttributes.get(0).getStringValue());
@@ -537,6 +554,10 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       assertEquals("invoiceNumber", documentAttributes.get(1).getKey());
       assertEquals("INV-001", documentAttributes.get(1).getStringValue());
       assertEquals(AttributeValueType.STRING, documentAttributes.get(1).getValueType());
+
+      assertEquals("other", documentAttributes.get(2).getKey());
+      assertEquals("thing", documentAttributes.get(2).getStringValue());
+      assertEquals(AttributeValueType.STRING, documentAttributes.get(2).getValueType());
     }
   }
 
@@ -644,6 +665,88 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
           new DocumentSearchAttribute().key("invoiceNumber").eq("INV-001");
       List<SearchResultDocument> docs = search(siteId, item0, item1);
       assertEquals(1, docs.size());
+    }
+  }
+
+  /**
+   * Add document with classification but site schema has required attribute.
+   */
+  @Test
+  void testAddDocument07() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "other");
+      addAttribute(siteId, "invoiceNumber");
+
+      SchemaAttributes attr = createSchemaAttributes(List.of("other"), null);
+      SetSitesSchemaRequest setSiteSchema =
+          new SetSitesSchemaRequest().name("test").attributes(attr);
+      this.schemasApi.setSitesSchema(siteId, setSiteSchema);
+
+      SchemaAttributes attr0 = createSchemaAttributes(List.of("invoiceNumber"), null);
+      String classificationId = addClassification(siteId, attr0);
+
+      AddDocumentAttribute attribute = createStringAttribute("invoiceNumber", "INV-001");
+      AddDocumentAttributeClassification classification =
+          new AddDocumentAttributeClassification().classificationId(classificationId);
+
+      // when
+      try {
+        addDocument(siteId, List.of(new AddDocumentAttribute(classification), attribute));
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"errors\":[{\"key\":\"other\","
+            + "\"error\":\"missing required attribute 'other'\"}]}", e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * Add document with classification, same attributes different allowed values.
+   */
+  @Test
+  void testAddDocument08() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "invoiceNumber");
+
+      SchemaAttributes attr0 = createSchemaAttributes(List.of("invoiceNumber"), null);
+      attr0.getRequired().get(0).addAllowedValuesItem("123");
+
+      SetSitesSchemaRequest setSiteSchema =
+          new SetSitesSchemaRequest().name("test").attributes(attr0);
+      this.schemasApi.setSitesSchema(siteId, setSiteSchema);
+
+      SchemaAttributes attr1 = createSchemaAttributes(List.of("invoiceNumber"), null);
+      attr1.getRequired().get(0).addAllowedValuesItem("INV-001");
+      String classificationId = addClassification(siteId, attr1);
+
+      AddDocumentAttribute attribute = createStringAttribute("invoiceNumber", "INV-001");
+      AddDocumentAttributeClassification classification =
+          new AddDocumentAttributeClassification().classificationId(classificationId);
+
+      // when
+      String documentId =
+          addDocument(siteId, List.of(new AddDocumentAttribute(classification), attribute));
+
+      // then
+      List<DocumentAttribute> documentAttributes = notNull(this.documentAttributesApi
+          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+
+      final int expected = 2;
+      assertEquals(expected, documentAttributes.size());
+
+      int i = 0;
+      assertEquals("Classification", documentAttributes.get(i++).getKey());
+      assertEquals("invoiceNumber", documentAttributes.get(i).getKey());
     }
   }
 

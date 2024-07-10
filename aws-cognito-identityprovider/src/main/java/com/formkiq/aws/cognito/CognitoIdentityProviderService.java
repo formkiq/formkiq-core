@@ -110,6 +110,17 @@ public class CognitoIdentityProviderService {
 
   /**
    * Add Cognito User.
+   *
+   * @param username {@link String}
+   * @param emailVerified boolean
+   * @return {@link UserType}
+   */
+  public UserType addUser(final String username, final boolean emailVerified) {
+    return addUser(username, null, emailVerified);
+  }
+
+  /**
+   * Add Cognito User.
    * 
    * @param username {@link String}
    * @param temporaryPassword {@link String}

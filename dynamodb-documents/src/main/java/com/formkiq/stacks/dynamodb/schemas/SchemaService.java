@@ -125,4 +125,13 @@ public interface SchemaService {
    * @return Schema
    */
   Schema getSchema(ClassificationRecord classification);
+
+  /**
+   * Merge {@link Schema} together.
+   * 
+   * @param from {@link Schema}
+   * @param to {@link Schema}
+   * @return {@link ClassificationRecord}
+   */
+  Schema mergeSchemaIntoClassification(Schema from, Schema to);
 }
