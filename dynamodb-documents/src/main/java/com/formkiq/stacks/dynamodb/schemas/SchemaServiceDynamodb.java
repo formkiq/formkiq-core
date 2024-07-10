@@ -32,6 +32,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.formkiq.aws.dynamodb.BatchGetConfig;
@@ -236,6 +238,46 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
   @Override
   public Schema getSchema(final ClassificationRecord classification) {
     return gson.fromJson(classification.getSchema(), Schema.class);
+  }
+
+  @Override
+  public Schema mergeSchemaIntoClassification(final Schema from, final Schema to) {
+
+    if (from != null) {
+      SchemaAttributes fromAttributes = from.getAttributes();
+      Map<String, SchemaAttributesRequired> required =
+          notNull(fromAttributes.getRequired()).stream().collect(
+              Collectors.toMap(SchemaAttributesRequired::getAttributeKey, Function.identity()));
+
+      to.getAttributes().getRequired().forEach(a -> {
+
+        if (required.containsKey(a.getAttributeKey())) {
+
+          SchemaAttributesRequired attr = required.get(a.getAttributeKey());
+
+          List<String> allowed = Stream.concat(notNull(a.getAllowedValues()).stream(),
+              notNull(attr.getAllowedValues()).stream()).toList();
+          a.allowedValues(allowed);
+
+          required.remove(a.getAttributeKey());
+        }
+
+      });
+
+      // get all required attributes
+      List<SchemaAttributesRequired> req = Stream
+          .concat(to.getAttributes().getRequired().stream(), required.values().stream()).toList();
+      to.getAttributes().required(req);
+
+      // merge composite keys
+      List<SchemaAttributesCompositeKey> cks =
+          Stream.concat(to.getAttributes().getCompositeKeys().stream(),
+              from.getAttributes().getCompositeKeys().stream()).toList();
+      to.getAttributes().compositeKeys(cks);
+      // can add allowed values / not remove
+    }
+
+    return to;
   }
 
   /**

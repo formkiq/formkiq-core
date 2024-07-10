@@ -345,17 +345,16 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   private List<SchemaAttributes> getSchemaAttributes(final String siteId,
       final Collection<DocumentAttributeRecord> documentAttributeRecords) {
 
+    Schema schema = getSchame(siteId);
+
     List<Schema> schemas = documentAttributeRecords.stream()
         .filter(a -> DocumentAttributeValueType.CLASSIFICATION.equals(a.getValueType()))
         .map(a -> this.schemaService.findClassification(siteId, a.getStringValue()))
-        .map(this.schemaService::getSchema).toList();
+        .map(this.schemaService::getSchema)
+        .map(a -> this.schemaService.mergeSchemaIntoClassification(schema, a)).toList();
 
-    if (schemas.isEmpty()) {
-      Schema schema = getSchame(siteId);
-
-      if (schema != null) {
-        schemas = List.of(schema);
-      }
+    if (schema != null && notNull(schemas).isEmpty()) {
+      schemas = List.of(schema);
     }
 
     return schemas.stream().map(Schema::getAttributes).toList();
