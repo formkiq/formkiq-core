@@ -55,6 +55,7 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -63,6 +64,7 @@ import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.testutils.aws.FkqAttributeService.createStringAttribute;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /** Unit Tests for request /sites/{siteId}/schema/document. */
@@ -88,10 +90,14 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
 
       SchemaAttributes attr0 = createSchemaAttributes(List.of("invoice"), null);
 
+      List<String> ids = new ArrayList<>();
+
       for (int i = 0; i < count; i++) {
         AddClassificationRequest req = new AddClassificationRequest()
             .classification(new AddClassification().name("test_" + i).attributes(attr0));
-        this.schemasApi.addClassification(siteId, req);
+        String classificationId =
+            this.schemasApi.addClassification(siteId, req).getClassificationId();
+        ids.add(classificationId);
       }
 
       // when
@@ -102,6 +108,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       // then
       int i = 0;
       assertEquals(limit, attributes.size());
+      assertTrue(ids.contains(attributes.get(i).getClassificationId()));
       assertEquals("joesmith", attributes.get(i).getUserId());
       assertNotNull(attributes.get(i).getInsertedDate());
       assertEquals("test_0", attributes.get(i++).getName());

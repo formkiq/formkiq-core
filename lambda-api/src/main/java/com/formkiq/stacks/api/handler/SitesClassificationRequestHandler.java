@@ -73,8 +73,11 @@ public class SitesClassificationRequestHandler
     PaginationResults<ClassificationRecord> results =
         service.findAllClassifications(siteId, startkey, limit);
 
-    List<?> data = results.getResults().stream().map(c -> Map.of("name", c.getName(), "userId",
-        c.getUserId(), "insertedDate", c.getInsertedDate())).toList();
+    List<?> data =
+        results
+            .getResults().stream().map(c -> Map.of("classificationId", c.getDocumentId(), "name",
+                c.getName(), "userId", c.getUserId(), "insertedDate", c.getInsertedDate()))
+            .toList();
 
     ApiPagination current =
         createPagination(cacheService, event, pagination, results.getToken(), limit);
