@@ -10139,6 +10139,9 @@ Resources:
             ClassificationSummary:
               type: "object"
               properties:
+                classificationId:
+                  type: "string"
+                  description: "Classification Identifier"
                 name:
                   description: "Name of Classification"
                   type: "string"
