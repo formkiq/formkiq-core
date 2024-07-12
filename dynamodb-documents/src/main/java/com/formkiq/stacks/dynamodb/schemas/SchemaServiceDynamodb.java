@@ -182,7 +182,7 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
       throws ValidationException {
 
     Collection<ValidationError> errors = validate(siteId, name, schemaJson, schema);
-    errors.addAll(validateClassification(siteId, name));
+    errors.addAll(validateClassification(siteId, classificationId, name));
 
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
@@ -284,11 +284,13 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
    * Validate Classification.
    * 
    * @param siteId {@link String}
+   * @param classificationId {@link String}
    * @param name {@link String}
    * @return Collection {@link ValidationError}
    */
   private Collection<ValidationError> validateClassification(final String siteId,
-      final String name) {
+      final String classificationId, final String name) {
+
     ClassificationRecord r = new ClassificationRecord().setName(name);
     AttributeValue pk = r.fromS(r.pkGsi1(siteId));
     AttributeValue sk = r.fromS(r.skGsi1());
@@ -297,7 +299,13 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
     QueryConfig config = new QueryConfig().indexName(GSI1);
     QueryResponse response = this.db.queryBeginsWith(config, pk, sk, null, 1);
 
-    if (!response.items().isEmpty()) {
+    List<Map<String, AttributeValue>> items = response.items();
+    if (!isEmpty(classificationId)) {
+      items =
+          items.stream().filter(i -> !classificationId.equals(i.get("documentId").s())).toList();
+    }
+
+    if (!items.isEmpty()) {
       errors = List.of(new ValidationErrorImpl().key("name").error("'name' is already used"));
     }
 

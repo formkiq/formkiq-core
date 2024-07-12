@@ -58,6 +58,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
@@ -190,6 +191,21 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       // when
       try {
         this.schemasApi.addClassification(siteId, req);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"errors\":[{\"key\":\"name\",\"error\":\"'name' is already used\"}]}",
+            e.getResponseBody());
+      }
+
+      // given
+      SetClassificationRequest sreq = new SetClassificationRequest()
+          .classification(new AddClassification().name("test").attributes(attr0));
+
+      // when
+      try {
+        this.schemasApi.setClassification(siteId, UUID.randomUUID().toString(), sreq);
         fail();
       } catch (ApiException e) {
         // then
@@ -352,7 +368,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       // given
       attr0 = createSchemaAttributes(null, List.of("documentType"));
       SetClassificationRequest setReq = new SetClassificationRequest()
-          .classification(new AddClassification().name("doc1").attributes(attr0));
+          .classification(new AddClassification().name("doc").attributes(attr0));
 
       // when
       this.schemasApi.setClassification(siteId, classificationId, setReq);
@@ -364,7 +380,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       assertNotNull(classification);
       assertNotNull(classification.getAttributes());
 
-      assertEquals("doc1", classification.getName());
+      assertEquals("doc", classification.getName());
       required = notNull(classification.getAttributes().getRequired());
       assertEquals(0, required.size());
 
@@ -726,14 +742,14 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       addAttribute(siteId, "invoiceNumber");
 
       SchemaAttributes attr0 = createSchemaAttributes(List.of("invoiceNumber"), null);
-      attr0.getRequired().get(0).addAllowedValuesItem("123");
+      Objects.requireNonNull(attr0.getRequired()).get(0).addAllowedValuesItem("123");
 
       SetSitesSchemaRequest setSiteSchema =
           new SetSitesSchemaRequest().name("test").attributes(attr0);
       this.schemasApi.setSitesSchema(siteId, setSiteSchema);
 
       SchemaAttributes attr1 = createSchemaAttributes(List.of("invoiceNumber"), null);
-      attr1.getRequired().get(0).addAllowedValuesItem("INV-001");
+      Objects.requireNonNull(attr1.getRequired()).get(0).addAllowedValuesItem("INV-001");
       String classificationId = addClassification(siteId, attr1);
 
       AddDocumentAttribute attribute = createStringAttribute("invoiceNumber", "INV-001");
