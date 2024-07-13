@@ -113,6 +113,8 @@ Mappings:
       PARTITION: "aws"
     ca-central-1:
       PARTITION: "aws"
+    ca-west-1:
+      PARTITION: "aws"
     eu-central-1:
       PARTITION: "aws"
     eu-west-1:
