@@ -297,7 +297,7 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
 
     Collection<ValidationError> errors = Collections.emptyList();
     QueryConfig config = new QueryConfig().indexName(GSI1);
-    QueryResponse response = this.db.queryBeginsWith(config, pk, sk, null, 1);
+    QueryResponse response = this.db.query(config, pk, sk, null, 1);
 
     List<Map<String, AttributeValue>> items = response.items();
     if (!isEmpty(classificationId)) {
