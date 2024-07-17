@@ -377,7 +377,7 @@ Resources:
       ApiId: 
         Fn::GetAtt:
           - KeyApi
-          - Outputs.DocumentsKeyAp
+          - Outputs.DocumentsKeyApi
       Stage: 
         Ref: KeyDocumentsStage
 
