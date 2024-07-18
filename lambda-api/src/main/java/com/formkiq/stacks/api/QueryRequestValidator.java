@@ -105,10 +105,23 @@ public class QueryRequestValidator {
       boolean isTagsEmpty = isTagsEmpty(q);
       boolean isAttributesEmpty = isAttributesEmpty(q);
       boolean isMetaEmpty = q.query().getMeta() == null;
+      boolean hasText = !isEmpty(q.query().getText());
 
       if (!isMetaEmpty && (!isTagsEmpty || !isAttributesEmpty)) {
         errors.add(new ValidationErrorImpl()
             .error("'meta' cannot be combined with 'tags' or 'attributes'"));
+      }
+
+      if (hasText) {
+        if (!isTagsEmpty) {
+          errors
+              .add(new ValidationErrorImpl().error("'text' search cannot be combined with 'tags'"));
+        }
+
+        if (!isAttributesEmpty) {
+          errors.add(new ValidationErrorImpl()
+              .error("'text' search cannot be combined with 'attributes'"));
+        }
       }
 
       List<SearchTagCriteria> tags = notNull(q.query().getTags());

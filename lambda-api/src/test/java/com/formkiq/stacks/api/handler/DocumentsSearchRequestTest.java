@@ -970,4 +970,46 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
       assertEquals(AttributeValueType.STRING, category.getValueType());
     }
   }
+
+  /**
+   * Post search by 'text' and 'tags' / 'attributes'.
+   *
+   */
+  @Test
+  public void testHandleSearchRequest25() {
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      setBearerToken(siteId);
+
+      DocumentSearchRequest dsq = new DocumentSearchRequest().query(new DocumentSearch().text("123")
+          .attribute(new DocumentSearchAttribute().key("test").eq("123")));
+
+      // when
+      try {
+        this.searchApi.documentSearch(dsq, siteId, null, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"error\":\"'text' search cannot be combined with 'attributes'\"}]}",
+            e.getResponseBody());
+      }
+
+      dsq = new DocumentSearchRequest().query(
+          new DocumentSearch().text("123").tag(new DocumentSearchTag().key("test").eq("123")));
+
+      // when
+      try {
+        this.searchApi.documentSearch(dsq, siteId, null, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"errors\":[{\"error\":\"'text' search cannot be combined with 'tags'\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
 }
