@@ -43,6 +43,7 @@ import com.formkiq.client.model.DocumentAttribute;
 import com.formkiq.client.model.SchemaAttributes;
 import com.formkiq.client.model.SetSitesSchemaRequest;
 import com.formkiq.client.model.UpdateDocumentRequest;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.client.invoker.ApiException;
@@ -62,6 +63,147 @@ import com.formkiq.testutils.aws.LocalStackExtension;
 @ExtendWith(DynamoDbExtension.class)
 @ExtendWith(LocalStackExtension.class)
 public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
+
+  /**
+   * DELETE /documents/{documentId} request.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testDocumentDelete01() throws Exception {
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      setBearerToken(siteId);
+
+      AddDocumentUploadRequest req = new AddDocumentUploadRequest().path("test.txt");
+      GetDocumentUrlResponse response =
+          this.documentsApi.addDocumentUpload(req, siteId, null, null, null);
+
+      String documentId = response.getDocumentId();
+
+      // when
+      this.documentsApi.deleteDocument(documentId, siteId, Boolean.FALSE);
+
+      // then
+      List<Document> softDeletedDocuments = getSoftDeletedDocuments(siteId);
+      assertEquals(0, softDeletedDocuments.size());
+
+      List<Document> documents = getDocuments(siteId);
+      assertEquals(0, documents.size());
+    }
+  }
+
+  /**
+   * DELETE /documents/{documentId} deeplink document request.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testDocumentDelete02() throws Exception {
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      setBearerToken(siteId);
+
+      AddDocumentUploadRequest req =
+          new AddDocumentUploadRequest().deepLinkPath("https://www.google.com");
+      GetDocumentUrlResponse response =
+          this.documentsApi.addDocumentUpload(req, siteId, null, null, null);
+
+      String documentId = response.getDocumentId();
+
+      // when
+      this.documentsApi.deleteDocument(documentId, siteId, Boolean.FALSE);
+
+      // then
+      List<Document> softDeletedDocuments = getSoftDeletedDocuments(siteId);
+      assertEquals(0, softDeletedDocuments.size());
+
+      List<Document> documents = getDocuments(siteId);
+      assertEquals(0, documents.size());
+    }
+  }
+
+  /**
+   * DELETE /documents/{documentId} deeplink document soft delete request.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testDocumentDelete03() throws Exception {
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      setBearerToken(siteId);
+
+      AddDocumentUploadRequest req =
+          new AddDocumentUploadRequest().deepLinkPath("https://www.google.com");
+      GetDocumentUrlResponse response =
+          this.documentsApi.addDocumentUpload(req, siteId, null, null, null);
+
+      String documentId = response.getDocumentId();
+
+      // when
+      this.documentsApi.deleteDocument(documentId, siteId, Boolean.TRUE);
+
+      // then
+      List<Document> softDeletedDocuments = getSoftDeletedDocuments(siteId);
+      assertEquals(1, softDeletedDocuments.size());
+      assertEquals(documentId, softDeletedDocuments.get(0).getDocumentId());
+
+      List<Document> documents = getDocuments(siteId);
+      assertEquals(0, documents.size());
+
+      // when
+      this.documentsApi.deleteDocument(documentId, siteId, Boolean.FALSE);
+
+      // then
+      softDeletedDocuments = getSoftDeletedDocuments(siteId);
+      assertEquals(0, softDeletedDocuments.size());
+
+      documents = getDocuments(siteId);
+      assertEquals(0, documents.size());
+    }
+  }
+
+  /**
+   * DELETE /documents/{documentId} document not found.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testDocumentDelete04() throws Exception {
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      setBearerToken(siteId);
+      String documentId = UUID.randomUUID().toString();
+
+      // when
+      try {
+        this.documentsApi.deleteDocument(documentId, siteId, Boolean.FALSE);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
+        assertEquals("{\"message\":\"Document " + documentId + " not found.\"}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  @NotNull
+  private List<Document> getDocuments(final String siteId) throws ApiException {
+    return notNull(this.documentsApi.getDocuments(siteId, null, null, null, null, null, null, null)
+        .getDocuments());
+  }
+
+  @NotNull
+  private List<Document> getSoftDeletedDocuments(final String siteId) throws ApiException {
+    return notNull(this.documentsApi
+        .getDocuments(siteId, null, Boolean.TRUE, null, null, null, null, null).getDocuments());
+  }
 
   /**
    * PUT /documents/{documentId}/restore request.
@@ -85,13 +227,11 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       this.documentsApi.deleteDocument(documentId, siteId, Boolean.TRUE);
 
       // then
-      List<Document> softDeletedDocuments = notNull(this.documentsApi
-          .getDocuments(siteId, null, Boolean.TRUE, null, null, null, null, null).getDocuments());
+      List<Document> softDeletedDocuments = getSoftDeletedDocuments(siteId);
       assertEquals(1, softDeletedDocuments.size());
       assertEquals("test.txt", softDeletedDocuments.get(0).getPath());
 
-      List<Document> documents = notNull(this.documentsApi
-          .getDocuments(siteId, null, null, null, null, null, null, null).getDocuments());
+      List<Document> documents = getDocuments(siteId);
       assertEquals(0, documents.size());
 
       // when
@@ -99,11 +239,9 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       // then
       assertEquals("document restored", restore.getMessage());
-      softDeletedDocuments = notNull(this.documentsApi
-          .getDocuments(siteId, null, Boolean.TRUE, null, null, null, null, null).getDocuments());
+      softDeletedDocuments = getSoftDeletedDocuments(siteId);
       assertEquals(0, softDeletedDocuments.size());
-      documents = notNull(this.documentsApi
-          .getDocuments(siteId, null, null, null, null, null, null, null).getDocuments());
+      documents = getDocuments(siteId);
       assertEquals(1, documents.size());
       assertEquals("test.txt", documents.get(0).getPath());
     }
