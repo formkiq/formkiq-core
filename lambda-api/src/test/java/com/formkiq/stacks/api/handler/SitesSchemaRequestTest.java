@@ -2195,6 +2195,74 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * PUT /sites/{siteId}/schema/document with default value outside of allowed values.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testSetSitesSchema09() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "category", null);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SchemaAttributes().addRequiredItem(new AttributeSchemaRequired()
+              .attributeKey("category").defaultValue("1").allowedValues(List.of("222"))));
+
+      // when
+      try {
+        this.schemasApi.setSitesSchema(siteId, req);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"defaultValue\","
+                + "\"error\":\"defaultValue must be part of allowed values\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * PUT /sites/{siteId}/schema/document duplicate composite keys.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testSetSitesSchema10() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "category", null);
+      addAttribute(siteId, "id", null);
+
+      AttributeSchemaCompositeKey k0 =
+          new AttributeSchemaCompositeKey().attributeKeys(List.of("category", "id"));
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SchemaAttributes().allowAdditionalAttributes(Boolean.TRUE)
+              .addCompositeKeysItem(k0).addCompositeKeysItem(k0));
+
+      // when
+      try {
+        this.schemasApi.setSitesSchema(siteId, req);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"compositeKeys\",\"error\":\"duplicate compositeKey\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
    * PATCH /documents after site schema is applied and without attributes.
    *
    * @throws ApiException an error has occurred
