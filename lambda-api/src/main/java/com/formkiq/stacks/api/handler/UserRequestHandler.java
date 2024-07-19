@@ -33,9 +33,12 @@ import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.api.transformers.UserTypeComparator;
 import com.formkiq.stacks.api.transformers.UsersResponseToMap;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserResponse;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AttributeType;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersResponse;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.UserNotFoundException;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.UserType;
 
 import java.util.HashMap;
 import java.util.List;
@@ -60,19 +63,57 @@ public class UserRequestHandler implements ApiGatewayRequestHandler, ApiGatewayR
     CognitoIdentityProviderService service =
         awsservice.getExtension(CognitoIdentityProviderService.class);
 
-    ListUsersResponse response = service.findUserByEmail(username);
+    UsersResponseToMap func = new UsersResponseToMap();
+    UserType user = getUserType(service, username, func);
 
     Map<String, Object> map = new HashMap<>();
 
-    if (!response.users().isEmpty()) {
-      List<Map<String, Object>> users = response.users().stream().map(new UsersResponseToMap())
-          .sorted(new UserTypeComparator()).toList();
-
-      map.put("user", users.get(0));
+    if (user != null) {
+      Map<String, Object> data = func.apply(user);
+      map.put("user", data);
     }
 
     ApiMapResponse resp = new ApiMapResponse(map);
     return new ApiRequestHandlerResponse(SC_OK, resp);
+  }
+
+  private UserType getUserType(CognitoIdentityProviderService service, final String username,
+      final UsersResponseToMap func) {
+
+    UserType user;
+    String userId = username;
+
+    try {
+      AdminGetUserResponse cognitoUser = service.getUser(userId);
+      List<AttributeType> attributeTypes = cognitoUser.userAttributes();
+      userId = func.getEmail(attributeTypes);
+      user = transformToUser(service, userId);
+
+    } catch (UserNotFoundException e) {
+
+      user = transformToUser(service, userId);
+    }
+
+    return user;
+  }
+
+  /**
+   * Transform Username to {@link UserType}.
+   * 
+   * @param service {@link CognitoIdentityProviderService}
+   * @param username {@link String}
+   * @return {@link UserType}
+   */
+  private UserType transformToUser(final CognitoIdentityProviderService service,
+      final String username) {
+
+    UserType user = null;
+    ListUsersResponse response = service.findUserByEmail(username);
+    if (!response.users().isEmpty()) {
+      user = response.users().get(0);
+    }
+
+    return user;
   }
 
   @Override
