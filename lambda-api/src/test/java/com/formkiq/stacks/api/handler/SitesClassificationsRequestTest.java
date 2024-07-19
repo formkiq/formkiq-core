@@ -332,8 +332,9 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       addAttribute(siteId, "documentType");
 
       SchemaAttributes attr1 = createSchemaAttributes(List.of("documentType"), null);
-      attr1.getRequired().get(0).setDefaultValue("123");
-      attr1.getRequired().get(0).setAllowedValues(List.of("1", "2"));
+      List<AttributeSchemaRequired> required = notNull(attr1.getRequired());
+      required.get(0).setDefaultValue("123");
+      required.get(0).setAllowedValues(List.of("1", "2"));
       AddClassificationRequest req = new AddClassificationRequest()
           .classification(new AddClassification().name("test").attributes(attr1));
 

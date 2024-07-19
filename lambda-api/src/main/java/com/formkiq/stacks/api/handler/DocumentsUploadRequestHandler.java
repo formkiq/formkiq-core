@@ -210,7 +210,7 @@ public class DocumentsUploadRequestHandler
 
     String documentId = request.getDocumentId();
 
-    if (tags.isEmpty()) {
+    if (tags.isEmpty() && notNull(documentAttributes).isEmpty()) {
       tags.add(new DocumentTag(documentId, "untagged", "true", new Date(),
           authorization.getUsername(), DocumentTagType.SYSTEMDEFINED));
     }
