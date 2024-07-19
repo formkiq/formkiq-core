@@ -77,7 +77,7 @@ public class UserRequestHandler implements ApiGatewayRequestHandler, ApiGatewayR
     return new ApiRequestHandlerResponse(SC_OK, resp);
   }
 
-  private UserType getUserType(CognitoIdentityProviderService service, final String username,
+  private UserType getUserType(final CognitoIdentityProviderService service, final String username,
       final UsersResponseToMap func) {
 
     UserType user;
