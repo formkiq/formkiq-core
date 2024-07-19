@@ -32,6 +32,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.transformers.UsersResponseToMap;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserResponse;
@@ -71,6 +72,8 @@ public class UserRequestHandler implements ApiGatewayRequestHandler, ApiGatewayR
     if (user != null) {
       Map<String, Object> data = func.apply(user);
       map.put("user", data);
+    } else {
+      throw new NotFoundException("username '" + username + "' not found");
     }
 
     ApiMapResponse resp = new ApiMapResponse(map);
