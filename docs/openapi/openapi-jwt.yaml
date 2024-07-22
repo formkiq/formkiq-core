@@ -8683,6 +8683,9 @@
             Mapping:
               type: object
               properties:
+                mappingId:
+                  type: string
+                  description: Mapping Identifier
                 name:
                   type: string
                   description: Name of Mapping
