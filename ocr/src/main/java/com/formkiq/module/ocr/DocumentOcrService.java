@@ -23,9 +23,10 @@
  */
 package com.formkiq.module.ocr;
 
-import java.util.List;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+
+import java.util.List;
 
 /**
  * 
@@ -135,4 +136,12 @@ public interface DocumentOcrService {
    * @param status {@link OcrScanStatus}
    */
   void updateOcrScanStatus(String siteId, String documentId, OcrScanStatus status);
+
+  /**
+   * Convert content to Key Value.
+   * 
+   * @param content {@link String}
+   * @return {@link String}
+   */
+  String toKeyValue(String content);
 }

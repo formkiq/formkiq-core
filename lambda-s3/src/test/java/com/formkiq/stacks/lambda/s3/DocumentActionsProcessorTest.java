@@ -1752,6 +1752,50 @@ public class DocumentActionsProcessorTest implements DbKeys {
     }
   }
 
+  /**
+   * Handle Idp with Mapping Action text/plain, Attribute STRING_VALUE.
+   *
+   * @throws IOException IOException
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testIdp09() throws IOException, ValidationException {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      try (InputStream is = new FileInputStream("src/test/resources/text/text02.txt")) {
+        String text = IoUtils.toUtf8String(is);
+        String documentId = addTextToBucket(siteId, text);
+
+        attributeService.addAttribute(siteId, "certificate_number", null, null);
+
+        Mapping mapping = createMapping("certificate_number", "Customer certificate",
+            MappingAttributeLabelMatchingType.FUZZY, MappingAttributeSourceType.CONTENT, null, null,
+            null);
+        mapping.getAttributes().get(0).setValidationRegex("\\d+");
+
+        MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
+
+        processRequest(siteId, documentId, mappingRecord);
+
+        // then
+        Action action = actionsService.getActions(siteId, documentId).get(0);
+        assertNull(action.message());
+        assertEquals(ActionStatus.COMPLETE, action.status());
+        assertEquals(ActionType.IDP, action.type());
+        assertNotNull(action.startDate());
+        assertNotNull(action.insertedDate());
+        assertNotNull(action.completedDate());
+
+        List<DocumentAttributeRecord> results =
+            documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
+        assertEquals(1, results.size());
+        DocumentAttributeRecord record = results.get(0);
+        assertEquals("certificate_number", record.getKey());
+        assertEquals("100232", record.getStringValue());
+      }
+    }
+  }
+
   private void processRequest(final String siteId, final String documentId,
       final MappingRecord mappingRecord) throws ValidationException, IOException {
     DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");

@@ -146,36 +146,6 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
     }
   }
 
-  /**
-   * OCR Convert Document.
-   * 
-   * @param awsservice {@link AwsServiceCache}
-   * @param request {@link OcrRequest}
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param s3key original s3 key
-   * @param documentS3toConvert Document S3 Key to convert.
-   * @param contentType {@link String}
-   * @return {@link String}
-   */
-  protected String convertDocument(final AwsServiceCache awsservice, final OcrRequest request,
-      final String siteId, final String documentId, final String s3key,
-      final String documentS3toConvert, final String contentType) {
-
-    String jobId = UUID.randomUUID().toString();
-
-    OcrSqsMessage msg = new OcrSqsMessage().jobId(jobId).siteId(siteId).documentId(documentId)
-        .contentType(contentType).request(request);
-
-    String json = this.gson.toJson(msg);
-
-    String sqsQueueUrl = awsservice.environment("OCR_SQS_QUEUE_URL");
-    SqsService sqsService = awsservice.getExtension(SqsService.class);
-    sqsService.sendMessage(sqsQueueUrl, json);
-
-    return jobId;
-  }
-
   @Override
   public void delete(final String siteId, final String documentId) {
 
@@ -208,10 +178,6 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
     return ocr;
   }
 
-  protected OcrEngine getOcrEngine(final OcrRequest request) {
-    return OcrEngine.TESSERACT;
-  }
-
   @Override
   public List<String> getOcrS3Keys(final String siteId, final String documentId,
       final String jobId) {
@@ -227,35 +193,9 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
     return s3Keys;
   }
 
-  /**
-   * Get S3 File Content-Type.
-   * 
-   * @param bucket {@link String}
-   * @param key {@link String}
-   * @return {@link String}
-   */
-  private String getS3FileContentType(final String bucket, final String key) {
-
-    S3ObjectMetadata meta = this.s3.getObjectMetadata(bucket, key, null);
-    return meta.getContentType();
-  }
-
   @Override
   public String getS3Key(final String siteId, final String documentId, final String jobId) {
     return SiteIdKeyGenerator.createS3Key(siteId, documentId);
-  }
-
-  /**
-   * Document Formats Key {@link AttributeValue}.
-   * 
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @return {@link Map}
-   */
-  private Map<String, AttributeValue> keysDocumentOcr(final String siteId,
-      final String documentId) {
-    Ocr ocr = new Ocr().documentId(documentId);
-    return Map.of(PK, AttributeValue.fromS(ocr.pk(siteId)), SK, AttributeValue.fromS(ocr.sk()));
   }
 
   @Override
@@ -321,6 +261,71 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
         Map.of("ocrStatus", AttributeValue.builder().s(status.name().toLowerCase()).build());
 
     this.db.updateValues(pkvalues.get(PK), pkvalues.get(SK), attributeValues);
+  }
+
+  @Override
+  public String toKeyValue(final String content) {
+    return toText(content);
+  }
+
+  /**
+   * OCR Convert Document.
+   *
+   * @param awsservice {@link AwsServiceCache}
+   * @param request {@link OcrRequest}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param s3key original s3 key
+   * @param documentS3toConvert Document S3 Key to convert.
+   * @param contentType {@link String}
+   * @return {@link String}
+   */
+  protected String convertDocument(final AwsServiceCache awsservice, final OcrRequest request,
+      final String siteId, final String documentId, final String s3key,
+      final String documentS3toConvert, final String contentType) {
+
+    String jobId = UUID.randomUUID().toString();
+
+    OcrSqsMessage msg = new OcrSqsMessage().jobId(jobId).siteId(siteId).documentId(documentId)
+        .contentType(contentType).request(request);
+
+    String json = this.gson.toJson(msg);
+
+    String sqsQueueUrl = awsservice.environment("OCR_SQS_QUEUE_URL");
+    SqsService sqsService = awsservice.getExtension(SqsService.class);
+    sqsService.sendMessage(sqsQueueUrl, json);
+
+    return jobId;
+  }
+
+  protected OcrEngine getOcrEngine(final OcrRequest request) {
+    return OcrEngine.TESSERACT;
+  }
+
+  /**
+   * Get S3 File Content-Type.
+   *
+   * @param bucket {@link String}
+   * @param key {@link String}
+   * @return {@link String}
+   */
+  private String getS3FileContentType(final String bucket, final String key) {
+
+    S3ObjectMetadata meta = this.s3.getObjectMetadata(bucket, key, null);
+    return meta.getContentType();
+  }
+
+  /**
+   * Document Formats Key {@link AttributeValue}.
+   *
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @return {@link Map}
+   */
+  private Map<String, AttributeValue> keysDocumentOcr(final String siteId,
+      final String documentId) {
+    Ocr ocr = new Ocr().documentId(documentId);
+    return Map.of(PK, AttributeValue.fromS(ocr.pk(siteId)), SK, AttributeValue.fromS(ocr.sk()));
   }
 
   /**

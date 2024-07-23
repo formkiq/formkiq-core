@@ -23,17 +23,6 @@
  */
 package com.formkiq.module.ocr;
 
-import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_FOUND;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-import static com.formkiq.module.ocr.DocumentOcrService.PREFIX_TEMP_FILES;
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
@@ -52,6 +41,19 @@ import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentService;
+
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_FOUND;
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
+import static com.formkiq.module.ocr.DocumentOcrService.PREFIX_TEMP_FILES;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/ocr". */
 public class DocumentsOcrRequestHandler
@@ -98,7 +100,7 @@ public class DocumentsOcrRequestHandler
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
 
-    verifyDocument(awsservice, event, siteId, documentId);
+    verifyDocument(awsservice, siteId, documentId);
 
     DocumentOcrService ocrService = awsservice.getExtension(DocumentOcrService.class);
     ocrService.delete(siteId, documentId);
@@ -115,13 +117,11 @@ public class DocumentsOcrRequestHandler
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
 
-    verifyDocument(awsservice, event, siteId, documentId);
+    verifyDocument(awsservice, siteId, documentId);
 
-    final boolean contentUrl = event.getQueryStringParameters() != null
-        && event.getQueryStringParameters().containsKey("contentUrl");
-
-    final boolean textOnly = event.getQueryStringParameters() != null
-        && event.getQueryStringParameters().containsKey("text");
+    final boolean contentUrl = isContentUrl(event);
+    final boolean textOnly = isTextOnly(event);
+    final boolean keyValue = isKeyValue(event);
 
     DocumentOcrService ocrService = awsservice.getExtension(DocumentOcrService.class);
 
@@ -149,7 +149,7 @@ public class DocumentsOcrRequestHandler
 
         } else {
 
-          String content = getS3Content(awsservice, ocrService, s3, s3Keys, textOnly);
+          String content = getS3Content(awsservice, ocrService, s3, s3Keys, textOnly, keyValue);
           map.put("data", content);
         }
 
@@ -199,11 +199,14 @@ public class DocumentsOcrRequestHandler
 
     S3PresignerService s3Presigner = awsservice.getExtension(S3PresignerService.class);
     PresignGetUrlConfig config = new PresignGetUrlConfig();
-    List<String> contentUrls = newS3Keys
+    return newS3Keys
         .stream().map(s3key -> s3Presigner
             .presignGetUrl(ocrBucket, s3key, Duration.ofHours(1), null, config).toString())
         .collect(Collectors.toList());
-    return contentUrls;
+  }
+
+  private String getOutputType(final ApiGatewayRequestEvent event) {
+    return event.getQueryStringParameter("outputType");
   }
 
   @Override
@@ -219,10 +222,12 @@ public class DocumentsOcrRequestHandler
    * @param s3 {@link S3Service}
    * @param s3Keys {@link List} {@link String}
    * @param textOnly boolean
+   * @param keyValue boolean
    * @return {@link String}
    */
   private String getS3Content(final AwsServiceCache awsservice, final DocumentOcrService ocrService,
-      final S3Service s3, final List<String> s3Keys, final boolean textOnly) {
+      final S3Service s3, final List<String> s3Keys, final boolean textOnly,
+      final boolean keyValue) {
 
     String ocrBucket = awsservice.environment("OCR_S3_BUCKET");
     StringBuilder sb = new StringBuilder();
@@ -232,12 +237,49 @@ public class DocumentsOcrRequestHandler
 
       if (textOnly) {
         content = ocrService.toText(content);
+      } else if (keyValue) {
+        content = ocrService.toKeyValue(content);
       }
 
       sb.append(content);
     }
 
     return sb.toString();
+  }
+
+  private boolean isContentUrl(final ApiGatewayRequestEvent event) {
+    boolean contentUrl = event.getQueryStringParameters() != null
+        && event.getQueryStringParameters().containsKey("contentUrl");
+
+    String outputType = getOutputType(event);
+    if ("CONTENT_URL".equalsIgnoreCase(outputType)) {
+      contentUrl = true;
+    }
+
+    return contentUrl;
+  }
+
+  private boolean isKeyValue(final ApiGatewayRequestEvent event) {
+    boolean keyOnly = false;
+
+    String outputType = getOutputType(event);
+    if ("KEY_VALUE".equalsIgnoreCase(outputType)) {
+      keyOnly = true;
+    }
+
+    return keyOnly;
+  }
+
+  private boolean isTextOnly(final ApiGatewayRequestEvent event) {
+    boolean textOnly = event.getQueryStringParameters() != null
+        && event.getQueryStringParameters().containsKey("text");
+
+    String outputType = getOutputType(event);
+    if ("text".equalsIgnoreCase(outputType)) {
+      textOnly = true;
+    }
+
+    return textOnly;
   }
 
   @Override
@@ -248,7 +290,7 @@ public class DocumentsOcrRequestHandler
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
 
-    verifyDocument(awsservice, event, siteId, documentId);
+    verifyDocument(awsservice, siteId, documentId);
 
     OcrRequest request = fromBodyToObject(event, OcrRequest.class);
     String userId = authorization.getUsername();
@@ -268,7 +310,7 @@ public class DocumentsOcrRequestHandler
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
 
-    verifyDocument(awsservice, event, siteId, documentId);
+    verifyDocument(awsservice, siteId, documentId);
 
     String userId = authorization.getUsername();
 
@@ -287,8 +329,8 @@ public class DocumentsOcrRequestHandler
     return new ApiRequestHandlerResponse(SC_OK, resp);
   }
 
-  private void verifyDocument(final AwsServiceCache awsservice, final ApiGatewayRequestEvent event,
-      final String siteId, final String documentId) throws Exception {
+  private void verifyDocument(final AwsServiceCache awsservice, final String siteId,
+      final String documentId) throws Exception {
     DocumentService ds = awsservice.getExtension(DocumentService.class);
     DocumentItem item = ds.findDocument(siteId, documentId);
     throwIfNull(item, new DocumentNotFoundException(documentId));

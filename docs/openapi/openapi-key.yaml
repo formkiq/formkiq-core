@@ -2135,6 +2135,7 @@
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/ocrOutputTypeParam'
               - $ref: '#/components/parameters/contentUrlParam'
               - $ref: '#/components/parameters/textParam'
               - $ref: '#/components/parameters/shareKeyParam'
@@ -6050,6 +6051,17 @@
                 enum:
                 - ACTIVE
                 - INACTIVE
+            ocrOutputTypeParam:
+              name: outputType
+              in: query
+              description: Output Format Type
+              required: false
+              schema:
+                type: string
+                enum:
+                - TEXT
+                - KEY_VALUE
+                - CONTENT_URL
             limitParam:
               name: limit
               in: query
@@ -6186,14 +6198,14 @@
             contentUrlParam:
               name: contentUrl
               in: query
-              description: Whether to return a "contentUrl", set value to 'true'
+              description: Whether to return a "contentUrl", set value to 'true' (deprecated)
               required: false
               schema:
                 type: string
             textParam:
               name: text
               in: query
-              description: Returns raw 'text' of OCR content. e.g. AWS Textract returns JSON, setting parameter to 'true' converts JSON to Text
+              description: Returns raw 'text' of OCR content. e.g. AWS Textract returns JSON, setting parameter to 'true' converts JSON to Text (deprecated)
               required: false
               schema:
                 type: string
