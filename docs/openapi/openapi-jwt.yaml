@@ -8993,6 +8993,10 @@
                   description: Presigned S3 Urls for the OCR content
                   items:
                     type: string
+                keyValues:
+                  type: object
+                  additionalProperties:
+                    type: string
                 data:
                   type: string
                   description: OCR text result

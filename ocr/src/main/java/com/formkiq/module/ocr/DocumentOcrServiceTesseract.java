@@ -25,6 +25,7 @@ package com.formkiq.module.ocr;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -266,8 +267,8 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
   }
 
   @Override
-  public String toKeyValue(final List<String> contents) {
-    return toText(contents);
+  public List<Map<String, String>> toKeyValue(final List<String> contents) {
+    return Collections.emptyList();
   }
 
   /**

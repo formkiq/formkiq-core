@@ -27,6 +27,7 @@ import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 
@@ -141,7 +142,7 @@ public interface DocumentOcrService {
    * Convert content to Key Value.
    * 
    * @param contents {@link List} {@link String}
-   * @return {@link String}
+   * @return {@link List}
    */
-  String toKeyValue(List<String> contents);
+  List<Map<String, String>> toKeyValue(List<String> contents);
 }

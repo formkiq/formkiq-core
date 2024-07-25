@@ -149,10 +149,14 @@ public class DocumentsOcrRequestHandler
 
         } else {
 
-          String content = getS3Content(awsservice, ocrService, s3, s3Keys, textOnly, keyValue);
-          map.put("data", content);
-        }
+          Object data = getS3Content(awsservice, ocrService, s3, s3Keys, keyValue);
 
+          if (keyValue) {
+            map.put("keyValues", data);
+          } else {
+            map.put("data", data);
+          }
+        }
       }
 
     } else {
@@ -221,19 +225,17 @@ public class DocumentsOcrRequestHandler
    * @param ocrService {@link DocumentOcrService}
    * @param s3 {@link S3Service}
    * @param s3Keys {@link List} {@link String}
-   * @param textOnly boolean
    * @param keyValue boolean
    * @return {@link String}
    */
-  private String getS3Content(final AwsServiceCache awsservice, final DocumentOcrService ocrService,
-      final S3Service s3, final List<String> s3Keys, final boolean textOnly,
-      final boolean keyValue) {
+  private Object getS3Content(final AwsServiceCache awsservice, final DocumentOcrService ocrService,
+      final S3Service s3, final List<String> s3Keys, final boolean keyValue) {
 
     String ocrBucket = awsservice.environment("OCR_S3_BUCKET");
     List<String> contents =
         s3Keys.stream().map(s3Key -> s3.getContentAsString(ocrBucket, s3Key, null)).toList();
 
-    return textOnly ? ocrService.toText(contents) : ocrService.toKeyValue(contents);
+    return keyValue ? ocrService.toKeyValue(contents) : ocrService.toText(contents);
   }
 
   private boolean isContentUrl(final ApiGatewayRequestEvent event) {
