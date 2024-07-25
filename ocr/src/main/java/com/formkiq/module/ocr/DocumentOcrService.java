@@ -112,10 +112,10 @@ public interface DocumentOcrService {
   /**
    * Converts OCR to Raw text.
    * 
-   * @param content {@link String}
+   * @param contents {@link List} {@link String}
    * @return {@link String}
    */
-  String toText(String content);
+  String toText(List<String> contents);
 
   /**
    * Update OCR Scan Status and call next action.
@@ -140,8 +140,8 @@ public interface DocumentOcrService {
   /**
    * Convert content to Key Value.
    * 
-   * @param content {@link String}
+   * @param contents {@link List} {@link String}
    * @return {@link String}
    */
-  String toKeyValue(String content);
+  String toKeyValue(List<String> contents);
 }

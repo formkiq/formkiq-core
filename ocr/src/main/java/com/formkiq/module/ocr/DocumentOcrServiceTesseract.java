@@ -223,8 +223,10 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
   }
 
   @Override
-  public String toText(final String content) {
-    return content;
+  public String toText(final List<String> contents) {
+    StringBuilder sb = new StringBuilder();
+    contents.forEach(c -> sb.append(c));
+    return sb.toString();
   }
 
   @Override
@@ -264,8 +266,8 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
   }
 
   @Override
-  public String toKeyValue(final String content) {
-    return toText(content);
+  public String toKeyValue(final List<String> contents) {
+    return toText(contents);
   }
 
   /**

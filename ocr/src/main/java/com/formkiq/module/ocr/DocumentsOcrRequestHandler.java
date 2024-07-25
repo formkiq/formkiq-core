@@ -185,7 +185,7 @@ public class DocumentsOcrRequestHandler
 
       s3Keys.forEach(s3Key -> {
         String content = s3.getContentAsString(ocrBucket, s3Key, null);
-        content = ocrService.toText(content);
+        content = ocrService.toText(List.of(content));
 
         String newKey = PREFIX_TEMP_FILES + s3Key;
         s3.putObject(ocrBucket, newKey, content.getBytes(StandardCharsets.UTF_8), "text/plain");
@@ -230,21 +230,10 @@ public class DocumentsOcrRequestHandler
       final boolean keyValue) {
 
     String ocrBucket = awsservice.environment("OCR_S3_BUCKET");
-    StringBuilder sb = new StringBuilder();
+    List<String> contents =
+        s3Keys.stream().map(s3Key -> s3.getContentAsString(ocrBucket, s3Key, null)).toList();
 
-    for (String s3Key : s3Keys) {
-      String content = s3.getContentAsString(ocrBucket, s3Key, null);
-
-      if (textOnly) {
-        content = ocrService.toText(content);
-      } else if (keyValue) {
-        content = ocrService.toKeyValue(content);
-      }
-
-      sb.append(content);
-    }
-
-    return sb.toString();
+    return textOnly ? ocrService.toText(contents) : ocrService.toKeyValue(contents);
   }
 
   private boolean isContentUrl(final ApiGatewayRequestEvent event) {
