@@ -80,7 +80,7 @@ public class DocumentIdContentRequestHandler
     String versionId = versionService.getVersionId(connection, siteId, documentId, versionKey);
 
     if (versionKey != null) {
-      throwIfNull(versionId, new BadException("invalid 'versionKey'"));
+      throwIfNull(versionId, new BadException("invalid versionKey '" + versionKey + "'"));
     }
 
     ApiResponse response = null;
