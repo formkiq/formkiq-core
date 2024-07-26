@@ -180,7 +180,7 @@ public class IdpAction implements DocumentAction {
           .map(val -> createDocumentAttribute(siteId, documentId, attributeKey, val)).toList();
 
       this.documentService.saveDocumentAttributes(siteId, documentId, records, false,
-          AttributeValidation.FULL, AttributeValidationAccess.ADMIN_CREATE);
+          AttributeValidation.FULL, AttributeValidationAccess.ADMIN_UPDATE);
     }
   }
 

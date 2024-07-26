@@ -854,7 +854,6 @@ public class DocumentActionsProcessorTest implements DbKeys {
    * 
    * @throws IOException IOException
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandle01() throws IOException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -895,7 +894,6 @@ public class DocumentActionsProcessorTest implements DbKeys {
    * @throws IOException IOException
    * @throws ValidationException ValidationException
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandle02() throws IOException, ValidationException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -937,7 +935,6 @@ public class DocumentActionsProcessorTest implements DbKeys {
    * @throws IOException IOException
    * @throws ValidationException ValidationException
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandle03() throws IOException, ValidationException {
 
@@ -1015,7 +1012,6 @@ public class DocumentActionsProcessorTest implements DbKeys {
    * @throws IOException IOException
    * @throws ValidationException ValidationException
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandle05() throws IOException, ValidationException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -1071,7 +1067,6 @@ public class DocumentActionsProcessorTest implements DbKeys {
    * @throws IOException IOException
    * @throws ValidationException ValidationException
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandle06() throws IOException, ValidationException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -1131,7 +1126,6 @@ public class DocumentActionsProcessorTest implements DbKeys {
    * @throws IOException IOException
    * @throws ValidationException ValidationException
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandle07() throws IOException, ValidationException {
     initProcessor("typesense", "chatgpt1");
@@ -1354,7 +1348,6 @@ public class DocumentActionsProcessorTest implements DbKeys {
    * @throws IOException IOException
    * @throws ValidationException ValidationException
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleFulltext03() throws IOException, ValidationException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -1869,23 +1862,26 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
       MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-      processRequest(siteId, documentId, "application/pdf", mappingRecord);
+      // run twice
+      for (int i = 0; i < 2; i++) {
+        processRequest(siteId, documentId, "application/pdf", mappingRecord);
 
-      // then
-      Action action = actionsService.getActions(siteId, documentId).get(0);
-      assertNull(action.message());
-      assertEquals(ActionStatus.COMPLETE, action.status());
-      assertEquals(ActionType.IDP, action.type());
-      assertNotNull(action.startDate());
-      assertNotNull(action.insertedDate());
-      assertNotNull(action.completedDate());
+        // then
+        Action action = actionsService.getActions(siteId, documentId).get(0);
+        assertNull(action.message());
+        assertEquals(ActionStatus.COMPLETE, action.status());
+        assertEquals(ActionType.IDP, action.type());
+        assertNotNull(action.startDate());
+        assertNotNull(action.insertedDate());
+        assertNotNull(action.completedDate());
 
-      List<DocumentAttributeRecord> results =
-          documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
-      assertEquals(1, results.size());
-      DocumentAttributeRecord record = results.get(0);
-      assertEquals("certificate_number", record.getKey());
-      assertEquals("28937423", record.getStringValue());
+        List<DocumentAttributeRecord> results =
+            documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
+        assertEquals(1, results.size());
+        DocumentAttributeRecord record = results.get(0);
+        assertEquals("certificate_number", record.getKey());
+        assertEquals("28937423", record.getStringValue());
+      }
     }
   }
 
