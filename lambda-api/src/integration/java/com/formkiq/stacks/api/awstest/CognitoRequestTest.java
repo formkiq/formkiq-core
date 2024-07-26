@@ -54,6 +54,7 @@ import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_UNAUTHORIZED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /**
@@ -374,6 +375,29 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
     } catch (ApiException e) {
       // then
       assertEquals(SC_UNAUTHORIZED.getStatusCode(), e.getCode());
+    }
+  }
+
+  /**
+   * Test POST /users.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  public void testAddUser01() throws Exception {
+    // given
+    ApiClient client = getApiClients(null).get(0);
+
+    UserManagementApi userApi = new UserManagementApi(client);
+    String email = "test_" + UUID.randomUUID();
+
+    // when
+    try {
+      addUser(userApi, email);
+    } catch (ApiException e) {
+      // then
+      assertTrue(e.getResponseBody().contains("Invalid email address format"));
     }
   }
 }

@@ -8997,7 +8997,9 @@
                 keyValues:
                   type: object
                   additionalProperties:
-                    type: string
+                    type: array
+                    items:
+                      type: string
                 data:
                   type: string
                   description: OCR text result
@@ -9636,7 +9638,7 @@
               properties:
                 username:
                   type: string
-                  description: Username of user
+                  description: Email address of user
             User:
               type: object
               properties:
