@@ -447,6 +447,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
         } catch (Exception e) {
 
+          e.printStackTrace();
           String stacktrace = Strings.toString(e);
           logger.log(stacktrace);
 

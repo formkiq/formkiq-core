@@ -153,6 +153,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
   private static final String DOCUMENT_ID_404 = UUID.randomUUID().toString();
   /** Document Id with OCR. */
   private static final String DOCUMENT_ID_OCR = UUID.randomUUID().toString();
+  /** Document Id with OCR Key/Value. */
+  private static final String DOCUMENT_ID_OCR_KEY_VALUE = UUID.randomUUID().toString();
   /** {@link Gson}. */
   private static final Gson GSON = new GsonBuilder().disableHtmlEscaping().create();
   /** Port to run Test server. */
@@ -270,10 +272,52 @@ public class DocumentActionsProcessorTest implements DbKeys {
     mockServer.when(request().withMethod("GET").withPath("/documents/" + DOCUMENT_ID_OCR + "/ocr*"))
         .respond(org.mockserver.model.HttpResponse
             .response("{\"contentUrls\":[\"" + URL + "/" + DOCUMENT_ID_OCR + "\"]}"));
+
+    addKeyValueOcrMock();
+
     mockServer.when(request().withMethod("PATCH")).respond(CALLBACK);
     mockServer.when(request().withMethod("POST")).respond(CALLBACK);
     mockServer.when(request().withMethod("PUT")).respond(CALLBACK);
     mockServer.when(request().withMethod("GET")).respond(CALLBACK);
+  }
+
+  private static void addKeyValueOcrMock() {
+    mockServer
+        .when(request().withMethod("GET")
+            .withPath("/documents/" + DOCUMENT_ID_OCR_KEY_VALUE + "/ocr*"))
+        .respond(org.mockserver.model.HttpResponse.response("""
+            {"ocrEngine": "TEXTRACT","ocrStatus": "SUCCESSFUL","keyValues":
+                [
+                    {
+                        "key": "Date",
+                        "value": "07/21/2024"
+                    },
+                    {
+                        "key": "Customer first name",
+                        "value": "John"
+                    },
+                    {
+                        "key": "City",
+                        "value": "Los Angeles"
+                    },
+                    {
+                        "key": "Anthem plan code (numbers found on ID card)",
+                        "value": "987654321"
+                    },
+                    {
+                        "key": "4. Customer certificate or ID no.",
+                        "value": "28937423"
+                    },
+                    {
+                        "key": "25. Total charges",
+                        "value": "$150"
+                    },
+                    {
+                        "key": "Age",
+                        "value": "54"
+                    }
+                ],
+                "contentType": "text/plain","userId": "joe"}"""));
   }
 
   private static void initProcessor(final String module, final String chatgptUrl) {
@@ -1399,6 +1443,15 @@ public class DocumentActionsProcessorTest implements DbKeys {
     return documentId;
   }
 
+  private String addPdfToBucket(final String siteId) {
+
+    String s3Key = SiteIdKeyGenerator.createS3Key(siteId, DOCUMENT_ID_OCR_KEY_VALUE);
+    s3Service.putObject(BUCKET_NAME, s3Key, "abc".getBytes(StandardCharsets.UTF_8),
+        "application/pdf");
+
+    return DocumentActionsProcessorTest.DOCUMENT_ID_OCR_KEY_VALUE;
+  }
+
   /**
    * Handle Idp with Mapping Action text/plain, Attribute STRING_VALUE.
    *
@@ -1420,7 +1473,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
                 MappingAttributeSourceType.CONTENT, null, null, null);
         MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-        processRequest(siteId, documentId, mappingRecord);
+        processRequest(siteId, documentId, "text/plain", mappingRecord);
 
         // then
         Action action = actionsService.getActions(siteId, documentId).get(0);
@@ -1462,7 +1515,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
                 MappingAttributeSourceType.CONTENT, null, null, null);
         MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-        processRequest(siteId, documentId, mappingRecord);
+        processRequest(siteId, documentId, "text/plain", mappingRecord);
 
         // then
         Action action = actionsService.getActions(siteId, documentId).get(0);
@@ -1504,7 +1557,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
                 MappingAttributeSourceType.CONTENT, null, null, null);
         MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-        processRequest(siteId, documentId, mappingRecord);
+        processRequest(siteId, documentId, "text/plain", mappingRecord);
 
         // then
         Action action = actionsService.getActions(siteId, documentId).get(0);
@@ -1544,7 +1597,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
         MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-        processRequest(siteId, documentId, mappingRecord);
+        processRequest(siteId, documentId, "text/plain", mappingRecord);
 
         // then
         Action action = actionsService.getActions(siteId, documentId).get(0);
@@ -1587,7 +1640,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
         MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-        processRequest(siteId, documentId, mappingRecord);
+        processRequest(siteId, documentId, "text/plain", mappingRecord);
 
         // then
         Action action = actionsService.getActions(siteId, documentId).get(0);
@@ -1633,7 +1686,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
                 MappingAttributeSourceType.CONTENT, null, null, null);
         MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-        processRequest(siteId, documentId, mappingRecord);
+        processRequest(siteId, documentId, "text/plain", mappingRecord);
 
         // then
         Action action = actionsService.getActions(siteId, documentId).get(0);
@@ -1676,7 +1729,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
             MappingAttributeMetadataField.USERNAME);
         MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-        processRequest(siteId, documentId, mappingRecord);
+        processRequest(siteId, documentId, "text/plain", mappingRecord);
 
         // then
         Action action = actionsService.getActions(siteId, documentId).get(0);
@@ -1726,7 +1779,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
         mapping.getAttributes().get(0).setValidationRegex(validationRegex);
         MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-        processRequest(siteId, documentId, mappingRecord);
+        processRequest(siteId, documentId, "text/plain", mappingRecord);
 
         // then
         Action action = actionsService.getActions(siteId, documentId).get(0);
@@ -1775,7 +1828,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
         MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-        processRequest(siteId, documentId, mappingRecord);
+        processRequest(siteId, documentId, "text/plain", mappingRecord);
 
         // then
         Action action = actionsService.getActions(siteId, documentId).get(0);
@@ -1796,10 +1849,128 @@ public class DocumentActionsProcessorTest implements DbKeys {
     }
   }
 
+  /**
+   * Handle Idp with Mapping Action application/pdf and CONTENT_KEY_VALUE FUZZY.
+   *
+   * @throws IOException IOException
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testId10() throws IOException, ValidationException {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String documentId = addPdfToBucket(siteId);
+
+      attributeService.addAttribute(siteId, "certificate_number", null, null);
+
+      Mapping mapping = createMapping("certificate_number", "Customer certificate",
+          MappingAttributeLabelMatchingType.FUZZY, MappingAttributeSourceType.CONTENT_KEY_VALUE,
+          null, null, null);
+
+      MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
+
+      processRequest(siteId, documentId, "application/pdf", mappingRecord);
+
+      // then
+      Action action = actionsService.getActions(siteId, documentId).get(0);
+      assertNull(action.message());
+      assertEquals(ActionStatus.COMPLETE, action.status());
+      assertEquals(ActionType.IDP, action.type());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertNotNull(action.completedDate());
+
+      List<DocumentAttributeRecord> results =
+          documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
+      assertEquals(1, results.size());
+      DocumentAttributeRecord record = results.get(0);
+      assertEquals("certificate_number", record.getKey());
+      assertEquals("28937423", record.getStringValue());
+    }
+  }
+
+  /**
+   * Handle Idp with Mapping Action application/pdf and CONTENT_KEY_VALUE EXACT.
+   *
+   * @throws IOException IOException
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testId11() throws IOException, ValidationException {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String documentId = addPdfToBucket(siteId);
+
+      attributeService.addAttribute(siteId, "certificate_number", null, null);
+
+      Mapping mapping =
+          createMapping("certificate_number", "Age", MappingAttributeLabelMatchingType.EXACT,
+              MappingAttributeSourceType.CONTENT_KEY_VALUE, null, null, null);
+
+      MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
+
+      processRequest(siteId, documentId, "application/pdf", mappingRecord);
+
+      // then
+      Action action = actionsService.getActions(siteId, documentId).get(0);
+      assertNull(action.message());
+      assertEquals(ActionStatus.COMPLETE, action.status());
+      assertEquals(ActionType.IDP, action.type());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertNotNull(action.completedDate());
+
+      List<DocumentAttributeRecord> results =
+          documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
+      assertEquals(1, results.size());
+      DocumentAttributeRecord record = results.get(0);
+      assertEquals("certificate_number", record.getKey());
+      assertEquals("54", record.getStringValue());
+    }
+  }
+
+  /**
+   * Handle Idp with Mapping Action application/pdf and CONTENT_KEY_VALUE, EXACT missing.
+   *
+   * @throws IOException IOException
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testId12() throws IOException, ValidationException {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String documentId = addPdfToBucket(siteId);
+
+      attributeService.addAttribute(siteId, "certificate_number", null, null);
+
+      Mapping mapping = createMapping("certificate_number", "Customer certificate",
+          MappingAttributeLabelMatchingType.EXACT, MappingAttributeSourceType.CONTENT_KEY_VALUE,
+          null, null, null);
+
+      MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
+
+      processRequest(siteId, documentId, "application/pdf", mappingRecord);
+
+      // then
+      Action action = actionsService.getActions(siteId, documentId).get(0);
+      assertNull(action.message());
+      assertEquals(ActionStatus.COMPLETE, action.status());
+      assertEquals(ActionType.IDP, action.type());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertNotNull(action.completedDate());
+
+      List<DocumentAttributeRecord> results =
+          documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
+      assertEquals(0, results.size());
+    }
+  }
+
   private void processRequest(final String siteId, final String documentId,
-      final MappingRecord mappingRecord) throws ValidationException, IOException {
+      final String contentType, final MappingRecord mappingRecord)
+      throws ValidationException, IOException {
     DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-    item.setContentType("text/plain");
+    item.setContentType(contentType);
     documentService.saveDocument(siteId, item, null);
 
     List<Action> actions = Collections.singletonList(new Action().type(ActionType.IDP).userId("joe")

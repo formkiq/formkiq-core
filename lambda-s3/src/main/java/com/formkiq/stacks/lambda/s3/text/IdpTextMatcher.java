@@ -45,7 +45,8 @@ public class IdpTextMatcher implements TextMatcher {
     for (String m : matches) {
 
       String match = tokenGenerator.formatText(m);
-      int groupSize = match.split(tokenGenerator.getSplitRegex()).length;
+      String splitRegex = tokenGenerator.getSplitRegex();
+      int groupSize = splitRegex != null ? match.split(splitRegex).length : 1;
 
       List<Token> groupTokens = tokenGenerator.groupTokens(tokens, groupSize);
 

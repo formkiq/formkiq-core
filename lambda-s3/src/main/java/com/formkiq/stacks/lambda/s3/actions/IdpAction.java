@@ -25,6 +25,7 @@ package com.formkiq.stacks.lambda.s3.actions;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.model.MappingRecord;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentService;
@@ -38,7 +39,6 @@ import com.formkiq.stacks.dynamodb.mappings.MappingAttribute;
 import com.formkiq.stacks.dynamodb.mappings.MappingAttributeLabelMatchingType;
 import com.formkiq.stacks.dynamodb.mappings.MappingAttributeMetadataField;
 import com.formkiq.stacks.dynamodb.mappings.MappingAttributeSourceType;
-import com.formkiq.aws.dynamodb.model.MappingRecord;
 import com.formkiq.stacks.dynamodb.mappings.MappingService;
 import com.formkiq.stacks.lambda.s3.DocumentAction;
 import com.formkiq.stacks.lambda.s3.DocumentContentFunction;
@@ -50,14 +50,17 @@ import com.formkiq.stacks.lambda.s3.text.IdpTextMatcher;
 import com.formkiq.stacks.lambda.s3.text.TextMatch;
 import com.formkiq.stacks.lambda.s3.text.TextMatchAlgorithm;
 import com.formkiq.stacks.lambda.s3.text.TokenGeneratorDefault;
+import com.formkiq.stacks.lambda.s3.text.TokenGeneratorKeyValue;
 import com.formkiq.validation.ValidationException;
 
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
-import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 
 /**
  * Intelligent Document Processor implementation of {@link DocumentAction}.
@@ -74,6 +77,8 @@ public class IdpAction implements DocumentAction {
   private final DocumentService documentService;
   /** {@link AttributeService}. */
   private final AttributeService attributeService;
+  /** {@link IdpTextMatcher}. */
+  private final IdpTextMatcher matcher = new IdpTextMatcher();
 
   /**
    * constructor.
@@ -107,16 +112,37 @@ public class IdpAction implements DocumentAction {
 
         String text = getDocumentContent(logger, siteId, documentId);
 
-        List<String> matchValues =
-            findMappingAttributeValue(logger, siteId, documentId, mappingAttribute, alg, text);
+        List<String> matchValues = findMappingAttributeValue(mappingAttribute, alg, text);
+        createDocumentAttribute(siteId, documentId, mappingAttribute, matchValues);
+
+      } else if (MappingAttributeSourceType.CONTENT_KEY_VALUE
+          .equals(mappingAttribute.getSourceType())) {
+
+        DocumentItem item = this.documentService.findDocument(siteId, documentId);
+
+        List<Map<String, Object>> contentKeyValues =
+            this.documentContentFunc.findContentKeyValues(this.debug ? logger : null, siteId, item);
+
+        List<String> labelTexts = mappingAttribute.getLabelTexts();
+        TextMatch match =
+            matcher.findMatch(null, labelTexts, new TokenGeneratorKeyValue(contentKeyValues), alg);
+
+        Optional<String> o = Optional.empty();
+
+        if (match != null) {
+          o = contentKeyValues.stream()
+              .filter(m -> m.get("key").toString().contains(match.getToken().getOriginal()))
+              .map(v -> (String) v.get("value")).findFirst();
+        }
+
+        List<String> matchValues = o.map(List::of).orElse(Collections.emptyList());
         createDocumentAttribute(siteId, documentId, mappingAttribute, matchValues);
 
       } else if (MappingAttributeSourceType.METADATA.equals(mappingAttribute.getSourceType())) {
 
         String text = getMetadataText(mappingAttribute, siteId, documentId);
 
-        List<String> matchValues =
-            findMappingAttributeValue(logger, siteId, documentId, mappingAttribute, alg, text);
+        List<String> matchValues = findMappingAttributeValue(mappingAttribute, alg, text);
         createDocumentAttribute(siteId, documentId, mappingAttribute, matchValues);
 
       } else {
@@ -178,25 +204,24 @@ public class IdpAction implements DocumentAction {
     return r;
   }
 
-  private List<String> findMappingAttributeValue(final LambdaLogger logger, final String siteId,
-      final String documentId, final MappingAttribute mappingAttribute,
+  private List<String> findMappingAttributeValue(final MappingAttribute mappingAttribute,
       final TextMatchAlgorithm alg, final String text) {
 
-    String validationRegex = mappingAttribute.getValidationRegex();
     List<String> labelTexts = mappingAttribute.getLabelTexts();
-
-    IdpTextMatcher matcher = new IdpTextMatcher();
     TextMatch match = matcher.findMatch(text, labelTexts, new TokenGeneratorDefault(), alg);
 
-    List<String> values = Collections.emptyList();
-
     String value;
+
+    String validationRegex = mappingAttribute.getValidationRegex();
     MappingAttributeSourceType sourceType = mappingAttribute.getSourceType();
+
     switch (sourceType) {
       case CONTENT -> value = matcher.findMatchValue(text, match, validationRegex);
       case METADATA -> value = match != null ? match.getToken().getOriginal() : null;
       default -> throw new IllegalArgumentException("Unsupported source type: " + sourceType);
     }
+
+    List<String> values = Collections.emptyList();
 
     if (!isEmpty(value)) {
       values = List.of(value);
@@ -212,23 +237,24 @@ public class IdpAction implements DocumentAction {
 
   private TextMatchAlgorithm getTextMatchAlgorithm(final MappingAttribute mappingAttribute) {
 
-    TextMatchAlgorithm matcher;
+    TextMatchAlgorithm textMatchAlgorithm;
     MappingAttributeLabelMatchingType labelMatchingType = mappingAttribute.getLabelMatchingType();
 
     switch (labelMatchingType) {
-      case EXACT -> matcher = new ExactMatcher();
-      case FUZZY -> matcher = new FuzzyMatcher();
-      case CONTAINS -> matcher = new ContainsMatcher();
-      case BEGINS_WITH -> matcher = new BeginsWithMatcher();
+      case EXACT -> textMatchAlgorithm = new ExactMatcher();
+      case FUZZY -> textMatchAlgorithm = new FuzzyMatcher();
+      case CONTAINS -> textMatchAlgorithm = new ContainsMatcher();
+      case BEGINS_WITH -> textMatchAlgorithm = new BeginsWithMatcher();
       default ->
         throw new IllegalArgumentException("Unsupported label matching type: " + labelMatchingType);
     }
 
-    return matcher;
+    return textMatchAlgorithm;
   }
 
   private String getDocumentContent(final LambdaLogger logger, final String siteId,
       final String documentId) throws IOException {
+
     DocumentItem item = this.documentService.findDocument(siteId, documentId);
 
     List<String> contentUrls =

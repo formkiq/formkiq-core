@@ -8756,6 +8756,7 @@
               description: Attribute Source Type
               enum:
               - CONTENT
+              - CONTENT_KEY_VALUE
               - METADATA
             GetAttributeResponse:
               type: object

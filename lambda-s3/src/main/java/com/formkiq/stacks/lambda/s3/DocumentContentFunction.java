@@ -79,6 +79,22 @@ public class DocumentContentFunction {
   }
 
   /**
+   * Find Content Ocr Key Value.
+   *
+   * @param logger {@link LambdaLogger}
+   * @param siteId {@link String}
+   * @param item {@link DocumentItem}
+   * @return {@link List} {@link String}
+   * @throws IOException IOException
+   */
+  @SuppressWarnings("unchecked")
+  public List<Map<String, Object>> findContentKeyValues(final LambdaLogger logger,
+      final String siteId, final DocumentItem item) throws IOException {
+    Map<String, Object> map = findDocumentOcr(logger, siteId, item.getDocumentId(), true);
+    return (List<Map<String, Object>>) map.getOrDefault("keyValues", Collections.emptyList());
+  }
+
+  /**
    * Find Content Url.
    * 
    * @param logger {@link LambdaLogger}
@@ -110,23 +126,7 @@ public class DocumentContentFunction {
 
     } else {
 
-      Map<String, String> parameters = new HashMap<>();
-      parameters.put("contentUrl", "true");
-      parameters.put("text", "true");
-
-      if (siteId != null) {
-        parameters.put("siteId", siteId);
-      }
-
-      String url = this.documentsIamUrl + "/documents/" + documentId + "/ocr";
-
-      HttpResponse<String> response = this.http.get(url, Optional.empty(), Optional.of(parameters));
-
-      if (logger != null) {
-        logger.log("GET /documents/{documentId}/ocr response: " + response.body());
-      }
-
-      Map<String, Object> map = this.gson.fromJson(response.body(), Map.class);
+      Map<String, Object> map = findDocumentOcr(logger, siteId, documentId, false);
 
       if (map != null && map.containsKey("contentUrls")) {
         urls = (List<String>) map.get("contentUrls");
@@ -134,6 +134,32 @@ public class DocumentContentFunction {
     }
 
     return urls;
+  }
+
+  private Map<String, Object> findDocumentOcr(final LambdaLogger logger, final String siteId,
+      final String documentId, final boolean contentKeyValues) throws IOException {
+    Map<String, String> parameters = new HashMap<>();
+
+    if (contentKeyValues) {
+      parameters.put("outputType", "KEY_VALUE");
+    } else {
+      parameters.put("contentUrl", "true");
+      parameters.put("text", "true");
+    }
+
+    if (siteId != null) {
+      parameters.put("siteId", siteId);
+    }
+
+    String url = this.documentsIamUrl + "/documents/" + documentId + "/ocr";
+
+    HttpResponse<String> response = this.http.get(url, Optional.empty(), Optional.of(parameters));
+
+    if (logger != null) {
+      logger.log("GET /documents/{documentId}/ocr response: " + response.body());
+    }
+
+    return this.gson.fromJson(response.body(), Map.class);
   }
 
   /**

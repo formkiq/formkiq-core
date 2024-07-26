@@ -21,19 +21,41 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb.mappings;
+package com.formkiq.stacks.lambda.s3.text;
 
-import com.formkiq.graalvm.annotations.Reflectable;
+import java.util.List;
+import java.util.Map;
 
 /**
- * Mapping Attribute Source Type.
+ * Key / Value Token Generator.
  */
-@Reflectable
-public enum MappingAttributeSourceType {
-  /** Source Type Content. */
-  CONTENT,
-  /** Source Type Content Key value. */
-  CONTENT_KEY_VALUE,
-  /** Source Type Metadata. */
-  METADATA
+public class TokenGeneratorKeyValue implements TokenGenerator {
+
+  /** {@link List}. */
+  private final List<Token> tokens;
+
+  /**
+   * constructor.
+   * 
+   * @param contentKeyValues {@link List}
+   */
+  public TokenGeneratorKeyValue(final List<Map<String, Object>> contentKeyValues) {
+    List<String> keys = contentKeyValues.stream().map(k -> (String) k.get("key")).toList();
+    this.tokens = keys.stream().map(k -> new Token().setOriginal(k).setFormatted(k)).toList();
+  }
+
+  @Override
+  public List<Token> generateTokens(final String text) {
+    return tokens;
+  }
+
+  @Override
+  public String getSplitRegex() {
+    return null;
+  }
+
+  @Override
+  public String formatText(final String text) {
+    return text;
+  }
 }
