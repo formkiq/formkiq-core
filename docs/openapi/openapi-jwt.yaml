@@ -8986,6 +8986,16 @@
                   description: Action metadata
                   additionalProperties:
                     type: string
+            OcrKeyValues:
+              type: object
+              properties:
+                key:
+                  type: string
+                  description: Ocr Key
+                values:
+                  type: array
+                  items:
+                    type: string
             GetDocumentOcrResponse:
               type: object
               properties:
@@ -8995,11 +9005,10 @@
                   items:
                     type: string
                 keyValues:
-                  type: object
-                  additionalProperties:
-                    type: array
-                    items:
-                      type: string
+                  type: array
+                  description: List of ocr key / values
+                  items:
+                    $ref: '#/components/schemas/OcrKeyValues'
                 data:
                   type: string
                   description: OCR text result

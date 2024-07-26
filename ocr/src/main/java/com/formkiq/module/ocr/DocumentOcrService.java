@@ -144,5 +144,5 @@ public interface DocumentOcrService {
    * @param contents {@link List} {@link String}
    * @return {@link List}
    */
-  List<Map<String, String>> toKeyValue(List<String> contents);
+  List<Map<String, Object>> toKeyValue(List<String> contents);
 }

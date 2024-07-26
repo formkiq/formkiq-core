@@ -267,7 +267,7 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
   }
 
   @Override
-  public List<Map<String, String>> toKeyValue(final List<String> contents) {
+  public List<Map<String, Object>> toKeyValue(final List<String> contents) {
     return Collections.emptyList();
   }
 
