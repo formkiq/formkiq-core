@@ -290,31 +290,31 @@ public class DocumentActionsProcessorTest implements DbKeys {
                 [
                     {
                         "key": "Date",
-                        "value": "07/21/2024"
+                        "values": ["07/21/2024"]
                     },
                     {
                         "key": "Customer first name",
-                        "value": "John"
+                        "values": ["John"]
                     },
                     {
                         "key": "City",
-                        "value": "Los Angeles"
+                        "values": ["Los Angeles", "New York"]
                     },
                     {
                         "key": "Anthem plan code (numbers found on ID card)",
-                        "value": "987654321"
+                        "values": ["987654321"]
                     },
                     {
                         "key": "4. Customer certificate or ID no.",
-                        "value": "28937423"
+                        "values": ["28937423"]
                     },
                     {
                         "key": "25. Total charges",
-                        "value": "$150"
+                        "values": ["$150"]
                     },
                     {
                         "key": "Age",
-                        "value": "54"
+                        "values": ["54"]
                     }
                 ],
                 "contentType": "text/plain","userId": "joe"}"""));

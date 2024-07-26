@@ -127,16 +127,15 @@ public class IdpAction implements DocumentAction {
         TextMatch match =
             matcher.findMatch(null, labelTexts, new TokenGeneratorKeyValue(contentKeyValues), alg);
 
-        Optional<String> o = Optional.empty();
-
         if (match != null) {
-          o = contentKeyValues.stream()
+          Optional<List<String>> o = contentKeyValues.stream()
               .filter(m -> m.get("key").toString().contains(match.getToken().getOriginal()))
-              .map(v -> (String) v.get("value")).findFirst();
-        }
+              .map(v -> (List<String>) v.get("values")).findFirst();
 
-        List<String> matchValues = o.map(List::of).orElse(Collections.emptyList());
-        createDocumentAttribute(siteId, documentId, mappingAttribute, matchValues);
+          if (o.isPresent()) {
+            createDocumentAttribute(siteId, documentId, mappingAttribute, o.get());
+          }
+        }
 
       } else if (MappingAttributeSourceType.METADATA.equals(mappingAttribute.getSourceType())) {
 
