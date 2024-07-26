@@ -32,9 +32,11 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.transformers.UserTypeComparator;
 import com.formkiq.stacks.api.transformers.UsersResponseToMap;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.InvalidParameterException;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersResponse;
 
 import java.util.HashMap;
@@ -89,7 +91,12 @@ public class UsersRequestHandler implements ApiGatewayRequestHandler, ApiGateway
     AddUserRequest request = fromBodyToObject(event, AddUserRequest.class);
 
     String username = request.getUser().getUsername();
-    service.addUser(username, Boolean.TRUE);
+
+    try {
+      service.addUser(username, Boolean.TRUE);
+    } catch (InvalidParameterException e) {
+      throw new BadException(e.getMessage());
+    }
 
     ApiMapResponse resp =
         new ApiMapResponse(Map.of("message", "user '" + username + "' has been created"));
