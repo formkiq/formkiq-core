@@ -381,6 +381,42 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * Save new File with documentId.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testPost09() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      String documentId = UUID.randomUUID().toString();
+      setBearerToken(siteId);
+
+      AddDocumentRequest req = new AddDocumentRequest().documentId(documentId).content("dummy data")
+          .contentType("application/pdf");
+
+      // when
+      AddDocumentResponse response = this.documentsApi.addDocument(req, siteId, null);
+
+      // then
+      assertEquals(documentId, response.getDocumentId());
+      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
+      assertEquals("application/pdf", document.getContentType());
+
+      // when - duplicate send
+      try {
+        this.documentsApi.addDocument(req, siteId, null);
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_METHOD_CONFLICT.getStatusCode(), e.getCode());
+        assertEquals("{\"message\":\"documentId '" + documentId + "' already exists\"}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
    * Test Publish no published document.
    * 
    * @throws ApiException ApiException
