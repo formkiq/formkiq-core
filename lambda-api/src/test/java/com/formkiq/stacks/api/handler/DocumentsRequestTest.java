@@ -407,10 +407,40 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       // when - duplicate send
       try {
         this.documentsApi.addDocument(req, siteId, null);
+        fail();
       } catch (ApiException e) {
         // then
         assertEquals(ApiResponseStatus.SC_METHOD_CONFLICT.getStatusCode(), e.getCode());
         assertEquals("{\"message\":\"documentId '" + documentId + "' already exists\"}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * Save new File with invaliddocumentId.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testPost10() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      String documentId = "casaljdalsdjat" + UUID.randomUUID().toString();
+      setBearerToken(siteId);
+
+      AddDocumentRequest req = new AddDocumentRequest().documentId(documentId).content("dummy data")
+          .contentType("application/pdf");
+
+      // when
+      try {
+        this.documentsApi.addDocument(req, siteId, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"message\":\"invalid documentId '" + documentId + "'\"}",
             e.getResponseBody());
       }
     }

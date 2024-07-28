@@ -40,6 +40,7 @@ import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
+import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -178,7 +179,7 @@ public class DocumentsUploadRequestHandler
   }
 
   private void validateDocumentIds(final AwsServiceCache awsservice, final String siteId,
-      final AddDocumentRequest request) throws ConflictException {
+      final AddDocumentRequest request) throws ConflictException, BadException {
 
     List<String> documentIds = new ArrayList<>();
     if (!isEmpty(request.getDocumentId())) {
@@ -192,6 +193,10 @@ public class DocumentsUploadRequestHandler
     DocumentService service = awsservice.getExtension(DocumentService.class);
 
     for (String documentId : documentIds) {
+
+      if (!Strings.isUuid(documentId)) {
+        throw new BadException("invalid documentId '" + documentId + "'");
+      }
 
       if (service.exists(siteId, documentId)) {
         throw new ConflictException("documentId '" + documentId + "' already exists");
