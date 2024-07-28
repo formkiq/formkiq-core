@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_BAD_REQUEST;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -62,11 +63,11 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
       this.systemApi.updateConfiguration(siteId, config);
 
       setBearerToken(siteId);
-      this.documentsApi.getDocumentUpload(null, siteId, Integer.valueOf(1), null, null);
+      this.documentsApi.getDocumentUpload(null, siteId, 1, null, null);
 
       // when
       try {
-        this.documentsApi.getDocumentUpload(null, siteId, Integer.valueOf(1), null, null);
+        this.documentsApi.getDocumentUpload(null, siteId, 1, null, null);
         fail();
       } catch (ApiException e) {
         // then
@@ -90,7 +91,7 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
 
       // when
       GetDocumentUrlResponse response =
-          this.documentsApi.getDocumentUpload(null, siteId, Integer.valueOf(1), null, null);
+          this.documentsApi.getDocumentUpload(null, siteId, 1, null, null);
 
       // then
       String documentId = response.getDocumentId();
@@ -118,11 +119,11 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
 
       setBearerToken(siteId);
       AddDocumentUploadRequest req = new AddDocumentUploadRequest();
-      this.documentsApi.addDocumentUpload(req, siteId, Integer.valueOf(1), null, null);
+      this.documentsApi.addDocumentUpload(req, siteId, 1, null, null);
 
       // when
       try {
-        this.documentsApi.addDocumentUpload(req, siteId, Integer.valueOf(1), null, null);
+        this.documentsApi.addDocumentUpload(req, siteId, 1, null, null);
         fail();
       } catch (ApiException e) {
         // then
@@ -144,11 +145,11 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
 
       setBearerToken(siteId);
       AddDocumentUploadRequest req = new AddDocumentUploadRequest();
-      this.documentsApi.addDocumentUpload(req, siteId, Integer.valueOf(1), null, null);
+      this.documentsApi.addDocumentUpload(req, siteId, 1, null, null);
 
       // when
       GetDocumentUrlResponse response =
-          this.documentsApi.addDocumentUpload(req, siteId, Integer.valueOf(1), null, null);
+          this.documentsApi.addDocumentUpload(req, siteId, 1, null, null);
 
       // then
       String documentId = response.getDocumentId();
@@ -172,11 +173,11 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
       setBearerToken(siteId);
       AddDocumentUploadRequest req = new AddDocumentUploadRequest()
           .addTagsItem(new AddDocumentTag().key("category").value("person"));
-      this.documentsApi.addDocumentUpload(req, siteId, Integer.valueOf(1), null, null);
+      this.documentsApi.addDocumentUpload(req, siteId, 1, null, null);
 
       // when
       GetDocumentUrlResponse response =
-          this.documentsApi.addDocumentUpload(req, siteId, Integer.valueOf(1), null, null);
+          this.documentsApi.addDocumentUpload(req, siteId, 1, null, null);
 
       // then
       String documentId = response.getDocumentId();
@@ -188,6 +189,41 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
       GetDocumentTagsResponse tags =
           this.tagsApi.getDocumentTags(documentId, siteId, null, null, null, null);
       assertEquals(1, tags.getTags().size());
+      assertEquals("category", tags.getTags().get(0).getKey());
+      assertEquals("person", tags.getTags().get(0).getValue());
+      assertEquals("userdefined", tags.getTags().get(0).getType());
+    }
+  }
+
+  /**
+   * POST Request Upload Document Url with documentId.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  public void testPost04() throws Exception {
+    // given
+    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+
+      String documentId = UUID.randomUUID().toString();
+      AddDocumentUploadRequest req = new AddDocumentUploadRequest().documentId(documentId)
+          .addTagsItem(new AddDocumentTag().key("category").value("person"));
+
+      // when
+      GetDocumentUrlResponse response =
+          this.documentsApi.addDocumentUpload(req, siteId, 1, null, null);
+
+      // then
+      assertNotNull(response.getUrl());
+
+      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
+      assertEquals(documentId, document.getDocumentId());
+
+      GetDocumentTagsResponse tags =
+          this.tagsApi.getDocumentTags(documentId, siteId, null, null, null, null);
+      assertEquals(1, notNull(tags.getTags()).size());
       assertEquals("category", tags.getTags().get(0).getKey());
       assertEquals("person", tags.getTags().get(0).getValue());
       assertEquals("userdefined", tags.getTags().get(0).getType());

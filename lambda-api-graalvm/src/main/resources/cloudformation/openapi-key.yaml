@@ -7022,6 +7022,9 @@ Resources:
             AddDocumentUploadRequest:
               type: "object"
               properties:
+                documentId:
+                  type: "string"
+                  description: "optional Document Identifier, if skipped one will be assigned"
                 tagSchemaId:
                   type: "string"
                   description: "Tag Schema Id"
