@@ -432,7 +432,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       processor.handleRequest(map, this.context);
 
       // then
-      final int expectedSize = 5;
+      final int expectedSize = 6;
       assertEquals(ActionStatus.COMPLETE,
           actionsService.getActions(siteId, documentId).get(0).status());
 
@@ -455,7 +455,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
           String.join(",", tags.getResults().get(i++).getValues()));
 
       assertEquals("subject", tags.getResults().get(i).getKey());
-      assertEquals("MINUTES OF A MEETING OF DIRECTORS", tags.getResults().get(i).getValue());
+      assertEquals("MINUTES OF A MEETING OF DIRECTORS", tags.getResults().get(i++).getValue());
+
+      assertEquals("untagged", tags.getResults().get(i).getKey());
+      assertEquals("", tags.getResults().get(i).getValue());
     }
   }
 
@@ -530,7 +533,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       processor.handleRequest(map, this.context);
 
       // then
-      final int expectedSize = 6;
+      final int expectedSize = 7;
       assertEquals(ActionStatus.COMPLETE,
           actionsService.getActions(siteId, documentId).get(0).status());
 
@@ -556,7 +559,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertEquals("None", tags.getResults().get(i++).getValue());
 
       assertEquals("subject", tags.getResults().get(i).getKey());
-      assertEquals("Receipt", tags.getResults().get(i).getValue());
+      assertEquals("Receipt", tags.getResults().get(i++).getValue());
+
+      assertEquals("untagged", tags.getResults().get(i).getKey());
+      assertEquals("", tags.getResults().get(i).getValue());
     }
   }
 
@@ -601,7 +607,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       processor.handleRequest(map, this.context);
 
       // then
-      final int expectedSize = 5;
+      final int expectedSize = 6;
       assertEquals(ActionStatus.COMPLETE,
           actionsService.getActions(siteId, documentId).get(0).status());
 
@@ -625,7 +631,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
       assertEquals("subject", tags.getResults().get(i).getKey());
       assertEquals("Frontend eaar brake cabies,New set of podal arms,Labor shrs 500",
-          String.join(",", tags.getResults().get(i).getValues()));
+          String.join(",", tags.getResults().get(i++).getValues()));
+
+      assertEquals("untagged", tags.getResults().get(i).getKey());
+      assertEquals("", tags.getResults().get(i).getValue());
     }
   }
 
@@ -670,7 +679,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       processor.handleRequest(map, this.context);
 
       // then
-      final int expectedSize = 4;
+      final int expectedSize = 5;
       assertEquals(ActionStatus.COMPLETE,
           actionsService.getActions(siteId, documentId).get(0).status());
 
@@ -690,7 +699,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
           String.join(",", tags.getResults().get(i++).getValues()));
 
       assertEquals("subject", tags.getResults().get(i).getKey());
-      assertEquals("MINUTES OF A MEETING OF DIRECTORS", tags.getResults().get(i).getValue());
+      assertEquals("MINUTES OF A MEETING OF DIRECTORS", tags.getResults().get(i++).getValue());
+
+      assertEquals("untagged", tags.getResults().get(i).getKey());
+      assertEquals("", tags.getResults().get(i).getValue());
     }
   }
 
@@ -735,7 +747,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       processor.handleRequest(map, this.context);
 
       // then
-      final int expectedSize = 6;
+      final int expectedSize = 7;
       assertEquals(ActionStatus.COMPLETE,
           actionsService.getActions(siteId, documentId).get(0).status());
 
@@ -761,7 +773,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertEquals("Thomas Bewick", tags.getResults().get(i++).getValue());
 
       assertEquals("secretary", tags.getResults().get(i).getKey());
-      assertEquals("Aaron Thomas", tags.getResults().get(i).getValue());
+      assertEquals("Aaron Thomas", tags.getResults().get(i++).getValue());
+
+      assertEquals("untagged", tags.getResults().get(i).getKey());
+      assertEquals("", tags.getResults().get(i).getValue());
     }
   }
 
@@ -806,7 +821,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       processor.handleRequest(map, this.context);
 
       // then
-      final int expectedSize = 4;
+      final int expectedSize = 5;
       assertEquals(ActionStatus.COMPLETE,
           actionsService.getActions(siteId, documentId).get(0).status());
 
@@ -827,7 +842,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
       assertEquals("subject", tags.getResults().get(i).getKey());
       assertEquals("Receipt,Frontend eaar brake cabies,New set of podal arms,Labor shrs",
-          String.join(",", tags.getResults().get(i).getValues()));
+          String.join(",", tags.getResults().get(i++).getValues()));
+
+      assertEquals("untagged", tags.getResults().get(i).getKey());
+      assertEquals("", tags.getResults().get(i).getValue());
     }
   }
 
@@ -1849,7 +1867,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
    * @throws ValidationException ValidationException
    */
   @Test
-  public void testId10() throws IOException, ValidationException {
+  public void testIdp10() throws IOException, ValidationException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String documentId = addPdfToBucket(siteId);
@@ -1892,7 +1910,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
    * @throws ValidationException ValidationException
    */
   @Test
-  public void testId11() throws IOException, ValidationException {
+  public void testIdp11() throws IOException, ValidationException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String documentId = addPdfToBucket(siteId);
@@ -1932,7 +1950,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
    * @throws ValidationException ValidationException
    */
   @Test
-  public void testId12() throws IOException, ValidationException {
+  public void testIdp12() throws IOException, ValidationException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String documentId = addPdfToBucket(siteId);

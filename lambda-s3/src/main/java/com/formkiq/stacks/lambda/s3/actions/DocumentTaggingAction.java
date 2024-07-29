@@ -201,7 +201,6 @@ public class DocumentTaggingAction implements DocumentAction {
 
     if (!tags.isEmpty()) {
       this.documentService.addTags(siteId, documentId, tags, null);
-      this.documentService.deleteDocumentTag(siteId, documentId, "untagged");
     }
   }
 

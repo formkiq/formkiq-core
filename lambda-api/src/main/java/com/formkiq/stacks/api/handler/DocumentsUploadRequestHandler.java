@@ -23,23 +23,9 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
-import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
-
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
-import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -66,6 +52,18 @@ import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
+
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
 /** {@link ApiGatewayRequestHandler} for GET "/documents/upload". */
 public class DocumentsUploadRequestHandler
@@ -248,11 +246,6 @@ public class DocumentsUploadRequestHandler
       throws BadException, ValidationException {
 
     String documentId = request.getDocumentId();
-
-    if (tags.isEmpty() && notNull(documentAttributes).isEmpty()) {
-      tags.add(new DocumentTag(documentId, "untagged", "true", new Date(),
-          authorization.getUsername(), DocumentTagType.SYSTEMDEFINED));
-    }
 
     AddDocumentRequestToPresignedUrls addDocumentRequestToPresignedUrls =
         new AddDocumentRequestToPresignedUrls(awsservice, siteId,

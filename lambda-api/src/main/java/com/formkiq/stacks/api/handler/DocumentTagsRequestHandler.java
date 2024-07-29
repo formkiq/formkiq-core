@@ -209,7 +209,6 @@ public class DocumentTagsRequestHandler
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
     DocumentItem item = verifyDocument(awsservice, event, siteId, documentId);
-    documentService.deleteDocumentTag(siteId, documentId, "untagged");
 
     Collection<DocumentTag> newTags = tagSchemaValidation(awsservice, siteId, tags, item, userId);
 
