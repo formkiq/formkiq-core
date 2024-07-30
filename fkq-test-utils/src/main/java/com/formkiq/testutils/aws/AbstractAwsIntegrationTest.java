@@ -95,7 +95,6 @@ public abstract class AbstractAwsIntegrationTest {
     if (!getCognito().isUserExists(username)) {
 
       getCognito().addUser(username, USER_PASSWORD);
-      // getCognito().loginWithNewPassword(username, TEMP_USER_PASSWORD, USER_PASSWORD);
 
       for (String groupName : groupNames) {
         if (!groupName.startsWith(DEFAULT_SITE_ID) && !"authentication_only".equals(groupName)) {
