@@ -62,6 +62,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
@@ -446,36 +447,44 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * Save google drive deep link.
+   * Save google drive deep link application/vnd.google-apps.document.
    *
    */
   @Test
   public void testPost11() throws ApiException {
     // given
+    Map<String, String> data =
+        Map.of("document", "application/vnd.google-apps.document", "spreadsheets",
+            "application/vnd.google-apps.spreadsheet", "forms", "application/vnd.google-apps.form",
+            "presentation", "application/vnd.google-apps.presentation");
+
     for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
 
       setBearerToken(siteId);
 
-      String deepLink = "https://docs.google.com/document/d/1tyOQ3yUL9dtpbuMOt7s/edit?usp=sharing";
+      for (Map.Entry<String, String> e : data.entrySet()) {
+        String deepLink =
+            "https://docs.google.com/" + e.getKey() + "/d/1tyOQ3yUL9dtpbuMOt7s/edit?usp=sharing";
 
-      AddDocumentRequest req = new AddDocumentRequest().deepLinkPath(deepLink);
+        AddDocumentRequest req = new AddDocumentRequest().deepLinkPath(deepLink);
 
-      // when
-      String documentId = this.documentsApi.addDocument(req, null, null).getDocumentId();
+        // when
+        String documentId = this.documentsApi.addDocument(req, null, null).getDocumentId();
 
-      // then
-      GetDocumentResponse doc = this.documentsApi.getDocument(documentId, siteId, null);
-      assertEquals("application/vnd.google-apps.document", doc.getContentType());
+        // then
+        GetDocumentResponse doc = this.documentsApi.getDocument(documentId, siteId, null);
+        assertEquals(e.getValue(), doc.getContentType());
 
-      // given
-      req.setContentType("application/pdf");
+        // given
+        req.setContentType("application/pdf");
 
-      // when
-      documentId = this.documentsApi.addDocument(req, null, null).getDocumentId();
+        // when
+        documentId = this.documentsApi.addDocument(req, null, null).getDocumentId();
 
-      // then
-      doc = this.documentsApi.getDocument(documentId, siteId, null);
-      assertEquals("application/pdf", doc.getContentType());
+        // then
+        doc = this.documentsApi.getDocument(documentId, siteId, null);
+        assertEquals("application/pdf", doc.getContentType());
+      }
     }
   }
 
