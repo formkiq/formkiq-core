@@ -2134,8 +2134,15 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
   private void updateDeepLinkPath(final Map<String, AttributeValue> pkvalues,
       final DocumentItem document) {
+
     if (!isEmpty(document.getDeepLinkPath())) {
       addS(pkvalues, "deepLinkPath", document.getDeepLinkPath());
+
+      if (document.getDeepLinkPath().startsWith("https://docs.google.com/document")
+          && isEmpty(document.getContentType())) {
+        document.setContentType("application/vnd.google-apps.document");
+      }
+
     } else {
       addS(pkvalues, "deepLinkPath", "");
     }

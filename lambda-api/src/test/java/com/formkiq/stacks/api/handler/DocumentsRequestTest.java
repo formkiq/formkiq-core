@@ -420,14 +420,13 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
   /**
    * Save new File with invaliddocumentId.
    *
-   * @throws ApiException ApiException
    */
   @Test
-  public void testPost10() throws ApiException {
+  public void testPost10() {
     // given
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
-      String documentId = "casaljdalsdjat" + UUID.randomUUID().toString();
+      String documentId = "casaljdalsdjat" + UUID.randomUUID();
       setBearerToken(siteId);
 
       AddDocumentRequest req = new AddDocumentRequest().documentId(documentId).content("dummy data")
@@ -443,6 +442,40 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
         assertEquals("{\"message\":\"invalid documentId '" + documentId + "'\"}",
             e.getResponseBody());
       }
+    }
+  }
+
+  /**
+   * Save google drive deep link.
+   *
+   */
+  @Test
+  public void testPost11() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+
+      String deepLink = "https://docs.google.com/document/d/1tyOQ3yUL9dtpbuMOt7s/edit?usp=sharing";
+
+      AddDocumentRequest req = new AddDocumentRequest().deepLinkPath(deepLink);
+
+      // when
+      String documentId = this.documentsApi.addDocument(req, null, null).getDocumentId();
+
+      // then
+      GetDocumentResponse doc = this.documentsApi.getDocument(documentId, siteId, null);
+      assertEquals("application/vnd.google-apps.document", doc.getContentType());
+
+      // given
+      req.setContentType("application/pdf");
+
+      // when
+      documentId = this.documentsApi.addDocument(req, null, null).getDocumentId();
+
+      // then
+      doc = this.documentsApi.getDocument(documentId, siteId, null);
+      assertEquals("application/pdf", doc.getContentType());
     }
   }
 
