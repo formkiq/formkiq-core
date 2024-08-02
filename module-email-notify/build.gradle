@@ -102,7 +102,7 @@ task buildTemplate {
 
 ext.macroLocalStackStart = {
 	exec {
-	  commandLine "bash", "-c", "docker-compose  -f ./docker-compose.yml up -d"
+	  commandLine "bash", "-c", "docker-compose  -f ./docker-compose.yml --verbose up -d"
 	}
 	exec {
 	  commandLine "bash", "-c", "${project.rootDir}/wait-for-localstack.sh 4567"
