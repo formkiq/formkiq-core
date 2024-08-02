@@ -1012,4 +1012,49 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
       }
     }
   }
+
+  /**
+   * Post search by attribute "eqOr".
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleSearchRequest26() throws Exception {
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      setBearerToken(siteId);
+
+      addAttribute(siteId);
+
+      String documentId0 = addDocumentWithAttributes(siteId, "person");
+      String documentId1 = addDocumentWithAttributes(siteId, "other");
+      addDocumentWithAttributes(siteId, "another");
+
+      DocumentSearchAttribute attributes =
+          new DocumentSearchAttribute().key("category").eqOr(List.of("person", "other"));
+
+      DocumentSearchRequest dsq0 =
+          new DocumentSearchRequest().query(new DocumentSearch().attribute(attributes));
+      DocumentSearchRequest dsq1 =
+          new DocumentSearchRequest().query(new DocumentSearch().attributes(List.of(attributes)));
+
+      // when
+      DocumentSearchResponse response0 =
+          this.searchApi.documentSearch(dsq0, siteId, null, null, null);
+      DocumentSearchResponse response1 =
+          this.searchApi.documentSearch(dsq1, siteId, null, null, null);
+
+      // then
+      for (DocumentSearchResponse response : List.of(response0, response1)) {
+        List<SearchResultDocument> documents = notNull(response.getDocuments());
+        assertEquals(2, documents.size());
+        assertEquals(documentId0, documents.get(0).getDocumentId());
+        assertEquals(documentId1, documents.get(1).getDocumentId());
+      }
+
+      // documentId filter
+    }
+  }
+
 }

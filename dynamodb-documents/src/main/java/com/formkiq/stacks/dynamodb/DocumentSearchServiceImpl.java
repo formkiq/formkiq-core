@@ -23,33 +23,6 @@
  */
 package com.formkiq.stacks.dynamodb;
 
-import static com.formkiq.aws.dynamodb.DbKeys.GLOBAL_FOLDER_METADATA;
-import static com.formkiq.aws.dynamodb.DbKeys.GSI1;
-import static com.formkiq.aws.dynamodb.DbKeys.GSI1_PK;
-import static com.formkiq.aws.dynamodb.DbKeys.GSI2;
-import static com.formkiq.aws.dynamodb.DbKeys.GSI2_PK;
-import static com.formkiq.aws.dynamodb.DbKeys.GSI2_SK;
-import static com.formkiq.aws.dynamodb.DbKeys.PK;
-import static com.formkiq.aws.dynamodb.DbKeys.PREFIX_DOCS;
-import static com.formkiq.aws.dynamodb.DbKeys.PREFIX_TAG;
-import static com.formkiq.aws.dynamodb.DbKeys.PREFIX_TAGS;
-import static com.formkiq.aws.dynamodb.DbKeys.SK;
-import static com.formkiq.aws.dynamodb.DbKeys.TAG_DELIMINATOR;
-import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
-import static com.formkiq.aws.dynamodb.objects.Objects.last;
-import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
-import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
-import static com.formkiq.stacks.dynamodb.attributes.AttributeRecord.ATTR;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.BatchGetConfig;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamicObject;
@@ -76,9 +49,9 @@ import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
+import com.formkiq.stacks.dynamodb.schemas.SchemaCompositeKeyRecord;
 import com.formkiq.stacks.dynamodb.schemas.SchemaService;
 import com.formkiq.stacks.dynamodb.schemas.SchemaServiceDynamodb;
-import com.formkiq.stacks.dynamodb.schemas.SchemaCompositeKeyRecord;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
@@ -90,6 +63,34 @@ import software.amazon.awssdk.services.dynamodb.model.KeysAndAttributes;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 import software.amazon.awssdk.utils.StringUtils;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import static com.formkiq.aws.dynamodb.DbKeys.GLOBAL_FOLDER_METADATA;
+import static com.formkiq.aws.dynamodb.DbKeys.GSI1;
+import static com.formkiq.aws.dynamodb.DbKeys.GSI1_PK;
+import static com.formkiq.aws.dynamodb.DbKeys.GSI2;
+import static com.formkiq.aws.dynamodb.DbKeys.GSI2_PK;
+import static com.formkiq.aws.dynamodb.DbKeys.GSI2_SK;
+import static com.formkiq.aws.dynamodb.DbKeys.PK;
+import static com.formkiq.aws.dynamodb.DbKeys.PREFIX_DOCS;
+import static com.formkiq.aws.dynamodb.DbKeys.PREFIX_TAG;
+import static com.formkiq.aws.dynamodb.DbKeys.PREFIX_TAGS;
+import static com.formkiq.aws.dynamodb.DbKeys.SK;
+import static com.formkiq.aws.dynamodb.DbKeys.TAG_DELIMINATOR;
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
+import static com.formkiq.stacks.dynamodb.attributes.AttributeRecord.ATTR;
 
 /**
  * 
@@ -225,53 +226,8 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
       final SearchQuery query) throws ValidationException {
 
     List<SearchAttributeCriteria> attributes = query.getAttributes();
-    Map<String, SearchAttributeCriteria> map = attributes.stream()
-        .collect(Collectors.toMap(SearchAttributeCriteria::getKey, Function.identity()));
-
     SchemaCompositeKeyRecord compositeKey = validateSearchAttributeCriteria(siteId, attributes);
-    List<String> compositeKeys = compositeKey != null ? compositeKey.getKeys()
-        : query.getAttributes().stream().map(SearchAttributeCriteria::getKey).toList();
-
-    String attributeKey = String.join("#", compositeKeys);
-
-    String eq = compositeKeys.stream().map(map::get).map(SearchAttributeCriteria::getEq)
-        .filter(java.util.Objects::nonNull).collect(Collectors.joining("#"));
-
-    String lastKey = last(compositeKeys);
-    SearchAttributeCriteria last = map.get(lastKey);
-    String beginsWith = last.getBeginsWith();
-    SearchTagCriteriaRange range = last.getRange();
-
-    if (!isEmpty(beginsWith) && !isEmpty(eq)) {
-      beginsWith = eq + "#" + beginsWith;
-      eq = null;
-    }
-
-    if (range != null) {
-
-      boolean number = "number".equalsIgnoreCase(range.getType());
-
-      String start = range.getStart();
-      String end = range.getEnd();
-
-      if (number) {
-
-        try {
-          start = Objects.formatDouble(Double.valueOf(range.getStart()), Objects.DOUBLE_FORMAT);
-          end = Objects.formatDouble(Double.valueOf(range.getEnd()), Objects.DOUBLE_FORMAT);
-        } catch (NumberFormatException e) {
-          start = range.getStart();
-          end = range.getEnd();
-        }
-      }
-
-      range.start(eq + "#" + start);
-      range.end(eq + "#" + end);
-      eq = null;
-    }
-
-    return new SearchAttributeCriteria().key(attributeKey).eq(eq).beginsWith(beginsWith)
-        .range(range);
+    return new SearchAttributesToCriteria(compositeKey).apply(attributes);
   }
 
   private QueryRequest createQueryRequest(final String index, final String expression,
