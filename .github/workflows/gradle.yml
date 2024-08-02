@@ -44,7 +44,7 @@ jobs:
         echo "$HOME/.local/bin" >> $GITHUB_PATH
         ytt --version
     - name: Execute Gradle build
-      run: ./gradlew test build --refresh-dependencies --info
+      run: ./gradlew :module-email-notify:build test build --refresh-dependencies --info
     - name: Upload test reports
       uses: actions/upload-artifact@v3
       if: always()
