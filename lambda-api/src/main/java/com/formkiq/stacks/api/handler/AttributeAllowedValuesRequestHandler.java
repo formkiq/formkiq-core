@@ -23,9 +23,6 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-import java.util.Collection;
-import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -35,14 +32,18 @@ import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.api.transformers.AttributeRecordToMap;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
-import com.formkiq.validation.ValidationError;
-import com.formkiq.validation.ValidationException;
+import com.formkiq.stacks.dynamodb.schemas.SchemaService;
 
-/** {@link ApiGatewayRequestHandler} for "/attributes/{key}". */
-public class AttributesIdRequestHandler
+import java.util.List;
+import java.util.Map;
+
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
+
+/** {@link ApiGatewayRequestHandler} for "/attributes/{key}/allowedValues". */
+public class AttributeAllowedValuesRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
   @Override
@@ -52,37 +53,38 @@ public class AttributesIdRequestHandler
 
     String siteId = authorization.getSiteId();
     String key = event.getPathParameters().get("key");
-    AttributeService service = awsServices.getExtension(AttributeService.class);
-    AttributeRecord attribute = service.getAttribute(siteId, key);
-    if (attribute == null) {
-      throw new NotFoundException("Attribute " + key + " not found");
+
+    SchemaService schemaService = awsServices.getExtension(SchemaService.class);
+    List<String> allowedValues = notNull(fetchAllowedValues(schemaService, siteId, null, key));
+
+    if (allowedValues.isEmpty()) {
+      AttributeService service = awsServices.getExtension(AttributeService.class);
+      AttributeRecord attribute = service.getAttribute(siteId, key);
+      if (attribute == null) {
+        throw new NotFoundException("Attribute " + key + " not found");
+      }
     }
 
-    Map<String, Object> map = Map.of("attribute", new AttributeRecordToMap().apply(attribute));
+    Map<String, Object> map = Map.of("allowedValues", allowedValues);
     return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
   }
 
   @Override
   public String getRequestUrl() {
-    return "/attributes/{key}";
+    return "/attributes/{key}/allowedValues";
   }
 
-  @Override
-  public ApiRequestHandlerResponse delete(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorizer,
-      final AwsServiceCache awsServices) throws Exception {
-
-    AttributeService service = awsServices.getExtension(AttributeService.class);
-
-    String siteId = authorizer.getSiteId();
-    String key = event.getPathParameters().get("key");
-
-    Collection<ValidationError> errors = service.deleteAttribute(siteId, key);
-    if (!errors.isEmpty()) {
-      throw new ValidationException(errors);
-    }
-
-    return new ApiRequestHandlerResponse(SC_OK,
-        new ApiMapResponse(Map.of("message", "Attribute '" + key + "' deleted")));
+  /**
+   * Get Allowed Values.
+   * 
+   * @param schemaService {@link SchemaService}
+   * @param siteId {@link String}
+   * @param classificationId {@link String}
+   * @param attributeKey {@link String}
+   * @return List String
+   */
+  public List<String> fetchAllowedValues(final SchemaService schemaService, final String siteId,
+      final String classificationId, final String attributeKey) {
+    return schemaService.getAttributeAllowedValues(siteId, attributeKey);
   }
 }

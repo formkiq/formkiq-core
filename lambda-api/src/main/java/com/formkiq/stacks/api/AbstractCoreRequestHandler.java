@@ -58,7 +58,8 @@ import com.formkiq.module.typesense.TypeSenseService;
 import com.formkiq.module.typesense.TypeSenseServiceExtension;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPluginExtension;
-import com.formkiq.stacks.api.handler.AttributesIdRequestHandler;
+import com.formkiq.stacks.api.handler.AttributeAllowedValuesRequestHandler;
+import com.formkiq.stacks.api.handler.AttributeRequestHandler;
 import com.formkiq.stacks.api.handler.AttributesRequestHandler;
 import com.formkiq.stacks.api.handler.ConfigurationApiKeyRequestHandler;
 import com.formkiq.stacks.api.handler.ConfigurationApiKeysRequestHandler;
@@ -121,10 +122,12 @@ import com.formkiq.stacks.api.handler.RulesetsRuleIdRequestHandler;
 import com.formkiq.stacks.api.handler.RulesetsRuleRequestHandler;
 import com.formkiq.stacks.api.handler.SearchFulltextRequestHandler;
 import com.formkiq.stacks.api.handler.SearchRequestHandler;
+import com.formkiq.stacks.api.handler.SitesClassificationAllowedValuesRequestHandler;
 import com.formkiq.stacks.api.handler.SitesClassificationIdRequestHandler;
 import com.formkiq.stacks.api.handler.SitesClassificationRequestHandler;
 import com.formkiq.stacks.api.handler.SitesOpenSearchIndexRequestHandler;
 import com.formkiq.stacks.api.handler.SitesRequestHandler;
+import com.formkiq.stacks.api.handler.SitesSchemaAttributeAllowedValuesRequestHandler;
 import com.formkiq.stacks.api.handler.SitesSchemaRequestHandler;
 import com.formkiq.stacks.api.handler.TagSchemasIdRequestHandler;
 import com.formkiq.stacks.api.handler.TagSchemasRequestHandler;
@@ -311,6 +314,8 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new SitesSchemaRequestHandler());
     addRequestHandler(new SitesClassificationRequestHandler());
     addRequestHandler(new SitesClassificationIdRequestHandler());
+    addRequestHandler(new SitesClassificationAllowedValuesRequestHandler());
+    addRequestHandler(new SitesSchemaAttributeAllowedValuesRequestHandler());
   }
 
   private static void addSystemEndpoints() {
@@ -330,7 +335,8 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
 
   private static void addAttributeRequestHandlers() {
     addRequestHandler(new AttributesRequestHandler());
-    addRequestHandler(new AttributesIdRequestHandler());
+    addRequestHandler(new AttributeRequestHandler());
+    addRequestHandler(new AttributeAllowedValuesRequestHandler());
   }
 
   private static void addMappingRequestHandlers() {
