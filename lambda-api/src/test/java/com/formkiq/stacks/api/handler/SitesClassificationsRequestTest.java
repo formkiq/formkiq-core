@@ -1033,13 +1033,13 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       addClassification(siteId, "doc2", attr2);
 
       // when
-      List<String> allowedValues0 = notNull(
+      final List<String> allowedValues0 = notNull(
           this.attributesApi.getAttributeAllowedValues(attributeKey, siteId).getAllowedValues());
 
-      List<String> allowedValues1 = notNull(this.schemasApi
+      final List<String> allowedValues1 = notNull(this.schemasApi
           .getSitesSchemaAttributeAllowedValues(siteId, attributeKey).getAllowedValues());
 
-      List<String> allowedValues2 = notNull(this.schemasApi
+      final List<String> allowedValues2 = notNull(this.schemasApi
           .getClassificationAttributeAllowedValues(siteId, classificationId, attributeKey)
           .getAllowedValues());
 
