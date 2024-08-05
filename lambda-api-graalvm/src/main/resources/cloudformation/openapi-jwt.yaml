@@ -5942,6 +5942,47 @@ Resources:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /integrations/google/drive/documents/{documentId}/export:
+            post:
+              operationId: AddGoogleDocumentExport
+              description: |-
+                Exports a Google Document; ONLY available with FormKiQ Enterprise
+              summary: Add Google Document Export
+              tags:
+              - Google Integration
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/AddGoogleDocumentExportRequest'
+              responses:
+                '201':
+                  description: 201 CREATED
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/AddResponse'
+                '400':
+                  description: 400 OK
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/ValidationErrorsResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/googleLambdaApi201"
         components:
           headers:
             AccessControlAllowOrigin:
@@ -8774,6 +8815,18 @@ Resources:
                 operation:
                   $ref: "#/components/schemas/RuleConditionOperation"
         
+            GoogleExportOutputType:
+              type: string
+              description: Google Export Output Type
+              enum:
+                - PDF
+
+            AddGoogleDocumentExportRequest:
+              type: "object"
+              properties:
+                outputType:
+                  $ref: "#/components/schemas/GoogleExportOutputType"
+
             GetExaminePdfUrlResponse:
               type: "object"
               properties:
@@ -10797,6 +10850,20 @@ Resources:
               responses:
                 default:
                   statusCode: "200"
+                  responseParameters:
+                    method.response.header.Access-Control-Allow-Methods: "'*'"
+                    method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+                    method.response.header.Access-Control-Allow-Origin: "'*'"
+              passthroughBehavior: "when_no_templates"
+              httpMethod: "POST"
+              type: "aws_proxy"
+              payloadFormatVersion: "1.0"
+            googleLambdaApi201:
+              uri:
+                Fn::Sub: "arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations"
+              responses:
+                default:
+                  statusCode: "201"
                   responseParameters:
                     method.response.header.Access-Control-Allow-Methods: "'*'"
                     method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
