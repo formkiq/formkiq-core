@@ -516,7 +516,7 @@ Resources:
             get:
               operationId: GetClassificationAttributeAllowedValues
               tags:
-              - Attributes
+              - Schemas
               description: |-
                 Returns an attribute's allowed values that spans for a specific classifications and site schema
               summary: Get Classification's Attribute Allowed Values

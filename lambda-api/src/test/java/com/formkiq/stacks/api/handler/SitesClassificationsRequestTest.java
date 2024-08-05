@@ -895,13 +895,13 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       addAttribute(siteId, "invoiceNumber");
 
       SchemaAttributes attr0 = createSchemaAttributes(List.of("invoiceNumber"), null);
-      Objects.requireNonNull(attr0.getRequired()).get(0).addAllowedValuesItem("123");
+      notNull(attr0.getRequired()).get(0).addAllowedValuesItem("123");
 
       setSiteSchema(siteId, attr0);
 
       SchemaAttributes attr1 = createSchemaAttributes(List.of("invoiceNumber"), null);
-      Objects.requireNonNull(attr1.getRequired()).get(0).addAllowedValuesItem("INV-001");
-      String classificationId = addClassification(siteId, "doc", attr1);
+      notNull(attr1.getRequired()).get(0).addAllowedValuesItem("INV-001");
+      String classificationId = addClassification(siteId, attr1);
 
       AddDocumentAttribute attribute = createStringAttribute("invoiceNumber", "INV-001");
       AddDocumentAttributeClassification classification =
@@ -930,6 +930,11 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
     return this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
   }
 
+  private String addClassification(final String siteId, final SchemaAttributes attr0)
+      throws ApiException {
+    return addClassification(siteId, "doc", attr0);
+  }
+
   private String addClassification(final String siteId, final String name,
       final SchemaAttributes attr0) throws ApiException {
     AddClassificationRequest req = new AddClassificationRequest()
@@ -943,4 +948,114 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
         .classification(new AddClassification().name("setDoc").attributes(attr0));
     this.schemasApi.setClassification(siteId, classificationId, req);
   }
+
+  /**
+   * Add Site Schema with allowed values.
+   * 
+   * @throws ApiException ApiException
+   */
+  @Test
+  void testAllowedValues01() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+      String attributeKey = "invoiceNumber";
+
+      addAttribute(siteId, attributeKey);
+
+      SchemaAttributes attr0 = createSchemaAttributes(List.of(attributeKey), null);
+      notNull(attr0.getRequired()).get(0).setAllowedValues(List.of("123", "A", "B"));
+
+      this.schemasApi.setSitesSchema(siteId,
+          new SetSitesSchemaRequest().name("test").attributes(attr0));
+
+      // when
+      List<String> allowedValues = notNull(
+          this.attributesApi.getAttributeAllowedValues(attributeKey, siteId).getAllowedValues());
+
+      // then
+      final int expected = 3;
+      assertEquals(expected, allowedValues.size());
+      assertEquals("123,A,B", String.join(",", allowedValues));
+    }
+  }
+
+  /**
+   * Missing attribute.
+   *
+   */
+  @Test
+  void testAllowedValues02() {
+    // given
+    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+
+      // when
+      try {
+        this.attributesApi.getAttributeAllowedValues("test", siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
+        assertEquals("{\"message\":\"Attribute test not found\"}", e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * Add Classification with allowed values.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  void testAllowedValues03() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+      String attributeKey = "invoiceNumber";
+
+      addAttribute(siteId, attributeKey);
+
+      SchemaAttributes attr0 = createSchemaAttributes(List.of(attributeKey), null);
+      notNull(attr0.getRequired()).get(0).setAllowedValues(List.of("123", "A", "B"));
+      this.schemasApi.setSitesSchema(siteId,
+          new SetSitesSchemaRequest().name("test").attributes(attr0));
+
+      SchemaAttributes attr1 = createSchemaAttributes(List.of(attributeKey), null);
+      notNull(attr1.getRequired()).get(0).addAllowedValuesItem("INV-001");
+      String classificationId = addClassification(siteId, attr1);
+
+      SchemaAttributes attr2 = createSchemaAttributes(null, List.of(attributeKey));
+      notNull(attr2.getOptional()).get(0).addAllowedValuesItem("OTHER");
+      addClassification(siteId, "doc2", attr2);
+
+      // when
+      List<String> allowedValues0 = notNull(
+          this.attributesApi.getAttributeAllowedValues(attributeKey, siteId).getAllowedValues());
+
+      List<String> allowedValues1 = notNull(this.schemasApi
+          .getSitesSchemaAttributeAllowedValues(siteId, attributeKey).getAllowedValues());
+
+      List<String> allowedValues2 = notNull(this.schemasApi
+          .getClassificationAttributeAllowedValues(siteId, classificationId, attributeKey)
+          .getAllowedValues());
+
+      // then
+      final int expected0 = 5;
+      assertEquals(expected0, allowedValues0.size());
+      assertEquals("123,A,B,INV-001,OTHER", String.join(",", allowedValues0));
+
+      final int expected1 = 3;
+      assertEquals(expected1, allowedValues1.size());
+      assertEquals("123,A,B", String.join(",", allowedValues1));
+
+      final int expected2 = 3;
+      assertEquals(expected2, allowedValues2.size());
+      assertEquals("123,A,B", String.join(",", allowedValues2));
+    }
+  }
+
 }
