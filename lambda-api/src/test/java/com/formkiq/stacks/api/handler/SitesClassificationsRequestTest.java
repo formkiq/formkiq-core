@@ -1027,8 +1027,8 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       notNull(attr1.getRequired()).get(0).addAllowedValuesItem("INV-001");
       String classificationId = addClassification(siteId, attr1);
 
-      SchemaAttributes attr2 = createSchemaAttributes(null, List.of(attributeKey));
-      notNull(attr2.getOptional()).get(0).addAllowedValuesItem("OTHER");
+      SchemaAttributes attr2 = createSchemaAttributes(List.of(attributeKey), null);
+      notNull(attr2.getRequired()).get(0).addAllowedValuesItem("OTHER");
       addClassification(siteId, "doc2", attr2);
 
       // when
