@@ -2002,23 +2002,15 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   private List<DocumentTag> saveDocumentItemGenerateTags(final String siteId,
       final DynamicDocumentItem doc, final Date date, final String username) {
 
-    boolean docexists = exists(siteId, doc.getDocumentId());
     List<DynamicObject> doctags = doc.getList("tags");
 
-    List<DocumentTag> tags = doctags.stream().filter(t -> t.containsKey("key")).map(t -> {
+    return doctags.stream().filter(t -> t.containsKey("key")).map(t -> {
       DynamicObjectToDocumentTag transform = new DynamicObjectToDocumentTag(this.df);
       DocumentTag tag = transform.apply(t);
       tag.setInsertedDate(date);
       tag.setUserId(username);
       return tag;
     }).collect(Collectors.toList());
-
-    if (!docexists && tags.isEmpty()) {
-      tags.add(
-          new DocumentTag(null, "untagged", "true", date, username, DocumentTagType.SYSTEMDEFINED));
-    }
-
-    return tags;
   }
 
   @Override
@@ -2028,10 +2020,6 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     final Date date = new Date();
     String username = doc.getUserId();
     String documentId = resetDatabaseKey(siteId, doc.getDocumentId());
-
-    if (isDocumentUserTagged(doc.getList("tags"))) {
-      deleteDocumentTag(siteId, documentId, "untagged");
-    }
 
     DocumentItem item = new DocumentItemDynamoDb(documentId, null, username);
 
@@ -2146,8 +2134,26 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
   private void updateDeepLinkPath(final Map<String, AttributeValue> pkvalues,
       final DocumentItem document) {
-    if (!isEmpty(document.getDeepLinkPath())) {
-      addS(pkvalues, "deepLinkPath", document.getDeepLinkPath());
+
+    String deepLinkPath = document.getDeepLinkPath();
+
+    if (!isEmpty(deepLinkPath)) {
+      addS(pkvalues, "deepLinkPath", deepLinkPath);
+
+      if (isEmpty(document.getContentType())) {
+
+        Map<String, String> googleContentTypes = Map.of("document",
+            "application/vnd.google-apps.document", "spreadsheets",
+            "application/vnd.google-apps.spreadsheet", "forms", "application/vnd.google-apps.form",
+            "presentation", "application/vnd.google-apps.presentation");
+
+        for (Map.Entry<String, String> e : googleContentTypes.entrySet()) {
+          if (deepLinkPath.startsWith("https://docs.google.com/" + e.getKey())) {
+            document.setContentType(e.getValue());
+          }
+        }
+      }
+
     } else {
       addS(pkvalues, "deepLinkPath", "");
     }

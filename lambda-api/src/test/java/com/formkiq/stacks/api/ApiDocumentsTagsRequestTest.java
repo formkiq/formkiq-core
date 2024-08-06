@@ -1166,8 +1166,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
 
       PaginationResults<DocumentTag> tags =
           getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
-      assertEquals(1, tags.getResults().size());
-      assertEquals("untagged", tags.getResults().get(0).getKey());
+      assertEquals(0, tags.getResults().size());
 
       final String tagname = "category";
       final String tagvalue = "";

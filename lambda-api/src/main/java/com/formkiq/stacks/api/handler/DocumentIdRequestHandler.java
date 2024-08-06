@@ -104,11 +104,9 @@ public class DocumentIdRequestHandler
       logger.log("deleting object " + documentId + " from bucket '" + documentBucket + "'");
     }
 
-    DocumentService service = awsservice.getExtension(DocumentService.class);
-    DocumentItem item = service.findDocument(siteId, documentId);
-    throwIfNull(item, new DocumentNotFoundException(documentId));
-
     boolean softDelete = "true".equals(event.getQueryStringParameter("softDelete"));
+
+    DocumentService service = awsservice.getExtension(DocumentService.class);
 
     try {
 

@@ -23,19 +23,6 @@
  */
 package com.formkiq.stacks.api.awstest;
 
-import static com.formkiq.testutils.aws.FkqDocumentService.addDocument;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 import com.formkiq.client.api.DocumentSearchApi;
 import com.formkiq.client.api.DocumentTagsApi;
 import com.formkiq.client.api.DocumentsApi;
@@ -52,6 +39,23 @@ import com.formkiq.client.model.GetVersionResponse;
 import com.formkiq.client.model.SearchResponseFields;
 import com.formkiq.client.model.SearchResultDocument;
 import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+
+import static com.formkiq.testutils.aws.FkqDocumentService.addDocument;
+import static com.formkiq.testutils.aws.FkqDocumentService.addDocumentTag;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * OPTIONS, POST /search tests.
@@ -74,7 +78,7 @@ public class DocumentsSearchRequestTest extends AbstractAwsIntegrationTest {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  @Timeout(value = TEST_TIMEOUT)
   public void testDocumentsSearch01() throws Exception {
     // given
     String siteId = null;
@@ -105,15 +109,18 @@ public class DocumentsSearchRequestTest extends AbstractAwsIntegrationTest {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  @Timeout(value = TEST_TIMEOUT)
   public void testDocumentsSearch02() throws Exception {
     // given
     String siteId = null;
     for (ApiClient client : getApiClients(null)) {
 
       String documentId = addDocument(client, siteId, null, new byte[] {}, null, null);
-      DocumentSearchRequest req = new DocumentSearchRequest().query(new DocumentSearch()
-          .tag(new DocumentSearchTag().key("untagged")).documentIds(Arrays.asList(documentId)));
+      addDocumentTag(client, siteId, documentId, "untagged", "true");
+
+      DocumentSearchRequest req = new DocumentSearchRequest()
+          .query(new DocumentSearch().tag(new DocumentSearchTag().key("untagged"))
+              .documentIds(Collections.singletonList(documentId)));
 
       DocumentSearchApi api = new DocumentSearchApi(client);
 
@@ -137,7 +144,7 @@ public class DocumentsSearchRequestTest extends AbstractAwsIntegrationTest {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  @Timeout(value = TEST_TIMEOUT)
   public void testDocumentsSearch03() throws Exception {
     // given
     String siteId = null;
@@ -147,7 +154,7 @@ public class DocumentsSearchRequestTest extends AbstractAwsIntegrationTest {
 
       DocumentSearchRequest req = new DocumentSearchRequest()
           .query(new DocumentSearch().tag(new DocumentSearchTag().key("untagged"))
-              .documentIds(Arrays.asList(UUID.randomUUID().toString())));
+              .documentIds(Collections.singletonList(UUID.randomUUID().toString())));
 
       DocumentSearchApi api = new DocumentSearchApi(client);
 
@@ -165,7 +172,7 @@ public class DocumentsSearchRequestTest extends AbstractAwsIntegrationTest {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  @Timeout(value = TEST_TIMEOUT)
   public void testDocumentsSearch04() throws Exception {
     // given
     String siteId = null;
@@ -182,7 +189,7 @@ public class DocumentsSearchRequestTest extends AbstractAwsIntegrationTest {
       DocumentSearchRequest req =
           new DocumentSearchRequest().responseFields(new SearchResponseFields().addTagsItem("test"))
               .query(new DocumentSearch().tag(new DocumentSearchTag().key("test").eq("somevalue"))
-                  .documentIds(Arrays.asList(documentId)));
+                  .documentIds(Collections.singletonList(documentId)));
 
       DocumentSearchApi api = new DocumentSearchApi(client);
 
@@ -203,7 +210,7 @@ public class DocumentsSearchRequestTest extends AbstractAwsIntegrationTest {
       // given
       req = new DocumentSearchRequest().responseFields(new SearchResponseFields())
           .query(new DocumentSearch().tag(new DocumentSearchTag().key("test").eq("somevalue2"))
-              .documentIds(Arrays.asList(documentId)));
+              .documentIds(Collections.singletonList(documentId)));
 
       // when
       results = api.documentSearch(req, siteId, null, null, null);
@@ -219,7 +226,7 @@ public class DocumentsSearchRequestTest extends AbstractAwsIntegrationTest {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  @Timeout(value = TEST_TIMEOUT)
   public void testDocumentsSearch05() throws Exception {
     // given
     String siteId = null;
@@ -237,7 +244,7 @@ public class DocumentsSearchRequestTest extends AbstractAwsIntegrationTest {
 
       DocumentSearchRequest req =
           new DocumentSearchRequest().query(new DocumentSearch().addDocumentIdsItem(documentId)
-              .tag(new DocumentSearchTag().key("test").eqOr(Arrays.asList("somevalue"))));
+              .tag(new DocumentSearchTag().key("test").eqOr(List.of("somevalue"))));
 
       // when
       DocumentSearchResponse results = api.documentSearch(req, siteId, null, null, null);
@@ -252,7 +259,7 @@ public class DocumentsSearchRequestTest extends AbstractAwsIntegrationTest {
 
       // given
       req = new DocumentSearchRequest().query(new DocumentSearch().addDocumentIdsItem(documentId)
-          .tag(new DocumentSearchTag().key("test").eqOr(Arrays.asList("somevalue2"))));
+          .tag(new DocumentSearchTag().key("test").eqOr(List.of("somevalue2"))));
 
       // when
       results = api.documentSearch(req, siteId, null, null, null);
@@ -268,7 +275,7 @@ public class DocumentsSearchRequestTest extends AbstractAwsIntegrationTest {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  @Timeout(value = TEST_TIMEOUT)
   public void testDocumentsSearch06() throws Exception {
     // given
     String siteId = null;
@@ -317,7 +324,7 @@ public class DocumentsSearchRequestTest extends AbstractAwsIntegrationTest {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT * 2)
+  @Timeout(value = TEST_TIMEOUT * 2)
   public void testDocumentsSearch07() throws Exception {
     // given
     String siteId = null;

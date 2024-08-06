@@ -84,8 +84,10 @@ public class AddOcrAction implements DocumentAction {
       payload.put("ocrNumberOfPages", parameters.get("ocrNumberOfPages"));
     }
 
-    String ocrExportToCsv = parameters.getOrDefault("ocrExportToCsv", "false");
-    payload.put("ocrExportToCsv", "true".equals(ocrExportToCsv));
+    String ocrOutputType = parameters.get("ocrOutputType");
+    if (ocrOutputType != null) {
+      payload.put("ocrOutputType", ocrOutputType);
+    }
 
     String ocrEngine = parameters.get("ocrEngine");
 

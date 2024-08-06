@@ -23,22 +23,10 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
-
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
-import com.formkiq.aws.dynamodb.model.DocumentTagType;
+import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -47,6 +35,7 @@ import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
+import com.formkiq.aws.services.lambda.exceptions.ConflictException;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.transformers.AddDocumentRequestToDocumentItem;
@@ -63,6 +52,18 @@ import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
+
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
 /** {@link ApiGatewayRequestHandler} for GET "/documents/upload". */
 public class DocumentsUploadRequestHandler
@@ -134,11 +135,20 @@ public class DocumentsUploadRequestHandler
       final AwsServiceCache awsservice) throws Exception {
 
     AddDocumentRequest request = fromBodyToObject(event, AddDocumentRequest.class);
-    request.setDocumentId(UUID.randomUUID().toString());
-
-    notNull(request.getDocuments()).forEach(d -> d.setDocumentId(UUID.randomUUID().toString()));
 
     String siteId = authorization.getSiteId();
+    validateDocumentIds(awsservice, siteId, request);
+
+    if (isEmpty(request.getDocumentId())) {
+      request.setDocumentId(UUID.randomUUID().toString());
+    }
+
+    notNull(request.getDocuments()).forEach(d -> {
+      if (isEmpty(d.getDocumentId())) {
+        d.setDocumentId(UUID.randomUUID().toString());
+      }
+    });
+
     String documentId = request.getDocumentId();
 
     List<DocumentAttribute> attributes = notNull(request.getAttributes());
@@ -166,10 +176,37 @@ public class DocumentsUploadRequestHandler
     return response;
   }
 
+  private void validateDocumentIds(final AwsServiceCache awsservice, final String siteId,
+      final AddDocumentRequest request) throws ConflictException, BadException {
+
+    List<String> documentIds = new ArrayList<>();
+    if (!isEmpty(request.getDocumentId())) {
+      documentIds.add(request.getDocumentId());
+    }
+
+    List<String> childDocIds = notNull(request.getDocuments()).stream()
+        .map(AddDocumentRequest::getDocumentId).filter(documentId -> !isEmpty(documentId)).toList();
+    documentIds.addAll(childDocIds);
+
+    DocumentService service = awsservice.getExtension(DocumentService.class);
+
+    for (String documentId : documentIds) {
+
+      if (!Strings.isUuid(documentId)) {
+        throw new BadException("invalid documentId '" + documentId + "'");
+      }
+
+      if (service.exists(siteId, documentId)) {
+        throw new ConflictException("documentId '" + documentId + "' already exists");
+      }
+    }
+  }
+
   private String validatePost(final AwsServiceCache awsservice, final String siteId,
       final AddDocumentRequest item) throws BadException, ValidationException {
 
     Collection<ValidationError> errors = this.documentValidator.validate(item.getMetadata());
+
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }
@@ -209,11 +246,6 @@ public class DocumentsUploadRequestHandler
       throws BadException, ValidationException {
 
     String documentId = request.getDocumentId();
-
-    if (tags.isEmpty()) {
-      tags.add(new DocumentTag(documentId, "untagged", "true", new Date(),
-          authorization.getUsername(), DocumentTagType.SYSTEMDEFINED));
-    }
 
     AddDocumentRequestToPresignedUrls addDocumentRequestToPresignedUrls =
         new AddDocumentRequestToPresignedUrls(awsservice, siteId,

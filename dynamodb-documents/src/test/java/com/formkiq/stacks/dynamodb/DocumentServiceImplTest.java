@@ -1709,13 +1709,7 @@ public class DocumentServiceImplTest implements DbKeys {
 
       PaginationResults<DocumentTag> tags =
           service.findDocumentTags(siteId, item.getDocumentId(), null, MAX_RESULTS);
-      assertEquals(1, tags.getResults().size());
-      assertEquals("untagged", tags.getResults().get(0).getKey());
-      assertEquals("true", tags.getResults().get(0).getValue());
-      assertEquals(DocumentTagType.SYSTEMDEFINED, tags.getResults().get(0).getType());
-      assertEquals(username, tags.getResults().get(0).getUserId());
-      assertEquals(item.getDocumentId(), tags.getResults().get(0).getDocumentId());
-      assertNotNull(tags.getResults().get(0).getInsertedDate());
+      assertEquals(0, tags.getResults().size());
     }
   }
 
@@ -1801,9 +1795,7 @@ public class DocumentServiceImplTest implements DbKeys {
 
       List<DocumentTag> tags =
           service.findDocumentTags(siteId, item.getDocumentId(), null, MAX_RESULTS).getResults();
-      assertEquals(1, tags.size());
-      assertEquals("untagged", tags.get(0).getKey());
-      assertEquals("true", tags.get(0).getValue());
+      assertEquals(0, tags.size());
 
       item = service.findDocument(siteId, doc1.getDocumentId());
       assertNotNull(item);
@@ -1927,14 +1919,6 @@ public class DocumentServiceImplTest implements DbKeys {
 
         Map<String, AttributeValue> result = dbClient.getItem(r).item();
         assertEquals(ttl, result.get("TimeToLive").n());
-
-        for (String tagKey : List.of("untagged")) {
-          r = GetItemRequest.builder().key(keysDocumentTag(siteId, item.getDocumentId(), tagKey))
-              .tableName(DOCUMENTS_TABLE).build();
-
-          result = dbClient.getItem(r).item();
-          assertEquals(ttl, result.get("TimeToLive").n());
-        }
       }
     }
   }
@@ -2070,13 +2054,7 @@ public class DocumentServiceImplTest implements DbKeys {
 
       PaginationResults<DocumentTag> tags =
           service.findDocumentTags(siteId, item.getDocumentId(), null, MAX_RESULTS);
-      assertEquals(1, tags.getResults().size());
-      assertEquals("untagged", tags.getResults().get(0).getKey());
-      assertEquals("true", tags.getResults().get(0).getValue());
-      assertEquals(DocumentTagType.SYSTEMDEFINED, tags.getResults().get(0).getType());
-      assertEquals(username, tags.getResults().get(0).getUserId());
-      assertEquals(item.getDocumentId(), tags.getResults().get(0).getDocumentId());
-      assertNotNull(tags.getResults().get(0).getInsertedDate());
+      assertEquals(0, tags.getResults().size());
     }
   }
 

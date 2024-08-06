@@ -54,8 +54,7 @@ public interface DocumentService extends DocumentTagLoader {
   String SOFT_DELETE = "softdelete#";
 
   /** System Defined Tags. */
-  Set<String> SYSTEM_DEFINED_TAGS =
-      Set.of("untagged", "CLAMAV_SCAN_STATUS", "CLAMAV_SCAN_TIMESTAMP");
+  Set<String> SYSTEM_DEFINED_TAGS = Set.of("CLAMAV_SCAN_STATUS", "CLAMAV_SCAN_TIMESTAMP");
 
   /**
    * Add Folder Index.

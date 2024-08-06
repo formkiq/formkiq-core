@@ -62,6 +62,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
@@ -376,6 +377,113 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
           assertEquals("{\"errors\":[{\"key\":\"deepLinkPath\"," + "\"error\":\"DeepLinkPath '"
               + deepLinkPath + "' is not a valid URL\"}]}", e.getResponseBody());
         }
+      }
+    }
+  }
+
+  /**
+   * Save new File with documentId.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testPost09() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      String documentId = UUID.randomUUID().toString();
+      setBearerToken(siteId);
+
+      AddDocumentRequest req = new AddDocumentRequest().documentId(documentId).content("dummy data")
+          .contentType("application/pdf");
+
+      // when
+      AddDocumentResponse response = this.documentsApi.addDocument(req, siteId, null);
+
+      // then
+      assertEquals(documentId, response.getDocumentId());
+      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
+      assertEquals("application/pdf", document.getContentType());
+
+      // when - duplicate send
+      try {
+        this.documentsApi.addDocument(req, siteId, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_METHOD_CONFLICT.getStatusCode(), e.getCode());
+        assertEquals("{\"message\":\"documentId '" + documentId + "' already exists\"}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * Save new File with invaliddocumentId.
+   *
+   */
+  @Test
+  public void testPost10() {
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      String documentId = "casaljdalsdjat" + UUID.randomUUID();
+      setBearerToken(siteId);
+
+      AddDocumentRequest req = new AddDocumentRequest().documentId(documentId).content("dummy data")
+          .contentType("application/pdf");
+
+      // when
+      try {
+        this.documentsApi.addDocument(req, siteId, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"message\":\"invalid documentId '" + documentId + "'\"}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * Save google drive deep link application/vnd.google-apps.document.
+   *
+   */
+  @Test
+  public void testPost11() throws ApiException {
+    // given
+    Map<String, String> data =
+        Map.of("document", "application/vnd.google-apps.document", "spreadsheets",
+            "application/vnd.google-apps.spreadsheet", "forms", "application/vnd.google-apps.form",
+            "presentation", "application/vnd.google-apps.presentation");
+
+    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+
+      for (Map.Entry<String, String> e : data.entrySet()) {
+        String deepLink =
+            "https://docs.google.com/" + e.getKey() + "/d/1tyOQ3yUL9dtpbuMOt7s/edit?usp=sharing";
+
+        AddDocumentRequest req = new AddDocumentRequest().deepLinkPath(deepLink);
+
+        // when
+        String documentId = this.documentsApi.addDocument(req, null, null).getDocumentId();
+
+        // then
+        GetDocumentResponse doc = this.documentsApi.getDocument(documentId, siteId, null);
+        assertEquals(e.getValue(), doc.getContentType());
+
+        // given
+        req.setContentType("application/pdf");
+
+        // when
+        documentId = this.documentsApi.addDocument(req, null, null).getDocumentId();
+
+        // then
+        doc = this.documentsApi.getDocument(documentId, siteId, null);
+        assertEquals("application/pdf", doc.getContentType());
       }
     }
   }

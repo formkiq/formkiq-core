@@ -21,37 +21,41 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api.transformers;
-
-import com.formkiq.stacks.dynamodb.mappings.MappingAttribute;
-import com.formkiq.aws.dynamodb.model.MappingRecord;
-import com.formkiq.stacks.dynamodb.mappings.MappingService;
+package com.formkiq.stacks.lambda.s3.text;
 
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 /**
- * {@link Function} transform {@link MappingRecord} to {@link Map}.
+ * Key / Value Token Generator.
  */
-public class MappingRecordToMap implements Function<MappingRecord, Map<String, Object>> {
+public class TokenGeneratorKeyValue implements TokenGenerator {
 
-  /** {@link MappingService}. */
-  private final MappingService service;
+  /** {@link List}. */
+  private final List<Token> tokens;
 
   /**
    * constructor.
    * 
-   * @param mappingService {@link MappingService}
+   * @param contentKeyValues {@link List}
    */
-  public MappingRecordToMap(final MappingService mappingService) {
-    this.service = mappingService;
+  public TokenGeneratorKeyValue(final List<Map<String, Object>> contentKeyValues) {
+    List<String> keys = contentKeyValues.stream().map(k -> (String) k.get("key")).toList();
+    this.tokens = keys.stream().map(k -> new Token().setOriginal(k).setFormatted(k)).toList();
   }
 
   @Override
-  public Map<String, Object> apply(final MappingRecord a) {
-    List<MappingAttribute> attributes = this.service.getAttributes(a);
-    return Map.of("mappingId", a.getDocumentId(), "name", a.getName(), "attributes", attributes,
-        "description", a.getDescription() != null ? a.getDescription() : "");
+  public List<Token> generateTokens(final String text) {
+    return tokens;
+  }
+
+  @Override
+  public String getSplitRegex() {
+    return null;
+  }
+
+  @Override
+  public String formatText(final String text) {
+    return text;
   }
 }

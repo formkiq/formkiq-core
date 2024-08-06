@@ -54,6 +54,7 @@ import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_UNAUTHORIZED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /**
@@ -74,11 +75,11 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
     assertEquals("Group " + groupName + " deleted", deleteResponse.getMessage());
   }
 
-  private static void addGroup(final UserManagementApi userApi, final String groupName,
-      final String groupDescription) throws ApiException {
+  private static void addGroup(final UserManagementApi userApi, final String groupName)
+      throws ApiException {
     // given
     AddGroupRequest req =
-        new AddGroupRequest().group(new AddGroup().name(groupName).description(groupDescription));
+        new AddGroupRequest().group(new AddGroup().name(groupName).description("some desc"));
 
     // when
     AddResponse response = userApi.addGroup(req);
@@ -129,6 +130,9 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
       assertEquals(Boolean.TRUE, user.getEnabled());
       assertNotNull(user.getInsertedDate());
       assertNotNull(user.getLastModifiedDate());
+
+      assertNotNull(userApi.getUser(user.getUsername()));
+      assertNotNull(userApi.getUser(user.getEmail()));
     }
 
     // given
@@ -141,6 +145,35 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
     } catch (ApiException e) {
       // then
       assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
+    }
+  }
+
+  /**
+   * Test GET /users/{username}.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  public void testGetUser01() throws Exception {
+    // given
+    List<ApiClient> clients = getApiClients(null);
+
+    for (ApiClient client : getAdminClients(clients)) {
+
+      UserManagementApi userApi = new UserManagementApi(client);
+      String username = UUID.randomUUID().toString();
+
+      // when
+      try {
+        userApi.getUser(username);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
+        assertEquals("{\"message\":\"username '" + username + "' not found\"}",
+            e.getResponseBody());
+      }
     }
   }
 
@@ -252,7 +285,7 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
 
       // when
       addUser(userApi, email);
-      addGroup(userApi, groupName, "some desc");
+      addGroup(userApi, groupName);
       addUserToGroup(userApi, email, groupName);
 
       // then
@@ -342,6 +375,29 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
     } catch (ApiException e) {
       // then
       assertEquals(SC_UNAUTHORIZED.getStatusCode(), e.getCode());
+    }
+  }
+
+  /**
+   * Test POST /users.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  public void testAddUser01() throws Exception {
+    // given
+    ApiClient client = getApiClients(null).get(0);
+
+    UserManagementApi userApi = new UserManagementApi(client);
+    String email = "test_" + UUID.randomUUID();
+
+    // when
+    try {
+      addUser(userApi, email);
+    } catch (ApiException e) {
+      // then
+      assertTrue(e.getResponseBody().contains("Invalid email address format"));
     }
   }
 }

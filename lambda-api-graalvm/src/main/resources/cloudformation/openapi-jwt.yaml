@@ -2154,6 +2154,7 @@ Resources:
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/ocrOutputTypeParam'
               - $ref: '#/components/parameters/contentUrlParam'
               - $ref: '#/components/parameters/textParam'
               - $ref: '#/components/parameters/shareKeyParam'
@@ -6085,6 +6086,17 @@ Resources:
                 enum:
                   - ACTIVE
                   - INACTIVE
+            ocrOutputTypeParam:
+              name: outputType
+              in: query
+              description: Output Format Type
+              required: false
+              schema:
+                type: string
+                enum:
+                  - TEXT
+                  - KEY_VALUE
+                  - CONTENT_URL
             limitParam:
               name: limit
               in: query
@@ -6221,14 +6233,14 @@ Resources:
             contentUrlParam:
               name: contentUrl
               in: query
-              description: Whether to return a "contentUrl", set value to 'true'
+              description: Whether to return a "contentUrl", set value to 'true' (deprecated)
               required: false
               schema:
                 type: string
             textParam:
               name: text
               in: query
-              description: Returns raw 'text' of OCR content. e.g. AWS Textract returns JSON, setting parameter to 'true' converts JSON to Text
+              description: Returns raw 'text' of OCR content. e.g. AWS Textract returns JSON, setting parameter to 'true' converts JSON to Text (deprecated)
               required: false
               schema:
                 type: string
@@ -7010,6 +7022,9 @@ Resources:
             AddDocumentUploadRequest:
               type: "object"
               properties:
+                documentId:
+                  type: "string"
+                  description: "optional Document Identifier, if skipped one will be assigned"
                 tagSchemaId:
                   type: "string"
                   description: "Tag Schema Id"
@@ -7042,6 +7057,9 @@ Resources:
               - "content"
               type: "object"
               properties:
+                documentId:
+                  type: "string"
+                  description: "optional Document Identifier, if skipped one will be assigned"
                 tagSchemaId:
                   type: "string"
                   description: "Tag Schema Id"
@@ -8756,6 +8774,9 @@ Resources:
             Mapping:
               type: "object"
               properties:
+                mappingId:
+                  type: "string"
+                  description: "Mapping Identifier"
                 name:
                   type: "string"
                   description: "Name of Mapping"
@@ -8818,6 +8839,7 @@ Resources:
               description: Attribute Source Type
               enum:
                 - CONTENT
+                - CONTENT_KEY_VALUE
                 - METADATA
 
             GetAttributeResponse:
@@ -9056,6 +9078,16 @@ Resources:
                   description: Action metadata
                   additionalProperties:
                     type: string
+            OcrKeyValues:
+              type: object
+              properties:
+                key:
+                  type: string
+                  description: Ocr Key
+                values:
+                  type: "array"
+                  items:
+                    type: "string"
             GetDocumentOcrResponse:
               type: object
               properties:
@@ -9064,6 +9096,11 @@ Resources:
                   description: "Presigned S3 Urls for the OCR content"
                   items:
                     type: "string"
+                keyValues:
+                  type: "array"
+                  description: "List of ocr key / values"
+                  items:
+                    $ref: "#/components/schemas/OcrKeyValues"
                 data:
                   type: string
                   description: OCR text result
@@ -9702,7 +9739,7 @@ Resources:
               properties:
                 username:
                   type: "string"
-                  description: "Username of user"
+                  description: "Email address of user"
             User:
               type: "object"
               properties:

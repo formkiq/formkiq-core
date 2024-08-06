@@ -85,7 +85,8 @@ public class DocumentsFulltextRequestTest extends AbstractAwsIntegrationTest {
       waitForActionsComplete(client, siteId, documentId);
 
       DocumentOcrApi ocrApi = new DocumentOcrApi(client);
-      GetDocumentOcrResponse response = ocrApi.getDocumentOcr(documentId, siteId, null, null, null);
+      GetDocumentOcrResponse response =
+          ocrApi.getDocumentOcr(documentId, siteId, null, null, null, null);
 
       assertTrue(response.getData().contains("This is a small demonstration"));
 

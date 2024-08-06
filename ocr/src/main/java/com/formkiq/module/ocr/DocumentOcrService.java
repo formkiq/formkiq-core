@@ -23,9 +23,11 @@
  */
 package com.formkiq.module.ocr;
 
-import java.util.List;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * 
@@ -111,10 +113,10 @@ public interface DocumentOcrService {
   /**
    * Converts OCR to Raw text.
    * 
-   * @param content {@link String}
+   * @param contents {@link List} {@link String}
    * @return {@link String}
    */
-  String toText(String content);
+  String toText(List<String> contents);
 
   /**
    * Update OCR Scan Status and call next action.
@@ -135,4 +137,12 @@ public interface DocumentOcrService {
    * @param status {@link OcrScanStatus}
    */
   void updateOcrScanStatus(String siteId, String documentId, OcrScanStatus status);
+
+  /**
+   * Convert content to Key Value.
+   * 
+   * @param contents {@link List} {@link String}
+   * @return {@link List}
+   */
+  List<Map<String, Object>> toKeyValue(List<String> contents);
 }

@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 /**
  *
@@ -50,7 +51,7 @@ public class Objects {
    */
   public static String formatDouble(final Double val) {
 
-    String s = null;
+    String s;
 
     double dv = val.doubleValue();
     if (dv == (long) dv) {
@@ -169,5 +170,17 @@ public class Objects {
     if (obj == null) {
       throw ex;
     }
+  }
+
+  /**
+   * Merge two {@link List} together.
+   *
+   * @param <T> Type of {@link List}
+   * @param t0 {@link List}
+   * @param t1 {@link List}
+   * @return {@link List}
+   */
+  public static <T> List<T> concat(final List<T> t0, final List<T> t1) {
+    return Stream.concat(notNull(t0).stream(), notNull(t1).stream()).toList();
   }
 }

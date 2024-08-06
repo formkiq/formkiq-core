@@ -27,7 +27,7 @@ repositories { mavenCentral() }
 
 allprojects {
 
-  version = '1.15.0'
+  version = '1.15.1'
   
   ext.awsCognitoVersion = '1.5.4'
   group = 'com.formkiq.stacks'

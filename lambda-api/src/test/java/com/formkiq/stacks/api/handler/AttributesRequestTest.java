@@ -44,6 +44,7 @@ import java.util.UUID;
 
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.model.AddDocumentAttributeStandard;
+import com.formkiq.client.model.DocumentTag;
 import com.formkiq.client.model.SearchResultDocumentAttribute;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -350,7 +351,15 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       assertEquals("confidential",
           Objects.requireNonNull(response.getAttribute()).getStringValue());
       assertEquals("joesmith", Objects.requireNonNull(response.getAttribute()).getUserId());
+
+      assertEmptyTags(siteId, documentId);
     }
+  }
+
+  private void assertEmptyTags(final String siteId, final String documentId) throws ApiException {
+    List<DocumentTag> tags =
+        notNull(this.tagsApi.getDocumentTags(documentId, siteId, null, null, null, null).getTags());
+    assertEquals(0, tags.size());
   }
 
   /**
@@ -604,6 +613,9 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       String documentId1 = addDocumentAttribute(siteId, key, "confidential", null, null);
 
       // then
+      assertEmptyTags(siteId, documentId0);
+      assertEmptyTags(siteId, documentId1);
+
       DocumentSearchAttribute searchAttribute = new DocumentSearchAttribute().key(key);
       DocumentSearch query = new DocumentSearch().attribute(searchAttribute);
       DocumentSearchRequest searchRequest = new DocumentSearchRequest().query(query);

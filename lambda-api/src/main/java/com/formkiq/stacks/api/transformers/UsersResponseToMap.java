@@ -30,6 +30,7 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.UserType;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -44,12 +45,22 @@ public class UsersResponseToMap implements Function<UserType, Map<String, Object
   @Override
   public Map<String, Object> apply(final UserType ut) {
 
-    String email = ut.attributes().stream().filter(u -> "email".equalsIgnoreCase(u.name()))
-        .map(AttributeType::value).findAny().orElse("");
+    String email = getEmail(ut.attributes());
 
     return Map.of("username", ut.username(), "email", email, "userStatus", ut.userStatus().name(),
         "enabled", ut.enabled(), "insertedDate", toString(ut.userCreateDate()), "lastModifiedDate",
         toString(ut.userLastModifiedDate()));
+  }
+
+  /**
+   * Get Email from {@link UserType}.
+   * 
+   * @param attributes {@link List} {@link AttributeType}
+   * @return {@link String}
+   */
+  public String getEmail(final List<AttributeType> attributes) {
+    return attributes.stream().filter(u -> "email".equalsIgnoreCase(u.name()))
+        .map(AttributeType::value).findAny().orElse("");
   }
 
   private String toString(final Instant date) {

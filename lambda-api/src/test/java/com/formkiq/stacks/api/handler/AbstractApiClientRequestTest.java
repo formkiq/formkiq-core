@@ -100,7 +100,7 @@ public abstract class AbstractApiClientRequestTest {
 
   /** 500 Milliseconds. */
   private static final long SLEEP = 500L;
-  // /** Time out. */
+  /** Time out. */
   // private static final int TIMEOUT = 30000;
 
   /** {@link ApiClient}. */

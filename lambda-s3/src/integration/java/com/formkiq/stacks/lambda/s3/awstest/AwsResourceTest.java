@@ -544,7 +544,7 @@ public class AwsResourceTest extends AbstractAwsTest {
       assertSnsMessage(documentQueueUrl, "create");
       PaginationResults<DocumentTag> list =
           getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
-      assertEquals("[status, untagged]",
+      assertEquals("[status]",
           list.getResults().stream().map(m -> m.getKey()).collect(Collectors.toList()).toString());
 
       item = getDocumentService().findDocument(siteId, documentId);

@@ -597,7 +597,7 @@ public class StagingS3CreateTest implements DbKeys {
 
       List<DocumentTag> tags =
           service.findDocumentTags(siteId, destDocumentId, null, MAX_RESULTS).getResults();
-      int tagcount = hasTags ? docitem.getList("tags").size() : 1;
+      int tagcount = hasTags ? docitem.getList("tags").size() : 0;
       assertEquals(tagcount, tags.size());
 
       if (hasTags) {
@@ -606,15 +606,6 @@ public class StagingS3CreateTest implements DbKeys {
           DocumentTag dtag = findTag(tags, tag.getString("key"));
           assertEquals(tag.getString("value"), dtag.getValue());
         }
-
-      } else {
-
-        DocumentTag ptag = findTag(tags, "untagged");
-        assertEquals(destDocumentId, ptag.getDocumentId());
-        assertEquals("true", ptag.getValue());
-        assertNotNull(ptag.getInsertedDate());
-        assertEquals(DocumentTagType.SYSTEMDEFINED, ptag.getType());
-        assertEquals(docitem.getUserId(), ptag.getUserId());
       }
     }
   }
@@ -671,10 +662,7 @@ public class StagingS3CreateTest implements DbKeys {
     List<DocumentTag> tags =
         service.findDocumentTags(siteId, item.getDocumentId(), null, MAX_RESULTS).getResults();
 
-    assertEquals(1, tags.size());
-
-    assertEquals("untagged", tags.get(0).getKey());
-    assertEquals(DocumentTagType.SYSTEMDEFINED, tags.get(0).getType());
+    assertEquals(0, tags.size());
 
     verifyS3Metadata(siteId, item);
   }
@@ -1252,14 +1240,9 @@ public class StagingS3CreateTest implements DbKeys {
       assertEquals(path, item.getPath());
       assertEquals("joesmith", item.getUserId());
 
-      int i = 0;
-      final int count = 1;
       List<DocumentTag> tags =
           service.findDocumentTags(siteId, documentId, null, MAX_RESULTS).getResults();
-      assertEquals(count, tags.size());
-
-      assertEqualsTag(tags.get(i), Map.of("documentId", documentId, "key", "untagged", "value",
-          "true", "type", "SYSTEMDEFINED", "userId", "joesmith"));
+      assertEquals(0, tags.size());
 
       verifyCliSyncs(siteId, documentId);
     }

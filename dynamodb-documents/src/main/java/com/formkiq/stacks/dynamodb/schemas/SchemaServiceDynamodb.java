@@ -29,8 +29,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -42,6 +44,7 @@ import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.QueryConfig;
 import com.formkiq.aws.dynamodb.QueryResponseToPagination;
+import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.stacks.dynamodb.attributes.AttributeDataType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
@@ -135,7 +138,7 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
   public Collection<ValidationError> setSitesSchema(final String siteId, final String name,
       final String schemaJson, final Schema schema) {
 
-    Collection<ValidationError> errors = validate(siteId, name, schemaJson, schema);
+    Collection<ValidationError> errors = validate(siteId, null, name, schemaJson, schema);
 
     if (errors.isEmpty()) {
 
@@ -181,8 +184,9 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
       final String name, final String schemaJson, final Schema schema, final String userId)
       throws ValidationException {
 
-    Collection<ValidationError> errors = validate(siteId, name, schemaJson, schema);
-    errors.addAll(validateClassification(siteId, name));
+    Schema sitesSchema = getSitesSchema(siteId);
+    Collection<ValidationError> errors = validate(siteId, sitesSchema, name, schemaJson, schema);
+    errors.addAll(validateClassification(siteId, classificationId, name));
 
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
@@ -244,73 +248,186 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
   public Schema mergeSchemaIntoClassification(final Schema from, final Schema to) {
 
     if (from != null) {
+
       SchemaAttributes fromAttributes = from.getAttributes();
+
       Map<String, SchemaAttributesRequired> required =
-          notNull(fromAttributes.getRequired()).stream().collect(
-              Collectors.toMap(SchemaAttributesRequired::getAttributeKey, Function.identity()));
+          getRequiredAttributeMap(fromAttributes.getRequired());
 
-      to.getAttributes().getRequired().forEach(a -> {
+      List<SchemaAttributesRequired> requiredMerged =
+          merge(required, notNull(to.getAttributes().getRequired()));
+      to.getAttributes().required(requiredMerged);
 
-        if (required.containsKey(a.getAttributeKey())) {
+      Map<String, SchemaAttributesOptional> optional =
+          getOptionalAttributeMap(fromAttributes.getOptional());
 
-          SchemaAttributesRequired attr = required.get(a.getAttributeKey());
-
-          List<String> allowed = Stream.concat(notNull(a.getAllowedValues()).stream(),
-              notNull(attr.getAllowedValues()).stream()).toList();
-          a.allowedValues(allowed);
-
-          required.remove(a.getAttributeKey());
-        }
-
-      });
-
-      // get all required attributes
-      List<SchemaAttributesRequired> req = Stream
-          .concat(to.getAttributes().getRequired().stream(), required.values().stream()).toList();
-      to.getAttributes().required(req);
+      if (to.getAttributes() != null) {
+        List<SchemaAttributesOptional> optionalMerged =
+            merge(required, optional, notNull(to.getAttributes().getOptional()));
+        to.getAttributes().optional(optionalMerged);
+      }
 
       // merge composite keys
       List<SchemaAttributesCompositeKey> cks =
-          Stream.concat(to.getAttributes().getCompositeKeys().stream(),
-              from.getAttributes().getCompositeKeys().stream()).toList();
+          mergeCompositeKeys(notNull(from.getAttributes().getCompositeKeys()),
+              notNull(to.getAttributes().getCompositeKeys()));
       to.getAttributes().compositeKeys(cks);
-      // can add allowed values / not remove
     }
 
     return to;
+  }
+
+  private List<SchemaAttributesCompositeKey> mergeCompositeKeys(
+      final List<SchemaAttributesCompositeKey> from, final List<SchemaAttributesCompositeKey> to) {
+
+    Set<String> keys =
+        from.stream().map(c -> String.join(",", c.getAttributeKeys())).collect(Collectors.toSet());
+
+    List<SchemaAttributesCompositeKey> toList = to.stream().filter(c -> {
+      String key = String.join(",", c.getAttributeKeys());
+      return !keys.contains(key);
+    }).toList();
+
+    return Objects.concat(from, toList);
+  }
+
+  private List<SchemaAttributesOptional> merge(
+      final Map<String, SchemaAttributesRequired> fromRequired,
+      final Map<String, SchemaAttributesOptional> from, final List<SchemaAttributesOptional> to) {
+
+    List<SchemaAttributesOptional> updated = new ArrayList<>(to);
+
+    // merge matching optional attributes
+    updated.forEach(u -> {
+      if (from.containsKey(u.getAttributeKey())) {
+        SchemaAttributesOptional r = from.get(u.getAttributeKey());
+        u.allowedValues(Objects.concat(r.getAllowedValues(), u.getAllowedValues()));
+      }
+    });
+
+    // add missing optional attributes
+    Set<String> attributeKeys =
+        to.stream().map(SchemaAttributesOptional::getAttributeKey).collect(Collectors.toSet());
+    List<SchemaAttributesOptional> missing =
+        from.values().stream().filter(f -> !attributeKeys.contains(f.getAttributeKey())).toList();
+    updated.addAll(missing);
+    updated = updated.stream().filter(a -> !fromRequired.containsKey(a.getAttributeKey())).toList();
+
+    return updated;
+  }
+
+  private List<SchemaAttributesRequired> merge(final Map<String, SchemaAttributesRequired> from,
+      final List<SchemaAttributesRequired> to) {
+
+    List<SchemaAttributesRequired> updated = new ArrayList<>(to);
+
+    // merge matching required attributes
+    updated.forEach(u -> {
+
+      if (from.containsKey(u.getAttributeKey())) {
+        SchemaAttributesRequired r = from.get(u.getAttributeKey());
+
+        u.allowedValues(Objects.concat(r.getAllowedValues(), u.getAllowedValues()));
+
+        if (isEmpty(u.getDefaultValue()) && !isEmpty(r.getDefaultValue())) {
+          u.defaultValue(r.getDefaultValue());
+        }
+      }
+    });
+
+    // add missing required attributes
+    Set<String> attributeKeys =
+        to.stream().map(SchemaAttributesRequired::getAttributeKey).collect(Collectors.toSet());
+    List<SchemaAttributesRequired> missing =
+        from.values().stream().filter(f -> !attributeKeys.contains(f.getAttributeKey())).toList();
+    updated.addAll(missing);
+
+    return updated;
+  }
+
+  private Map<String, SchemaAttributesRequired> getRequiredAttributeMap(
+      final List<SchemaAttributesRequired> attributes) {
+    return notNull(attributes).stream()
+        .collect(Collectors.toMap(SchemaAttributesRequired::getAttributeKey, Function.identity()));
+  }
+
+  private Map<String, SchemaAttributesOptional> getOptionalAttributeMap(
+      final List<SchemaAttributesOptional> attributes) {
+    return notNull(attributes).stream()
+        .collect(Collectors.toMap(SchemaAttributesOptional::getAttributeKey, Function.identity()));
   }
 
   /**
    * Validate Classification.
    * 
    * @param siteId {@link String}
+   * @param classificationId {@link String}
    * @param name {@link String}
    * @return Collection {@link ValidationError}
    */
   private Collection<ValidationError> validateClassification(final String siteId,
-      final String name) {
+      final String classificationId, final String name) {
+
     ClassificationRecord r = new ClassificationRecord().setName(name);
     AttributeValue pk = r.fromS(r.pkGsi1(siteId));
     AttributeValue sk = r.fromS(r.skGsi1());
 
     Collection<ValidationError> errors = Collections.emptyList();
     QueryConfig config = new QueryConfig().indexName(GSI1);
-    QueryResponse response = this.db.queryBeginsWith(config, pk, sk, null, 1);
+    QueryResponse response = this.db.query(config, pk, sk, null, 1);
 
-    if (!response.items().isEmpty()) {
+    List<Map<String, AttributeValue>> items = response.items();
+    if (!isEmpty(classificationId)) {
+      items =
+          items.stream().filter(i -> !classificationId.equals(i.get("documentId").s())).toList();
+    }
+
+    if (!items.isEmpty()) {
       errors = List.of(new ValidationErrorImpl().key("name").error("'name' is already used"));
     }
 
     return errors;
   }
 
-  private Collection<ValidationError> validate(final String siteId, final String name,
-      final String schemaJson, final Schema schema) {
+  private Collection<ValidationError> validate(final String siteId, final Schema sitesSchema,
+      final String name, final String schemaJson, final Schema schema) {
 
     Collection<ValidationError> errors = validateSchema(schema, name, schemaJson);
 
     if (errors.isEmpty()) {
+      errors = validateAttributesAgainstSiteSchema(sitesSchema, schema);
+    }
+
+    if (errors.isEmpty()) {
       errors = validateAttributes(siteId, schema);
+    }
+
+    return errors;
+  }
+
+  /**
+   * Validate Site Schema against Classification Schema.
+   * 
+   * @param sitesSchema {@link Schema}
+   * @param schema {@link Schema}
+   * @return {@link Collection} {@link ValidationError}
+   */
+  private Collection<ValidationError> validateAttributesAgainstSiteSchema(final Schema sitesSchema,
+      final Schema schema) {
+
+    Collection<ValidationError> errors = new ArrayList<>();
+
+    if (sitesSchema != null) {
+
+      Set<String> siteSchemaRequiredKeys = notNull(sitesSchema.getAttributes().getRequired())
+          .stream().map(SchemaAttributesRequired::getAttributeKey).collect(Collectors.toSet());
+
+      Set<String> optionalKeys = notNull(schema.getAttributes().getOptional()).stream()
+          .map(SchemaAttributesOptional::getAttributeKey).filter(siteSchemaRequiredKeys::contains)
+          .collect(Collectors.toSet());
+
+      optionalKeys.forEach(k -> errors.add(new ValidationErrorImpl().key(k)
+          .error("attribute cannot override site schema attribute")));
     }
 
     return errors;
@@ -377,21 +494,44 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
       List<SchemaAttributesCompositeKey> compositeKeys =
           notNull(schemaAttributes.getCompositeKeys());
 
-      if (notNull(schemaAttributes.getRequired()).isEmpty()
-          && notNull(schemaAttributes.getOptional()).isEmpty() && compositeKeys.isEmpty()) {
+      List<SchemaAttributesRequired> required = notNull(schemaAttributes.getRequired());
+
+      if (required.isEmpty() && notNull(schemaAttributes.getOptional()).isEmpty()
+          && compositeKeys.isEmpty()) {
         errors.add(new ValidationErrorImpl()
             .error("either 'required', 'optional' or 'compositeKeys' attributes list is required"));
       }
 
-      compositeKeys.forEach(keys -> {
-        if (notNull(keys.getAttributeKeys()).size() == 1) {
-          errors.add(new ValidationErrorImpl().key("compositeKeys")
-              .error("compositeKeys must have more than 1 value"));
+      required.forEach(r -> {
+        if (!isEmpty(r.getDefaultValue()) && !notNull(r.getAllowedValues()).isEmpty()) {
+
+          if (!r.getAllowedValues().contains(r.getDefaultValue())) {
+            errors.add(new ValidationErrorImpl().key("defaultValue")
+                .error("defaultValue must be part of allowed values"));
+          }
         }
       });
+
+      validateCompositeKeys(compositeKeys, errors);
     }
 
     return errors;
+  }
+
+  private void validateCompositeKeys(final Collection<SchemaAttributesCompositeKey> compositeKeys,
+      final Collection<ValidationError> errors) {
+    compositeKeys.forEach(keys -> {
+      if (notNull(keys.getAttributeKeys()).size() == 1) {
+        errors.add(new ValidationErrorImpl().key("compositeKeys")
+            .error("compositeKeys must have more than 1 value"));
+      }
+    });
+
+    List<String> keys =
+        compositeKeys.stream().map(k -> String.join(",", k.getAttributeKeys())).toList();
+    if (keys.size() != new HashSet<>(keys).size()) {
+      errors.add(new ValidationErrorImpl().key("compositeKeys").error("duplicate compositeKey"));
+    }
   }
 
   private Collection<ValidationError> validateAttributes(final String siteId, final Schema schema) {

@@ -29,6 +29,7 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthenticationResultType;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UserType;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.UsernameExistsException;
 
 /**
  * 
@@ -37,17 +38,15 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.UserType;
  */
 public class FkqCognitoService {
   /** {@link Region}. */
-  private Region awsregion;
+  private final Region awsregion;
   /** FormKiQ IAM Api Url. */
-  private String rootIamUrl;
+  private final String rootIamUrl;
   /** FormKiQ Http Api Url. */
-  private String rootJwtUrl;
+  private final String rootJwtUrl;
   /** FormKiQ Key Api Url. */
-  private String rootKeyUrl;
+  private final String rootKeyUrl;
   /** {@link CognitoIdentityProviderService}. */
-  private CognitoIdentityProviderService service;
-  /** {@link FkqSsmService}. */
-  private FkqSsmService ssm;
+  private final CognitoIdentityProviderService service;
 
   /**
    * constructor.
@@ -60,22 +59,19 @@ public class FkqCognitoService {
       final String appEnvironment) {
 
     this.awsregion = awsRegion;
-    this.ssm = new FkqSsmService(awsProfile, awsRegion);
+    FkqSsmService ssm = new FkqSsmService(awsProfile, awsRegion);
 
-    this.rootJwtUrl =
-        this.ssm.getParameterValue("/formkiq/" + appEnvironment + "/api/DocumentsHttpUrl");
+    this.rootJwtUrl = ssm.getParameterValue("/formkiq/" + appEnvironment + "/api/DocumentsHttpUrl");
 
-    this.rootIamUrl =
-        this.ssm.getParameterValue("/formkiq/" + appEnvironment + "/api/DocumentsIamUrl");
+    this.rootIamUrl = ssm.getParameterValue("/formkiq/" + appEnvironment + "/api/DocumentsIamUrl");
 
-    this.rootKeyUrl =
-        this.ssm.getParameterValue("/formkiq/" + appEnvironment + "/api/DocumentsKeyUrl");
+    this.rootKeyUrl = ssm.getParameterValue("/formkiq/" + appEnvironment + "/api/DocumentsKeyUrl");
 
     String cognitoUserPoolId =
-        this.ssm.getParameterValue("/formkiq/" + appEnvironment + "/cognito/UserPoolId");
+        ssm.getParameterValue("/formkiq/" + appEnvironment + "/cognito/UserPoolId");
 
     String cognitoClientId =
-        this.ssm.getParameterValue("/formkiq/" + appEnvironment + "/cognito/UserPoolClientId");
+        ssm.getParameterValue("/formkiq/" + appEnvironment + "/cognito/UserPoolClientId");
 
     CognitoIdentityProviderConnectionBuilder builder =
         new CognitoIdentityProviderConnectionBuilder(cognitoClientId, cognitoUserPoolId)
@@ -105,8 +101,13 @@ public class FkqCognitoService {
     UserType userType = null;
     if (!this.service.isUserExists(email)) {
       String tempPassword = "!" + password + "!";
-      userType = this.service.addUser(email, tempPassword, Boolean.TRUE);
-      this.service.loginWithNewPassword(email, tempPassword, password);
+
+      try {
+        userType = this.service.addUser(email, tempPassword, Boolean.TRUE);
+        this.service.loginWithNewPassword(email, tempPassword, password);
+      } catch (UsernameExistsException e) {
+        // ignore
+      }
     }
     return userType;
   }

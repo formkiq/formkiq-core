@@ -158,7 +158,8 @@ public class DocumentsDocumentIdOcrRequestTest extends AbstractAwsIntegrationTes
     waitForActions(client, siteId, documentId, Arrays.asList(DocumentActionStatus.COMPLETE));
 
     DocumentOcrApi api = new DocumentOcrApi(client);
-    GetDocumentOcrResponse documentOcr = api.getDocumentOcr(documentId, siteId, null, null, null);
+    GetDocumentOcrResponse documentOcr =
+        api.getDocumentOcr(documentId, siteId, null, null, null, null);
     assertTrue(documentOcr.getData().contains("East Repair"));
 
     GetDocumentActionsResponse actions =
@@ -181,11 +182,12 @@ public class DocumentsDocumentIdOcrRequestTest extends AbstractAwsIntegrationTes
   private GetDocumentOcrResponse getDocumentOcr(final DocumentOcrApi api, final String siteId,
       final String documentId) throws IOException, InterruptedException, ApiException {
 
-    GetDocumentOcrResponse documentOcr = api.getDocumentOcr(documentId, siteId, null, null, null);
+    GetDocumentOcrResponse documentOcr =
+        api.getDocumentOcr(documentId, siteId, null, null, null, null);
 
     while (documentOcr == null || documentOcr.getData() == null) {
       try {
-        documentOcr = api.getDocumentOcr(documentId, siteId, null, null, null);
+        documentOcr = api.getDocumentOcr(documentId, siteId, null, null, null, null);
       } catch (ApiException e) {
         // ignore
       }
@@ -230,7 +232,8 @@ public class DocumentsDocumentIdOcrRequestTest extends AbstractAwsIntegrationTes
     waitForActions(client, siteId, documentId, Arrays.asList(DocumentActionStatus.COMPLETE));
 
     DocumentOcrApi api = new DocumentOcrApi(client);
-    GetDocumentOcrResponse documentOcr = api.getDocumentOcr(documentId, siteId, null, null, null);
+    GetDocumentOcrResponse documentOcr =
+        api.getDocumentOcr(documentId, siteId, null, null, null, null);
 
     String text = documentOcr.getData();
     assertTrue(text.contains("Your Company"));
