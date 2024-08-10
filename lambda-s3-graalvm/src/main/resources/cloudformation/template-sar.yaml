@@ -1091,8 +1091,16 @@ Resources:
 Outputs:
 
   DocumentsTableName:
+    Description: Documents DynamoDb Table Name.
     Value:
       Ref: Documents
+
+  DocumentsTableArn:
+    Description: Documents DynamoDb Table Arn.
+    Value:
+      Fn::GetAtt:
+        - Documents
+        - Arn
 
   DocumentSyncsTableName:
     Value:
