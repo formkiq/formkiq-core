@@ -170,10 +170,9 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
   /**
    * DELETE /documents/{documentId} document not found.
    *
-   * @throws Exception an error has occurred
    */
   @Test
-  public void testDocumentDelete04() throws Exception {
+  public void testDocumentDelete04() {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given

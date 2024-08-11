@@ -8816,6 +8816,9 @@ Resources:
             AddGoogleDocumentExportRequest:
               type: "object"
               properties:
+                path:
+                  type: "string"
+                  description: "Path of exported file"
                 outputType:
                   $ref: "#/components/schemas/GoogleExportOutputType"
 
