@@ -583,14 +583,6 @@ Resources:
                   application/json:
                     schema:
                       $ref: '#/components/schemas/UpdateConfigurationRequest'
-                    examples:
-                      Config:
-                        value:
-                          chatGptApiKey: "ABC"
-                          maxContentLengthBytes: "1000000"
-                          maxDocuments: "1000"
-                          maxWebhooks: "10"
-                          notificationEmail: "<email>"
               responses:
                 '200':
                   description: 200 OK
@@ -5972,7 +5964,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/AddResponse'
+                        $ref: '#/components/schemas/AddGoogleDocumentExportResponse'
                 '400':
                   description: 400 OK
                   content:
@@ -8827,6 +8819,13 @@ Resources:
                 outputType:
                   $ref: "#/components/schemas/GoogleExportOutputType"
 
+            AddGoogleDocumentExportResponse:
+              type: "object"
+              properties:
+                documentId:
+                  type: "string"
+                  description: "Exported document identifier"
+
             GetExaminePdfUrlResponse:
               type: "object"
               properties:
@@ -9561,6 +9560,8 @@ Resources:
                 notificationEmail:
                   type: "string"
                   description: "Email address to use for notifications"
+                google:
+                  $ref: "#/components/schemas/GoogleConfig"
             UpdateConfigurationResponse:
               type: object
               properties:
@@ -9849,6 +9850,19 @@ Resources:
                 notificationEmail:
                   type: "string"
                   description: "Email address to use for notifications (Must be verified identity created in AWS SES)"
+                google:
+                  $ref: "#/components/schemas/GoogleConfig"
+
+            GoogleConfig:
+              type: "object"
+              properties:
+                workloadIdentityAudience:
+                  type: "string"
+                  description: "Workload Identity Audience"
+                workloadIdentityServiceAccount:
+                  type: "string"
+                  description: "Workload Service Account"
+
             GetUsersInGroupResponse:
               type: object
               properties:

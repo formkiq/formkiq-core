@@ -25,9 +25,12 @@ package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.stacks.dynamodb.ConfigService.CHATGPT_API_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
 import java.util.Map;
 import java.util.UUID;
+
+import com.formkiq.client.model.GoogleConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import com.formkiq.aws.dynamodb.DynamicObject;
@@ -195,10 +198,9 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
   /**
    * PUT /config default as user.
    *
-   * @throws Exception an error has occurred
    */
   @Test
-  public void testHandlePutConfiguration02() throws Exception {
+  public void testHandlePutConfiguration02() {
     // given
     String siteId = SiteIdKeyGenerator.DEFAULT_SITE_ID;
     String group = "default";
@@ -215,5 +217,34 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
       final int code = 401;
       assertEquals(code, e.getCode());
     }
+  }
+
+  /**
+   * PUT google configuration /config default as Admin.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePutConfiguration03() throws Exception {
+    // given
+    String siteId = SiteIdKeyGenerator.DEFAULT_SITE_ID;
+    String group = "Admins";
+    setBearerToken(group);
+
+    UpdateConfigurationRequest req = new UpdateConfigurationRequest().google(
+        new GoogleConfig().workloadIdentityAudience("123").workloadIdentityServiceAccount("444"));
+
+    // when
+    UpdateConfigurationResponse configResponse = this.systemApi.updateConfiguration(siteId, req);
+    GetConfigurationResponse response = this.systemApi.getConfiguration(siteId);
+
+    // then
+    assertEquals("Config saved", configResponse.getMessage());
+    GoogleConfig google = response.getGoogle();
+
+    assertNotNull(google);
+
+    assertEquals("123", google.getWorkloadIdentityAudience());
+    assertEquals("444", google.getWorkloadIdentityServiceAccount());
   }
 }

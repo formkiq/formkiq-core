@@ -100,6 +100,16 @@ public class ConfigurationRequestHandler
     map.put("maxWebhooks", obj.getOrDefault(MAX_WEBHOOKS, ""));
     map.put("notificationEmail", obj.getOrDefault(NOTIFICATION_EMAIL, ""));
 
+    String workloadIdentityAudience =
+        (String) obj.getOrDefault("googleWorkloadIdentityAudience", "");
+    String workloadIdentityServiceAccount =
+        (String) obj.getOrDefault("googleWorkloadIdentityServiceAccount", "");
+
+    if (!isEmpty(workloadIdentityAudience) || !isEmpty(workloadIdentityServiceAccount)) {
+      map.put("google", Map.of("workloadIdentityAudience", workloadIdentityAudience,
+          "workloadIdentityServiceAccount", workloadIdentityServiceAccount));
+    }
+
     return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
   }
 
@@ -139,7 +149,7 @@ public class ConfigurationRequestHandler
       final AwsServiceCache awsservice) throws Exception {
 
     String siteId = event.getPathParameters().get("siteId");
-    Map<String, String> body = fromBodyToObject(event, Map.class);
+    Map<String, Object> body = fromBodyToObject(event, Map.class);
 
     Map<String, Object> map = new HashMap<>();
     put(map, body, CHATGPT_API_KEY, "chatGptApiKey");
@@ -147,6 +157,17 @@ public class ConfigurationRequestHandler
     put(map, body, MAX_DOCUMENTS, "maxDocuments");
     put(map, body, MAX_WEBHOOKS, "maxWebhooks");
     put(map, body, NOTIFICATION_EMAIL, "notificationEmail");
+
+    if (body.containsKey("google")) {
+
+      Map<String, String> google = (Map<String, String>) body.get("google");
+      String workloadIdentityAudience = google.getOrDefault("workloadIdentityAudience", "");
+      String workloadIdentityServiceAccount =
+          google.getOrDefault("workloadIdentityServiceAccount", "");
+
+      map.put("googleWorkloadIdentityAudience", workloadIdentityAudience);
+      map.put("googleWorkloadIdentityServiceAccount", workloadIdentityServiceAccount);
+    }
 
     validate(awsservice, map);
 
@@ -161,7 +182,7 @@ public class ConfigurationRequestHandler
     throw new BadException("missing required body parameters");
   }
 
-  private void put(final Map<String, Object> map, final Map<String, String> body,
+  private void put(final Map<String, Object> map, final Map<String, Object> body,
       final String mapKey, final String bodyKey) {
     if (body.containsKey(bodyKey)) {
       map.put(mapKey, body.get(bodyKey));

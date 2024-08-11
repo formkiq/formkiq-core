@@ -44,7 +44,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 public class ConfigServiceDynamoDb implements ConfigService, DbKeys {
 
   /** {@link DynamoDbService}. */
-  private DynamoDbService db;
+  private final DynamoDbService db;
 
   /**
    * constructor.
