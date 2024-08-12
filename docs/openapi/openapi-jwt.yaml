@@ -9095,6 +9095,7 @@
               - WEBHOOK
               - IDP
               - PUBLISH
+              - PDFEXPORT
             DocumentAction:
               type: object
               properties:

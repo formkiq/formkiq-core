@@ -1484,7 +1484,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
                 MappingAttributeSourceType.CONTENT, null, null, null);
         MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-        processRequest(siteId, documentId, "text/plain", mappingRecord);
+        processIdpRequest(siteId, documentId, "text/plain", mappingRecord);
 
         // then
         Action action = actionsService.getActions(siteId, documentId).get(0);
@@ -1526,7 +1526,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
                 MappingAttributeSourceType.CONTENT, null, null, null);
         MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-        processRequest(siteId, documentId, "text/plain", mappingRecord);
+        processIdpRequest(siteId, documentId, "text/plain", mappingRecord);
 
         // then
         Action action = actionsService.getActions(siteId, documentId).get(0);
@@ -1568,7 +1568,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
                 MappingAttributeSourceType.CONTENT, null, null, null);
         MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-        processRequest(siteId, documentId, "text/plain", mappingRecord);
+        processIdpRequest(siteId, documentId, "text/plain", mappingRecord);
 
         // then
         Action action = actionsService.getActions(siteId, documentId).get(0);
@@ -1608,7 +1608,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
         MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-        processRequest(siteId, documentId, "text/plain", mappingRecord);
+        processIdpRequest(siteId, documentId, "text/plain", mappingRecord);
 
         // then
         Action action = actionsService.getActions(siteId, documentId).get(0);
@@ -1651,7 +1651,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
         MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-        processRequest(siteId, documentId, "text/plain", mappingRecord);
+        processIdpRequest(siteId, documentId, "text/plain", mappingRecord);
 
         // then
         Action action = actionsService.getActions(siteId, documentId).get(0);
@@ -1697,7 +1697,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
                 MappingAttributeSourceType.CONTENT, null, null, null);
         MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-        processRequest(siteId, documentId, "text/plain", mappingRecord);
+        processIdpRequest(siteId, documentId, "text/plain", mappingRecord);
 
         // then
         Action action = actionsService.getActions(siteId, documentId).get(0);
@@ -1740,7 +1740,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
             MappingAttributeMetadataField.USERNAME);
         MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-        processRequest(siteId, documentId, "text/plain", mappingRecord);
+        processIdpRequest(siteId, documentId, "text/plain", mappingRecord);
 
         // then
         Action action = actionsService.getActions(siteId, documentId).get(0);
@@ -1790,7 +1790,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
         mapping.getAttributes().get(0).setValidationRegex(validationRegex);
         MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-        processRequest(siteId, documentId, "text/plain", mappingRecord);
+        processIdpRequest(siteId, documentId, "text/plain", mappingRecord);
 
         // then
         Action action = actionsService.getActions(siteId, documentId).get(0);
@@ -1839,7 +1839,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
         MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-        processRequest(siteId, documentId, "text/plain", mappingRecord);
+        processIdpRequest(siteId, documentId, "text/plain", mappingRecord);
 
         // then
         Action action = actionsService.getActions(siteId, documentId).get(0);
@@ -1882,7 +1882,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
       // run twice
       for (int i = 0; i < 2; i++) {
-        processRequest(siteId, documentId, "application/pdf", mappingRecord);
+        processIdpRequest(siteId, documentId, "application/pdf", mappingRecord);
 
         // then
         Action action = actionsService.getActions(siteId, documentId).get(0);
@@ -1923,7 +1923,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
       MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-      processRequest(siteId, documentId, "application/pdf", mappingRecord);
+      processIdpRequest(siteId, documentId, "application/pdf", mappingRecord);
 
       // then
       Action action = actionsService.getActions(siteId, documentId).get(0);
@@ -1963,7 +1963,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
       MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-      processRequest(siteId, documentId, "application/pdf", mappingRecord);
+      processIdpRequest(siteId, documentId, "application/pdf", mappingRecord);
 
       // then
       Action action = actionsService.getActions(siteId, documentId).get(0);
@@ -1980,7 +1980,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     }
   }
 
-  private void processRequest(final String siteId, final String documentId,
+  private void processIdpRequest(final String siteId, final String documentId,
       final String contentType, final MappingRecord mappingRecord)
       throws ValidationException, IOException {
     DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
@@ -2065,6 +2065,120 @@ public class DocumentActionsProcessorTest implements DbKeys {
       List<DynamicDocumentItem> docs =
           notNull(documentSearchService.search(siteId, req, null, null, 2).getResults());
       assertEquals(1, docs.size());
+    }
+  }
+
+  /**
+   * Handle Pdf Export Action Google not configured.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  public void testPdfExportAction01() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String documentId = UUID.randomUUID().toString();
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      item.setContentType("text/plain");
+      documentService.saveDocument(siteId, item, null);
+
+      List<Action> actions =
+          Collections.singletonList(new Action().type(ActionType.PDFEXPORT).userId("joe"));
+      actionsService.saveNewActions(siteId, documentId, actions);
+
+      Map<String, Object> map =
+          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
+              documentId, "default", siteId != null ? siteId : "default");
+
+      // when
+      processor.handleRequest(map, this.context);
+
+      // then
+      Action action = actionsService.getActions(siteId, documentId).get(0);
+      assertEquals(ActionType.PDFEXPORT, action.type());
+      assertEquals(ActionStatus.FAILED, action.status());
+      assertEquals("Google Workload Identity is not configured", action.message());
+    }
+  }
+
+  /**
+   * Handle Pdf Export on non Google Deeplink Action.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  public void testPdfExportAction02() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      configService.save(siteId, new DynamicObject(Map.of("googleWorkloadIdentityAudience", "abc",
+          "googleWorkloadIdentityServiceAccount", "123")));
+
+      String documentId = UUID.randomUUID().toString();
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      item.setContentType("text/plain");
+      documentService.saveDocument(siteId, item, null);
+
+      List<Action> actions =
+          Collections.singletonList(new Action().type(ActionType.PDFEXPORT).userId("joe"));
+      actionsService.saveNewActions(siteId, documentId, actions);
+
+      Map<String, Object> map =
+          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
+              documentId, "default", siteId != null ? siteId : "default");
+
+      // when
+      processor.handleRequest(map, this.context);
+
+      // then
+      Action action = actionsService.getActions(siteId, documentId).get(0);
+      assertEquals(ActionType.PDFEXPORT, action.type());
+      assertEquals(ActionStatus.FAILED, action.status());
+      assertEquals("PdfExport only supports Google DeepLink", action.message());
+    }
+  }
+
+  /**
+   * Handle Pdf Export Action.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  public void testPdfExportAction03() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      configService.save(siteId, new DynamicObject(Map.of("googleWorkloadIdentityAudience", "abc",
+          "googleWorkloadIdentityServiceAccount", "123")));
+
+      String documentId = UUID.randomUUID().toString();
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      item.setDeepLinkPath(
+          "https://docs.google.com/document/d/1Vtwhg36ViJVoO4VHTzHv-uMIpw1hqMR2ttB8EhxXHzA/edit");
+      documentService.saveDocument(siteId, item, null);
+
+      List<Action> actions =
+          Collections.singletonList(new Action().type(ActionType.PDFEXPORT).userId("joe"));
+      actionsService.saveNewActions(siteId, documentId, actions);
+
+      Map<String, Object> map =
+          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
+              documentId, "default", siteId != null ? siteId : "default");
+
+      // when
+      processor.handleRequest(map, this.context);
+
+      // then
+      Action action = actionsService.getActions(siteId, documentId).get(0);
+      assertEquals(ActionType.PDFEXPORT, action.type());
+      assertEquals(ActionStatus.COMPLETE, action.status());
+
+      HttpRequest lastRequest = CALLBACK.getLastRequest();
+      assertEquals("/integrations/google/drive/documents/" + documentId + "/export",
+          lastRequest.getPath().getValue());
+      assertEquals("{\"outputType\": \"PDF\"}", lastRequest.getBodyAsString());
+
+      if (siteId != null) {
+        assertEquals(siteId, lastRequest.getFirstQueryStringParameter("siteId"));
+      }
     }
   }
 }

@@ -107,6 +107,7 @@ import com.formkiq.stacks.lambda.s3.actions.FullTextAction;
 import com.formkiq.stacks.lambda.s3.actions.IdpAction;
 import com.formkiq.stacks.lambda.s3.actions.NotificationAction;
 import com.formkiq.stacks.lambda.s3.actions.AddOcrAction;
+import com.formkiq.stacks.lambda.s3.actions.PdfExportAction;
 import com.formkiq.stacks.lambda.s3.actions.SendHttpRequest;
 import com.formkiq.validation.ValidationException;
 import com.google.gson.Gson;
@@ -393,6 +394,12 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
       case PUBLISH -> {
         DocumentAction da = new PublishAction(serviceCache);
+        da.run(logger, siteId, documentId, actions, action);
+        updateComplete = true;
+      }
+
+      case PDFEXPORT -> {
+        DocumentAction da = new PdfExportAction(serviceCache);
         da.run(logger, siteId, documentId, actions, action);
         updateComplete = true;
       }
