@@ -41,6 +41,7 @@ import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentMetadata;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiAuthorization;
@@ -56,6 +57,8 @@ import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.aws.services.lambda.services.CacheService;
+import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.services.ActionsNotificationService;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.transformers.AddDocumentRequestToDocumentItem;
@@ -219,8 +222,15 @@ public class DocumentIdRequestHandler
     new PresignedUrlsToS3Bucket(request).apply(uploadUrls);
 
     ActionsService actionsService = awsservice.getExtension(ActionsService.class);
-    notNull(request.getActions()).forEach(a -> a.userId(authorization.getUsername()));
+    List<Action> actions = notNull(request.getActions());
+    actions.forEach(a -> a.userId(authorization.getUsername()));
     actionsService.saveNewActions(siteId, documentId, request.getActions());
+
+    if (!Strings.isEmpty(item.getDeepLinkPath()) && !actions.isEmpty()) {
+      ActionsNotificationService notificationService =
+          awsservice.getExtension(ActionsNotificationService.class);
+      notificationService.publishNextActionEvent(siteId, documentId);
+    }
 
     uploadUrls.put("siteId", siteId);
     return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(uploadUrls));

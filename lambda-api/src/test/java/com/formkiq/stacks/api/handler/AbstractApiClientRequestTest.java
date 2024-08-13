@@ -178,6 +178,25 @@ public abstract class AbstractApiClientRequestTest {
   }
 
   /**
+   * Clear Sqs Messages.
+   *
+   * @throws InterruptedException InterruptedException
+   */
+  public void clearSqsMessages() throws InterruptedException {
+
+    String sqsDocumentEventUrl = localstack.getSqsDocumentEventUrl();
+
+    AwsServiceCache awsServices = getAwsServices();
+    awsServices.register(SqsService.class, new SqsServiceExtension());
+    SqsService sqsService = awsServices.getExtension(SqsService.class);
+
+    List<Message> msgs = sqsService.receiveMessages(sqsDocumentEventUrl).messages();
+    for (Message msg : msgs) {
+      sqsService.deleteMessage(sqsDocumentEventUrl, msg.receiptHandle());
+    }
+  }
+
+  /**
    * Get Validation Errors.
    * 
    * @param e {@link ApiException}

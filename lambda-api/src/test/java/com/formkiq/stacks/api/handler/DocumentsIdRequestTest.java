@@ -29,9 +29,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
+import com.formkiq.aws.services.lambda.GsonUtil;
 import com.formkiq.client.model.AddAttribute;
 import com.formkiq.client.model.AddAttributeRequest;
 import com.formkiq.client.model.AddDocumentAttribute;
@@ -44,7 +46,9 @@ import com.formkiq.client.model.SchemaAttributes;
 import com.formkiq.client.model.SetSitesSchemaRequest;
 import com.formkiq.client.model.UpdateDocumentRequest;
 import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAction;
@@ -58,11 +62,20 @@ import com.formkiq.client.model.GetDocumentUrlResponse;
 import com.formkiq.client.model.SetDocumentRestoreResponse;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
+import software.amazon.awssdk.services.sqs.model.Message;
 
 /** Unit Tests for request /documents/{documentId}. */
 @ExtendWith(DynamoDbExtension.class)
 @ExtendWith(LocalStackExtension.class)
 public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
+
+  /** Test Timeout. */
+  private static final int TEST_TIMEOUT = 30;
+
+  @BeforeEach
+  void beforeEach() throws InterruptedException {
+    clearSqsMessages();
+  }
 
   /**
    * DELETE /documents/{documentId} request.
@@ -715,6 +728,44 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       assertEquals("123", attributes.get(i++).getStringValue());
       assertEquals("userId#" + attributeKey0 + "#" + attributeKey1, attributes.get(i).getKey());
       assertEquals("123#person#privacy", attributes.get(i).getStringValue());
+    }
+  }
+
+  /**
+   * Update Document actions.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(TEST_TIMEOUT)
+  public void testUpdate08() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+
+      AddDocumentRequest req = new AddDocumentRequest().deepLinkPath("https://www.google.com");
+
+      String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+
+      // when
+      UpdateDocumentRequest updateReq =
+          new UpdateDocumentRequest().deepLinkPath("https://www.google.com/2")
+              .addActionsItem(new AddAction().type(DocumentActionType.PDFEXPORT));
+
+      // when
+      this.documentsApi.updateDocument(documentId, updateReq, siteId, null);
+
+      // then
+      List<Message> sqsMessages = getSqsMessages();
+      assertEquals(1, sqsMessages.size());
+
+      Map<String, String> map =
+          GsonUtil.getInstance().fromJson(sqsMessages.get(0).body(), Map.class);
+
+      map = GsonUtil.getInstance().fromJson(map.get("Message"), Map.class);
+      assertEquals(documentId, map.get("documentId"));
+      assertEquals("actions", map.get("type"));
     }
   }
 }

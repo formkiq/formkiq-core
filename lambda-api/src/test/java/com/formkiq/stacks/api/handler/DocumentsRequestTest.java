@@ -29,8 +29,10 @@ import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.s3.S3ServiceExtension;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
+import com.formkiq.aws.services.lambda.GsonUtil;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.invoker.ApiResponse;
+import com.formkiq.client.model.AddAction;
 import com.formkiq.client.model.AddAttribute;
 import com.formkiq.client.model.AddAttributeRequest;
 import com.formkiq.client.model.AddChildDocument;
@@ -44,6 +46,7 @@ import com.formkiq.client.model.AddDocumentTag;
 import com.formkiq.client.model.AttributeSchemaCompositeKey;
 import com.formkiq.client.model.AttributeSchemaOptional;
 import com.formkiq.client.model.ChildDocument;
+import com.formkiq.client.model.DocumentActionType;
 import com.formkiq.client.model.DocumentAttribute;
 import com.formkiq.client.model.DocumentMetadata;
 import com.formkiq.client.model.DocumentTag;
@@ -57,8 +60,11 @@ import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
+import software.amazon.awssdk.services.sqs.model.Message;
 
 import java.util.Arrays;
 import java.util.List;
@@ -78,6 +84,14 @@ import static org.junit.jupiter.api.Assertions.fail;
 @ExtendWith(DynamoDbExtension.class)
 @ExtendWith(LocalStackExtension.class)
 public class DocumentsRequestTest extends AbstractApiClientRequestTest {
+
+  /** Test Timeout. */
+  private static final int TEST_TIMEOUT = 10;
+
+  @BeforeEach
+  void beforeEach() throws InterruptedException {
+    clearSqsMessages();
+  }
 
   /**
    * Save new File.
@@ -469,9 +483,11 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
         AddDocumentRequest req = new AddDocumentRequest().deepLinkPath(deepLink);
 
         // when
-        String documentId = this.documentsApi.addDocument(req, null, null).getDocumentId();
+        AddDocumentResponse response = this.documentsApi.addDocument(req, null, null);
 
         // then
+        String documentId = response.getDocumentId();
+
         GetDocumentResponse doc = this.documentsApi.getDocument(documentId, siteId, null);
         assertEquals(e.getValue(), doc.getContentType());
 
@@ -485,6 +501,42 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
         doc = this.documentsApi.getDocument(documentId, siteId, null);
         assertEquals("application/pdf", doc.getContentType());
       }
+    }
+  }
+
+  /**
+   * Save google drive deep link with actions.
+   *
+   */
+  @Test
+  @Timeout(TEST_TIMEOUT)
+  public void testPost12() throws ApiException, InterruptedException {
+    // given
+    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+
+      clearSqsMessages();
+      setBearerToken(siteId);
+
+      String deepLink = "https://docs.google.com/document/d/1tyOQ3yUL9dtpbuMOt7s/edit?usp=sharing";
+
+      AddDocumentRequest req = new AddDocumentRequest().deepLinkPath(deepLink)
+          .addActionsItem(new AddAction().type(DocumentActionType.PDFEXPORT));
+
+      // when
+      AddDocumentResponse response = this.documentsApi.addDocument(req, null, null);
+
+      // then
+      String documentId = response.getDocumentId();
+
+      List<Message> sqsMessages = getSqsMessages();
+      assertEquals(1, sqsMessages.size());
+
+      Map<String, String> map =
+          GsonUtil.getInstance().fromJson(sqsMessages.get(0).body(), Map.class);
+
+      map = GsonUtil.getInstance().fromJson(map.get("Message"), Map.class);
+      assertEquals(documentId, map.get("documentId"));
+      assertEquals("actions", map.get("type"));
     }
   }
 

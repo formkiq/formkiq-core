@@ -36,6 +36,8 @@ import com.formkiq.aws.services.lambda.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.ConflictException;
+import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.services.ActionsNotificationService;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.transformers.AddDocumentRequestToDocumentItem;
@@ -267,8 +269,15 @@ public class DocumentsUploadRequestHandler
     service.saveDocument(siteId, item, tags, documentAttributes, options);
 
     ActionsService actionsService = awsservice.getExtension(ActionsService.class);
-    notNull(request.getActions()).forEach(a -> a.userId(authorization.getUsername()));
-    actionsService.saveNewActions(siteId, documentId, request.getActions());
+    List<Action> actions = notNull(request.getActions());
+    actions.forEach(a -> a.userId(authorization.getUsername()));
+    actionsService.saveNewActions(siteId, documentId, actions);
+
+    if (!Strings.isEmpty(item.getDeepLinkPath()) && !actions.isEmpty()) {
+      ActionsNotificationService notificationService =
+          awsservice.getExtension(ActionsNotificationService.class);
+      notificationService.publishNextActionEvent(siteId, documentId);
+    }
 
     return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
   }
