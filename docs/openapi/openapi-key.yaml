@@ -9448,6 +9448,9 @@
                 type:
                   type: string
                   description: FormKiQ type
+                appEnvironment:
+                  type: string
+                  description: FormKiQ App Environment
                 modules:
                   type: array
                   description: List of installed modules

@@ -53,6 +53,7 @@ public class VersionRequestTest extends AbstractAwsIntegrationTest {
   public void testVersion01() throws Exception {
     for (ApiClient client : getApiClients(null)) {
       SystemManagementApi api = new SystemManagementApi(client);
+      assertNotNull(api.getVersion().getAppEnvironment());
       assertNotNull(api.getVersion().getVersion());
       assertNotNull(api.getVersion().getType());
     }

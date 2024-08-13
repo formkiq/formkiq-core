@@ -56,7 +56,7 @@ public class VersionRequestHandler implements ApiGatewayRequestHandler, ApiGatew
         .map(e -> e.getKey().replaceAll("MODULE_", "")).collect(Collectors.toList());
 
     return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(Map.of("version", version,
-        "type", awsservice.environment("FORMKIQ_TYPE"), "modules", modules)));
+        "type", awsservice.environment("FORMKIQ_TYPE"), "appEnvironment", awsservice.environment("APP_ENVIRONMENT"), "modules", modules)));
   }
 
   @Override
