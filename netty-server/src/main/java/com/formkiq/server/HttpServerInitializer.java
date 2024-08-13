@@ -23,19 +23,6 @@
  */
 package com.formkiq.server;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import org.apache.commons.cli.CommandLine;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.objects.Strings;
@@ -77,6 +64,7 @@ import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.http.HttpServerExpectContinueHandler;
 import io.netty.handler.stream.ChunkedWriteHandler;
+import org.apache.commons.cli.CommandLine;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -84,6 +72,19 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.DescribeTableRequest;
 import software.amazon.awssdk.services.dynamodb.model.DescribeTableResponse;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * {@link ChannelInitializer} for Http Server.
@@ -109,7 +110,7 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
   /** Documents Stating S3 Bucket. */
   private static final String STAGING_DOCUMENTS_BUCKET = "stagingdocuments";
   /** {@link ScheduledExecutorService}. */
-  private ScheduledExecutorService executorService = Executors.newScheduledThreadPool(1);
+  private final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(1);
   /** {@link NettyRequestHandler}. */
   private NettyRequestHandler handler;
   /** {@link StagingS3Create}. */
@@ -187,12 +188,12 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
     NotificationConfiguration bucketNotification =
         mc.getBucketNotification(GetBucketNotificationArgs.builder().bucket(bucket).build());
 
-    if (bucketNotification.queueConfigurationList().size() < 1) {
+    if (bucketNotification.queueConfigurationList().isEmpty()) {
       NotificationConfiguration notificationConfiguration = new NotificationConfiguration();
       QueueConfiguration q = new QueueConfiguration();
-      q.setEvents(Arrays.asList(EventType.OBJECT_CREATED_ANY));
+      q.setEvents(List.of(EventType.OBJECT_CREATED_ANY));
       q.setQueue("arn:minio:sqs::" + eventKey + ":webhook");
-      notificationConfiguration.setQueueConfigurationList(Arrays.asList(q));
+      notificationConfiguration.setQueueConfigurationList(List.of(q));
 
       mc.setBucketNotification(SetBucketNotificationArgs.builder().bucket(bucket)
           .config(notificationConfiguration).build());
@@ -239,9 +240,8 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
     String s3PresignerUrl = commandLine.getOptionValue("s3-presigner-url");
 
     try {
-      Map<String, URI> awsServiceEndpoints = Map.of("dynamodb", new URI(dynamoDbUrl), "s3",
-          new URI(s3Url), "s3presigner", new URI(s3PresignerUrl));
-      return awsServiceEndpoints;
+      return Map.of("dynamodb", new URI(dynamoDbUrl), "s3", new URI(s3Url), "s3presigner",
+          new URI(s3PresignerUrl));
     } catch (URISyntaxException e) {
       throw new RuntimeException(e);
     }
@@ -251,6 +251,7 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
 
     Map<String, String> env = new HashMap<>();
     env.put("USER_AUTHENTICATION", "cognito");
+    env.put("APP_ENVIRONMENT", "dev");
     env.put("VERSION", "1.13");
     env.put("FORMKIQ_TYPE", "core");
     env.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);

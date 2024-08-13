@@ -48,7 +48,7 @@ public class HttpServer {
   /** Default Server Port. */
   private static final int DEFAULT_PORT = 8080;
   /** {@link Logger}. */
-  private static Logger logger = Logger.getLogger(HttpServer.class.getName());
+  private static final Logger logger = Logger.getLogger(HttpServer.class.getName());
 
   /**
    * Create Options.
@@ -114,9 +114,9 @@ public class HttpServer {
   }
 
   /** {@link CommandLine}. */
-  private CommandLine commandLine;
+  private final CommandLine commandLine;
   /** Server Port. */
-  private int port;
+  private final int port;
 
   /**
    * constructor.
@@ -158,8 +158,7 @@ public class HttpServer {
       }
     }
 
-    String[] newargs = set.toArray(new String[0]);
-    return newargs;
+    return set.toArray(new String[0]);
   }
 
   /**

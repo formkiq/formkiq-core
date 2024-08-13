@@ -23,27 +23,6 @@
  */
 package com.formkiq.server;
 
-import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContent;
-import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContentLength;
-import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentFulltext;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpRequest.BodyPublishers;
-import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.model.AddDocumentRequest;
@@ -56,6 +35,28 @@ import com.formkiq.testutils.aws.TypesenseExtension;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContent;
+import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContentLength;
+import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentFulltext;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Unit Test for {@link HttpServer}.
@@ -81,14 +82,14 @@ public class HttpServerTest {
   private static final int TEST_TIME = 30;
 
   /** {@link ApiClient}. */
-  private ApiClient apiClient = new ApiClient().setReadTimeout(0).setBasePath(BASE_URL)
+  private final ApiClient apiClient = new ApiClient().setReadTimeout(0).setBasePath(BASE_URL)
       .addDefaultHeader("Authorization", NettyExtension.API_KEY);
 
   /** {@link DocumentsApi}. */
-  private DocumentsApi documentsApi = new DocumentsApi(this.apiClient);
+  private final DocumentsApi documentsApi = new DocumentsApi(this.apiClient);
 
   /** {@link Gson}. */
-  private Gson gson = new GsonBuilder().create();
+  private final Gson gson = new GsonBuilder().create();
 
   private void assertCorsHeaders(final HttpResponse<String> response) {
     assertEquals("Content-Type,X-Amz-Date,Authorization,X-Api-Key",
@@ -103,31 +104,30 @@ public class HttpServerTest {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIME)
+  @Timeout(value = TEST_TIME)
   void testAddDocument01() throws Exception {
     // given
-    String siteId = null;
     String content = UUID.randomUUID().toString();
     String path = "sometest123.txt";
     AddDocumentRequest req =
         new AddDocumentRequest().path(path).content(content).contentType("text/plain");
 
     // when
-    AddDocumentResponse addDocument = this.documentsApi.addDocument(req, siteId, null);
+    AddDocumentResponse addDocument = this.documentsApi.addDocument(req, null, null);
 
     // then
     String documentId = addDocument.getDocumentId();
     assertNotNull(documentId);
-    waitForDocumentContent(this.apiClient, siteId, documentId);
+    waitForDocumentContent(this.apiClient, null, documentId);
 
     assertEquals(content,
-        this.documentsApi.getDocumentContent(documentId, null, siteId, null).getContent());
+        this.documentsApi.getDocumentContent(documentId, null, null, null).getContent());
 
-    GetDocumentResponse response = waitForDocumentContentLength(this.apiClient, siteId, documentId);
+    GetDocumentResponse response = waitForDocumentContentLength(this.apiClient, null, documentId);
     assertEquals(content.length(), response.getContentLength().intValue());
 
     GetDocumentFulltextResponse fulltext =
-        waitForDocumentFulltext(this.apiClient, siteId, documentId);
+        waitForDocumentFulltext(this.apiClient, null, documentId);
     assertEquals(path, fulltext.getPath());
   }
 
@@ -137,7 +137,7 @@ public class HttpServerTest {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIME)
+  @Timeout(value = TEST_TIME)
   void testGetDocument01() throws Exception {
     // given
     // when
@@ -154,7 +154,7 @@ public class HttpServerTest {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIME)
+  @Timeout(value = TEST_TIME)
   void testInvalidEndpoint() throws Exception {
     HttpClient client = HttpClient.newHttpClient();
     HttpRequest request = HttpRequest.newBuilder().header("Authorization", NettyExtension.API_KEY)
@@ -172,7 +172,7 @@ public class HttpServerTest {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIME)
+  @Timeout(value = TEST_TIME)
   void testLoginFailed() throws Exception {
     HttpClient client = HttpClient.newHttpClient();
     Map<String, Object> body = Map.of("username", "jsmith", "password", "12345");
@@ -195,7 +195,7 @@ public class HttpServerTest {
    */
   @SuppressWarnings("unchecked")
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIME)
+  @Timeout(value = TEST_TIME)
   void testLoginOk() throws Exception {
     HttpClient client = HttpClient.newHttpClient();
     Map<String, Object> body = Map.of("username", NettyExtension.ADMIN_USERNAME, "password",
@@ -224,7 +224,7 @@ public class HttpServerTest {
    */
   @SuppressWarnings("unchecked")
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIME)
+  @Timeout(value = TEST_TIME)
   void testSites() throws Exception {
     HttpClient client = HttpClient.newHttpClient();
     HttpRequest request = HttpRequest.newBuilder().header("Authorization", NettyExtension.API_KEY)
@@ -250,7 +250,7 @@ public class HttpServerTest {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIME)
+  @Timeout(value = TEST_TIME)
   void testUnAuthorizedEndpoint() throws Exception {
     HttpClient client = HttpClient.newHttpClient();
     HttpRequest request = HttpRequest.newBuilder().uri(new URI(BASE_URL + "/hello")).build();
@@ -268,7 +268,7 @@ public class HttpServerTest {
    */
   @SuppressWarnings("unchecked")
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIME)
+  @Timeout(value = TEST_TIME)
   void testVersions() throws Exception {
     HttpClient client = HttpClient.newHttpClient();
     HttpRequest request = HttpRequest.newBuilder().header("Authorization", NettyExtension.API_KEY)
@@ -291,7 +291,7 @@ public class HttpServerTest {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIME)
+  @Timeout(value = TEST_TIME)
   void testOptions() throws Exception {
     HttpClient client = HttpClient.newHttpClient();
     HttpRequest request =
