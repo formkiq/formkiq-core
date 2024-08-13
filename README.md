@@ -55,7 +55,7 @@ And it ALL runs in *your* AWS account.
 
 ✅ Supports Both Multi-Tenant and Multi-Instance
 
-✅ [Commerical Support Available](https://www.formkiq.com)
+✅ [Commercial Support Available](https://www.formkiq.com)
 
 ## Demo
 
