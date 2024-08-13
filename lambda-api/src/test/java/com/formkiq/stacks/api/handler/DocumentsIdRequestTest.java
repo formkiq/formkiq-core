@@ -768,4 +768,39 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       assertEquals("actions", map.get("type"));
     }
   }
+
+  /**
+   * Update Document deeplink and content.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(TEST_TIMEOUT)
+  public void testUpdate09() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+
+      AddDocumentRequest req = new AddDocumentRequest().deepLinkPath("https://www.google.com");
+
+      String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+
+      // when
+      UpdateDocumentRequest updateReq =
+          new UpdateDocumentRequest().deepLinkPath("https://www.google.com/2").content("test");
+
+      // when
+      try {
+        this.documentsApi.updateDocument(documentId, updateReq, siteId, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"error\":\"both 'content', and 'deepLinkPath' cannot be set\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
 }

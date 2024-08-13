@@ -573,6 +573,38 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * document with content and deep link.
+   *
+   */
+  @Test
+  @Timeout(TEST_TIMEOUT)
+  public void testPost14() throws InterruptedException {
+    // given
+    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+
+      clearSqsMessages();
+      setBearerToken(siteId);
+
+      String deepLink =
+          "https://1drv.ms/w/c/73bd1abf56df7172/Ef0NPjbUj7BHlPuH_5dpE8EBdEX4FHcdLxbaTvvWQF161A?e=jkK12r";
+
+      AddDocumentRequest req = new AddDocumentRequest().deepLinkPath(deepLink).content("some data");
+
+      // when
+      try {
+        this.documentsApi.addDocument(req, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"error\":\"both 'content', and 'deepLinkPath' cannot be set\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
    * Test Publish no published document.
    * 
    * @throws ApiException ApiException

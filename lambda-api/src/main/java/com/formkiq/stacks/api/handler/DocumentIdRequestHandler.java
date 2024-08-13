@@ -26,6 +26,7 @@ package com.formkiq.stacks.api.handler;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_FOUND;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.util.ArrayList;
@@ -75,6 +76,7 @@ import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.validation.ValidationError;
+import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
@@ -199,7 +201,7 @@ public class DocumentIdRequestHandler
         new AddDocumentRequestToDocumentItem(existingItem, authorization.getUsername(), null)
             .apply(request);
 
-    validatePatch(awsservice, siteId, documentId, item);
+    validatePatch(awsservice, siteId, documentId, item, request);
 
     logger.log("setting userId: " + item.getUserId() + " contentType: " + item.getContentType());
 
@@ -243,10 +245,12 @@ public class DocumentIdRequestHandler
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param doc {@link DocumentItem}
+   * @param request {@link AddDocumentRequest}
    * @throws Exception Exception
    */
   private void validatePatch(final AwsServiceCache awsservice, final String siteId,
-      final String documentId, final DocumentItem doc) throws Exception {
+      final String documentId, final DocumentItem doc, final AddDocumentRequest request)
+      throws Exception {
 
     DocumentService docService = awsservice.getExtension(DocumentService.class);
     DocumentItem item = docService.findDocument(siteId, documentId);
@@ -259,6 +263,15 @@ public class DocumentIdRequestHandler
     }
 
     Collection<ValidationError> errors = this.documentValidator.validate(metadata);
+
+    boolean emptyDeepLink = isEmpty(doc.getDeepLinkPath()) && isEmpty(item.getDeepLinkPath());
+    boolean emptyContent = isEmpty(request.getContent());
+
+    if (!emptyDeepLink && !emptyContent) {
+      errors
+          .add(new ValidationErrorImpl().error("both 'content', and 'deepLinkPath' cannot be set"));
+    }
+
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }

@@ -31,6 +31,7 @@ import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
 import java.time.ZonedDateTime;
 import java.time.zone.ZoneRulesException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -325,11 +326,19 @@ public class DocumentsRequestHandler
 
     boolean isFolder = isFolder(item);
 
-    if (!isFolder && isEmpty(item.getContent()) && notNull(item.getDocuments()).isEmpty()
-        && isEmpty(item.getDeepLinkPath())) {
+    boolean emptyContent = isEmpty(item.getContent());
+    boolean emptyDeepLink = isEmpty(item.getDeepLinkPath());
+    Collection<ValidationError> errors = new ArrayList<>();
 
-      Collection<ValidationError> errors = Collections.singletonList(new ValidationErrorImpl()
+    if (!isFolder && emptyContent && notNull(item.getDocuments()).isEmpty() && emptyDeepLink) {
+      errors.add(new ValidationErrorImpl()
           .error("either 'content', 'documents', or 'deepLinkPath' are required"));
+    } else if (!emptyDeepLink && !emptyContent) {
+      errors
+          .add(new ValidationErrorImpl().error("both 'content', and 'deepLinkPath' cannot be set"));
+    }
+
+    if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }
   }
