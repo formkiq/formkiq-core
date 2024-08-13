@@ -149,7 +149,7 @@ public class Strings {
   }
 
   public static boolean isUrl(final String s) {
-    String regex = "^[a-zA-Z][a-zA-Z0-9]+" + SCHEME_AUTHORITY + "[a-zA-Z]+.*$";
+    String regex = "^[a-zA-Z][a-zA-Z0-9]+" + SCHEME_AUTHORITY + "[a-zA-Z0-9]+.*$";
     Pattern pattern = Pattern.compile(regex);
     Matcher matcher = pattern.matcher(s);
     return matcher.matches();

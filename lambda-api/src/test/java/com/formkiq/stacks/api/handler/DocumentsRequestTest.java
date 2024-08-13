@@ -543,6 +543,36 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * Save micosoft drive deep link.
+   *
+   */
+  @Test
+  @Timeout(TEST_TIMEOUT)
+  public void testPost13() throws ApiException, InterruptedException {
+    // given
+    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+
+      clearSqsMessages();
+      setBearerToken(siteId);
+
+      String deepLink =
+          "https://1drv.ms/w/c/73bd1abf56df7172/Ef0NPjbUj7BHlPuH_5dpE8EBdEX4FHcdLxbaTvvWQF161A?e=jkK12r";
+
+      AddDocumentRequest req = new AddDocumentRequest().deepLinkPath(deepLink);
+
+      // when
+      AddDocumentResponse response = this.documentsApi.addDocument(req, null, null);
+
+      // then
+      assertNull(response.getUploadUrl());
+      String documentId = response.getDocumentId();
+
+      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
+      assertEquals(deepLink, document.getDeepLinkPath());
+    }
+  }
+
+  /**
    * Test Publish no published document.
    * 
    * @throws ApiException ApiException
