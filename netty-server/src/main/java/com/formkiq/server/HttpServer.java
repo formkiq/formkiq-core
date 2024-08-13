@@ -48,7 +48,7 @@ public class HttpServer {
   /** Default Server Port. */
   private static final int DEFAULT_PORT = 8080;
   /** {@link Logger}. */
-  private static final Logger logger = Logger.getLogger(HttpServer.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(HttpServer.class.getName());
 
   /**
    * Create Options.
@@ -109,7 +109,7 @@ public class HttpServer {
    * @throws InterruptedException InterruptedException
    */
   public static void main(final String[] args) throws ParseException, InterruptedException {
-    logger.info("Starting FormKiQ server");
+    LOGGER.info("Starting FormKiQ server");
     new HttpServer(args).run();
   }
 
