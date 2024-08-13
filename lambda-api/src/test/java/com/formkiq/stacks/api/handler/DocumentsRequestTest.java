@@ -486,6 +486,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
         AddDocumentResponse response = this.documentsApi.addDocument(req, null, null);
 
         // then
+        assertNull(response.getUploadUrl());
         String documentId = response.getDocumentId();
 
         GetDocumentResponse doc = this.documentsApi.getDocument(documentId, siteId, null);
@@ -526,6 +527,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       AddDocumentResponse response = this.documentsApi.addDocument(req, null, null);
 
       // then
+      assertNull(response.getUploadUrl());
       String documentId = response.getDocumentId();
 
       List<Message> sqsMessages = getSqsMessages();

@@ -34,6 +34,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
+
+import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.handler.AddDocumentRequest;
@@ -81,8 +83,10 @@ public class AddDocumentRequestToPresignedUrls
     String documentId = item.getDocumentId();
     map.put("documentId", documentId);
 
-    String docUrl = generatePresignedUrl(documentId);
-    map.put("url", docUrl);
+    if (Strings.isEmpty(item.getDeepLinkPath())) {
+      String docUrl = generatePresignedUrl(documentId);
+      map.put("url", docUrl);
+    }
 
     List<Map<String, String>> child = new ArrayList<>();
 
@@ -93,8 +97,10 @@ public class AddDocumentRequestToPresignedUrls
       String docid = o.getDocumentId();
       m.put("documentId", docid);
 
-      String url = generatePresignedUrl(docid);
-      m.put("url", url);
+      if (Strings.isEmpty(o.getDeepLinkPath())) {
+        String url = generatePresignedUrl(docid);
+        m.put("url", url);
+      }
 
       child.add(m);
     }
