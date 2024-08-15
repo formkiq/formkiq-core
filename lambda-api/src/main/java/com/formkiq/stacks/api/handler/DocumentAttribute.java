@@ -25,6 +25,7 @@ package com.formkiq.stacks.api.handler;
 
 import java.util.List;
 import com.formkiq.graalvm.annotations.Reflectable;
+import com.formkiq.stacks.dynamodb.attributes.DocumentRelationshipType;
 
 /**
  * Document Attributes Request.

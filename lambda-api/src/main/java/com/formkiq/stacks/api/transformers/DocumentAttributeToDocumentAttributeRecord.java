@@ -23,15 +23,18 @@
  */
 package com.formkiq.stacks.api.transformers;
 
-import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
-import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.function.Function;
 import com.formkiq.stacks.api.handler.DocumentAttribute;
 import com.formkiq.stacks.dynamodb.attributes.AttributeKeyReserved;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
+import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecordBuilder;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.function.Function;
+
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 
 /**
  * Convert {@link DocumentAttribute} to {@link DocumentAttributeRecord}.
@@ -123,15 +126,10 @@ public class DocumentAttributeToDocumentAttributeRecord
 
   private void addRelationship(final DocumentAttribute a,
       final Collection<DocumentAttributeRecord> c) {
-    String eq = a.getRelationship() + "#" + a.getDocumentId();
-    addToList(c, DocumentAttributeValueType.RELATIONSHIPS,
-        AttributeKeyReserved.RELATIONSHIPS.getKey(), eq, null, null);
 
-    if (a.getInverseRelationship() != null) {
-      eq = a.getInverseRelationship() + "#" + this.docId;
-      addToList(c, a.getDocumentId(), DocumentAttributeValueType.RELATIONSHIPS,
-          AttributeKeyReserved.RELATIONSHIPS.getKey(), eq, null, null);
-    }
+    Collection<DocumentAttributeRecord> records = new DocumentAttributeRecordBuilder().apply(
+        this.docId, a.getDocumentId(), a.getRelationship(), a.getInverseRelationship(), this.user);
+    c.addAll(records);
   }
 
   private void addToList(final Collection<DocumentAttributeRecord> list,
