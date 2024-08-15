@@ -23,6 +23,53 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import com.formkiq.aws.services.lambda.ApiResponseStatus;
+import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.model.AddAttribute;
+import com.formkiq.client.model.AddAttributeRequest;
+import com.formkiq.client.model.AddAttributeResponse;
+import com.formkiq.client.model.AddDocumentAttribute;
+import com.formkiq.client.model.AddDocumentAttributeRelationship;
+import com.formkiq.client.model.AddDocumentAttributeStandard;
+import com.formkiq.client.model.AddDocumentAttributeValue;
+import com.formkiq.client.model.AddDocumentAttributesRequest;
+import com.formkiq.client.model.AddDocumentRequest;
+import com.formkiq.client.model.AddDocumentUploadRequest;
+import com.formkiq.client.model.Attribute;
+import com.formkiq.client.model.AttributeDataType;
+import com.formkiq.client.model.AttributeType;
+import com.formkiq.client.model.DeleteResponse;
+import com.formkiq.client.model.DocumentAttribute;
+import com.formkiq.client.model.DocumentRelationshipType;
+import com.formkiq.client.model.DocumentSearch;
+import com.formkiq.client.model.DocumentSearchAttribute;
+import com.formkiq.client.model.DocumentSearchRange;
+import com.formkiq.client.model.DocumentSearchRequest;
+import com.formkiq.client.model.DocumentSearchResponse;
+import com.formkiq.client.model.DocumentTag;
+import com.formkiq.client.model.GetDocumentAttributeResponse;
+import com.formkiq.client.model.GetDocumentAttributesResponse;
+import com.formkiq.client.model.SearchResponseFields;
+import com.formkiq.client.model.SearchResultDocument;
+import com.formkiq.client.model.SearchResultDocumentAttribute;
+import com.formkiq.client.model.SetDocumentAttributeRequest;
+import com.formkiq.client.model.SetDocumentAttributesRequest;
+import com.formkiq.client.model.SetResponse;
+import com.formkiq.client.model.UpdateDocumentRequest;
+import com.formkiq.stacks.dynamodb.attributes.AttributeKeyReserved;
+import com.formkiq.testutils.aws.DynamoDbExtension;
+import com.formkiq.testutils.aws.LocalStackExtension;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
+
 import static com.formkiq.aws.dynamodb.objects.Objects.formatDouble;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.testutils.aws.FkqAttributeService.createNumberAttribute;
@@ -34,49 +81,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import java.math.BigDecimal;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
-
-import com.formkiq.aws.services.lambda.ApiResponseStatus;
-import com.formkiq.client.model.AddDocumentAttributeStandard;
-import com.formkiq.client.model.DocumentTag;
-import com.formkiq.client.model.SearchResultDocumentAttribute;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import com.formkiq.client.invoker.ApiException;
-import com.formkiq.client.model.AddAttribute;
-import com.formkiq.client.model.AddAttributeRequest;
-import com.formkiq.client.model.AddAttributeResponse;
-import com.formkiq.client.model.AddDocumentAttribute;
-import com.formkiq.client.model.AddDocumentAttributeValue;
-import com.formkiq.client.model.AddDocumentAttributesRequest;
-import com.formkiq.client.model.AddDocumentRequest;
-import com.formkiq.client.model.AddDocumentUploadRequest;
-import com.formkiq.client.model.Attribute;
-import com.formkiq.client.model.AttributeDataType;
-import com.formkiq.client.model.AttributeType;
-import com.formkiq.client.model.DeleteResponse;
-import com.formkiq.client.model.DocumentAttribute;
-import com.formkiq.client.model.DocumentSearch;
-import com.formkiq.client.model.DocumentSearchAttribute;
-import com.formkiq.client.model.DocumentSearchRange;
-import com.formkiq.client.model.DocumentSearchRequest;
-import com.formkiq.client.model.DocumentSearchResponse;
-import com.formkiq.client.model.GetDocumentAttributeResponse;
-import com.formkiq.client.model.GetDocumentAttributesResponse;
-import com.formkiq.client.model.SearchResponseFields;
-import com.formkiq.client.model.SearchResultDocument;
-import com.formkiq.client.model.SetDocumentAttributeRequest;
-import com.formkiq.client.model.SetDocumentAttributesRequest;
-import com.formkiq.client.model.SetResponse;
-import com.formkiq.client.model.UpdateDocumentRequest;
-import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.LocalStackExtension;
 
 /** Unit Tests for request /attributes. */
 @ExtendWith(DynamoDbExtension.class)
@@ -143,11 +147,17 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
   private String addDocument(final String siteId, final String key, final String stringValue,
       final BigDecimal numberValue) throws ApiException {
 
+    AddDocumentRequest docReq = new AddDocumentRequest().content("test");
+
     AddDocumentAttributeStandard o = new AddDocumentAttributeStandard().key(key)
         .stringValue(stringValue).booleanValue(null).numberValue(numberValue);
-    AddDocumentRequest docReq =
-        new AddDocumentRequest().content("test").addAttributesItem(new AddDocumentAttribute(o));
+    docReq.addAttributesItem(new AddDocumentAttribute(o));
 
+    return this.documentsApi.addDocument(docReq, siteId, null).getDocumentId();
+  }
+
+  private String addDocument(final String siteId) throws ApiException {
+    AddDocumentRequest docReq = new AddDocumentRequest().content("test");
     return this.documentsApi.addDocument(docReq, siteId, null).getDocumentId();
   }
 
@@ -591,6 +601,150 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
             + "\"error\":\"attribute does not support a value\"}]}", e.getResponseBody());
       }
     }
+  }
+
+  /**
+   * POST /documents with Relationships bi directional.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testAddDocumentAttribute10() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+
+      setBearerToken(siteId);
+
+      String documentId0 = addDocument(siteId);
+
+      AddDocumentAttributeRelationship o = new AddDocumentAttributeRelationship()
+          .documentId(documentId0).relationship(DocumentRelationshipType.PRIMARY)
+          .inverseRelationship(DocumentRelationshipType.APPENDIX);
+      AddDocumentRequest docReq =
+          new AddDocumentRequest().content("test").addAttributesItem(new AddDocumentAttribute(o));
+
+      // when
+      String documentId = this.documentsApi.addDocument(docReq, siteId, null).getDocumentId();
+
+      // then
+      GetDocumentAttributeResponse response0 = this.documentAttributesApi
+          .getDocumentAttribute(documentId, AttributeKeyReserved.RELATIONSHIPS.getKey(), siteId);
+      assertEquals("PRIMARY#" + documentId0,
+          Objects.requireNonNull(response0.getAttribute()).getStringValue());
+      assertEquals("joesmith", Objects.requireNonNull(response0.getAttribute()).getUserId());
+
+      GetDocumentAttributeResponse response1 = this.documentAttributesApi
+          .getDocumentAttribute(documentId0, AttributeKeyReserved.RELATIONSHIPS.getKey(), siteId);
+      assertEquals("APPENDIX#" + documentId,
+          Objects.requireNonNull(response1.getAttribute()).getStringValue());
+      assertEquals("joesmith", Objects.requireNonNull(response1.getAttribute()).getUserId());
+    }
+  }
+
+  /**
+   * POST /documents with Relationships uni-directional.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testAddDocumentAttribute11() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+
+      setBearerToken(siteId);
+
+      String documentId0 = addDocument(siteId);
+
+      AddDocumentAttributeRelationship o = new AddDocumentAttributeRelationship()
+          .documentId(documentId0).relationship(DocumentRelationshipType.PRIMARY);
+      AddDocumentRequest docReq =
+          new AddDocumentRequest().content("test").addAttributesItem(new AddDocumentAttribute(o));
+
+      // when
+      String documentId = this.documentsApi.addDocument(docReq, siteId, null).getDocumentId();
+
+      // then
+      GetDocumentAttributeResponse response0 = this.documentAttributesApi
+          .getDocumentAttribute(documentId, AttributeKeyReserved.RELATIONSHIPS.getKey(), siteId);
+      assertEquals("PRIMARY#" + documentId0,
+          Objects.requireNonNull(response0.getAttribute()).getStringValue());
+      assertEquals("joesmith", Objects.requireNonNull(response0.getAttribute()).getUserId());
+
+      try {
+        this.documentAttributesApi.getDocumentAttribute(documentId0,
+            AttributeKeyReserved.RELATIONSHIPS.getKey(), siteId);
+        fail();
+      } catch (ApiException e) {
+        assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
+        assertEquals("{\"message\":\"attribute 'Relationships' not found on document '"
+            + documentId0 + "'\"}", e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * POST /documents multiple parent with attachments.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testAddDocumentAttribute12() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+
+      setBearerToken(siteId);
+
+      final String documentId0 = addDocument(siteId);
+      final String documentId1 = addDocument(siteId);
+      final String documentId2 = addDocument(siteId);
+      final String documentId3 = addDocument(siteId);
+
+      // when
+      addRelationship(siteId, documentId0, DocumentRelationshipType.APPENDIX, documentId1);
+      addRelationship(siteId, documentId0, DocumentRelationshipType.APPENDIX, documentId2);
+      addRelationship(siteId, documentId0, DocumentRelationshipType.ASSOCIATED, documentId2);
+      addRelationship(siteId, documentId1, DocumentRelationshipType.PRIMARY, documentId0);
+      addRelationship(siteId, documentId2, DocumentRelationshipType.PRIMARY, documentId0);
+
+      // then
+      GetDocumentAttributeResponse response = this.documentAttributesApi
+          .getDocumentAttribute(documentId0, AttributeKeyReserved.RELATIONSHIPS.getKey(), siteId);
+      List<String> stringValues =
+          notNull(Objects.requireNonNull(response.getAttribute()).getStringValues());
+      assertTrue(stringValues.contains("APPENDIX#" + documentId1));
+      assertTrue(stringValues.contains("APPENDIX#" + documentId2));
+
+      response = this.documentAttributesApi.getDocumentAttribute(documentId1,
+          AttributeKeyReserved.RELATIONSHIPS.getKey(), siteId);
+      assertEquals("PRIMARY#" + documentId0,
+          Objects.requireNonNull(response.getAttribute()).getStringValue());
+
+      response = this.documentAttributesApi.getDocumentAttribute(documentId2,
+          AttributeKeyReserved.RELATIONSHIPS.getKey(), siteId);
+      assertEquals("PRIMARY#" + documentId0,
+          Objects.requireNonNull(response.getAttribute()).getStringValue());
+
+      try {
+        this.documentAttributesApi.getDocumentAttribute(documentId3,
+            AttributeKeyReserved.RELATIONSHIPS.getKey(), siteId);
+        fail();
+      } catch (ApiException e) {
+        assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
+        assertEquals("{\"message\":\"attribute 'Relationships' not found on document '"
+            + documentId3 + "'\"}", e.getResponseBody());
+      }
+    }
+  }
+
+  private void addRelationship(final String siteId, final String d0,
+      final DocumentRelationshipType r0, final String d1) throws ApiException {
+
+    AddDocumentAttributeRelationship o =
+        new AddDocumentAttributeRelationship().documentId(d1).relationship(r0);
+
+    AddDocumentAttributesRequest req =
+        new AddDocumentAttributesRequest().addAttributesItem(new AddDocumentAttribute(o));
+    this.documentAttributesApi.addDocumentAttributes(d0, req, siteId, null);
   }
 
   /**

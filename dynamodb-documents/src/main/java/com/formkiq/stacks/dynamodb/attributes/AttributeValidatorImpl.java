@@ -62,8 +62,8 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
   public Map<String, AttributeRecord> getAttributeRecordMap(final String siteId,
       final Collection<DocumentAttributeRecord> documentAttributes) {
 
-    List<String> attributeKeys = documentAttributes.stream().filter(a -> !isEmpty(a.getKey()))
-        .map(DocumentAttributeRecord::getKey).toList();
+    List<String> attributeKeys = documentAttributes.stream().map(DocumentAttributeRecord::getKey)
+        .filter(key -> !isEmpty(key)).toList();
 
     return this.attributeService.getAttributes(siteId, attributeKeys);
   }
@@ -132,13 +132,15 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
 
   /**
    * Validate Attribute exists and has the correct data type.
-   * 
+   *
+   * @param siteId {@link String}
    * @param attributesMap {@link Map} {@link AttributeRecord}
    * @param documentAttributes {@link Collection} {@link DocumentAttributeRecord}
    * @param access {@link AttributeValidationAccess}
    * @param errors {@link Collection} {@link ValidationError}
    */
-  private void validateAttributeExistsAndDataType(final Map<String, AttributeRecord> attributesMap,
+  private void validateAttributeExistsAndDataType(final String siteId,
+      final Map<String, AttributeRecord> attributesMap,
       final Collection<DocumentAttributeRecord> documentAttributes,
       final AttributeValidationAccess access, final Collection<ValidationError> errors) {
 
@@ -148,8 +150,17 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
 
         if (!attributesMap.containsKey(da.getKey())) {
 
-          String errorMsg = "attribute '" + da.getKey() + "' not found";
-          errors.add(new ValidationErrorImpl().key(da.getKey()).error(errorMsg));
+          AttributeKeyReserved reserved = AttributeKeyReserved.find(da.getKey());
+
+          if (reserved != null) {
+
+            attributeService.addAttribute(siteId, da.getKey(), AttributeDataType.STRING,
+                AttributeType.STANDARD);
+
+          } else {
+            String errorMsg = "attribute '" + da.getKey() + "' not found";
+            errors.add(new ValidationErrorImpl().key(da.getKey()).error(errorMsg));
+          }
 
         } else {
 
@@ -290,7 +301,7 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
 
     if (errors.isEmpty()) {
 
-      validateAttributeExistsAndDataType(attributesMap, documentAttributes, access, errors);
+      validateAttributeExistsAndDataType(siteId, attributesMap, documentAttributes, access, errors);
 
       if (errors.isEmpty()) {
 
@@ -340,7 +351,7 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
     validateRequired(documentAttributes, errors);
 
     if (errors.isEmpty()) {
-      validateAttributeExistsAndDataType(attributesMap, documentAttributes, access, errors);
+      validateAttributeExistsAndDataType(siteId, attributesMap, documentAttributes, access, errors);
     }
 
     if (errors.isEmpty() && schemaAttributes != null) {
@@ -357,6 +368,7 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
     for (DocumentAttributeRecord a : documentAttributes) {
 
       if (!DocumentAttributeValueType.CLASSIFICATION.equals(a.getValueType())
+          && !DocumentAttributeValueType.RELATIONSHIPS.equals(a.getValueType())
           && Strings.isEmpty(a.getKey())) {
         errors.add(new ValidationErrorImpl().key("key").error("'key' is missing from attribute"));
       }

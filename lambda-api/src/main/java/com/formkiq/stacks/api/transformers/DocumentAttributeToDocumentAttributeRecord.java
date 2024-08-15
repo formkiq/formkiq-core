@@ -73,6 +73,11 @@ public class DocumentAttributeToDocumentAttributeRecord
       boolean used = false;
       String key = a.getKey();
 
+      if (isRelationship(a)) {
+        used = true;
+        addRelationship(a, c);
+      }
+
       if (!isEmpty(a.getClassificationId())) {
         used = true;
         addToList(c, DocumentAttributeValueType.CLASSIFICATION,
@@ -112,13 +117,36 @@ public class DocumentAttributeToDocumentAttributeRecord
     return c;
   }
 
+  private static boolean isRelationship(final DocumentAttribute a) {
+    return !isEmpty(a.getDocumentId()) && a.getRelationship() != null;
+  }
+
+  private void addRelationship(final DocumentAttribute a,
+      final Collection<DocumentAttributeRecord> c) {
+    String eq = a.getRelationship() + "#" + a.getDocumentId();
+    addToList(c, DocumentAttributeValueType.RELATIONSHIPS,
+        AttributeKeyReserved.RELATIONSHIPS.getKey(), eq, null, null);
+
+    if (a.getInverseRelationship() != null) {
+      eq = a.getInverseRelationship() + "#" + this.docId;
+      addToList(c, a.getDocumentId(), DocumentAttributeValueType.RELATIONSHIPS,
+          AttributeKeyReserved.RELATIONSHIPS.getKey(), eq, null, null);
+    }
+  }
+
   private void addToList(final Collection<DocumentAttributeRecord> list,
+      final DocumentAttributeValueType valueType, final String key, final String stringValue,
+      final Boolean boolValue, final Double numberValue) {
+    addToList(list, this.docId, valueType, key, stringValue, boolValue, numberValue);
+  }
+
+  private void addToList(final Collection<DocumentAttributeRecord> list, final String documentId,
       final DocumentAttributeValueType valueType, final String key, final String stringValue,
       final Boolean boolValue, final Double numberValue) {
 
     DocumentAttributeRecord a = new DocumentAttributeRecord();
     a.setKey(key);
-    a.setDocumentId(this.docId);
+    a.setDocumentId(documentId);
     a.setStringValue(stringValue);
     a.setBooleanValue(boolValue);
     a.setNumberValue(numberValue);

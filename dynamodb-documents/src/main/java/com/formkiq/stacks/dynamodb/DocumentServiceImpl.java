@@ -2282,10 +2282,14 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
         || AttributeValidationAccess.ADMIN_CREATE.equals(validationAccess)) {
 
       Set<String> keys = documentAttributes.stream().map(DocumentAttributeRecord::getKey)
+          .filter(k -> !AttributeKeyReserved.RELATIONSHIPS.getKey().equals(k))
           .collect(Collectors.toSet());
+
       keys.forEach(key -> {
+
         List<DocumentAttributeRecord> documentAttribute =
             findDocumentAttribute(siteId, documentId, key, 1);
+
         if (!documentAttribute.isEmpty()) {
           errors.add(new ValidationErrorImpl().key(key)
               .error("document attribute '" + key + "' already exists"));

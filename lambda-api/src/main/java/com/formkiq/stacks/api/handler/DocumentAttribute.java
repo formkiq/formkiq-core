@@ -46,12 +46,79 @@ public class DocumentAttribute {
   private List<String> stringValues;
   /** {@link String} Classification Id. */
   private String classificationId;
+  /** Document Id. */
+  private String documentId;
+  /** {@link DocumentRelationshipType}. */
+  private DocumentRelationshipType relationship;
+  /** {@link DocumentRelationshipType}. */
+  private DocumentRelationshipType inverseRelationship;
 
   /**
    * constructor.
    */
   public DocumentAttribute() {
 
+  }
+
+  /**
+   * Get Document Id.
+   * 
+   * @return String
+   */
+  public String getDocumentId() {
+    return this.documentId;
+  }
+
+  /**
+   * Set Document Id.
+   * 
+   * @param relationshipDocumentId {@link String}
+   * @return DocumentAttribute
+   */
+  public DocumentAttribute setDocumentId(final String relationshipDocumentId) {
+    this.documentId = relationshipDocumentId;
+    return this;
+  }
+
+  /**
+   * Get {@link DocumentRelationshipType}.
+   * 
+   * @return {@link DocumentRelationshipType}
+   */
+  public DocumentRelationshipType getRelationship() {
+    return this.relationship;
+  }
+
+  /**
+   * Set {@link DocumentRelationshipType}.
+   * 
+   * @param documentRelationship {@link DocumentRelationshipType}
+   * @return DocumentAttribute
+   */
+  public DocumentAttribute setRelationship(final DocumentRelationshipType documentRelationship) {
+    this.relationship = documentRelationship;
+    return this;
+  }
+
+  /**
+   * Inverse {@link DocumentRelationshipType}.
+   * 
+   * @return {@link DocumentRelationshipType}
+   */
+  public DocumentRelationshipType getInverseRelationship() {
+    return this.inverseRelationship;
+  }
+
+  /**
+   * Set Inverse Relationship.
+   * 
+   * @param documentRelationship {@link DocumentRelationshipType}
+   * @return DocumentAttribute
+   */
+  public DocumentAttribute setInverseRelationship(
+      final DocumentRelationshipType documentRelationship) {
+    this.inverseRelationship = documentRelationship;
+    return this;
   }
 
   /**

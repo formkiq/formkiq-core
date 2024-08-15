@@ -21,49 +21,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb.attributes;
+package com.formkiq.stacks.api.handler;
 
-import java.util.Arrays;
-import java.util.Optional;
+import com.formkiq.graalvm.annotations.Reflectable;
 
-/**
- * Reserved Attribute Keys.
- */
-public enum AttributeKeyReserved {
-  /** Publication. */
-  PUBLICATION("Publication"),
-  /** Classification. */
-  CLASSIFICATION("Classification"),
-  /** Malware Scan Result. */
-  MALWARE_SCAN_RESULT("MalwareScanResult"),
-  /** Relationships. */
-  RELATIONSHIPS("Relationships");
-
-  /** Key Name. */
-  private final String key;
-
-  AttributeKeyReserved(final String reservedKey) {
-    this.key = reservedKey;
-  }
-
-  /**
-   * Find {@link AttributeKeyReserved}.
-   * 
-   * @param key {@link AttributeKeyReserved}
-   * @return {@link AttributeKeyReserved}
-   */
-  public static AttributeKeyReserved find(final String key) {
-    Optional<AttributeKeyReserved> a =
-        Arrays.stream(values()).filter(v -> v.getKey().equalsIgnoreCase(key)).findFirst();
-    return a.orElse(null);
-  }
-
-  /**
-   * Get Key Name.
-   * 
-   * @return String
-   */
-  public String getKey() {
-    return this.key;
-  }
+@Reflectable
+public enum DocumentRelationshipType {
+  /** Primary Relationship. */
+  PRIMARY,
+  /** Attachment Relationship. */
+  ATTACHMENT,
+  /** Appendex Relationship. */
+  APPENDIX,
+  /** Supplement Relationship. */
+  SUPPLEMENT,
+  /** Associated Relationship. */
+  ASSOCIATED,
+  /** Rendition Relationship. */
+  RENDITION
 }
