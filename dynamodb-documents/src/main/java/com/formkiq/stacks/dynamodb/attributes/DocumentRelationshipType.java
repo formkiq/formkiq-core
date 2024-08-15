@@ -42,5 +42,5 @@ public enum DocumentRelationshipType {
   /** TEMPLATE. */
   TEMPLATE,
   /** DATASOURCE. */
-  DATASOURCE;
+  DATASOURCE
 }
