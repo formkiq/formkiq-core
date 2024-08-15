@@ -38,5 +38,9 @@ public enum DocumentRelationshipType {
   /** Associated Relationship. */
   ASSOCIATED,
   /** Rendition Relationship. */
-  RENDITION
+  RENDITION,
+  /** TEMPLATE. */
+  TEMPLATE,
+  /** DATASOURCE. */
+  DATASOURCE;
 }
