@@ -24,6 +24,7 @@
 package com.formkiq.module.http;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.http.HttpResponse;
 import java.nio.file.Path;
 import java.util.Map;
@@ -49,8 +50,8 @@ public interface HttpService {
       Optional<Map<String, String>> parameters) throws IOException;
 
   /**
-   * GET HTTP Request and return a {@link HttpResponse}.
-   * 
+   * GET HTTP Request and return a {@link HttpResponse} {@link String}.
+   *
    * @param url {@link String}
    * @param headers {@link HttpHeaders}
    * @param parameters {@link Optional} {@link Map}
@@ -58,6 +59,18 @@ public interface HttpService {
    * @throws IOException IOException
    */
   HttpResponse<String> get(String url, Optional<HttpHeaders> headers,
+      Optional<Map<String, String>> parameters) throws IOException;
+
+  /**
+   * GET HTTP Request and return a {@link HttpResponse} {@link InputStream}.
+   *
+   * @param url {@link String}
+   * @param headers {@link HttpHeaders}
+   * @param parameters {@link Optional} {@link Map}
+   * @return {@link HttpResponse} {@link String}
+   * @throws IOException IOException
+   */
+  HttpResponse<InputStream> getAsInputStream(String url, Optional<HttpHeaders> headers,
       Optional<Map<String, String>> parameters) throws IOException;
 
   /**
