@@ -30,6 +30,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.util.Map;
 import java.util.UUID;
 
+import com.formkiq.aws.services.lambda.ApiResponseStatus;
+import com.formkiq.client.model.DocusignConfig;
 import com.formkiq.client.model.GoogleConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,7 +45,7 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.ConfigService;
 import com.formkiq.stacks.dynamodb.ConfigServiceExtension;
 
-/** Unit Tests for request /configuration. */
+/** Unit Tests for request /sites/{siteId}/configuration. */
 public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
 
   /** {@link ConfigService}. */
@@ -246,5 +248,86 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
 
     assertEquals("123", google.getWorkloadIdentityAudience());
     assertEquals("444", google.getWorkloadIdentityServiceAccount());
+  }
+
+  /**
+   * PUT google invalid configuration /config default as Admin.
+   *
+   */
+  @Test
+  public void testHandlePutConfiguration04() {
+    // given
+    String siteId = SiteIdKeyGenerator.DEFAULT_SITE_ID;
+    String group = "Admins";
+    setBearerToken(group);
+
+    UpdateConfigurationRequest req =
+        new UpdateConfigurationRequest().google(new GoogleConfig().workloadIdentityAudience("123"));
+
+    // when
+    try {
+      this.systemApi.updateConfiguration(siteId, req);
+      fail();
+    } catch (ApiException e) {
+      // then
+      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"google\"," + "\"error\":\"all 'googleWorkloadIdentityAudience', "
+              + "'googleWorkloadIdentityServiceAccount' " + "are required for google setup\"}]}",
+          e.getResponseBody());
+    }
+  }
+
+  /**
+   * PUT google invalid configuration /config default as Admin.
+   *
+   */
+  @Test
+  public void testHandlePutConfiguration05() {
+    // given
+    String siteId = SiteIdKeyGenerator.DEFAULT_SITE_ID;
+    String group = "Admins";
+    setBearerToken(group);
+
+    UpdateConfigurationRequest req = new UpdateConfigurationRequest()
+        .docusign(new DocusignConfig().clientId("111").rsaPrivateKey("222"));
+
+    // when
+    try {
+      this.systemApi.updateConfiguration(siteId, req);
+      fail();
+    } catch (ApiException e) {
+      // then
+      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+      assertEquals("{\"errors\":[{\"key\":\"docusign\","
+          + "\"error\":\"all 'docusignUserId', 'docusignClientId', 'docusignRsaPrivateKey' "
+          + "are required for docusign setup\"}]}", e.getResponseBody());
+    }
+  }
+
+  /**
+   * PUT google invalid configuration /config default as Admin.
+   *
+   */
+  @Test
+  public void testHandlePutConfiguration06() throws ApiException {
+    // given
+    String siteId = SiteIdKeyGenerator.DEFAULT_SITE_ID;
+    String group = "Admins";
+    setBearerToken(group);
+
+    UpdateConfigurationRequest req = new UpdateConfigurationRequest()
+        .docusign(new DocusignConfig().userId("123").clientId("111").rsaPrivateKey("222"));
+
+    this.systemApi.updateConfiguration(siteId, req);
+
+    // when
+    GetConfigurationResponse configuration = this.systemApi.getConfiguration(siteId);
+
+    // then
+    assertNotNull(configuration.getDocusign());
+    assertEquals("111", configuration.getDocusign().getClientId());
+    assertEquals("123", configuration.getDocusign().getUserId());
+    assertEquals("222", configuration.getDocusign().getRsaPrivateKey());
   }
 }

@@ -24,6 +24,9 @@
 package com.formkiq.aws.dynamodb.objects;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -95,5 +98,15 @@ class StringsTest {
     assertEquals("/documents/{documentId}/content", result0);
     assertEquals("/documents/{documentId}", result1);
     assertEquals("/documents", result2);
+  }
+
+  @Test
+  void testIsEmptyOrHasValues01() {
+    assertTrue(Strings.isEmptyOrHasValues("asd", "asd"));
+    assertFalse(Strings.isEmptyOrHasValues("", "asd"));
+    assertFalse(Strings.isEmptyOrHasValues("asd", null));
+    assertTrue(Strings.isEmptyOrHasValues("", ""));
+    assertTrue(Strings.isEmptyOrHasValues("", null));
+    assertTrue(Strings.isEmptyOrHasValues(null, null, null));
   }
 }

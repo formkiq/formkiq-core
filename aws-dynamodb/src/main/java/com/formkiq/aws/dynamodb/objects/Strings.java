@@ -28,6 +28,7 @@ import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -235,5 +236,18 @@ public class Strings {
     PrintWriter pw = new PrintWriter(sw);
     e.printStackTrace(pw);
     return sw.toString();
+  }
+
+  /**
+   * XOR {@link String} {@link List}.
+   * 
+   * @param strs {@link Collection} {@link String}
+   * @return boolean
+   */
+  public static boolean isEmptyOrHasValues(final String... strs) {
+
+    int len = strs.length;
+    long countEmpty = Arrays.stream(strs).filter(s -> isEmpty(s)).count();
+    return len == countEmpty || countEmpty == 0;
   }
 }

@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.Optional;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -100,17 +101,33 @@ public class ConfigurationRequestHandler
     map.put("maxWebhooks", obj.getOrDefault(MAX_WEBHOOKS, ""));
     map.put("notificationEmail", obj.getOrDefault(NOTIFICATION_EMAIL, ""));
 
+    setupGoogle(obj, map);
+    setupDocusign(obj, map);
+
+    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
+  }
+
+  private void setupGoogle(final DynamicObject obj, final Map<String, Object> map) {
     String workloadIdentityAudience =
         (String) obj.getOrDefault("googleWorkloadIdentityAudience", "");
     String workloadIdentityServiceAccount =
         (String) obj.getOrDefault("googleWorkloadIdentityServiceAccount", "");
 
-    if (!isEmpty(workloadIdentityAudience) || !isEmpty(workloadIdentityServiceAccount)) {
+    if (!isEmpty(workloadIdentityAudience) && !isEmpty(workloadIdentityServiceAccount)) {
       map.put("google", Map.of("workloadIdentityAudience", workloadIdentityAudience,
           "workloadIdentityServiceAccount", workloadIdentityServiceAccount));
     }
+  }
 
-    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
+  private void setupDocusign(final DynamicObject obj, final Map<String, Object> map) {
+    String docusignUserId = (String) obj.getOrDefault("docusignUserId", "");
+    String docusignClientId = (String) obj.getOrDefault("docusignClientId", "");
+    String docusignRsaPrivateKey = (String) obj.getOrDefault("docusignRsaPrivateKey", "");
+
+    if (!isEmpty(docusignUserId) && !isEmpty(docusignClientId) && !isEmpty(docusignRsaPrivateKey)) {
+      map.put("docusign", Map.of("userId", docusignUserId, "clientId", docusignClientId,
+          "rsaPrivateKey", docusignRsaPrivateKey));
+    }
   }
 
   @Override
@@ -169,6 +186,18 @@ public class ConfigurationRequestHandler
       map.put("googleWorkloadIdentityServiceAccount", workloadIdentityServiceAccount);
     }
 
+    if (body.containsKey("docusign")) {
+
+      Map<String, String> google = (Map<String, String>) body.get("docusign");
+      String docusignUserId = google.getOrDefault("userId", "");
+      String docusignClientId = google.getOrDefault("clientId", "");
+      String docusignRsaPrivateKey = google.getOrDefault("rsaPrivateKey", "");
+
+      map.put("docusignUserId", docusignUserId);
+      map.put("docusignClientId", docusignClientId);
+      map.put("docusignRsaPrivateKey", docusignRsaPrivateKey);
+    }
+
     validate(awsservice, map);
 
     if (!map.isEmpty()) {
@@ -209,8 +238,40 @@ public class ConfigurationRequestHandler
       }
     }
 
+    validateGoogle(map, errors);
+    validateDocusign(map, errors);
+
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
+    }
+  }
+
+  private void validateGoogle(final Map<String, Object> map,
+      final Collection<ValidationError> errors) {
+    String googleWorkloadIdentityAudience =
+        (String) map.getOrDefault("googleWorkloadIdentityAudience", null);
+    String googleWorkloadIdentityServiceAccount =
+        (String) map.getOrDefault("googleWorkloadIdentityServiceAccount", null);
+
+    if (!Strings.isEmptyOrHasValues(googleWorkloadIdentityAudience,
+        googleWorkloadIdentityServiceAccount)) {
+      errors.add(new ValidationErrorImpl().key("google")
+          .error("all 'googleWorkloadIdentityAudience', 'googleWorkloadIdentityServiceAccount' "
+              + "are required for google setup"));
+    }
+  }
+
+  private void validateDocusign(final Map<String, Object> map,
+      final Collection<ValidationError> errors) {
+
+    String docusignUserId = (String) map.getOrDefault("docusignUserId", null);
+    String docusignClientId = (String) map.getOrDefault("docusignClientId", null);
+    String docusignRsaPrivateKey = (String) map.getOrDefault("docusignRsaPrivateKey", null);
+
+    if (!Strings.isEmptyOrHasValues(docusignUserId, docusignClientId, docusignRsaPrivateKey)) {
+      errors.add(new ValidationErrorImpl().key("docusign")
+          .error("all 'docusignUserId', 'docusignClientId', 'docusignRsaPrivateKey' "
+              + "are required for docusign setup"));
     }
   }
 }

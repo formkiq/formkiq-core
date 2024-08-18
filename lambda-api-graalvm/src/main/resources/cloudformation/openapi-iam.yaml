@@ -9663,6 +9663,8 @@ Resources:
                   description: "Email address to use for notifications"
                 google:
                   $ref: "#/components/schemas/GoogleConfig"
+                docusign:
+                  $ref: "#/components/schemas/DocusignConfig"
             UpdateConfigurationResponse:
               type: object
               properties:
@@ -9953,6 +9955,8 @@ Resources:
                   description: "Email address to use for notifications (Must be verified identity created in AWS SES)"
                 google:
                   $ref: "#/components/schemas/GoogleConfig"
+                docusign:
+                  $ref: "#/components/schemas/DocusignConfig"
 
             GoogleConfig:
               type: "object"
@@ -9963,6 +9967,19 @@ Resources:
                 workloadIdentityServiceAccount:
                   type: "string"
                   description: "Workload Service Account"
+
+            DocusignConfig:
+              type: "object"
+              properties:
+                userId:
+                  type: "string"
+                  description: "Docusign UserId"
+                clientId:
+                  type: "string"
+                  description: "Docusign ClientId"
+                rsaPrivateKey:
+                  type: "string"
+                  description: "Docusign Rsa Private Key"
 
             GetUsersInGroupResponse:
               type: object
