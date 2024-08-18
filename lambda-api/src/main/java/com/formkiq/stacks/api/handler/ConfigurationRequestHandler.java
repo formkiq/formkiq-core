@@ -68,7 +68,9 @@ public class ConfigurationRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
   /** Mask Value, must be even number. */
-  private static final int MASK = 4;
+  private static final int CHAT_GPT_MASK = 4;
+  /** Mask Value, must be even number. */
+  private static final int RSA_PRIVATE_KEY_MASK = 40;
 
   /**
    * constructor.
@@ -98,7 +100,7 @@ public class ConfigurationRequestHandler
     DynamicObject obj = configService.get(siteId);
 
     Map<String, Object> map = new HashMap<>();
-    map.put("chatGptApiKey", mask(obj.getOrDefault(CHATGPT_API_KEY, "").toString()));
+    map.put("chatGptApiKey", mask(obj.getOrDefault(CHATGPT_API_KEY, "").toString(), CHAT_GPT_MASK));
     map.put("maxContentLengthBytes", obj.getOrDefault(MAX_DOCUMENT_SIZE_BYTES, ""));
     map.put("maxDocuments", obj.getOrDefault(MAX_DOCUMENTS, ""));
     map.put("maxWebhooks", obj.getOrDefault(MAX_WEBHOOKS, ""));
@@ -129,7 +131,7 @@ public class ConfigurationRequestHandler
 
     if (!isEmpty(docusignUserId) && !isEmpty(docusignClientId) && !isEmpty(docusignRsaPrivateKey)) {
       map.put("docusign", Map.of("userId", docusignUserId, "clientId", docusignClientId,
-          "rsaPrivateKey", docusignRsaPrivateKey));
+          "rsaPrivateKey", mask(docusignRsaPrivateKey, RSA_PRIVATE_KEY_MASK)));
     }
   }
 
@@ -156,10 +158,11 @@ public class ConfigurationRequestHandler
    * Mask {@link String}.
    * 
    * @param s {@link String}
+   * @param mask int
    * @return {@link String}
    */
-  private String mask(final String s) {
-    return !isEmpty(s) ? s.subSequence(0, MASK) + "*******" + s.substring(s.length() - MASK) : s;
+  private String mask(final String s, final int mask) {
+    return !isEmpty(s) ? s.subSequence(0, mask) + "*******" + s.substring(s.length() - mask) : s;
   }
 
   @SuppressWarnings("unchecked")

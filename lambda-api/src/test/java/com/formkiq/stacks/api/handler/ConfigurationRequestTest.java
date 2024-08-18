@@ -50,6 +50,38 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
 
   /** {@link ConfigService}. */
   private ConfigService config;
+  private static final String RSA_PRIVATE_KEY = """
+      -----BEGIN RSA PRIVATE KEY-----
+      MIIEpAIBAAKCAQEArZ1qkA2Aav9OlH6j8C3K5f3Z+zBkRv/VjdW3f7f0VVtslkfj
+      i8o6d7lM7gYjp91G9TlG8dOkdJHgZ1lVOjV+Gh8Zg+ReyQ8V2dG3yqMK6qUbiwQ+
+      xO5g9mD0W6qmfDeL4Ye6HfN7yZPx5/KQ3R5xF8qBf5kZ3QdrKvLwXs5SFi4kH9Yr
+      OqB9rV74PxC/5KggCv9+9DnI5+aU6nb6oxR1+oGxqg8RWiwFMzrcFvptbg6+24EB
+      3PMrjkhOScT9Y4l/9LgR0X5+wU/72J4UCqlWh6gW5h9Pz/S5cR3C+KCo4gZiZ/mz
+      hrGb0r5M5zTisj6HwtFup/HCMaCZ2tcHb28d1QIDAQABAoIBAD5IQZEq5OEWOfPz
+      J5/aGakPvmMxsbPZB0+RaZJfxKAvWOUF24B2oF5RdnH2yOGtFeU5QuGg/2K0Eih4
+      5X3j6lnK7TtGFUPj2zyAxBoUzR2emDPkcBbY9k/MW3h1JvOFbvdCgCnOrC2Tdcjx
+      vzk12GuP6FtI9Th7VCiZdOBfg9ZhvUeMcmj0RrVhPOzEyN5uLXMZBzDhllIsTzZu
+      G7pRhxA/Z3Lv2FtL9Bsg1GYymVXXgMfhm3EErVFn9OHhp1av1G4QON0kWkJ0ZmX3
+      hMl8gk0YVJIrWFHwN2ue7b71kF2SMcvU+LoMBLvLEo9tJtDi4OfD6o3leUE6IgdO
+      D1ZKPnUCgYEA2F+E6vjBRvcAIKz80MbmjNpuMRFmxh8EFMs+9UtPYW3GnGnIQHcJ
+      MQXZqJmMSM6we7MPzVkTfijvOaCF3MQjoEXC0hC+yTQkdm+hyPoJggtLq7sz6I/p
+      P66y14+V2v9oF5Ohm0dQg3Jm6b+bQOZgWiLNgO8w5cy+H4WQ0tvw7NcCgYEAyO+D
+      FrV+Fb5cxsMEivpkkbItt9J4MdCTIhz1XMfKETvW3VKiOZLIFpAWGXYmOL9UlQa3
+      cNs+oubsL8wTn+Kn4T4C5ngW2nYUVk+2yAcCx2oA2Xf0/Eup7fDqTiM5k7cI6hsZ
+      nHek5mLQir6oHtGo2bQ1MwQmWlJ5nyvnAbqG+jcCgYEAtTeg9hr4FYAwOf/3Z5Vb
+      T4MeUbJ5HH7lgpg7ccLKi1kTxR9ZpCfyZo44H9NivqVto8LzAjFyfbWzKBLB3f0l
+      GUtQ6X8MxV1iSG7V1yq8SlCnAZlqf/NxOTjJ0rAyo23tX8eY84LCzhll7W4p/U+a
+      kbvXB2fCX7ZfoWmY7KbZBe8CgYEAzEdpKeWFTAgFkM+vTX7wFhU6OoCQbSMc6GTZ
+      EcfZrg+/WeXzJ8G0zXxqDlNhbTEU5PEzMf0FxbMj7ETtseJyxgri/CHDLmLfAtXV
+      Mu8MZZqXyDFAFTldZTHM60iY/q0Xo4FFlfKi3CaBtLK5PRmZ7DPizSZRlIlC1GJz
+      yOLdQpECgYB5R53Jl/mWBY7YB7mN7hnxRLLMwzszLtZWsoC7rHMQHbGbn/suj1Pb
+      0wdSNEX4zzpFb2YBmhnJ5yMspe7KhAYLrA1yIouQXvdK2PVU2E5gVhFt8Jumg3zd
+      +hDj+3W+ptjLh1mMaDW9KMUC82gDBH+fB0EJiaDxPF5ux/vJczj8FQKBgQC4t5WR
+      /npH1BHCgDeXDOeH5ojjtTmS/jI/xyEFxyHiF9FeMiAlxZoPOD/U6He4W7wZCOqH
+      fEoZXhNR4DFQnvfjUkrMr/JmRzHlt2yVhQUwtyvJ8cVZ0yhsqCQEOLdE2F0XnKkv
+      23ybvqMt27quf7bB6FKNBJihmwoCSMREfI7Ebw==
+      -----END RSA PRIVATE KEY-----
+      """;
 
   /**
    * Before Each.
@@ -316,8 +348,8 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     String group = "Admins";
     setBearerToken(group);
 
-    UpdateConfigurationRequest req = new UpdateConfigurationRequest()
-        .docusign(new DocusignConfig().userId("123").clientId("111").rsaPrivateKey("222"));
+    UpdateConfigurationRequest req = new UpdateConfigurationRequest().docusign(
+        new DocusignConfig().userId("123").clientId("111").rsaPrivateKey(RSA_PRIVATE_KEY));
 
     this.systemApi.updateConfiguration(siteId, req);
 
@@ -328,6 +360,10 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     assertNotNull(configuration.getDocusign());
     assertEquals("111", configuration.getDocusign().getClientId());
     assertEquals("123", configuration.getDocusign().getUserId());
-    assertEquals("222", configuration.getDocusign().getRsaPrivateKey());
+    assertEquals("""
+        -----BEGIN RSA PRIVATE KEY-----
+        MIIEpAIB*******EfI7Ebw==
+        -----END RSA PRIVATE KEY-----
+        """, configuration.getDocusign().getRsaPrivateKey());
   }
 }
