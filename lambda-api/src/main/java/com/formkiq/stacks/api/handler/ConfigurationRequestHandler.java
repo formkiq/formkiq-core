@@ -26,6 +26,9 @@ package com.formkiq.stacks.api.handler;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import static com.formkiq.stacks.dynamodb.ConfigService.CHATGPT_API_KEY;
+import static com.formkiq.stacks.dynamodb.ConfigService.KEY_DOCUSIGN_CLIENT_ID;
+import static com.formkiq.stacks.dynamodb.ConfigService.KEY_DOCUSIGN_RSA_PRIVATE_KEY;
+import static com.formkiq.stacks.dynamodb.ConfigService.KEY_DOCUSIGN_USER_ID;
 import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENTS;
 import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENT_SIZE_BYTES;
 import static com.formkiq.stacks.dynamodb.ConfigService.MAX_WEBHOOKS;
@@ -120,9 +123,9 @@ public class ConfigurationRequestHandler
   }
 
   private void setupDocusign(final DynamicObject obj, final Map<String, Object> map) {
-    String docusignUserId = (String) obj.getOrDefault("docusignUserId", "");
-    String docusignClientId = (String) obj.getOrDefault("docusignClientId", "");
-    String docusignRsaPrivateKey = (String) obj.getOrDefault("docusignRsaPrivateKey", "");
+    String docusignUserId = (String) obj.getOrDefault(KEY_DOCUSIGN_USER_ID, "");
+    String docusignClientId = (String) obj.getOrDefault(KEY_DOCUSIGN_CLIENT_ID, "");
+    String docusignRsaPrivateKey = (String) obj.getOrDefault(KEY_DOCUSIGN_RSA_PRIVATE_KEY, "");
 
     if (!isEmpty(docusignUserId) && !isEmpty(docusignClientId) && !isEmpty(docusignRsaPrivateKey)) {
       map.put("docusign", Map.of("userId", docusignUserId, "clientId", docusignClientId,
@@ -193,9 +196,9 @@ public class ConfigurationRequestHandler
       String docusignClientId = google.getOrDefault("clientId", "");
       String docusignRsaPrivateKey = google.getOrDefault("rsaPrivateKey", "");
 
-      map.put("docusignUserId", docusignUserId);
-      map.put("docusignClientId", docusignClientId);
-      map.put("docusignRsaPrivateKey", docusignRsaPrivateKey);
+      map.put(KEY_DOCUSIGN_USER_ID, docusignUserId);
+      map.put(KEY_DOCUSIGN_CLIENT_ID, docusignClientId);
+      map.put(KEY_DOCUSIGN_RSA_PRIVATE_KEY, docusignRsaPrivateKey);
     }
 
     validate(awsservice, map);
@@ -264,9 +267,9 @@ public class ConfigurationRequestHandler
   private void validateDocusign(final Map<String, Object> map,
       final Collection<ValidationError> errors) {
 
-    String docusignUserId = (String) map.getOrDefault("docusignUserId", null);
-    String docusignClientId = (String) map.getOrDefault("docusignClientId", null);
-    String docusignRsaPrivateKey = (String) map.getOrDefault("docusignRsaPrivateKey", null);
+    String docusignUserId = (String) map.getOrDefault(KEY_DOCUSIGN_USER_ID, null);
+    String docusignClientId = (String) map.getOrDefault(KEY_DOCUSIGN_CLIENT_ID, null);
+    String docusignRsaPrivateKey = (String) map.getOrDefault(KEY_DOCUSIGN_RSA_PRIVATE_KEY, null);
 
     if (!Strings.isEmptyOrHasValues(docusignUserId, docusignClientId, docusignRsaPrivateKey)) {
       errors.add(new ValidationErrorImpl().key("docusign")
