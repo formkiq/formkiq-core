@@ -4231,65 +4231,6 @@ Resources:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/esignatureLambdaApi200"
-          /esignature/docusign/config:
-            get:
-              operationId: GetEsignatureDocusignConfig
-              summary: Get E-signature config
-              description: Get DocuSign configuration info; ONLY available with FormKiQ Enterprise 
-              tags:
-              - E-Signature
-              parameters:
-              - $ref: '#/components/parameters/siteIdParam'
-              responses:
-                '200':
-                  description: 200 OK
-                  headers:
-                    Access-Control-Allow-Origin:
-                      $ref: '#/components/headers/AccessControlAllowOrigin'
-                    Access-Control-Allow-Methods:
-                      $ref: '#/components/headers/AccessControlAllowMethods'
-                    Access-Control-Allow-Headers:
-                      $ref: '#/components/headers/AccessControlAllowHeaders'
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/GetEsignatureDocusignConfigResponse'
-              security:
-              - ApiAuthorization: []
-              x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/esignatureLambdaApi200"
-            put:
-              operationId: SetEsignatureDocusignConfig
-              summary: Set E-signature config
-              description: Set DocuSign configuration, required for integration; ONLY available with FormKiQ Enterprise 
-              tags:
-              - E-Signature
-              parameters:
-              - $ref: '#/components/parameters/siteIdParam'
-              requestBody:
-                required: true
-                content:
-                  application/json:
-                    schema:
-                      $ref: '#/components/schemas/SetEsignatureDocusignConfigRequest'
-              responses:
-                '200':
-                  description: 200 OK
-                  headers:
-                    Access-Control-Allow-Origin:
-                      $ref: '#/components/headers/AccessControlAllowOrigin'
-                    Access-Control-Allow-Methods:
-                      $ref: '#/components/headers/AccessControlAllowMethods'
-                    Access-Control-Allow-Headers:
-                      $ref: '#/components/headers/AccessControlAllowHeaders'
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/SetEsignatureDocusignConfigResponse'
-              security:
-              - ApiAuthorization: []
-              x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/esignatureLambdaApi200"
           /esignature/docusign/events:
             post:
               operationId: AddEsignatureDocusignEvents
@@ -10817,40 +10758,6 @@ Resources:
                 message:
                   type: "string"
                   description: "Result message"
-            GetEsignatureDocusignConfigResponse:
-              type: "object"
-              properties:
-                configured:
-                  type: "boolean"
-                  description: "Whether DocuSign is configured"
-                userId:
-                  type: "string"
-                  description: "DocuSign UserId configured"
-                clientId:
-                  type: "string"
-                  description: "DocuSign Client configured"
-            SetEsignatureDocusignConfigRequest:
-              type: "object"
-              required:
-              - privateKey
-              - userId
-              - clientId
-              properties:
-                privateKey:
-                  type: "string"
-                  description: "DocuSign App RSA PRIVATE KEY"
-                userId:
-                  type: "string"
-                  description: "DocuSign App UserId"
-                clientId:
-                  type: "string"
-                  description: "DocuSign App Client"
-            SetEsignatureDocusignConfigResponse:
-              type: "object"
-              properties:
-                message:
-                  type: "string"
-                  description: "Message response"
           securitySchemes:
             ApiAuthorization:
               type: oauth2
