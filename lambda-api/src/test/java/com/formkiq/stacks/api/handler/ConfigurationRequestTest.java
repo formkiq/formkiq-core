@@ -50,6 +50,7 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
 
   /** {@link ConfigService}. */
   private ConfigService config;
+  /** Test RSA Private Key. */
   private static final String RSA_PRIVATE_KEY = """
       -----BEGIN RSA PRIVATE KEY-----
       MIIEpAIBAAKCAQEArZ1qkA2Aav9OlH6j8C3K5f3Z+zBkRv/VjdW3f7f0VVtslkfj
