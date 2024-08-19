@@ -26,7 +26,7 @@ package com.formkiq.stacks.api.handler;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import static com.formkiq.stacks.dynamodb.ConfigService.CHATGPT_API_KEY;
-import static com.formkiq.stacks.dynamodb.ConfigService.KEY_DOCUSIGN_CLIENT_ID;
+import static com.formkiq.stacks.dynamodb.ConfigService.KEY_DOCUSIGN_INTEGRATION_KEY;
 import static com.formkiq.stacks.dynamodb.ConfigService.KEY_DOCUSIGN_RSA_PRIVATE_KEY;
 import static com.formkiq.stacks.dynamodb.ConfigService.KEY_DOCUSIGN_USER_ID;
 import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENTS;
@@ -126,11 +126,12 @@ public class ConfigurationRequestHandler
 
   private void setupDocusign(final DynamicObject obj, final Map<String, Object> map) {
     String docusignUserId = (String) obj.getOrDefault(KEY_DOCUSIGN_USER_ID, "");
-    String docusignClientId = (String) obj.getOrDefault(KEY_DOCUSIGN_CLIENT_ID, "");
+    String docusignIntegrationKey = (String) obj.getOrDefault(KEY_DOCUSIGN_INTEGRATION_KEY, "");
     String docusignRsaPrivateKey = (String) obj.getOrDefault(KEY_DOCUSIGN_RSA_PRIVATE_KEY, "");
 
-    if (!isEmpty(docusignUserId) && !isEmpty(docusignClientId) && !isEmpty(docusignRsaPrivateKey)) {
-      map.put("docusign", Map.of("userId", docusignUserId, "clientId", docusignClientId,
+    if (!isEmpty(docusignUserId) && !isEmpty(docusignIntegrationKey)
+        && !isEmpty(docusignRsaPrivateKey)) {
+      map.put("docusign", Map.of("userId", docusignUserId, "integrationKey", docusignIntegrationKey,
           "rsaPrivateKey", mask(docusignRsaPrivateKey, RSA_PRIVATE_KEY_MASK)));
     }
   }
@@ -162,7 +163,9 @@ public class ConfigurationRequestHandler
    * @return {@link String}
    */
   private String mask(final String s, final int mask) {
-    return !isEmpty(s) ? s.subSequence(0, mask) + "*******" + s.substring(s.length() - mask) : s;
+    final int smallDiv = 3;
+    int m = mask > s.length() ? s.length() / smallDiv : mask;
+    return !isEmpty(s) ? s.subSequence(0, m) + "*******" + s.substring(s.length() - m) : s;
   }
 
   @SuppressWarnings("unchecked")
@@ -196,11 +199,11 @@ public class ConfigurationRequestHandler
 
       Map<String, String> google = (Map<String, String>) body.get("docusign");
       String docusignUserId = google.getOrDefault("userId", "");
-      String docusignClientId = google.getOrDefault("clientId", "");
+      String docusignIntegrationKey = google.getOrDefault("integrationKey", "");
       String docusignRsaPrivateKey = google.getOrDefault("rsaPrivateKey", "");
 
       map.put(KEY_DOCUSIGN_USER_ID, docusignUserId);
-      map.put(KEY_DOCUSIGN_CLIENT_ID, docusignClientId);
+      map.put(KEY_DOCUSIGN_INTEGRATION_KEY, docusignIntegrationKey);
       map.put(KEY_DOCUSIGN_RSA_PRIVATE_KEY, docusignRsaPrivateKey);
     }
 
@@ -271,12 +274,13 @@ public class ConfigurationRequestHandler
       final Collection<ValidationError> errors) {
 
     String docusignUserId = (String) map.getOrDefault(KEY_DOCUSIGN_USER_ID, null);
-    String docusignClientId = (String) map.getOrDefault(KEY_DOCUSIGN_CLIENT_ID, null);
+    String docusignIntegrationKey = (String) map.getOrDefault(KEY_DOCUSIGN_INTEGRATION_KEY, null);
     String docusignRsaPrivateKey = (String) map.getOrDefault(KEY_DOCUSIGN_RSA_PRIVATE_KEY, null);
 
-    if (!Strings.isEmptyOrHasValues(docusignUserId, docusignClientId, docusignRsaPrivateKey)) {
+    if (!Strings.isEmptyOrHasValues(docusignUserId, docusignIntegrationKey,
+        docusignRsaPrivateKey)) {
       errors.add(new ValidationErrorImpl().key("docusign")
-          .error("all 'docusignUserId', 'docusignClientId', 'docusignRsaPrivateKey' "
+          .error("all 'docusignUserId', 'docusignIntegrationKey', 'docusignRsaPrivateKey' "
               + "are required for docusign setup"));
     }
   }

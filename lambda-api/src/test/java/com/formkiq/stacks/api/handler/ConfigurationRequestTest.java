@@ -323,7 +323,7 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     setBearerToken(group);
 
     UpdateConfigurationRequest req = new UpdateConfigurationRequest()
-        .docusign(new DocusignConfig().clientId("111").rsaPrivateKey("222"));
+        .docusign(new DocusignConfig().integrationKey("111").rsaPrivateKey("222"));
 
     // when
     try {
@@ -333,13 +333,13 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
       // then
       assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
       assertEquals("{\"errors\":[{\"key\":\"docusign\","
-          + "\"error\":\"all 'docusignUserId', 'docusignClientId', 'docusignRsaPrivateKey' "
+          + "\"error\":\"all 'docusignUserId', 'docusignIntegrationKey', 'docusignRsaPrivateKey' "
           + "are required for docusign setup\"}]}", e.getResponseBody());
     }
   }
 
   /**
-   * PUT google invalid configuration /config default as Admin.
+   * PUT docusign valid configuration /config default as Admin.
    *
    */
   @Test
@@ -350,7 +350,7 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     setBearerToken(group);
 
     UpdateConfigurationRequest req = new UpdateConfigurationRequest().docusign(
-        new DocusignConfig().userId("123").clientId("111").rsaPrivateKey(RSA_PRIVATE_KEY));
+        new DocusignConfig().userId("123").integrationKey("111").rsaPrivateKey(RSA_PRIVATE_KEY));
 
     this.systemApi.updateConfiguration(siteId, req);
 
@@ -359,12 +359,38 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
 
     // then
     assertNotNull(configuration.getDocusign());
-    assertEquals("111", configuration.getDocusign().getClientId());
+    assertEquals("111", configuration.getDocusign().getIntegrationKey());
     assertEquals("123", configuration.getDocusign().getUserId());
     assertEquals("""
         -----BEGIN RSA PRIVATE KEY-----
         MIIEpAIB*******EfI7Ebw==
         -----END RSA PRIVATE KEY-----
         """, configuration.getDocusign().getRsaPrivateKey());
+  }
+
+  /**
+   * PUT docusign invalid RSA key configuration /config default as Admin.
+   *
+   */
+  @Test
+  public void testHandlePutConfiguration07() throws ApiException {
+    // given
+    String siteId = SiteIdKeyGenerator.DEFAULT_SITE_ID;
+    String group = "Admins";
+    setBearerToken(group);
+
+    UpdateConfigurationRequest req = new UpdateConfigurationRequest().docusign(
+        new DocusignConfig().userId("123").integrationKey("111").rsaPrivateKey("3423432432432423"));
+
+    this.systemApi.updateConfiguration(siteId, req);
+
+    // when
+    GetConfigurationResponse configuration = this.systemApi.getConfiguration(siteId);
+
+    // then
+    assertNotNull(configuration.getDocusign());
+    assertEquals("111", configuration.getDocusign().getIntegrationKey());
+    assertEquals("123", configuration.getDocusign().getUserId());
+    assertEquals("34234*******32423", configuration.getDocusign().getRsaPrivateKey());
   }
 }

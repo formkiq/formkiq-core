@@ -45,8 +45,8 @@ public interface ConfigService {
 
   /** Docusign User Id. */
   String KEY_DOCUSIGN_USER_ID = "docusignUserId";
-  /** Docusign Client Id. */
-  String KEY_DOCUSIGN_CLIENT_ID = "docusignClientId";
+  /** Docusign Integration Key / Client Id. */
+  String KEY_DOCUSIGN_INTEGRATION_KEY = "docusignIntegrationKey";
   /** Docusign Rsa Private Key. */
   String KEY_DOCUSIGN_RSA_PRIVATE_KEY = "docusignRsaPrivateKey";
 

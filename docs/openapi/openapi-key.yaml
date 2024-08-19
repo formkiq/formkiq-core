@@ -9814,9 +9814,9 @@
                 userId:
                   type: string
                   description: Docusign UserId
-                clientId:
+                integrationKey:
                   type: string
-                  description: Docusign ClientId
+                  description: Docusign Integration Key or ClientId
                 rsaPrivateKey:
                   type: string
                   description: Docusign Rsa Private Key
