@@ -21,37 +21,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.module.actions;
+package com.formkiq.aws.eventbridge;
 
-import com.formkiq.graalvm.annotations.Reflectable;
+import java.net.URI;
+import java.util.Map;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.AwsServiceRegistry;
+import com.formkiq.module.lambdaservices.ClassServiceExtension;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 
 /**
- * 
- * Supported Type of Actions.
- *
+ * SQS {@link AwsServiceRegistry}.
  */
-@Reflectable
-public enum ActionType {
-  /** AntiVirus. */
-  ANTIVIRUS,
-  /** Document Tagging. */
-  DOCUMENTTAGGING,
-  /** Full Text. */
-  FULLTEXT,
-  /** Intelligent Document Processing. */
-  IDP,
-  /** Notification Action. */
-  NOTIFICATION,
-  /** OCR. */
-  OCR,
-  /** Queue. */
-  QUEUE,
-  /** WebHook. */
-  WEBHOOK,
-  /** Publish. */
-  PUBLISH,
-  /** Pdf Export. */
-  PDFEXPORT,
-  /** Event Bridge. */
-  EVENTBRIDGE
+public class EventBridgeAwsServiceRegistry implements AwsServiceRegistry {
+
+  @Override
+  public void initService(final AwsServiceCache serviceCache,
+      final Map<String, URI> awsServiceEndpoints,
+      final AwsCredentialsProvider credentialsProvider) {
+
+    EventBridgeConnectionBuilder sqs = new EventBridgeConnectionBuilder(serviceCache.enableXray())
+        .setRegion(serviceCache.region()).setCredentials(credentialsProvider)
+        .setEndpointOverride(awsServiceEndpoints.get("sqs"));
+
+    serviceCache.register(EventBridgeConnectionBuilder.class,
+        new ClassServiceExtension<EventBridgeConnectionBuilder>(sqs));
+  }
 }

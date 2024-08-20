@@ -2136,6 +2136,7 @@
                 | NOTIFICATION    | notificationHtml    | Notification as Html | Email HTML Text |
                 | QUEUE    | queueId    | Id of Queue | |
                 | IDP    | mappingId    | Id of Mapping | |
+                | EVENTBRIDGE    | eventBusName    | The name or ARN of the Amazon EventBridge to receive the event. | |
               tags:
               - Document Actions
               parameters:
@@ -9125,6 +9126,7 @@
               - IDP
               - PUBLISH
               - PDFEXPORT
+              - EVENTBRIDGE
             DocumentAction:
               type: object
               properties:

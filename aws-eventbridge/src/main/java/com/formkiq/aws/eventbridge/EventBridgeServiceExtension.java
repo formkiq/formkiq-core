@@ -21,37 +21,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.module.actions;
+package com.formkiq.aws.eventbridge;
 
-import com.formkiq.graalvm.annotations.Reflectable;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.AwsServiceExtension;
 
 /**
  * 
- * Supported Type of Actions.
+ * {@link AwsServiceExtension} for {@link EventBridgeService}.
  *
  */
-@Reflectable
-public enum ActionType {
-  /** AntiVirus. */
-  ANTIVIRUS,
-  /** Document Tagging. */
-  DOCUMENTTAGGING,
-  /** Full Text. */
-  FULLTEXT,
-  /** Intelligent Document Processing. */
-  IDP,
-  /** Notification Action. */
-  NOTIFICATION,
-  /** OCR. */
-  OCR,
-  /** Queue. */
-  QUEUE,
-  /** WebHook. */
-  WEBHOOK,
-  /** Publish. */
-  PUBLISH,
-  /** Pdf Export. */
-  PDFEXPORT,
-  /** Event Bridge. */
-  EVENTBRIDGE
+public class EventBridgeServiceExtension implements AwsServiceExtension<EventBridgeService> {
+
+  /** {@link EventBridgeService}. */
+  private EventBridgeService service;
+
+  @Override
+  public EventBridgeService loadService(final AwsServiceCache awsServiceCache) {
+    if (this.service == null) {
+      EventBridgeConnectionBuilder connection =
+          awsServiceCache.getExtension(EventBridgeConnectionBuilder.class);
+      this.service = new EventBridgeServiceImpl(connection);
+    }
+
+    return this.service;
+  }
 }

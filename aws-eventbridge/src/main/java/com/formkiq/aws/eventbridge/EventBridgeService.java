@@ -21,37 +21,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.module.actions;
+package com.formkiq.aws.eventbridge;
 
-import com.formkiq.graalvm.annotations.Reflectable;
+import software.amazon.awssdk.services.eventbridge.model.PutEventsResponse;
 
 /**
- * 
- * Supported Type of Actions.
+ * Event Bridge Service.
  *
  */
-@Reflectable
-public enum ActionType {
-  /** AntiVirus. */
-  ANTIVIRUS,
-  /** Document Tagging. */
-  DOCUMENTTAGGING,
-  /** Full Text. */
-  FULLTEXT,
-  /** Intelligent Document Processing. */
-  IDP,
-  /** Notification Action. */
-  NOTIFICATION,
-  /** OCR. */
-  OCR,
-  /** Queue. */
-  QUEUE,
-  /** WebHook. */
-  WEBHOOK,
-  /** Publish. */
-  PUBLISH,
-  /** Pdf Export. */
-  PDFEXPORT,
-  /** Event Bridge. */
-  EVENTBRIDGE
+public interface EventBridgeService {
+
+  /**
+   * Put AWS Event Bridge Event.
+   *
+   * @param eventBusName The name or ARN of the event bus to receive the event. Only the rules that
+   *        are associated with this event bus are used to match the event. If you omit this, the
+   *        default event bus is used.
+   * @param detailType Free-form string, with a maximum of 128 characters, used to decide what
+   *        fields to expect in the event detail.
+   * @param detail A valid JSON object
+   * @param source The source of the event
+   * @return PutEventsResponse
+   */
+  PutEventsResponse putEvents(String eventBusName, String detailType, String detail, String source);
 }
