@@ -57,6 +57,11 @@ import java.util.concurrent.TimeUnit;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.model.SearchAttributeCriteria;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
+import com.formkiq.aws.eventbridge.EventBridgeAwsServiceRegistry;
+import com.formkiq.aws.eventbridge.EventBridgeService;
+import com.formkiq.aws.sqs.SqsConnectionBuilder;
+import com.formkiq.aws.sqs.SqsService;
+import com.formkiq.aws.sqs.SqsServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
 import com.formkiq.stacks.dynamodb.DocumentSearchServiceImpl;
 import com.formkiq.stacks.dynamodb.attributes.AttributeKeyReserved;
@@ -67,6 +72,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockserver.integration.ClientAndServer;
@@ -135,6 +141,8 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.sqs.model.Message;
+import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 import software.amazon.awssdk.utils.IoUtils;
 
 /** Unit Tests for {@link DocumentActionsProcessor}. */
@@ -142,6 +150,8 @@ import software.amazon.awssdk.utils.IoUtils;
 @ExtendWith(LocalStackExtension.class)
 public class DocumentActionsProcessorTest implements DbKeys {
 
+  /** SQS Sns Update Queue. */
+  private static final String SQS_QUEUE1 = "sqssnsCreate1";
   /** App Environment. */
   private static final String APP_ENVIRONMENT = "test";
   /** {@link RequestRecordExpectationResponseCallback}. */
@@ -156,7 +166,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
   /** Document Id with OCR Key/Value. */
   private static final String DOCUMENT_ID_OCR_KEY_VALUE = UUID.randomUUID().toString();
   /** {@link Gson}. */
-  private static final Gson GSON = new GsonBuilder().disableHtmlEscaping().create();
+  private static final Gson GSON = GsonUtil.getInstance();
   /** Port to run Test server. */
   private static final int PORT = 8888;
   /** Sns Document Event. */
@@ -165,6 +175,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
   private static final String URL = "http://localhost:" + PORT;
   /** Search Limit. */
   private static final int LIMIT = 100;
+  /** Test Timeout. */
+  private static final int TEST_TIMEOUT = 10;
   /** {@link TypesenseExtension}. */
   @RegisterExtension
   static TypesenseExtension typesenseExtension = new TypesenseExtension();
@@ -192,6 +204,14 @@ public class DocumentActionsProcessorTest implements DbKeys {
   private static TypeSenseService typesense;
   /** {@link AwsServiceCache}. */
   private static AwsServiceCache serviceCache;
+  /** {@link EventBridgeService}. */
+  private static EventBridgeService eventBridgeService;
+  /** {@link SqsService}. */
+  private static SqsService sqsService;
+  /** Sqs Queue Arn . */
+  private static String sqsQueueArn;
+  /** SQS Queue Url. */
+  private static String sqsDocumentQueueUrl;
   /** {@link LambdaContextRecorder}. */
   private LambdaContextRecorder context;
 
@@ -241,6 +261,13 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
     SnsService sns = new SnsService(TestServices.getSnsConnection(null));
     snsDocumentEventTopicArn = sns.createTopic(SNS_DOCUMENT_EVENT_TOPIC).topicArn();
+
+    SqsConnectionBuilder sqsBuilder = TestServices.getSqsConnection(null);
+    sqsService = new SqsServiceImpl(sqsBuilder);
+    if (!sqsService.exists(SQS_QUEUE1)) {
+      sqsDocumentQueueUrl = sqsService.createQueue(SQS_QUEUE1).queueUrl();
+      sqsQueueArn = sqsService.getQueueArn(sqsDocumentQueueUrl);
+    }
   }
 
   /**
@@ -330,10 +357,11 @@ public class DocumentActionsProcessorTest implements DbKeys {
         new AwsServiceCacheBuilder(env, TestServices.getEndpointMap(), credentialsProvider)
             .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
                 new SnsAwsServiceRegistry(), new SsmAwsServiceRegistry(),
-                new SesAwsServiceRegistry())
+                new SesAwsServiceRegistry(), new EventBridgeAwsServiceRegistry())
             .build();
 
     processor = new DocumentActionsProcessor(serviceCache);
+    eventBridgeService = serviceCache.getExtension(EventBridgeService.class);
   }
 
   private static @NotNull Map<String, String> buildEnvironment(final String module,
@@ -2180,5 +2208,69 @@ public class DocumentActionsProcessorTest implements DbKeys {
         assertEquals(siteId, lastRequest.getFirstQueryStringParameter("siteId"));
       }
     }
+  }
+
+  /**
+   * Handle Export Bridge Action.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(TEST_TIMEOUT)
+  public void testEventBridge01() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String documentId = UUID.randomUUID().toString();
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      documentService.saveDocument(siteId, item, null);
+
+      String eventBusName = "test_" + UUID.randomUUID();
+      eventBridgeService.createEventBridge(eventBusName);
+
+      String eventPattern = "{\"source\":[\"formkiq.test\"]}";
+      eventBridgeService.createRule(eventBusName, "sqs", eventPattern, "test", sqsQueueArn);
+
+      List<Action> actions = Collections.singletonList(new Action().type(ActionType.EVENTBRIDGE)
+          .parameters(Map.of("eventBusName", eventBusName)).userId("joe"));
+      actionsService.saveNewActions(siteId, documentId, actions);
+
+      Map<String, Object> map =
+          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
+              documentId, "default", siteId != null ? siteId : "default");
+
+      // when
+      processor.handleRequest(map, this.context);
+
+      // then
+      Action action = actionsService.getActions(siteId, documentId).get(0);
+      assertEquals(ActionType.EVENTBRIDGE, action.type());
+      assertEquals(ActionStatus.COMPLETE, action.status());
+
+      ReceiveMessageResponse response = getReceiveMessageResponse();
+
+      assertEquals(1, response.messages().size());
+      Message message = response.messages().get(0);
+
+      Map<String, Object> data = GSON.fromJson(message.body(), Map.class);
+      assertEquals("formkiq.test", (String) data.get("source"));
+      assertEquals("Document Action Event", (String) data.get("detail-type"));
+      assertTrue(data.get("time").toString().endsWith("Z"));
+
+      data = (Map<String, Object>) data.get("detail");
+      List<Map<String, Object>> documents = (List<Map<String, Object>>) data.get("documents");
+      assertEquals(1, documents.size());
+      assertNotNull(documents.get(0).get("documentId"));
+      assertNotNull(documents.get(0).get("url"));
+      assertNotNull(documents.get(0).get("path"));
+    }
+  }
+
+  private ReceiveMessageResponse getReceiveMessageResponse() throws InterruptedException {
+    ReceiveMessageResponse response = sqsService.receiveMessages(sqsDocumentQueueUrl);
+    while (response.messages().isEmpty()) {
+      TimeUnit.SECONDS.sleep(1);
+      response = sqsService.receiveMessages(sqsDocumentQueueUrl);
+    }
+    return response;
   }
 }

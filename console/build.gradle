@@ -20,21 +20,21 @@ dependencies {
 
 	implementation project(':aws-s3')
 	implementation project(':aws-ssm')
-	
+
 	implementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.7'
 	implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.3'
 	implementation group: 'org.json', name: 'json', version: '20231013'
-	
+
 	testImplementation project(':aws-cognito-identity')
 	testImplementation project(':aws-cognito-identityprovider')
 	testImplementation project(':fkq-test-utils')
 	testImplementation group: 'com.google.code.gson', name: 'gson', version: '2.10.1'
-	testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.7'	
-	
+	testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.7'
+
 	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.10.1'
-	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.19.4'
-	
-	testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.19.4'
+	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.20.1'
+
+	testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.20.1'
 	testImplementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.12.646'
 	testImplementation group: 'com.microsoft.playwright', name: 'playwright', version: '1.37.0'
 }
@@ -53,7 +53,7 @@ task integrationTest(type: Test) {
 task buildTemplate {
 	inputs.files("src/main/resources/cloudformation/template.yaml", "src/main/resources/cloudformation/template-install.yaml", "src/main/resources/cloudformation/template-users.yaml")
 	outputs.files("${buildDir}/distributions/console/template.yaml", "${buildDir}/distributions/console/template-install.yaml", "${buildDir}/distributions/console/template-users.yaml")
-	
+
 	doLast {
 		copy {
 		  from layout.buildDirectory.dir("${buildDir}/../src/main/resources/cloudformation")
@@ -75,10 +75,10 @@ distributions {
     main {
         contents {
             from compileJava
-    		from processResources              
+    		from processResources
     		into('lib') {
         		from configurations.runtimeClasspath
-    		}    
+    		}
             into '/'
         }
     }

@@ -24,9 +24,14 @@
 package com.formkiq.aws.eventbridge;
 
 import software.amazon.awssdk.services.eventbridge.EventBridgeClient;
+import software.amazon.awssdk.services.eventbridge.model.CreateEventBusRequest;
+import software.amazon.awssdk.services.eventbridge.model.CreateEventBusResponse;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequest;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsResponse;
+import software.amazon.awssdk.services.eventbridge.model.PutRuleRequest;
+import software.amazon.awssdk.services.eventbridge.model.PutTargetsRequest;
+import software.amazon.awssdk.services.eventbridge.model.Target;
 
 /**
  * Implementation of {@link EventBridgeService}.
@@ -46,15 +51,33 @@ public class EventBridgeServiceImpl implements EventBridgeService {
     this.client = connection.build();
   }
 
+  @Override
+  public CreateEventBusResponse createEventBridge(final String eventBusName) {
+    CreateEventBusRequest req = CreateEventBusRequest.builder().name(eventBusName).build();
+    return client.createEventBus(req);
+  }
 
   @Override
   public PutEventsResponse putEvents(final String eventBusName, final String detailType,
       final String detail, final String source) {
+
     PutEventsRequestEntry requestEntry = PutEventsRequestEntry.builder().eventBusName(eventBusName)
         .detailType(detailType).source(source).detail(detail).build();
 
     PutEventsRequest request = PutEventsRequest.builder().entries(requestEntry).build();
-
     return client.putEvents(request);
+  }
+
+  @Override
+  public void createRule(final String eventBusName, final String ruleName,
+      final String eventPattern, final String targetId, final String arn) {
+    PutRuleRequest ruleReq = PutRuleRequest.builder().name(ruleName).eventBusName(eventBusName)
+        .eventPattern(eventPattern).build();
+    client.putRule(ruleReq);
+
+    Target target = Target.builder().id(targetId).arn(arn).build();
+    PutTargetsRequest putTarget = PutTargetsRequest.builder().rule(ruleName)
+        .eventBusName(eventBusName).targets(target).build();
+    client.putTargets(putTarget);
   }
 }

@@ -23,29 +23,6 @@
  */
 package com.formkiq.stacks.lambda.s3;
 
-import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
-import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
-import static com.formkiq.module.events.document.DocumentEventType.ACTIONS;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.net.http.HttpClient;
-import java.net.http.HttpClient.Redirect;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
@@ -53,13 +30,10 @@ import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceExtension;
-import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
-import com.formkiq.aws.dynamodb.model.DocumentTag;
-import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.objects.Strings;
-import com.formkiq.aws.s3.PresignGetUrlConfig;
+import com.formkiq.aws.eventbridge.EventBridgeService;
+import com.formkiq.aws.eventbridge.EventBridgeServiceExtension;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.aws.s3.S3PresignerServiceExtension;
@@ -93,7 +67,6 @@ import com.formkiq.module.typesense.TypeSenseService;
 import com.formkiq.module.typesense.TypeSenseServiceExtension;
 import com.formkiq.stacks.dynamodb.ConfigService;
 import com.formkiq.stacks.dynamodb.ConfigServiceExtension;
-import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
@@ -102,11 +75,13 @@ import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeServiceExtension;
 import com.formkiq.stacks.dynamodb.mappings.MappingService;
 import com.formkiq.stacks.dynamodb.mappings.MappingServiceExtension;
+import com.formkiq.stacks.lambda.s3.actions.AddOcrAction;
+import com.formkiq.stacks.lambda.s3.actions.DocumentExternalSystemExport;
 import com.formkiq.stacks.lambda.s3.actions.DocumentTaggingAction;
+import com.formkiq.stacks.lambda.s3.actions.EventBridgeAction;
 import com.formkiq.stacks.lambda.s3.actions.FullTextAction;
 import com.formkiq.stacks.lambda.s3.actions.IdpAction;
 import com.formkiq.stacks.lambda.s3.actions.NotificationAction;
-import com.formkiq.stacks.lambda.s3.actions.AddOcrAction;
 import com.formkiq.stacks.lambda.s3.actions.PdfExportAction;
 import com.formkiq.stacks.lambda.s3.actions.SendHttpRequest;
 import com.formkiq.validation.ValidationException;
@@ -114,6 +89,23 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.http.HttpClient;
+import java.net.http.HttpClient.Redirect;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
+import static com.formkiq.module.events.document.DocumentEventType.ACTIONS;
 
 /** {@link RequestHandler} for handling Document Actions. */
 @Reflectable
@@ -156,6 +148,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
         new ActionsNotificationServiceExtension());
     awsServiceCache.register(SesService.class, new SesServiceExtension());
     awsServiceCache.register(AttributeService.class, new AttributeServiceExtension());
+    awsServiceCache.register(EventBridgeService.class, new EventBridgeServiceExtension());
 
     SsmService ssmService = awsServiceCache.getExtension(SsmService.class);
 
@@ -204,84 +197,12 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     serviceCache = awsServiceCache;
   }
 
-  /**
-   * Build Webhook Body.
-   * 
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param actions {@link List} {@link Action}
-   * @return {@link String}
-   */
-  private String buildWebhookBody(final String siteId, final String documentId,
-      final List<Action> actions) {
-
-    DocumentService documentService = serviceCache.getExtension(DocumentService.class);
-
-    DocumentItem result = documentService.findDocument(siteId, documentId);
-    DynamicDocumentItem item = new DocumentItemToDynamicDocumentItem().apply(result);
-
-    String site = siteId != null ? siteId : SiteIdKeyGenerator.DEFAULT_SITE_ID;
-    item.put("siteId", site);
-
-    URL s3Url = getS3Url(siteId, documentId, item);
-    item.put("url", s3Url);
-
-    List<DynamicDocumentItem> documents = new ArrayList<>();
-    documents.add(item);
-
-    Optional<Action> antiVirus = actions.stream()
-        .filter(
-            a -> ActionType.ANTIVIRUS.equals(a.type()) && ActionStatus.COMPLETE.equals(a.status()))
-        .findFirst();
-
-    if (antiVirus.isPresent()) {
-
-      Map<String, Collection<DocumentTag>> tagMap =
-          documentService.findDocumentsTags(siteId, Collections.singletonList(documentId),
-              Arrays.asList("CLAMAV_SCAN_STATUS", "CLAMAV_SCAN_TIMESTAMP"));
-
-      Map<String, String> values = new HashMap<>();
-      Collection<DocumentTag> tags = tagMap.get(documentId);
-      for (DocumentTag tag : tags) {
-        values.put(tag.getKey(), tag.getValue());
-      }
-
-      String status = values.getOrDefault("CLAMAV_SCAN_STATUS", "ERROR");
-      item.put("status", status);
-
-      String timestamp = values.getOrDefault("CLAMAV_SCAN_TIMESTAMP", "");
-      item.put("timestamp", timestamp);
-    }
-
-    return this.gson.toJson(Map.of("documents", documents));
-  }
-
   private ActionsService getActionsService() {
     return serviceCache.getExtension(ActionsService.class);
   }
 
   private ActionsNotificationService getNotificationService() {
     return serviceCache.getExtension(ActionsNotificationService.class);
-  }
-
-  /**
-   * Get Document S3 Url.
-   * 
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param item {@link DocumentItem}
-   * @return {@link URL}
-   */
-  private URL getS3Url(final String siteId, final String documentId, final DocumentItem item) {
-
-    String documentsBucket = serviceCache.environment("DOCUMENTS_S3_BUCKET");
-    Duration duration = Duration.ofDays(1);
-    PresignGetUrlConfig config =
-        new PresignGetUrlConfig().contentDispositionByPath(item.getPath(), false);
-    String s3key = createS3Key(siteId, documentId);
-
-    S3PresignerService s3Presigner = serviceCache.getExtension(S3PresignerService.class);
-    return s3Presigner.presignGetUrl(documentsBucket, s3key, duration, null, config);
   }
 
   @SuppressWarnings("unchecked")
@@ -351,11 +272,11 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
       final String documentId, final List<Action> actions, final Action action)
       throws IOException, InterruptedException, ValidationException {
 
-    boolean updateComplete = false;
     ActionStatus completeStatus = ActionStatus.COMPLETE;
 
     logAction(logger, "action start", siteId, documentId, action);
 
+    boolean updateComplete = false;
     switch (action.type()) {
       case QUEUE -> {
         completeStatus = ActionStatus.IN_QUEUE;
@@ -400,6 +321,12 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
       case PDFEXPORT -> {
         DocumentAction da = new PdfExportAction(serviceCache);
+        da.run(logger, siteId, documentId, actions, action);
+        updateComplete = true;
+      }
+
+      case EVENTBRIDGE -> {
+        DocumentAction da = new EventBridgeAction(serviceCache);
         da.run(logger, siteId, documentId, actions, action);
         updateComplete = true;
       }
@@ -535,7 +462,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
     String url = action.parameters().get("url");
 
-    String body = buildWebhookBody(siteId, documentId, actions);
+    String body = new DocumentExternalSystemExport(serviceCache).apply(siteId, documentId, actions);
 
     try {
 

@@ -73,7 +73,7 @@ public final class TestServices {
   private static LocalStackContainer localstack = null;
   /** LocalStack {@link DockerImageName}. */
   private static final DockerImageName LOCALSTACK_IMAGE =
-      DockerImageName.parse("localstack/localstack:3.1.0");
+      DockerImageName.parse("localstack/localstack:3.6.0");
   /** {@link String}. */
   public static final String OCR_BUCKET_NAME = "ocrbucket";
   /** {@link S3ConnectionBuilder}. */
@@ -406,7 +406,7 @@ public final class TestServices {
 
     if (localstack == null && isPortAvailable()) {
       localstack = new LocalStackContainer(LOCALSTACK_IMAGE).withServices(Service.S3, Service.SQS,
-          Service.SSM, Service.SNS);
+          Service.SSM, Service.SNS, LocalStackContainer.EnabledService.named("events"));
       localstack.start();
     }
   }
