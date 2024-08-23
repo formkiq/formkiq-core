@@ -73,6 +73,7 @@ subprojects {
     systemProperties['testprofile'] = project.getProperty('testprofile')
     systemProperties['testappenvironment'] = project.getProperty('testappenvironment')
     systemProperties['testchatgptapikey'] = project.getProperty('testchatgptapikey')
+    systemProperties['testeventbridgename'] = project.getProperty('testeventbridgename')
   }
 
   spotbugs {
