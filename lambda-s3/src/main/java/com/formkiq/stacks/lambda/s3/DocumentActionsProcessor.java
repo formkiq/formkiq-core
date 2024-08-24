@@ -32,6 +32,7 @@ import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceExtension;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.objects.Strings;
+import com.formkiq.aws.eventbridge.EventBridgeAwsServiceRegistry;
 import com.formkiq.aws.eventbridge.EventBridgeService;
 import com.formkiq.aws.eventbridge.EventBridgeServiceExtension;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
@@ -120,7 +121,8 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
       serviceCache = new AwsServiceCacheBuilder(System.getenv(), Map.of(),
           EnvironmentVariableCredentialsProvider.create())
           .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
-              new SnsAwsServiceRegistry(), new SsmAwsServiceRegistry(), new SesAwsServiceRegistry())
+              new SnsAwsServiceRegistry(), new SsmAwsServiceRegistry(), new SesAwsServiceRegistry(),
+              new EventBridgeAwsServiceRegistry())
           .build();
 
       initialize(serviceCache);
