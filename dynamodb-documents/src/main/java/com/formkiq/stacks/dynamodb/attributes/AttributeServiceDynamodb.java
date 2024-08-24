@@ -67,8 +67,15 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
   @Override
   public Collection<ValidationError> addAttribute(final String siteId, final String key,
       final AttributeDataType dataType, final AttributeType type) {
+    return addAttribute(siteId, key, dataType, type, false);
+  }
 
-    Collection<ValidationError> errors = validate(siteId, key);
+  @Override
+  public Collection<ValidationError> addAttribute(final String siteId, final String key,
+      final AttributeDataType dataType, final AttributeType type,
+      final boolean allowReservedAttributeKey) {
+
+    Collection<ValidationError> errors = validate(siteId, key, allowReservedAttributeKey);
 
     if (errors.isEmpty()) {
 
@@ -81,14 +88,15 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
     return errors;
   }
 
-  private Collection<ValidationError> validate(final String siteId, final String key) {
+  private Collection<ValidationError> validate(final String siteId, final String key,
+      final boolean allowReservedAttributeKey) {
 
     Collection<ValidationError> errors = Collections.emptyList();
 
     if (key == null || key.isEmpty()) {
       errors = Collections
           .singletonList(new ValidationErrorImpl().key("key").error("'key' is required"));
-    } else {
+    } else if (!allowReservedAttributeKey) {
 
       AttributeKeyReserved r = AttributeKeyReserved.find(key);
       if (r != null) {
@@ -170,6 +178,12 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
     }
 
     return r;
+  }
+
+  @Override
+  public boolean existsAttribute(final String siteId, final String key) {
+    AttributeRecord r = new AttributeRecord().documentId(key);
+    return this.db.exists(r.fromS(r.pk(siteId)), r.fromS(r.sk()));
   }
 
   @Override

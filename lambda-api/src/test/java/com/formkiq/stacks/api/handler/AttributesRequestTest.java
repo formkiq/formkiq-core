@@ -627,6 +627,9 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       String documentId = this.documentsApi.addDocument(docReq, siteId, null).getDocumentId();
 
       // then
+      assertNotNull(
+          this.attributesApi.getAttribute(AttributeKeyReserved.RELATIONSHIPS.getKey(), siteId));
+
       GetDocumentAttributeResponse response0 = this.documentAttributesApi
           .getDocumentAttribute(documentId, AttributeKeyReserved.RELATIONSHIPS.getKey(), siteId);
       assertEquals("PRIMARY#" + documentId0,
@@ -664,6 +667,8 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       String documentId = this.documentsApi.addDocument(docReq, siteId, null).getDocumentId();
 
       // then
+      assertNotNull(
+          this.attributesApi.getAttribute(AttributeKeyReserved.RELATIONSHIPS.getKey(), siteId));
       GetDocumentAttributeResponse response0 = this.documentAttributesApi
           .getDocumentAttribute(documentId, AttributeKeyReserved.RELATIONSHIPS.getKey(), siteId);
       assertEquals("PRIMARY#" + documentId0,
@@ -707,6 +712,9 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       addRelationship(siteId, documentId2, DocumentRelationshipType.PRIMARY, documentId0);
 
       // then
+      assertNotNull(
+          this.attributesApi.getAttribute(AttributeKeyReserved.RELATIONSHIPS.getKey(), siteId));
+
       GetDocumentAttributeResponse response = this.documentAttributesApi
           .getDocumentAttribute(documentId0, AttributeKeyReserved.RELATIONSHIPS.getKey(), siteId);
       List<String> stringValues =

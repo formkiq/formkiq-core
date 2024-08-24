@@ -313,12 +313,13 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       validateDocumentAttributes(schemaAttributes, siteId, documentId, documentAttributes, isUpdate,
           validation, validationAccess);
 
+      Collection<String> attributeKeys = documentAttributes.stream()
+          .map(DocumentAttributeRecord::getKey).collect(Collectors.toSet());
+      insertAttributeIfExists(attributeKeys, siteId, AttributeKeyReserved.RELATIONSHIPS);
+
       // when updating attributes remove existing attribute keys
       if (AttributeValidationAccess.ADMIN_UPDATE.equals(validationAccess)
           || AttributeValidationAccess.UPDATE.equals(validationAccess)) {
-
-        List<String> attributeKeys =
-            documentAttributes.stream().map(DocumentAttributeRecord::getKey).toList();
 
         for (String attributeKey : attributeKeys) {
           List<DocumentAttributeRecord> deletedValues = deleteDocumentAttribute(siteId, documentId,
@@ -339,6 +340,29 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
       writeBuilder.appends(this.documentTableName,
           documentAttributes.stream().map(a -> a.getAttributes(siteId)).toList());
+    }
+  }
+
+  /**
+   * Insert Attribute If doesn't exist.
+   * 
+   * @param attributeKeys {@link Collection}
+   * @param siteId {@link String}
+   * @param attributeKey {@link AttributeKeyReserved}
+   */
+  private void insertAttributeIfExists(final Collection<String> attributeKeys, final String siteId,
+      final AttributeKeyReserved attributeKey) throws ValidationException {
+
+    String key = attributeKey.getKey();
+    if (attributeKeys.contains(key)) {
+
+      if (!attributeService.existsAttribute(siteId, key)) {
+        Collection<ValidationError> errors = attributeService.addAttribute(siteId, key,
+            AttributeDataType.STRING, AttributeType.STANDARD, true);
+        if (!errors.isEmpty()) {
+          throw new ValidationException(errors);
+        }
+      }
     }
   }
 
@@ -2244,14 +2268,10 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
           this.attributeValidator.getAttributeRecordMap(siteId, documentAttributes);
 
       switch (validation) {
-        case FULL -> {
-          errors = this.attributeValidator.validateFullAttribute(schemaAttributes, siteId,
-              documentId, documentAttributes, attributeRecordMap, isUpdate, validationAccess);
-        }
-        case PARTIAL -> {
-          errors = this.attributeValidator.validatePartialAttribute(schemaAttributes, siteId,
-              documentAttributes, attributeRecordMap, validationAccess);
-        }
+        case FULL -> errors = this.attributeValidator.validateFullAttribute(schemaAttributes,
+            siteId, documentId, documentAttributes, attributeRecordMap, isUpdate, validationAccess);
+        case PARTIAL -> errors = this.attributeValidator.validatePartialAttribute(schemaAttributes,
+            siteId, documentAttributes, attributeRecordMap, validationAccess);
         case NONE -> {
         }
         default -> throw new IllegalArgumentException("Unexpected value: " + validation);
