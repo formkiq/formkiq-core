@@ -37,6 +37,7 @@ import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.PaginationToAttributeValue;
 import com.formkiq.aws.dynamodb.QueryConfig;
 import com.formkiq.aws.dynamodb.QueryResponseToPagination;
+import com.formkiq.stacks.dynamodb.schemas.SchemaAttributeKeyRecord;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -120,26 +121,43 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
   public Collection<ValidationError> deleteAttribute(final String siteId, final String key) {
 
     boolean deleted = false;
-    Collection<ValidationError> errors = new ArrayList<>();
-    AttributeRecord r = new AttributeRecord().documentId(key);
-    Map<String, AttributeValue> dbKey = this.db.get(r.fromS(r.pk(siteId)), r.fromS(r.sk()));
+    Collection<ValidationError> errors = validateDeleteAttribute(siteId, key);
 
-    if (!dbKey.isEmpty()) {
+    if (errors.isEmpty()) {
 
-      QueryConfig config = new QueryConfig().indexName(GSI1);
-      DocumentAttributeRecord dar = new DocumentAttributeRecord().setKey(key);
-      AttributeValue pk = dar.fromS(dar.pkGsi1(siteId));
-
-      QueryResponse response = this.db.queryBeginsWith(config, pk, null, null, 1);
-      if (response.items().isEmpty()) {
-        deleted = this.db.deleteItem(Map.of(PK, dbKey.get(PK), SK, dbKey.get(SK)));
-      } else {
-        errors.add(new ValidationErrorImpl().error("attribute 'key' is in use, cannot be deleted"));
-      }
+      AttributeRecord r = new AttributeRecord().documentId(key);
+      deleted = this.db.deleteItem(Map.of(PK, r.fromS(r.pk(siteId)), SK, r.fromS(r.sk())));
     }
 
     if (!deleted && errors.isEmpty()) {
       errors.add(new ValidationErrorImpl().key("key").error("attribute 'key' not found"));
+    }
+
+    return errors;
+  }
+
+  private Collection<ValidationError> validateDeleteAttribute(final String siteId,
+      final String key) {
+    Collection<ValidationError> errors = new ArrayList<>();
+
+    QueryConfig config = new QueryConfig().indexName(GSI1);
+
+    // check for Schema / Classification Key
+    SchemaAttributeKeyRecord r = new SchemaAttributeKeyRecord().setKey(key);
+    AttributeValue pk = r.fromS(r.pkGsi1(siteId));
+    QueryResponse response = this.db.queryBeginsWith(config, pk, null, null, 1);
+    if (!response.items().isEmpty()) {
+      errors.add(new ValidationErrorImpl()
+          .error("attribute 'key' is used in a Schema / Classification, cannot be deleted"));
+    }
+
+    // check for DocumentAttributeRecords
+    DocumentAttributeRecord dar = new DocumentAttributeRecord().setKey(key);
+    pk = dar.fromS(dar.pkGsi1(siteId));
+    response = this.db.queryBeginsWith(config, pk, null, null, 1);
+
+    if (!response.items().isEmpty()) {
+      errors.add(new ValidationErrorImpl().error("attribute 'key' is in use, cannot be deleted"));
     }
 
     return errors;

@@ -26,6 +26,7 @@ package com.formkiq.stacks.dynamodb.schemas;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
+import com.formkiq.aws.dynamodb.QueryConfig;
 import com.formkiq.stacks.dynamodb.attributes.AttributeDataType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeServiceDynamodb;
@@ -38,6 +39,8 @@ import com.google.gson.GsonBuilder;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -47,17 +50,21 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Unit Tests for {@link SchemaServiceDynamodb}.
  */
 @ExtendWith(DynamoDbExtension.class)
 public class SchemaServiceDynamodbTest {
-
+  /** Results Limit. */
+  private static final int LIMIT = 100;
   /** {@link SchemaService}. */
   private static SchemaService service;
   /** {@link AttributeService}. */
   private static AttributeService attributeService;
+  /** {@link DynamoDbService}. */
+  private static DynamoDbService db;
 
   /**
    * Before Test.
@@ -66,10 +73,10 @@ public class SchemaServiceDynamodbTest {
    */
   @BeforeAll
   public static void beforeAll() throws Exception {
-    DynamoDbConnectionBuilder db = DynamoDbTestServices.getDynamoDbConnection();
-    DynamoDbService dbb = new DynamoDbServiceImpl(db, "Documents");
-    service = new SchemaServiceDynamodb(dbb);
-    attributeService = new AttributeServiceDynamodb(dbb);
+    DynamoDbConnectionBuilder dbc = DynamoDbTestServices.getDynamoDbConnection();
+    db = new DynamoDbServiceImpl(dbc, "Documents");
+    service = new SchemaServiceDynamodb(db);
+    attributeService = new AttributeServiceDynamodb(db);
   }
 
   private static Collection<ValidationError> setSitesSchema(final String siteId,
@@ -80,7 +87,6 @@ public class SchemaServiceDynamodbTest {
     return service.setSitesSchema(siteId, name, schemaJson, schema);
   }
 
-  // TODO remove "name" parameter once 1.15.1 is merged
   private static ClassificationRecord setClassification(final String siteId,
       final String classificationId, final String name, final SchemaAttributes schemaAttributes)
       throws ValidationException {
@@ -96,6 +102,10 @@ public class SchemaServiceDynamodbTest {
 
   private static SchemaAttributesRequired createCategoryRequired(final List<String> allowedValues) {
     return new SchemaAttributesRequired().attributeKey("category").allowedValues(allowedValues);
+  }
+
+  private static SchemaAttributesOptional createCategoryOptional(final List<String> allowedValues) {
+    return new SchemaAttributesOptional().attributeKey("category").allowedValues(allowedValues);
   }
 
   private static void addAttribute(final String siteId, final String attributeKey) {
@@ -160,6 +170,29 @@ public class SchemaServiceDynamodbTest {
   }
 
   /**
+   * Duplicate Attribute Key across site schema.
+   */
+  @Test
+  void testSetSitesSchema02() throws ValidationException {
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      addAttribute(siteId, "category");
+
+      SchemaAttributesRequired require0 = createCategoryRequired(List.of("Z", "Y"));
+      SchemaAttributesOptional optional0 = createCategoryOptional(List.of("Z", "Y"));
+
+      // when
+      Collection<ValidationError> errors = setSitesSchema(siteId,
+          new SchemaAttributes().required(List.of(require0)).optional(List.of(optional0)));
+
+      // then
+      assertEquals(1, errors.size());
+      assertEquals("attribute 'category' is in both required & optional lists",
+          errors.iterator().next().error());
+    }
+  }
+
+  /**
    * Set Classification.
    */
   @Test
@@ -201,7 +234,7 @@ public class SchemaServiceDynamodbTest {
       require0.allowedValues(List.of("1", "2", "3"));
 
       // when
-      setClassification(siteId, classificationId, "doc1", schemaAttributes);
+      setClassification(siteId, classificationId, "doc", schemaAttributes);
 
       // then
       allowedValues =
@@ -230,7 +263,7 @@ public class SchemaServiceDynamodbTest {
       setSitesSchema(siteId, new SchemaAttributes().required(List.of(require0)));
 
       SchemaAttributesRequired require1 = createCategoryRequired(List.of("A", "Z"));
-      ClassificationRecord classification = setClassification(siteId, null, "doc1",
+      ClassificationRecord classification = setClassification(siteId, null, "doc",
           new SchemaAttributes().required(List.of(require1)));
 
       // when
@@ -269,6 +302,33 @@ public class SchemaServiceDynamodbTest {
       final int expected = 6;
       assertEquals(expected, allowedValues.size());
       assertEquals("A,AA,BB,CC,Y,Z", String.join(",", allowedValues));
+    }
+  }
+
+  /**
+   * Delete Sites schema.
+   */
+  @Test
+  void testSitesSchemaDelete01() {
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      addAttribute(siteId, "category");
+
+      SchemaAttributesRequired require0 = createCategoryRequired(List.of("Z", "Y"));
+      Collection<ValidationError> errors =
+          setSitesSchema(siteId, new SchemaAttributes().required(List.of(require0)));
+      assertTrue(errors.isEmpty());
+
+      // when
+      errors = setSitesSchema(siteId, new SchemaAttributes());
+      assertTrue(errors.isEmpty());
+
+      // then
+      QueryConfig config = new QueryConfig();
+      AttributeValue pk = AttributeValue.fromS("schemas");
+      QueryResponse response = db.queryBeginsWith(config, pk, null, null, LIMIT);
+      assertEquals(1, response.items().size());
     }
   }
 }

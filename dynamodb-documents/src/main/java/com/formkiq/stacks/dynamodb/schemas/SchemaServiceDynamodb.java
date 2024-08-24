@@ -146,7 +146,7 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
       SitesSchemaRecord r = new SitesSchemaRecord().name(name).schema(schemaJson);
 
       deleteSchemaCompositeKeys(siteId, null);
-      deleteSchemaAttributeAllowedValues(siteId, null);
+      deleteSchemaAttribute(siteId, null);
 
       List<Map<String, AttributeValue>> list = new ArrayList<>();
       list.add(r.getAttributes(siteId));
@@ -158,6 +158,10 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
       List<SchemaAttributeAllowedValueRecord> allowedValues =
           createAllowedValues(null, schema.getAttributes());
       list.addAll(allowedValues.stream().map(a -> a.getAttributes(siteId)).toList());
+
+      List<SchemaAttributeKeyRecord> attributeKeys =
+          createAttributeKeys(null, schema.getAttributes());
+      list.addAll(attributeKeys.stream().map(a -> a.getAttributes(siteId)).toList());
 
       this.db.putItems(list);
     }
@@ -204,7 +208,7 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
         .setDocumentId(documentId).setInsertedDate(new Date()).setUserId(userId);
 
     deleteSchemaCompositeKeys(siteId, documentId);
-    deleteSchemaAttributeAllowedValues(siteId, documentId);
+    deleteSchemaAttribute(siteId, documentId);
 
     List<Map<String, AttributeValue>> list = new ArrayList<>();
     list.add(r.getAttributes(siteId));
@@ -288,6 +292,57 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
     return to;
   }
 
+  @Override
+  public List<String> getSitesSchemaAttributeAllowedValues(final String siteId,
+      final String attributeKey) {
+    return getClassificationAttributeAllowedValues(siteId, null, attributeKey);
+  }
+
+  @Override
+  public List<String> getClassificationAttributeAllowedValues(final String siteId,
+      final String documentId, final String attributeKey) {
+
+    SchemaAttributeAllowedValueRecord r =
+        new SchemaAttributeAllowedValueRecord().setDocumentId(documentId).setKey(attributeKey);
+
+    AttributeValue pk = r.fromS(r.pk(siteId));
+    AttributeValue sk =
+        r.fromS(SchemaAttributeAllowedValueRecord.SK + attributeKey + "#allowedvalue#");
+
+    final int limit = 100;
+    QueryConfig config = new QueryConfig().scanIndexForward(Boolean.TRUE);
+    QueryResponse response = this.db.queryBeginsWith(config, pk, sk, null, limit);
+    List<String> classification = response.items().stream().map(i -> i.get("value").s()).toList();
+
+    if (documentId != null) {
+      List<String> siteSchema = getSitesSchemaAttributeAllowedValues(siteId, attributeKey);
+      classification =
+          Stream.concat(classification.stream(), siteSchema.stream()).distinct().sorted().toList();
+    }
+
+    return classification;
+  }
+
+  @Override
+  public List<String> getAttributeAllowedValues(final String siteId, final String attributeKey) {
+    SchemaAttributeAllowedValueRecord r =
+        new SchemaAttributeAllowedValueRecord().setKey(attributeKey);
+
+    AttributeValue pk = r.fromS(r.pkGsi1(siteId));
+    AttributeValue sk = r.fromS(SchemaAttributeAllowedValueRecord.GSI_SK);
+
+    final int limit = 100;
+    QueryConfig config = new QueryConfig().scanIndexForward(Boolean.TRUE).indexName(GSI1);
+    QueryResponse response = this.db.queryBeginsWith(config, pk, sk, null, limit);
+
+    List<Map<String, AttributeValue>> keys = new HashSet<>(response.items()).stream()
+        .map(i -> Map.of(PK, i.get(PK), SK, i.get(SK))).toList();
+
+    List<Map<String, AttributeValue>> batch = this.db.getBatch(new BatchGetConfig(), keys);
+
+    return batch.stream().map(i -> i.get("value").s()).distinct().sorted().toList();
+  }
+
   private List<SchemaAttributesCompositeKey> mergeCompositeKeys(
       final List<SchemaAttributesCompositeKey> from, final List<SchemaAttributesCompositeKey> to) {
 
@@ -368,55 +423,18 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
         .collect(Collectors.toMap(SchemaAttributesOptional::getAttributeKey, Function.identity()));
   }
 
-  @Override
-  public List<String> getSitesSchemaAttributeAllowedValues(final String siteId,
-      final String attributeKey) {
-    return getClassificationAttributeAllowedValues(siteId, null, attributeKey);
-  }
+  private List<SchemaAttributeKeyRecord> createAttributeKeys(final String documentId,
+      final SchemaAttributes attributes) {
 
-  @Override
-  public List<String> getClassificationAttributeAllowedValues(final String siteId,
-      final String documentId, final String attributeKey) {
+    Set<String> requiredKeys = notNull(attributes.getRequired()).stream()
+        .map(SchemaAttributesRequired::getAttributeKey).collect(Collectors.toSet());
+    Set<String> optionalKeys = notNull(attributes.getOptional()).stream()
+        .map(SchemaAttributesOptional::getAttributeKey).collect(Collectors.toSet());
 
-    SchemaAttributeAllowedValueRecord r =
-        new SchemaAttributeAllowedValueRecord().setDocumentId(documentId).setKey(attributeKey);
+    List<String> keys = Stream.concat(requiredKeys.stream(), optionalKeys.stream()).toList();
 
-    AttributeValue pk = r.fromS(r.pk(siteId));
-    AttributeValue sk =
-        r.fromS(SchemaAttributeAllowedValueRecord.SK + attributeKey + "#allowedvalue#");
-
-    final int limit = 100;
-    QueryConfig config = new QueryConfig().scanIndexForward(Boolean.TRUE);
-    QueryResponse response = this.db.queryBeginsWith(config, pk, sk, null, limit);
-    List<String> classification = response.items().stream().map(i -> i.get("value").s()).toList();
-
-    if (documentId != null) {
-      List<String> siteSchema = getSitesSchemaAttributeAllowedValues(siteId, attributeKey);
-      classification =
-          Stream.concat(classification.stream(), siteSchema.stream()).distinct().sorted().toList();
-    }
-
-    return classification;
-  }
-
-  @Override
-  public List<String> getAttributeAllowedValues(final String siteId, final String attributeKey) {
-    SchemaAttributeAllowedValueRecord r =
-        new SchemaAttributeAllowedValueRecord().setKey(attributeKey);
-
-    AttributeValue pk = r.fromS(r.pkGsi1(siteId));
-    AttributeValue sk = r.fromS(SchemaAttributeAllowedValueRecord.GSI_SK);
-
-    final int limit = 100;
-    QueryConfig config = new QueryConfig().scanIndexForward(Boolean.TRUE).indexName(GSI1);
-    QueryResponse response = this.db.queryBeginsWith(config, pk, sk, null, limit);
-
-    List<Map<String, AttributeValue>> keys = new HashSet<>(response.items()).stream()
-        .map(i -> Map.of(PK, i.get(PK), SK, i.get(SK))).toList();
-
-    List<Map<String, AttributeValue>> batch = this.db.getBatch(new BatchGetConfig(), keys);
-
-    return batch.stream().map(i -> i.get("value").s()).distinct().sorted().toList();
+    return keys.stream()
+        .map(key -> new SchemaAttributeKeyRecord().setKey(key).setDocumentId(documentId)).toList();
   }
 
   private List<SchemaAttributeAllowedValueRecord> createAllowedValues(final String documentId,
@@ -543,7 +561,7 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
     this.db.deleteItemsBeginsWith(pk, sk);
   }
 
-  private void deleteSchemaAttributeAllowedValues(final String siteId, final String documentId) {
+  private void deleteSchemaAttribute(final String siteId, final String documentId) {
 
     SchemaAttributeAllowedValueRecord r =
         new SchemaAttributeAllowedValueRecord().setDocumentId(documentId);
@@ -573,12 +591,6 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
           notNull(schemaAttributes.getCompositeKeys());
 
       List<SchemaAttributesRequired> required = notNull(schemaAttributes.getRequired());
-
-      if (required.isEmpty() && notNull(schemaAttributes.getOptional()).isEmpty()
-          && compositeKeys.isEmpty()) {
-        errors.add(new ValidationErrorImpl()
-            .error("either 'required', 'optional' or 'compositeKeys' attributes list is required"));
-      }
 
       required.forEach(r -> {
         if (!isEmpty(r.getDefaultValue()) && !notNull(r.getAllowedValues()).isEmpty()) {

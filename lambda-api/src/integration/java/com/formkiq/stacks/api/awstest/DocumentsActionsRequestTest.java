@@ -23,22 +23,6 @@
  */
 package com.formkiq.stacks.api.awstest;
 
-import static com.formkiq.testutils.aws.FkqDocumentService.addDocument;
-import static com.formkiq.testutils.aws.FkqDocumentService.waitForAction;
-import static com.formkiq.testutils.aws.FkqDocumentService.waitForActions;
-import static com.formkiq.testutils.aws.FkqDocumentService.waitForActionsComplete;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import java.io.File;
-import java.nio.file.Files;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.client.api.DocumentActionsApi;
@@ -52,6 +36,7 @@ import com.formkiq.client.model.AddActionParameters.NotificationTypeEnum;
 import com.formkiq.client.model.AddDocumentActionsRetryResponse;
 import com.formkiq.client.model.AddDocumentTag;
 import com.formkiq.client.model.Document;
+import com.formkiq.client.model.DocumentAction;
 import com.formkiq.client.model.DocumentActionStatus;
 import com.formkiq.client.model.DocumentActionType;
 import com.formkiq.client.model.GetDocumentActionsResponse;
@@ -60,6 +45,25 @@ import com.formkiq.client.model.UpdateConfigurationRequest;
 import com.formkiq.testutils.FileGenerator;
 import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
 import com.nimbusds.jose.util.StandardCharset;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.testutils.aws.FkqDocumentService.addDocument;
+import static com.formkiq.testutils.aws.FkqDocumentService.waitForAction;
+import static com.formkiq.testutils.aws.FkqDocumentService.waitForActions;
+import static com.formkiq.testutils.aws.FkqDocumentService.waitForActionsComplete;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * GET, POST /documents/{documentId}/actions tests.
@@ -70,7 +74,7 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
   /** JUnit Test Timeout. */
   private static final int TEST_TIMEOUT = 90;
   /** {@link FileGenerator}. */
-  private FileGenerator fileGenerator = new FileGenerator();
+  private final FileGenerator fileGenerator = new FileGenerator();
 
   /**
    * POST /documents/{documentId}.
@@ -78,21 +82,20 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  @Timeout(value = TEST_TIMEOUT)
   public void testaddDocumentActions01() throws Exception {
     // given
-    String siteId = null;
-    List<ApiClient> clients = getApiClients(siteId);
+    List<ApiClient> clients = getApiClients(null);
     ApiClient client = clients.get(0);
     byte[] data = "somedata".getBytes(StandardCharset.UTF_8);
 
     List<AddAction> actions =
-        Arrays.asList(new AddAction().type(DocumentActionType.QUEUE).queueId("test"));
+        List.of(new AddAction().type(DocumentActionType.QUEUE).queueId("test"));
     List<AddDocumentTag> tags = Collections.emptyList();
 
     // when
     try {
-      addDocument(client, siteId, "data.txt", data, MimeType.MIME_PLAIN_TEXT.getContentType(),
+      addDocument(client, null, "data.txt", data, MimeType.MIME_PLAIN_TEXT.getContentType(),
           actions, tags);
     } catch (ApiException e) {
       // then
@@ -102,60 +105,95 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
   }
 
   /**
+   * POST Document Action Event Bridge.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  public void testaddDocumentActions02() throws Exception {
+    // given
+    String testeventbridgename = System.getProperty("testeventbridgename");
+    if (testeventbridgename == null) {
+      throw new IOException("eventbridge name not set");
+    }
+
+    String siteId = SiteIdKeyGenerator.DEFAULT_SITE_ID;
+    List<ApiClient> clients = getApiClients(siteId);
+    ApiClient client = clients.get(0);
+
+    String content = "this is a test";
+    List<AddAction> actions = List.of(new AddAction().type(DocumentActionType.EVENTBRIDGE)
+        .parameters(new AddActionParameters().eventBusName(testeventbridgename)));
+
+    // when
+    String documentId = addDocument(client, siteId, "test.txt", content, "text/plain", actions);
+    System.out.println("DOCUMENT ID: " + documentId);
+
+    // then
+    GetDocumentActionsResponse response = waitForActionsComplete(client, siteId, documentId);
+    List<DocumentAction> docActions = notNull(response.getActions());
+    assertEquals(1, docActions.size());
+    assertEquals(DocumentActionStatus.COMPLETE, docActions.get(0).getStatus());
+    assertNotNull(docActions.get(0).getStartDate());
+    assertNotNull(docActions.get(0).getInsertedDate());
+    assertNotNull(docActions.get(0).getCompletedDate());
+  }
+
+  /**
    * POST /documents/{documentId}/actions/retry.
    * 
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  @Timeout(value = TEST_TIMEOUT)
   public void testAddDocumentActionsRetry01() throws Exception {
     // given
-    String siteId = null;
-    List<ApiClient> clients = getApiClients(siteId);
+    List<ApiClient> clients = getApiClients(null);
     ApiClient client = clients.get(0);
     final long targetSize = 1024;
     File file = this.fileGenerator.generateZipFile(targetSize);
     byte[] data = Files.readAllBytes(file.toPath());
 
-    List<AddAction> actions = Arrays.asList(new AddAction().type(DocumentActionType.OCR));
+    List<AddAction> actions = List.of(new AddAction().type(DocumentActionType.OCR));
     List<AddDocumentTag> tags = Collections.emptyList();
 
     // when
-    String documentId = addDocument(client, siteId, "retry.docx", data,
+    String documentId = addDocument(client, null, "retry.docx", data,
         MimeType.MIME_DOCX.getContentType(), actions, tags);
 
     // then
     GetDocumentActionsResponse response =
-        waitForActions(client, siteId, documentId, Arrays.asList(DocumentActionStatus.FAILED));
-    assertEquals(1, response.getActions().size());
-    assertEquals("FAILED", response.getActions().get(0).getStatus().name());
+        waitForActions(client, null, documentId, List.of(DocumentActionStatus.FAILED));
+    assertEquals(1, notNull(response.getActions()).size());
+    assertEquals("FAILED", Objects.requireNonNull(response.getActions().get(0).getStatus()).name());
 
     // given
     DocumentActionsApi actionsApi = new DocumentActionsApi(client);
 
     // when
     AddDocumentActionsRetryResponse retryResponse =
-        actionsApi.addDocumentRetryAction(documentId, siteId);
+        actionsApi.addDocumentRetryAction(documentId, null);
 
     // then
     assertEquals("Actions retrying", retryResponse.getMessage());
 
-    response =
-        waitForAction(client, siteId, documentId, Arrays.asList(DocumentActionStatus.FAILED));
-    assertEquals(2, response.getActions().size());
-    assertEquals("FAILED_RETRY", response.getActions().get(0).getStatus().name());
-    assertEquals("FAILED", response.getActions().get(1).getStatus().name());
+    response = waitForAction(client, null, documentId, List.of(DocumentActionStatus.FAILED));
+    assertEquals(2, notNull(response.getActions()).size());
+    assertEquals("FAILED_RETRY",
+        Objects.requireNonNull(response.getActions().get(0).getStatus()).name());
+    assertEquals("FAILED", Objects.requireNonNull(response.getActions().get(1).getStatus()).name());
 
     DocumentsApi docApi = new DocumentsApi(client);
 
     GetDocumentsResponse documents =
-        docApi.getDocuments(siteId, "FAILED", null, null, null, null, null, "100");
-    Optional<Document> o = documents.getDocuments().stream()
-        .filter(d -> d.getDocumentId().equals(documentId)).findAny();
+        docApi.getDocuments(null, "FAILED", null, null, null, null, null, "100");
+    Optional<Document> o = notNull(documents.getDocuments()).stream()
+        .filter(d -> documentId.equals(d.getDocumentId())).findAny();
     assertFalse(o.isEmpty());
 
-    documents = docApi.getDocuments(siteId, "FAILED_RETRY", null, null, null, null, null, "100");
-    o = documents.getDocuments().stream().filter(d -> d.getDocumentId().equals(documentId))
+    documents = docApi.getDocuments(null, "FAILED_RETRY", null, null, null, null, null, "100");
+    o = notNull(documents.getDocuments()).stream().filter(d -> documentId.equals(d.getDocumentId()))
         .findAny();
     assertFalse(o.isEmpty());
   }
@@ -166,7 +204,7 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  @Timeout(value = TEST_TIMEOUT)
   public void testAddNotifications01() throws Exception {
     // given
     String siteId = SiteIdKeyGenerator.DEFAULT_SITE_ID;
@@ -183,7 +221,7 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
     String content = "this is a test";
     String subject = "Test email";
     String text = "This is a text email";
-    List<AddAction> actions = Arrays.asList(new AddAction().type(DocumentActionType.NOTIFICATION)
+    List<AddAction> actions = List.of(new AddAction().type(DocumentActionType.NOTIFICATION)
         .parameters(new AddActionParameters().notificationType(NotificationTypeEnum.EMAIL)
             .notificationSubject(subject).notificationToCc("mfriesen@gmail.com")
             .notificationText(text)));
@@ -193,10 +231,11 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
 
     // then
     GetDocumentActionsResponse response = waitForActionsComplete(client, siteId, documentId);
-    assertEquals(1, response.getActions().size());
-    assertEquals("COMPLETE", response.getActions().get(0).getStatus().name());
-    assertNotNull(response.getActions().get(0).getStartDate());
-    assertNotNull(response.getActions().get(0).getInsertedDate());
-    assertNotNull(response.getActions().get(0).getCompletedDate());
+    List<DocumentAction> docActions = notNull(response.getActions());
+    assertEquals(1, docActions.size());
+    assertEquals("COMPLETE", Objects.requireNonNull(docActions.get(0).getStatus()).name());
+    assertNotNull(docActions.get(0).getStartDate());
+    assertNotNull(docActions.get(0).getInsertedDate());
+    assertNotNull(docActions.get(0).getCompletedDate());
   }
 }

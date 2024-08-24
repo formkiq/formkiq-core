@@ -1977,9 +1977,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
         fail();
       } catch (ApiException e) {
         // then
-        assertEquals("{\"errors\":[{\"key\":\"name\",\"error\":\"'name' is required\"},"
-            + "{\"error\":\"either 'required', 'optional' or 'compositeKeys' "
-            + "attributes list is required\"}]}", e.getResponseBody());
+        assertEquals("{\"errors\":[{\"key\":\"name\",\"error\":\"'name' is required\"}]}",
+            e.getResponseBody());
       }
     }
   }
@@ -2195,7 +2194,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * PUT /sites/{siteId}/schema/document with default value outside of allowed values.
+   * PUT /sites/{siteId}/schema/document with default value not in allowed values.
    *
    * @throws ApiException an error has occurred
    */
@@ -2258,6 +2257,40 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
         assertEquals(
             "{\"errors\":[{\"key\":\"compositeKeys\",\"error\":\"duplicate compositeKey\"}]}",
             e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * PUT /sites/{siteId}/schema/document with required attribute and then attempt to delete
+   * attribute.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testSetSitesSchema11() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+
+      String key = "category";
+      addAttribute(siteId, key, null);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe").attributes(
+          new SchemaAttributes().addRequiredItem(new AttributeSchemaRequired().attributeKey(key)));
+
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      // when
+      try {
+        this.attributesApi.deleteAttribute(key, siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"errors\":[{\"error\":\"attribute 'key' is used in a Schema "
+            + "/ Classification, cannot be deleted\"}]}", e.getResponseBody());
       }
     }
   }
