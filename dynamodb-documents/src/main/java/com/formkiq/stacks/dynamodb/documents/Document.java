@@ -60,8 +60,6 @@ public class Document implements DocumentItem {
   private String path;
   /** S3 Version. */
   private String s3version;
-  /** Tag Schema Id. */
-  private String tagSchemaId;
   /** Time to Live. */
   private String timeToLive;
   /** User Id. */

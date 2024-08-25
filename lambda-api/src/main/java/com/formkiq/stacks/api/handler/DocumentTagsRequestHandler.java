@@ -202,12 +202,11 @@ public class DocumentTagsRequestHandler
       tags.setTags(Arrays.asList(tag));
     }
 
-    String userId = updateTagsMetadata(event, authorization, tags);
-
+    updateTagsMetadata(event, authorization, tags);
     validateTags(tags);
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
-    DocumentItem item = verifyDocument(awsservice, event, siteId, documentId);
+    verifyDocument(awsservice, event, siteId, documentId);
 
     List<DocumentTag> allTags = new ArrayList<>(tags.getTags());
 
