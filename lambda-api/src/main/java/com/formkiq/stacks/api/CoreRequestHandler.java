@@ -23,7 +23,6 @@
  */
 package com.formkiq.stacks.api;
 
-import java.util.Map;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
@@ -33,15 +32,16 @@ import com.formkiq.aws.ssm.SsmAwsServiceRegistry;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
-import com.formkiq.plugins.tagschema.DocumentTagSchemaPluginEmpty;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
+
+import java.util.Map;
 
 /** {@link RequestStreamHandler} for handling API Gateway 'GET' requests. */
 @Reflectable
 public class CoreRequestHandler extends AbstractCoreRequestHandler {
 
   /** {@link AwsServiceCache}. */
-  private static AwsServiceCache serviceCache;
+  private static final AwsServiceCache serviceCache;
 
   static {
 
@@ -51,7 +51,7 @@ public class CoreRequestHandler extends AbstractCoreRequestHandler {
             new SnsAwsServiceRegistry(), new SqsAwsServiceRegistry(), new SsmAwsServiceRegistry())
         .build();
 
-    initialize(serviceCache, new DocumentTagSchemaPluginEmpty());
+    initialize(serviceCache);
   }
 
   @Override

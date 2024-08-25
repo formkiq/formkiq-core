@@ -56,8 +56,6 @@ import com.formkiq.module.ocr.DocumentOcrServiceExtension;
 import com.formkiq.module.ocr.DocumentsOcrRequestHandler;
 import com.formkiq.module.typesense.TypeSenseService;
 import com.formkiq.module.typesense.TypeSenseServiceExtension;
-import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
-import com.formkiq.plugins.tagschema.DocumentTagSchemaPluginExtension;
 import com.formkiq.stacks.api.handler.AttributeAllowedValuesRequestHandler;
 import com.formkiq.stacks.api.handler.AttributeRequestHandler;
 import com.formkiq.stacks.api.handler.AttributesRequestHandler;
@@ -129,8 +127,6 @@ import com.formkiq.stacks.api.handler.SitesOpenSearchIndexRequestHandler;
 import com.formkiq.stacks.api.handler.SitesRequestHandler;
 import com.formkiq.stacks.api.handler.SitesSchemaAttributeAllowedValuesRequestHandler;
 import com.formkiq.stacks.api.handler.SitesSchemaRequestHandler;
-import com.formkiq.stacks.api.handler.TagSchemasIdRequestHandler;
-import com.formkiq.stacks.api.handler.TagSchemasRequestHandler;
 import com.formkiq.stacks.api.handler.UpdateDocumentMatchingRequestHandler;
 import com.formkiq.stacks.api.handler.UserActivitiesDocumentIdRequestHandler;
 import com.formkiq.stacks.api.handler.UserActivitiesRequestHandler;
@@ -189,12 +185,10 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
    * Initialize.
    *
    * @param serviceCache {@link AwsServiceCache}
-   * @param plugin {@link DocumentTagSchemaPlugin}
    */
-  public static void initialize(final AwsServiceCache serviceCache,
-      final DocumentTagSchemaPlugin plugin) {
+  public static void initialize(final AwsServiceCache serviceCache) {
 
-    registerExtensions(serviceCache, plugin);
+    registerExtensions(serviceCache);
 
     if (serviceCache.hasModule("typesense")) {
       serviceCache.register(TypeSenseService.class, new TypeSenseServiceExtension());
@@ -209,10 +203,8 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
    * Register Extensions.
    *
    * @param serviceCache {@link AwsServiceCache}
-   * @param schemaEvents {@link DocumentTagSchemaPlugin}
    */
-  private static void registerExtensions(final AwsServiceCache serviceCache,
-      final DocumentTagSchemaPlugin schemaEvents) {
+  private static void registerExtensions(final AwsServiceCache serviceCache) {
 
     serviceCache.register(CognitoIdentityProviderService.class,
         new CognitoIdentityProviderServiceExtension());
@@ -225,8 +217,6 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     serviceCache.register(S3Service.class, new S3ServiceExtension());
     serviceCache.register(S3PresignerService.class, new S3PresignerServiceExtension());
     serviceCache.register(SqsService.class, new SqsServiceExtension());
-    serviceCache.register(DocumentTagSchemaPlugin.class,
-        new DocumentTagSchemaPluginExtension(schemaEvents));
     serviceCache.register(CacheService.class, new DynamoDbCacheServiceExtension());
     serviceCache.register(DocumentService.class, new DocumentServiceExtension());
     serviceCache.register(DocumentSearchService.class, new DocumentSearchServiceExtension());
@@ -286,8 +276,6 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new DocumentsOcrRequestHandler());
     addRequestHandler(new DocumentsSyncsRequestHandler());
     addRequestHandler(new DocumentsFulltextRequestHandler());
-    addRequestHandler(new TagSchemasRequestHandler());
-    addRequestHandler(new TagSchemasIdRequestHandler());
     addRequestHandler(new WebhooksTagsRequestHandler());
     addRequestHandler(new WebhooksIdRequestHandler());
     addRequestHandler(new WebhooksRequestHandler());

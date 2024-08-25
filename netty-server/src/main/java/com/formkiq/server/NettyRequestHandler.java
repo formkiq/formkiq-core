@@ -23,8 +23,6 @@
  */
 package com.formkiq.server;
 
-import java.net.URI;
-import java.util.Map;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.sns.SnsAwsServiceRegistry;
@@ -32,9 +30,11 @@ import com.formkiq.aws.sqs.SqsAwsServiceRegistry;
 import com.formkiq.aws.ssm.SsmAwsServiceRegistry;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
-import com.formkiq.plugins.tagschema.DocumentTagSchemaPluginEmpty;
 import com.formkiq.stacks.api.AbstractCoreRequestHandler;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+
+import java.net.URI;
+import java.util.Map;
 
 /**
  * Netty {@link AbstractCoreRequestHandler}.
@@ -42,7 +42,7 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 public class NettyRequestHandler extends AbstractCoreRequestHandler {
 
   /** {@link AwsServiceCache}. */
-  private AwsServiceCache serviceCache;
+  private final AwsServiceCache serviceCache;
 
   /**
    * constructor.
@@ -59,7 +59,7 @@ public class NettyRequestHandler extends AbstractCoreRequestHandler {
             new SnsAwsServiceRegistry(), new SqsAwsServiceRegistry(), new SsmAwsServiceRegistry())
         .build();
 
-    initialize(this.serviceCache, new DocumentTagSchemaPluginEmpty());
+    initialize(this.serviceCache);
   }
 
   @Override

@@ -61,13 +61,7 @@ public class QueryRequestValidator {
   private void validateMultiTags(final List<SearchTagCriteria> tags,
       final Collection<ValidationError> errors) {
     if (tags.size() > 1) {
-      // every tag must use "eq" except last one
-      for (int i = 0; i < tags.size() - 1; i++) {
-        if (tags.get(i).beginsWith() != null || tags.get(i).range() != null) {
-          errors.add(new ValidationErrorImpl().key("tag/eq")
-              .error("'beginsWith','range' is only supported on the last tag"));
-        }
-      }
+      errors.add(new ValidationErrorImpl().key("tags").error("multiple tags search not supported"));
     }
   }
 

@@ -1377,7 +1377,6 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       addS(pkvalues, "lastModifiedDate", fullLastModifiedDate);
     }
 
-    addS(pkvalues, "tagSchemaId", document.getTagSchemaId());
     addS(pkvalues, "userId", document.getUserId());
 
     String path = isEmpty(document.getPath()) ? document.getDocumentId() : document.getPath();
@@ -2057,7 +2056,6 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     item.setContentLength(doc.getContentLength());
     item.setUserId(doc.getUserId());
     item.setBelongsToDocumentId(doc.getBelongsToDocumentId());
-    item.setTagSchemaId(doc.getTagSchemaId());
     item.setMetadata(doc.getMetadata());
 
     List<DocumentTag> tags = saveDocumentItemGenerateTags(siteId, doc, date, username);

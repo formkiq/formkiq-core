@@ -49,8 +49,6 @@ import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsService;
-import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
-import com.formkiq.plugins.tagschema.DocumentTagSchemaPluginExtension;
 import com.formkiq.stacks.client.models.AddLargeDocument;
 import com.formkiq.stacks.client.models.DocumentActionType;
 import com.formkiq.stacks.dynamodb.ConfigService;
@@ -436,44 +434,6 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
   }
 
   /**
-   * fails TagSchema required tags.
-   *
-   * @throws Exception an error has occurred
-   */
-  @SuppressWarnings("unchecked")
-  @Test
-  public void testHandlePostDocumentsUpload02() throws Exception {
-    // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-
-      final String tagSchemaId = UUID.randomUUID().toString();
-      getAwsServices().register(DocumentTagSchemaPlugin.class,
-          new DocumentTagSchemaPluginExtension(new DocumentTagSchemaReturnErrors()));
-
-      ApiGatewayRequestEvent event =
-          toRequestEvent("/request-get-documents-upload-documentid.json");
-      event.setHttpMethod("POST");
-      addParameter(event, "siteId", siteId);
-      com.formkiq.stacks.client.models.DocumentTag tag0 =
-          new com.formkiq.stacks.client.models.DocumentTag().key("test").value("this");
-      AddLargeDocument document =
-          new AddLargeDocument().tagSchemaId(tagSchemaId).tags(Arrays.asList(tag0));
-      event.setBody(GsonUtil.getInstance().toJson(document));
-      event.setIsBase64Encoded(Boolean.FALSE);
-
-      // when
-      String response = handleRequest(event);
-
-      // then
-      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
-      assertEquals("400.0", String.valueOf(m.get("statusCode")));
-      assertEquals("{\"errors\":[{\"error\":\"test error\",\"key\":\"type\"}]}", m.get("body"));
-
-      assertNull(getDocumentService().findMostDocumentDate());
-    }
-  }
-
-  /**
    * Valid POST generate upload document signed url.
    *
    * @throws Exception an error has occurred
@@ -482,8 +442,8 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePostDocumentsUpload03() throws Exception {
     // given
-    getAwsServices().register(DocumentTagSchemaPlugin.class,
-        new DocumentTagSchemaPluginExtension(new DocumentTagSchemaReturnNewTags()));
+    // getAwsServices().register(DocumentTagSchemaPlugin.class,
+    // new DocumentTagSchemaPluginExtension(new DocumentTagSchemaReturnNewTags()));
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       String tagSchemaId = UUID.randomUUID().toString();
@@ -516,14 +476,12 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
       assertNotNull(document);
 
       int i = 0;
-      final int expectedCount = 2;
+      final int expectedCount = 1;
       List<DocumentTag> tags =
           getDocumentService().findDocumentTags(siteId, documentId, null, LIMIT).getResults();
       assertEquals(expectedCount, tags.size());
       assertEquals("test", tags.get(i).getKey());
       assertEquals("this", tags.get(i++).getValue());
-      assertEquals("testtag", tags.get(i).getKey());
-      assertEquals("testvalue", tags.get(i++).getValue());
 
       assertNotNull(getDocumentService().findMostDocumentDate());
     }

@@ -241,7 +241,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     mappingService = new MappingServiceDynamodb(db);
     attributeService = new AttributeServiceDynamodb(db);
     documentSearchService =
-        new DocumentSearchServiceImpl(dbBuilder, documentService, DOCUMENTS_TABLE, null);
+        new DocumentSearchServiceImpl(dbBuilder, documentService, DOCUMENTS_TABLE);
     createMockServer();
 
     s3Service = new S3Service(TestServices.getS3Connection(null));

@@ -131,11 +131,6 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
   }
 
   @Override
-  public String getTagSchemaId() {
-    return getString("tagSchemaId");
-  }
-
-  @Override
   public String getTimeToLive() {
     return getString("TimeToLive");
   }
@@ -216,11 +211,6 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
   @Override
   public void setS3version(final String version) {
     put("s3version", version);
-  }
-
-  @Override
-  public void setTagSchemaId(final String id) {
-    put("tagSchemaId", id);
   }
 
   @Override

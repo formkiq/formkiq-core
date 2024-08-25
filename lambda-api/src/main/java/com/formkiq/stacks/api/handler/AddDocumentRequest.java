@@ -56,8 +56,6 @@ public class AddDocumentRequest {
   private String path;
   /** Document Tags. */
   private List<AddDocumentTag> tags;
-  /** Tag Schema Id. */
-  private String tagSchemaId;
 
   /**
    * constructor.
@@ -154,15 +152,6 @@ public class AddDocumentRequest {
    */
   public List<AddDocumentTag> getTags() {
     return this.tags;
-  }
-
-  /**
-   * Get Tag Schema Id.
-   * 
-   * @return {@link String}
-   */
-  public String getTagSchemaId() {
-    return this.tagSchemaId;
   }
 
   /**
@@ -271,14 +260,5 @@ public class AddDocumentRequest {
    */
   public void setTags(final List<AddDocumentTag> documentTags) {
     this.tags = documentTags;
-  }
-
-  /**
-   * Set Tag Schema Id.
-   * 
-   * @param documentTagSchemaId {@link String}
-   */
-  public void setTagSchemaId(final String documentTagSchemaId) {
-    this.tagSchemaId = documentTagSchemaId;
   }
 }

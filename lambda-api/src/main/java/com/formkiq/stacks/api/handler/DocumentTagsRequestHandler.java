@@ -51,7 +51,6 @@ import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.services.lambda.services.CacheService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 import com.formkiq.plugins.tagschema.TagSchemaInterface;
 import com.formkiq.stacks.api.ApiDocumentTagItemResponse;
 import com.formkiq.stacks.api.ApiDocumentTagsItemResponse;
@@ -210,10 +209,7 @@ public class DocumentTagsRequestHandler
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
     DocumentItem item = verifyDocument(awsservice, event, siteId, documentId);
 
-    Collection<DocumentTag> newTags = tagSchemaValidation(awsservice, siteId, tags, item, userId);
-
     List<DocumentTag> allTags = new ArrayList<>(tags.getTags());
-    allTags.addAll(newTags);
 
     documentService.addTags(siteId, documentId, allTags, null);
 
@@ -246,48 +242,6 @@ public class DocumentTagsRequestHandler
     documentService.addTags(siteId, documentId, tags.getTags(), null);
 
     return new ApiRequestHandlerResponse(SC_OK, new ApiMessageResponse("Set Tags"));
-  }
-
-  /**
-   * Added Any TagSchema Composite Keys and Validate.
-   * 
-   * @param coreServices {@link AwsServiceCache}
-   * @param siteId {@link String}
-   * @param tags {@link DocumentTags}
-   * @param item {@link DocumentItem}
-   * @param userId {@link String}
-   * @return {@link Collection} {@link DocumentTag}
-   * @throws ValidationException ValidationException
-   * @throws BadException BadException
-   */
-  private Collection<DocumentTag> tagSchemaValidation(final AwsServiceCache coreServices,
-      final String siteId, final DocumentTags tags, final DocumentItem item, final String userId)
-      throws ValidationException, BadException {
-
-    Collection<DocumentTag> newTags = Collections.emptyList();
-
-    DocumentTagSchemaPlugin plugin = coreServices.getExtension(DocumentTagSchemaPlugin.class);
-
-    if (item.getTagSchemaId() != null) {
-
-      Collection<ValidationError> errors = new ArrayList<>();
-
-      TagSchemaInterface tagSchema = plugin.getTagSchema(siteId, item.getTagSchemaId());
-
-      if (tagSchema == null) {
-        throw new BadException("TagschemaId " + item.getTagSchemaId() + " not found");
-      }
-
-      plugin.updateInUse(siteId, tagSchema);
-      newTags = plugin.addCompositeKeys(tagSchema, siteId, item.getDocumentId(), tags.getTags(),
-          userId, false, errors);
-
-      if (!errors.isEmpty()) {
-        throw new ValidationException(errors);
-      }
-    }
-
-    return newTags;
   }
 
   /**

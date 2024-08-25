@@ -82,9 +82,6 @@
         - name: mappings
           description: Mappings API
           x-displayName: Mappings
-        - name: tagSchema
-          description: Tag Schema API
-          x-displayName: Tag Schema
         - name: userActivities
           description: User Activities API
           x-displayName: User Activities
@@ -1916,7 +1913,7 @@
             post:
               operationId: DocumentSearch
               summary: Document search
-              description: "Document search query request; \n\nSupports searching DynamoDB for document(s) by a single TAG key and/or value. Value can be \"exacted\" or \"begins_with\" matched. Search can be filtered to only check certain documentIds (up to 100 documentIds accepted).\n\nIf using Enteprise TagSchema Composite Keys feature then multiple tag(s) can be searched for.\n\nIf Typesense is enabled, full text search is supported through the \"text\" parameter. Full text search will look for the text in the \"content\" and/or document \"metadata\".\n\nDocumentIds parameter allows you to filter your results to a specific set of documents. \n\nSee requestBody examples below for commmon examples."
+              description: "Document search query request; \n\nSupports searching DynamoDB for document(s) by a single TAG key and/or value. Value can be \"exacted\" or \"begins_with\" matched. Search can be filtered to only check certain documentIds (up to 100 documentIds accepted).\n\nIf using Enteprise Composite Keys feature then multiple tag(s) can be searched for.\n\nIf Typesense is enabled, full text search is supported through the \"text\" parameter. Full text search will look for the text in the \"content\" and/or document \"metadata\".\n\nDocumentIds parameter allows you to filter your results to a specific set of documents. \n\nSee requestBody examples below for commmon examples."
               tags:
               - Document Search
               parameters:
@@ -3217,129 +3214,6 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
-          /tagSchemas:
-            get:
-              operationId: GetTagSchemas
-              summary: Get tag schemas
-              description: Returns the list of tagSchemas; ONLY available with FormKiQ Pro and Enterprise
-              tags:
-              - Tag Schema
-              parameters:
-              - $ref: '#/components/parameters/siteIdParam'
-              - $ref: '#/components/parameters/limitParam'
-              - $ref: '#/components/parameters/nextParam'
-              - name: previous
-                in: query
-                description: Previous page of results token
-                schema:
-                  type: string
-              responses:
-                "200":
-                  description: 200 OK
-                  headers:
-                    Access-Control-Allow-Origin:
-                      $ref: '#/components/headers/AccessControlAllowOrigin'
-                    Access-Control-Allow-Methods:
-                      $ref: '#/components/headers/AccessControlAllowMethods'
-                    Access-Control-Allow-Headers:
-                      $ref: '#/components/headers/AccessControlAllowHeaders'
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/GetTagSchemasResponse'
-              security:
-              - ApiAuthorization: []
-              x-amazon-apigateway-integration:
-                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
-            post:
-              operationId: AddTagSchema
-              summary: Add tag schemas
-              description: Creates a new TagSchema; ONLY available with FormKiQ Pro and Enterprise
-              tags:
-              - Tag Schema
-              parameters:
-              - $ref: '#/components/parameters/siteIdParam'
-              requestBody:
-                required: true
-                content:
-                  application/json:
-                    schema:
-                      $ref: '#/components/schemas/AddTagSchemaRequest'
-              responses:
-                "201":
-                  description: 201 CREATED
-                  headers:
-                    Access-Control-Allow-Origin:
-                      $ref: '#/components/headers/AccessControlAllowOrigin'
-                    Access-Control-Allow-Methods:
-                      $ref: '#/components/headers/AccessControlAllowMethods'
-                    Access-Control-Allow-Headers:
-                      $ref: '#/components/headers/AccessControlAllowHeaders'
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/AddTagSchemaResponse'
-                "400":
-                  description: 400 BAD REQUEST
-                  headers:
-                    Access-Control-Allow-Origin:
-                      $ref: '#/components/headers/AccessControlAllowOrigin'
-                    Access-Control-Allow-Methods:
-                      $ref: '#/components/headers/AccessControlAllowMethods'
-                    Access-Control-Allow-Headers:
-                      $ref: '#/components/headers/AccessControlAllowHeaders'
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/ErrorsResponse'
-              security:
-              - ApiAuthorization: []
-              x-amazon-apigateway-integration:
-                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
-          /tagSchemas/{tagSchemaId}:
-            get:
-              operationId: GetTagSchema
-              summary: Get tag schema
-              description: Retrieves a TagSchema's details, i.e., metadata; ONLY available with FormKiQ Pro and Enterprise
-              tags:
-              - Tag Schema
-              parameters:
-              - $ref: '#/components/parameters/siteIdParam'
-              - $ref: '#/components/parameters/tagSchemaIdParam'
-              responses:
-                "200":
-                  description: 200 OK
-                  headers:
-                    Access-Control-Allow-Origin:
-                      $ref: '#/components/headers/AccessControlAllowOrigin'
-                    Access-Control-Allow-Methods:
-                      $ref: '#/components/headers/AccessControlAllowMethods'
-                    Access-Control-Allow-Headers:
-                      $ref: '#/components/headers/AccessControlAllowHeaders'
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/GetTagSchemaResponse'
-              security:
-              - ApiAuthorization: []
-              x-amazon-apigateway-integration:
-                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
-            delete:
-              operationId: DeleteTagSchema
-              summary: Delete tag schema
-              description: Delete a TagSchema; ONLY available with FormKiQ Pro and Enterprise
-              tags:
-              - Tag Schema
-              parameters:
-              - $ref: '#/components/parameters/siteIdParam'
-              - $ref: '#/components/parameters/tagSchemaIdParam'
-              responses:
-                "200":
-                  $ref: '#/components/responses/200CorsDeleteResponse'
-              security:
-              - ApiAuthorization: []
-              x-amazon-apigateway-integration:
-                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /documents/{documentId}/antivirus:
             put:
               operationId: SetAntivirus
@@ -6249,13 +6123,6 @@
               required: true
               schema:
                 type: string
-            tagSchemaIdParam:
-              name: tagSchemaId
-              in: path
-              description: Tag Schema Identifier
-              required: true
-              schema:
-                type: string
             attributeKeyParam:
               name: attributeKey
               in: path
@@ -7092,9 +6959,6 @@
                 documentId:
                   type: string
                   description: optional Document Identifier, if skipped one will be assigned
-                tagSchemaId:
-                  type: string
-                  description: Tag Schema Id
                 path:
                   type: string
                   description: Path or Name of document
@@ -7127,9 +6991,6 @@
                 documentId:
                   type: string
                   description: optional Document Identifier, if skipped one will be assigned
-                tagSchemaId:
-                  type: string
-                  description: Tag Schema Id
                 path:
                   type: string
                   description: Path or Name of document
@@ -7173,9 +7034,6 @@
             UpdateDocumentRequest:
               type: object
               properties:
-                tagSchemaId:
-                  type: string
-                  description: Tag Schema Id
                 path:
                   type: string
                   description: Path or Name of document
@@ -10029,12 +9887,6 @@
                 classificationId:
                   type: string
                   description: Classification Identifier
-            AddTagSchemaResponse:
-              type: object
-              properties:
-                tagSchemaId:
-                  type: string
-                  description: Tag Schema Identifier
             ErrorsResponse:
               type: object
               properties:
@@ -10052,18 +9904,6 @@
                 error:
                   type: string
                   description: Error Message
-            GetTagSchemasResponse:
-              type: object
-              properties:
-                schemas:
-                  type: array
-                  description: List of Tag Schemas
-                  items:
-                    $ref: '#/components/schemas/TagSchemaSummary'
-                next:
-                  type: string
-                previous:
-                  type: string
             AddQueueRequest:
               type: object
               required:
@@ -10372,103 +10212,10 @@
                 allowAdditionalAttributes:
                   type: boolean
                   default: true
-            AddTagSchemaRequest:
-              type: object
-              properties:
-                name:
-                  type: string
-                tags:
-                  $ref: '#/components/schemas/AddTagSchemaTags'
-            AddTagSchemaTags:
-              type: object
-              properties:
-                compositeKeys:
-                  type: array
-                  description: List of Composite Keys
-                  items:
-                    $ref: '#/components/schemas/TagSchemaCompositeKey'
-                required:
-                  type: array
-                  description: List of Required Tags
-                  items:
-                    $ref: '#/components/schemas/TagSchemaRequired'
-                optional:
-                  type: array
-                  description: List of Optional Tags
-                  items:
-                    $ref: '#/components/schemas/TagSchemaOptional'
-                allowAdditionalTags:
-                  type: boolean
-                  default: true
-            TagSchemaSummary:
-              type: object
-              properties:
-                tagSchemaId:
-                  type: string
-                name:
-                  type: string
-                userId:
-                  type: string
-                inUse:
-                  type: boolean
-                  description: Whether the TagSchema is in use
-                insertedDate:
-                  type: string
-                  description: Inserted Timestamp
-            GetTagSchemaResponse:
-              type: object
-              properties:
-                tagSchema:
-                  $ref: '#/components/schemas/TagSchema'
-            TagSchema:
-              type: object
-              properties:
-                tagSchemaId:
-                  type: string
-                name:
-                  type: string
-                userId:
-                  type: string
-                inUse:
-                  type: boolean
-                  description: Whether the TagSchema is in use
-                insertedDate:
-                  type: string
-                  description: Inserted Timestamp
-                tags:
-                  $ref: '#/components/schemas/TagSchemaTags'
-            TagSchemaTags:
-              type: object
-              properties:
-                compositeKeys:
-                  type: array
-                  description: List of Composite Keys
-                  items:
-                    $ref: '#/components/schemas/TagSchemaCompositeKey'
-                required:
-                  type: array
-                  description: List of Required Tags
-                  items:
-                    $ref: '#/components/schemas/TagSchemaRequired'
-                optional:
-                  type: array
-                  description: List of Optional Tags
-                  items:
-                    $ref: '#/components/schemas/TagSchemaOptional'
-                allowAdditionalTags:
-                  type: boolean
-                  default: true
             AttributeSchemaCompositeKey:
               type: object
               properties:
                 attributeKeys:
-                  type: array
-                  items:
-                    type: string
-            TagSchemaCompositeKey:
-              type: object
-              properties:
-                key:
                   type: array
                   items:
                     type: string
@@ -10490,21 +10237,6 @@
                   description: Only valid string values
                   items:
                     type: string
-            TagSchemaRequired:
-              type: object
-              properties:
-                key:
-                  type: string
-                defaultValues:
-                  type: array
-                  description: Default values
-                  items:
-                    type: string
-                allowedValues:
-                  type: array
-                  description: Only valid values
-                  items:
-                    type: string
             AttributeSchemaOptional:
               type: object
               properties:
@@ -10513,21 +10245,6 @@
                 allowedValues:
                   type: array
                   description: Only valid string values
-                  items:
-                    type: string
-            TagSchemaOptional:
-              type: object
-              properties:
-                key:
-                  type: string
-                defaultValues:
-                  type: array
-                  description: Default values
-                  items:
-                    type: string
-                allowedValues:
-                  type: array
-                  description: Only valid values
                   items:
                     type: string
             OnlyOfficeDocumentNewRequest:

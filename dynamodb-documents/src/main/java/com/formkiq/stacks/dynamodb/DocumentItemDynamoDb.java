@@ -161,11 +161,6 @@ public class DocumentItemDynamoDb implements DocumentItem {
   }
 
   @Override
-  public String getTagSchemaId() {
-    return this.tagSchemaId;
-  }
-
-  @Override
   public String getTimeToLive() {
     return this.timeToLive;
   }
@@ -238,11 +233,6 @@ public class DocumentItemDynamoDb implements DocumentItem {
   @Override
   public void setS3version(final String s3Version) {
     this.s3version = s3Version;
-  }
-
-  @Override
-  public void setTagSchemaId(final String id) {
-    this.tagSchemaId = id;
   }
 
   @Override

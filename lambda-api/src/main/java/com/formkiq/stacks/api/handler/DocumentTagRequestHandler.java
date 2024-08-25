@@ -45,7 +45,6 @@ import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 import com.formkiq.plugins.tagschema.TagSchemaInterface;
 import com.formkiq.stacks.api.ApiDocumentTagItemResponse;
 import com.formkiq.stacks.dynamodb.DocumentService;
@@ -85,17 +84,6 @@ public class DocumentTagRequestHandler
     throwIfNull(document, new DocumentNotFoundException(documentId));
 
     List<String> tags = Arrays.asList(tagKey);
-
-    if (document.getTagSchemaId() != null) {
-
-      DocumentTagSchemaPlugin plugin = awsservice.getExtension(DocumentTagSchemaPlugin.class);
-      TagSchemaInterface tagSchema = plugin.getTagSchema(siteId, document.getTagSchemaId());
-
-      Collection<ValidationError> errors = plugin.validateRemoveTags(tagSchema, tags);
-      if (!errors.isEmpty()) {
-        throw new ValidationException(errors);
-      }
-    }
 
     documentService.removeTags(siteId, documentId, tags);
 
@@ -202,28 +190,6 @@ public class DocumentTagRequestHandler
     }
 
     List<DocumentTag> tags = new ArrayList<>(Arrays.asList(tag));
-
-    if (document.getTagSchemaId() != null) {
-      Collection<ValidationError> errors = new ArrayList<>();
-
-      DocumentTagSchemaPlugin plugin = awsservice.getExtension(DocumentTagSchemaPlugin.class);
-      TagSchemaInterface tagSchema = plugin.getTagSchema(siteId, document.getTagSchemaId());
-
-      throwIfNull(tagSchema,
-          new BadException("TagschemaId " + document.getTagSchemaId() + " not found"));
-
-      plugin.updateInUse(siteId, tagSchema);
-
-      Collection<DocumentTag> newTags = plugin.addCompositeKeys(tagSchema, siteId,
-          document.getDocumentId(), tags, userId, false, errors);
-
-      if (!errors.isEmpty()) {
-        throw new ValidationException(errors);
-      }
-
-      tags.addAll(newTags);
-    }
-
 
     validateTags(tags);
 

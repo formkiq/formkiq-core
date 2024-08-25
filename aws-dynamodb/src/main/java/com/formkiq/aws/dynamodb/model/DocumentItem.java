@@ -115,13 +115,6 @@ public interface DocumentItem {
   String getS3version();
 
   /**
-   * Get Tag Schema Id.
-   * 
-   * @return {@link String}
-   */
-  String getTagSchemaId();
-
-  /**
    * Get Time To Live.
    *
    * @return {@link String}
@@ -225,13 +218,6 @@ public interface DocumentItem {
    * @param version {@link String}
    */
   void setS3version(String version);
-
-  /**
-   * Set TagSchema Id.
-   * 
-   * @param id {@link String}
-   */
-  void setTagSchemaId(String id);
 
   /**
    * Set Time To Live.

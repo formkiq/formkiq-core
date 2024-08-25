@@ -23,13 +23,32 @@
  */
 package com.formkiq.stacks.api;
 
-import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
-import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.PaginationResults;
+import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
+import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.model.DocumentTag;
+import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
+import com.formkiq.aws.dynamodb.model.SearchQuery;
+import com.formkiq.aws.dynamodb.objects.DateUtil;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestEventBuilder;
+import com.formkiq.aws.services.lambda.ApiResponseError;
+import com.formkiq.lambda.apigateway.util.GsonUtil;
+import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.ActionType;
+import com.formkiq.module.actions.services.ActionsService;
+import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
+import com.formkiq.stacks.dynamodb.DocumentSearchService;
+import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.testutils.aws.DynamoDbExtension;
+import com.formkiq.testutils.aws.LocalStackExtension;
+import org.apache.commons.lang3.StringUtils;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import software.amazon.awssdk.utils.IoUtils;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -48,33 +67,14 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.commons.lang3.StringUtils;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import com.formkiq.aws.dynamodb.DynamicObject;
-import com.formkiq.aws.dynamodb.PaginationResults;
-import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
-import com.formkiq.aws.dynamodb.model.DocumentTag;
-import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
-import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
-import com.formkiq.aws.dynamodb.model.SearchQuery;
-import com.formkiq.aws.dynamodb.objects.DateUtil;
-import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
-import com.formkiq.aws.services.lambda.ApiGatewayRequestEventBuilder;
-import com.formkiq.aws.services.lambda.ApiResponseError;
-import com.formkiq.lambda.apigateway.util.GsonUtil;
-import com.formkiq.module.actions.Action;
-import com.formkiq.module.actions.ActionType;
-import com.formkiq.module.actions.services.ActionsService;
-import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
-import com.formkiq.plugins.tagschema.DocumentTagSchemaPluginExtension;
-import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
-import com.formkiq.stacks.dynamodb.DocumentSearchService;
-import com.formkiq.stacks.dynamodb.DocumentService;
-import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.LocalStackExtension;
-import software.amazon.awssdk.utils.IoUtils;
+
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Unit Tests for request GET / POST / DELETE /documents. */
 @ExtendWith(DynamoDbExtension.class)
@@ -1360,82 +1360,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
 
       assertEquals("application/octet-stream",
           getS3().getObjectMetadata(BUCKET_NAME, key, null).getContentType());
-    }
-  }
-
-  /**
-   * POST /documents request with invalid TagSchema.
-   *
-   * @throws Exception an error has occurred
-   */
-  @Test
-  public void testHandlePostDocuments13() throws Exception {
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
-      // given
-      getAwsServices().register(DocumentTagSchemaPlugin.class,
-          new DocumentTagSchemaPluginExtension(new DocumentTagSchemaReturnErrors()));
-
-      // when
-      DynamicObject obj =
-          handleRequest("/request-post-documents-documentid13.json", siteId, null, null);
-
-      // then
-      assertHeaders(obj.getMap("headers"));
-      assertEquals("400.0", obj.getString("statusCode"));
-      assertEquals("{\"errors\":[{\"error\":\"test error\",\"key\":\"type\"}]}",
-          obj.getString("body"));
-    }
-  }
-
-  /**
-   * POST /documents request with valid TagSchema and added compositeKey.
-   *
-   * @throws Exception an error has occurred
-   */
-  @SuppressWarnings("unchecked")
-  @Test
-  public void testHandlePostDocuments14() throws Exception {
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
-      // given
-      getAwsServices().register(DocumentTagSchemaPlugin.class,
-          new DocumentTagSchemaPluginExtension(new DocumentTagSchemaReturnNewTags()));
-
-      // when
-      DynamicObject obj =
-          handleRequest("/request-post-documents-documentid13.json", siteId, null, null);
-
-      // then
-      DynamicObject body = new DynamicObject(fromJson(obj.getString("body"), Map.class));
-
-      assertHeaders(obj.getMap("headers"));
-      assertEquals("201.0", obj.getString("statusCode"));
-
-      assertNotNull(body.getString("documentId"));
-      assertNull(body.getString("next"));
-      assertNull(body.getString("previous"));
-
-      String documentId = body.getString("documentId");
-      String key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
-
-      String content = getS3().getContentAsString(BUCKET_NAME, key, null);
-      assertEquals("this is a test", content);
-
-      final int limit = 10;
-      List<DocumentTag> tags =
-          getDocumentService().findDocumentTags(siteId, documentId, null, limit).getResults();
-
-      final int expected = 3;
-      assertEquals(expected, tags.size());
-
-      int i = 0;
-      assertEquals("firstname", tags.get(i).getKey());
-      assertEquals("john", tags.get(i++).getValue());
-
-      assertEquals("lastname", tags.get(i).getKey());
-      assertEquals("smith", tags.get(i++).getValue());
-
-      assertEquals("testtag", tags.get(i).getKey());
-      assertEquals("testvalue", tags.get(i++).getValue());
     }
   }
 

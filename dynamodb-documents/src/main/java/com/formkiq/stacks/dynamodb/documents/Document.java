@@ -135,11 +135,6 @@ public class Document implements DocumentItem {
   }
 
   @Override
-  public String getTagSchemaId() {
-    return this.tagSchemaId;
-  }
-
-  @Override
   public String getTimeToLive() {
     return this.timeToLive;
   }
@@ -212,11 +207,6 @@ public class Document implements DocumentItem {
   @Override
   public void setS3version(final String documentVersion) {
     this.s3version = documentVersion;
-  }
-
-  @Override
-  public void setTagSchemaId(final String documentTagSchemaId) {
-    this.tagSchemaId = documentTagSchemaId;
   }
 
   @Override

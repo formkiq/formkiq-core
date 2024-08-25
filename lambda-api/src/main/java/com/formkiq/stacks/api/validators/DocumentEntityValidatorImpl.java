@@ -37,7 +37,6 @@ import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.services.ActionsValidator;
 import com.formkiq.module.actions.services.ActionsValidatorImpl;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 import com.formkiq.plugins.tagschema.TagSchemaInterface;
 import com.formkiq.stacks.api.handler.AddDocumentRequest;
 import com.formkiq.stacks.api.handler.AddDocumentTag;
@@ -145,30 +144,6 @@ public class DocumentEntityValidatorImpl implements DocumentEntityValidator {
     List<DocumentTag> tags = doctags.stream().map(t -> {
       return transform.apply(t);
     }).collect(Collectors.toList());
-
-    // boolean newCompositeTags = false;
-    String tagSchemaId = item.getTagSchemaId();
-
-    if (tagSchemaId != null) {
-
-      DocumentTagSchemaPlugin plugin = cacheService.getExtension(DocumentTagSchemaPlugin.class);
-      TagSchemaInterface tagSchema = plugin.getTagSchema(siteId, tagSchemaId);
-
-      if (tagSchema == null) {
-        throw new BadException("TagschemaId " + tagSchemaId + " not found");
-      }
-
-      plugin.updateInUse(siteId, tagSchema);
-      List<DocumentTag> compositeTags =
-          plugin.addCompositeKeys(tagSchema, siteId, item.getDocumentId(), tags, userId, !isUpdate,
-              errors).stream().map(t -> t).collect(Collectors.toList());
-
-      if (!errors.isEmpty()) {
-        throw new ValidationException(errors);
-      }
-
-      tags.addAll(compositeTags);
-    }
 
     return tags;
   }

@@ -96,8 +96,7 @@ class FolderIndexProcessorTest implements DbKeys {
 
     service = new DocumentServiceImpl(dynamoDbConnection, DOCUMENTS_TABLE,
         new DocumentVersionServiceNoVersioning());
-    searchService =
-        new DocumentSearchServiceImpl(dynamoDbConnection, service, DOCUMENTS_TABLE, null);
+    searchService = new DocumentSearchServiceImpl(dynamoDbConnection, service, DOCUMENTS_TABLE);
     dbService = new DynamoDbServiceImpl(dynamoDbConnection, DOCUMENTS_TABLE);
   }
 

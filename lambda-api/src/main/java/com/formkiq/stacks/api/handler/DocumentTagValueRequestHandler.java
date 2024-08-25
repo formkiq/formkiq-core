@@ -23,11 +23,6 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.services.lambda.ApiAuthorization;
@@ -40,11 +35,12 @@ import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
-import com.formkiq.plugins.tagschema.TagSchemaInterface;
 import com.formkiq.stacks.dynamodb.DocumentService;
-import com.formkiq.validation.ValidationError;
-import com.formkiq.validation.ValidationException;
+
+import java.util.Map;
+
+import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/tags/{tagKey}/{tagValue}". */
 public class DocumentTagValueRequestHandler
@@ -71,19 +67,6 @@ public class DocumentTagValueRequestHandler
 
     DocumentItem item = documentService.findDocument(siteId, documentId);
     throwIfNull(item, new DocumentNotFoundException(documentId));
-
-    if (item.getTagSchemaId() != null) {
-      DocumentTagSchemaPlugin plugin = awsservice.getExtension(DocumentTagSchemaPlugin.class);
-
-      TagSchemaInterface tagSchema = plugin.getTagSchema(siteId, item.getTagSchemaId());
-
-      Collection<ValidationError> errors =
-          plugin.validateRemoveTags(tagSchema, Arrays.asList(tagKey));
-
-      if (!errors.isEmpty()) {
-        throw new ValidationException(errors);
-      }
-    }
 
     boolean removed = documentService.removeTag(siteId, documentId, tagKey, tagValue);
     if (!removed) {

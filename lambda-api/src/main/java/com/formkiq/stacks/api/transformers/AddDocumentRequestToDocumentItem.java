@@ -96,7 +96,6 @@ public class AddDocumentRequestToDocumentItem
     if (this.existing == null) {
       item.setDocumentId(r.getDocumentId());
       item.setUserId(this.userId);
-      item.setTagSchemaId(r.getTagSchemaId());
     } else {
       item.setLastModifiedDate(new Date());
     }

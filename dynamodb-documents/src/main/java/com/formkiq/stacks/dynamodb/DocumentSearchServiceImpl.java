@@ -46,7 +46,6 @@ import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteriaRange;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.objects.Strings;
-import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
 import com.formkiq.stacks.dynamodb.schemas.SchemaCompositeKeyRecord;
@@ -111,8 +110,6 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
   private final FolderIndexProcessor folderIndexProcesor;
   /** {@link SchemaService}. */
   private final SchemaService schemaService;
-  /** {@link DocumentTagSchemaPlugin}. */
-  private final DocumentTagSchemaPlugin tagSchemaPlugin;
 
   /**
    * constructor.
@@ -120,16 +117,12 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
    * @param connection {@link DynamoDbConnectionBuilder}
    * @param documentService {@link DocumentService}
    * @param documentsTable {@link String}
-   * @param plugin {@link DocumentTagSchemaPlugin}
    */
   public DocumentSearchServiceImpl(final DynamoDbConnectionBuilder connection,
-      final DocumentService documentService, final String documentsTable,
-      final DocumentTagSchemaPlugin plugin) {
+      final DocumentService documentService, final String documentsTable) {
 
     this.dbClient = connection.build();
     this.docService = documentService;
-    this.tagSchemaPlugin = plugin;
-
 
     if (documentsTable == null) {
       throw new IllegalArgumentException("Table name is null");
@@ -907,10 +900,6 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
       final int maxresults, final String projectionExpression) {
 
     SearchTagCriteria search = csearch;
-
-    if (this.tagSchemaPlugin != null) {
-      search = this.tagSchemaPlugin.createMultiTagSearch(query);
-    }
 
     String key = getSearchKey(search);
 

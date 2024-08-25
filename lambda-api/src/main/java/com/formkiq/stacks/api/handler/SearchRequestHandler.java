@@ -23,19 +23,6 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_PAYMENT;
-import static software.amazon.awssdk.utils.StringUtils.isEmpty;
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
@@ -58,7 +45,6 @@ import com.formkiq.aws.services.lambda.services.CacheService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.typesense.TypeSenseService;
 import com.formkiq.module.typesense.TypeSenseServiceImpl;
-import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 import com.formkiq.stacks.api.QueryRequestValidator;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
@@ -67,6 +53,20 @@ import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.regions.Region;
+
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
+import static software.amazon.awssdk.utils.StringUtils.isEmpty;
 
 /** {@link ApiGatewayRequestHandler} for "/search". */
 public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
@@ -118,17 +118,6 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
     return Optional.of(access);
   }
 
-  private boolean isEnterpriseFeature(final AwsServiceCache serviceCache, final QueryRequest q) {
-
-    return isTagOrAttribute(q) && q.query().getMeta() == null && isEmpty(q.query().getText())
-        && !serviceCache.getExtension(DocumentTagSchemaPlugin.class).isActive();
-  }
-
-  private boolean isTagOrAttribute(final QueryRequest q) {
-    return notNull(q.query().getAttributes()).isEmpty() && q.query().getAttribute() == null
-        && q.query().getTag() == null;
-  }
-
   /**
    * Merge Response Tags into Response.
    * 
@@ -172,57 +161,46 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
-    if (isEnterpriseFeature(awsservice, q)) {
+    CacheService cacheService = awsservice.getExtension(CacheService.class);
+    ApiPagination pagination = getPagination(cacheService, event);
+    int limit = pagination != null ? pagination.getLimit() : getLimit(logger, event);
+    PaginationMapToken ptoken = pagination != null ? pagination.getStartkey() : null;
 
-      ApiMapResponse resp = new ApiMapResponse();
-      resp.setMap(Map.of("message", "Feature only available in FormKiQ Enterprise"));
-      response = new ApiRequestHandlerResponse(SC_PAYMENT, resp);
+    Collection<String> documentIds = q.query().getDocumentIds();
 
-    } else {
-
-      CacheService cacheService = awsservice.getExtension(CacheService.class);
-      ApiPagination pagination = getPagination(cacheService, event);
-      int limit = pagination != null ? pagination.getLimit() : getLimit(logger, event);
-      PaginationMapToken ptoken = pagination != null ? pagination.getStartkey() : null;
-
-      Collection<String> documentIds = q.query().getDocumentIds();
-
-      if (!Objects.isEmpty(documentIds)) {
-        if (documentIds.size() > MAX_DOCUMENT_IDS) {
-          throw new BadException("Maximum number of DocumentIds is " + MAX_DOCUMENT_IDS);
-        }
-
-        if (!getQueryParameterMap(event).containsKey("limit")) {
-          limit = documentIds.size();
-        }
+    if (!Objects.isEmpty(documentIds)) {
+      if (documentIds.size() > MAX_DOCUMENT_IDS) {
+        throw new BadException("Maximum number of DocumentIds is " + MAX_DOCUMENT_IDS);
       }
 
-      String siteId = authorization.getSiteId();
-      DocumentSearchService documentSearchService =
-          awsservice.getExtension(DocumentSearchService.class);
-
-      PaginationResults<DynamicDocumentItem> results =
-          query(awsservice, documentSearchService, siteId, q, ptoken, limit);
-
-      ApiPagination current =
-          createPagination(cacheService, event, pagination, results.getToken(), limit);
-
-      List<DynamicDocumentItem> documents = subList(results.getResults(), limit);
-
-      Map<String, Collection<DocumentTag>> responseTags =
-          getResponseTags(documentService, siteId, q.responseFields(), documents);
-      mergeResponseTags(documents, responseTags);
-
-
-
-      Map<String, Object> map = new HashMap<>();
-      map.put("documents", documents);
-      map.put("previous", current.getPrevious());
-      map.put("next", current.hasNext() ? current.getNext() : null);
-
-      ApiMapResponse resp = new ApiMapResponse(map);
-      response = new ApiRequestHandlerResponse(SC_OK, resp);
+      if (!getQueryParameterMap(event).containsKey("limit")) {
+        limit = documentIds.size();
+      }
     }
+
+    String siteId = authorization.getSiteId();
+    DocumentSearchService documentSearchService =
+        awsservice.getExtension(DocumentSearchService.class);
+
+    PaginationResults<DynamicDocumentItem> results =
+        query(awsservice, documentSearchService, siteId, q, ptoken, limit);
+
+    ApiPagination current =
+        createPagination(cacheService, event, pagination, results.getToken(), limit);
+
+    List<DynamicDocumentItem> documents = subList(results.getResults(), limit);
+
+    Map<String, Collection<DocumentTag>> responseTags =
+        getResponseTags(documentService, siteId, q.responseFields(), documents);
+    mergeResponseTags(documents, responseTags);
+
+    Map<String, Object> map = new HashMap<>();
+    map.put("documents", documents);
+    map.put("previous", current.getPrevious());
+    map.put("next", current.hasNext() ? current.getNext() : null);
+
+    ApiMapResponse resp = new ApiMapResponse(map);
+    response = new ApiRequestHandlerResponse(SC_OK, resp);
 
     return response;
   }

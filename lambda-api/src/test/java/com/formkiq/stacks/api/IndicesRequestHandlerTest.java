@@ -94,7 +94,7 @@ public class IndicesRequestHandlerTest {
     DynamoDbConnectionBuilder db = DynamoDbTestServices.getDynamoDbConnection();
     documentService =
         new DocumentServiceImpl(db, DOCUMENTS_TABLE, new DocumentVersionServiceNoVersioning());
-    dss = new DocumentSearchServiceImpl(db, documentService, DOCUMENTS_TABLE, null);
+    dss = new DocumentSearchServiceImpl(db, documentService, DOCUMENTS_TABLE);
   }
 
   /**

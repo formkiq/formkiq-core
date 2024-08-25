@@ -57,8 +57,6 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEventBuilder;
 import com.formkiq.aws.services.lambda.ApiMessageResponse;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
-import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
-import com.formkiq.plugins.tagschema.DocumentTagSchemaPluginExtension;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentTagToAttributeValueMap;
 import com.formkiq.testutils.aws.DynamoDbExtension;
@@ -338,54 +336,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
           + "'.\\\"}\"," + "\"statusCode\":200}";
 
       assertTrue(getLogger().containsString(expected));
-    }
-  }
-
-  /**
-   * DELETE /documents/{documentId}/tags/{tagKey} request with Validation Errors.
-   *
-   * @throws Exception an error has occurred
-   */
-  @SuppressWarnings("unchecked")
-  @Test
-  public void testHandleDeleteTagDocument04() throws Exception {
-    getAwsServices().register(DocumentTagSchemaPlugin.class,
-        new DocumentTagSchemaPluginExtension(new DocumentTagSchemaReturnErrors()));
-
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      // given
-      final Date now = new Date();
-      final String documentId = UUID.randomUUID().toString();
-      final String tagKey = "category";
-      final String userId = "jsmith";
-
-      ApiGatewayRequestEvent event =
-          toRequestEvent("/request-delete-documents-documentid-tags01.json");
-      addParameter(event, "siteId", siteId);
-      setPathParameter(event, "documentId", documentId);
-
-      DocumentItem item = new DocumentItemDynamoDb(documentId, now, "joe");
-      item.setTagSchemaId("123");
-      getDocumentService().saveDocument(siteId, item, null);
-
-      DocumentTag tag = new DocumentTag(documentId, tagKey, tagKey, now, userId);
-      tag.setInsertedDate(new Date());
-
-      getDocumentService().addTags(siteId, documentId, Arrays.asList(tag), null);
-      assertEquals(1, getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS)
-          .getResults().size());
-
-      // when
-      String response = handleRequest(event);
-
-      // then
-      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
-
-      final int mapsize = 3;
-      assertEquals(mapsize, m.size());
-      assertEquals("400.0", String.valueOf(m.get("statusCode")));
-      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-      assertEquals("{\"errors\":[{\"error\":\"test error\",\"key\":\"type\"}]}", m.get("body"));
     }
   }
 
@@ -1317,47 +1267,12 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   }
 
   /**
-   * POST /documents/{documentId}/tags tags request. Add Tag Base 64
-   *
-   * @throws Exception an error has occurred
-   */
-  @Test
-  public void testHandlePostDocumentTags10() throws Exception {
-    getAwsServices().register(DocumentTagSchemaPlugin.class,
-        new DocumentTagSchemaPluginExtension(new DocumentTagSchemaReturnErrors()));
-
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      // given
-      final String documentId = UUID.randomUUID().toString();
-
-      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-      item.setTagSchemaId("123");
-      getDocumentService().saveDocument(siteId, item, null);
-
-      ApiGatewayRequestEvent event =
-          documentsTagsRequest("post", siteId, documentId, siteId != null ? siteId : "default",
-              "eyJrZXkiOiAiY2F0ZWdvcnkiLCJ2YWx1ZSI6ICJqb2IifQ==", true);
-
-      // when
-      String response = handleRequest(event);
-
-      // then
-      String expected = "{" + getHeaders() + ",\"body\":\""
-          + "{\\\"errors\\\":[{\\\"error\\\":\\\"test error\\\",\\\"key\\\":\\\"type\\\"}]}\","
-          + "\"statusCode\":400}";
-      assertEquals(expected, response);
-    }
-  }
-
-  /**
    * POST/PATCH/PUT /documents/{documentId}/tags with Document Missing.
    * 
    * @throws Exception an error has occurred
    */
   @Test
   public void testHandlePostDocumentTags11() throws Exception {
-    getAwsServices().register(DocumentTagSchemaPlugin.class,
-        new DocumentTagSchemaPluginExtension(new DocumentTagSchemaReturnErrors()));
 
     for (String method : Arrays.asList("post", "patch", "put")) {
 

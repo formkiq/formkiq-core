@@ -87,7 +87,7 @@ public class DocumentSearchServiceImplTest {
     this.service = new DocumentServiceImpl(dynamoDbConnection, DOCUMENTS_TABLE,
         new DocumentVersionServiceNoVersioning());
     this.searchService =
-        new DocumentSearchServiceImpl(dynamoDbConnection, this.service, DOCUMENTS_TABLE, null);
+        new DocumentSearchServiceImpl(dynamoDbConnection, this.service, DOCUMENTS_TABLE);
   }
 
   /**
