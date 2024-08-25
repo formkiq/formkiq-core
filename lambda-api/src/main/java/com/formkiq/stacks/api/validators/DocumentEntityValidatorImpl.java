@@ -23,11 +23,6 @@
  */
 package com.formkiq.stacks.api.validators;
 
-import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
@@ -37,7 +32,6 @@ import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.services.ActionsValidator;
 import com.formkiq.module.actions.services.ActionsValidatorImpl;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.plugins.tagschema.TagSchemaInterface;
 import com.formkiq.stacks.api.handler.AddDocumentRequest;
 import com.formkiq.stacks.api.handler.AddDocumentTag;
 import com.formkiq.stacks.api.transformers.AddDocumentTagToDocumentTag;
@@ -46,6 +40,13 @@ import com.formkiq.stacks.dynamodb.DocumentTagValidator;
 import com.formkiq.stacks.dynamodb.DocumentTagValidatorImpl;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 
 /**
  * {@link DocumentEntityValidator} implementation.

@@ -153,8 +153,6 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    ApiRequestHandlerResponse response;
-
     QueryRequest q = fromBodyToObject(event, QueryRequest.class);
 
     validatePost(q);
@@ -200,9 +198,7 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
     map.put("next", current.hasNext() ? current.getNext() : null);
 
     ApiMapResponse resp = new ApiMapResponse(map);
-    response = new ApiRequestHandlerResponse(SC_OK, resp);
-
-    return response;
+    return new ApiRequestHandlerResponse(SC_OK, resp);
   }
 
   /**

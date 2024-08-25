@@ -41,7 +41,7 @@ import java.util.Map;
 public class CoreRequestHandler extends AbstractCoreRequestHandler {
 
   /** {@link AwsServiceCache}. */
-  private static final AwsServiceCache serviceCache;
+  private static AwsServiceCache serviceCache;
 
   static {
 

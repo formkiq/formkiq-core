@@ -111,7 +111,7 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
    */
   @Test
   @Timeout(value = TEST_TIMEOUT)
-  public void testaddDocumentActions02() throws Exception {
+  public void testAddDocumentActions02() throws Exception {
     // given
     String testeventbridgename = System.getProperty("testeventbridgename");
     if (testeventbridgename == null) {
@@ -128,7 +128,6 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
 
     // when
     String documentId = addDocument(client, siteId, "test.txt", content, "text/plain", actions);
-    System.out.println("DOCUMENT ID: " + documentId);
 
     // then
     GetDocumentActionsResponse response = waitForActionsComplete(client, siteId, documentId);
