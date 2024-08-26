@@ -1065,21 +1065,6 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
-  public Collection<DocumentTag> findDocumentTags(final String siteId, final String documentId,
-      final Collection<String> tagKeys) {
-
-    Collection<DocumentTag> tags = new ArrayList<>();
-    tagKeys.forEach(tagKey -> {
-      DocumentTag tag = findDocumentTag(siteId, documentId, tagKey);
-      if (tag != null) {
-        tags.add(tag);
-      }
-    });
-
-    return tags;
-  }
-
-  @Override
   public PaginationResults<DocumentTag> findDocumentTags(final String siteId,
       final String documentId, final PaginationMapToken token, final int limit) {
 
