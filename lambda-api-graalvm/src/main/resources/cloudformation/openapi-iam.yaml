@@ -9846,6 +9846,59 @@ Resources:
                 lastModifiedDate:
                   type: "string"
                   description: "Last nodified timestamp of user"
+                attributes:
+                  $ref: "#/components/schemas/UserAttributes"
+            UserAttributes:
+              type: "object"
+              properties:
+                address:
+                  type: "string"
+                  description: "Address of user"
+                birthdate:
+                  type: "string"
+                  description: "Birthdate of user"
+                familyName:
+                  type: "string"
+                  description: "Family name of user"
+                gender:
+                  type: "string"
+                  description: "Gender of user"
+                givenName:
+                  type: "string"
+                  description: "Given name of user"
+                locale:
+                  type: "string"
+                  description: "Locale of user"
+                middleName:
+                  type: "string"
+                  description: "Middle name of user"
+                name:
+                  type: "string"
+                  description: "Name of user"
+                nickname:
+                  type: "string"
+                  description: "Nickname of user"
+                phoneNumber:
+                  type: "string"
+                  description: "Phone number of user"
+                picture:
+                  type: "string"
+                  description: "Picture of user"
+                preferredUsername:
+                  type: "string"
+                  description: "Preferred username of user"
+                profile:
+                  type: "string"
+                  description: "Profile of user"
+                zoneinfo:
+                  type: "string"
+                  description: "Zoneinfo of user"
+                updatedAt:
+                  type: "string"
+                  description: "Updated at date of user"
+                website:
+                  type: "string"
+                  description: "Website of user"
             GetGroupsResponse:
               type: object
               properties:

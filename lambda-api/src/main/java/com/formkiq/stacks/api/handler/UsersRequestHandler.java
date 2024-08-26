@@ -93,7 +93,7 @@ public class UsersRequestHandler implements ApiGatewayRequestHandler, ApiGateway
     String username = request.getUser().getUsername();
 
     try {
-      service.addUser(username, Boolean.TRUE);
+      service.addUser(username, request.getUser().getAttributes(), Boolean.TRUE);
     } catch (InvalidParameterException e) {
       throw new BadException(e.getMessage());
     }

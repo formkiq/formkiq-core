@@ -103,7 +103,7 @@ public class FkqCognitoService {
       String tempPassword = "!" + password + "!";
 
       try {
-        userType = this.service.addUser(email, tempPassword, Boolean.TRUE);
+        userType = this.service.addUser(email, tempPassword, null, Boolean.TRUE);
         this.service.loginWithNewPassword(email, tempPassword, password);
       } catch (UsernameExistsException e) {
         // ignore

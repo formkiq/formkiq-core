@@ -33,11 +33,15 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import static com.formkiq.aws.cognito.CognitoIdentityProviderService.COGNITO_USER_ATTRIBUTES;
 
 /**
  * Function to Convert {@link UserType} to {@link Map}.
  */
 public class UsersResponseToMap implements Function<UserType, Map<String, Object>> {
+
 
   /** {@link SimpleDateFormat}. */
   private final SimpleDateFormat df = DateUtil.getIsoDateFormatter();
@@ -49,7 +53,12 @@ public class UsersResponseToMap implements Function<UserType, Map<String, Object
 
     return Map.of("username", ut.username(), "email", email, "userStatus", ut.userStatus().name(),
         "enabled", ut.enabled(), "insertedDate", toString(ut.userCreateDate()), "lastModifiedDate",
-        toString(ut.userLastModifiedDate()));
+        toString(ut.userLastModifiedDate()), "attributes", getUserAttributes(ut.attributes()));
+  }
+
+  private Map<String, String> getUserAttributes(final List<AttributeType> attributes) {
+    return attributes.stream().filter(a -> COGNITO_USER_ATTRIBUTES.contains(a.name()))
+        .collect(Collectors.toMap(AttributeType::name, AttributeType::value));
   }
 
   /**

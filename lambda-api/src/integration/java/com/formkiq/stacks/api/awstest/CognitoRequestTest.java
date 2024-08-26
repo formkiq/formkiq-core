@@ -35,11 +35,13 @@ import com.formkiq.client.model.AddUser;
 import com.formkiq.client.model.AddUserRequest;
 import com.formkiq.client.model.DeleteResponse;
 import com.formkiq.client.model.GetGroupsResponse;
+import com.formkiq.client.model.GetUserResponse;
 import com.formkiq.client.model.GetUsersInGroupResponse;
 import com.formkiq.client.model.GetUsersResponse;
 import com.formkiq.client.model.Group;
 import com.formkiq.client.model.SetResponse;
 import com.formkiq.client.model.User;
+import com.formkiq.client.model.UserAttributes;
 import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -88,10 +90,11 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
     assertEquals("Group " + groupName + " created", response.getMessage());
   }
 
-  private static void addUser(final UserManagementApi userApi, final String email)
-      throws ApiException {
+  private static void addUser(final UserManagementApi userApi, final String email,
+      final UserAttributes attributes) throws ApiException {
     // given
-    AddUserRequest req = new AddUserRequest().user(new AddUser().username(email));
+    AddUserRequest req =
+        new AddUserRequest().user(new AddUser().username(email).attributes(attributes));
 
     // when
     AddResponse response = userApi.addUser(req);
@@ -284,7 +287,7 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
       String email = groupName + "@formkiq.com";
 
       // when
-      addUser(userApi, email);
+      addUser(userApi, email, null);
       addGroup(userApi, groupName);
       addUserToGroup(userApi, email, groupName);
 
@@ -394,10 +397,45 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
 
     // when
     try {
-      addUser(userApi, email);
+      addUser(userApi, email, null);
     } catch (ApiException e) {
       // then
       assertTrue(e.getResponseBody().contains("Invalid email address format"));
     }
+  }
+
+  /**
+   * Test POST /users with attributes.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  public void testAddUser02() throws Exception {
+    // given
+    String address = "123 main";
+    String birthDate = "2012-01-12";
+    ApiClient client = getApiClients(null).get(0);
+
+    UserManagementApi userApi = new UserManagementApi(client);
+    String email = "test_" + UUID.randomUUID();
+
+    UserAttributes attributes = new UserAttributes().address(address).birthdate(birthDate)
+        .familyName("Smith").givenName("John");
+
+    // when
+    addUser(userApi, email, attributes);
+
+    // then
+    GetUserResponse user = userApi.getUser(email);
+    assertNotNull(user.getUser());
+
+    UserAttributes attr = user.getUser().getAttributes();
+    assertNotNull(attr);
+
+    assertEquals(address, attr.getAddress());
+    assertEquals(birthDate, attr.getBirthdate());
+    assertEquals("Smith", attr.getFamilyName());
+    assertEquals("John", attr.getGivenName());
   }
 }
