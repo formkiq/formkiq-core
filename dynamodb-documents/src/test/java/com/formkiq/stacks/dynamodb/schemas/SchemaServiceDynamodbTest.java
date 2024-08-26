@@ -45,6 +45,7 @@ import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -326,9 +327,42 @@ public class SchemaServiceDynamodbTest {
 
       // then
       QueryConfig config = new QueryConfig();
-      AttributeValue pk = AttributeValue.fromS("schemas");
+
+      SitesSchemaRecord r = new SitesSchemaRecord();
+      AttributeValue pk = r.fromS(r.pk(siteId));
       QueryResponse response = db.queryBeginsWith(config, pk, null, null, LIMIT);
       assertEquals(1, response.items().size());
+    }
+  }
+
+  /**
+   * Delete Sites schema.
+   */
+  @Test
+  void testSitesClassificationDelete01() throws ValidationException {
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      addAttribute(siteId, "category");
+
+      SchemaAttributesRequired require0 = createCategoryRequired(List.of("Z", "Y"));
+      SchemaAttributes schemaAttributes = new SchemaAttributes().required(List.of(require0));
+
+      ClassificationRecord classification =
+          setClassification(siteId, null, "doc", schemaAttributes);
+
+      // when
+      boolean deleted = service.deleteClassification(siteId, classification.getDocumentId());
+
+      // then
+      assertTrue(deleted);
+
+      QueryConfig config = new QueryConfig();
+      ClassificationRecord r =
+          new ClassificationRecord().setDocumentId(classification.getDocumentId());
+      AttributeValue pk = r.fromS(r.pk(siteId));
+      QueryResponse response = db.queryBeginsWith(config, pk, null, null, LIMIT);
+      assertEquals(0, response.items().size());
     }
   }
 }

@@ -147,8 +147,8 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
     AttributeValue pk = r.fromS(r.pkGsi1(siteId));
     QueryResponse response = this.db.queryBeginsWith(config, pk, null, null, 1);
     if (!response.items().isEmpty()) {
-      errors.add(new ValidationErrorImpl()
-          .error("attribute 'key' is used in a Schema / Classification, cannot be deleted"));
+      errors.add(new ValidationErrorImpl().error(
+          "attribute '" + key + "' is used in a Schema / Classification, cannot be deleted"));
     }
 
     // check for DocumentAttributeRecords
@@ -157,7 +157,8 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
     response = this.db.queryBeginsWith(config, pk, null, null, 1);
 
     if (!response.items().isEmpty()) {
-      errors.add(new ValidationErrorImpl().error("attribute 'key' is in use, cannot be deleted"));
+      errors.add(
+          new ValidationErrorImpl().error("attribute '" + key + "' is in use, cannot be deleted"));
     }
 
     return errors;

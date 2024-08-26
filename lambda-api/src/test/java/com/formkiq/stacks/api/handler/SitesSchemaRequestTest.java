@@ -2262,40 +2262,6 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * PUT /sites/{siteId}/schema/document with required attribute and then attempt to delete
-   * attribute.
-   *
-   * @throws ApiException an error has occurred
-   */
-  @Test
-  public void testSetSitesSchema11() throws ApiException {
-    // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
-
-      setBearerToken(siteId);
-
-      String key = "category";
-      addAttribute(siteId, key, null);
-
-      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe").attributes(
-          new SchemaAttributes().addRequiredItem(new AttributeSchemaRequired().attributeKey(key)));
-
-      this.schemasApi.setSitesSchema(siteId, req);
-
-      // when
-      try {
-        this.attributesApi.deleteAttribute(key, siteId);
-        fail();
-      } catch (ApiException e) {
-        // then
-        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
-        assertEquals("{\"errors\":[{\"error\":\"attribute 'key' is used in a Schema "
-            + "/ Classification, cannot be deleted\"}]}", e.getResponseBody());
-      }
-    }
-  }
-
-  /**
    * PATCH /documents after site schema is applied and without attributes.
    *
    * @throws ApiException an error has occurred

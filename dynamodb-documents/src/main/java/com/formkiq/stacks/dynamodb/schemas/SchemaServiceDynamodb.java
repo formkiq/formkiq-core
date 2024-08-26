@@ -222,6 +222,10 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
         createAllowedValues(documentId, schema.getAttributes());
     list.addAll(allowedValues.stream().map(a -> a.getAttributes(siteId)).toList());
 
+    List<SchemaAttributeKeyRecord> attributeKeys =
+        createAttributeKeys(documentId, schema.getAttributes());
+    list.addAll(attributeKeys.stream().map(a -> a.getAttributes(siteId)).toList());
+
     this.db.putItems(list);
 
     return r;
@@ -247,11 +251,9 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
 
   @Override
   public boolean deleteClassification(final String siteId, final String classificationId) {
-
     ClassificationRecord r = new ClassificationRecord().setDocumentId(classificationId);
     AttributeValue pk = r.fromS(r.pk(siteId));
-    AttributeValue sk = r.fromS(r.sk());
-    return this.db.deleteItem(pk, sk);
+    return this.db.deleteItemsBeginsWith(pk, null);
   }
 
   @Override

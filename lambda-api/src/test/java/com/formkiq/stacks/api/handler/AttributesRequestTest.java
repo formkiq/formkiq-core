@@ -28,6 +28,8 @@ import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAttribute;
 import com.formkiq.client.model.AddAttributeRequest;
 import com.formkiq.client.model.AddAttributeResponse;
+import com.formkiq.client.model.AddClassification;
+import com.formkiq.client.model.AddClassificationRequest;
 import com.formkiq.client.model.AddDocumentAttribute;
 import com.formkiq.client.model.AddDocumentAttributeRelationship;
 import com.formkiq.client.model.AddDocumentAttributeStandard;
@@ -37,6 +39,7 @@ import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AddDocumentUploadRequest;
 import com.formkiq.client.model.Attribute;
 import com.formkiq.client.model.AttributeDataType;
+import com.formkiq.client.model.AttributeSchemaRequired;
 import com.formkiq.client.model.AttributeType;
 import com.formkiq.client.model.DeleteResponse;
 import com.formkiq.client.model.DocumentAttribute;
@@ -49,12 +52,14 @@ import com.formkiq.client.model.DocumentSearchResponse;
 import com.formkiq.client.model.DocumentTag;
 import com.formkiq.client.model.GetDocumentAttributeResponse;
 import com.formkiq.client.model.GetDocumentAttributesResponse;
+import com.formkiq.client.model.SchemaAttributes;
 import com.formkiq.client.model.SearchResponseFields;
 import com.formkiq.client.model.SearchResultDocument;
 import com.formkiq.client.model.SearchResultDocumentAttribute;
 import com.formkiq.client.model.SetDocumentAttributeRequest;
 import com.formkiq.client.model.SetDocumentAttributesRequest;
 import com.formkiq.client.model.SetResponse;
+import com.formkiq.client.model.SetSitesSchemaRequest;
 import com.formkiq.client.model.UpdateDocumentRequest;
 import com.formkiq.stacks.dynamodb.attributes.AttributeKeyReserved;
 import com.formkiq.testutils.aws.DynamoDbExtension;
@@ -1372,8 +1377,80 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
         fail();
       } catch (ApiException e) {
         // then
-        assertEquals("{\"errors\":[{\"error\":\"attribute 'key' is in use, cannot be deleted\"}]}",
+        assertEquals(
+            "{\"errors\":[{\"error\":\"attribute '" + key + "' is in use, cannot be deleted\"}]}",
             e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * PUT /sites/{siteId}/schema/document with required attribute and then attempt to delete
+   * attribute.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testDeleteAttributes04() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+
+      String key = "category";
+      AddAttributeRequest areq = new AddAttributeRequest().attribute(new AddAttribute().key(key));
+      this.attributesApi.addAttribute(areq, siteId);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe").attributes(
+          new SchemaAttributes().addRequiredItem(new AttributeSchemaRequired().attributeKey(key)));
+
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      // when
+      try {
+        this.attributesApi.deleteAttribute(key, siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"errors\":[{\"error\":\"attribute '" + key + "' is used in a Schema "
+            + "/ Classification, cannot be deleted\"}]}", e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * POST /sites/{siteId}/classifications with required attribute and then attempt to delete
+   * attribute.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testDeleteAttributes05() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+
+      String key = "category";
+      AddAttributeRequest areq = new AddAttributeRequest().attribute(new AddAttribute().key(key));
+      this.attributesApi.addAttribute(areq, siteId);
+
+      SchemaAttributes attr =
+          new SchemaAttributes().addRequiredItem(new AttributeSchemaRequired().attributeKey(key));
+      AddClassificationRequest req = new AddClassificationRequest()
+          .classification(new AddClassification().name("test").attributes(attr));
+      this.schemasApi.addClassification(siteId, req);
+
+      // when
+      try {
+        this.attributesApi.deleteAttribute(key, siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"errors\":[{\"error\":\"attribute '" + key + "' is used in a Schema "
+            + "/ Classification, cannot be deleted\"}]}", e.getResponseBody());
       }
     }
   }
