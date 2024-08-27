@@ -80,10 +80,29 @@ import java.util.Map;
 public class CognitoIdentityProviderService {
 
   /** Cognito User Attributes. */
-  public static final Collection<String> COGNITO_USER_ATTRIBUTES =
-      List.of("address", "birthdate", "family_name", "gender", "given_name", "locale",
-          "middle_name", "name", "nickname", "phone_number", "picture", "preferred_username",
-          "profile", "zoneinfo", "updated_at", "website");
+  public static final Map<String, String> COGNITO_USER_ATTRIBUTES = initCognitoAttributes();
+
+  private static Map<String, String> initCognitoAttributes() {
+    Map<String, String> map = new HashMap<>();
+    map.put("address", "address");
+    map.put("birthdate", "birthdate");
+    map.put("familyName", "family_name");
+    map.put("gender", "gender");
+    map.put("givenName", "given_name");
+    map.put("locale", "locale");
+    map.put("middleName", "middle_name");
+    map.put("name", "name");
+    map.put("nickname", "nickname");
+    map.put("phoneNumber", "phone_number");
+    map.put("picture", "picture");
+    map.put("preferredUsername", "preferred_username");
+    map.put("profile", "profile");
+    map.put("zoneinfo", "zoneinfo");
+    map.put("updatedAt", "updated_at");
+    map.put("website", "website");
+
+    return map;
+  }
 
   /** {@link String}. */
   private final String clientId;

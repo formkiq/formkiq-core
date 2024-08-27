@@ -57,8 +57,12 @@ public class UsersResponseToMap implements Function<UserType, Map<String, Object
   }
 
   private Map<String, String> getUserAttributes(final List<AttributeType> attributes) {
-    return attributes.stream().filter(a -> COGNITO_USER_ATTRIBUTES.contains(a.name()))
-        .collect(Collectors.toMap(AttributeType::name, AttributeType::value));
+    Map<String, String> m =
+        attributes.stream().filter(a -> COGNITO_USER_ATTRIBUTES.containsKey(a.name()))
+            .collect(Collectors.toMap(AttributeType::name, AttributeType::value));
+
+    return m.entrySet().stream().collect(
+        Collectors.toMap(e -> COGNITO_USER_ATTRIBUTES.get(e.getKey()), Map.Entry::getValue));
   }
 
   /**

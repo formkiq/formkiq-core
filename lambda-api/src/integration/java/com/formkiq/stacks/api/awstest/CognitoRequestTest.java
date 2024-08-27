@@ -418,7 +418,7 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
     ApiClient client = getApiClients(null).get(0);
 
     UserManagementApi userApi = new UserManagementApi(client);
-    String email = "test_" + UUID.randomUUID();
+    String email = "test_" + UUID.randomUUID() + "@formkiq.com";
 
     UserAttributes attributes = new UserAttributes().address(address).birthdate(birthDate)
         .familyName("Smith").givenName("John");
