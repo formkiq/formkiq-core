@@ -45,7 +45,6 @@ import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -174,7 +173,7 @@ public class SchemaServiceDynamodbTest {
    * Duplicate Attribute Key across site schema.
    */
   @Test
-  void testSetSitesSchema02() throws ValidationException {
+  void testSetSitesSchema02() {
     // given
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       addAttribute(siteId, "category");
