@@ -87,18 +87,24 @@ public class CognitoIdentityProviderService {
     map.put("address", "address");
     map.put("birthdate", "birthdate");
     map.put("familyName", "family_name");
+    map.put("family_name", "familyName");
     map.put("gender", "gender");
     map.put("givenName", "given_name");
+    map.put("given_name", "givenName");
     map.put("locale", "locale");
     map.put("middleName", "middle_name");
+    map.put("middle_name", "middleName");
     map.put("name", "name");
     map.put("nickname", "nickname");
     map.put("phoneNumber", "phone_number");
+    map.put("phone_number", "phoneNumber");
     map.put("picture", "picture");
     map.put("preferredUsername", "preferred_username");
+    map.put("preferred_username", "preferredUsername");
     map.put("profile", "profile");
     map.put("zoneinfo", "zoneinfo");
     map.put("updatedAt", "updated_at");
+    map.put("updated_at", "updatedAt");
     map.put("website", "website");
 
     return map;
@@ -169,7 +175,11 @@ public class CognitoIdentityProviderService {
 
     if (userAttributes != null) {
       for (Map.Entry<String, String> e : userAttributes.entrySet()) {
-        attributes.add(AttributeType.builder().name(e.getKey()).value(e.getValue()).build());
+
+        if (COGNITO_USER_ATTRIBUTES.containsKey(e.getKey())) {
+          attributes.add(AttributeType.builder().name(COGNITO_USER_ATTRIBUTES.get(e.getKey()))
+              .value(e.getValue()).build());
+        }
       }
     }
 
