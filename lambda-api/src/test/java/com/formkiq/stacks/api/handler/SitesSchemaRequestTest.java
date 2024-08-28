@@ -23,30 +23,12 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import static com.formkiq.aws.dynamodb.objects.Objects.formatDouble;
-import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
-import static com.formkiq.testutils.aws.FkqAttributeService.createNumberAttribute;
-import static com.formkiq.testutils.aws.FkqAttributeService.createStringsAttribute;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-import java.math.BigDecimal;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
-
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
-import com.formkiq.client.model.AddDocumentAttributeStandard;
-import com.formkiq.client.model.SearchResultDocument;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAttribute;
 import com.formkiq.client.model.AddAttributeRequest;
 import com.formkiq.client.model.AddDocumentAttribute;
+import com.formkiq.client.model.AddDocumentAttributeStandard;
 import com.formkiq.client.model.AddDocumentAttributeValue;
 import com.formkiq.client.model.AddDocumentAttributesRequest;
 import com.formkiq.client.model.AddDocumentRequest;
@@ -69,6 +51,7 @@ import com.formkiq.client.model.GetDocumentUrlResponse;
 import com.formkiq.client.model.GetSitesSchemaResponse;
 import com.formkiq.client.model.SchemaAttributes;
 import com.formkiq.client.model.SearchRangeDataType;
+import com.formkiq.client.model.SearchResultDocument;
 import com.formkiq.client.model.SetDocumentAttributeRequest;
 import com.formkiq.client.model.SetDocumentAttributesRequest;
 import com.formkiq.client.model.SetResponse;
@@ -76,6 +59,24 @@ import com.formkiq.client.model.SetSitesSchemaRequest;
 import com.formkiq.client.model.UpdateDocumentRequest;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.List;
+import java.util.UUID;
+
+import static com.formkiq.aws.dynamodb.objects.Objects.formatDouble;
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.testutils.aws.FkqAttributeService.createNumberAttribute;
+import static com.formkiq.testutils.aws.FkqAttributeService.createStringsAttribute;
+import static java.util.Objects.requireNonNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /** Unit Tests for request /sites/{siteId}/schema/document. */
 @ExtendWith(DynamoDbExtension.class)
@@ -1515,21 +1516,19 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       assertEquals(expected, notNull(response0.getDocuments()).size());
 
       assertEquals("category#date",
-          Objects.requireNonNull(response0.getDocuments().get(i).getMatchedAttribute()).getKey());
+          requireNonNull(response0.getDocuments().get(i).getMatchedAttribute()).getKey());
       assertEquals("person#000000000000100.1200",
-          Objects.requireNonNull(response0.getDocuments().get(i++).getMatchedAttribute())
-              .getStringValue());
+          requireNonNull(response0.getDocuments().get(i++).getMatchedAttribute()).getStringValue());
 
       assertEquals("category#date",
-          Objects.requireNonNull(response0.getDocuments().get(i).getMatchedAttribute()).getKey());
+          requireNonNull(response0.getDocuments().get(i).getMatchedAttribute()).getKey());
       assertEquals("person#000000000000150.1400",
-          Objects.requireNonNull(response0.getDocuments().get(i++).getMatchedAttribute())
-              .getStringValue());
+          requireNonNull(response0.getDocuments().get(i++).getMatchedAttribute()).getStringValue());
 
       assertEquals("category#date",
-          Objects.requireNonNull(response0.getDocuments().get(i).getMatchedAttribute()).getKey());
-      assertEquals("person#000000000000200.0000", Objects
-          .requireNonNull(response0.getDocuments().get(i).getMatchedAttribute()).getStringValue());
+          requireNonNull(response0.getDocuments().get(i).getMatchedAttribute()).getKey());
+      assertEquals("person#000000000000200.0000",
+          requireNonNull(response0.getDocuments().get(i).getMatchedAttribute()).getStringValue());
     }
   }
 
@@ -2360,6 +2359,47 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       UpdateDocumentRequest updateReq =
           new UpdateDocumentRequest().path("asd.txt").addAttributesItem(new AddDocumentAttribute(
               new AddDocumentAttributeStandard().key("strings").stringValue("test")));
+
+      // when
+      this.documentsApi.updateDocument(documentId, updateReq, siteId, null);
+
+      // then
+      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
+      assertEquals("asd.txt", document.getPath());
+    }
+  }
+
+  /**
+   * PATCH /documents/:documentId with all attributes that where used at creation except the
+   * required one.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testUpdateDocument04() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "category", null);
+      addAttribute(siteId, "user", null);
+
+      SetSitesSchemaRequest req =
+          new SetSitesSchemaRequest().name("joe").attributes(new SchemaAttributes()
+              .addRequiredItem(new AttributeSchemaRequired().attributeKey("category")));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      AddDocumentAttribute categoryAttribute = new AddDocumentAttribute(
+          new AddDocumentAttributeStandard().key("category").stringValue("test"));
+      AddDocumentUploadRequest ureq0 =
+          new AddDocumentUploadRequest().path("sample.txt").addAttributesItem(categoryAttribute);
+      String documentId =
+          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null).getDocumentId();
+
+      UpdateDocumentRequest updateReq =
+          new UpdateDocumentRequest().path("asd.txt").addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key("user").stringValue("1234")));
 
       // when
       this.documentsApi.updateDocument(documentId, updateReq, siteId, null);
