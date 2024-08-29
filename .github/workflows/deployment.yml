@@ -84,6 +84,6 @@ jobs:
         aws s3 cp template-${formKiQVersion}.yaml s3://formkiq-core-distribution-eu-west-3/${formKiQVersion}/template.yaml
         aws s3 cp vpc.yaml s3://formkiq-core-distribution-eu-west-3/${formKiQVersion}/vpc.yaml
 
-        sam package --s3-prefix ${formKiQVersion} --s3-bucket formkiq-core-distribution-ap-southeast-1 --template-file template.yaml --region ap-northeast-2 --output-template-file template-${formKiQVersion}.yaml
+        sam package --s3-prefix ${formKiQVersion} --s3-bucket formkiq-core-distribution-ap-southeast-1 --template-file template.yaml --region ap-southeast-1 --output-template-file template-${formKiQVersion}.yaml
         aws s3 cp template-${formKiQVersion}.yaml s3://formkiq-core-distribution-ap-southeast-1/${formKiQVersion}/template.yaml
         aws s3 cp vpc.yaml s3://formkiq-core-distribution-ap-southeast-1/${formKiQVersion}/vpc.yaml
