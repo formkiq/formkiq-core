@@ -2286,11 +2286,15 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       UpdateDocumentRequest updateReq = new UpdateDocumentRequest().path("asd.txt");
 
       // when
-      this.documentsApi.updateDocument(documentId, updateReq, siteId, null);
-
-      // then
-      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
-      assertEquals("asd.txt", document.getPath());
+      try {
+        this.documentsApi.updateDocument(documentId, updateReq, siteId, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"errors\":[{\"key\":\"strings\","
+            + "\"error\":\"missing required attribute 'strings'\"}]}", e.getResponseBody());
+      }
     }
   }
 
@@ -2407,6 +2411,44 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       // then
       GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
       assertEquals("asd.txt", document.getPath());
+    }
+  }
+
+  /**
+   * PATCH /documents after site schema is applied and with invalid attributes.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testUpdateDocument05() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "strings", null);
+
+      AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt");
+      String documentId =
+          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null).getDocumentId();
+
+      SetSitesSchemaRequest req =
+          new SetSitesSchemaRequest().name("joe").attributes(new SchemaAttributes()
+              .addRequiredItem(new AttributeSchemaRequired().attributeKey("strings")));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      UpdateDocumentRequest updateReq = new UpdateDocumentRequest().path("asd.txt");
+
+      // when
+      try {
+        this.documentsApi.updateDocument(documentId, updateReq, siteId, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"errors\":[{\"key\":\"strings\","
+            + "\"error\":\"missing required attribute 'strings'\"}]}", e.getResponseBody());
+      }
     }
   }
 }

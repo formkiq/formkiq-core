@@ -305,17 +305,8 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
 
       if (errors.isEmpty()) {
 
-        if (isUpdate) {
-
-          notNull(schemaAttributes).forEach(schemaAttribute -> {
-            validateOptionalAttributes(schemaAttribute, documentAttributes, errors);
-            validateAllowedValues(schemaAttribute, documentAttributes, errors);
-          });
-
-        } else {
-          notNull(schemaAttributes).forEach(schemaAttribute -> validateSitesSchema(schemaAttribute,
-              siteId, attributesMap, documentAttributes, errors));
-        }
+        notNull(schemaAttributes).forEach(schemaAttribute -> validateSitesSchema(schemaAttribute,
+            siteId, attributesMap, documentAttributes, errors));
       }
     }
 

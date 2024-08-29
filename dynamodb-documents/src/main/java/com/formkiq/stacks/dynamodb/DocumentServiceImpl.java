@@ -2242,8 +2242,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     Map<String, AttributeRecord> attributeRecordMap = Collections.emptyMap();
     Collection<ValidationError> errors = new ArrayList<>();
 
-    validateDocumentAttributesExist(siteId, documentId, documentAttributes, validationAccess,
-        errors);
+    validateDocumentAttributes(siteId, documentId, documentAttributes, validationAccess, errors);
 
     if (errors.isEmpty()) {
 
@@ -2261,11 +2260,52 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       }
     }
 
+    postValidateDocumentAttributeErrors(siteId, documentId, validationAccess, errors);
+
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }
 
     return attributeRecordMap;
+  }
+
+  /**
+   * Post Processing Document Attribute Validation Errors. If updating and attribute key is missing
+   * error, check to see if the attribute was added previously.
+   *
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param validationAccess {@link AttributeValidationAccess}
+   * @param errors {@link Collection} {@link ValidationError}
+   */
+  private void postValidateDocumentAttributeErrors(final String siteId, final String documentId,
+      final AttributeValidationAccess validationAccess, final Collection<ValidationError> errors) {
+
+    if (AttributeValidationAccess.ADMIN_UPDATE.equals(validationAccess)
+        || AttributeValidationAccess.UPDATE.equals(validationAccess)) {
+
+      List<ValidationError> missingRequiredErrors =
+          errors.stream().filter(e -> e.error().startsWith("missing required attribute")).toList();
+      for (ValidationError error : missingRequiredErrors) {
+
+        String attributeKey = error.key();
+
+        List<DocumentAttributeRecord> documentAttribute =
+            findDocumentAttribute(siteId, documentId, attributeKey, 1);
+
+        if (!documentAttribute.isEmpty()) {
+          errors.remove(error);
+        }
+      }
+    }
+  }
+
+  private void validateDocumentAttributes(final String siteId, final String documentId,
+      final Collection<DocumentAttributeRecord> documentAttributes,
+      final AttributeValidationAccess validationAccess, final Collection<ValidationError> errors) {
+
+    validateDocumentAttributesExist(siteId, documentId, documentAttributes, validationAccess,
+        errors);
   }
 
   /**
