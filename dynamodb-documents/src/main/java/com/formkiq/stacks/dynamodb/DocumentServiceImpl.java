@@ -2233,6 +2233,14 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     }
   }
 
+  private void validateDocumentAttributes(final String siteId, final String documentId,
+      final Collection<DocumentAttributeRecord> documentAttributes,
+      final AttributeValidationAccess validationAccess, final Collection<ValidationError> errors) {
+
+    validateDocumentAttributesExist(siteId, documentId, documentAttributes, validationAccess,
+        errors);
+  }
+
   private Map<String, AttributeRecord> validateDocumentAttributes(
       final List<SchemaAttributes> schemaAttributes, final String siteId, final String documentId,
       final Collection<DocumentAttributeRecord> documentAttributes, final boolean isUpdate,
@@ -2298,14 +2306,6 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
         }
       }
     }
-  }
-
-  private void validateDocumentAttributes(final String siteId, final String documentId,
-      final Collection<DocumentAttributeRecord> documentAttributes,
-      final AttributeValidationAccess validationAccess, final Collection<ValidationError> errors) {
-
-    validateDocumentAttributesExist(siteId, documentId, documentAttributes, validationAccess,
-        errors);
   }
 
   /**
