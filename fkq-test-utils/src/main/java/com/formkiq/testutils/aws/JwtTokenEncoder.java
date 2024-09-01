@@ -25,6 +25,9 @@ package com.formkiq.testutils.aws;
 
 import io.jsonwebtoken.Jwts;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * 
  * Jwt Token Encoder.
@@ -40,8 +43,23 @@ public class JwtTokenEncoder {
    * @return {@link String}
    */
   public static String encodeCognito(final String[] groups, final String username) {
-    String jws = Jwts.builder().subject("FormKiQ").claim("cognito:groups", groups)
+    return Jwts.builder().subject("FormKiQ").claim("cognito:groups", groups)
         .claim("cognito:username", username).compact();
-    return jws;
+  }
+
+  /**
+   * Encode Cognito Api Gateway Jwt Token.
+   *
+   * @param groups {@link List} {@link String}
+   * @param permissions {@link Map}
+   * @param username {@link String}
+   * @return {@link String}
+   */
+  public static String encodeExplicitSites(final List<String> groups,
+                                           final Map<String, List<String>> permissions, final String username) {
+    Map<String, Object> sitesClaims =
+            Map.of("cognito:groups", String.join(" ", groups), "permissionsMap", permissions);
+    return Jwts.builder().subject("FormKiQ").claim("sitesClaims", sitesClaims)
+            .claim("cognito:username", username).compact();
   }
 }
