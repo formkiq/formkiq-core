@@ -31,6 +31,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import com.formkiq.aws.services.lambda.exceptions.ForbiddenException;
 
@@ -80,14 +81,33 @@ public class ApiAuthorizationBuilder {
 
           String[] list = claims.get("permissions").toString().split(",");
           List<ApiPermission> permissions = Arrays.stream(list)
-              .map(p -> ApiPermission.valueOf(p.toUpperCase())).collect(Collectors.toList());
+              .map(ApiAuthorizationBuilder::toApiPermission).collect(Collectors.toList());
           authorization.addPermission(group, permissions);
+
+        } else if (claims.containsKey("permissionsMap")) {
+
+          Map<String, List<String>> map = (Map<String, List<String>>) claims.get("permissionsMap");
+
+          if (map.containsKey(group)) {
+            List<String> strs = map.get(group);
+            List<ApiPermission> permissions = strs.stream()
+                .map(ApiAuthorizationBuilder::toApiPermission).filter(Objects::nonNull).toList();
+            authorization.addPermission(group, permissions);
+          }
 
         } else {
           authorization.addPermission(group,
               Arrays.asList(ApiPermission.READ, ApiPermission.WRITE, ApiPermission.DELETE));
         }
       }
+    }
+  }
+
+  private static ApiPermission toApiPermission(final String val) {
+    try {
+      return ApiPermission.valueOf(val.toUpperCase());
+    } catch (IllegalArgumentException e) {
+      return null;
     }
   }
 
@@ -160,6 +180,10 @@ public class ApiAuthorizationBuilder {
 
     if (notNull(claims).isEmpty() && authorizer != null && authorizer.containsKey("apiKeyClaims")) {
       claims = (Map<String, Object>) authorizer.get("apiKeyClaims");
+    }
+
+    if (authorizer != null && authorizer.containsKey("sitesClaims")) {
+      claims = (Map<String, Object>) authorizer.get("sitesClaims");
     }
 
     return claims;

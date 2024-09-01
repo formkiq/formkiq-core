@@ -26,6 +26,7 @@ package com.formkiq.aws.services.lambda;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -37,6 +38,26 @@ import org.junit.jupiter.api.Test;
  *
  */
 class ApiAuthorizationBuilderTest {
+
+  /**
+   * Get {@link ApiGatewayRequestEvent}.
+   *
+   * @param groups {@link List} {@link String}
+   * @param permissions {@link Map}
+   * @return {@link ApiGatewayRequestEvent}
+   */
+  private ApiGatewayRequestEvent getExplicitSitesJwtEvent(final List<String> groups,
+      final Map<String, List<String>> permissions) {
+    ApiGatewayRequestEvent event = new ApiGatewayRequestEvent();
+    ApiGatewayRequestContext content = new ApiGatewayRequestContext();
+
+    Map<String, Object> claims = Map.of("sitesClaims",
+        Map.of("cognito:groups", String.join(" ", groups), "permissionsMap", permissions));
+    content.setAuthorizer(claims);
+    event.setRequestContext(content);
+
+    return event;
+  }
 
   /**
    * Get {@link ApiGatewayRequestEvent}.
@@ -589,5 +610,81 @@ class ApiAuthorizationBuilderTest {
     assertEquals("groups: finance (DELETE,READ,WRITE), other (DELETE,READ,WRITE)",
         api1.getAccessSummary());
     assertEquals("other,finance", String.join(",", api1.getRoles()));
+  }
+
+  /**
+   * Sites permissionsMap.
+   */
+  @Test
+  void testApiAuthorizer19() throws Exception {
+    // given
+    ApiGatewayRequestEvent event0 = getExplicitSitesJwtEvent(List.of("default", "test"),
+        Map.of("default", List.of(ApiPermission.READ.name()), "test",
+            List.of(ApiPermission.WRITE.name(), ApiPermission.DELETE.name())));
+
+    // when
+    final ApiAuthorization api0 = new ApiAuthorizationBuilder().build(event0);
+
+    // then
+    assertNull(api0.getSiteId());
+    assertEquals("default,test", String.join(",", api0.getSiteIds()));
+    assertEquals("",
+        api0.getPermissions().stream().map(Enum::name).collect(Collectors.joining(",")));
+    assertEquals("READ",
+        api0.getPermissions("default").stream().map(Enum::name).collect(Collectors.joining(",")));
+    assertEquals("WRITE,DELETE",
+        api0.getPermissions("test").stream().map(Enum::name).collect(Collectors.joining(",")));
+    assertEquals("groups: default (READ), test (DELETE,WRITE)", api0.getAccessSummary());
+    assertEquals("default,test", String.join(",", api0.getRoles()));
+  }
+
+  /**
+   * Sites permissionsMap missing permission for site.
+   */
+  @Test
+  void testApiAuthorizer20() throws Exception {
+    // given
+    ApiGatewayRequestEvent event0 = getExplicitSitesJwtEvent(List.of("default", "test"),
+        Map.of("default", List.of(ApiPermission.READ.name())));
+
+    // when
+    final ApiAuthorization api0 = new ApiAuthorizationBuilder().build(event0);
+
+    // then
+    assertNull(api0.getSiteId());
+    assertEquals("default", String.join(",", api0.getSiteIds()));
+    assertEquals("READ",
+        api0.getPermissions().stream().map(Enum::name).collect(Collectors.joining(",")));
+    assertEquals("READ",
+        api0.getPermissions("default").stream().map(Enum::name).collect(Collectors.joining(",")));
+    assertEquals("READ",
+        api0.getPermissions("test").stream().map(Enum::name).collect(Collectors.joining(",")));
+    assertEquals("groups: default (READ)", api0.getAccessSummary());
+    assertEquals("default,test", String.join(",", api0.getRoles()));
+  }
+
+  /**
+   * Sites permissionsMap invalid permission for site.
+   */
+  @Test
+  void testApiAuthorizer21() throws Exception {
+    // given
+    ApiGatewayRequestEvent event0 = getExplicitSitesJwtEvent(List.of("default", "test"),
+        Map.of("default", List.of("READ", "invalid")));
+
+    // when
+    final ApiAuthorization api0 = new ApiAuthorizationBuilder().build(event0);
+
+    // then
+    assertNull(api0.getSiteId());
+    assertEquals("default", String.join(",", api0.getSiteIds()));
+    assertEquals("READ",
+        api0.getPermissions().stream().map(Enum::name).collect(Collectors.joining(",")));
+    assertEquals("READ",
+        api0.getPermissions("default").stream().map(Enum::name).collect(Collectors.joining(",")));
+    assertEquals("READ",
+        api0.getPermissions("test").stream().map(Enum::name).collect(Collectors.joining(",")));
+    assertEquals("groups: default (READ)", api0.getAccessSummary());
+    assertEquals("default,test", String.join(",", api0.getRoles()));
   }
 }

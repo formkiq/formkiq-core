@@ -153,7 +153,7 @@ public class ApiAuthorization {
         long count = this.permissionsBySiteId.values().stream()
             .filter(t -> t.contains(ApiPermission.READ)).count();
         if (count == this.permissionsBySiteId.size()) {
-          permissions = Arrays.asList(ApiPermission.READ);
+          permissions = List.of(ApiPermission.READ);
         }
       }
     }

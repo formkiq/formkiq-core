@@ -183,6 +183,164 @@ Resources:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+            post:
+              operationId: AddSite
+              description: Add Site
+              summary: Add Site
+              tags:
+              - System Management
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/AddSiteRequest'
+              responses:
+                '201':
+                  description: 201 CREATED
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/AddResponse'
+                '400':
+                  description: 400 OK
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/ValidationErrorsResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
+          /sites/{siteId}:
+            patch:
+              operationId: UpdateSite
+              description: Update Site
+              summary: Update Site
+              tags:
+              - System Management
+              parameters:
+              - $ref: '#/components/parameters/siteIdPathParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/UpdateSiteRequest'
+              responses:
+                '200':
+                  description: "200 OK"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        "$ref": "#/components/schemas/UpdateResponse"
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /sites/{siteId}/groups:
+            get:
+              operationId: GetSiteGroups
+              description: Returns list of groups and permissions belonging to site
+              summary: Get group(s) and permissions belonging to site
+              tags:
+              - System Management
+              parameters:
+              - $ref: '#/components/parameters/siteIdPathParam'
+              responses:
+                '200':
+                  description: "200 OK"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        "$ref": "#/components/schemas/GetSiteGroupsResponse"
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /sites/{siteId}/groups/{groupName}:
+            get:
+              operationId: GetSiteGroup
+              description: Returns details of a group and permissions belonging to site
+              summary: Get group and permissions belonging to site
+              tags:
+              - System Management
+              parameters:
+              - $ref: '#/components/parameters/siteIdPathParam'
+              - $ref: '#/components/parameters/groupNamePath'
+              responses:
+                '200':
+                  description: "200 OK"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        "$ref": "#/components/schemas/GetSiteGroupResponse"
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /sites/{siteId}/groups/{groupName}/permissions:
+            put:
+              operationId: SetSiteGroupPermissions
+              description: Set Site's Group Permissions
+              summary: Set Site's Group Permissions
+              tags:
+              - System Management
+              parameters:
+              - $ref: '#/components/parameters/siteIdPathParam'
+              - $ref: '#/components/parameters/groupNamePath'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/SetGroupPermissionsRequest'
+              responses:
+                '200':
+                  description: "200 OK"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        "$ref": "#/components/schemas/SetResponse"
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /sites/{siteId}/opensearch/index:
             get:
               operationId: GetOpensearchIndex
@@ -9959,6 +10117,13 @@ Resources:
                 lastModifiedDate:
                   type: "string"
                   description: "Last nodified timestamp of group"
+            SetGroupPermissionsRequest:
+              type: object
+              properties:
+                permissions:
+                  type: "array"
+                  items:
+                    $ref: "#/components/schemas/SiteGroupPermissions"
             SetOpenSearchIndexRequest:
               type: object
               properties:
@@ -9976,6 +10141,12 @@ Resources:
                 message:
                   type: "string"
                   description: "Result message"
+            UpdateResponse:
+              type: "object"
+              properties:
+                message:
+                  type: "string"
+                  description: "Result message"
             SetResponse:
               type: "object"
               properties:
@@ -9988,6 +10159,25 @@ Resources:
                 message:
                   type: "string"
                   description: "Result message"
+            GetSiteGroupsResponse:
+              type: object
+              properties:
+                groupNames:
+                  type: "array"
+                  items:
+                    type: "string"
+            GetSiteGroupResponse:
+              type: object
+              properties:
+                group:
+                  $ref: "#/components/schemas/SiteGroup"
+            SiteGroup:
+              type: object
+              properties:
+                permissions:
+                  type: "array"
+                  items:
+                    $ref: "#/components/schemas/SiteGroupPermissions"
             GetOpenSearchIndexResponse:
               type: object
               properties:
@@ -10019,6 +10209,9 @@ Resources:
                 siteId:
                   type: "string"
                   description: "Site Identifier"
+                title:
+                  type: "string"
+                  description: "Site Title"
                 permission:
                   type: "string"
                   description: "SiteId permission level"
@@ -10026,15 +10219,9 @@ Resources:
                     - READ_WRITE
                     - READ_ONLY
                 permissions:
-                  type: array
-                  description: "List of caller permissions"
+                  type: "array"
                   items:
-                    type: "string"
-                    enum:
-                      - ADMIN
-                      - DELETE
-                      - READ
-                      - WRITE
+                    $ref: "#/components/schemas/SiteGroupPermissions"
                 uploadEmail:
                   type: "string"
                   description: "SiteId document upload email address"
@@ -10335,6 +10522,49 @@ Resources:
               properties:
                 classification:
                   $ref: "#/components/schemas/AddClassification"
+            AddSiteRequest:
+              type: "object"
+              properties:
+                site:
+                  $ref: "#/components/schemas/AddSite"
+            AddSite:
+              type: "object"
+              properties:
+                id:
+                  description: "Site Id"
+                  type: "string"
+                title:
+                  description: "Title of Site"
+                  type: "string"
+                status:
+                  $ref: "#/components/schemas/SiteStatus"
+            UpdateSiteRequest:
+              type: "object"
+              properties:
+                site:
+                  $ref: "#/components/schemas/UpdateSite"
+            UpdateSite:
+              type: "object"
+              properties:
+                title:
+                  description: "Title of Site"
+                  type: "string"
+                status:
+                  $ref: "#/components/schemas/SiteStatus"
+            SiteStatus:
+              type: string
+              description: "Site status"
+              enum:
+                - ACTIVE
+                - INACTIVE
+            SiteGroupPermissions:
+              type: string
+              description: "Site Group Permissions"
+              enum:
+                - ADMIN
+                - DELETE
+                - READ
+                - WRITE
             AddClassificationRequest:
               type: "object"
               properties:
