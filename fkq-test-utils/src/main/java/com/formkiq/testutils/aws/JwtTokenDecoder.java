@@ -54,8 +54,13 @@ public class JwtTokenDecoder {
     String s = new String(Base64.getDecoder().decode(split[1]), StandardCharsets.UTF_8);
     Map<String, Object> map = gson.fromJson(s, Map.class);
 
-    this.groups = (List<String>) map.get("cognito:groups");
     this.username = (String) map.get("cognito:username");
+
+    if (map.containsKey("sitesClaims")) {
+      map = (Map<String, Object>) map.get("sitesClaims");
+    }
+
+    this.groups = (List<String>) map.get("cognito:groups");
   }
 
   /**
