@@ -687,4 +687,53 @@ class ApiAuthorizationBuilderTest {
     assertEquals("groups: default (READ)", api0.getAccessSummary());
     assertEquals("default,test", String.join(",", api0.getRoles()));
   }
+
+  /**
+   * Sites permissionsMap with Admins.
+   */
+  @Test
+  void testApiAuthorizer22() throws Exception {
+    // given
+    ApiGatewayRequestEvent event0 = getExplicitSitesJwtEvent(List.of("Admins"), Map.of());
+
+    // when
+    final ApiAuthorization api0 = new ApiAuthorizationBuilder().build(event0);
+
+    // then
+    assertEquals("default", api0.getSiteId());
+    assertEquals("default", String.join(",", api0.getSiteIds()));
+    assertEquals("READ,WRITE,DELETE,ADMIN",
+        api0.getPermissions().stream().map(Enum::name).collect(Collectors.joining(",")));
+    assertEquals("READ,WRITE,DELETE,ADMIN",
+        api0.getPermissions("default").stream().map(Enum::name).collect(Collectors.joining(",")));
+    assertEquals("ADMIN,DELETE,READ,WRITE",
+        api0.getPermissions("test").stream().map(Enum::name).collect(Collectors.joining(",")));
+    assertEquals("groups: default (ADMIN,DELETE,READ,WRITE)", api0.getAccessSummary());
+    assertEquals("Admins", String.join(",", api0.getRoles()));
+  }
+
+  /**
+   * Sites permissionsMap with user.
+   */
+  @Test
+  void testApiAuthorizer23() throws Exception {
+    // given
+    ApiGatewayRequestEvent event0 = getExplicitSitesJwtEvent(List.of("student", "test"),
+        Map.of("student", List.of("read", "write"), "test", List.of("delete")));
+
+    // when
+    final ApiAuthorization api0 = new ApiAuthorizationBuilder().build(event0);
+
+    // then
+    assertNull(api0.getSiteId());
+    assertEquals("student,test", String.join(",", api0.getSiteIds()));
+    assertEquals("",
+        api0.getPermissions().stream().map(Enum::name).collect(Collectors.joining(",")));
+    assertEquals("READ,WRITE",
+        api0.getPermissions("student").stream().map(Enum::name).collect(Collectors.joining(",")));
+    assertEquals("DELETE",
+        api0.getPermissions("test").stream().map(Enum::name).collect(Collectors.joining(",")));
+    assertEquals("groups: student (READ,WRITE), test (DELETE)", api0.getAccessSummary());
+    assertEquals("test,student", String.join(",", api0.getRoles()));
+  }
 }
