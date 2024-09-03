@@ -68,6 +68,7 @@ public class JwtTokenDecoder {
 
   /**
    * Get Permissions {@link Map}.
+   * 
    * @return Map
    */
   public Map<String, List<String>> getPermissions() {

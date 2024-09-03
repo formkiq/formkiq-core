@@ -16,7 +16,7 @@ configurations {
 
 dependencies {
 
- 	annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.4.1'
+ 	annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.4.2'
  
 	implementation project(':aws-s3')
 	implementation project(':aws-sns')
@@ -35,7 +35,7 @@ dependencies {
 	implementation project(':http-sigv4')
 	
 	implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.3'
-    implementation group: 'com.google.code.gson', name: 'gson', version: '2.10.1'
+    implementation group: 'com.google.code.gson', name: 'gson', version: '2.11.0'
     
 	implementation group: 'com.formkiq', name: 'lambda-runtime-graalvm', version:'2.5.0-SNAPSHOT'
     implementation group: 'com.formkiq', name: 'graalvm-annotations', version: '1.2.0'
@@ -45,16 +45,16 @@ dependencies {
 	testImplementation project(':aws-sqs')	
 	testImplementation project(':fkq-test-utils')
 	testImplementation project(':fkq-validation')
-    testImplementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.14.0'
+    testImplementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.17.0'
 
-	testImplementation group: 'software.amazon.awssdk', name: 'dynamodb', version: '2.23.12'
-	testImplementation group: 'software.amazon.awssdk', name: 's3', version: '2.23.12'
+	testImplementation group: 'software.amazon.awssdk', name: 'dynamodb', version: '2.27.18'
+	testImplementation group: 'software.amazon.awssdk', name: 's3', version: '2.27.18'
 
-	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.10.1'
+	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.11.0'
     testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.20.1'
 	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.20.1'
     testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.20.1'
-	testImplementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.12.646'
+	testImplementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.12.770'
 	testImplementation group: 'org.mock-server', name: 'mockserver-netty', version: '5.15.0'
 }
 

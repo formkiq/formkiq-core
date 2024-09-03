@@ -21,7 +21,7 @@ tasks.processIntegrationResources {
 
 dependencies {
 
-	annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.4.1'
+	annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.4.2'
 	
 	api project(':document-events')
 	api project(':fkq-lambda-services')
@@ -42,7 +42,7 @@ dependencies {
 	api project(':http-sigv4')
 	
 	api group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.3'
-    api group: 'com.google.code.gson', name: 'gson', version: '2.10.1'
+    api group: 'com.google.code.gson', name: 'gson', version: '2.11.0'
     
     api group: 'com.formkiq', name: 'lambda-runtime-graalvm', version:'2.5.0-SNAPSHOT'
     api group: 'com.formkiq', name: 'graalvm-annotations', version: '1.2.0'
@@ -56,14 +56,14 @@ dependencies {
 	testImplementation project(':fkq-test-utils')
 	testImplementation project(':lambda-typesense')
 	
-	testImplementation group: 'software.amazon.awssdk', name: 'apigateway', version: '2.23.12'
-	testImplementation group: 'software.amazon.awssdk', name: 'sts', version: '2.23.12'
+	testImplementation group: 'software.amazon.awssdk', name: 'apigateway', version: '2.27.18'
+	testImplementation group: 'software.amazon.awssdk', name: 'sts', version: '2.27.18'
 	
-    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.10.1'
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.11.0'
     testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.20.1'
 	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.20.1'
 	testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.20.1'
-	testImplementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.12.646'
+	testImplementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.12.770'
 	testImplementation group: 'org.mock-server', name: 'mockserver-netty', version: '5.15.0'
 	
 	// TODO remove
