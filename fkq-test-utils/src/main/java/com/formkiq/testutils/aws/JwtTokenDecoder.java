@@ -41,6 +41,8 @@ public class JwtTokenDecoder {
   private List<String> groups;
   /** Username. */
   private String username;
+  /** {@link Map}. */
+  private Map<String, List<String>> permissions;
 
   /**
    * constructor.
@@ -58,9 +60,18 @@ public class JwtTokenDecoder {
 
     if (map.containsKey("sitesClaims")) {
       map = (Map<String, Object>) map.get("sitesClaims");
+      this.permissions = (Map<String, List<String>>) map.get("permissionsMap");
     }
 
     this.groups = (List<String>) map.get("cognito:groups");
+  }
+
+  /**
+   * Get Permissions {@link Map}.
+   * @return Map
+   */
+  public Map<String, List<String>> getPermissions() {
+    return this.permissions;
   }
 
   /**

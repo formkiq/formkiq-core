@@ -24,6 +24,7 @@
 package com.formkiq.testutils.aws;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -237,6 +238,11 @@ public class ApiHttpRequest {
    */
   public ApiHttpRequest user(final String username) {
     getClaims().put("cognito:username", username);
+    return this;
+  }
+
+  public ApiHttpRequest permissions(final Map<String, List<String>> permissions) {
+    getClaims().put("permissionsMap", permissions);
     return this;
   }
 }
