@@ -23,6 +23,8 @@
  */
 package com.formkiq.aws.services.lambda;
 
+import com.formkiq.aws.dynamodb.ApiPermission;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
