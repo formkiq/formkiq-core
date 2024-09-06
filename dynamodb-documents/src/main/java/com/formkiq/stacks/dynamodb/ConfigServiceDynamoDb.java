@@ -41,7 +41,7 @@ import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /** Implementation of the {@link ConfigService}. */
-public class ConfigServiceDynamoDb implements ConfigService, DbKeys {
+public final class ConfigServiceDynamoDb implements ConfigService, DbKeys {
 
   /** {@link DynamoDbService}. */
   private final DynamoDbService db;

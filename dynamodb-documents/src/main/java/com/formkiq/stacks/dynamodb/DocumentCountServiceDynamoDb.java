@@ -39,7 +39,7 @@ import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest;
  * Service for keeping track of number of documents.
  *
  */
-public class DocumentCountServiceDynamoDb implements DocumentCountService {
+public final class DocumentCountServiceDynamoDb implements DocumentCountService {
 
   /** Documents Table Name. */
   private String documentTableName;

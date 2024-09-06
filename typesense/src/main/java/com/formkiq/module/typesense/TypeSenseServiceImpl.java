@@ -51,7 +51,7 @@ import software.amazon.awssdk.regions.Region;
  * Implementation of {@link TypeSenseService}.
  *
  */
-public class TypeSenseServiceImpl implements TypeSenseService {
+public final class TypeSenseServiceImpl implements TypeSenseService {
 
   /** {@link Map}. */
   private Map<String, String> additionalHeaders = Collections.emptyMap();

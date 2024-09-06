@@ -39,7 +39,7 @@ import software.amazon.awssdk.services.sns.model.PublishResponse;
  * SQS implementation of the {@link EventService}.
  *
  */
-public class EventServiceSns implements EventService {
+public final class EventServiceSns implements EventService {
 
   /** Max Sns Message Size. */
   public static final int MAX_SNS_MESSAGE_SIZE = 256000;

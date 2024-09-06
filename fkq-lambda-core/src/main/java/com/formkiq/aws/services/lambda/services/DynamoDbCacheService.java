@@ -40,7 +40,7 @@ import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
  * {@link DynamoDbClient} Implementation of {@link CacheService}.
  *
  */
-public class DynamoDbCacheService implements CacheService {
+public final class DynamoDbCacheService implements CacheService {
 
   /** MilliSeconds per Second. */
   private static final int MILLISECONDS = 1000;

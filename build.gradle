@@ -3,7 +3,7 @@ plugins {
   id 'java-library'
   id 'checkstyle'
   id 'distribution'
-  id 'com.github.spotbugs'  version '5.0.14'
+  id 'com.github.spotbugs'  version '6.0.22'
   id 'com.diffplug.spotless' version '6.21.0'
   id 'com.github.ben-manes.versions' version '0.47.0'
   id 'com.formkiq.gradle.graalvm-native-plugin' version '1.6.0'
@@ -97,7 +97,7 @@ subprojects {
   } 
   
   checkstyle {
-    toolVersion '9.3'
+    toolVersion '10.12.1'
     configFile file("config/checkstyle/checkstyle.xml")
     configProperties = [project_loc: "${projectDir}"]
     maxWarnings = 0

@@ -96,7 +96,7 @@ import static com.formkiq.stacks.dynamodb.attributes.AttributeRecord.ATTR;
  * Implementation {@link DocumentSearchService}.
  *
  */
-public class DocumentSearchServiceImpl implements DocumentSearchService {
+public final class DocumentSearchServiceImpl implements DocumentSearchService {
 
   /** {@link DynamoDbService}. */
   private final DynamoDbService db;

@@ -54,7 +54,7 @@ import software.amazon.awssdk.regions.Region;
  * SigV4 implementation of {@link HttpService}.
  *
  */
-public class HttpServiceSigv4 implements HttpService {
+public final class HttpServiceSigv4 implements HttpService {
 
   /** Headers that are not allowed to be added to {@link HttpClient}. */
   private static final Set<String> NOT_ALLOWED_HEADERS = Set.of("connection", "content-length",

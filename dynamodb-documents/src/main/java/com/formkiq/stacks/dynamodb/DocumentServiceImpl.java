@@ -117,7 +117,7 @@ import static com.formkiq.stacks.dynamodb.attributes.AttributeRecord.ATTR;
 import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.fromS;
 
 /** Implementation of the {@link DocumentService}. */
-public class DocumentServiceImpl implements DocumentService, DbKeys {
+public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
   /** Maximum number of Records DynamoDb can be queries for at a time. */
   private static final int MAX_QUERY_RECORDS = 100;

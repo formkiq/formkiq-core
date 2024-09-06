@@ -57,7 +57,7 @@ import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
  * Implementation of {@link DynamoDbService}.
  *
  */
-public class DynamoDbServiceImpl implements DynamoDbService {
+public final class DynamoDbServiceImpl implements DynamoDbService {
 
   /** {@link DynamoDbClient}. */
   private final DynamoDbClient dbClient;

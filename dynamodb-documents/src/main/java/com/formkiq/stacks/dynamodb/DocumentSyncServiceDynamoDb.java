@@ -56,7 +56,7 @@ import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
  * DynamoDb implementation of {@link DocumentSyncService}.
  *
  */
-public class DocumentSyncServiceDynamoDb implements DocumentSyncService {
+public final class DocumentSyncServiceDynamoDb implements DocumentSyncService {
 
   /** Syncs SK. */
   private static final String SK_SYNCS = "syncs#";

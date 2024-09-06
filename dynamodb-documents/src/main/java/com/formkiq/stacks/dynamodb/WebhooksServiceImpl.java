@@ -61,7 +61,7 @@ import software.amazon.awssdk.services.dynamodb.model.TransactWriteItemsRequest;
 import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest;
 
 /** Implementation of the {@link WebhooksService}. */
-public class WebhooksServiceImpl implements WebhooksService, DbKeys {
+public final class WebhooksServiceImpl implements WebhooksService, DbKeys {
 
   /** MilliSeconds per Second. */
   private static final int MILLISECONDS = 1000;

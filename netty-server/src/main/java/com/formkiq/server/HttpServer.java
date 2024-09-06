@@ -43,7 +43,7 @@ import io.netty.handler.logging.LoggingHandler;
 /**
  * FormKiQ Http Server.
  */
-public class HttpServer {
+public final class HttpServer {
 
   /** Default Server Port. */
   private static final int DEFAULT_PORT = 8080;

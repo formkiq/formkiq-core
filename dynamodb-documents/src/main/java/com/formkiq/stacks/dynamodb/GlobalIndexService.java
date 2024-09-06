@@ -49,7 +49,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
  * Global Index Service.
  *
  */
-public class GlobalIndexService {
+public final class GlobalIndexService {
 
   /** Cache Size. */
   private static final int CACHE_SIZE = 500;

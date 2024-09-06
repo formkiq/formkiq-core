@@ -48,7 +48,7 @@ import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
  * DynamoDb implementation of {@link ApiKeysService}.
  *
  */
-public class ApiKeysServiceDynamoDb implements ApiKeysService, DbKeys {
+public final class ApiKeysServiceDynamoDb implements ApiKeysService, DbKeys {
 
   /**
    * Generate Random String.

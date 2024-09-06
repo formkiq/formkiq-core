@@ -89,7 +89,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * {@link ChannelInitializer} for Http Server.
  */
-public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
+public final class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
 
   /** AWS Region. */
   private static final Region AWS_REGION = Region.US_EAST_2;

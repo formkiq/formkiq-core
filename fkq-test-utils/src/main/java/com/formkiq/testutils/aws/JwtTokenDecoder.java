@@ -35,7 +35,7 @@ import com.google.gson.GsonBuilder;
  * Jwt Token Encoder.
  *
  */
-public class JwtTokenDecoder {
+public final class JwtTokenDecoder {
 
   /** Groups. */
   private List<String> groups;
