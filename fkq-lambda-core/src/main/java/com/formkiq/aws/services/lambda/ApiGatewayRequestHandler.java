@@ -273,7 +273,7 @@ public interface ApiGatewayRequestHandler {
   default void checkPermission(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final ApiPermission permission)
       throws UnauthorizedException {
-    String siteId = event.getPathParameters().get("siteId");
+    String siteId = event.getPathParameter("siteId");
     if (!authorization.getPermissions(siteId).contains(permission)) {
       throw new UnauthorizedException("user is unauthorized");
     }

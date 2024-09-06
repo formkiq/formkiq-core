@@ -135,6 +135,15 @@ public class ApiGatewayRequestEvent {
   }
 
   /**
+   * Get Path Parameter.
+   * @param key {@link String}
+   * @return String
+   */
+  public String getPathParameter(final String key) {
+    return this.pathParameters != null ? this.pathParameters.get(key) : null;
+  }
+
+  /**
    * Get Query Parameter.
    * 
    * @param key {@link String}
