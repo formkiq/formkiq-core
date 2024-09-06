@@ -167,6 +167,7 @@ Resources:
             Ref: OcrBucket
           OCR_SQS_QUEUE_URL:
             Ref: OcrQueueUrl
+          MODULE_site_permissions: "automatic"
           MODULE_typesense:
             Fn::If:
             - CreateTypesenseResources
