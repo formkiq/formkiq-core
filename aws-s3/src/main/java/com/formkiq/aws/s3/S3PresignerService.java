@@ -28,6 +28,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 import software.amazon.awssdk.awscore.AwsRequestOverrideConfiguration;
+import software.amazon.awssdk.services.s3.model.ChecksumAlgorithm;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.UploadPartRequest;
@@ -90,14 +91,16 @@ public class S3PresignerService {
    * @param key {@link String}
    * @param duration {@link Duration}
    * @param contentLength {@link Optional} {@link Long}
+   * @param checksumAlgorithm {@link ChecksumAlgorithm}
    * @return {@link URL}
    */
   public URL presignPostUrl(final String bucket, final String key, final Duration duration,
-      final Optional<Long> contentLength) {
+      final Optional<Long> contentLength, final ChecksumAlgorithm checksumAlgorithm) {
 
     try (S3Presigner signer = this.builder.build()) {
 
-      UploadPartRequest.Builder uploadBuilder = UploadPartRequest.builder().bucket(bucket).key(key);
+      UploadPartRequest.Builder uploadBuilder =
+          UploadPartRequest.builder().bucket(bucket).key(key).checksumAlgorithm(checksumAlgorithm);
 
       if (contentLength.isPresent()) {
         uploadBuilder = uploadBuilder.contentLength(contentLength.get());
@@ -147,9 +150,7 @@ public class S3PresignerService {
           .signatureDuration(duration).putObjectRequest(putObjectRequest.build()).build();
 
       PresignedPutObjectRequest req = signer.presignPutObject(putRequest);
-      URL url = req.url();
-
-      return url;
+      return req.url();
     }
   }
 }

@@ -23,8 +23,11 @@
  */
 package com.formkiq.stacks.api.transformers;
 
-import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.isDefaultSiteId;
-import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import com.formkiq.aws.dynamodb.objects.Strings;
+import com.formkiq.aws.s3.S3PresignerService;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.stacks.api.handler.AddDocumentRequest;
+
 import java.net.URL;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -35,10 +38,8 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 
-import com.formkiq.aws.dynamodb.objects.Strings;
-import com.formkiq.aws.s3.S3PresignerService;
-import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.api.handler.AddDocumentRequest;
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.isDefaultSiteId;
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 
 /**
  * Transforms {@link AddDocumentRequest} to a list of Presigned Urls.
@@ -47,15 +48,15 @@ public class AddDocumentRequestToPresignedUrls
     implements Function<AddDocumentRequest, Map<String, Object>> {
 
   /** {@link S3PresignerService}. */
-  private S3PresignerService s3PresignerService;
+  private final S3PresignerService s3PresignerService;
   /** S3 Bucket. */
-  private String s3Bucket;
+  private final String s3Bucket;
   /** {@link Duration}. */
-  private Duration duration;
+  private final Duration duration;
   /** {@link Optional} Content Length. */
-  private Optional<Long> contentLength;
+  private final Optional<Long> contentLength;
   /** Site Id. */
-  private String siteId;
+  private final String siteId;
 
   /**
    * constructor.

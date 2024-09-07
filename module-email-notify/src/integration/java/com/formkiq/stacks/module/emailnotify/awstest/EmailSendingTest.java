@@ -125,7 +125,7 @@ public class EmailSendingTest {
     final S3ConnectionBuilder s3Builder =
         new S3ConnectionBuilder(enableAwsXray).setCredentials(awsprofile).setRegion(awsregion);
 
-    s3Service = new S3Service(s3Builder);
+    s3Service = new S3Service(s3Builder, null);
     sqsService = new SqsServiceImpl(sqsConnection);
     SsmService ssmService = new SsmServiceImpl(ssmBuilder);
     snsService = new SnsService(snsBuilder);
@@ -218,7 +218,7 @@ public class EmailSendingTest {
     String data = UUID.randomUUID().toString();
 
     s3Service.putObject(stagingdocumentsbucketname, key, data.getBytes(StandardCharsets.UTF_8),
-        contentType);
+        contentType, null);
 
     return key;
   }

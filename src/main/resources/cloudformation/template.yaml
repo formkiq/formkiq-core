@@ -79,6 +79,12 @@ Parameters:
     Type: String
     AllowedValues: ["FARGATE_SPOT", "FARGATE"]
 
+  S3ChecksumAlgorithm:
+    Description: The S3 Checksum calculation to use
+    Default: "ETag"
+    Type: String
+    AllowedValues: ["ETag", "SHA-256", "SHA-1", "CRC-32", "CR-32C"]
+
 Mappings: 
   RegionMap: 
     us-east-2:
@@ -413,6 +419,8 @@ Resources:
           - PARTITION
         AppEnvironment: 
           Ref: AppEnvironment
+        S3ChecksumAlgorithm:
+          Ref: S3ChecksumAlgorithm
         EnablePublicUrls: 
           Ref: EnablePublicUrls
         PasswordMinimumLength: 

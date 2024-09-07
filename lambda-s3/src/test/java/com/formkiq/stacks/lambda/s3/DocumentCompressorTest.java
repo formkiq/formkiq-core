@@ -116,7 +116,7 @@ public class DocumentCompressorTest {
     dbBuilder = DynamoDbTestServices.getDynamoDbConnection();
 
     dbHelper = DynamoDbTestServices.getDynamoDbHelper(null);
-    s3 = new S3Service(s3Builder);
+    s3 = new S3Service(s3Builder, null);
     documentService = new DocumentServiceImpl(dbBuilder, DOCUMENTS_TABLE,
         new DocumentVersionServiceNoVersioning());
 

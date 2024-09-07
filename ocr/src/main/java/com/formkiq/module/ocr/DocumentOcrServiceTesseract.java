@@ -213,7 +213,8 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
     String jobId = UUID.randomUUID().toString();
     String s3Key = getS3Key(siteId, documentId, jobId);
 
-    this.s3.putObject(this.ocrBucket, s3Key, content.getBytes(StandardCharsets.UTF_8), contentType);
+    this.s3.putObject(this.ocrBucket, s3Key, content.getBytes(StandardCharsets.UTF_8), contentType,
+        null);
 
     Ocr ocr = new Ocr().documentId(documentId).jobId(jobId).engine(OcrEngine.MANUAL)
         .status(OcrScanStatus.SUCCESSFUL).contentType(contentType).userId(userId);
@@ -350,7 +351,7 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
 
     String ocrS3Key = getS3Key(siteId, documentId, jobId);
     this.s3.putObject(this.ocrBucket, ocrS3Key, content.getBytes(StandardCharsets.UTF_8),
-        contentType);
+        contentType, null);
 
     OcrScanStatus status = OcrScanStatus.SKIPPED;
 

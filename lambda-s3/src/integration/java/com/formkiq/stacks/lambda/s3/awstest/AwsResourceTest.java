@@ -23,13 +23,32 @@
  */
 package com.formkiq.stacks.lambda.s3.awstest;
 
-import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
-import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import com.formkiq.aws.dynamodb.PaginationResults;
+import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.model.DocumentTag;
+import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
+import com.formkiq.aws.dynamodb.model.SearchQuery;
+import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
+import com.formkiq.aws.s3.S3ObjectMetadata;
+import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
+import com.formkiq.stacks.dynamodb.DocumentService;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.parallel.Isolated;
+import software.amazon.awssdk.services.s3.model.Event;
+import software.amazon.awssdk.services.s3.model.GetBucketNotificationConfigurationResponse;
+import software.amazon.awssdk.services.s3.model.LambdaFunctionConfiguration;
+import software.amazon.awssdk.services.s3.model.QueueConfiguration;
+import software.amazon.awssdk.services.sns.SnsClient;
+import software.amazon.awssdk.services.sqs.SqsClient;
+import software.amazon.awssdk.services.sqs.model.CreateQueueRequest;
+import software.amazon.awssdk.services.sqs.model.CreateQueueResponse;
+import software.amazon.awssdk.services.sqs.model.QueueAttributeName;
+import software.amazon.awssdk.services.sqs.model.SetQueueAttributesRequest;
+
 import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -49,32 +68,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
-import org.junit.jupiter.api.parallel.Isolated;
-import com.formkiq.aws.dynamodb.PaginationResults;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
-import com.formkiq.aws.dynamodb.model.DocumentTag;
-import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
-import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
-import com.formkiq.aws.dynamodb.model.SearchQuery;
-import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
-import com.formkiq.aws.s3.S3ObjectMetadata;
-import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
-import com.formkiq.stacks.dynamodb.DocumentService;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import software.amazon.awssdk.services.s3.model.Event;
-import software.amazon.awssdk.services.s3.model.GetBucketNotificationConfigurationResponse;
-import software.amazon.awssdk.services.s3.model.LambdaFunctionConfiguration;
-import software.amazon.awssdk.services.s3.model.QueueConfiguration;
-import software.amazon.awssdk.services.sns.SnsClient;
-import software.amazon.awssdk.services.sqs.SqsClient;
-import software.amazon.awssdk.services.sqs.model.CreateQueueRequest;
-import software.amazon.awssdk.services.sqs.model.CreateQueueResponse;
-import software.amazon.awssdk.services.sqs.model.QueueAttributeName;
-import software.amazon.awssdk.services.sqs.model.SetQueueAttributesRequest;
+
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test CloudFormation.
@@ -151,7 +152,7 @@ public class AwsResourceTest extends AbstractAwsTest {
   }
 
   /** {@link Gson}. */
-  private Gson gson = new GsonBuilder().create();
+  private final Gson gson = new GsonBuilder().create();
 
   private void assertQueueConfigurations(final QueueConfiguration q, final String arn,
       final String event) {
@@ -349,7 +350,6 @@ public class AwsResourceTest extends AbstractAwsTest {
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testAddDeleteFile04() throws Exception {
     // given
-    final String siteId = null;
     final String key = UUID.randomUUID().toString();
 
     String contentType = "text/plain";
@@ -373,10 +373,10 @@ public class AwsResourceTest extends AbstractAwsTest {
     // then
     SearchQuery query = new SearchQuery().tag(new SearchTagCriteria().key(mycategory).eq(myvalue));
 
-    PaginationResults<DynamicDocumentItem> results = null;
+    PaginationResults<DynamicDocumentItem> results;
 
     do {
-      results = getSearchService().search(siteId, query, null, null, MAX_RESULTS);
+      results = getSearchService().search(null, query, null, null, MAX_RESULTS);
       TimeUnit.SECONDS.sleep(1);
     } while (results.getResults().isEmpty());
 
@@ -406,7 +406,7 @@ public class AwsResourceTest extends AbstractAwsTest {
     // then
     List<LambdaFunctionConfiguration> list =
         new ArrayList<>(response0.lambdaFunctionConfigurations());
-    Collections.sort(list, new LambdaFunctionConfigurationComparator());
+    list.sort(new LambdaFunctionConfigurationComparator());
 
     assertEquals(0, response0.queueConfigurations().size());
     assertEquals(2, list.size());
@@ -469,7 +469,7 @@ public class AwsResourceTest extends AbstractAwsTest {
     // then
     List<LambdaFunctionConfiguration> list =
         new ArrayList<>(response0.lambdaFunctionConfigurations());
-    Collections.sort(list, new LambdaFunctionConfigurationComparator());
+    list.sort(new LambdaFunctionConfigurationComparator());
 
     assertEquals(0, response0.queueConfigurations().size());
     assertEquals(2, list.size());
@@ -501,7 +501,7 @@ public class AwsResourceTest extends AbstractAwsTest {
     String subDocumentArn = subscribeToSns(getSnsDocumentEventArn(), documentQueueUrl);
 
     String contentType = "text/plain";
-    String path = "user/home/test_" + UUID.randomUUID().toString() + ".txt";
+    String path = "user/home/test_" + UUID.randomUUID() + ".txt";
 
     try {
 
@@ -529,7 +529,7 @@ public class AwsResourceTest extends AbstractAwsTest {
 
       // given
       Collection<DocumentTag> tags =
-          Arrays.asList(new DocumentTag(documentId, "status", "active", new Date(), "testuser"));
+          List.of(new DocumentTag(documentId, "status", "active", new Date(), "testuser"));
       getDocumentService().addTags(siteId, documentId, tags, null);
 
       // when
@@ -545,7 +545,7 @@ public class AwsResourceTest extends AbstractAwsTest {
       PaginationResults<DocumentTag> list =
           getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
       assertEquals("[status]",
-          list.getResults().stream().map(m -> m.getKey()).collect(Collectors.toList()).toString());
+          list.getResults().stream().map(DocumentTag::getKey).toList().toString());
 
       item = getDocumentService().findDocument(siteId, documentId);
       assertNotEquals(item.getInsertedDate(), item.getLastModifiedDate());

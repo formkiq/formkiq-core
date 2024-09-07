@@ -91,7 +91,7 @@ public class AwsResourceTest {
 
     final S3ConnectionBuilder s3Builder =
         new S3ConnectionBuilder(false).setCredentials(awsprofile).setRegion(region);
-    s3 = new S3Service(s3Builder);
+    s3 = new S3Service(s3Builder, null);
 
     FkqCognitoService cognito = new FkqCognitoService(awsprofile, region, appenvironment);
     cognito.addUser(USER, PASSWORD);

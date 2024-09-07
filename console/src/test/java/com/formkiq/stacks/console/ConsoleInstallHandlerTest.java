@@ -73,7 +73,7 @@ public class ConsoleInstallHandlerTest {
 
   /**
    * Before Class.
-   * 
+   *
    * @throws IOException IOException
    * @throws InterruptedException InterruptedException
    * @throws URISyntaxException URISyntaxException
@@ -90,7 +90,7 @@ public class ConsoleInstallHandlerTest {
         .setEndpointOverride(
             new URI(localStackInstance.getEndpointOverride(Service.S3).toString()));
 
-    s3 = new S3Service(s3Connection);
+    s3 = new S3Service(s3Connection, null);
 
     s3.createBucket("distrobucket");
     s3.createBucket(CONSOLE_BUCKET);
@@ -440,7 +440,7 @@ public class ConsoleInstallHandlerTest {
 
   /**
    * Verify Config File is written.
-   * 
+   *
    * @param cognitoSingleSignOnUrl {@link String}
    */
   private void verifyConfigWritten(final String cognitoSingleSignOnUrl) {

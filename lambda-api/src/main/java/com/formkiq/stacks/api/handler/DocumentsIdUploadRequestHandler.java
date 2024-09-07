@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api.handler;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.s3.S3PresignerService;
@@ -31,7 +32,6 @@ import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
@@ -63,10 +63,10 @@ public class DocumentsIdUploadRequestHandler
   /** Default Duration Hours. */
   private static final int DEFAULT_DURATION_HOURS = 48;
   /** {@link DocumentsRestrictionsMaxContentLength}. */
-  private DocumentsRestrictionsMaxContentLength restrictionMaxContentLength =
+  private final DocumentsRestrictionsMaxContentLength restrictionMaxContentLength =
       new DocumentsRestrictionsMaxContentLength();
   /** {@link DocumentsRestrictionsMaxDocuments}. */
-  private DocumentsRestrictionsMaxDocuments restrictionMaxDocuments =
+  private final DocumentsRestrictionsMaxDocuments restrictionMaxDocuments =
       new DocumentsRestrictionsMaxDocuments();
 
   /**
@@ -87,8 +87,7 @@ public class DocumentsIdUploadRequestHandler
         query != null && query.containsKey("duration") ? Integer.valueOf(query.get("duration"))
             : Integer.valueOf(DEFAULT_DURATION_HOURS);
 
-    Duration duration = Duration.ofHours(durationHours.intValue());
-    return duration;
+    return Duration.ofHours(durationHours);
   }
 
   /**
@@ -141,11 +140,11 @@ public class DocumentsIdUploadRequestHandler
     S3PresignerService s3Service = awsservice.getExtension(S3PresignerService.class);
 
     Map<String, String> map = Map.of("checksum", UUID.randomUUID().toString());
+
     URL url = s3Service.presignPutUrl(awsservice.environment("DOCUMENTS_S3_BUCKET"), key, duration,
         contentLength, map);
 
-    String urlstring = url.toString();
-    return urlstring;
+    return url.toString();
   }
 
   @Override
@@ -175,12 +174,12 @@ public class DocumentsIdUploadRequestHandler
       item = service.findDocument(siteId, documentId);
       throwIfNull(item, new DocumentNotFoundException(documentId));
 
-      documentExists = item != null;
+      documentExists = true;
 
     } else if (query != null && query.containsKey("path")) {
 
       String path = query.get("path");
-      path = URLDecoder.decode(path, StandardCharsets.UTF_8.toString());
+      path = URLDecoder.decode(path, StandardCharsets.UTF_8);
 
       item.setPath(path);
     }
@@ -188,7 +187,7 @@ public class DocumentsIdUploadRequestHandler
     String urlstring = generatePresignedUrl(awsservice, siteId, documentId, query);
     logger.log("generated presign url: " + urlstring + " for document " + documentId);
 
-    if (!documentExists && item != null) {
+    if (!documentExists) {
 
       String value = this.restrictionMaxDocuments.getValue(awsservice, siteId);
       if (!this.restrictionMaxDocuments.enforced(awsservice, siteId, value)) {
@@ -230,6 +229,6 @@ public class DocumentsIdUploadRequestHandler
   public Optional<Boolean> isAuthorized(final AwsServiceCache awsservice, final String method,
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
     boolean access = authorization.getPermissions().contains(ApiPermission.WRITE);
-    return Optional.of(Boolean.valueOf(access));
+    return Optional.of(access);
   }
 }

@@ -244,7 +244,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
         new DocumentSearchServiceImpl(dbBuilder, documentService, DOCUMENTS_TABLE);
     createMockServer();
 
-    s3Service = new S3Service(TestServices.getS3Connection(null));
+    s3Service = new S3Service(TestServices.getS3Connection(null), null);
     SsmConnectionBuilder ssmBuilder = TestServices.getSsmConnection(null);
 
     SsmService ssmService = new SsmServiceCache(ssmBuilder, 1, TimeUnit.DAYS);

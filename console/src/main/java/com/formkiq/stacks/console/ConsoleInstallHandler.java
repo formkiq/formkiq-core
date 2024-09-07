@@ -48,14 +48,14 @@ import software.amazon.awssdk.regions.Region;
 public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>, Object> {
 
   /** Environment Variable {@link Map}. */
-  private Map<String, String> environmentMap;
+  private final Map<String, String> environmentMap;
   /** Extra Mime Types. */
-  private Map<String, String> mimeTypes = new HashMap<>();
+  private final Map<String, String> mimeTypes = new HashMap<>();
   /** {@link S3Service}. */
-  private S3Service s3;
+  private final S3Service s3;
 
   /** {@link S3Service}. */
-  private S3Service s3UsEast1;
+  private final S3Service s3UsEast1;
 
   /** constructor. */
   public ConsoleInstallHandler() {
@@ -87,8 +87,8 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
     this.mimeTypes.put(".woff", "font/woff");
     this.mimeTypes.put(".css", "text/css");
 
-    this.s3 = new S3Service(s3builder);
-    this.s3UsEast1 = new S3Service(s3builderUsEast1);
+    this.s3 = new S3Service(s3builder, null);
+    this.s3UsEast1 = new S3Service(s3builderUsEast1, null);
   }
 
   /**
@@ -124,14 +124,15 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
 
     String fileName = consoleVersion + "/assets/config.json";
 
-    this.s3.putObject(destinationBucket, fileName, json.getBytes(StandardCharsets.UTF_8), null);
+    this.s3.putObject(destinationBucket, fileName, json.getBytes(StandardCharsets.UTF_8), null,
+        null);
 
     logger.log("writing Cognito config: " + json);
   }
 
   /**
    * Customize Cognito Email Templates.
-   * 
+   *
    * @param logger {@link LambdaLogger}
    * @throws IOException IOException
    */
@@ -161,7 +162,7 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
 
   /**
    * Empty Console Bucket.
-   * 
+   *
    * @param logger {@link LambdaLogger}
    */
   private void deleteConsole(final LambdaLogger logger) {
@@ -342,7 +343,7 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
       try {
         stream.close();
       } catch (IOException e) {
-        logger.log("cannot close stream " + e.toString());
+        logger.log("cannot close stream " + e);
       }
     }
   }
@@ -353,7 +354,7 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
    * @param stream {@link InputStream}
    * @param destinationBucket {@link String}
    * @param consoleversion {@link String}
-   * 
+   *
    * @throws IOException IOException
    */
   private void writeToBucket(final InputStream stream, final String destinationBucket,
@@ -379,7 +380,7 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
 
         byte[] byteArray = S3Service.toByteArray(zis);
 
-        this.s3.putObject(destinationBucket, fileName, byteArray, mimeType);
+        this.s3.putObject(destinationBucket, fileName, byteArray, mimeType, null);
 
         entry = zis.getNextEntry();
       }
