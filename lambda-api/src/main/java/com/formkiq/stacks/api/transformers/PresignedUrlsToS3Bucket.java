@@ -31,6 +31,7 @@ import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
@@ -38,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import com.formkiq.aws.dynamodb.objects.MimeType;
+import com.formkiq.module.http.HttpResponseStatus;
 import com.formkiq.stacks.api.handler.AddDocumentRequest;
 
 /**
@@ -99,8 +101,15 @@ public class PresignedUrlsToS3Bucket implements Function<Map<String, Object>, Vo
       byte[] bytes = isBase64 ? Base64.getDecoder().decode(content.getBytes(StandardCharsets.UTF_8))
           : content.getBytes(StandardCharsets.UTF_8);
 
-      this.http.send(HttpRequest.newBuilder(new URI(url)).header("Content-Type", ct)
-          .method("PUT", BodyPublishers.ofByteArray(bytes)).build(), BodyHandlers.ofString());
+      HttpResponse<String> response =
+          this.http.send(
+              HttpRequest.newBuilder(new URI(url)).header("Content-Type", ct)
+                  .method("PUT", BodyPublishers.ofByteArray(bytes)).build(),
+              BodyHandlers.ofString());
+
+      if (!HttpResponseStatus.is2XX(response)) {
+        throw new IOException(response.body());
+      }
 
     } else {
       map.put("uploadUrl", map.get("url"));

@@ -90,7 +90,7 @@ public class ConsoleInstallHandlerTest {
         .setEndpointOverride(
             new URI(localStackInstance.getEndpointOverride(Service.S3).toString()));
 
-    s3 = new S3Service(s3Connection, null);
+    s3 = new S3Service(s3Connection);
 
     s3.createBucket("distrobucket");
     s3.createBucket(CONSOLE_BUCKET);

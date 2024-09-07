@@ -87,8 +87,8 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
     this.mimeTypes.put(".woff", "font/woff");
     this.mimeTypes.put(".css", "text/css");
 
-    this.s3 = new S3Service(s3builder, null);
-    this.s3UsEast1 = new S3Service(s3builderUsEast1, null);
+    this.s3 = new S3Service(s3builder);
+    this.s3UsEast1 = new S3Service(s3builderUsEast1);
   }
 
   /**

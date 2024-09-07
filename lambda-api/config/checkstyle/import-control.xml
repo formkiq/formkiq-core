@@ -100,6 +100,7 @@
 
 			<subpackage name="transformers">
 				<allow pkg="java.text" />
+				<allow pkg="com.formkiq.module.http" />
 			</subpackage>
 
 			<subpackage name="util">

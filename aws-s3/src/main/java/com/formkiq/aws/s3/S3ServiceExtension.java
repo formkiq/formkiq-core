@@ -25,7 +25,6 @@ package com.formkiq.aws.s3;
 
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceExtension;
-import software.amazon.awssdk.services.s3.model.ChecksumAlgorithm;
 
 /**
  * 
@@ -47,20 +46,9 @@ public class S3ServiceExtension implements AwsServiceExtension<S3Service> {
 
     if (this.service == null) {
       S3ConnectionBuilder connection = awsServiceCache.getExtension(S3ConnectionBuilder.class);
-      String s3ChecksumAlgorithm = awsServiceCache.environment("S3_CHECKSUM_ALGORITHM");
-      this.service = new S3Service(connection, getChecksumAlgorithm(s3ChecksumAlgorithm));
+      this.service = new S3Service(connection);
     }
 
     return this.service;
-  }
-
-  private ChecksumAlgorithm getChecksumAlgorithm(final String algorithm) {
-    return switch (algorithm != null ? algorithm.toLowerCase() : "") {
-      case "sha-256" -> ChecksumAlgorithm.SHA256;
-      case "sha-1" -> ChecksumAlgorithm.SHA1;
-      case "crc-32" -> ChecksumAlgorithm.CRC32;
-      case "cr-32c" -> ChecksumAlgorithm.CRC32_C;
-      default -> null;
-    };
   }
 }

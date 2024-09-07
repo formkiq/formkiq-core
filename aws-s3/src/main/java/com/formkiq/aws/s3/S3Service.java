@@ -27,7 +27,6 @@ import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.BucketVersioningStatus;
-import software.amazon.awssdk.services.s3.model.ChecksumAlgorithm;
 import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
 import software.amazon.awssdk.services.s3.model.CopyObjectResponse;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
@@ -76,9 +75,6 @@ import java.util.Map;
  */
 public class S3Service {
 
-  /** {@link ChecksumAlgorithm}. */
-  private final ChecksumAlgorithm s3ChecksumAlgorithm;
-
   /**
    * URL Decode {@link String}.
    *
@@ -117,12 +113,9 @@ public class S3Service {
    * Constructor.
    * 
    * @param s3connectionBuilder {@link S3ConnectionBuilder}
-   * @param checksumAlgorithm {@link ChecksumAlgorithm}
    */
-  public S3Service(final S3ConnectionBuilder s3connectionBuilder,
-      final ChecksumAlgorithm checksumAlgorithm) {
+  public S3Service(final S3ConnectionBuilder s3connectionBuilder) {
     this.s3Client = s3connectionBuilder.build();
-    this.s3ChecksumAlgorithm = checksumAlgorithm;
   }
 
   /**
@@ -141,8 +134,7 @@ public class S3Service {
       final Map<String, String> metadata) {
 
     CopyObjectRequest.Builder req = CopyObjectRequest.builder().sourceBucket(sourcebucket)
-        .checksumAlgorithm(this.s3ChecksumAlgorithm).sourceKey(sourcekey)
-        .destinationBucket(destinationBucket).destinationKey(destinationKey);
+        .sourceKey(sourcekey).destinationBucket(destinationBucket).destinationKey(destinationKey);
 
     if (contentType != null) {
       req = req.contentType(contentType);
@@ -173,7 +165,6 @@ public class S3Service {
   public void createBucket(final String bucket) {
     this.s3Client.createBucket(CreateBucketRequest.builder().bucket(bucket).build());
     this.s3Client.putBucketVersioning(PutBucketVersioningRequest.builder().bucket(bucket)
-        .checksumAlgorithm(this.s3ChecksumAlgorithm)
         .versioningConfiguration(
             VersioningConfiguration.builder().status(BucketVersioningStatus.ENABLED).build())
         .build());
@@ -415,8 +406,8 @@ public class S3Service {
   public PutObjectResponse putObject(final String bucket, final String key, final byte[] data,
       final String contentType, final Map<String, String> metadata) {
     int contentLength = data.length;
-    PutObjectRequest.Builder build = PutObjectRequest.builder().bucket(bucket).key(key)
-        .checksumAlgorithm(this.s3ChecksumAlgorithm).contentLength((long) contentLength);
+    PutObjectRequest.Builder build =
+        PutObjectRequest.builder().bucket(bucket).key(key).contentLength((long) contentLength);
 
     if (contentType != null) {
       build.contentType(contentType);

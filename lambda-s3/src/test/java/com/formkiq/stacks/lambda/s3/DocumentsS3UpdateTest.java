@@ -192,7 +192,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
     }
 
     S3ConnectionBuilder s3Builder = TestServices.getS3Connection(null);
-    s3service = new S3Service(s3Builder, null);
+    s3service = new S3Service(s3Builder);
     s3service.createBucket("example-bucket");
 
     SnsConnectionBuilder snsBuilder = TestServices.getSnsConnection(null);

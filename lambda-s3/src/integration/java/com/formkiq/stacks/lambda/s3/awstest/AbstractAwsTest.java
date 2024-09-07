@@ -120,7 +120,7 @@ public abstract class AbstractAwsTest {
         new SnsConnectionBuilder(enableAwsXray).setCredentials(awsprofile).setRegion(awsregion);
 
     sqsService = new SqsServiceImpl(sqsBuilder);
-    s3Service = new S3Service(s3Builder, null);
+    s3Service = new S3Service(s3Builder);
     s3PresignerService = new S3PresignerService(
         new S3PresignerConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion));
     ssmService = new SsmServiceImpl(ssmBuilder);

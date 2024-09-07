@@ -78,10 +78,6 @@ Parameters:
     Description: Whether to enable public urls
     Type: String
 
-  S3ChecksumAlgorithm:
-    Description: The S3 Checksum calculation to use
-    Type: String
-
 Conditions:
         
   HasVpcStackName:
@@ -160,8 +156,6 @@ Resources:
             Ref: WebsocketSqsQueueUrl
           USER_AUTHENTICATION:
             Ref: UserAuthentication
-          S3_CHECKSUM_ALGORITHM:
-            Ref: S3ChecksumAlgorithm
           DOCUMENT_VERSIONS_PLUGIN: "com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning"
           DOCUMENT_SYNC_TABLE: 
             Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentSyncsTableName}}"

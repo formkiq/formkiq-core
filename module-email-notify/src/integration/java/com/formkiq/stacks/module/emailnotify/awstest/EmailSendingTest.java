@@ -125,7 +125,7 @@ public class EmailSendingTest {
     final S3ConnectionBuilder s3Builder =
         new S3ConnectionBuilder(enableAwsXray).setCredentials(awsprofile).setRegion(awsregion);
 
-    s3Service = new S3Service(s3Builder, null);
+    s3Service = new S3Service(s3Builder);
     sqsService = new SqsServiceImpl(sqsConnection);
     SsmService ssmService = new SsmServiceImpl(ssmBuilder);
     snsService = new SnsService(snsBuilder);

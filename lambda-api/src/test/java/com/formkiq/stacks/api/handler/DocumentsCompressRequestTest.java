@@ -67,7 +67,7 @@ public class DocumentsCompressRequestTest extends AbstractApiClientRequestTest {
    */
   @BeforeAll
   public static void beforeAll() throws URISyntaxException {
-    s3 = new S3Service(TestServices.getS3Connection(null), null);
+    s3 = new S3Service(TestServices.getS3Connection(null));
   }
 
   /**
