@@ -197,7 +197,7 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
       UserManagementApi userApi = new UserManagementApi(client);
 
       // when
-      GetGroupsResponse response = userApi.getGroups(null, null);
+      GetGroupsResponse response = userApi.getGroups("60", null);
 
       // then
       List<Group> groups = notNull(response.getGroups());

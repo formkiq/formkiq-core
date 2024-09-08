@@ -73,17 +73,21 @@ public class GroupsRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
     CognitoIdentityProviderService service =
         awsservice.getExtension(CognitoIdentityProviderService.class);
 
-    ListGroupsResponse response = service.listGroups(token, limit);
+    try {
+      ListGroupsResponse response = service.listGroups(token, limit);
 
-    List<Map<String, Object>> groups = response.groups().stream().sorted(new GroupNameComparator())
-        .map(new GroupsResponseToMap()).toList();
+      List<Map<String, Object>> groups = response.groups().stream()
+          .sorted(new GroupNameComparator()).map(new GroupsResponseToMap()).toList();
 
-    Map<String, Object> map = new HashMap<>();
-    map.put("groups", groups);
-    map.put("next", response.nextToken());
+      Map<String, Object> map = new HashMap<>();
+      map.put("groups", groups);
+      map.put("next", response.nextToken());
 
-    ApiMapResponse resp = new ApiMapResponse(map);
-    return new ApiRequestHandlerResponse(SC_OK, resp);
+      ApiMapResponse resp = new ApiMapResponse(map);
+      return new ApiRequestHandlerResponse(SC_OK, resp);
+    } catch (InvalidParameterException e) {
+      throw new BadException(e.getMessage());
+    }
   }
 
   @Override
