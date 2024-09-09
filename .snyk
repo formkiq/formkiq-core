@@ -1,0 +1,6 @@
+# .snyk
+ignore:
+  # Ignore all vulnerabilities in a specific Java package (e.g., `com.example:my-library`)
+  "maven:org.mock-server:mockserver-netty":
+    - reason: "This library is not relevant for our production environment."
+
