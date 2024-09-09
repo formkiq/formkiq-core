@@ -1,6 +1,58 @@
-# .snyk
+version: v1.5.0
 ignore:
-  # Ignore all vulnerabilities in a specific Java package (e.g., `com.example:my-library`)
-  "maven:org.mock-server:mockserver-netty":
-    - reason: "This library is not relevant for our production environment."
-
+    'SNYK-JAVA-COMFASTERXMLJACKSONCORE-7569538':
+     - '* > org.mock-server:mockserver-netty@5.15.0':
+        reason: 'No fix available, test library dependency only'
+    'SNYK-JAVA-COMGOOGLEGUAVA-5710356':
+     - '* > org.mock-server:mockserver-netty@5.15.0':
+        reason: 'No fix available, test library dependency only'
+    'SNYK-JAVA-COMJAYWAYJSONPATH-6140361':
+     - '* > org.mock-server:mockserver-netty@5.15.0':
+        reason: 'No fix available, test library dependency only'
+    'SNYK-JAVA-COMNIMBUSDS-6247633':
+     - '* > org.mock-server:mockserver-netty@5.15.0':
+        reason: 'No fix available, test library dependency only'
+    'SNYK-JAVA-IONETTY-5725787':
+     - '* > org.mock-server:mockserver-netty@5.15.0':
+        reason: 'No fix available, test library dependency only'
+    'SNYK-JAVA-IONETTY-5953332':
+     - '* > org.mock-server:mockserver-netty@5.15.0':
+        reason: 'No fix available, test library dependency only'
+    'SNYK-JAVA-IONETTY-6483812':
+     - '* > org.mock-server:mockserver-netty@5.15.0':
+        reason: 'No fix available, test library dependency only'
+    'SNYK-JAVA-NETMINIDEV-3369748':
+     - '* > org.mock-server:mockserver-netty@5.15.0':
+        reason: 'No fix available, test library dependency only'
+    'SNYK-JAVA-ORGBOUNCYCASTLE-5771340':
+     - '* > org.mock-server:mockserver-netty@5.15.0':
+        reason: 'No fix available, test library dependency only'
+    'SNYK-JAVA-ORGBOUNCYCASTLE-6084023':
+     - '* > org.mock-server:mockserver-netty@5.15.0':
+        reason: 'No fix available, test library dependency only'
+    'SNYK-JAVA-ORGBOUNCYCASTLE-6612984':
+     - '* > org.mock-server:mockserver-netty@5.15.0':
+        reason: 'No fix available, test library dependency only'
+    'SNYK-JAVA-ORGBOUNCYCASTLE-6613076':
+     - '* > org.mock-server:mockserver-netty@5.15.0':
+        reason: 'No fix available, test library dependency only'
+    'SNYK-JAVA-ORGBOUNCYCASTLE-6613079':
+     - '* > org.mock-server:mockserver-netty@5.15.0':
+        reason: 'No fix available, test library dependency only'
+    'SNYK-JAVA-ORGMOZILLA-1314295':
+     - '* > org.mock-server:mockserver-netty@5.15.0':
+        reason: 'No fix available, test library dependency only'
+    'SNYK-JAVA-ORGXMLUNIT-6751676':
+     - '* > org.mock-server:mockserver-netty@5.15.0':
+        reason: 'No fix available, test library dependency only'
+    'SNYK-JAVA-ORGYAML-3152153':
+     - '* > org.mock-server:mockserver-netty@5.15.0':
+        reason: 'No fix available, test library dependency only'
+    'SNYK-JAVA-ORGAPACHECOMMONS-6254296':
+     - '* > org.testcontainers:testcontainers@1.20.1':
+        reason: 'No fix available, test library dependency only'
+        expires: "2024-12-31T12:00:00Z"
+    'SNYK-JAVA-ORGAPACHECOMMONS-6254297':
+     - '* > org.testcontainers:testcontainers@1.20.1':
+        reason: 'No fix available, test library dependency only'
+        expires: "2024-12-31T12:00:00Z"
