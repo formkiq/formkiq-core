@@ -142,7 +142,7 @@ public class DocumentsIdUploadRequestHandler
     Map<String, String> map = Map.of("checksum", UUID.randomUUID().toString());
 
     URL url = s3Service.presignPutUrl(awsservice.environment("DOCUMENTS_S3_BUCKET"), key, duration,
-        contentLength, map);
+        null, null, contentLength, map);
 
     return url.toString();
   }

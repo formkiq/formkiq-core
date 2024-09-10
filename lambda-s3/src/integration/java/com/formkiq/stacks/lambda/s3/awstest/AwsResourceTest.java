@@ -302,7 +302,7 @@ public class AwsResourceTest extends AbstractAwsTest {
 
       // when
       URL url = getS3PresignerService().presignPutUrl(getDocumentsbucketname(), key,
-          Duration.ofHours(1), Optional.empty(), null);
+          Duration.ofHours(1), null, null, Optional.empty(), null);
       HttpResponse<String> put =
           http.send(
               HttpRequest.newBuilder(url.toURI()).header("Content-Type", contentType)

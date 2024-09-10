@@ -58,7 +58,8 @@ dependencies {
 	
 	testImplementation group: 'software.amazon.awssdk', name: 'apigateway', version: '2.27.18'
 	testImplementation group: 'software.amazon.awssdk', name: 'sts', version: '2.27.18'
-	
+
+	testImplementation group: 'commons-codec', name: 'commons-codec', version: '1.17.1'
     testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.11.0'
     testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.20.1'
 	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.20.1'

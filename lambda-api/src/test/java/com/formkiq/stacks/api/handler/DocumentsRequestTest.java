@@ -45,6 +45,7 @@ import com.formkiq.client.model.AddDocumentResponse;
 import com.formkiq.client.model.AddDocumentTag;
 import com.formkiq.client.model.AttributeSchemaCompositeKey;
 import com.formkiq.client.model.AttributeSchemaOptional;
+import com.formkiq.client.model.ChecksumType;
 import com.formkiq.client.model.ChildDocument;
 import com.formkiq.client.model.DocumentActionType;
 import com.formkiq.client.model.DocumentAttribute;
@@ -60,6 +61,7 @@ import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -601,6 +603,41 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
             "{\"errors\":[{\"error\":\"both 'content', and 'deepLinkPath' cannot be set\"}]}",
             e.getResponseBody());
       }
+    }
+  }
+
+  /**
+   * Save new File with valid SHA-256.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testPost15() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+
+      String content = "dummy data";
+      String checksum = DigestUtils.sha256Hex(content);
+
+      AddDocumentRequest req = new AddDocumentRequest().content(content).contentType("text/plain")
+          .checksum(checksum).checksumType(ChecksumType.SHA256);
+
+      // when
+      AddDocumentResponse response = this.documentsApi.addDocument(req, siteId, null);
+
+      // then
+      assertNotNull(response.getDocumentId());
+      assertEquals(siteId, response.getSiteId());
+
+      GetDocumentResponse site =
+          this.documentsApi.getDocument(response.getDocumentId(), siteId, null);
+      assertEquals("text/plain", site.getContentType());
+      assertNotNull(site.getPath());
+      assertNotNull(site.getDocumentId());
+      assertEquals(content, this.documentsApi
+          .getDocumentContent(response.getDocumentId(), siteId, null, null).getContent());
     }
   }
 

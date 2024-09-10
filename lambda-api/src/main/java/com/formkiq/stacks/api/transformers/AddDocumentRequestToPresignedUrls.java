@@ -27,6 +27,7 @@ import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.handler.AddDocumentRequest;
+import software.amazon.awssdk.services.s3.model.ChecksumAlgorithm;
 
 import java.net.URL;
 import java.time.Duration;
@@ -85,7 +86,7 @@ public class AddDocumentRequestToPresignedUrls
     map.put("documentId", documentId);
 
     if (Strings.isEmpty(item.getDeepLinkPath())) {
-      String docUrl = generatePresignedUrl(documentId);
+      String docUrl = generatePresignedUrl(item);
       map.put("url", docUrl);
     }
 
@@ -99,7 +100,7 @@ public class AddDocumentRequestToPresignedUrls
       m.put("documentId", docid);
 
       if (Strings.isEmpty(o.getDeepLinkPath())) {
-        String url = generatePresignedUrl(docid);
+        String url = generatePresignedUrl(o);
         m.put("url", url);
       }
 
@@ -113,13 +114,19 @@ public class AddDocumentRequestToPresignedUrls
     return map;
   }
 
-  private String generatePresignedUrl(final String documentId) {
+  private String generatePresignedUrl(final AddDocumentRequest o) {
 
+    String documentId = o.getDocumentId();
+    String checksum =
+        !Strings.isEmpty(o.getChecksum()) ? o.getChecksum() : UUID.randomUUID().toString();
     String key = !isDefaultSiteId(this.siteId) ? this.siteId + "/" + documentId : documentId;
 
-    Map<String, String> map = Map.of("checksum", UUID.randomUUID().toString());
+    Map<String, String> map = Map.of("checksum", checksum);
+
+    ChecksumAlgorithm checksumAlgorithm =
+        this.s3PresignerService.getChecksumAlgorithm(o.getChecksumType());
     URL url = this.s3PresignerService.presignPutUrl(this.s3Bucket, key, this.duration,
-        this.contentLength, map);
+        checksumAlgorithm, checksum, this.contentLength, map);
 
     return url.toString();
   }

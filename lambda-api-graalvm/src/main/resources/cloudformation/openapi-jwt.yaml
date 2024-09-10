@@ -7166,6 +7166,11 @@ Resources:
                 deepLinkPath:
                   type: "string"
                   description: "Path or Name of deep link"
+                checksumType:
+                  $ref: "#/components/schemas/ChecksumType"
+                checksum:
+                  type: "string"
+                  description: "The checksum value to validate the file against"
                 attributes:
                   type: array
                   description: "List of Attributes to add to document"
@@ -7181,6 +7186,13 @@ Resources:
                   description: "List of Actions"
                   items:
                     $ref: "#/components/schemas/AddAction"
+            ChecksumType:
+              type: string
+              description: The type of checksum to use for file validation
+              enum:
+                - ETAG
+                - SHA1
+                - SHA256
             AddDocumentRequest:
               required:
               - "content"
@@ -7192,6 +7204,11 @@ Resources:
                 path:
                   type: "string"
                   description: "Path or Name of document"
+                checksumType:
+                  $ref: "#/components/schemas/ChecksumType"
+                checksum:
+                  type: "string"
+                  description: "The checksum value to validate the file against"
                 deepLinkPath:
                   type: "string"
                   description: "Path or Name of deep link"
@@ -7544,6 +7561,11 @@ Resources:
                 contentType:
                   type: "string"
                   description: "Document Content-Type"
+                checksumType:
+                  $ref: "#/components/schemas/ChecksumType"
+                checksum:
+                  type: "string"
+                  description: "The checksum value to validate the file against"
                 isBase64:
                   type: "boolean"
                   description: "Is the content Base64-encoded?"
@@ -7992,6 +8014,8 @@ Resources:
                 checksum:
                   type: "string"
                   description: "Document checksum, changes when document file changes"
+                checksumType:
+                  $ref: "#/components/schemas/ChecksumType"
                 documentId:
                   type: "string"
                   description: "Document Identifier"

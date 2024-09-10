@@ -23,14 +23,6 @@
  */
 package com.formkiq.module.lambda.ocr.handlers;
 
-import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-import java.net.URL;
-import java.time.Duration;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.aws.services.lambda.ApiAuthorization;
@@ -40,6 +32,16 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+
+import java.net.URL;
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
 /** {@link ApiGatewayRequestHandler} for "/objects/examine/pdf". */
 public class ObjectExaminePdfHandler
@@ -61,7 +63,8 @@ public class ObjectExaminePdfHandler
     String bucket = awsservice.environment("STAGE_DOCUMENTS_S3_BUCKET");
     String s3key = String.format("tempfiles/%s", createS3Key(siteId, id));
 
-    URL url = service.presignPutUrl(bucket, s3key, Duration.ofDays(1), Optional.empty(), null);
+    URL url = service.presignPutUrl(bucket, s3key, Duration.ofDays(1), null, null, Optional.empty(),
+        null);
 
     Map<String, Object> map = new HashMap<>();
     map.put("id", id);

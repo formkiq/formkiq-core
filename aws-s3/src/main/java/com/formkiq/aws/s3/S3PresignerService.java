@@ -40,6 +40,8 @@ import software.amazon.awssdk.services.s3.presigner.model.PresignedUploadPartReq
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.UploadPartPresignRequest;
 
+import static software.amazon.awssdk.utils.StringUtils.isEmpty;
+
 /**
  * Class to handle S3 Presigned Urls.
  */
@@ -91,16 +93,14 @@ public class S3PresignerService {
    * @param key {@link String}
    * @param duration {@link Duration}
    * @param contentLength {@link Optional} {@link Long}
-   * @param checksumAlgorithm {@link ChecksumAlgorithm}
    * @return {@link URL}
    */
   public URL presignPostUrl(final String bucket, final String key, final Duration duration,
-      final Optional<Long> contentLength, final ChecksumAlgorithm checksumAlgorithm) {
+      final Optional<Long> contentLength) {
 
     try (S3Presigner signer = this.builder.build()) {
 
-      UploadPartRequest.Builder uploadBuilder =
-          UploadPartRequest.builder().bucket(bucket).key(key).checksumAlgorithm(checksumAlgorithm);
+      UploadPartRequest.Builder uploadBuilder = UploadPartRequest.builder().bucket(bucket).key(key);
 
       if (contentLength.isPresent()) {
         uploadBuilder = uploadBuilder.contentLength(contentLength.get());
@@ -120,17 +120,26 @@ public class S3PresignerService {
    * @param bucket {@link String}
    * @param key {@link String}
    * @param duration {@link Duration}
+   * @param checksumAlgorithm {@link String}
+   * @param checksum {@link String}
    * @param contentLength {@link Optional} {@link Long}
    * @param metadata {@link Map}
    * @return {@link URL}
    */
   public URL presignPutUrl(final String bucket, final String key, final Duration duration,
+      final ChecksumAlgorithm checksumAlgorithm, final String checksum,
       final Optional<Long> contentLength, final Map<String, String> metadata) {
 
     try (S3Presigner signer = this.builder.build()) {
 
       PutObjectRequest.Builder putObjectRequest =
-          PutObjectRequest.builder().bucket(bucket).key(key);
+          PutObjectRequest.builder().bucket(bucket).key(key).checksumAlgorithm(checksumAlgorithm);
+
+      if (ChecksumAlgorithm.SHA1.equals(checksumAlgorithm)) {
+        putObjectRequest = putObjectRequest.checksumSHA1(checksum);
+      } else if (ChecksumAlgorithm.SHA256.equals(checksumAlgorithm)) {
+        putObjectRequest = putObjectRequest.checksumSHA256(checksum);
+      }
 
       if (contentLength.isPresent()) {
         putObjectRequest = putObjectRequest.contentLength(contentLength.get());
@@ -152,5 +161,9 @@ public class S3PresignerService {
       PresignedPutObjectRequest req = signer.presignPutObject(putRequest);
       return req.url();
     }
+  }
+
+  public ChecksumAlgorithm getChecksumAlgorithm(final String algorithm) {
+    return !isEmpty(algorithm) ? ChecksumAlgorithm.valueOf(algorithm.toUpperCase()) : null;
   }
 }
