@@ -23,12 +23,27 @@
  */
 package com.formkiq.stacks.api.awstest;
 
-import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENTS;
-import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENT_SIZE_BYTES;
-import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContent;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.fail;
+import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.objects.MimeType;
+import com.formkiq.client.api.DocumentTagsApi;
+import com.formkiq.client.api.DocumentsApi;
+import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.model.AddDocumentTag;
+import com.formkiq.client.model.AddDocumentUploadRequest;
+import com.formkiq.client.model.ChecksumType;
+import com.formkiq.client.model.DocumentTag;
+import com.formkiq.client.model.GetDocumentUrlResponse;
+import com.formkiq.stacks.dynamodb.ConfigService;
+import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -37,29 +52,23 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
-import com.formkiq.aws.dynamodb.DynamicObject;
-import com.formkiq.aws.dynamodb.objects.MimeType;
-import com.formkiq.client.api.DocumentsApi;
-import com.formkiq.client.invoker.ApiClient;
-import com.formkiq.client.invoker.ApiException;
-import com.formkiq.client.model.AddDocumentTag;
-import com.formkiq.client.model.AddDocumentUploadRequest;
-import com.formkiq.client.model.GetDocumentUrlResponse;
-import com.formkiq.stacks.dynamodb.ConfigService;
-import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
+
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENTS;
+import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENT_SIZE_BYTES;
+import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContent;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * GET, OPTIONS /documents/upload tests.
  *
  */
+@Execution(ExecutionMode.CONCURRENT)
 public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
 
   /** {@link ConfigService}. */
@@ -70,8 +79,6 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
   private static final String SITEID1 = UUID.randomUUID().toString();
   /** 400 Bad Request. */
   private static final int STATUS_BAD_REQUEST = 400;
-  // /** 200 No Content. */
-  // private static final int STATUS_NO_CONTENT = 204;
   /** 200 OK. */
   private static final int STATUS_OK = 200;
   /** JUnit Test Timeout. */
@@ -101,7 +108,7 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
   }
 
   /** {@link HttpClient}. */
-  private HttpClient http = HttpClient.newHttpClient();
+  private final HttpClient http = HttpClient.newHttpClient();
 
   /**
    * before.
@@ -118,18 +125,17 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  @Timeout(value = TEST_TIMEOUT)
   public void testGet01() throws Exception {
     // given
-    String siteId = null;
-    for (ApiClient client : getApiClients(siteId)) {
+    for (ApiClient client : getApiClients(null)) {
 
       DocumentsApi api = new DocumentsApi(client);
       String content = "<html><body>test content</body></html>";
 
       // when
-      GetDocumentUrlResponse response = api.getDocumentUpload(null, siteId, null, null,
-          Integer.valueOf(content.length()), null, null);
+      GetDocumentUrlResponse response =
+          api.getDocumentUpload(null, null, null, null, content.length(), null, null);
 
       // then
       assertNotNull(response.getUrl());
@@ -147,7 +153,7 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
       // then
       assertEquals(STATUS_OK, httpResponse.statusCode());
 
-      waitForDocumentContent(client, siteId, documentId, content);
+      waitForDocumentContent(client, null, documentId, content);
     }
   }
 
@@ -157,7 +163,7 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  @Timeout(value = TEST_TIMEOUT)
   public void testGet02() throws Exception {
     // given
     configService.save(SITEID0, new DynamicObject(Map.of(MAX_DOCUMENT_SIZE_BYTES, "5")));
@@ -183,7 +189,7 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  @Timeout(value = TEST_TIMEOUT)
   public void testGet03() throws Exception {
     // given
     final int contentLength = 100;
@@ -195,8 +201,7 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
 
       // when
       try {
-        api.getDocumentUpload(null, SITEID0, null, null, Integer.valueOf(contentLength), null,
-            null);
+        api.getDocumentUpload(null, SITEID0, null, null, contentLength, null, null);
       } catch (ApiException e) {
         assertEquals(STATUS_BAD_REQUEST, e.getCode());
         assertEquals("{\"message\":\"'contentLength' cannot exceed 5 bytes\"}",
@@ -211,7 +216,7 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  @Timeout(value = TEST_TIMEOUT)
   public void testGet04() throws Exception {
     // given
     final int contentLength = 5;
@@ -223,8 +228,8 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
       DocumentsApi api = new DocumentsApi(client);
 
       // when
-      GetDocumentUrlResponse response = api.getDocumentUpload(null, SITEID0, null, null,
-          Integer.valueOf(contentLength), null, null);
+      GetDocumentUrlResponse response =
+          api.getDocumentUpload(null, SITEID0, null, null, contentLength, null, null);
 
       // then
       assertNotNull(response.getUrl());
@@ -237,14 +242,14 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  @Timeout(value = TEST_TIMEOUT)
   public void testGet05() throws Exception {
     // given
     configService.save(SITEID1, new DynamicObject(Map.of(MAX_DOCUMENTS, "1")));
 
     DocumentsApi api = new DocumentsApi(getApiClients(SITEID1).get(0));
 
-    api.getDocumentUpload(null, SITEID1, null, null, Integer.valueOf(1), null, null);
+    api.getDocumentUpload(null, SITEID1, null, null, 1, null, null);
 
     for (ApiClient client : getApiClients(SITEID1)) {
 
@@ -252,7 +257,7 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
 
       // when
       try {
-        api.getDocumentUpload(null, SITEID1, null, null, Integer.valueOf(1), null, null);
+        api.getDocumentUpload(null, SITEID1, null, null, 1, null, null);
         fail();
       } catch (ApiException e) {
         // then
@@ -268,11 +273,10 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  @Timeout(value = TEST_TIMEOUT)
   public void testPost01() throws Exception {
     // given
-    String siteId = null;
-    for (ApiClient client : getApiClients(siteId)) {
+    for (ApiClient client : getApiClients(null)) {
 
       DocumentsApi api = new DocumentsApi(client);
 
@@ -280,10 +284,11 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
           .addTagsItem(new AddDocumentTag().key("test").value("this"));
 
       // when
-      GetDocumentUrlResponse response = api.addDocumentUpload(req, siteId, null, null, null);
+      GetDocumentUrlResponse response = api.addDocumentUpload(req, null, null, null, null);
 
       // then
       assertNotNull(response.getDocumentId());
+      assertNotNull(response.getUrl());
 
       // given
       String documentId = response.getDocumentId();
@@ -297,7 +302,64 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
 
       // then
       assertEquals(STATUS_OK, httpResponse.statusCode());
-      waitForDocumentContent(client, siteId, documentId, content);
+      waitForDocumentContent(client, null, documentId, content);
+
+      DocumentTagsApi tagApi = new DocumentTagsApi(client);
+      List<DocumentTag> tags =
+          notNull(tagApi.getDocumentTags(documentId, null, null, null, null, null).getTags());
+      assertEquals(1, tags.size());
+      assertEquals("test", tags.get(0).getKey());
+      assertEquals("this", tags.get(0).getValue());
+    }
+  }
+
+  /**
+   * POST Request Upload Document Url.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  public void testPost02() throws Exception {
+    // given
+    for (ApiClient client : getApiClients(null)) {
+
+      DocumentsApi api = new DocumentsApi(client);
+
+      String checksum = "ff7b3ee5cc8c328a8f8a1372a8bef4f09d01ecc581fdee2b65a0b76e50ae73ef";
+      AddDocumentUploadRequest req =
+          new AddDocumentUploadRequest().checksum(checksum).checksumType(ChecksumType.SHA256);
+
+      // when
+      GetDocumentUrlResponse response = api.addDocumentUpload(req, null, null, null, null);
+
+      // then
+      assertNotNull(response.getDocumentId());
+      assertNotNull(response.getUrl());
+
+      Map<String, Object> headers = notNull(response.getHeaders());
+      assertEquals(2, headers.size());
+      assertEquals("/3s+5cyMMoqPihNyqL708J0B7MWB/e4rZaC3blCuc+8=",
+          response.getHeaders().get("x-amz-checksum-sha256"));
+      assertEquals("SHA256", response.getHeaders().get("x-amz-sdk-checksum-algorithm"));
+
+      // given
+      String documentId = response.getDocumentId();
+      String url = response.getUrl();
+      String content = "<html><body>test content</body></html>";
+
+      // when
+      HttpRequest.Builder put = HttpRequest.newBuilder(new URI(url))
+          .header("Content-Type", MimeType.MIME_HTML.getContentType())
+          .method("PUT", BodyPublishers.ofString(content));
+
+      headers.forEach((key, value) -> put.setHeader(key, (String) value));
+
+      HttpResponse<String> httpResponse = this.http.send(put.build(), BodyHandlers.ofString());
+
+      // then
+      assertEquals(STATUS_OK, httpResponse.statusCode());
+      waitForDocumentContent(client, null, documentId, content);
     }
   }
 }
