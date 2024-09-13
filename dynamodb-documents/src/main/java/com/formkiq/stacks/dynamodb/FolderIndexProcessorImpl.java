@@ -94,7 +94,8 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
 
     if (!StringUtils.isEmpty(path) && !"/".equals(path)) {
 
-      String p = path.replaceAll(":://", DELIMINATOR).replaceAll("/+", "/");
+      String p =
+          path.replaceAll(":://", DELIMINATOR).replaceFirst("^\\.+", "").replaceAll("/+", "/");
       String ss = p.startsWith(DELIMINATOR) ? p.substring(DELIMINATOR.length()) : p;
       strs = ss.split(DELIMINATOR);
 
@@ -106,11 +107,11 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
   }
 
   /** {@link DynamoDbClient}. */
-  private DynamoDbClient dbClient;
+  private final DynamoDbClient dbClient;
   /** Documents Table Name. */
-  private String documentTableName;
+  private final String documentTableName;
   /** {@link DynamoDbService}. */
-  private DynamoDbService dynamoDb;
+  private final DynamoDbService dynamoDb;
 
   /**
    * constructor.
@@ -265,9 +266,9 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
       Map<String, Map<String, AttributeValue>> map =
           generateFileKeys(siteId, path, folders, documentId);
 
-      List<Map<String, AttributeValue>> files =
-          map.entrySet().stream().filter(f -> "file".equals(f.getValue().get("type").s()))
-              .map(e -> e.getValue()).collect(Collectors.toList());
+      List<Map<String, AttributeValue>> files = map.values().stream()
+          .filter(stringAttributeValueMap -> "file".equals(stringAttributeValueMap.get("type").s()))
+          .toList();
 
       for (Map<String, AttributeValue> file : files) {
         this.dynamoDb.deleteItem(file.get(PK), file.get(SK));

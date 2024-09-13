@@ -106,7 +106,7 @@ class FolderIndexProcessorTest implements DbKeys {
   }
 
   /**
-   * Test Create all new directories.
+   * Test Create all new directories with starting '/'.
    */
   @Test
   void testGenerateIndex01() throws Exception {
@@ -318,6 +318,56 @@ class FolderIndexProcessorTest implements DbKeys {
       Map<String, AttributeValue> map = indexes.get(0);
       assertFalse(dbService.exists(map.get(PK), map.get(SK)));
       verifyIndex(map, site + "global#folders#", "fi#test.pdf", "test.pdf", false);
+    }
+  }
+
+  /**
+   * Test Create all new directories with starting '/'.
+   */
+  @Test
+  void testGenerateIndex08() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      String documentId = UUID.randomUUID().toString();
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      item.setPath("./aa/b/c/test.pdf");
+
+      // when
+      List<Map<String, AttributeValue>> indexes = index.generateIndex(siteId, item);
+      dbService.putItems(indexes);
+
+      // then
+      final String site = siteId != null ? siteId + "/" : "";
+      final int expected = 4;
+      assertEquals(expected, indexes.size());
+
+      int i = 0;
+      Map<String, AttributeValue> map = indexes.get(i++);
+      assertTrue(dbService.exists(map.get(PK), map.get(SK)));
+
+      verifyIndex(map, map.get(PK).s(), "ff#aa", "aa", true);
+      String documentIdA = map.get("documentId").s();
+
+      map = indexes.get(i++);
+      assertTrue(dbService.exists(map.get(PK), map.get(SK)));
+      verifyIndex(map, site + "global#folders#" + documentIdA, "ff#b", "b", true);
+      String documentIdB = map.get("documentId").s();
+
+      map = indexes.get(i++);
+      assertTrue(dbService.exists(map.get(PK), map.get(SK)));
+      verifyIndex(map, site + "global#folders#" + documentIdB, "ff#c", "c", true);
+      String documentIdC = map.get("documentId").s();
+
+      map = indexes.get(i++);
+      assertTrue(dbService.exists(map.get(PK), map.get(SK)));
+      verifyIndex(map, site + "global#folders#" + documentIdC, "fi#test.pdf", "test.pdf", false);
+
+      // when
+      indexes = index.generateIndex(siteId, item);
+
+      // then
+      assertEquals(0, indexes.size());
     }
   }
 
