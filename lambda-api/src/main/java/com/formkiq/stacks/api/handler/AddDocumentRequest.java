@@ -74,7 +74,7 @@ public class AddDocumentRequest {
    * @return String
    */
   public String getChecksumType() {
-    return this.checksumType;
+    return this.checksumType != null ? this.checksumType.toUpperCase() : null;
   }
 
   /**

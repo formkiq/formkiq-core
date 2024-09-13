@@ -179,8 +179,10 @@ public class DocumentsCompressRequestTest extends AbstractAwsIntegrationTest {
     ApiClient apiClient = getApiClients(null).get(0);
 
     DocumentsApi documentsApi = new DocumentsApi(apiClient);
-    GetDocumentUrlResponse upload1 = documentsApi.getDocumentUpload(null, siteId, null, null, null);
-    GetDocumentUrlResponse upload2 = documentsApi.getDocumentUpload(null, siteId, null, null, null);
+    GetDocumentUrlResponse upload1 =
+        documentsApi.getDocumentUpload(null, siteId, null, null, null, null, null);
+    GetDocumentUrlResponse upload2 =
+        documentsApi.getDocumentUpload(null, siteId, null, null, null, null, null);
 
     // when
     HttpResponse<String> response1 =

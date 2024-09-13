@@ -24,6 +24,7 @@
 package com.formkiq.aws.s3;
 
 import java.net.URL;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
@@ -49,6 +50,8 @@ public class S3PresignerService {
 
   /** {@link S3ConnectionBuilder}. */
   private final S3PresignerConnectionBuilder builder;
+  /** Hash Calculator. */
+  private final ChecksumCalculator calculator;
 
   /**
    * Constructor.
@@ -57,6 +60,7 @@ public class S3PresignerService {
    */
   public S3PresignerService(final S3PresignerConnectionBuilder s3PresignerBuilder) {
     this.builder = s3PresignerBuilder;
+    this.calculator = new ChecksumCalculator();
   }
 
   /**
@@ -136,9 +140,9 @@ public class S3PresignerService {
           PutObjectRequest.builder().bucket(bucket).key(key).checksumAlgorithm(checksumAlgorithm);
 
       if (ChecksumAlgorithm.SHA1.equals(checksumAlgorithm)) {
-        putObjectRequest = putObjectRequest.checksumSHA1(checksum);
+        putObjectRequest = putObjectRequest.checksumSHA1(toBase64(checksum));
       } else if (ChecksumAlgorithm.SHA256.equals(checksumAlgorithm)) {
-        putObjectRequest = putObjectRequest.checksumSHA256(checksum);
+        putObjectRequest = putObjectRequest.checksumSHA256(toBase64(checksum));
       }
 
       if (contentLength.isPresent()) {
@@ -163,7 +167,44 @@ public class S3PresignerService {
     }
   }
 
+  /**
+   * Convert Checksum Hex {@link String} to Base64.
+   * 
+   * @param checksum {@link String}
+   * @return {@link String}
+   */
+  public String toBase64(final String checksum) {
+    byte[] bytes = this.calculator.hexStringToByteArray(checksum);
+    return this.calculator.encodeToBas64String(bytes);
+  }
+
+  /**
+   * Convert {@link String} to {@link ChecksumAlgorithm}.
+   * 
+   * @param algorithm {@link String}
+   * @return {@link ChecksumAlgorithm}
+   */
   public ChecksumAlgorithm getChecksumAlgorithm(final String algorithm) {
     return !isEmpty(algorithm) ? ChecksumAlgorithm.valueOf(algorithm.toUpperCase()) : null;
+  }
+
+  /**
+   * Calculate AWS Checksum.
+   * 
+   * @param algorithm {@link ChecksumAlgorithm}
+   * @param bytes byte[]
+   * @return String
+   */
+  public String calculateChecksumAsHex(final ChecksumAlgorithm algorithm, final byte[] bytes) {
+    try {
+      return switch (algorithm) {
+        case SHA1 -> this.calculator.bytesToHex(this.calculator.calculateSha1(bytes));
+        case SHA256 -> this.calculator.bytesToHex(this.calculator.calculateSha256(bytes));
+        default ->
+          throw new IllegalArgumentException("Supported Checksum Algorithm '" + algorithm + "'");
+      };
+    } catch (NoSuchAlgorithmException e) {
+      throw new IllegalArgumentException(e.getMessage());
+    }
   }
 }

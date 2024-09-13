@@ -37,9 +37,12 @@ public class DocumentItemDynamoDb implements DocumentItem {
   /** Belongs To Document Id. */
   @Reflectable
   private String belongsToDocumentId;
-  /** Entity tag. */
+  /** Entity Checksum. */
   @Reflectable
   private String checksum;
+  /** Entity Checksum Type. */
+  @Reflectable
+  private String checksumType;
   /** {@link Long}. */
   @Reflectable
   private Long contentLength;
@@ -70,9 +73,6 @@ public class DocumentItemDynamoDb implements DocumentItem {
   /** S3 Version. */
   @Reflectable
   private String s3version;
-  /** Tag Schema Id. */
-  @Reflectable
-  private String tagSchemaId;
   /** Time to Live. */
   @Reflectable
   private String timeToLive;
@@ -108,6 +108,11 @@ public class DocumentItemDynamoDb implements DocumentItem {
   @Override
   public String getChecksum() {
     return this.checksum;
+  }
+
+  @Override
+  public String getChecksumType() {
+    return this.checksumType;
   }
 
   @Override
@@ -183,6 +188,11 @@ public class DocumentItemDynamoDb implements DocumentItem {
   @Override
   public void setChecksum(final String etag) {
     this.checksum = etag;
+  }
+
+  @Override
+  public void setChecksumType(final String type) {
+    this.checksumType = type;
   }
 
   @Override

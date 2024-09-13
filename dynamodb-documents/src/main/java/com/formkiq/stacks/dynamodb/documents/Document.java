@@ -40,6 +40,8 @@ public class Document implements DocumentItem {
   private String belongsToDocumentId;
   /** Checksum. */
   private String checksum;
+  /** Checksum Type. */
+  private String checksumType;
   /** Content Length. */
   private Long contentLength;
   /** Content Type. */
@@ -80,6 +82,11 @@ public class Document implements DocumentItem {
   @Override
   public String getChecksum() {
     return this.checksum;
+  }
+
+  @Override
+  public String getChecksumType() {
+    return this.checksumType;
   }
 
   @Override
@@ -155,6 +162,11 @@ public class Document implements DocumentItem {
   @Override
   public void setChecksum(final String documentChecksum) {
     this.checksum = documentChecksum;
+  }
+
+  @Override
+  public void setChecksumType(final String documentChecksumType) {
+    this.checksumType = documentChecksumType;
   }
 
   @Override

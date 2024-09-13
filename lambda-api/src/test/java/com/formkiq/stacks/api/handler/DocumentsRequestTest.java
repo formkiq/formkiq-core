@@ -61,7 +61,6 @@ import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
-import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -614,30 +613,107 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testPost15() throws ApiException {
     // given
+    final String reqChecksum = "797bb0abff798d7200af7685dca7901edffc52bf26500d5bd97282658ee24152";
+
     for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+
+      for (String checksum : Arrays.asList(null, reqChecksum)) {
+        setBearerToken(siteId);
+
+        String content = "dummy data";
+
+        AddDocumentRequest req = new AddDocumentRequest().content(content).contentType("text/plain")
+            .checksum(checksum).checksumType(ChecksumType.SHA256);
+
+        // when
+        AddDocumentResponse response = this.documentsApi.addDocument(req, siteId, null);
+
+        // then
+        assertNotNull(response.getDocumentId());
+        assertEquals(siteId, response.getSiteId());
+
+        GetDocumentResponse site =
+            this.documentsApi.getDocument(response.getDocumentId(), siteId, null);
+        assertEquals("text/plain", site.getContentType());
+        assertEquals(ChecksumType.SHA256, site.getChecksumType());
+        assertEquals(reqChecksum, site.getChecksum());
+        assertNotNull(site.getPath());
+        assertNotNull(site.getDocumentId());
+        assertEquals(content, this.documentsApi
+            .getDocumentContent(response.getDocumentId(), siteId, null, null).getContent());
+      }
+    }
+  }
+
+  /**
+   * Save new File with valid SHA-1.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testPost16() throws ApiException {
+    // given
+    final String reqChecksum = "611ff54ef4d8389cf982da9516804906d99389b6";
+
+    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+
+      for (String checksum : Arrays.asList(null, reqChecksum)) {
+        setBearerToken(siteId);
+
+        String content = "dummy data";
+
+        AddDocumentRequest req = new AddDocumentRequest().content(content).contentType("text/plain")
+            .checksum(checksum).checksumType(ChecksumType.SHA1);
+
+        // when
+        AddDocumentResponse response = this.documentsApi.addDocument(req, siteId, null);
+
+        // then
+        assertNotNull(response.getDocumentId());
+        assertNull(response.getUploadUrl());
+        assertEquals(siteId, response.getSiteId());
+
+        GetDocumentResponse site =
+            this.documentsApi.getDocument(response.getDocumentId(), siteId, null);
+        assertEquals("text/plain", site.getContentType());
+        assertEquals(ChecksumType.SHA1, site.getChecksumType());
+        assertEquals(reqChecksum, site.getChecksum());
+        assertNotNull(site.getPath());
+        assertNotNull(site.getDocumentId());
+        assertEquals(content, this.documentsApi
+            .getDocumentContent(response.getDocumentId(), siteId, null, null).getContent());
+      }
+    }
+  }
+
+  /**
+   * Save new File with invalid checksum.
+   *
+   */
+  @Test
+  public void testPost17() {
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
       setBearerToken(siteId);
 
       String content = "dummy data";
-      String checksum = DigestUtils.sha256Hex(content);
+      String checksum = "12387198371293721893";
 
       AddDocumentRequest req = new AddDocumentRequest().content(content).contentType("text/plain")
           .checksum(checksum).checksumType(ChecksumType.SHA256);
 
       // when
-      AddDocumentResponse response = this.documentsApi.addDocument(req, siteId, null);
-
-      // then
-      assertNotNull(response.getDocumentId());
-      assertEquals(siteId, response.getSiteId());
-
-      GetDocumentResponse site =
-          this.documentsApi.getDocument(response.getDocumentId(), siteId, null);
-      assertEquals("text/plain", site.getContentType());
-      assertNotNull(site.getPath());
-      assertNotNull(site.getDocumentId());
-      assertEquals(content, this.documentsApi
-          .getDocumentContent(response.getDocumentId(), siteId, null, null).getContent());
+      try {
+        this.documentsApi.addDocument(req, siteId, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertTrue(e.getResponseBody()
+            .startsWith("{\"message\":\"<?xml version='1.0' encoding='utf-8'?>\\n"
+                + "<Error><Code>InvalidRequest</Code>"));
+      }
     }
   }
 

@@ -1386,6 +1386,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       addS(pkvalues, "checksum", etag);
     }
 
+    addS(pkvalues, "checksumType", document.getChecksumType());
     addS(pkvalues, "belongsToDocumentId", document.getBelongsToDocumentId());
 
     addN(pkvalues, "TimeToLive", options.timeToLive());

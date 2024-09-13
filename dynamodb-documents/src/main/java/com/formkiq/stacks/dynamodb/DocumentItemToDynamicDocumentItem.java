@@ -46,7 +46,7 @@ public class DocumentItemToDynamicDocumentItem
     DynamicDocumentItem ditem = convert(item);
 
     List<DynamicDocumentItem> children =
-        notNull(item.getDocuments()).stream().map(d -> convert(d)).collect(Collectors.toList());
+        notNull(item.getDocuments()).stream().map(this::convert).collect(Collectors.toList());
 
     if (!children.isEmpty()) {
       ditem.put("documents", children);
@@ -59,6 +59,7 @@ public class DocumentItemToDynamicDocumentItem
 
     Map<String, Object> map = new HashMap<>();
     map.put("checksum", item.getChecksum());
+    map.put("checksumType", item.getChecksumType());
     map.put("contentLength", item.getContentLength());
     map.put("contentType", item.getContentType());
     map.put("documentId", item.getDocumentId());

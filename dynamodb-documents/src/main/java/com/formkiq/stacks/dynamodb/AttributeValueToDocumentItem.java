@@ -114,6 +114,10 @@ public class AttributeValueToDocumentItem
       item.setBelongsToDocumentId(map.get("belongsToDocumentId").s());
     }
 
+    if (map.containsKey("checksumType")) {
+      item.setChecksumType(map.get("checksumType").s());
+    }
+
     item.setVersion(getString(map.get("version")));
     item.setS3version(getString(map.get(DocumentVersionService.S3VERSION_ATTRIBUTE)));
 

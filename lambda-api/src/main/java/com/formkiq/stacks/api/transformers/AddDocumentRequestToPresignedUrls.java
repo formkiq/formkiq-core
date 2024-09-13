@@ -23,7 +23,6 @@
  */
 package com.formkiq.stacks.api.transformers;
 
-import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.handler.AddDocumentRequest;
@@ -41,6 +40,7 @@ import java.util.function.Function;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.isDefaultSiteId;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 
 /**
  * Transforms {@link AddDocumentRequest} to a list of Presigned Urls.
@@ -85,8 +85,9 @@ public class AddDocumentRequestToPresignedUrls
     String documentId = item.getDocumentId();
     map.put("documentId", documentId);
 
-    if (Strings.isEmpty(item.getDeepLinkPath())) {
+    if (isEmpty(item.getDeepLinkPath())) {
       String docUrl = generatePresignedUrl(item);
+      addHeaders(map, item);
       map.put("url", docUrl);
     }
 
@@ -99,7 +100,7 @@ public class AddDocumentRequestToPresignedUrls
       String docid = o.getDocumentId();
       m.put("documentId", docid);
 
-      if (Strings.isEmpty(o.getDeepLinkPath())) {
+      if (isEmpty(o.getDeepLinkPath())) {
         String url = generatePresignedUrl(o);
         m.put("url", url);
       }
@@ -114,17 +115,39 @@ public class AddDocumentRequestToPresignedUrls
     return map;
   }
 
+  private void addHeaders(final Map<String, Object> map, final AddDocumentRequest item) {
+
+    Map<String, String> headers = new HashMap<>();
+
+    if (item.getChecksumType() != null) {
+
+      String checksumType = item.getChecksumType().toUpperCase();
+      headers.put("x-amz-sdk-checksum-algorithm", item.getChecksumType().toUpperCase());
+
+      if ("SHA256".equals(checksumType)) {
+        headers.put("x-amz-checksum-sha256", this.s3PresignerService.toBase64(item.getChecksum()));
+      } else if ("SHA1".equals(checksumType)) {
+        headers.put("x-amz-checksum-sha1", this.s3PresignerService.toBase64(item.getChecksum()));
+      }
+    }
+
+    if (!headers.isEmpty()) {
+      map.put("headers", headers);
+    }
+  }
+
   private String generatePresignedUrl(final AddDocumentRequest o) {
 
     String documentId = o.getDocumentId();
-    String checksum =
-        !Strings.isEmpty(o.getChecksum()) ? o.getChecksum() : UUID.randomUUID().toString();
     String key = !isDefaultSiteId(this.siteId) ? this.siteId + "/" + documentId : documentId;
-
-    Map<String, String> map = Map.of("checksum", checksum);
 
     ChecksumAlgorithm checksumAlgorithm =
         this.s3PresignerService.getChecksumAlgorithm(o.getChecksumType());
+
+    String checksum = !isEmpty(o.getChecksum()) ? o.getChecksum() : UUID.randomUUID().toString();
+    o.setChecksum(checksum);
+
+    Map<String, String> map = Map.of("checksum", checksum);
     URL url = this.s3PresignerService.presignPutUrl(this.s3Bucket, key, this.duration,
         checksumAlgorithm, checksum, this.contentLength, map);
 

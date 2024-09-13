@@ -61,6 +61,11 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
   }
 
   @Override
+  public String getChecksumType() {
+    return getString("checksumType");
+  }
+
+  @Override
   public Long getContentLength() {
     return getLong("contentLength");
   }
@@ -153,6 +158,11 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
   @Override
   public void setChecksum(final String checksum) {
     put("checksum", checksum);
+  }
+
+  @Override
+  public void setChecksumType(final String checksumType) {
+    put("checksumType", checksumType);
   }
 
   @Override

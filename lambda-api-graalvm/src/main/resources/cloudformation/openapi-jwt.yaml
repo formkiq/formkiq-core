@@ -1763,6 +1763,8 @@ Resources:
                   schema:
                     type: string
                 - $ref: '#/components/parameters/siteIdParam'
+                - $ref: '#/components/parameters/checksumTypeParam'
+                - $ref: '#/components/parameters/checksumParam'
                 - $ref: '#/components/parameters/contentLengthParam'
                 - $ref: '#/components/parameters/durationParam'
                 - $ref: '#/components/parameters/shareKeyParam'
@@ -1806,8 +1808,6 @@ Resources:
                         value:
                           path: test.txt
                           contentType: text/plain
-                          isBase64: false
-                          content: This is sample data file
                           tags:
                             - key: category 
                               value: sample
@@ -1841,6 +1841,8 @@ Resources:
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/checksumTypeParam'
+              - $ref: '#/components/parameters/checksumParam'
               - $ref: '#/components/parameters/contentLengthParam'
               - $ref: '#/components/parameters/durationParam'
               - $ref: '#/components/parameters/shareKeyParam'
@@ -6265,6 +6267,23 @@ Resources:
               required: true
               schema:
                 type: string
+            checksumParam:
+              name: checksum
+              in: query
+              description: Checksum value
+              required: false
+              schema:
+                type: string
+            checksumTypeParam:
+              name: checksumType
+              in: query
+              description: Checksum Type
+              required: false
+              schema:
+                type: string
+                enum:
+                  - SHA1
+                  - SHA256
             classificationIdParam:
               name: classificationId
               in: path
@@ -6816,6 +6835,10 @@ Resources:
                 url:
                   type: "string"
                   description: "Document content url"
+                headers:
+                  type: "object"
+                  additionalProperties:
+                    type: object
             GetDocumentResponse:
               required:
               - "documentId"
@@ -6839,6 +6862,8 @@ Resources:
                 checksum:
                   type: "string"
                   description: "Document checksum, changes when document file changes"
+                checksumType:
+                  $ref: "#/components/schemas/ChecksumType"
                 documentId:
                   type: "string"
                   description: "Document Identifier"
@@ -7190,7 +7215,6 @@ Resources:
               type: string
               description: The type of checksum to use for file validation
               enum:
-                - ETAG
                 - SHA1
                 - SHA256
             AddDocumentRequest:

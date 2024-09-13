@@ -120,7 +120,7 @@ public class FkqDocumentService {
 
     DocumentsApi api = new DocumentsApi(apiClient);
     GetDocumentUrlResponse response =
-        api.getDocumentUpload(path, siteId, content.length, null, shareKey);
+        api.getDocumentUpload(path, siteId, null, null, content.length, null, shareKey);
     String s3url = response.getUrl();
 
     if (content.length > 0) {

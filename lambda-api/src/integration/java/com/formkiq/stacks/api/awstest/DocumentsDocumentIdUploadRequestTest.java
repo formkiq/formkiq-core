@@ -63,7 +63,7 @@ public class DocumentsDocumentIdUploadRequestTest extends AbstractAwsIntegration
 
       // when
       try {
-        api.getDocumentIdUpload(documentId, siteId, Integer.valueOf(1), null, null);
+        api.getDocumentIdUpload(documentId, siteId, null, null, Integer.valueOf(1), null, null);
         fail();
       } catch (ApiException e) {
         // then
@@ -88,7 +88,7 @@ public class DocumentsDocumentIdUploadRequestTest extends AbstractAwsIntegration
 
       // when
       GetDocumentUrlResponse response =
-          api.getDocumentIdUpload(documentId, siteId, Integer.valueOf(1), null, null);
+          api.getDocumentIdUpload(documentId, siteId, null, null, Integer.valueOf(1), null, null);
 
       // then
       assertNotNull(response.getUrl());

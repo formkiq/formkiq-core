@@ -59,9 +59,11 @@ import java.util.concurrent.TimeUnit;
 import com.formkiq.client.api.AttributesApi;
 import com.formkiq.client.invoker.ApiResponse;
 import com.formkiq.client.model.AddAction;
+import com.formkiq.client.model.ChecksumType;
 import com.formkiq.client.model.DocumentActionType;
 import com.formkiq.client.model.GetAttributeResponse;
 import com.formkiq.stacks.dynamodb.attributes.AttributeKeyReserved;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -914,6 +916,43 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
             java.util.Objects.requireNonNull(document.getMetadata().get(0).getValues())));
         assertEquals("person", document.getMetadata().get(1).getKey());
         assertEquals("category", document.getMetadata().get(1).getValue());
+      }
+    }
+  }
+
+  /**
+   * Save new File with valid SHA-256.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testPost11() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+
+      for (ApiClient client : getApiClients(siteId)) {
+
+        DocumentsApi api = new DocumentsApi(client);
+
+        String content = "dummy data";
+        String checksum = DigestUtils.sha256Hex(content);
+
+        AddDocumentRequest req = new AddDocumentRequest().content(content).contentType("text/plain")
+            .checksum(checksum).checksumType(ChecksumType.SHA256);
+
+        // when
+        AddDocumentResponse response = api.addDocument(req, siteId, null);
+
+        // then
+        assertNotNull(response.getDocumentId());
+        assertEquals(siteId, response.getSiteId());
+
+        GetDocumentResponse site = api.getDocument(response.getDocumentId(), siteId, null);
+        assertEquals("text/plain", site.getContentType());
+        assertNotNull(site.getPath());
+        assertNotNull(site.getDocumentId());
+        assertEquals(content,
+            api.getDocumentContent(response.getDocumentId(), siteId, null, null).getContent());
       }
     }
   }

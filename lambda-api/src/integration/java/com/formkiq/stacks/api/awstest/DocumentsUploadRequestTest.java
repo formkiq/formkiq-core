@@ -128,8 +128,8 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
       String content = "<html><body>test content</body></html>";
 
       // when
-      GetDocumentUrlResponse response =
-          api.getDocumentUpload(null, siteId, Integer.valueOf(content.length()), null, null);
+      GetDocumentUrlResponse response = api.getDocumentUpload(null, siteId, null, null,
+          Integer.valueOf(content.length()), null, null);
 
       // then
       assertNotNull(response.getUrl());
@@ -168,7 +168,7 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
 
       // when
       try {
-        api.getDocumentUpload(null, SITEID0, null, null, null);
+        api.getDocumentUpload(null, SITEID0, null, null, null, null, null);
         fail();
       } catch (ApiException e) {
         assertEquals(STATUS_BAD_REQUEST, e.getCode());
@@ -195,7 +195,8 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
 
       // when
       try {
-        api.getDocumentUpload(null, SITEID0, Integer.valueOf(contentLength), null, null);
+        api.getDocumentUpload(null, SITEID0, null, null, Integer.valueOf(contentLength), null,
+            null);
       } catch (ApiException e) {
         assertEquals(STATUS_BAD_REQUEST, e.getCode());
         assertEquals("{\"message\":\"'contentLength' cannot exceed 5 bytes\"}",
@@ -222,8 +223,8 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
       DocumentsApi api = new DocumentsApi(client);
 
       // when
-      GetDocumentUrlResponse response =
-          api.getDocumentUpload(null, SITEID0, Integer.valueOf(contentLength), null, null);
+      GetDocumentUrlResponse response = api.getDocumentUpload(null, SITEID0, null, null,
+          Integer.valueOf(contentLength), null, null);
 
       // then
       assertNotNull(response.getUrl());
@@ -243,7 +244,7 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
 
     DocumentsApi api = new DocumentsApi(getApiClients(SITEID1).get(0));
 
-    api.getDocumentUpload(null, SITEID1, Integer.valueOf(1), null, null);
+    api.getDocumentUpload(null, SITEID1, null, null, Integer.valueOf(1), null, null);
 
     for (ApiClient client : getApiClients(SITEID1)) {
 
@@ -251,7 +252,7 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
 
       // when
       try {
-        api.getDocumentUpload(null, SITEID1, Integer.valueOf(1), null, null);
+        api.getDocumentUpload(null, SITEID1, null, null, Integer.valueOf(1), null, null);
         fail();
       } catch (ApiException e) {
         // then
