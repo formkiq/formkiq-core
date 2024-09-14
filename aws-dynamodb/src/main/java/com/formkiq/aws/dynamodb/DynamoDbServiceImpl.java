@@ -48,6 +48,8 @@ import software.amazon.awssdk.services.dynamodb.model.PutRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 import software.amazon.awssdk.services.dynamodb.model.ReturnValue;
+import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
+import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
 import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.UpdateItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
@@ -164,6 +166,35 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
       list.addAll(attrs);
 
       startkey = response.lastEvaluatedKey();
+
+    } while (startkey != null && !startkey.isEmpty());
+
+    return deleteItems(list);
+  }
+
+  @Override
+  public boolean deleteItemsBeginsWith(final AttributeValue pk) {
+
+    final int limit = 100;
+    List<Map<String, AttributeValue>> list = new ArrayList<>();
+
+    Map<String, AttributeValue> expressionAttributeValues = Map.of(":pkValue", pk);
+
+    ScanRequest.Builder scanRequest = ScanRequest.builder().tableName(this.tableName).limit(limit)
+        .filterExpression("begins_with(PK, :pkValue)")
+        .expressionAttributeValues(expressionAttributeValues).projectionExpression("PK,SK");
+
+    Map<String, AttributeValue> startkey;
+
+    do {
+
+      ScanResponse response = this.dbClient.scan(scanRequest.build());
+
+      List<Map<String, AttributeValue>> attrs = response.items().stream().toList();
+      list.addAll(attrs);
+
+      startkey = response.lastEvaluatedKey();
+      scanRequest.exclusiveStartKey(response.lastEvaluatedKey());
 
     } while (startkey != null && !startkey.isEmpty());
 
