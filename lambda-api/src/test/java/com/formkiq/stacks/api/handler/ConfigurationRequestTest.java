@@ -23,27 +23,28 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import static com.formkiq.stacks.dynamodb.ConfigService.CHATGPT_API_KEY;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.fail;
-import java.util.Map;
-import java.util.UUID;
-
-import com.formkiq.aws.services.lambda.ApiResponseStatus;
-import com.formkiq.client.model.DocusignConfig;
-import com.formkiq.client.model.GoogleConfig;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
+import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.model.DocusignConfig;
 import com.formkiq.client.model.GetConfigurationResponse;
+import com.formkiq.client.model.GoogleConfig;
 import com.formkiq.client.model.UpdateConfigurationRequest;
 import com.formkiq.client.model.UpdateConfigurationResponse;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.ConfigService;
 import com.formkiq.stacks.dynamodb.ConfigServiceExtension;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import java.util.Map;
+import java.util.UUID;
+
+import static com.formkiq.stacks.dynamodb.ConfigService.CHATGPT_API_KEY;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /** Unit Tests for request /sites/{siteId}/configuration. */
 public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
@@ -53,36 +54,34 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
   /** Test RSA Private Key. */
   private static final String RSA_PRIVATE_KEY = """
       -----BEGIN RSA PRIVATE KEY-----
-      MIIEpAIBAAKCAQEArZ1qkA2Aav9OlH6j8C3K5f3Z+zBkRv/VjdW3f7f0VVtslkfj
-      i8o6d7lM7gYjp91G9TlG8dOkdJHgZ1lVOjV+Gh8Zg+ReyQ8V2dG3yqMK6qUbiwQ+
-      xO5g9mD0W6qmfDeL4Ye6HfN7yZPx5/KQ3R5xF8qBf5kZ3QdrKvLwXs5SFi4kH9Yr
-      OqB9rV74PxC/5KggCv9+9DnI5+aU6nb6oxR1+oGxqg8RWiwFMzrcFvptbg6+24EB
-      3PMrjkhOScT9Y4l/9LgR0X5+wU/72J4UCqlWh6gW5h9Pz/S5cR3C+KCo4gZiZ/mz
-      hrGb0r5M5zTisj6HwtFup/HCMaCZ2tcHb28d1QIDAQABAoIBAD5IQZEq5OEWOfPz
-      J5/aGakPvmMxsbPZB0+RaZJfxKAvWOUF24B2oF5RdnH2yOGtFeU5QuGg/2K0Eih4
-      5X3j6lnK7TtGFUPj2zyAxBoUzR2emDPkcBbY9k/MW3h1JvOFbvdCgCnOrC2Tdcjx
-      vzk12GuP6FtI9Th7VCiZdOBfg9ZhvUeMcmj0RrVhPOzEyN5uLXMZBzDhllIsTzZu
-      G7pRhxA/Z3Lv2FtL9Bsg1GYymVXXgMfhm3EErVFn9OHhp1av1G4QON0kWkJ0ZmX3
-      hMl8gk0YVJIrWFHwN2ue7b71kF2SMcvU+LoMBLvLEo9tJtDi4OfD6o3leUE6IgdO
-      D1ZKPnUCgYEA2F+E6vjBRvcAIKz80MbmjNpuMRFmxh8EFMs+9UtPYW3GnGnIQHcJ
-      MQXZqJmMSM6we7MPzVkTfijvOaCF3MQjoEXC0hC+yTQkdm+hyPoJggtLq7sz6I/p
-      P66y14+V2v9oF5Ohm0dQg3Jm6b+bQOZgWiLNgO8w5cy+H4WQ0tvw7NcCgYEAyO+D
-      FrV+Fb5cxsMEivpkkbItt9J4MdCTIhz1XMfKETvW3VKiOZLIFpAWGXYmOL9UlQa3
-      cNs+oubsL8wTn+Kn4T4C5ngW2nYUVk+2yAcCx2oA2Xf0/Eup7fDqTiM5k7cI6hsZ
-      nHek5mLQir6oHtGo2bQ1MwQmWlJ5nyvnAbqG+jcCgYEAtTeg9hr4FYAwOf/3Z5Vb
-      T4MeUbJ5HH7lgpg7ccLKi1kTxR9ZpCfyZo44H9NivqVto8LzAjFyfbWzKBLB3f0l
-      GUtQ6X8MxV1iSG7V1yq8SlCnAZlqf/NxOTjJ0rAyo23tX8eY84LCzhll7W4p/U+a
-      kbvXB2fCX7ZfoWmY7KbZBe8CgYEAzEdpKeWFTAgFkM+vTX7wFhU6OoCQbSMc6GTZ
-      EcfZrg+/WeXzJ8G0zXxqDlNhbTEU5PEzMf0FxbMj7ETtseJyxgri/CHDLmLfAtXV
-      Mu8MZZqXyDFAFTldZTHM60iY/q0Xo4FFlfKi3CaBtLK5PRmZ7DPizSZRlIlC1GJz
-      yOLdQpECgYB5R53Jl/mWBY7YB7mN7hnxRLLMwzszLtZWsoC7rHMQHbGbn/suj1Pb
-      0wdSNEX4zzpFb2YBmhnJ5yMspe7KhAYLrA1yIouQXvdK2PVU2E5gVhFt8Jumg3zd
-      +hDj+3W+ptjLh1mMaDW9KMUC82gDBH+fB0EJiaDxPF5ux/vJczj8FQKBgQC4t5WR
-      /npH1BHCgDeXDOeH5ojjtTmS/jI/xyEFxyHiF9FeMiAlxZoPOD/U6He4W7wZCOqH
-      fEoZXhNR4DFQnvfjUkrMr/JmRzHlt2yVhQUwtyvJ8cVZ0yhsqCQEOLdE2F0XnKkv
-      23ybvqMt27quf7bB6FKNBJihmwoCSMREfI7Ebw==
+      MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDil6aKnJO2L7ih
+      B0VP8D2mDnYaX/RmAe66nNQDX/fvnVD+sYk0Rf2uBXlpKmcJ/ZPFdXG7vNOgx7de
+      V6tNVxbq7kmC7+KEuBMnUQW5dvUm3yFRaWrfmerSUJWcBGzXZhoH8WSsJ1P86vh4
+      kkOXLa8zggGA3GKBjQvXjXwJKEZOSlGi/MUOUofLPU74TCeSg3LCpUC4+WZ0IY0T
+      w3mnX83PkZFykSFVsxFsR2IRE6CLVHrQNExRrjoBcfXHesfn6bJs82/UUkDjXhIK
+      I2ChgE9WUVDQTtv5YqOUAxNpk2iQu/+eMQIl0orJGQXkvQPsGC4wgyLpaIHJiwkK
+      yYdCKNtTAgMBAAECggEAFbi479+7r0La3aDvTY73sfP/8V5SdPbpdj0ze9FW2MMJ
+      cSj+wKKXA3gl3+V/NC95W3v7N6aN2QNcOjCITOU03reSF3m8isGEoIe9Vz6mmJ/a
+      N042PxIntxqfhPHNp0Zz52AGKRSqEfxKbnCDBzqLaZIkZ8B4tveY84RuKAiS2M1L
+      4AA+Pyd7JejyK1SuczigQEUcVoakLECxfO9hVd3CIuCWTCiqQRrukhSW0jqTrTna
+      fgNOOEn1exkpTDlwjdQkCUMqgJ9F2HsyMXQ4eX6u6+GXr16HsGzA61ZVG31dZf9I
+      xWZk9fUXSe1Pzw02p3jWbZ5P2CpofXJ0YMrHhS+S1QKBgQD1JfgnzlQIPWMuM2il
+      jml6TzPI2AaJ8owTpRBSWMhqj7CRJgQrxVk78H5aQ/NDU6wGt9g60vSvxNgr6Ff5
+      dWYwhrP24VMx0gHaWdjOP3nNnj4jxeXw0/QJeb/qOY0PXgFHgfecTvQIUmfNeJPS
+      G0fBh0h6HcEkX1eSBqFNx5rGHQKBgQDsn2eU0b2n28I0pJTfecycgdAFFfFDmmzh
+      IZGq/q4032YOl3J5+/WGePJfmboR4dddtaKdPJ/BfSPTt4ocpwJ76dNWKLDs+L8l
+      lyICjb3gaj7VuBHL9JPPs/lt79kAFnFXXeIPVk6JWW5X2Ej9d5i0moeX4s8MFmeh
+      LjPoEL+sLwKBgBshcZ5OKmSjDpftXpZ79VZw74U5yzd3HWOLMAw9ASkx79OQhoOl
+      mqOUkRdCT+jSmMZBkG+qKyRMv7PUSfA0uvOB5Obctw1bdZMJwIHK6psD+VKSM0l8
+      25Q04jV02xSpTbDxREsLPdyx6gUGZC2rkTxs0WuaYWa6GoHxs+ZcwddNAoGBANju
+      TzUlkN16YLKIjJ/Q92AotsBi3Hyg7976OqTstmNsyBDqkZ35+5+b9IDm26qXRS35
+      XqsOsFvgUV9BblJUXrehqAneZk3qwrtAsoJq1kAOx6qCBXbZtEWAd1VtxaEJ8kEp
+      ph1vf7L2FW5dsJUH9yzkWxlJa45mX/1p8VZ5PHArAoGAZxeL5r6SX0Rv/hLkE1Cs
+      v7od0OhmDPCMGm8djdpVMEFkhr0636c/r61IbycWI/c3k6njd4hhMSWfHmwDvO/a
+      9i7pWanM1abM4es/tdATp56uTWntoa2ZQTHieFtSkYlufDbgLaCIb4HCStimbzye
+      xm4Xo6+jDbifGOqFT4Ofeyc=
       -----END RSA PRIVATE KEY-----
-      """;
+            """;
 
   /**
    * Before Each.
@@ -363,7 +362,7 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     assertEquals("123", configuration.getDocusign().getUserId());
     assertEquals("""
         -----BEGIN RSA PRIVATE KEY-----
-        MIIEpAIB*******EfI7Ebw==
+        MIIEvQIB*******FT4Ofeyc=
         -----END RSA PRIVATE KEY-----
         """, configuration.getDocusign().getRsaPrivateKey());
   }
@@ -373,7 +372,7 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
    *
    */
   @Test
-  public void testHandlePutConfiguration07() throws ApiException {
+  public void testHandlePutConfiguration07() {
     // given
     String siteId = SiteIdKeyGenerator.DEFAULT_SITE_ID;
     String group = "Admins";
@@ -382,15 +381,15 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     UpdateConfigurationRequest req = new UpdateConfigurationRequest().docusign(
         new DocusignConfig().userId("123").integrationKey("111").rsaPrivateKey("3423432432432423"));
 
-    this.systemApi.updateConfiguration(siteId, req);
-
     // when
-    GetConfigurationResponse configuration = this.systemApi.getConfiguration(siteId);
-
-    // then
-    assertNotNull(configuration.getDocusign());
-    assertEquals("111", configuration.getDocusign().getIntegrationKey());
-    assertEquals("123", configuration.getDocusign().getUserId());
-    assertEquals("34234*******32423", configuration.getDocusign().getRsaPrivateKey());
+    try {
+      this.systemApi.updateConfiguration(siteId, req);
+      fail();
+    } catch (ApiException e) {
+      // then
+      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+      assertEquals("{\"errors\":[{\"key\":\"docusignRsaPrivateKey\","
+          + "\"error\":\"invalid RSA Private Key\"}]}", e.getResponseBody());
+    }
   }
 }

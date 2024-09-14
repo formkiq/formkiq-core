@@ -33,7 +33,14 @@ import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENTS;
 import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENT_SIZE_BYTES;
 import static com.formkiq.stacks.dynamodb.ConfigService.MAX_WEBHOOKS;
 import static com.formkiq.stacks.dynamodb.ConfigService.NOTIFICATION_EMAIL;
+
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -67,14 +74,17 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 public class ConfigurationRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
-  /** Mask Value, must be even number. */
+  /**
+   * Mask Value, must be even number.
+   */
   private static final int CHAT_GPT_MASK = 4;
-  /** Mask Value, must be even number. */
+  /**
+   * Mask Value, must be even number.
+   */
   private static final int RSA_PRIVATE_KEY_MASK = 40;
 
   /**
    * constructor.
-   *
    */
   public ConfigurationRequestHandler() {}
 
@@ -157,7 +167,7 @@ public class ConfigurationRequestHandler
 
   /**
    * Mask {@link String}.
-   * 
+   *
    * @param s {@link String}
    * @param mask int
    * @return {@link String}
@@ -168,13 +178,12 @@ public class ConfigurationRequestHandler
     return !isEmpty(s) ? s.subSequence(0, m) + "*******" + s.substring(s.length() - m) : s;
   }
 
-  @SuppressWarnings("unchecked")
   @Override
   public ApiRequestHandlerResponse patch(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    String siteId = event.getPathParameters().get("siteId");
+    String siteId = event.getPathParameter("siteId");
     Map<String, Object> body = fromBodyToObject(event, Map.class);
 
     Map<String, Object> map = new HashMap<>();
@@ -282,6 +291,28 @@ public class ConfigurationRequestHandler
       errors.add(new ValidationErrorImpl().key("docusign")
           .error("all 'docusignUserId', 'docusignIntegrationKey', 'docusignRsaPrivateKey' "
               + "are required for docusign setup"));
+    } else if (docusignRsaPrivateKey != null && !isValidRsaPrivateKey(docusignRsaPrivateKey)) {
+      errors.add(
+          new ValidationErrorImpl().key("docusignRsaPrivateKey").error("invalid RSA Private Key"));
+    }
+  }
+
+  private boolean isValidRsaPrivateKey(final String privateKeyPem) {
+    try {
+      // Remove the PEM header and footer
+      String privateKeyPemStripped = privateKeyPem.replace("-----BEGIN RSA PRIVATE KEY-----", "")
+          .replace("-----END RSA PRIVATE KEY-----", "").replaceAll("\\s", "");
+
+      byte[] privateKeyBytes = Base64.getDecoder().decode(privateKeyPemStripped);
+
+      PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(privateKeyBytes);
+      KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+      PrivateKey privateKey = keyFactory.generatePrivate(keySpec);
+
+      return privateKey != null;
+
+    } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
+      return false;
     }
   }
 }

@@ -95,6 +95,7 @@
 				<allow pkg="java.lang.reflect" />
 				<allow pkg="java.time" />
 				<allow pkg="java.text" />
+				<allow pkg="java.security" />
 
 			</subpackage>
 
