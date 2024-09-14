@@ -80,8 +80,12 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
   private static final int TEST_TIMEOUT = 10;
 
   private void addAttribute(final String siteId) throws ApiException {
+    addAttribute(siteId, "category");
+  }
+
+  private void addAttribute(final String siteId, final String attributeKey) throws ApiException {
     AddAttributeRequest req =
-        new AddAttributeRequest().attribute(new AddAttribute().key("category"));
+        new AddAttributeRequest().attribute(new AddAttribute().key(attributeKey));
     this.attributesApi.addAttribute(req, siteId);
   }
 
@@ -1054,7 +1058,111 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
         assertEquals(documentId1, documents.get(1).getDocumentId());
       }
 
-      // documentId filter
+      // given - documentId filter
+      dsq0.getQuery().setDocumentIds(List.of(documentId1));
+
+      // when
+      response0 = this.searchApi.documentSearch(dsq0, siteId, null, null, null);
+
+      // then
+      List<SearchResultDocument> documents = notNull(response0.getDocuments());
+      assertEquals(1, documents.size());
+      assertEquals(documentId1, documents.get(0).getDocumentId());
+    }
+  }
+
+  /**
+   * Post search by attribute, responsefields.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleSearchRequest27() throws Exception {
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      setBearerToken(siteId);
+
+      addAttribute(siteId);
+      addAttribute(siteId, "playerId");
+
+      AddDocumentUploadRequest uploadReq = new AddDocumentUploadRequest();
+
+      AddDocumentAttribute attr0 = new AddDocumentAttribute(
+          new AddDocumentAttributeStandard().key("category").stringValue("person"));
+      AddDocumentAttribute attr1 = new AddDocumentAttribute(
+          new AddDocumentAttributeStandard().key("playerId").stringValue("12345"));
+      uploadReq.addAttributesItem(attr0).addAttributesItem(attr1);
+
+      String documentId0 =
+          this.documentsApi.addDocumentUpload(uploadReq, siteId, null, null, null).getDocumentId();
+      addDocumentWithAttributes(siteId, "other");
+
+      DocumentSearchAttribute attributes =
+          new DocumentSearchAttribute().key("category").eq("person");
+
+      DocumentSearchRequest dsq =
+          new DocumentSearchRequest().query(new DocumentSearch().attribute(attributes))
+              .responseFields(new SearchResponseFields().addAttributesItem("playerId"));
+
+      // when
+      DocumentSearchResponse response =
+          this.searchApi.documentSearch(dsq, siteId, null, null, null);
+
+      // then
+      List<SearchResultDocument> documents = notNull(response.getDocuments());
+      assertEquals(1, documents.size());
+      assertEquals(documentId0, documents.get(0).getDocumentId());
+      Map<String, SearchResultDocumentAttribute> map = documents.get(0).getAttributes();
+      assertNotNull(map);
+      assertEquals(1, map.size());
+      assertEquals("12345", String.join(",", notNull(map.get("playerId").getStringValues())));
+    }
+  }
+
+  /**
+   * Post search by documentIds only.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleSearchRequest28() throws Exception {
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      setBearerToken(siteId);
+
+      addAttribute(siteId);
+      addAttribute(siteId, "playerId");
+
+      AddDocumentAttribute attr0 = new AddDocumentAttribute(
+          new AddDocumentAttributeStandard().key("category").stringValue("person"));
+      AddDocumentAttribute attr1 = new AddDocumentAttribute(
+          new AddDocumentAttributeStandard().key("playerId").stringValue("12345"));
+      AddDocumentUploadRequest uploadReq =
+          new AddDocumentUploadRequest().addAttributesItem(attr0).addAttributesItem(attr1);
+
+      String documentId0 =
+          this.documentsApi.addDocumentUpload(uploadReq, siteId, null, null, null).getDocumentId();
+      assertNotNull(documentId0);
+      addDocumentWithAttributes(siteId, "other");
+
+      DocumentSearchRequest dsq = new DocumentSearchRequest()
+          .responseFields(new SearchResponseFields().addAttributesItem("playerId"))
+          .query(new DocumentSearch().documentIds(List.of(documentId0)));
+
+      // when
+      DocumentSearchResponse response =
+          this.searchApi.documentSearch(dsq, siteId, null, null, null);
+
+      // then
+      List<SearchResultDocument> documents = notNull(response.getDocuments());
+      assertEquals(1, documents.size());
+      assertEquals(documentId0, documents.get(0).getDocumentId());
+      Map<String, SearchResultDocumentAttribute> map = documents.get(0).getAttributes();
+      assertNotNull(map);
+      assertEquals(1, map.size());
+      assertEquals("12345", String.join(",", notNull(map.get("playerId").getStringValues())));
     }
   }
 

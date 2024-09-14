@@ -631,14 +631,30 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
 
       results = searchByAttribute(siteId, query, search, token, maxresults);
 
-    } else {
+    } else if (query.getTag() != null) {
 
       SearchTagCriteria search = query.getTag();
       results = searchByTag(siteId, query, search, token, maxresults, null);
+
+    } else {
+
+      results = searchByDocumentIds(siteId, query.getDocumentIds());
     }
 
     addResponseFields(siteId, results.getResults(), searchResponseFields);
     return results;
+  }
+
+  private PaginationResults<DynamicDocumentItem> searchByDocumentIds(final String siteId,
+      final Collection<String> documentIds) {
+
+    List<DocumentItem> list = this.docService.findDocuments(siteId, new ArrayList<>(documentIds));
+
+    List<DynamicDocumentItem> results = list != null
+        ? list.stream().map(l -> new DocumentItemToDynamicDocumentItem().apply(l)).toList()
+        : Collections.emptyList();
+
+    return new PaginationResults<>(results, null);
   }
 
   private QueryResponse searchAttributeBeginsWith(final String siteId,
@@ -845,7 +861,6 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
             .collect(Collectors.toList()) : Collections.emptyList();
 
     addMatchAttributes(items, results);
-    // addResponseFields(siteId, results, searchResponseFields);
 
     return new PaginationResults<>(results, pagination);
   }
