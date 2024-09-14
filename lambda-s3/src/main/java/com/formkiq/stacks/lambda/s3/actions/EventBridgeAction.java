@@ -28,7 +28,6 @@ import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.eventbridge.EventBridgeService;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.lambda.s3.DocumentAction;
 import com.formkiq.validation.ValidationException;
 
@@ -40,14 +39,12 @@ import java.util.List;
  */
 public class EventBridgeAction implements DocumentAction {
 
-  /** {@link DocumentService}. */
-  private final DocumentService documentService;
   /** {@link EventBridgeService}. */
   private final EventBridgeService eventBridgeService;
   /** App Environment. */
   private final String appEnvironment;
   /** {@link DocumentExternalSystemExport}. */
-  private final DocumentExternalSystemExport sytemExport;
+  private final DocumentExternalSystemExport systemExport;
 
   /**
    * constructor.
@@ -56,9 +53,8 @@ public class EventBridgeAction implements DocumentAction {
    */
   public EventBridgeAction(final AwsServiceCache serviceCache) {
     this.eventBridgeService = serviceCache.getExtension(EventBridgeService.class);
-    this.documentService = serviceCache.getExtension(DocumentService.class);
     this.appEnvironment = serviceCache.environment("APP_ENVIRONMENT");
-    this.sytemExport = new DocumentExternalSystemExport(serviceCache);
+    this.systemExport = new DocumentExternalSystemExport(serviceCache);
   }
 
   @Override
@@ -74,7 +70,7 @@ public class EventBridgeAction implements DocumentAction {
     String detailType = "Document Action Event";
     String source = "formkiq." + this.appEnvironment;
 
-    String detail = this.sytemExport.apply(siteId, documentId, actions);
+    String detail = this.systemExport.apply(siteId, documentId, actions);
 
     eventBridgeService.putEvents(eventBusName, detailType, detail, source);
   }

@@ -21,16 +21,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api.transformers;
+package com.formkiq.stacks.dynamodb.attributes;
 
-import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
+import com.formkiq.aws.dynamodb.DynamodbRecordToMap;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-import com.formkiq.aws.dynamodb.DynamodbRecordToMap;
-import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
+
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 
 /**
  * {@link Function} to merge {@link DocumentAttributeRecord} with the same keys together.
@@ -60,7 +61,7 @@ public class DocumentAttributeRecordToMap
 
     for (DocumentAttributeRecord a : attributes) {
 
-      if (uniqueKeys && lastValues != null && last != null && last.getKey().equals(a.getKey())) {
+      if (uniqueKeys && lastValues != null && last.getKey().equals(a.getKey())) {
 
         if (!isEmpty(a.getStringValue())) {
 
@@ -90,7 +91,6 @@ public class DocumentAttributeRecordToMap
     return c;
   }
 
-  @SuppressWarnings("unchecked")
   private void addNumberValues(final Map<String, Object> lastValues,
       final DocumentAttributeRecord a) {
     if (lastValues.containsKey("numberValue")) {
@@ -107,7 +107,6 @@ public class DocumentAttributeRecordToMap
     }
   }
 
-  @SuppressWarnings("unchecked")
   private void addStringValues(final Map<String, Object> lastValues,
       final DocumentAttributeRecord a) {
 

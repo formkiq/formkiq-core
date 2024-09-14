@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.lambda.s3.actions;
 
+import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
@@ -35,6 +36,8 @@ import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
+import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecordToMap;
 import com.formkiq.stacks.lambda.s3.GsonUtil;
 import com.google.gson.Gson;
 
@@ -47,7 +50,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 
@@ -93,12 +95,38 @@ public class DocumentExternalSystemExport {
     List<DynamicDocumentItem> documents = new ArrayList<>();
     documents.add(item);
 
-    Optional<Action> antiVirus = actions.stream()
-        .filter(
-            a -> ActionType.ANTIVIRUS.equals(a.type()) && ActionStatus.COMPLETE.equals(a.status()))
-        .findFirst();
+    Collection<Map<String, Object>> attributes = addDocumentAttributes(siteId, documentId);
+    if (!attributes.isEmpty()) {
+      item.put("attributes", attributes);
+    }
 
-    if (antiVirus.isPresent()) {
+    addDocumentTags(siteId, documentId, actions, item);
+
+    return this.gson.toJson(Map.of("documents", documents));
+  }
+
+  private Collection<Map<String, Object>> addDocumentAttributes(final String siteId,
+      final String documentId) {
+
+    final int limit = 100;
+
+    PaginationResults<DocumentAttributeRecord> results =
+        this.documentService.findDocumentAttributes(siteId, documentId, null, limit);
+
+    Collection<Map<String, Object>> list =
+        new DocumentAttributeRecordToMap(true).apply(results.getResults());
+
+    list.forEach(l -> {
+      l.remove("userId");
+      l.remove("insertedDate");
+    });
+
+    return list;
+  }
+
+  private void addDocumentTags(final String siteId, final String documentId,
+      final List<Action> actions, final DynamicDocumentItem item) {
+    if (hasAction(actions)) {
 
       Map<String, Collection<DocumentTag>> tagMap =
           this.documentService.findDocumentsTags(siteId, Collections.singletonList(documentId),
@@ -116,8 +144,11 @@ public class DocumentExternalSystemExport {
       String timestamp = values.getOrDefault("CLAMAV_SCAN_TIMESTAMP", "");
       item.put("timestamp", timestamp);
     }
+  }
 
-    return this.gson.toJson(Map.of("documents", documents));
+  private boolean hasAction(final List<Action> actions) {
+    return actions.stream().anyMatch(
+        a -> ActionType.ANTIVIRUS.equals(a.type()) && ActionStatus.COMPLETE.equals(a.status()));
   }
 
   /**

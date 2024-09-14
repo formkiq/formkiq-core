@@ -70,11 +70,13 @@ import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
+import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
 import com.formkiq.stacks.dynamodb.attributes.AttributeDataType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeKeyReserved;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeServiceDynamodb;
+import com.formkiq.stacks.dynamodb.attributes.AttributeType;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.documents.DocumentPublicationRecord;
 import com.formkiq.stacks.dynamodb.mappings.Mapping;
@@ -2220,9 +2222,20 @@ public class DocumentActionsProcessorTest implements DbKeys {
   public void testEventBridge01() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
+      attributeService.addAttribute(siteId, "category", AttributeDataType.STRING,
+          AttributeType.STANDARD);
+
       String documentId = UUID.randomUUID().toString();
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-      documentService.saveDocument(siteId, item, null);
+
+      DocumentAttributeRecord attr0 = new DocumentAttributeRecord().setDocumentId(documentId)
+          .setUserId("joe").setKey("category").setStringValue("person").updateValueType();
+
+      DocumentAttributeRecord attr1 = new DocumentAttributeRecord().setDocumentId(documentId)
+          .setUserId("joe").setKey("category").setStringValue("other").updateValueType();
+
+      List<DocumentAttributeRecord> attributes = List.of(attr0, attr1);
+      documentService.saveDocument(siteId, item, null, attributes, new SaveDocumentOptions());
 
       String eventBusName = "test_" + UUID.randomUUID();
       eventBridgeService.createEventBridge(eventBusName);
@@ -2262,7 +2275,22 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertNotNull(documents.get(0).get("documentId"));
       assertNotNull(documents.get(0).get("url"));
       assertNotNull(documents.get(0).get("path"));
+
+      validateAttributes(documents);
     }
+  }
+
+  private void validateAttributes(final List<Map<String, Object>> documents) {
+    Collection<Map<String, Object>> attrList =
+        (Collection<Map<String, Object>>) documents.get(0).get("attributes");
+    assertEquals(1, attrList.size());
+
+    Map<String, Object> attrMap = attrList.iterator().next();
+    final int expected = 3;
+    assertEquals(expected, attrMap.size());
+    assertEquals("category", attrMap.get("key"));
+    assertEquals("STRING", attrMap.get("valueType"));
+    assertEquals("[other, person]", attrMap.get("stringValues").toString());
   }
 
   private ReceiveMessageResponse getReceiveMessageResponse() throws InterruptedException {
