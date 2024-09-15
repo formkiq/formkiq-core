@@ -90,10 +90,11 @@ public interface DynamoDbService {
   /**
    * Delete all records that beginsWith PK.
    *
+   * @param indexName {@link String}
    * @param pk {@link AttributeValue}
    * @return boolean
    */
-  boolean deleteItemsBeginsWith(AttributeValue pk);
+  boolean deleteItemsBeginsWith(String indexName, AttributeValue pk);
 
   /**
    * Whether Database Record Exist.

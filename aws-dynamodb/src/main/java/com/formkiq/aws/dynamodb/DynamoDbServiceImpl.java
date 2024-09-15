@@ -173,15 +173,15 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
   }
 
   @Override
-  public boolean deleteItemsBeginsWith(final AttributeValue pk) {
+  public boolean deleteItemsBeginsWith(final String indexName, final AttributeValue pk) {
 
     final int limit = 100;
     List<Map<String, AttributeValue>> list = new ArrayList<>();
 
     Map<String, AttributeValue> expressionAttributeValues = Map.of(":pkValue", pk);
 
-    ScanRequest.Builder scanRequest = ScanRequest.builder().tableName(this.tableName).limit(limit)
-        .filterExpression("begins_with(PK, :pkValue)")
+    ScanRequest.Builder scanRequest = ScanRequest.builder().tableName(this.tableName).indexName(indexName).limit(limit)
+        .filterExpression("begins_with(" + indexName + "PK, :pkValue)")
         .expressionAttributeValues(expressionAttributeValues).projectionExpression("PK,SK");
 
     Map<String, AttributeValue> startkey;
