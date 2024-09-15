@@ -180,8 +180,10 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
 
     Map<String, AttributeValue> expressionAttributeValues = Map.of(":pkValue", pk);
 
+    String prefix = indexName != null ? indexName : "";
+    String filterExpression = "begins_with(" + prefix + "PK, :pkValue)";
     ScanRequest.Builder scanRequest = ScanRequest.builder().tableName(this.tableName).indexName(indexName).limit(limit)
-        .filterExpression("begins_with(" + indexName + "PK, :pkValue)")
+        .filterExpression(filterExpression)
         .expressionAttributeValues(expressionAttributeValues).projectionExpression("PK,SK");
 
     Map<String, AttributeValue> startkey;
