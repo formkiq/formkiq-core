@@ -56,11 +56,18 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.client.api.AttributesApi;
+import com.formkiq.client.api.DocumentAttributesApi;
 import com.formkiq.client.invoker.ApiResponse;
 import com.formkiq.client.model.AddAction;
+import com.formkiq.client.model.AddAttribute;
+import com.formkiq.client.model.AddAttributeRequest;
+import com.formkiq.client.model.AddDocumentAttribute;
+import com.formkiq.client.model.AddDocumentAttributeStandard;
 import com.formkiq.client.model.ChecksumType;
 import com.formkiq.client.model.DocumentActionType;
+import com.formkiq.client.model.DocumentAttribute;
 import com.formkiq.client.model.GetAttributeResponse;
 import com.formkiq.stacks.dynamodb.attributes.AttributeKeyReserved;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -953,6 +960,49 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
         assertNotNull(site.getDocumentId());
         assertEquals(content,
             api.getDocumentContent(response.getDocumentId(), siteId, null, null).getContent());
+      }
+    }
+  }
+
+  /**
+   * Add Document with very large attributes.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  public void testPost12() throws Exception {
+    // given
+    String content0 = "test data";
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+
+      for (ApiClient client : getApiClients(siteId)) {
+
+        String attributeKey = "category_" + UUID.randomUUID();
+
+        DocumentsApi api = new DocumentsApi(client);
+        AttributesApi attrApi = new AttributesApi(client);
+
+        attrApi.addAttribute(
+            new AddAttributeRequest().attribute(new AddAttribute().key(attributeKey)), siteId);
+
+        final int len = 3000;
+        String value = Strings.generateRandomString(len);
+        AddDocumentRequest req =
+            new AddDocumentRequest().content(content0).addAttributesItem(new AddDocumentAttribute(
+                new AddDocumentAttributeStandard().key(attributeKey).stringValue(value)));
+
+        // when
+        String documentId = api.addDocument(req, siteId, null).getDocumentId();
+
+        // then
+        DocumentAttributesApi documentAttributesApi = new DocumentAttributesApi(client);
+        List<DocumentAttribute> attributes = notNull(documentAttributesApi
+            .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+
+        final int expected = 1;
+        assertEquals(expected, attributes.size());
+        assertEquals(attributeKey, attributes.get(0).getKey());
+        assertEquals(value, attributes.get(0).getStringValue());
       }
     }
   }
