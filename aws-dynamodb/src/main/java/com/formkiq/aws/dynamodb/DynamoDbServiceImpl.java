@@ -182,8 +182,8 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
 
     String prefix = indexName != null ? indexName : "";
     String filterExpression = "begins_with(" + prefix + "PK, :pkValue)";
-    ScanRequest.Builder scanRequest = ScanRequest.builder().tableName(this.tableName).indexName(indexName).limit(limit)
-        .filterExpression(filterExpression)
+    ScanRequest.Builder scanRequest = ScanRequest.builder().tableName(this.tableName)
+        .indexName(indexName).limit(limit).filterExpression(filterExpression)
         .expressionAttributeValues(expressionAttributeValues).projectionExpression("PK,SK");
 
     Map<String, AttributeValue> startkey;

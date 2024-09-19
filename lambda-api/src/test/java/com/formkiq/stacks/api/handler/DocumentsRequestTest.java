@@ -25,6 +25,7 @@ package com.formkiq.stacks.api.handler;
 
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.objects.Objects;
+import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.s3.S3ServiceExtension;
@@ -714,6 +715,43 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
             .startsWith("{\"message\":\"<?xml version='1.0' encoding='utf-8'?>\\n"
                 + "<Error><Code>InvalidRequest</Code>"));
       }
+    }
+  }
+
+  /**
+   * Add Document with very large attributes.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  public void testPost18() throws Exception {
+    // given
+    String content0 = "test data";
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+      String attributeKey = "category";
+
+      this.attributesApi.addAttribute(
+          new AddAttributeRequest().attribute(new AddAttribute().key(attributeKey)), siteId);
+
+      final int len = 3000;
+      String value = Strings.generateRandomString(len);
+      AddDocumentRequest req =
+          new AddDocumentRequest().content(content0).addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key(attributeKey).stringValue(value)));
+
+      // when
+      String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+
+      // then
+      List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
+          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+
+      final int expected = 1;
+      assertEquals(expected, attributes.size());
+      assertEquals(attributeKey, attributes.get(0).getKey());
+      assertEquals(value, attributes.get(0).getStringValue());
     }
   }
 

@@ -109,4 +109,11 @@ class StringsTest {
     assertTrue(Strings.isEmptyOrHasValues("", null));
     assertTrue(Strings.isEmptyOrHasValues(null, null, null));
   }
+
+  @Test
+  void testTruncate01() {
+    assertEquals("a", Strings.truncate("a", 2));
+    assertEquals("ab", Strings.truncate("ab", 2));
+    assertEquals("ab", Strings.truncate("abc", 2));
+  }
 }

@@ -250,4 +250,21 @@ public class Strings {
     long countEmpty = Arrays.stream(strs).filter(s -> isEmpty(s)).count();
     return len == countEmpty || countEmpty == 0;
   }
+
+  /**
+   * Truncates a string to a specified maximum number of characters. If the string is shorter than
+   * or equal to the maximum length, it is returned unchanged.
+   *
+   * @param input the string to be truncated
+   * @param maxLength the maximum number of characters to retain
+   * @return the truncated string
+   */
+  public static String truncate(final String input, final int maxLength) {
+    if (input == null || maxLength < 0) {
+      throw new IllegalArgumentException(
+          "Input cannot be null and maxLength must be non-negative.");
+    }
+
+    return input.length() <= maxLength ? input : input.substring(0, maxLength);
+  }
 }
