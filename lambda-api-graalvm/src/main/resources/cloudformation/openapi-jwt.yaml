@@ -8910,11 +8910,25 @@ Resources:
             AddDocumentGenerateRequest:
               type: "object"
               properties:
-                templateDocumentId:
-                  type: "string"
-                  description: "Document Identifier of the template to use"
+                datasources:
+                  type: "array"
+                  description: "List of data sources"
+                  items:
+                    $ref: "#/components/schemas/DocumentGenerateDataSource"
                 outputType:
                   $ref: "#/components/schemas/DocumentGenerateOutputType"
+
+            DocumentGenerateDataSource:
+              type: "object"
+              required:
+                - documentId
+              properties:
+                name:
+                  type: "string"
+                  description: "The data source name"
+                documentId:
+                  type: "string"
+                  description: "Document Identifier of the data source document"
 
             DocumentGenerateOutputType:
               type: string
