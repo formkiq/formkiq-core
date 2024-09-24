@@ -2045,7 +2045,8 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * PATCH /documents, existing attribute.
+   * PATCH /documents, POST /documents/{documentId}/attributes, PUT
+   * /documents/{documentId}/attributes, existing attribute .
    *
    * @throws ApiException ApiException
    */
@@ -2075,6 +2076,33 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       // then
       assertEquals("public", getDocumentAttribute(siteId, documentId, key).getStringValue());
+
+      // given - POST /documents/{documentId}/attributes
+      AddDocumentAttributesRequest addReq = new AddDocumentAttributesRequest()
+          .addAttributesItem(createStringAttribute(key, "another"));
+
+      // when
+      try {
+        this.documentAttributesApi.addDocumentAttributes(documentId, addReq, siteId, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"security\","
+                + "\"error\":\"document attribute 'security' already exists\"}]}",
+            e.getResponseBody());
+      }
+
+      // give - PUT /documents/{documentId}/attributes
+      SetDocumentAttributesRequest setReq =
+          new SetDocumentAttributesRequest().addAttributesItem(createStringAttribute(key, "third"));
+
+      // when
+      this.documentAttributesApi.setDocumentAttributes(documentId, setReq, siteId);
+
+      // then
+      assertEquals("third", getDocumentAttribute(siteId, documentId, key).getStringValue());
     }
   }
 

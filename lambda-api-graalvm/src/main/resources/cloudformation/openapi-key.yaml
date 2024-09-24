@@ -1176,7 +1176,11 @@ Resources:
             patch:
               operationId: UpdateDocument
               summary: Update document
-              description: Update a document's details, i.e., metadata
+              description: |-
+                Update a document's details, i.e., metadata
+
+                NOTE:
+                - provided attributes will overwrite existing matching attribute keys in the document. Attributes not included in the request body will remain unchanged.
               tags:
                 - Documents
               parameters:
@@ -1314,7 +1318,8 @@ Resources:
             post:
               operationId: AddDocumentAttributes
               summary: Add attribute to document
-              description: Add multiple attributes to a document; this endpoint also accepts a different body parameter for adding a single attribute
+              description: |-
+                Add multiple attributes to a document; this endpoint also accepts a different body parameter for adding a single attribute
               tags:
                 - Document Attributes
               parameters:
@@ -1337,7 +1342,11 @@ Resources:
             put:
               operationId: SetDocumentAttributes
               summary: Set document's attributes
-              description: Set multiple attributes to a document; this endpoint also accepts a different body parameter for setting a single attribute
+              description: |-
+                Set multiple attributes to a document; this endpoint also accepts a different body parameter for setting a single attribute
+
+                Note:
+                - attributes in the request will overwrite existing attributes.
               tags:
                 - Document Attributes
               parameters:
@@ -5917,7 +5926,11 @@ Resources:
             post:
               operationId: AddDocumentGenerate
               description: |-
-                Generates a document based from a template file; ONLY available with FormKiQ Enterprise
+                Generates a new document using a specified template file and data sources. This operation allows users to merge data from multiple documents into a template to create a new document in the desired output format (e.g., DOCX).
+
+                Each data source must include a `data` object, which contains key-value pairs that will be merged into the template. The value can be any valid JSON object. { "data":{}}
+
+                ; ONLY available with FormKiQ Enterprise
               summary: Add Document Generate
               tags:
                 - Document Generation
