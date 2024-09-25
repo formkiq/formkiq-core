@@ -469,6 +469,39 @@ public class FkqDocumentService {
   }
 
   /**
+   * Wait For Document Content.
+   *
+   * @param client {@link ApiClient}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param contentType {@link String}
+   * @return {@link GetDocumentContentResponse}
+   * @throws InterruptedException InterruptedException
+   */
+  public static GetDocumentContentResponse waitForDocumentContentType(final ApiClient client,
+      final String siteId, final String documentId, final String contentType)
+      throws InterruptedException {
+
+    DocumentsApi api = new DocumentsApi(client);
+
+    while (true) {
+
+      try {
+        GetDocumentContentResponse response =
+            api.getDocumentContent(documentId, siteId, null, null);
+        if ((contentType.equals(response.getContentType()))) {
+          return response;
+        }
+
+      } catch (ApiException e) {
+        // ignore error
+      }
+
+      TimeUnit.SECONDS.sleep(1);
+    }
+  }
+
+  /**
    * Wait For Document Content Length.
    * 
    * @param client {@link ApiClient}

@@ -52,6 +52,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -60,6 +61,7 @@ import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENTS;
 import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENT_SIZE_BYTES;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContent;
+import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContentType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -296,9 +298,7 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
       String content = "<html><body>test content</body></html>";
 
       // when
-      HttpResponse<String> httpResponse = this.http.send(HttpRequest.newBuilder(new URI(url))
-          .header("Content-Type", MimeType.MIME_HTML.getContentType())
-          .method("PUT", BodyPublishers.ofString(content)).build(), BodyHandlers.ofString());
+      HttpResponse<String> httpResponse = putS3PresignedUrl(url, MimeType.MIME_HTML, content);
 
       // then
       assertEquals(STATUS_OK, httpResponse.statusCode());
@@ -311,6 +311,13 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
       assertEquals("test", tags.get(0).getKey());
       assertEquals("this", tags.get(0).getValue());
     }
+  }
+
+  private HttpResponse<String> putS3PresignedUrl(final String url, final MimeType mime,
+      final String content) throws IOException, InterruptedException, URISyntaxException {
+    return this.http
+        .send(HttpRequest.newBuilder(new URI(url)).header("Content-Type", mime.getContentType())
+            .method("PUT", BodyPublishers.ofString(content)).build(), BodyHandlers.ofString());
   }
 
   /**
@@ -360,6 +367,57 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
       // then
       assertEquals(STATUS_OK, httpResponse.statusCode());
       waitForDocumentContent(client, null, documentId, content);
+    }
+  }
+
+  /**
+   * POST Request Upload Document Url and then patch document content type.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  public void testPost03() throws Exception {
+    // given
+    ApiClient client = getApiClients(null).get(0);
+
+    DocumentsApi api = new DocumentsApi(client);
+    AddDocumentUploadRequest req = new AddDocumentUploadRequest();
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      // when
+      GetDocumentUrlResponse response = api.addDocumentUpload(req, siteId, null, null, null);
+
+      // then
+      assertNotNull(response.getDocumentId());
+      assertNotNull(response.getUrl());
+
+      // given
+      String documentId = response.getDocumentId();
+      String url = response.getUrl();
+      String content = "<html><body>test content</body></html>";
+
+      // when
+      HttpResponse<String> httpResponse = putS3PresignedUrl(url, MimeType.MIME_HTML, content);
+
+      // then
+      assertEquals(STATUS_OK, httpResponse.statusCode());
+      waitForDocumentContent(client, siteId, documentId, content);
+      assertEquals("text/html", api.getDocument(documentId, siteId, null).getContentType());
+
+      // given
+      url = api.getDocumentIdUpload(documentId, siteId, null, null, null, null, null).getUrl();
+      content = "some test data";
+
+      // when
+      httpResponse = putS3PresignedUrl(url, MimeType.MIME_PLAIN_TEXT, content);
+
+      // then
+      assertEquals(STATUS_OK, httpResponse.statusCode());
+      waitForDocumentContent(client, siteId, documentId, content);
+      waitForDocumentContentType(client, siteId, documentId, "text/plain");
+      assertEquals("text/plain", api.getDocument(documentId, siteId, null).getContentType());
     }
   }
 }

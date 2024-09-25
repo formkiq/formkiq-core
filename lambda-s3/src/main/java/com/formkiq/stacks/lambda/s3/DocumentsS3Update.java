@@ -54,6 +54,7 @@ import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.dynamodb.objects.MimeType;
+import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3Service;
@@ -558,7 +559,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
         attributes.put("lastModifiedDate", AttributeValue.fromS(this.df.format(new Date())));
       }
 
-      if (contentType != null && contentType.length() > 0) {
+      if (!Strings.isEmpty(contentType)) {
         attributes.put("contentType", AttributeValue.fromS(contentType));
       }
 
