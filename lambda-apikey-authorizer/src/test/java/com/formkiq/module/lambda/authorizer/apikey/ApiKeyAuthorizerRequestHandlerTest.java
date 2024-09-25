@@ -27,9 +27,7 @@ import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
-import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
@@ -71,18 +69,13 @@ class ApiKeyAuthorizerRequestHandlerTest {
   private static final Gson GSON = new GsonBuilder().create();
   /** {@link ApiKeyAuthorizerRequestHandler}. */
   private static ApiKeyAuthorizerRequestHandler processor;
-  /** {@link AwsServiceCache}. */
-  private static AwsServiceCache awsServices;
 
   /**
    * Before Class.
    *
-   * @throws URISyntaxException URISyntaxException
-   * @throws InterruptedException InterruptedException
-   * @throws IOException IOException
    */
   @BeforeAll
-  public static void beforeClass() throws URISyntaxException, InterruptedException, IOException {
+  public static void beforeClass() {
 
     Map<String, String> env = new HashMap<>();
     env.put("AWS_REGION", Region.US_EAST_1.id());
@@ -91,7 +84,7 @@ class ApiKeyAuthorizerRequestHandlerTest {
     AwsCredentials creds = AwsBasicCredentials.create("aaa", "bbb");
     StaticCredentialsProvider credentialsProvider = StaticCredentialsProvider.create(creds);
 
-    awsServices =
+    AwsServiceCache awsServices =
         new AwsServiceCacheBuilder(env, TestServices.getEndpointMap(), credentialsProvider)
             .addService(new DynamoDbAwsServiceRegistry()).build();
 
@@ -100,14 +93,13 @@ class ApiKeyAuthorizerRequestHandlerTest {
   }
 
   /** {@link Context}. */
-  private Context context = new LambdaContextRecorder();
+  private final Context context = new LambdaContextRecorder();
 
   private InputStream getInput(final String apiKey) {
-    List<String> identitySource = apiKey != null ? Arrays.asList(apiKey) : Collections.emptyList();
+    List<String> identitySource = apiKey != null ? List.of(apiKey) : Collections.emptyList();
     String json = GSON.toJson(Map.of("type", "REQUEST", "identitySource", identitySource));
 
-    InputStream is = new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8));
-    return is;
+    return new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8));
   }
 
   /**
@@ -129,7 +121,7 @@ class ApiKeyAuthorizerRequestHandlerTest {
       processor.handleRequest(is, os, this.context);
 
       // then
-      String response = new String(os.toByteArray(), "UTF-8");
+      String response = os.toString(StandardCharsets.UTF_8);
       Map<String, Object> map = GSON.fromJson(response, Map.class);
       assertEquals(Boolean.FALSE, map.get("isAuthorized"));
       Map<String, Object> ctx = (Map<String, Object>) map.get("context");
@@ -165,7 +157,7 @@ class ApiKeyAuthorizerRequestHandlerTest {
         processor.handleRequest(is, os, this.context);
 
         // then
-        String response = new String(os.toByteArray(), "UTF-8");
+        String response = os.toString(StandardCharsets.UTF_8);
         Map<String, Object> map = GSON.fromJson(response, Map.class);
         assertEquals(Boolean.TRUE, map.get("isAuthorized"));
 
@@ -201,7 +193,7 @@ class ApiKeyAuthorizerRequestHandlerTest {
       processor.handleRequest(is, os, this.context);
 
       // then
-      String response = new String(os.toByteArray(), "UTF-8");
+      String response = os.toString(StandardCharsets.UTF_8);
       Map<String, Object> map = GSON.fromJson(response, Map.class);
       assertEquals(Boolean.FALSE, map.get("isAuthorized"));
 
@@ -233,7 +225,7 @@ class ApiKeyAuthorizerRequestHandlerTest {
       processor.handleRequest(is, os, this.context);
 
       // then
-      String response = new String(os.toByteArray(), "UTF-8");
+      String response = os.toString(StandardCharsets.UTF_8);
       Map<String, Object> map = GSON.fromJson(response, Map.class);
       assertEquals(Boolean.FALSE, map.get("isAuthorized"));
       Map<String, Object> ctx = (Map<String, Object>) map.get("context");

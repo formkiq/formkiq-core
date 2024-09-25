@@ -57,6 +57,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import com.formkiq.aws.dynamodb.objects.Strings;
+import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.api.AttributesApi;
 import com.formkiq.client.api.DocumentAttributesApi;
 import com.formkiq.client.invoker.ApiResponse;
@@ -1005,6 +1006,43 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
         assertEquals(value, attributes.get(0).getStringValue());
       }
     }
+  }
+
+  /**
+   * Save new File using API Key with non-matching SiteId.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  public void testPost13() throws Exception {
+    // given
+    ApiClient client = getApiClients("mysite").get(2);
+    DocumentsApi api = new DocumentsApi(client);
+    AddDocumentRequest addReq =
+        new AddDocumentRequest().content("test data").contentType("text/plain");
+
+    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+
+      // when
+      try {
+        api.addDocument(addReq, siteId, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(SC_UNAUTHORIZED.getStatusCode(), e.getCode());
+        assertEquals("{\"message\":\"fkq access denied to siteId (" + siteId + ")\"}",
+            e.getResponseBody());
+      }
+    }
+
+    // when
+    AddDocumentResponse response = api.addDocument(addReq, null, null);
+
+    // then
+    String documentId = response.getDocumentId();
+    assertEquals("mysite", api.getDocument(documentId, "mysite", null).getSiteId());
+    assertEquals("mysite", api.getDocument(documentId, null, null).getSiteId());
   }
 
   /**
