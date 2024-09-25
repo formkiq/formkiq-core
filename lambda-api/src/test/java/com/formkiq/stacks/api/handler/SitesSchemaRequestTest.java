@@ -159,6 +159,41 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * POST /documents Add attributes.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddDocument03() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "strings", null);
+
+      SetSitesSchemaRequest req0 =
+          new SetSitesSchemaRequest().name("joe").attributes(new SchemaAttributes()
+              .addRequiredItem(new AttributeSchemaRequired().attributeKey("strings")));
+      this.schemasApi.setSitesSchema(siteId, req0);
+
+      req0 = new SetSitesSchemaRequest().name("joe").attributes(new SchemaAttributes()
+          .addOptionalItem(new AttributeSchemaOptional().attributeKey("strings")));
+      this.schemasApi.setSitesSchema(siteId, req0);
+
+      AddDocumentRequest areq = new AddDocumentRequest().content("adasd");
+
+      // when
+      String documentId = this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
+
+      // then
+      List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
+          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+      assertEquals(0, attributes.size());
+    }
+  }
+
+  /**
    * POST /documents/{documentId}/attributes. Add attributes.
    *
    * @throws ApiException an error has occurred

@@ -2142,4 +2142,46 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       }
     }
   }
+
+  /**
+   * PATCH /documents/{documentId} with OPA.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testUpdateDocumentAttribute01() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "security", null, AttributeType.OPA);
+
+      String documentId = addDocumentAttribute(siteId, "security", "confidential", null, null);
+
+      List<SearchResultDocument> documents =
+          foldersApi.getFolderDocuments(siteId, null, null, null, null).getDocuments();
+      assertEquals(1, documents.size());
+
+      UpdateDocumentRequest updateReq = new UpdateDocumentRequest().path("somepath.txt")
+          .addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key("security").stringValue("other")));
+
+      // when
+      try {
+        this.documentsApi.updateDocument(documentId, updateReq, siteId, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"security\",\"error\":\"attribute "
+                + "'security' is an access attribute, can only be changed by Admin\"}]}",
+            e.getResponseBody());
+
+        documents = foldersApi.getFolderDocuments(siteId, null, null, null, null).getDocuments();
+        assertEquals(1, documents.size());
+      }
+    }
+  }
 }

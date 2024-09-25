@@ -1870,11 +1870,6 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       documentValues.put("path", AttributeValue.fromS(document.getPath()));
     }
 
-    if (isPathChanges(previous, documentValues)) {
-      this.folderIndexProcessor.deletePath(siteId, document.getDocumentId(),
-          previous.get("path").s());
-    }
-
     List<Map<String, AttributeValue>> tagValues =
         getSaveTagsAttributes(siteId, document.getDocumentId(), tags, options.timeToLive());
 
@@ -1891,8 +1886,13 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
     if (writeBuilder.batchWriteItem(this.dbClient)) {
 
+      if (isPathChanges(previous, documentValues)) {
+        this.folderIndexProcessor.deletePath(siteId, document.getDocumentId(),
+            previous.get("path").s());
+      }
+
       List<String> tagKeys =
-          notNull(tags).stream().map(t -> t.getKey()).collect(Collectors.toList());
+          notNull(tags).stream().map(DocumentTag::getKey).collect(Collectors.toList());
       this.indexWriter.writeTagIndex(siteId, tagKeys);
 
       if (options.saveDocumentDate()) {
