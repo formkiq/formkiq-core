@@ -78,8 +78,8 @@ public class SchemaMissingRequiredAttributes
       Set<String> keys =
           c.stream().map(DocumentAttributeRecord::getKey).collect(Collectors.toSet());
 
-      List<SchemaAttributesRequired> requiredAttributes = this.attributes.getRequired().stream()
-          .filter(a -> !keys.contains(a.getAttributeKey())).toList();
+      List<SchemaAttributesRequired> requiredAttributes = notNull(this.attributes.getRequired())
+          .stream().filter(a -> !keys.contains(a.getAttributeKey())).toList();
 
       if (!requiredAttributes.isEmpty()) {
 

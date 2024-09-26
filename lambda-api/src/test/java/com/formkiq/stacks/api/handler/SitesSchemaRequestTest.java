@@ -374,6 +374,45 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * POST /documents/{documentId}/attributes. Add attributes with NULL required attributes.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddDocumentAttribute05() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+      addAttribute(siteId, "strings", null);
+
+      AddDocumentRequest areq = new AddDocumentRequest().content("adasd");
+      String documentId = this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
+
+      SetSitesSchemaRequest req =
+          new SetSitesSchemaRequest().name("joe").attributes(new SchemaAttributes().required(null));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      AddDocumentAttributesRequest attrReq =
+          new AddDocumentAttributesRequest().addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key("strings").stringValue("category")));
+
+      // when
+      AddResponse response =
+          this.documentAttributesApi.addDocumentAttributes(documentId, attrReq, siteId, null);
+
+      // then
+      assertEquals("added attributes to documentId '" + documentId + "'", response.getMessage());
+
+      List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
+          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+      assertEquals(1, attributes.size());
+      assertEquals("strings", attributes.get(0).getKey());
+      assertEquals("category", attributes.get(0).getStringValue());
+    }
+  }
+
+  /**
    * POST /documents/upload with site schema required attribute.
    *
    * @throws ApiException an error has occurred
