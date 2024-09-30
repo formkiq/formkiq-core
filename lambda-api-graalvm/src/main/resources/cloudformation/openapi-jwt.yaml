@@ -9724,6 +9724,7 @@ Resources:
                       - READ
                       - WRITE
                       - DELETE
+                      - GOVERN
             AddApiKeyResponse:
               type: object
               properties:
@@ -9973,6 +9974,7 @@ Resources:
                       - READ
                       - WRITE
                       - DELETE
+                      - GOVERN
             GetConfigurationResponse:
               type: object
               properties:
@@ -10641,6 +10643,7 @@ Resources:
                 - DELETE
                 - READ
                 - WRITE
+                - GOVERN
             AddClassificationRequest:
               type: "object"
               properties:

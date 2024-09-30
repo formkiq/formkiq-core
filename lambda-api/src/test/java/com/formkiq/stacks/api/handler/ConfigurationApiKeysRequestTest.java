@@ -23,23 +23,24 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
+import com.formkiq.client.model.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.client.invoker.ApiException;
-import com.formkiq.client.model.AddApiKeyRequest;
-import com.formkiq.client.model.AddApiKeyResponse;
-import com.formkiq.client.model.DeleteApiKeyResponse;
-import com.formkiq.client.model.GetApiKeysResponse;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 
@@ -185,5 +186,46 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
 
     // then
     assertEquals(0, response.getApiKeys().size());
+  }
+
+  /**
+   * Add API Key with Govern permission.
+   *
+   * @throws Exception an error has occurred
+   */
+  // @SuppressWarnings("unchecked")
+  @Test
+  public void testHandleGetApiKeys04() throws Exception {
+    // given
+    String group = "Admins";
+
+    for (String siteId : Arrays.asList(SiteIdKeyGenerator.DEFAULT_SITE_ID,
+        UUID.randomUUID().toString())) {
+
+      setBearerToken(group);
+
+      String apiKeyName = "test key";
+      AddApiKeyRequest req = new AddApiKeyRequest().name(apiKeyName)
+          .addPermissionsItem(AddApiKeyRequest.PermissionsEnum.GOVERN);
+
+      // when
+      AddApiKeyResponse response = this.systemApi.addApiKey(siteId, req);
+
+      // then
+      String apiKey = response.getApiKey();
+      assertNotNull(response.getApiKey());
+
+      // when
+      GetApiKeysResponse apiKeys = this.systemApi.getApiKeys(siteId);
+
+      // then
+      assertEquals(1, apiKeys.getApiKeys().size());
+      assertTrue(apiKeys.getApiKeys().get(0).getApiKey().contains("**************"));
+      assertNotNull(apiKeys.getApiKeys().get(0).getInsertedDate());
+      assertEquals(apiKeyName, apiKeys.getApiKeys().get(0).getName());
+      assertEquals("GOVERN", apiKeys.getApiKeys().get(0).getPermissions().stream().map(Enum::name)
+          .sorted().collect(Collectors.joining(",")));
+      assertEquals(siteId, apiKeys.getApiKeys().get(0).getSiteId());
+    }
   }
 }

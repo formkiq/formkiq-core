@@ -1571,6 +1571,32 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * DELETE /documents/{documentId}/attributes/{attributeKey} with OPA and GOVERN.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testDeleteDocumentAttribute03() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList("default", SITE_ID)) {
+
+      setBearerToken(new String[] {siteId, siteId + "_govern"});
+
+      addAttribute(siteId, "security", null, AttributeType.OPA);
+
+      String documentId = addDocumentAttribute(siteId, "security", "confidential", null, null);
+
+      // when
+      this.documentAttributesApi.deleteDocumentAttribute(documentId, "security", siteId);
+
+      // then
+      List<DocumentAttribute> documentAttributes = notNull(this.documentAttributesApi
+          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+      assertEquals(0, documentAttributes.size());
+    }
+  }
+
+  /**
    * DELETE /documents/{documentId}/attributes/{attributeKey}/{attributeValue} with OPA.
    * 
    * @throws ApiException ApiException
@@ -1977,6 +2003,41 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * PUT /documents/{documentId}/attributes with OPA attribute attached to document and govern.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testPutDocumentAttribute03() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList("default", SITE_ID)) {
+
+      setBearerToken(new String[] {siteId, siteId + "_govern"});
+
+      addAttribute(siteId, "security", null, AttributeType.OPA);
+      addAttribute(siteId, "strings", null, null);
+
+      String documentId = addDocumentAttribute(siteId, "security", "confidential", null, null);
+
+      AddDocumentAttribute strings = createStringsAttribute("strings", Arrays.asList("abc", "xyz"));
+      addDocumentAttribute(siteId, documentId, strings);
+
+      SetDocumentAttributesRequest sreq = new SetDocumentAttributesRequest()
+          .addAttributesItem(createStringAttribute("strings", "123"));
+
+      // when
+      this.documentAttributesApi.setDocumentAttributes(documentId, sreq, siteId);
+
+      // then
+      List<DocumentAttribute> documentAttributes = notNull(this.documentAttributesApi
+          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+      assertEquals(1, documentAttributes.size());
+      assertEquals("strings", documentAttributes.get(0).getKey());
+      assertEquals("123", documentAttributes.get(0).getStringValue());
+    }
+  }
+
+  /**
    * PUT /documents/{documentId}/attributes/{attributeKey} with OPA.
    * 
    * @throws ApiException ApiException
@@ -2182,6 +2243,43 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
         documents = foldersApi.getFolderDocuments(siteId, null, null, null, null).getDocuments();
         assertEquals(1, documents.size());
       }
+    }
+  }
+
+  /**
+   * PATCH /documents/{documentId} with OPA and Govern permission.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testUpdateDocumentAttribute02() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList("default", SITE_ID)) {
+
+      // setBearerToken(siteId);
+      setBearerToken(new String[] {siteId, siteId + "_govern"});
+
+      addAttribute(siteId, "security", null, AttributeType.OPA);
+
+      String documentId = addDocumentAttribute(siteId, "security", "confidential", null, null);
+
+      List<SearchResultDocument> documents =
+          notNull(foldersApi.getFolderDocuments(siteId, null, null, null, null).getDocuments());
+      assertEquals(1, documents.size());
+
+      UpdateDocumentRequest updateReq = new UpdateDocumentRequest().path("somepath.txt")
+          .addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key("security").stringValue("other")));
+
+      // when
+      this.documentsApi.updateDocument(documentId, updateReq, siteId, null);
+
+      // then
+      List<DocumentAttribute> documentAttributes = notNull(this.documentAttributesApi
+          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+      assertEquals(1, documentAttributes.size());
+      assertEquals("security", documentAttributes.get(0).getKey());
+      assertEquals("other", documentAttributes.get(0).getStringValue());
     }
   }
 }

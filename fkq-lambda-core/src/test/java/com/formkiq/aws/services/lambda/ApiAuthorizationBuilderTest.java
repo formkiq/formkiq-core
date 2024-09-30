@@ -544,9 +544,9 @@ class ApiAuthorizationBuilderTest {
         .sorted().collect(Collectors.joining(",")));
     assertEquals("ADMIN,DELETE,READ,WRITE", api.getPermissions("sample").stream().map(Enum::name)
         .sorted().collect(Collectors.joining(",")));
-    assertEquals("ADMIN,DELETE,READ,WRITE", api.getPermissions("another").stream().map(Enum::name)
-        .sorted().collect(Collectors.joining(",")));
-    assertEquals("ADMIN,DELETE,READ,WRITE",
+    assertEquals("ADMIN,DELETE,GOVERN,READ,WRITE", api.getPermissions("another").stream()
+        .map(Enum::name).sorted().collect(Collectors.joining(",")));
+    assertEquals("ADMIN,DELETE,GOVERN,READ,WRITE",
         api.getPermissions().stream().map(Enum::name).sorted().collect(Collectors.joining(",")));
     assertEquals("groups: default (ADMIN,DELETE,READ,WRITE), sample (ADMIN,DELETE,READ,WRITE)",
         api.getAccessSummary());
@@ -708,7 +708,7 @@ class ApiAuthorizationBuilderTest {
         api0.getPermissions().stream().map(Enum::name).collect(Collectors.joining(",")));
     assertEquals("READ,WRITE,DELETE,ADMIN",
         api0.getPermissions("default").stream().map(Enum::name).collect(Collectors.joining(",")));
-    assertEquals("ADMIN,DELETE,READ,WRITE",
+    assertEquals("ADMIN,DELETE,READ,WRITE,GOVERN",
         api0.getPermissions("test").stream().map(Enum::name).collect(Collectors.joining(",")));
     assertEquals("groups: default (ADMIN,DELETE,READ,WRITE)", api0.getAccessSummary());
     assertEquals("Admins", String.join(",", api0.getRoles()));
@@ -720,22 +720,57 @@ class ApiAuthorizationBuilderTest {
   @Test
   void testApiAuthorizer23() throws Exception {
     // given
-    ApiGatewayRequestEvent event0 = getExplicitSitesJwtEvent(List.of("student", "test"),
-        Map.of("student", List.of("read", "write"), "test", List.of("delete")));
+    ApiGatewayRequestEvent event0 =
+        getExplicitSitesJwtEvent(List.of("student", "test", "joe"), Map.of("student",
+            List.of("read", "write"), "test", List.of("delete"), "joe", List.of("govern")));
 
     // when
     final ApiAuthorization api0 = new ApiAuthorizationBuilder().build(event0);
 
     // then
     assertNull(api0.getSiteId());
-    assertEquals("student,test", String.join(",", api0.getSiteIds()));
+    assertEquals("joe,student,test", String.join(",", api0.getSiteIds()));
     assertEquals("",
         api0.getPermissions().stream().map(Enum::name).collect(Collectors.joining(",")));
     assertEquals("READ,WRITE",
         api0.getPermissions("student").stream().map(Enum::name).collect(Collectors.joining(",")));
     assertEquals("DELETE",
         api0.getPermissions("test").stream().map(Enum::name).collect(Collectors.joining(",")));
-    assertEquals("groups: student (READ,WRITE), test (DELETE)", api0.getAccessSummary());
-    assertEquals("test,student", String.join(",", api0.getRoles()));
+    assertEquals("GOVERN",
+        api0.getPermissions("joe").stream().map(Enum::name).collect(Collectors.joining(",")));
+    assertEquals("groups: joe (GOVERN), student (READ,WRITE), test (DELETE)",
+        api0.getAccessSummary());
+    assertEquals("joe,test,student", String.join(",", api0.getRoles()));
+  }
+
+  /**
+   * Basic 'default_govern' access.
+   */
+  @Test
+  void testApiAuthorizer24() throws Exception {
+    // given
+    String s0 = "[default_govern]";
+    String s1 = "[finance_govern]";
+    ApiGatewayRequestEvent event0 = getJwtEvent(s0);
+    ApiGatewayRequestEvent event1 = getJwtEvent(s1);
+
+    // when
+    final ApiAuthorization api0 = new ApiAuthorizationBuilder().build(event0);
+    final ApiAuthorization api1 = new ApiAuthorizationBuilder().build(event1);
+
+    // then
+    assertEquals("default", api0.getSiteId());
+    assertEquals("default", String.join(",", api0.getSiteIds()));
+    assertEquals("GOVERN",
+        api0.getPermissions().stream().map(Enum::name).collect(Collectors.joining(",")));
+    assertEquals("groups: default (GOVERN)", api0.getAccessSummary());
+    assertEquals("default_govern", String.join(",", api0.getRoles()));
+
+    assertEquals("finance", api1.getSiteId());
+    assertEquals("finance", String.join(",", api1.getSiteIds()));
+    assertEquals("GOVERN",
+        api1.getPermissions().stream().map(Enum::name).collect(Collectors.joining(",")));
+    assertEquals("groups: finance (GOVERN)", api1.getAccessSummary());
+    assertEquals("finance_govern", String.join(",", api1.getRoles()));
   }
 }

@@ -36,5 +36,7 @@ public enum ApiPermission {
   /** Read Permission. */
   READ,
   /** Write Permission. */
-  WRITE;
+  WRITE,
+  /** Govern Permission. */
+  GOVERN;
 }

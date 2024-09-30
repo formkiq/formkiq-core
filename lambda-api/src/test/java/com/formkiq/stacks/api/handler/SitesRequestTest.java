@@ -56,8 +56,6 @@ import com.formkiq.stacks.dynamodb.ConfigService;
 import com.formkiq.stacks.dynamodb.ConfigServiceExtension;
 
 /** Unit Tests for request /sites. */
-// @ExtendWith(DynamoDbExtension.class)
-// @ExtendWith(LocalStackExtension.class)
 public class SitesRequestTest extends AbstractApiClientRequestTest {
 
   /** {@link ConfigService}. */

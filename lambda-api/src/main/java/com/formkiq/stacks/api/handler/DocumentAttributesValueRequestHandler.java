@@ -38,6 +38,8 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 
+import java.util.Collection;
+
 /**
  * {@link ApiGatewayRequestHandler} for
  * 
@@ -55,7 +57,9 @@ public class DocumentAttributesValueRequestHandler
   private AttributeValidationAccess getAttributeValidationAccessDelete(
       final ApiAuthorization authorization, final String siteId) {
 
-    boolean isAdmin = authorization.getPermissions(siteId).contains(ApiPermission.ADMIN);
+    Collection<ApiPermission> permissions = authorization.getPermissions(siteId);
+    boolean isAdmin =
+        permissions.contains(ApiPermission.ADMIN) || permissions.contains(ApiPermission.GOVERN);
     return isAdmin ? AttributeValidationAccess.ADMIN_DELETE : AttributeValidationAccess.DELETE;
   }
 

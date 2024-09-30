@@ -116,14 +116,18 @@ public class DocumentAttributeRequestHandler
   private AttributeValidationAccess getAttributeValidationAccess(
       final ApiAuthorization authorization, final String siteId) {
 
-    boolean isAdmin = authorization.getPermissions(siteId).contains(ApiPermission.ADMIN);
+    Collection<ApiPermission> permissions = authorization.getPermissions(siteId);
+    boolean isAdmin =
+        permissions.contains(ApiPermission.ADMIN) || permissions.contains(ApiPermission.GOVERN);
     return isAdmin ? AttributeValidationAccess.ADMIN_UPDATE : AttributeValidationAccess.UPDATE;
   }
 
   private AttributeValidationAccess getAttributeValidationAccessDelete(
       final ApiAuthorization authorization, final String siteId) {
 
-    boolean isAdmin = authorization.getPermissions(siteId).contains(ApiPermission.ADMIN);
+    Collection<ApiPermission> permissions = authorization.getPermissions(siteId);
+    boolean isAdmin =
+        permissions.contains(ApiPermission.ADMIN) || permissions.contains(ApiPermission.GOVERN);
     return isAdmin ? AttributeValidationAccess.ADMIN_DELETE : AttributeValidationAccess.DELETE;
   }
 

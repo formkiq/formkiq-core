@@ -163,7 +163,9 @@ public class DocumentAttributesRequestHandler
       final ApiAuthorization authorization, final String siteId,
       final AttributeValidationAccess admin, final AttributeValidationAccess regular) {
 
-    boolean isAdmin = authorization.getPermissions(siteId).contains(ApiPermission.ADMIN);
+    Collection<ApiPermission> permissions = authorization.getPermissions(siteId);
+    boolean isAdmin =
+        permissions.contains(ApiPermission.ADMIN) || permissions.contains(ApiPermission.GOVERN);
     return isAdmin ? admin : regular;
   }
 

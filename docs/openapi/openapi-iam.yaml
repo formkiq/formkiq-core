@@ -9624,6 +9624,7 @@
                     - READ
                     - WRITE
                     - DELETE
+                    - GOVERN
             AddApiKeyResponse:
               type: object
               properties:
@@ -9873,6 +9874,7 @@
                     - READ
                     - WRITE
                     - DELETE
+                    - GOVERN
             GetConfigurationResponse:
               type: object
               properties:
@@ -10538,6 +10540,7 @@
               - DELETE
               - READ
               - WRITE
+              - GOVERN
             AddClassificationRequest:
               type: object
               properties:
@@ -10744,10 +10747,16 @@
                   description: Result message
           securitySchemes:
             ApiAuthorization:
-              type: apiKey
-              name: Authorization
-              in: header
-              x-amazon-apigateway-authtype: awsSigv4
+              type: oauth2
+              flows: {}
+              x-amazon-apigateway-authorizer:
+                type: jwt
+                jwtConfiguration:
+                  issuer:
+                    Fn::Sub: https://cognito-idp.${AWS::Region}.amazonaws.com/${CognitoUserPool}
+                  audience:
+                  - Fn::Sub: ${CognitoUserPoolClient}
+                identitySource: $request.header.Authorization
           x-amazon-apigateway-integrations:
             lambdaApi200:
               uri:

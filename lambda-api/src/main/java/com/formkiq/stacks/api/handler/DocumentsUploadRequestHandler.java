@@ -368,7 +368,9 @@ public class DocumentsUploadRequestHandler
   private AttributeValidationAccess getAttributeValidationAccess(
       final ApiAuthorization authorization, final String siteId) {
 
-    boolean isAdmin = authorization.getPermissions(siteId).contains(ApiPermission.ADMIN);
+    Collection<ApiPermission> permissions = authorization.getPermissions(siteId);
+    boolean isAdmin =
+        permissions.contains(ApiPermission.ADMIN) || permissions.contains(ApiPermission.GOVERN);
     return isAdmin ? AttributeValidationAccess.ADMIN_CREATE : AttributeValidationAccess.CREATE;
   }
 }

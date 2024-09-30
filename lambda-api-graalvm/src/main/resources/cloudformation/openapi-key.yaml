@@ -5,14 +5,14 @@
 ---
 Resources:
 
-  DocumentsKeyApi:
+  DocumentsHttpApi:
     Properties:
       #@overlay/match missing_ok=True
       Body:
         openapi: "3.0.1"
         info:
           title:
-            Fn::Sub: "${AWS::StackName} Key API - ${AppEnvironment}"
+            Fn::Sub: "${AWS::StackName} OAuth API - ${AppEnvironment}"
           contact:
             name: FormKiQ
             url: https://formkiq.com
@@ -9724,6 +9724,7 @@ Resources:
                       - READ
                       - WRITE
                       - DELETE
+                      - GOVERN
             AddApiKeyResponse:
               type: object
               properties:
@@ -9973,6 +9974,7 @@ Resources:
                       - READ
                       - WRITE
                       - DELETE
+                      - GOVERN
             GetConfigurationResponse:
               type: object
               properties:
@@ -10641,6 +10643,7 @@ Resources:
                 - DELETE
                 - READ
                 - WRITE
+                - GOVERN
             AddClassificationRequest:
               type: "object"
               properties:
@@ -10847,18 +10850,16 @@ Resources:
                   description: "Result message"
           securitySchemes:
             ApiAuthorization:
-              type: apiKey
-              name: Authorization
-              in: header
-              x-amazon-apigateway-authtype: Custom API Key
+              type: oauth2
+              flows: {}
               x-amazon-apigateway-authorizer:
-                identitySource: $request.header.Authorization
-                authorizerUri:
-                  Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ApiKeyAuthorizer.Arn}/invocations
-                authorizerResultTtlInSeconds: 300
-                authorizerPayloadFormatVersion: "2.0"
-                enableSimpleResponses: true
-                type: request
+                type: jwt
+                jwtConfiguration:
+                  issuer:
+                    Fn::Sub: https://cognito-idp.${AWS::Region}.amazonaws.com/${CognitoUserPool}
+                  audience:
+                    - Fn::Sub: "${CognitoUserPoolClient}"
+                identitySource: "$request.header.Authorization"
           x-amazon-apigateway-integrations:
             lambdaApi200:
               uri:
