@@ -2219,14 +2219,19 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
    */
   private void validate(final DocumentItem document) throws ValidationException {
 
-    Collection<ValidationError> errors = Collections.emptyList();
+    Collection<ValidationError> errors = new ArrayList<>();
 
     if (!isEmpty(document.getDeepLinkPath())) {
 
       if (!Strings.isUrl(document.getDeepLinkPath())) {
-        errors = List.of(new ValidationErrorImpl().key("deepLinkPath")
+        errors.add(new ValidationErrorImpl().key("deepLinkPath")
             .error("DeepLinkPath '" + document.getDeepLinkPath() + "' is not a valid URL"));
       }
+    }
+
+    if (document.getPath() != null && document.getPath().contains("//")) {
+      errors.add(new ValidationErrorImpl().key("path")
+          .error("invalid Path contains multiple '//' characters"));
     }
 
     if (!errors.isEmpty()) {

@@ -756,6 +756,36 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * Save document with double "//" in the path.
+   *
+   */
+  @Test
+  @Timeout(TEST_TIMEOUT)
+  public void testPost19() throws ApiException, InterruptedException {
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+
+      AddDocumentRequest req =
+          new AddDocumentRequest().path("myfile//test-file.txt").content("test");
+
+      // when
+      try {
+        this.documentsApi.addDocument(req, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"path\","
+                + "\"error\":\"invalid Path contains multiple '//' characters\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
    * Test Publish no published document.
    * 
    * @throws ApiException ApiException
