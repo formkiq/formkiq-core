@@ -23,51 +23,33 @@
  */
 package com.formkiq.aws.dynamodb;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Function;
+import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
-import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
- * Convert {@link Map} {@link AttributeValue} to {@link Map}.
- *
+ * Unit Test for {@link AttributeValueToMap}.
  */
-public class AttributeValueToMap
-    implements Function<Map<String, AttributeValue>, Map<String, Object>> {
+public class AttributeValueToMapTest {
 
-  @Override
-  public Map<String, Object> apply(final Map<String, AttributeValue> map) {
+  /** {@link AttributeValueToMap}. */
+  private AttributeValueToMap av = new AttributeValueToMap();
 
-    Map<String, Object> result = new HashMap<>();
+  @Test
+  void testApply01() {
+    // given
+    Map<String, AttributeValue> map = Map.of("contentType", AttributeValue.fromS("text/plain"),
+        "contentLength", AttributeValue.fromN("38"));
 
-    for (Map.Entry<String, AttributeValue> e : map.entrySet()) {
+    // when
+    Map<String, Object> result = av.apply(map);
 
-      String key = getKey(e.getKey());
-      String s = e.getValue().s();
-      String n = e.getValue().n();
-
-      if (isEmpty(s) && !isEmpty(n)) {
-        result.put(key, Double.valueOf(n));
-      } else {
-        result.put(key, s);
-      }
-    }
-
-    return result;
-  }
-
-  private String getKey(final String key) {
-
-    String k = key;
-    if ("inserteddate".equals(key)) {
-      k = "insertedDate";
-    } else if (k.startsWith("fk#")) {
-      final int pos = 3;
-      k = k.substring(pos);
-    }
-
-    return k;
+    // then
+    assertEquals(2, result.size());
+    assertEquals("text/plain", result.get("contentType"));
+    assertEquals(Double.valueOf("38"), result.get("contentLength"));
   }
 }
