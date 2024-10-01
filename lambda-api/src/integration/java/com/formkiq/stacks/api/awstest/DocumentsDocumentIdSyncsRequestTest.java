@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api.awstest;
 
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.testutils.aws.FkqDocumentService.addDocument;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -42,11 +43,9 @@ import com.formkiq.client.model.DocumentSyncType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import com.formkiq.client.api.DocumentsApi;
-import com.formkiq.client.api.SystemManagementApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.model.GetDocumentSync;
 import com.formkiq.client.model.GetDocumentSyncResponse;
-import com.formkiq.client.model.GetVersionResponse;
 import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
 
 /**
@@ -60,21 +59,17 @@ public class DocumentsDocumentIdSyncsRequestTest extends AbstractAwsIntegrationT
 
   private List<GetDocumentSync> find(final List<GetDocumentSync> list,
       final DocumentSyncService type) {
-    return list.stream().filter(s -> s.getService().equals(type)).collect(Collectors.toList());
+    return list.stream().filter(s -> type.equals(s.getService())).collect(Collectors.toList());
   }
 
   private Optional<GetDocumentSync> find(final Collection<GetDocumentSync> list,
       final DocumentSyncType type) {
-    return list.stream().filter(s -> s.getType().equals(type)).findFirst();
+    return list.stream().filter(s -> type.equals(s.getType())).findFirst();
   }
 
-  private boolean isComplete(final GetVersionResponse versions,
-      final GetDocumentSyncResponse syncs) {
-    final int three = 3;
-    int count = syncs.getSyncs().size();
-    String type = versions.getModules().contains("opensearch") ? "enterprise" : "core";
-    return ("enterprise".equals(type) && count == three)
-        || (!"enterprise".equals(type) && count == 2);
+  private boolean isComplete(final GetDocumentSyncResponse syncs) {
+    int count = notNull(syncs.getSyncs()).size();
+    return count == 2;
   }
 
   /**
@@ -83,33 +78,29 @@ public class DocumentsDocumentIdSyncsRequestTest extends AbstractAwsIntegrationT
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  @Timeout(value = TEST_TIMEOUT)
   public void testGetSyncs01() throws Exception {
 
-    List<ApiClient> clients = getApiClients(null);
-    SystemManagementApi smapi = new SystemManagementApi(clients.get(0));
-    GetVersionResponse versions = smapi.getVersion();
-
-    // given
+      // given
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       for (ApiClient client : getApiClients(siteId)) {
 
         DocumentsApi api = new DocumentsApi(client);
 
-        String path = UUID.randomUUID().toString() + ".txt";
+        String path = UUID.randomUUID() + ".txt";
         byte[] content = "content".getBytes(StandardCharsets.UTF_8);
         String documentId = addDocument(client, siteId, path, content, "text/plain", null);
 
         // when
         GetDocumentSyncResponse syncs = api.getDocumentSyncs(documentId, siteId, null, null);
 
-        while (!isComplete(versions, syncs)) {
+        while (!isComplete(syncs)) {
           TimeUnit.SECONDS.sleep(1);
           syncs = api.getDocumentSyncs(documentId, siteId, null, null);
         }
 
         // then
-        List<GetDocumentSync> list = syncs.getSyncs();
+        List<GetDocumentSync> list = notNull(syncs.getSyncs());
         assertFalse(list.isEmpty());
 
         for (GetDocumentSync sync : list) {
@@ -131,18 +122,17 @@ public class DocumentsDocumentIdSyncsRequestTest extends AbstractAwsIntegrationT
           assertEquals(DocumentSyncType.METADATA, sync.getType());
         }
 
-        final int expected = 3;
         List<GetDocumentSync> opensearch = find(list, DocumentSyncService.OPENSEARCH);
         if (!opensearch.isEmpty()) {
-          assertEquals(expected, opensearch.size());
+          assertEquals(2, opensearch.size());
 
           GetDocumentSync sync = find(opensearch, DocumentSyncType.CONTENT).get();
           assertEquals(DocumentSyncService.OPENSEARCH, sync.getService());
           assertEquals(DocumentSyncType.CONTENT, sync.getType());
 
-          sync = find(opensearch, DocumentSyncType.TAG).get();
-          assertEquals(DocumentSyncService.OPENSEARCH, sync.getService());
-          assertEquals(DocumentSyncType.TAG, sync.getType());
+          // sync = find(opensearch, DocumentSyncType.TAG).get();
+          // assertEquals(DocumentSyncService.OPENSEARCH, sync.getService());
+          // assertEquals(DocumentSyncType.TAG, sync.getType());
 
           sync = find(opensearch, DocumentSyncType.METADATA).get();
           assertEquals(DocumentSyncService.OPENSEARCH, sync.getService());

@@ -8120,6 +8120,8 @@ Resources:
                 checksum:
                   type: "string"
                   description: "Document checksum, changes when document file changes"
+                checksumType:
+                  $ref: "#/components/schemas/ChecksumType"
                 documentId:
                   type: "string"
                   description: "Document Identifier"
