@@ -81,7 +81,7 @@ public class DocumentsDocumentIdSyncsRequestTest extends AbstractAwsIntegrationT
   @Timeout(value = TEST_TIMEOUT)
   public void testGetSyncs01() throws Exception {
 
-      // given
+    // given
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       for (ApiClient client : getApiClients(siteId)) {
 

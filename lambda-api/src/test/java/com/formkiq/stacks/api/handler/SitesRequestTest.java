@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_PAYMENT;
 import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENTS;
 import static com.formkiq.stacks.dynamodb.ConfigService.MAX_WEBHOOKS;
@@ -300,6 +301,8 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
 
     // then
     assertNotNull(response.getVersion());
+    assertEquals("typesense,site_permissions_automatic",
+        String.join(",", notNull(response.getModules())));
   }
 
   /**
