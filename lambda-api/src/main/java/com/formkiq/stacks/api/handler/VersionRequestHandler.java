@@ -51,7 +51,6 @@ public class VersionRequestHandler implements ApiGatewayRequestHandler, ApiGatew
       final AwsServiceCache awsservice) throws Exception {
 
     String version = getVersion(awsservice);
-    System.out.println(awsservice.environment());
     List<String> modules = awsservice.environment().entrySet().stream()
         .filter(e -> e.getKey().startsWith("MODULE_")).map(e -> {
           String key = "true".equals(e.getValue()) ? e.getKey() : e.getKey() + "_" + e.getValue();
