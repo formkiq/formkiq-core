@@ -52,7 +52,8 @@ public class VersionRequestHandler implements ApiGatewayRequestHandler, ApiGatew
 
     String version = getVersion(awsservice);
     List<String> modules = awsservice.environment().entrySet().stream()
-        .filter(e -> e.getKey().startsWith("MODULE_")).map(e -> {
+        .filter(e -> e.getKey().startsWith("MODULE_") && !"false".equalsIgnoreCase(e.getValue()))
+        .map(e -> {
           String key = "true".equals(e.getValue()) ? e.getKey() : e.getKey() + "_" + e.getValue();
           return key.replaceAll("MODULE_", "");
         }).collect(Collectors.toList());
