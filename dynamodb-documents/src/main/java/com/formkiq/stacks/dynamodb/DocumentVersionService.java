@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamodbVersionRecord;
+import com.formkiq.aws.dynamodb.model.DocumentItem;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
@@ -71,14 +72,22 @@ public interface DocumentVersionService {
   /**
    * Get S3 Version Id.
    * 
+   * @param attributes {@link Map}
+   * @return {@link String}
+   */
+  String getVersionId(Map<String, AttributeValue> attributes);
+
+  /**
+   * Get Version Record.
+   * 
    * @param connection {@link DynamoDbConnectionBuilder}
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param versionKey {@link String}
-   * @return {@link String}
+   * @return Map
    */
-  String getVersionId(DynamoDbConnectionBuilder connection, String siteId, String documentId,
-      String versionKey);
+  Map<String, AttributeValue> get(DynamoDbConnectionBuilder connection, String siteId,
+      String documentId, String versionKey);
 
   /**
    * Initialize Service.
@@ -106,4 +115,17 @@ public interface DocumentVersionService {
    */
   List<Map<String, AttributeValue>> addRecords(DynamoDbClient client, String siteId,
       Collection<? extends DynamodbVersionRecord<?>> records);
+
+  /**
+   * Get {@link DocumentItem} either current or versioned.
+   * 
+   * @param documentService {@link DocumentService}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param versionKey {@link String}
+   * @param versionAttributes {@link Map}
+   * @return DocumentItem
+   */
+  DocumentItem getDocumentItem(DocumentService documentService, String siteId, String documentId,
+      String versionKey, Map<String, AttributeValue> versionAttributes);
 }

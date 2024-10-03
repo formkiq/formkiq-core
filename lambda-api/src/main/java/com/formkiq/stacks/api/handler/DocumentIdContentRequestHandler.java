@@ -49,6 +49,7 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.useractivity.UserActivityPlugin;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/content". */
@@ -70,53 +71,23 @@ public class DocumentIdContentRequestHandler
     String documentId = event.getPathParameters().get("documentId");
     String versionKey = getParameter(event, "versionKey");
 
-    DocumentService documentService = awsservice.getExtension(DocumentService.class);
+    Map<String, AttributeValue> versionAttributes =
+        getVersionAttributes(awsservice, siteId, documentId, versionKey);
+    DocumentItem item =
+        getDocumentItem(awsservice, siteId, documentId, versionKey, versionAttributes);
+    String versionId = getVersionId(awsservice, versionAttributes, versionKey);
 
-    DocumentItem item = documentService.findDocument(siteId, documentId);
-    throwIfNull(item, new DocumentNotFoundException(documentId));
-
-    DocumentVersionService versionService = awsservice.getExtension(DocumentVersionService.class);
-    DynamoDbConnectionBuilder connection = awsservice.getExtension(DynamoDbConnectionBuilder.class);
-    String versionId = versionService.getVersionId(connection, siteId, documentId, versionKey);
-
-    if (versionKey != null) {
-      throwIfNull(versionId, new BadException("invalid versionKey '" + versionKey + "'"));
-    }
-
-    ApiResponse response = null;
+    ApiResponse response;
 
     String s3key = createS3Key(siteId, documentId);
 
     if (MimeType.isPlainText(item.getContentType())) {
 
-      S3Service s3Service = awsservice.getExtension(S3Service.class);
-
-      try {
-        String content = s3Service.getContentAsString(awsservice.environment("DOCUMENTS_S3_BUCKET"),
-            s3key, versionId);
-
-        response = new ApiMapResponse(Map.of("content", content, "contentType",
-            item.getContentType(), "isBase64", Boolean.FALSE));
-      } catch (NoSuchKeyException e) {
-        throw new DocumentNotFoundException(documentId);
-      }
+      response = getPlainTextResponse(awsservice, s3key, versionId, item, documentId);
 
     } else {
 
-      String contentType =
-          item.getContentType() != null ? item.getContentType() : "application/octet-stream";
-
-      PresignGetUrlConfig config =
-          new PresignGetUrlConfig().contentDispositionByPath(item.getPath(), false)
-              .contentType(s3key).contentType(contentType);
-
-      S3PresignerService s3Service = awsservice.getExtension(S3PresignerService.class);
-      Duration duration = Duration.ofHours(1);
-      URL url = s3Service.presignGetUrl(awsservice.environment("DOCUMENTS_S3_BUCKET"), s3key,
-          duration, versionId, config);
-
-      response =
-          new ApiMapResponse(Map.of("contentUrl", url.toString(), "contentType", contentType));
+      response = getApiResponse(awsservice, item, s3key, versionId);
     }
 
     if (awsservice.containsExtension(UserActivityPlugin.class)) {
@@ -125,6 +96,76 @@ public class DocumentIdContentRequestHandler
     }
 
     return new ApiRequestHandlerResponse(SC_OK, response);
+  }
+
+  private ApiResponse getApiResponse(final AwsServiceCache awsservice, final DocumentItem item,
+      final String s3key, final String versionId) {
+    String contentType =
+        item.getContentType() != null ? item.getContentType() : "application/octet-stream";
+
+    PresignGetUrlConfig config =
+        new PresignGetUrlConfig().contentDispositionByPath(item.getPath(), false).contentType(s3key)
+            .contentType(contentType);
+
+    S3PresignerService s3Service = awsservice.getExtension(S3PresignerService.class);
+    Duration duration = Duration.ofHours(1);
+    URL url = s3Service.presignGetUrl(awsservice.environment("DOCUMENTS_S3_BUCKET"), s3key,
+        duration, versionId, config);
+
+    return new ApiMapResponse(Map.of("contentUrl", url.toString(), "contentType", contentType));
+  }
+
+  private static ApiResponse getPlainTextResponse(final AwsServiceCache awsservice,
+      final String s3key, final String versionId, final DocumentItem item, final String documentId)
+      throws DocumentNotFoundException {
+
+    S3Service s3Service = awsservice.getExtension(S3Service.class);
+
+    try {
+      String content = s3Service.getContentAsString(awsservice.environment("DOCUMENTS_S3_BUCKET"),
+          s3key, versionId);
+
+      return new ApiMapResponse(Map.of("content", content, "contentType", item.getContentType(),
+          "isBase64", Boolean.FALSE));
+    } catch (NoSuchKeyException e) {
+      throw new DocumentNotFoundException(documentId);
+    }
+  }
+
+  private Map<String, AttributeValue> getVersionAttributes(final AwsServiceCache awsservice,
+      final String siteId, final String documentId, final String versionKey) {
+    DocumentVersionService versionService = awsservice.getExtension(DocumentVersionService.class);
+    DynamoDbConnectionBuilder connection = awsservice.getExtension(DynamoDbConnectionBuilder.class);
+    return versionService.get(connection, siteId, documentId, versionKey);
+  }
+
+  private DocumentItem getDocumentItem(final AwsServiceCache awsservice, final String siteId,
+      final String documentId, final String versionKey,
+      final Map<String, AttributeValue> versionAttributes) throws Exception {
+
+    DocumentVersionService versionService = awsservice.getExtension(DocumentVersionService.class);
+    DocumentService documentService = awsservice.getExtension(DocumentService.class);
+
+    DocumentItem item = versionService.getDocumentItem(documentService, siteId, documentId,
+        versionKey, versionAttributes);
+    throwIfNull(item, new DocumentNotFoundException(documentId));
+    return item;
+  }
+
+  private String getVersionId(final AwsServiceCache awsservice,
+      final Map<String, AttributeValue> versionAttributes, final String versionKey)
+      throws Exception {
+
+    String versionId = null;
+    if (versionKey != null) {
+
+      DocumentVersionService versionService = awsservice.getExtension(DocumentVersionService.class);
+      versionId = versionService.getVersionId(versionAttributes);
+
+      throwIfNull(versionId, new BadException("invalid versionKey '" + versionKey + "'"));
+    }
+
+    return versionId;
   }
 
   @Override

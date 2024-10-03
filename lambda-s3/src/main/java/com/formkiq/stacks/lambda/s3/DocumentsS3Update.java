@@ -137,13 +137,10 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
    * @param event {@link Map}
    * @return {@link String}
    */
-  @SuppressWarnings("unchecked")
   private static String getBucketName(final Map<String, Object> event) {
     Map<String, Object> s3 = (Map<String, Object>) event.get("s3");
     Map<String, Object> bucket = (Map<String, Object>) s3.get("bucket");
-
-    String bucketName = bucket.get("name").toString();
-    return bucketName;
+    return bucket.get("name").toString();
   }
 
   /**
@@ -152,13 +149,11 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
    * @param event {@link Map}
    * @return {@link String}
    */
-  @SuppressWarnings("unchecked")
   private static String getObjectKey(final Map<String, Object> event) {
     Map<String, Object> s3 = (Map<String, Object>) event.get("s3");
     Map<String, Object> object = (Map<String, Object>) s3.get("object");
 
-    String key = object.get("key").toString();
-    return key;
+    return object.get("key").toString();
   }
 
   /**
@@ -178,7 +173,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
         new ActionsNotificationServiceExtension());
 
     AwsCredentials awsCredentials = awsServiceCache.getExtension(AwsCredentials.class);
-    awsServiceCache.register(HttpService.class, new ClassServiceExtension<HttpService>(
+    awsServiceCache.register(HttpService.class, new ClassServiceExtension<>(
         new HttpServiceSigv4(awsServiceCache.region(), awsCredentials)));
 
     service = awsServiceCache.getExtension(DocumentService.class);
@@ -210,10 +205,10 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
   }
 
   /** {@link SimpleDateFormat} in ISO Standard format. */
-  private SimpleDateFormat df = DateUtil.getIsoDateFormatter();
+  private final SimpleDateFormat df = DateUtil.getIsoDateFormatter();
 
   /** {@link Gson}. */
-  private Gson gson = new GsonBuilder().create();
+  private final Gson gson = new GsonBuilder().create();
 
   /** constructor. */
   public DocumentsS3Update() {
@@ -226,6 +221,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
    * @param awsServiceCache {@link AwsServiceCache}
    */
   public DocumentsS3Update(final AwsServiceCache awsServiceCache) {
+    this();
     initialize(awsServiceCache);
     serviceCache = awsServiceCache;
   }
@@ -246,11 +242,8 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     String site = siteId != null ? siteId : SiteIdKeyGenerator.DEFAULT_SITE_ID;
     String documentId = resetDatabaseKey(siteId, doc.getDocumentId());
 
-    DocumentEvent event =
-        new DocumentEvent().siteId(site).documentId(documentId).s3bucket(s3Bucket).s3key(s3Key)
-            .type(eventType).userId(doc.getUserId()).contentType(contentType).path(doc.getPath());
-
-    return event;
+    return new DocumentEvent().siteId(site).documentId(documentId).s3bucket(s3Bucket).s3key(s3Key)
+        .type(eventType).userId(doc.getUserId()).contentType(contentType).path(doc.getPath());
   }
 
   /**
@@ -277,7 +270,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     String content = null;
 
     if (MimeType.isPlainText(contentType) && resp.getContentLength() != null
-        && resp.getContentLength().longValue() < EventServiceSns.MAX_SNS_MESSAGE_SIZE) {
+        && resp.getContentLength() < EventServiceSns.MAX_SNS_MESSAGE_SIZE) {
       content = s3service.getContentAsString(s3bucket, key, null);
     }
 
@@ -369,13 +362,10 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
   /**
    * Process S3 Event.
    * 
-   * @param logger {@link LambdaLogger}
    * @param event {@link Map}
    * @return {@link Map}
-   * @throws FileNotFoundException FileNotFoundException
    */
-  private Map<String, Object> processEvent(final LambdaLogger logger,
-      final Map<String, Object> event) {
+  private Map<String, Object> processEvent(final Map<String, Object> event) {
 
     Map<String, Object> map = new HashMap<>();
     String eventName = event.get("eventName").toString();
@@ -395,9 +385,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
    * @param logger {@link LambdaLogger}
    * @param records {@link List} {@link Map}
    * @return {@link Map}
-   * @throws FileNotFoundException FileNotFoundException
    */
-  @SuppressWarnings("unchecked")
   private List<Map<String, Object>> processRecords(final LambdaLogger logger,
       final List<Map<String, Object>> records) {
 
@@ -413,7 +401,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
         list.addAll(processRecords(logger, map));
 
       } else if (event.containsKey("eventName")) {
-        list.add(processEvent(logger, event));
+        list.add(processEvent(event));
       } else {
         list.addAll(processRecords(logger, event));
       }
@@ -428,9 +416,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
    * @param logger {@link LambdaLogger}
    * @param map {@link Map}
    * @return {@link List} {@link Map}
-   * @throws FileNotFoundException FileNotFoundException
    */
-  @SuppressWarnings("unchecked")
   private List<Map<String, Object>> processRecords(final LambdaLogger logger,
       final Map<String, Object> map) {
 
@@ -467,8 +453,8 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
     if (!s3service.getObjectMetadata(bucket, key, null).isObjectExists()) {
 
-      String siteId = getSiteId(key.toString());
-      String documentId = resetDatabaseKey(siteId, key.toString());
+      String siteId = getSiteId(key);
+      String documentId = resetDatabaseKey(siteId, key);
 
       String msg = String.format("Removing %s from bucket %s.", key, bucket);
       logger.log(msg);

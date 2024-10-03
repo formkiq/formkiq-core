@@ -208,50 +208,13 @@ public class DocumentIdUrlGetRequestHandlerTest extends AbstractRequestHandler {
   }
 
   /**
-   * /documents/{documentId}/url request.
-   * 
-   * Tests No Content-Type, Content-Type matches DocumentItem's Content Type and Document Format
-   * exists.
-   *
-   * @throws Exception an error has occurred
-   */
-  @SuppressWarnings("unchecked")
-  @Test
-  public void testHandleGetDocumentContent04() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      // given
-      String documentId = UUID.randomUUID().toString();
-
-      ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents-documentid-url01.json");
-      addParameter(event, "siteId", siteId);
-      setPathParameter(event, "documentId", documentId);
-      addHeader(event, "Content-Type", "application/pdf");
-
-      String userId = "jsmith";
-      DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, new Date(), userId);
-      getDocumentService().saveDocument(siteId, item, new ArrayList<>());
-
-      // when
-      String response = handleRequest(event);
-
-      // then
-      Map<String, String> m = fromJson(response, Map.class);
-
-      final int mapsize = 3;
-      assertEquals(mapsize, m.size());
-      assertEquals("404.0", String.valueOf(m.get("statusCode")));
-      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-    }
-  }
-
-  /**
    * /documents/{documentId}/url request deepLinkPath to another bucket.
    *
    * @throws Exception an error has occurred
    */
   @SuppressWarnings("unchecked")
   @Test
-  public void testHandleGetDocumentContent05() throws Exception {
+  public void testHandleGetDocumentContent04() throws Exception {
 
     if (!getS3().exists("anotherbucket")) {
       getS3().createBucket("anotherbucket");
@@ -312,7 +275,7 @@ public class DocumentIdUrlGetRequestHandlerTest extends AbstractRequestHandler {
    */
   @SuppressWarnings("unchecked")
   @Test
-  public void testHandleGetDocumentContent06() throws Exception {
+  public void testHandleGetDocumentContent05() throws Exception {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given

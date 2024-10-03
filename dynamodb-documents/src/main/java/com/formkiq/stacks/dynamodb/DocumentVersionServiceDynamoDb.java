@@ -31,15 +31,21 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static software.amazon.awssdk.utils.StringUtils.isEmpty;
 import java.text.SimpleDateFormat;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+
+import com.formkiq.aws.dynamodb.AttributeValueToMap;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.DynamodbVersionRecord;
 import com.formkiq.aws.dynamodb.QueryConfig;
+import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
+import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.graalvm.annotations.Reflectable;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -110,28 +116,26 @@ public class DocumentVersionServiceDynamoDb implements DocumentVersionService {
   }
 
   @Override
-  public String getVersionId(final DynamoDbConnectionBuilder connection, final String siteId,
-      final String documentId, final String versionKey) {
+  public String getVersionId(final Map<String, AttributeValue> attrs) {
+    return attrs.containsKey(S3VERSION_ATTRIBUTE) ? attrs.get(S3VERSION_ATTRIBUTE).s() : null;
+  }
 
-    String versionId = null;
+  @Override
+  public Map<String, AttributeValue> get(final DynamoDbConnectionBuilder connection,
+      final String siteId, final String documentId, final String versionKey) {
+
+    Map<String, AttributeValue> attrs = Collections.emptyMap();
     String documentVersionsTable = getDocumentVersionsTableName();
 
     if (!isEmpty(documentVersionsTable) && !isEmpty(versionKey)) {
 
       String pk = createDatabaseKey(siteId, PREFIX_DOCS + documentId);
-      String sk = versionKey;
 
       DynamoDbService db = new DynamoDbServiceImpl(connection, documentVersionsTable);
-
-      Map<String, AttributeValue> attrs =
-          db.get(AttributeValue.fromS(pk), AttributeValue.fromS(sk));
-
-      if (attrs.containsKey(S3VERSION_ATTRIBUTE)) {
-        versionId = attrs.get(S3VERSION_ATTRIBUTE).s();
-      }
+      attrs = db.get(AttributeValue.fromS(pk), AttributeValue.fromS(versionKey));
     }
 
-    return versionId;
+    return attrs;
   }
 
   @Override
@@ -168,5 +172,21 @@ public class DocumentVersionServiceDynamoDb implements DocumentVersionService {
   private String getSk(final Map<String, AttributeValue> previous, final String version) {
     return previous.get(SK).s() + TAG_DELIMINATOR + this.df.format(new Date()) + TAG_DELIMINATOR
         + "v" + version;
+  }
+
+  @Override
+  public DocumentItem getDocumentItem(final DocumentService documentService, final String siteId,
+      final String documentId, final String versionKey,
+      final Map<String, AttributeValue> versionAttributes) {
+
+    DocumentItem item;
+
+    if (!Strings.isEmpty(versionKey)) {
+      item = new DynamicDocumentItem(new AttributeValueToMap().apply(versionAttributes));
+    } else {
+      item = documentService.findDocument(siteId, documentId);
+    }
+
+    return item;
   }
 }
