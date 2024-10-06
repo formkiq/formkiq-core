@@ -24,11 +24,10 @@
 package com.formkiq.stacks.api.awstest;
 
 import static com.formkiq.testutils.aws.FkqDocumentService.addDocument;
-import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContent;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContentType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.TimeUnit;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import com.formkiq.client.invoker.ApiClient;
@@ -50,20 +49,19 @@ public class DocumentsDocumentIdUrlRequestTest extends AbstractAwsIntegrationTes
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  @Timeout(value = TEST_TIMEOUT)
   public void testGet01() throws Exception {
     for (ApiClient client : getApiClients(null)) {
       // given
-      String siteId = null;
       String text = "sample content";
       byte[] content = text.getBytes(StandardCharsets.UTF_8);
 
       // when
-      String documentId = addDocument(client, siteId, null, content, "text/plain", null);
+      String documentId = addDocument(client, null, null, content, "text/plain", null);
 
       // then
       GetDocumentContentResponse response =
-          waitForDocumentContentType(client, siteId, documentId, "text/plain");
+          waitForDocumentContentType(client, null, documentId, "text/plain");
 
       assertEquals("text/plain", response.getContentType());
       assertEquals(text, response.getContent());
