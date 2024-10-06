@@ -28,8 +28,6 @@ import java.util.Map;
 import java.util.function.Function;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
-import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
-
 /**
  * Convert {@link Map} {@link AttributeValue} to {@link Map}.
  *
@@ -54,25 +52,15 @@ public class AttributeValueToMap
   }
 
   private Object convert(final AttributeValue val) {
-    Object obj = null;
+    Object obj;
 
     switch (val.type()) {
-      case S -> {
-        obj = val.s();
-      }
-      case N -> {
-        obj = val.n();
-      }
-      case BOOL -> {
-        obj = val.b();
-      }
-      case L -> {
-        obj = val.l().stream().map(this::convert).toList();
-      }
-      default -> {
-        throw new IllegalArgumentException(
-            "Unsupported attribute value map conversion " + val.type());
-      }
+      case S -> obj = val.s();
+      case N -> obj = val.n();
+      case BOOL -> obj = val.b();
+      case L -> obj = val.l().stream().map(this::convert).toList();
+      default -> throw new IllegalArgumentException(
+          "Unsupported attribute value map conversion " + val.type());
     }
 
     return obj;
