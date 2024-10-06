@@ -404,6 +404,7 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
       // then
       assertEquals(STATUS_OK, httpResponse.statusCode());
       waitForDocumentContent(client, siteId, documentId, content);
+      waitForDocumentContentType(client, siteId, documentId, "text/html");
       assertEquals("text/html", api.getDocument(documentId, siteId, null).getContentType());
 
       // given

@@ -25,6 +25,7 @@ package com.formkiq.aws.dynamodb;
 
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -42,17 +43,25 @@ public class MapToAttributeValue
     Map<String, AttributeValue> result = new HashMap<>();
 
     for (Map.Entry<String, Object> e : map.entrySet()) {
-
-      if (e.getValue() instanceof Double d) {
-        result.put(e.getKey(), AttributeValue.fromN(String.valueOf(d)));
-      } else if (e.getValue() instanceof String s) {
-        result.put(e.getKey(), AttributeValue.fromS(s));
-      } else {
-        throw new IllegalArgumentException(
-            "Unsupported data type: " + e.getValue().getClass().getName());
-      }
+      AttributeValue a = convert(e.getValue());
+      result.put(e.getKey(), a);
     }
 
     return result;
+  }
+
+  private AttributeValue convert(final Object obj) {
+    AttributeValue o = null;
+    if (obj instanceof Double d) {
+      o = AttributeValue.fromN(String.valueOf(d));
+    } else if (obj instanceof String s) {
+      o = AttributeValue.fromS(s);
+    } else if (obj instanceof Collection<?> c) {
+      o = AttributeValue.fromL(c.stream().map(this::convert).toList());
+    } else {
+      throw new IllegalArgumentException("Unsupported data type: " + obj.getClass().getName());
+    }
+
+    return o;
   }
 }

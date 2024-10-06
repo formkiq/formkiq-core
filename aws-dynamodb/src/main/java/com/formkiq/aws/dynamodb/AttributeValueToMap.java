@@ -45,17 +45,37 @@ public class AttributeValueToMap
     for (Map.Entry<String, AttributeValue> e : map.entrySet()) {
 
       String key = getKey(e.getKey());
-      String s = e.getValue().s();
-      String n = e.getValue().n();
 
-      if (isEmpty(s) && !isEmpty(n)) {
-        result.put(key, Double.valueOf(n));
-      } else {
-        result.put(key, s);
-      }
+      Object obj = convert(e.getValue());
+      result.put(key, obj);
     }
 
     return result;
+  }
+
+  private Object convert(final AttributeValue val) {
+    Object obj = null;
+
+    switch (val.type()) {
+      case S -> {
+        obj = val.s();
+      }
+      case N -> {
+        obj = val.n();
+      }
+      case BOOL -> {
+        obj = val.b();
+      }
+      case L -> {
+        obj = val.l().stream().map(this::convert).toList();
+      }
+      default -> {
+        throw new IllegalArgumentException(
+            "Unsupported attribute value map conversion " + val.type());
+      }
+    }
+
+    return obj;
   }
 
   private String getKey(final String key) {

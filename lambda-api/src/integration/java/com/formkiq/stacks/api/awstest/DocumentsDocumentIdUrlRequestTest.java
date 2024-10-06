@@ -25,6 +25,7 @@ package com.formkiq.stacks.api.awstest;
 
 import static com.formkiq.testutils.aws.FkqDocumentService.addDocument;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContent;
+import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContentType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
@@ -62,7 +63,7 @@ public class DocumentsDocumentIdUrlRequestTest extends AbstractAwsIntegrationTes
 
       // then
       GetDocumentContentResponse response =
-          waitForDocumentContent(client, siteId, documentId, text);
+          waitForDocumentContentType(client, siteId, documentId, "text/plain");
 
       assertEquals("text/plain", response.getContentType());
       assertEquals(text, response.getContent());

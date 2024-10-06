@@ -26,6 +26,7 @@ package com.formkiq.aws.dynamodb;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -36,20 +37,23 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class AttributeValueToMapTest {
 
   /** {@link AttributeValueToMap}. */
-  private AttributeValueToMap av = new AttributeValueToMap();
+  private final AttributeValueToMap av = new AttributeValueToMap();
 
   @Test
   void testApply01() {
     // given
     Map<String, AttributeValue> map = Map.of("contentType", AttributeValue.fromS("text/plain"),
-        "contentLength", AttributeValue.fromN("38"));
+        "contentLength", AttributeValue.fromN("38"), "ids",
+        AttributeValue.fromL(List.of(AttributeValue.fromS("123"), AttributeValue.fromS("444"))));
 
     // when
     Map<String, Object> result = av.apply(map);
 
     // then
-    assertEquals(2, result.size());
+    final int expected = 3;
+    assertEquals(expected, result.size());
     assertEquals("text/plain", result.get("contentType"));
-    assertEquals(Double.valueOf("38"), result.get("contentLength"));
+    assertEquals("38", result.get("contentLength").toString());
+    assertEquals("[123, 444]", result.get("ids").toString());
   }
 }

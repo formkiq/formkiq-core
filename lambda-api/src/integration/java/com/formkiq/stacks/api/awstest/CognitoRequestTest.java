@@ -400,7 +400,7 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
       addUser(userApi, email, null);
     } catch (ApiException e) {
       // then
-      assertTrue(e.getResponseBody().contains("Invalid email address format"));
+      assertTrue(e.getResponseBody().contains("Username should be an email"));
     }
   }
 
