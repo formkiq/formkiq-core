@@ -473,7 +473,10 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       }
     }
 
-    this.interceptor.deleteDocument(siteId, documentId, softDelete);
+    if (this.interceptor != null) {
+      this.interceptor.deleteDocument(siteId, documentId, softDelete);
+    }
+
     return deleted;
   }
 
