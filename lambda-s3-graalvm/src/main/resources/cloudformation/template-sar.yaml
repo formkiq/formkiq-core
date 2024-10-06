@@ -832,6 +832,11 @@ Resources:
                 - '/*'
           - Effect: Allow
             Action:
+              - dynamodb:GetItem
+            Resource:
+              - Fn::Sub: "arn:${Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Cache}"
+          - Effect: Allow
+            Action:
             - dynamodb:BatchGetItem
             - dynamodb:GetItem
             - dynamodb:Query
