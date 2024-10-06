@@ -70,12 +70,6 @@ public class DocumentVersionServiceNoVersioning implements DocumentVersionServic
   }
 
   @Override
-  public void revertDocumentVersionAttributes(final Map<String, AttributeValue> previous,
-      final Map<String, AttributeValue> current) {
-    // empty
-  }
-
-  @Override
   public List<Map<String, AttributeValue>> addRecords(final DynamoDbClient client,
       final String siteId, final Collection<? extends DynamodbVersionRecord<?>> records) {
     // empty

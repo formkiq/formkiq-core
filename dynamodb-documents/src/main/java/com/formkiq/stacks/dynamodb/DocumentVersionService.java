@@ -41,8 +41,6 @@ public interface DocumentVersionService {
 
   /** FormKiQ S3 Version. */
   String S3VERSION_ATTRIBUTE = "s3version";
-  /** FormKiQ Version. */
-  String VERSION_ATTRIBUTE = "version";
 
   /**
    * Delete all document versions.
@@ -86,15 +84,6 @@ public interface DocumentVersionService {
    * @param map {@link Map}
    */
   void initialize(Map<String, String> map);
-
-  /**
-   * Revert to previous Document Version.
-   * 
-   * @param previous {@link Map}
-   * @param current {@link Map}
-   */
-  void revertDocumentVersionAttributes(Map<String, AttributeValue> previous,
-      Map<String, AttributeValue> current);
 
   /**
    * Add Versioning {@link DynamodbVersionRecord} records.

@@ -126,19 +126,6 @@ public class DocumentVersionServiceDynamoDb implements DocumentVersionService {
   }
 
   @Override
-  public void revertDocumentVersionAttributes(final Map<String, AttributeValue> previous,
-      final Map<String, AttributeValue> current) {
-
-    String nextVersion = String.valueOf(Integer.parseInt(current.get(VERSION_ATTRIBUTE).s()) + 1);
-
-    previous.put(SK, current.get(SK));
-    previous.put(VERSION_ATTRIBUTE, AttributeValue.fromS(nextVersion));
-
-    String sk = getSk(current, current.get(VERSION_ATTRIBUTE).s());
-    current.put(SK, AttributeValue.fromS(sk));
-  }
-
-  @Override
   public List<Map<String, AttributeValue>> addRecords(final DynamoDbClient client,
       final String siteId, final Collection<? extends DynamodbVersionRecord<?>> records) {
 
