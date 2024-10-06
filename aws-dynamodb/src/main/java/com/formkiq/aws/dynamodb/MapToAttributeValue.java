@@ -21,38 +21,38 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.services.lambda.services;
+package com.formkiq.aws.dynamodb;
 
-import java.util.Date;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Function;
 
 /**
- * Cache Service.
+ * Convert {@link Map} to {@link AttributeValue} {@link Map}.
  *
  */
-public interface CacheService {
+public class MapToAttributeValue
+    implements Function<Map<String, Object>, Map<String, AttributeValue>> {
 
-  /**
-   * Get Cache Key Expiry Date.
-   * 
-   * @param key {@link String}
-   * @return {@link Date}
-   */
-  Date getExpiryDate(String key);
+  @Override
+  public Map<String, AttributeValue> apply(final Map<String, Object> map) {
 
-  /**
-   * Read Value from Cache.
-   * 
-   * @param key {@link String}
-   * @return {@link String}
-   */
-  String read(String key);
+    Map<String, AttributeValue> result = new HashMap<>();
 
-  /**
-   * Write to Cache.
-   * 
-   * @param key {@link String}
-   * @param value {@link String}
-   * @param cacheInDays int
-   */
-  void write(String key, String value, int cacheInDays);
+    for (Map.Entry<String, Object> e : map.entrySet()) {
+
+      if (e.getValue() instanceof Double d) {
+        result.put(e.getKey(), AttributeValue.fromN(String.valueOf(d)));
+      } else if (e.getValue() instanceof String s) {
+        result.put(e.getKey(), AttributeValue.fromS(s));
+      } else {
+        throw new IllegalArgumentException(
+            "Unsupported data type: " + e.getValue().getClass().getName());
+      }
+    }
+
+    return result;
+  }
 }

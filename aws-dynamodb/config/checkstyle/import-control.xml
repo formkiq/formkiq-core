@@ -14,6 +14,7 @@
 		<allow pkg="java.io" />
 		<allow pkg="java.net" />
 		<allow pkg="java.text" />
+		<allow pkg="java.time" />
 		<allow pkg="java.util" />
 		
 		<allow pkg="software.amazon.awssdk.auth.credentials" />

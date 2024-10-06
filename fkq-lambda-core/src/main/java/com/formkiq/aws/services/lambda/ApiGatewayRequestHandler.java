@@ -25,6 +25,7 @@ package com.formkiq.aws.services.lambda;
 
 import java.util.Optional;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;

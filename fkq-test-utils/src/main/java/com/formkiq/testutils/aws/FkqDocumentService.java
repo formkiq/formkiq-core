@@ -61,6 +61,8 @@ import com.formkiq.client.model.GetDocumentUrlResponse;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
+
 /**
  * 
  * FormKiQ Documents Service.
@@ -448,6 +450,23 @@ public class FkqDocumentService {
   public static GetDocumentContentResponse waitForDocumentContent(final ApiClient client,
       final String siteId, final String documentId, final String content)
       throws InterruptedException {
+    return waitForDocumentContent(client, siteId, documentId, null, content);
+  }
+
+  /**
+   * Wait For Document Content.
+   *
+   * @param client {@link ApiClient}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param content {@link String}
+   * @param versionKey {@link String}
+   * @return {@link GetDocumentContentResponse}
+   * @throws InterruptedException InterruptedException
+   */
+  public static GetDocumentContentResponse waitForDocumentContent(final ApiClient client,
+      final String siteId, final String documentId, final String versionKey, final String content)
+      throws InterruptedException {
 
     DocumentsApi api = new DocumentsApi(client);
 
@@ -455,8 +474,10 @@ public class FkqDocumentService {
 
       try {
         GetDocumentContentResponse response =
-            api.getDocumentContent(documentId, siteId, null, null);
-        if (content == null || (content.equals(response.getContent()))) {
+            api.getDocumentContent(documentId, siteId, versionKey, null);
+
+        if (content == null || content.equals(response.getContent())
+            || !isEmpty(response.getContentUrl())) {
           return response;
         }
 

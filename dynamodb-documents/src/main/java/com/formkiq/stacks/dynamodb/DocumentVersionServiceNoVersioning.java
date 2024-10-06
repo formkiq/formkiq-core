@@ -43,12 +43,6 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 public class DocumentVersionServiceNoVersioning implements DocumentVersionService {
 
   @Override
-  public void addDocumentVersionAttributes(final Map<String, AttributeValue> previous,
-      final Map<String, AttributeValue> current) {
-    // empty
-  }
-
-  @Override
   public void deleteAllVersionIds(final DynamoDbClient client, final String siteId,
       final String documentId) {
     // empty

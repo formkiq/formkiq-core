@@ -23,19 +23,19 @@
  */
 package com.formkiq.stacks.api.transformers;
 
+import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.cache.CacheService;
 import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.handler.AddDocumentRequest;
 import software.amazon.awssdk.services.s3.model.ChecksumAlgorithm;
 
-import java.net.URL;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.function.Function;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.isDefaultSiteId;
@@ -58,23 +58,30 @@ public class AddDocumentRequestToPresignedUrls
   private final Optional<Long> contentLength;
   /** Site Id. */
   private final String siteId;
+  /** {@link CacheService}. */
+  private final CacheService cacheService;
+  /** Username. */
+  private final String username;
 
   /**
    * constructor.
    * 
    * @param awsservice {@link AwsServiceCache}
+   * @param authorization {@link ApiAuthorization}
    * @param documentSiteId {@link String}
    * @param urlDuration {@link Duration}
    * @param documentContentLength {@link Long}
    */
   public AddDocumentRequestToPresignedUrls(final AwsServiceCache awsservice,
-      final String documentSiteId, final Duration urlDuration,
+      final ApiAuthorization authorization, final String documentSiteId, final Duration urlDuration,
       final Optional<Long> documentContentLength) {
     this.siteId = documentSiteId;
     this.s3PresignerService = awsservice.getExtension(S3PresignerService.class);
+    this.cacheService = awsservice.getExtension(CacheService.class);
     this.s3Bucket = awsservice.environment("DOCUMENTS_S3_BUCKET");
     this.duration = urlDuration != null ? urlDuration : Duration.ofHours(1);
     this.contentLength = documentContentLength;
+    this.username = authorization.getUsername();
   }
 
   @Override
@@ -144,13 +151,13 @@ public class AddDocumentRequestToPresignedUrls
     ChecksumAlgorithm checksumAlgorithm =
         this.s3PresignerService.getChecksumAlgorithm(o.getChecksumType());
 
-    String checksum = !isEmpty(o.getChecksum()) ? o.getChecksum() : UUID.randomUUID().toString();
-    o.setChecksum(checksum);
+    String url = this.s3PresignerService.presignPutUrl(this.s3Bucket, key, this.duration,
+        checksumAlgorithm, o.getChecksum(), this.contentLength, null).toString();
 
-    Map<String, String> map = Map.of("checksum", checksum);
-    URL url = this.s3PresignerService.presignPutUrl(this.s3Bucket, key, this.duration,
-        checksumAlgorithm, checksum, this.contentLength, map);
+    String cacheKey = "s3PresignedUrl#" + this.s3Bucket + "#" + key;
+    final int cacheInDays = 7;
+    this.cacheService.write(cacheKey, this.username, cacheInDays);
 
-    return url.toString();
+    return url;
   }
 }

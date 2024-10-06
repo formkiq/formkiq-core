@@ -46,6 +46,8 @@ public class DynamoDbExtension
   public static final String DOCUMENTS_VERSION_TABLE = "DocumentVersions";
   /** Cache Table Name. */
   public static final String CACHE_TABLE = "Cache";
+  /** Documents Audit Table. */
+  public static final String DOCUMENTS_AUDIT_TABLE = "DocumentsAudit";
   /** {@link GenericContainer}. */
   private GenericContainer<?> dynamoDbLocal;
   /** {@link DynamoDbHelper}. */
@@ -71,6 +73,7 @@ public class DynamoDbExtension
       this.schema.createDocumentsTable(DOCUMENTS_VERSION_TABLE);
       this.schema.createCacheTable(CACHE_TABLE);
       this.schema.createDocumentSyncsTable(DOCUMENT_SYNCS_TABLE);
+      this.schema.createDocumentSyncsTable(DOCUMENTS_AUDIT_TABLE);
     }
   }
 

@@ -522,10 +522,8 @@ public interface DocumentService {
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param attributes {@link Map}
-   * @param updateVersioning boolean
    */
-  void updateDocument(String siteId, String documentId, Map<String, AttributeValue> attributes,
-      boolean updateVersioning);
+  void updateDocument(String siteId, String documentId, Map<String, AttributeValue> attributes);
 
   /**
    * Publish Document.

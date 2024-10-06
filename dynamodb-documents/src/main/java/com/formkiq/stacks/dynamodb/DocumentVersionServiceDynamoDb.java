@@ -67,24 +67,6 @@ public class DocumentVersionServiceDynamoDb implements DocumentVersionService {
   private String tableName = null;
 
   @Override
-  public void addDocumentVersionAttributes(final Map<String, AttributeValue> previous,
-      final Map<String, AttributeValue> current) {
-
-    if (!previous.isEmpty()) {
-
-      String version = current.getOrDefault(VERSION_ATTRIBUTE, AttributeValue.fromS("1")).s();
-      String nextVersion = String.valueOf(Integer.parseInt(version) + 1);
-
-      previous.put(VERSION_ATTRIBUTE, AttributeValue.fromS(version));
-
-      String sk = getSk(previous, version);
-      previous.put(SK, AttributeValue.fromS(sk));
-
-      current.put(VERSION_ATTRIBUTE, AttributeValue.fromS(nextVersion));
-    }
-  }
-
-  @Override
   public void deleteAllVersionIds(final DynamoDbClient client, final String siteId,
       final String documentId) {
 
@@ -183,6 +165,7 @@ public class DocumentVersionServiceDynamoDb implements DocumentVersionService {
 
     if (!Strings.isEmpty(versionKey)) {
       item = new DynamicDocumentItem(new AttributeValueToMap().apply(versionAttributes));
+      item.setDocumentId(documentId);
     } else {
       item = documentService.findDocument(siteId, documentId);
     }

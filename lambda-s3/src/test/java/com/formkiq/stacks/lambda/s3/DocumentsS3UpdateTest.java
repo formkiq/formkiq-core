@@ -32,11 +32,9 @@ import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFile;
 import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFileAsMap;
 import static com.formkiq.testutils.aws.DynamoDbExtension.CACHE_TABLE;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
-import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_VERSION_TABLE;
 import static com.formkiq.testutils.aws.TestServices.AWS_REGION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -53,8 +51,15 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+
+import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.DbKeys;
+import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.PaginationResults;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -63,10 +68,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockserver.integration.ClientAndServer;
-import com.formkiq.aws.dynamodb.DbKeys;
-import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
-import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
@@ -160,7 +161,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
   private static final String URL = "http://localhost:" + PORT;
 
   /**
-   * AfterAll.
+   * After All.
    */
   @AfterAll
   public static void afterAll() {
@@ -217,7 +218,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
     Map<String, String> map = new HashMap<>();
     map.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
-    map.put("DOCUMENT_VERSIONS_TABLE", DOCUMENTS_VERSION_TABLE);
+    map.put("CACHE_TABLE", CACHE_TABLE);
     map.put("SNS_DOCUMENT_EVENT", snsDocumentEvent);
     map.put("AWS_REGION", AWS_REGION.id());
     map.put("APP_ENVIRONMENT", APP_ENVIRONMENT);
@@ -301,18 +302,15 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
   /**
    * Assert Publish SNS Topic.
-   * 
+   *
    * @param siteId {@link String}
    * @param sqsQueueUrl {@link String}
    * @param eventType {@link String}
-   * @param hasContent boolean
    * @param childDoc boolean
    * @throws InterruptedException InterruptedException
    */
-  @SuppressWarnings("unchecked")
   private void assertPublishSnsMessage(final String siteId, final String sqsQueueUrl,
-      final String eventType, final boolean hasContent, final boolean childDoc)
-      throws InterruptedException {
+      final String eventType, final boolean childDoc) throws InterruptedException {
 
     List<Message> msgs = sqsService.receiveMessages(sqsQueueUrl).messages();
     while (msgs.size() != 1) {
@@ -333,22 +331,13 @@ public class DocumentsS3UpdateTest implements DbKeys {
       assertNotNull(map.get("path"));
     }
 
-    if (hasContent) {
-      assertEquals("text/plain", map.get("contentType"));
-      assertNotNull(map.get("content"));
-    } else {
-      assertNull(map.get("content"));
-    }
+    assertNull(map.get("content"));
 
     if (!"delete".equals(eventType)) {
       assertNotNull(map.get("userId"));
     }
 
-    if (siteId != null) {
-      assertEquals(siteId, map.get("siteId"));
-    } else {
-      assertEquals("default", map.get("siteId"));
-    }
+    assertEquals(Objects.requireNonNullElse(siteId, "default"), map.get("siteId"));
   }
 
   /**
@@ -459,6 +448,9 @@ public class DocumentsS3UpdateTest implements DbKeys {
   @Timeout(value = TEST_TIMEOUT)
   public void testHandleRequest01() throws Exception {
 
+    ApiAuthorization authorization = new ApiAuthorization().username("firstwriter");
+    ApiAuthorization.login(authorization);
+
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       this.logger.reset();
@@ -474,12 +466,18 @@ public class DocumentsS3UpdateTest implements DbKeys {
       doc.setPath("test.txt");
       service.saveDocumentItemWithTag(siteId, doc);
 
-      addS3File(key, "pdf", false, "testdata");
+      String content = "testdata";
+      addS3File(key, "text/plain", false, content);
 
       // when
-      final DocumentItem item = handleRequest(siteId, BUCKET_KEY, map);
+      DocumentItem item = handleRequest(siteId, BUCKET_KEY, map);
 
       // then
+      assertEquals("text/plain", item.getContentType());
+      assertEquals(content.length(), item.getContentLength());
+      assertNotNull(item.getS3version());
+      assertEquals("joe", item.getUserId());
+
       assertFalse(item.getChecksum().startsWith("\""));
       assertFalse(item.getChecksum().endsWith("\""));
       assertNotNull(item.getS3version());
@@ -491,8 +489,8 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
       assertEquals(0,
           service.findDocumentFormats(siteId, BUCKET_KEY, null, MAX_RESULTS).getResults().size());
-      verifyDocumentSaved(siteId, item, "pdf", "8");
-      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, CREATE, false, false);
+      verifyDocumentSaved(siteId, item, "text/plain", "8");
+      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, CREATE, false);
 
       assertNotNull(service.findMostDocumentDate());
     }
@@ -537,7 +535,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       final DocumentItem item = handleRequest(siteId, BUCKET_KEY, map);
 
       // then
-      assertNotEquals(item.getInsertedDate(), item.getLastModifiedDate());
+      assertEquals(item.getInsertedDate(), item.getLastModifiedDate());
 
       PaginationResults<DocumentTag> tags =
           service.findDocumentTags(siteId, BUCKET_KEY, null, MAX_RESULTS);
@@ -558,7 +556,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
           service.findDocumentFormats(siteId, BUCKET_KEY, null, MAX_RESULTS).getResults().size());
 
       verifyDocumentSaved(siteId, item, "pdf", "8");
-      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, UPDATE, false, false);
+      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, UPDATE, false);
       assertNotNull(service.findMostDocumentDate());
     }
   }
@@ -634,7 +632,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
       // then
       assertNull(item);
-      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, DELETE, false, true);
+      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, DELETE, true);
     }
   }
 
@@ -693,7 +691,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       assertEquals(0,
           service.findDocumentFormats(siteId, BUCKET_KEY, null, MAX_RESULTS).getResults().size());
       verifyDocumentSaved(siteId, item, "pdf", "8");
-      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, CREATE, false, true);
+      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, CREATE, true);
 
       tags = service.findDocumentTags(siteId, documentId, null, MAX_RESULTS);
       assertEquals(0, tags.getResults().size());
@@ -785,7 +783,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
       // then
       verifyDocumentSaved(siteId, item, "text/plain", "8");
-      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, CREATE, false, false);
+      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, CREATE, false);
     }
   }
 
@@ -821,7 +819,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
       // then
       verifyDocumentSaved(siteId, item, "text/plain", "" + content.length());
-      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, CREATE, false, false);
+      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, CREATE, false);
     }
   }
 
@@ -857,7 +855,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
       // then
       verifyDocumentSaved(siteId, item, "text/plain", "" + content.length());
-      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, CREATE, false, false);
+      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, CREATE, false);
     }
   }
 
@@ -899,7 +897,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       assertEquals(ttl, result.get("TimeToLive").n());
 
       verifyDocumentSaved(siteId, item, "pdf", "8");
-      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, CREATE, false, false);
+      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, CREATE, false);
     }
   }
 
@@ -1056,11 +1054,10 @@ public class DocumentsS3UpdateTest implements DbKeys {
   @Timeout(value = TEST_TIMEOUT)
   public void testInvalidRequest01() {
     // given
-    String siteId = null;
     Map<String, Object> map = new HashMap<>();
 
     // when
-    handleRequest(siteId, BUCKET_KEY, map);
+    handleRequest(null, BUCKET_KEY, map);
 
     // then
   }

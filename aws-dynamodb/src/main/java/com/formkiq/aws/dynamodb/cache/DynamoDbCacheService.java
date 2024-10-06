@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.services.lambda.services;
+package com.formkiq.aws.dynamodb.cache;
 
 import java.text.SimpleDateFormat;
 import java.time.ZoneOffset;

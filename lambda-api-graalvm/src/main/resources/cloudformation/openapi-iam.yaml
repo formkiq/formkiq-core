@@ -1235,7 +1235,16 @@ Resources:
             delete:
               operationId: DeleteDocument
               summary: Delete document
-              description: Delete a document
+              description: |-
+                Delete a document's details, i.e., metadata, contents, etc
+
+                SoftDelete:
+
+                The SoftDelete parameter allows for the temporary removal of a document's metadata, attributes, etc from being retrieved from all API requests.
+
+                The document can be permanently deleted by calling the DELETE /documents/{documentId} with softDelete=false or restored using the PUT /documents/{documentId}/restore.
+
+                Only the GET /documents?deleted=true will return all the soft deleted documents.
               tags:
                 - Documents
               parameters:
@@ -7619,24 +7628,14 @@ Resources:
             DocumentVersion:
               type: "object"
               properties:
-                path:
-                  type: "string"
-                  description: "Path or Name of document"
-                deepLinkPath:
-                  type: "string"
-                  description: "Path or Name of deep link"
                 insertedDate:
                   type: "string"
                   description: "Inserted Timestamp"
-                lastModifiedDate:
-                  type: "string"
-                  description: "Last Modified Timestamp"
                 checksum:
                   type: "string"
                   description: "Document checksum, changes when document file changes"
-                documentId:
-                  type: "string"
-                  description: "Document Identifier"
+                checksumType:
+                  $ref: "#/components/schemas/ChecksumType"
                 contentType:
                   type: "string"
                   description: "Document Content-Type"
@@ -7646,9 +7645,6 @@ Resources:
                 contentLength:
                   type: "integer"
                   description: "Document size"
-                version:
-                  type: "string"
-                  description: "Document version"
                 versionKey:
                   type: "string"
                   description: "Document Version Identifier"
@@ -7964,6 +7960,9 @@ Resources:
               description:  "The type of the activity"
               enum:
                 - VIEW
+                - CREATE
+                - UPDATE
+                - DELETE
             UserActivity:
               type: "object"
               properties:
@@ -7984,6 +7983,8 @@ Resources:
                 timeToLive:
                   type: "string"
                   description: "User activity time to live"
+                document:
+                  $ref: "#/components/schemas/Document"
             GetFoldersResponse:
               type: "object"
               properties:

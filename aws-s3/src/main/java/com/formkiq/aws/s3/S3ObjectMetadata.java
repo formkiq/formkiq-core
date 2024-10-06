@@ -43,11 +43,55 @@ public class S3ObjectMetadata {
   private boolean objectExists;
   /** S3 Version Id. */
   private String versionId;
+  /** Checksum Sha1. */
+  private String checksumSha1;
+  /** Checksum Sha256. */
+  private String checksumSha256;
 
   /**
    * constructor.
    */
   public S3ObjectMetadata() {}
+
+  /**
+   * Get Checksum Sha1.
+   * 
+   * @return String
+   */
+  public String getChecksumSha1() {
+    return this.checksumSha1;
+  }
+
+  /**
+   * Set Checksum Sha1.
+   * 
+   * @param checksum {@link String}
+   * @return S3ObjectMetadata
+   */
+  public S3ObjectMetadata setChecksumSha1(final String checksum) {
+    this.checksumSha1 = checksum;
+    return this;
+  }
+
+  /**
+   * Get Checksum SHA 256.
+   * 
+   * @return String
+   */
+  public String getChecksumSha256() {
+    return this.checksumSha256;
+  }
+
+  /**
+   * Set Checksum SHA 256.
+   * 
+   * @param checksum {@link String}
+   * @return S3ObjectMetadata
+   */
+  public S3ObjectMetadata setChecksumSha256(final String checksum) {
+    this.checksumSha256 = checksum;
+    return this;
+  }
 
   /**
    * Get Content Length.
@@ -59,54 +103,8 @@ public class S3ObjectMetadata {
   }
 
   /**
-   * Get Content Type.
-   * 
-   * @return {@link String}
-   */
-  public String getContentType() {
-    return this.contentType;
-  }
-
-  /**
-   * Get Object ETag.
-   * 
-   * @return {@link String}
-   */
-  public String getEtag() {
-    return this.etag;
-  }
-
-  /**
-   * Get Metadata.
-   * 
-   * @return {@link Map}
-   */
-  public Map<String, String> getMetadata() {
-    return this.metadata != null ? Collections.unmodifiableMap(this.metadata)
-        : Collections.emptyMap();
-  }
-
-  /**
-   * Get S3 Version Id.
-   * 
-   * @return {@link String}
-   */
-  public String getVersionId() {
-    return this.versionId;
-  }
-
-  /**
-   * Does Object Exist.
-   * 
-   * @return boolean
-   */
-  public boolean isObjectExists() {
-    return this.objectExists;
-  }
-
-  /**
    * Set Content Length.
-   * 
+   *
    * @param length {@link Long}
    */
   public void setContentLength(final Long length) {
@@ -114,8 +112,17 @@ public class S3ObjectMetadata {
   }
 
   /**
+   * Get Content Type.
+   *
+   * @return {@link String}
+   */
+  public String getContentType() {
+    return this.contentType;
+  }
+
+  /**
    * Set Object Content Type.
-   * 
+   *
    * @param objectContentType {@link String}
    * @return {@link S3ObjectMetadata}
    */
@@ -125,8 +132,17 @@ public class S3ObjectMetadata {
   }
 
   /**
+   * Get Object ETag.
+   *
+   * @return {@link String}
+   */
+  public String getEtag() {
+    return this.etag;
+  }
+
+  /**
    * Set Object ETag.
-   * 
+   *
    * @param objectEtag {@link String}
    * @return {@link S3ObjectMetadata}
    */
@@ -136,8 +152,18 @@ public class S3ObjectMetadata {
   }
 
   /**
+   * Get Metadata.
+   *
+   * @return {@link Map}
+   */
+  public Map<String, String> getMetadata() {
+    return this.metadata != null ? Collections.unmodifiableMap(this.metadata)
+        : Collections.emptyMap();
+  }
+
+  /**
    * Set Metadata.
-   * 
+   *
    * @param map {@link Map}
    * @return {@link S3ObjectMetadata}
    */
@@ -147,8 +173,37 @@ public class S3ObjectMetadata {
   }
 
   /**
+   * Get S3 Version Id.
+   *
+   * @return {@link String}
+   */
+  public String getVersionId() {
+    return this.versionId;
+  }
+
+  /**
+   * Set S3 Version Id.
+   *
+   * @param s3VersionId {@link String}
+   * @return {@link S3ObjectMetadata}
+   */
+  public S3ObjectMetadata setVersionId(final String s3VersionId) {
+    this.versionId = s3VersionId;
+    return this;
+  }
+
+  /**
+   * Does Object Exist.
+   *
+   * @return boolean
+   */
+  public boolean isObjectExists() {
+    return this.objectExists;
+  }
+
+  /**
    * Sets Whether Object Exists.
-   * 
+   *
    * @param exists boolean
    * @return {@link S3ObjectMetadata}
    */
@@ -158,13 +213,54 @@ public class S3ObjectMetadata {
   }
 
   /**
-   * Set S3 Version Id.
+   * Get Checksum.
    * 
-   * @param s3VersionId {@link String}
-   * @return {@link S3ObjectMetadata}
+   * @return String
    */
-  public S3ObjectMetadata setVersionId(final String s3VersionId) {
-    this.versionId = s3VersionId;
-    return this;
+  public String getChecksum() {
+    String checksum;
+    String checksumType = getChecksumType();
+
+    if ("SHA256".equals(checksumType)) {
+      checksum = getChecksumSha256();
+    } else if ("SHA1".equals(checksumType)) {
+      checksum = getChecksumSha1();
+    } else {
+      checksum = removeQuotes(getEtag());
+    }
+
+    return checksum;
+  }
+
+  /**
+   * Get Checksum Type.
+   * 
+   * @return String
+   */
+  public String getChecksumType() {
+
+    String checksumType = null;
+
+    if (!isEmpty(getChecksumSha256())) {
+      checksumType = "SHA256";
+    } else if (!isEmpty(getChecksumSha1())) {
+      checksumType = "SHA1";
+    }
+
+    return checksumType;
+  }
+
+  private boolean isEmpty(final String s) {
+    return s == null || s.isEmpty();
+  }
+
+  /**
+   * Remove single/double quotes from {@link String}.
+   *
+   * @param s {@link String}
+   * @return {@link String}
+   */
+  private String removeQuotes(final String s) {
+    return s.replaceAll("^['\"]|['\"]$", "");
   }
 }

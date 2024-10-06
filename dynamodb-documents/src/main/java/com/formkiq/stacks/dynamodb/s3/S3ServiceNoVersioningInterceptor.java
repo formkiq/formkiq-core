@@ -21,48 +21,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.plugins.useractivity;
+package com.formkiq.stacks.dynamodb.s3;
 
-import java.util.Map;
+import com.formkiq.aws.s3.S3Service;
+import com.formkiq.aws.s3.S3ServiceInterceptor;
 
 /**
- * User Activity.
+ * {@link S3ServiceInterceptor} for No Document versioning.
  */
-public interface UserActivityPlugin {
+public class S3ServiceNoVersioningInterceptor implements S3ServiceInterceptor {
 
   /**
-   * Add User Activity View.
-   * 
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param versionKey {@link String}
+   * constructor.
+   *
    */
-  void addDocumentViewActivity(String siteId, String documentId, String versionKey);
+  public S3ServiceNoVersioningInterceptor() {
+    // empty
+  }
 
-  /**
-   * Add Document Activity.
-   * 
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param record {@link Map}
-   */
-  void addDocumentActivity(String siteId, String documentId, Map<String, Object> record);
-
-  /**
-   * Add update Document Activity.
-   * 
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param record {@link Map}
-   */
-  void updateDocumentActivity(String siteId, String documentId, Map<String, Object> record);
-
-  /**
-   * Add delete Document Activity.
-   * 
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param record {@link Map}
-   */
-  void deleteDocumentActivity(String siteId, String documentId, Map<String, Object> record);
+  @Override
+  public void putObjectEvent(final S3Service s3, final String bucket, final String key) {
+    // empty
+  }
 }

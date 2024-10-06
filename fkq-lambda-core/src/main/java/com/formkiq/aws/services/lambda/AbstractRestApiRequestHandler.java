@@ -51,6 +51,7 @@ import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
+import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.ConflictException;
@@ -518,9 +519,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
       List<ApiAuthorizationInterceptor> interceptors =
           setupApiAuthorizationInterceptor(awsServices);
 
-      ApiAuthorization authorization =
-          new ApiAuthorizationBuilder().interceptors(interceptors).build(event);
-      log(logger, event, authorization);
+      ApiAuthorization authorization = buildApiAuthorization(logger, event, interceptors);
 
       List<ApiRequestHandlerInterceptor> requestInterceptors =
           getApiRequestHandlerInterceptors(awsServices);
@@ -564,7 +563,25 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
       buildResponse(logger, awsServices, output, SC_ERROR, Collections.emptyMap(),
           new ApiResponseError("Internal Server Error"));
+
+    } finally {
+      ApiAuthorization.logout();
     }
+  }
+
+  private ApiAuthorization buildApiAuthorization(final LambdaLogger logger,
+      final ApiGatewayRequestEvent event, final List<ApiAuthorizationInterceptor> interceptors)
+      throws Exception {
+
+    ApiAuthorization.logout();
+
+    ApiAuthorization authorization =
+        new ApiAuthorizationBuilder().interceptors(interceptors).build(event);
+
+    log(logger, event, authorization);
+    ApiAuthorization.login(authorization);
+
+    return authorization;
   }
 
   /**

@@ -26,7 +26,7 @@ package com.formkiq.stacks.api.validators;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
-import com.formkiq.aws.services.lambda.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.services.ActionsValidator;

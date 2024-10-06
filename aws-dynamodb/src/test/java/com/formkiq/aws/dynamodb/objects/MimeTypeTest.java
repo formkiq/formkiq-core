@@ -42,4 +42,14 @@ class MimeTypeTest {
     assertEquals(MimeType.MIME_UNKNOWN, MimeType.fromContentType(null));
   }
 
+  /**
+   * Test fromContentType.
+   */
+  @Test
+  void testFromExtension() {
+    assertEquals("png", MimeType.fromContentType("image/png").getExtension());
+    assertEquals("txt", MimeType.fromContentType("text/plain").getExtension());
+    assertEquals("", MimeType.fromContentType(null).getExtension());
+  }
+
 }

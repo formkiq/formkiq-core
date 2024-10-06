@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.exceptions.ForbiddenException;
 

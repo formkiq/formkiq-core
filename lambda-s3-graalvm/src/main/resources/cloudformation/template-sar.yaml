@@ -430,6 +430,8 @@ Resources:
         Variables:
           DOCUMENTS_TABLE: 
             Ref: Documents
+          CACHE_TABLE:
+            Ref: Cache
           APP_ENVIRONMENT: 
             Fn::Sub: "${AppEnvironment}"
           DEBUG: false
@@ -439,6 +441,8 @@ Resources:
           FormKiQType:
             Ref: FormKiQType
           DOCUMENT_VERSIONS_PLUGIN: "com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning"
+          DOCUMENTS_S3_BUCKET:
+            Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-documents-${AWS::AccountId}"
           DOCUMENT_SYNC_TABLE: 
             Ref: DocumentSyncs
           MODULE_typesense:
@@ -800,6 +804,7 @@ Resources:
           - Effect: Allow
             Action:
             - s3:ListBucket
+            - s3:ListBucketVersions
             Resource:
             - Fn::Join:
               - ''

@@ -21,30 +21,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.services.lambda;
+package com.formkiq.aws.dynamodb.cache;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import com.formkiq.testutils.aws.DynamoDbExtension;
+import com.formkiq.testutils.aws.DynamoDbTestServices;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Date;
 import java.util.UUID;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import com.formkiq.aws.services.lambda.services.CacheService;
-import com.formkiq.aws.services.lambda.services.DynamoDbCacheService;
-import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.DynamoDbTestServices;
 
-/** Unit Tests for {@link DynamoDbCacheService}. */
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+/** Unit Tests for {@link CacheService}. */
 @ExtendWith(DynamoDbExtension.class)
 public class DynamoDbCacheServiceTest {
 
   /** Document Table. */
   private CacheService service;
   /** Cache Table. */
-  private static String cacheTable = "Cache";
+  private static final String CACHE_TABLE = "Cache";
 
   /**
    * Before Test.
@@ -54,16 +54,15 @@ public class DynamoDbCacheServiceTest {
   @BeforeEach
   public void before() throws Exception {
     this.service =
-        new DynamoDbCacheService(DynamoDbTestServices.getDynamoDbConnection(), cacheTable);
+        new DynamoDbCacheService(DynamoDbTestServices.getDynamoDbConnection(), CACHE_TABLE);
   }
 
   /**
    * Test Write to Cache.
-   * 
-   * @throws Exception Exception
+   *
    */
   @Test
-  public void testWrite01() throws Exception {
+  public void testWrite01() {
     // given
     final Date before = Date.from(ZonedDateTime.now(ZoneOffset.UTC).minusMinutes(1).toInstant());
     final Date after = Date.from(ZonedDateTime.now(ZoneOffset.UTC).plusDays(1).toInstant());

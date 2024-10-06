@@ -41,10 +41,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import static com.formkiq.stacks.dynamodb.DocumentVersionService.VERSION_ATTRIBUTE;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_VERSION_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * 
@@ -64,105 +62,6 @@ class DocumentVersionServiceDynamoDbTest implements DbKeys {
   public static void beforeAll() {
     service = new DocumentVersionServiceDynamoDb();
     service.initialize(Map.of("DOCUMENT_VERSIONS_TABLE", DOCUMENTS_VERSION_TABLE));
-  }
-
-  /**
-   * Test First Time.
-   */
-  @Test
-  void testAddDocumentVersionAttributes01() {
-    // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-
-      String documentId = UUID.randomUUID().toString();
-
-      Map<String, AttributeValue> previous = keysDocument(siteId, documentId);
-      previous.put("path", AttributeValue.fromS("previous.txt"));
-
-      Map<String, AttributeValue> current = keysDocument(siteId, documentId);
-      current.put("path", AttributeValue.fromS("current.txt"));
-
-      // when
-      service.addDocumentVersionAttributes(previous, current);
-
-      // then
-      assertTrue(previous.get(SK).s().startsWith("document#"));
-      assertTrue(previous.get(SK).s().endsWith("#v1"));
-      assertEquals("1", previous.get(VERSION_ATTRIBUTE).s());
-      assertEquals("1", previous.get(VERSION_ATTRIBUTE).s());
-
-      assertEquals("document", current.get(SK).s());
-      assertEquals("2", current.get(VERSION_ATTRIBUTE).s());
-      assertEquals("2", current.get(VERSION_ATTRIBUTE).s());
-
-      // when - revert
-      service.revertDocumentVersionAttributes(previous, current);
-
-      // then
-      assertEquals("document", previous.get(SK).s());
-      assertEquals("3", previous.get(VERSION_ATTRIBUTE).s());
-
-      assertTrue(current.get(SK).s().endsWith("#v2"));
-      assertEquals("2", current.get(VERSION_ATTRIBUTE).s());
-    }
-  }
-
-  /**
-   * Test 2nd Time.
-   */
-  @Test
-  void testAddDocumentVersionAttributes02() {
-    // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-
-      String documentId = UUID.randomUUID().toString();
-      Map<String, AttributeValue> previous = keysDocument(siteId, documentId);
-
-      Map<String, AttributeValue> current = keysDocument(siteId, documentId);
-      current.put(VERSION_ATTRIBUTE, AttributeValue.fromS("2"));
-
-      // when
-      service.addDocumentVersionAttributes(previous, current);
-
-      // then
-      assertTrue(previous.get(SK).s().startsWith("document#"));
-      assertTrue(previous.get(SK).s().endsWith("#v2"));
-      assertEquals("2", previous.get(VERSION_ATTRIBUTE).s());
-      assertEquals("2", previous.get(VERSION_ATTRIBUTE).s());
-
-      assertEquals("document", current.get(SK).s());
-      assertEquals("3", current.get(VERSION_ATTRIBUTE).s());
-      assertEquals("3", current.get(VERSION_ATTRIBUTE).s());
-    }
-  }
-
-  /**
-   * Test 100th Time.
-   */
-  @Test
-  void testAddDocumentVersionAttributes03() {
-    // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-
-      String documentId = UUID.randomUUID().toString();
-      Map<String, AttributeValue> previous = keysDocument(siteId, documentId);
-
-      Map<String, AttributeValue> current = keysDocument(siteId, documentId);
-      current.put(VERSION_ATTRIBUTE, AttributeValue.fromS("100"));
-
-      // when
-      service.addDocumentVersionAttributes(previous, current);
-
-      // then
-      assertTrue(previous.get(SK).s().startsWith("document#"));
-      assertTrue(previous.get(SK).s().endsWith("#v100"));
-      assertEquals("100", previous.get(VERSION_ATTRIBUTE).s());
-      assertEquals("100", previous.get(VERSION_ATTRIBUTE).s());
-
-      assertEquals("document", current.get(SK).s());
-      assertEquals("101", current.get(VERSION_ATTRIBUTE).s());
-      assertEquals("101", current.get(VERSION_ATTRIBUTE).s());
-    }
   }
 
   /**

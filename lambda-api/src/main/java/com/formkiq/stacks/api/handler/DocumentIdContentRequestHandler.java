@@ -36,7 +36,7 @@ import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.aws.s3.S3Service;
-import com.formkiq.aws.services.lambda.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -68,13 +68,16 @@ public class DocumentIdContentRequestHandler
       final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorization.getSiteId();
-    String documentId = event.getPathParameters().get("documentId");
-    String versionKey = getParameter(event, "versionKey");
+    String documentId = event.getPathParameter("documentId");
+    String versionKey = event.getQueryStringParameter("versionKey");
 
     Map<String, AttributeValue> versionAttributes =
         getVersionAttributes(awsservice, siteId, documentId, versionKey);
+    logger.log("versionKey: " + versionKey);
+    logger.log("versionAttributes: " + versionAttributes);
     DocumentItem item =
         getDocumentItem(awsservice, siteId, documentId, versionKey, versionAttributes);
+    logger.log("item: " + item.getContentType());
     String versionId = getVersionId(awsservice, versionAttributes, versionKey);
 
     ApiResponse response;
@@ -92,7 +95,7 @@ public class DocumentIdContentRequestHandler
 
     if (awsservice.containsExtension(UserActivityPlugin.class)) {
       UserActivityPlugin plugin = awsservice.getExtension(UserActivityPlugin.class);
-      plugin.addViewActivity(siteId, documentId, versionKey, authorization.getUsername());
+      plugin.addDocumentViewActivity(siteId, documentId, versionKey);
     }
 
     return new ApiRequestHandlerResponse(SC_OK, response);
@@ -162,7 +165,8 @@ public class DocumentIdContentRequestHandler
       DocumentVersionService versionService = awsservice.getExtension(DocumentVersionService.class);
       versionId = versionService.getVersionId(versionAttributes);
 
-      throwIfNull(versionId, new BadException("invalid versionKey '" + versionKey + "'"));
+      throwIfNull(versionId,
+          new BadException("content versionId not found in versionKey '" + versionKey + "'"));
     }
 
     return versionId;

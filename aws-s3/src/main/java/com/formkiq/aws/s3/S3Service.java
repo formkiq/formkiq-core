@@ -75,6 +75,9 @@ import java.util.Map;
  */
 public class S3Service {
 
+  /** {@link S3ServiceInterceptor}. */
+  private final S3ServiceInterceptor interceptor;
+
   /**
    * URL Decode {@link String}.
    *
@@ -115,7 +118,19 @@ public class S3Service {
    * @param s3connectionBuilder {@link S3ConnectionBuilder}
    */
   public S3Service(final S3ConnectionBuilder s3connectionBuilder) {
+    this(s3connectionBuilder, null);
+  }
+
+  /**
+   * Constructor.
+   *
+   * @param s3connectionBuilder {@link S3ConnectionBuilder}
+   * @param s3Interceptor {@link S3ServiceInterceptor}
+   */
+  public S3Service(final S3ConnectionBuilder s3connectionBuilder,
+      final S3ServiceInterceptor s3Interceptor) {
     this.s3Client = s3connectionBuilder.build();
+    this.interceptor = s3Interceptor;
   }
 
   /**
@@ -327,6 +342,8 @@ public class S3Service {
       md.setEtag(resp.eTag());
       md.setContentLength(resp.contentLength());
       md.setVersionId(resp.versionId());
+      md.setChecksumSha1(resp.checksumSHA1());
+      md.setChecksumSha256(resp.checksumSHA256());
 
     } catch (NoSuchKeyException e) {
       md.setObjectExists(false);
@@ -353,12 +370,13 @@ public class S3Service {
    * @param bucket {@link String}
    * @param prefix {@link String}
    * @param keyMarker {@link String}
+   * @param maxKeys {@link Integer}
    * @return {@link ListObjectVersionsResponse}
    */
   public ListObjectVersionsResponse getObjectVersions(final String bucket, final String prefix,
-      final String keyMarker) {
+      final String keyMarker, final Integer maxKeys) {
     ListObjectVersionsRequest req = ListObjectVersionsRequest.builder().bucket(bucket)
-        .prefix(prefix).keyMarker(keyMarker).build();
+        .prefix(prefix).keyMarker(keyMarker).maxKeys(maxKeys).build();
     return this.s3Client.listObjectVersions(req);
   }
 
@@ -417,7 +435,13 @@ public class S3Service {
       build.metadata(metadata);
     }
 
-    return this.s3Client.putObject(build.build(), RequestBody.fromBytes(data));
+    PutObjectRequest request = build.build();
+
+    if (this.interceptor != null) {
+      this.interceptor.putObjectEvent(this, bucket, key);
+    }
+
+    return this.s3Client.putObject(request, RequestBody.fromBytes(data));
   }
 
   /**

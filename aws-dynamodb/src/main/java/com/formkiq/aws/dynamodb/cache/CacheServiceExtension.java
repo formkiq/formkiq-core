@@ -21,48 +21,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.plugins.useractivity;
+package com.formkiq.aws.dynamodb.cache;
 
-import java.util.Map;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.AwsServiceExtension;
 
 /**
- * User Activity.
+ * 
+ * {@link AwsServiceExtension} for {@link CacheService}.
+ *
  */
-public interface UserActivityPlugin {
+public class CacheServiceExtension implements AwsServiceExtension<CacheService> {
+
+  /** {@link CacheService}. */
+  private CacheService service;
 
   /**
-   * Add User Activity View.
-   * 
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param versionKey {@link String}
+   * constructor.
    */
-  void addDocumentViewActivity(String siteId, String documentId, String versionKey);
+  public CacheServiceExtension() {}
 
-  /**
-   * Add Document Activity.
-   * 
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param record {@link Map}
-   */
-  void addDocumentActivity(String siteId, String documentId, Map<String, Object> record);
+  @Override
+  public CacheService loadService(final AwsServiceCache awsServiceCache) {
+    if (this.service == null) {
+      DynamoDbConnectionBuilder connection =
+          awsServiceCache.getExtension(DynamoDbConnectionBuilder.class);
+      this.service =
+          new DynamoDbCacheService(connection, awsServiceCache.environment("CACHE_TABLE"));
+    }
 
-  /**
-   * Add update Document Activity.
-   * 
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param record {@link Map}
-   */
-  void updateDocumentActivity(String siteId, String documentId, Map<String, Object> record);
-
-  /**
-   * Add delete Document Activity.
-   * 
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param record {@link Map}
-   */
-  void deleteDocumentActivity(String siteId, String documentId, Map<String, Object> record);
+    return this.service;
+  }
 }

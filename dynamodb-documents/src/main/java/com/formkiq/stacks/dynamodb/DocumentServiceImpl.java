@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.dynamodb;
 
+import com.formkiq.aws.dynamodb.AttributeValueToMap;
 import com.formkiq.aws.dynamodb.BatchGetConfig;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamicObject;
@@ -147,6 +148,20 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   private final SimpleDateFormat yyyymmddFormat;
   /** {@link DateTimeFormatter}. */
   private final DateTimeFormatter yyyymmddFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+  /** {@link DocumentServiceInterceptor}. */
+  private final DocumentServiceInterceptor interceptor;
+
+  /**
+   * constructor.
+   *
+   * @param connection {@link DynamoDbConnectionBuilder}
+   * @param documentsTable {@link String}
+   * @param documentVersionsService {@link DocumentVersionService}
+   */
+  public DocumentServiceImpl(final DynamoDbConnectionBuilder connection,
+      final String documentsTable, final DocumentVersionService documentVersionsService) {
+    this(connection, documentsTable, documentVersionsService, null);
+  }
 
   /**
    * constructor.
@@ -154,14 +169,17 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
    * @param connection {@link DynamoDbConnectionBuilder}
    * @param documentsTable {@link String}
    * @param documentVersionsService {@link DocumentVersionService}
+   * @param documentServiceInterceptor {@link DocumentServiceInterceptor}
    */
   public DocumentServiceImpl(final DynamoDbConnectionBuilder connection,
-      final String documentsTable, final DocumentVersionService documentVersionsService) {
+      final String documentsTable, final DocumentVersionService documentVersionsService,
+      final DocumentServiceInterceptor documentServiceInterceptor) {
 
     if (documentsTable == null) {
       throw new IllegalArgumentException("'documentsTable' is null");
     }
 
+    this.interceptor = documentServiceInterceptor;
     this.indexWriter = new GlobalIndexService(connection, documentsTable);
     this.versionsService = documentVersionsService;
     this.dbClient = connection.build();
@@ -1852,17 +1870,18 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     Map<String, AttributeValue> documentValues = new HashMap<>(previous);
     Map<String, AttributeValue> current =
         getSaveDocumentAttributes(keys, siteId, document, previous, options, documentExists);
+
     documentValues.putAll(current);
 
     removeNullMetadata(document, documentValues);
 
-    String documentVersionsTableName = this.versionsService.getDocumentVersionsTableName();
-    boolean hasDocumentChanged = documentVersionsTableName != null && !previous.isEmpty()
-        && isChangedMatching(previous, current);
+    // String documentVersionsTableName = this.versionsService.getDocumentVersionsTableName();
+    // boolean hasDocumentChanged = documentVersionsTableName != null && !previous.isEmpty()
+    // && isChangedMatching(previous, current);
 
-    if (hasDocumentChanged) {
-      this.versionsService.addDocumentVersionAttributes(previous, documentValues);
-    }
+    // if (hasDocumentChanged) {
+    // this.versionsService.addDocumentVersionAttributes(previous, documentValues);
+    // }
 
     List<Map<String, AttributeValue>> folderIndex =
         this.folderIndexProcessor.generateIndex(siteId, document);
@@ -1880,15 +1899,17 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     appendDocumentAttributes(writeBuilder, siteId, document.getDocumentId(), attributes,
         documentExists, AttributeValidation.FULL, options.getValidationAccess());
 
-    if (hasDocumentChanged) {
-      writeBuilder = writeBuilder.appends(documentVersionsTableName, List.of(previous));
-    }
+    // if (hasDocumentChanged) {
+    // writeBuilder = writeBuilder.appends(documentVersionsTableName, List.of(previous));
+    // }
 
     if (writeBuilder.batchWriteItem(this.dbClient)) {
 
+      String documentId = document.getDocumentId();
+      saveDocumentInterceptor(siteId, documentId, current, previous);
+
       if (isPathChanges(previous, documentValues)) {
-        this.folderIndexProcessor.deletePath(siteId, document.getDocumentId(),
-            previous.get("path").s());
+        this.folderIndexProcessor.deletePath(siteId, documentId, previous.get("path").s());
       }
 
       List<String> tagKeys =
@@ -1934,6 +1955,15 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
       keys = keysDocument(siteId, childDoc.getDocumentId(), Optional.empty());
       saveDocument(keys, siteId, childDoc, null, null, childOptions);
+    }
+  }
+
+  private void saveDocumentInterceptor(final String siteId, final String documentId,
+      final Map<String, AttributeValue> current, final Map<String, AttributeValue> previous) {
+    if (this.interceptor != null) {
+      AttributeValueToMap attributeValueToMap = new AttributeValueToMap();
+      this.interceptor.saveDocument(siteId, documentId, attributeValueToMap.apply(current),
+          attributeValueToMap.apply(previous));
     }
   }
 
@@ -2169,32 +2199,9 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
   @Override
   public void updateDocument(final String siteId, final String documentId,
-      final Map<String, AttributeValue> attributes, final boolean updateVersioning) {
+      final Map<String, AttributeValue> attributes) {
 
     Map<String, AttributeValue> keys = keysDocument(siteId, documentId);
-
-    if (updateVersioning) {
-
-      String documentVersionsTableName = this.versionsService.getDocumentVersionsTableName();
-      if (documentVersionsTableName != null) {
-
-        Map<String, AttributeValue> current =
-            new HashMap<>(this.dbService.get(keys.get(PK), keys.get(SK)));
-        Map<String, AttributeValue> updated = new HashMap<>(current);
-        updated.putAll(attributes);
-
-        String fullLastModifiedDate = this.df.format(new Date());
-        addS(updated, "lastModifiedDate", fullLastModifiedDate);
-
-        this.versionsService.addDocumentVersionAttributes(current, updated);
-
-        WriteRequestBuilder writeBuilder = new WriteRequestBuilder()
-            .append(this.documentTableName, updated).append(documentVersionsTableName, current);
-
-        writeBuilder.batchWriteItem(this.dbClient);
-      }
-    }
-
     this.dbService.updateValues(keys.get(PK), keys.get(SK), attributes);
   }
 

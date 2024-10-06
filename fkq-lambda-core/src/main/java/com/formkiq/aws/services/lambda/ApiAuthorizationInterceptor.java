@@ -23,6 +23,8 @@
  */
 package com.formkiq.aws.services.lambda;
 
+import com.formkiq.aws.dynamodb.ApiAuthorization;
+
 /**
  * 
  * Interceptor to allow injecting extra actions into the {@link ApiAuthorization}.

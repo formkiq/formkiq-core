@@ -21,48 +21,38 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.plugins.useractivity;
+package com.formkiq.aws.dynamodb.cache;
 
-import java.util.Map;
+import java.util.Date;
 
 /**
- * User Activity.
+ * Cache Service.
+ *
  */
-public interface UserActivityPlugin {
+public interface CacheService {
 
   /**
-   * Add User Activity View.
+   * Get Cache Key Expiry Date.
    * 
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param versionKey {@link String}
+   * @param key {@link String}
+   * @return {@link Date}
    */
-  void addDocumentViewActivity(String siteId, String documentId, String versionKey);
+  Date getExpiryDate(String key);
 
   /**
-   * Add Document Activity.
+   * Read Value from Cache.
    * 
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param record {@link Map}
+   * @param key {@link String}
+   * @return {@link String}
    */
-  void addDocumentActivity(String siteId, String documentId, Map<String, Object> record);
+  String read(String key);
 
   /**
-   * Add update Document Activity.
+   * Write to Cache.
    * 
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param record {@link Map}
+   * @param key {@link String}
+   * @param value {@link String}
+   * @param cacheInDays int
    */
-  void updateDocumentActivity(String siteId, String documentId, Map<String, Object> record);
-
-  /**
-   * Add delete Document Activity.
-   * 
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param record {@link Map}
-   */
-  void deleteDocumentActivity(String siteId, String documentId, Map<String, Object> record);
+  void write(String key, String value, int cacheInDays);
 }

@@ -21,41 +21,49 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb;
+package com.formkiq.stacks.dynamodb.s3;
 
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
+import com.formkiq.aws.s3.S3ServiceInterceptor;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceExtension;
 
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
+
 /**
  * 
- * {@link AwsServiceExtension} for {@link DocumentService}.
+ * {@link AwsServiceExtension} for {@link S3ServiceInterceptor}.
  *
  */
-public class DocumentServiceExtension implements AwsServiceExtension<DocumentService> {
+public class S3ServiceInterceptorExtension implements AwsServiceExtension<S3ServiceInterceptor> {
 
-  /** {@link DocumentService}. */
-  private DocumentService service;
+  /** {@link S3ServiceInterceptor}. */
+  private S3ServiceInterceptor service;
 
   /**
    * constructor.
    */
-  public DocumentServiceExtension() {}
+  public S3ServiceInterceptorExtension() {}
 
   @Override
-  public DocumentService loadService(final AwsServiceCache awsServiceCache) {
+  public S3ServiceInterceptor loadService(final AwsServiceCache awsServiceCache) {
+
     if (this.service == null) {
-      DynamoDbConnectionBuilder connection =
-          awsServiceCache.getExtension(DynamoDbConnectionBuilder.class);
 
-      DocumentVersionService versionService =
-          awsServiceCache.getExtension(DocumentVersionService.class);
+      String versionsTable = awsServiceCache.environment("DOCUMENT_VERSIONS_TABLE");
 
-      DocumentServiceInterceptor interceptor =
-          awsServiceCache.getExtensionOrNull(DocumentServiceInterceptor.class);
+      if (!isEmpty(versionsTable)) {
+        String documentsS3Bucket = awsServiceCache.environment("DOCUMENTS_S3_BUCKET");
 
-      this.service = new DocumentServiceImpl(connection,
-          awsServiceCache.environment("DOCUMENTS_TABLE"), versionService, interceptor);
+        DynamoDbConnectionBuilder connection =
+            awsServiceCache.getExtension(DynamoDbConnectionBuilder.class);
+        DynamoDbService db = new DynamoDbServiceImpl(connection, versionsTable);
+        this.service = new S3ServiceVersioningInterceptor(documentsS3Bucket, db);
+      } else {
+        this.service = new S3ServiceNoVersioningInterceptor();
+      }
     }
 
     return this.service;

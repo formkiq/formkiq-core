@@ -36,8 +36,8 @@ import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
+import com.formkiq.aws.dynamodb.cache.CacheService;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
-import com.formkiq.aws.services.lambda.services.CacheService;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import software.amazon.awssdk.utils.StringUtils;
@@ -70,7 +70,7 @@ public interface ApiGatewayRequestEventUtil {
       final ApiGatewayRequestEvent event, final ApiPagination lastPagination,
       final PaginationMapToken token, final int limit) {
 
-    ApiPagination current = null;
+    ApiPagination current;
     final Map<String, String> q = getQueryParameterMap(event);
 
     Gson gson = GsonUtil.getInstance();
@@ -103,7 +103,6 @@ public interface ApiGatewayRequestEventUtil {
    * @throws BadException BadException
    * @throws IOException IOException
    */
-  @SuppressWarnings("unchecked")
   default DynamicObject fromBodyToDynamicObject(final ApiGatewayRequestEvent event)
       throws BadException, IOException {
     return new DynamicObject(fromBodyToObject(event, Map.class));
@@ -117,7 +116,6 @@ public interface ApiGatewayRequestEventUtil {
    * @throws BadException BadException
    * @throws IOException IOException
    */
-  @SuppressWarnings("unchecked")
   default Map<String, Object> fromBodyToMap(final ApiGatewayRequestEvent event)
       throws BadException, IOException {
     return fromBodyToObject(event, Map.class);
@@ -147,17 +145,11 @@ public interface ApiGatewayRequestEventUtil {
       data = Base64.getDecoder().decode(body);
     }
 
-    Reader reader = new InputStreamReader(new ByteArrayInputStream(data), StandardCharsets.UTF_8);
-    try {
+    try (Reader reader =
+        new InputStreamReader(new ByteArrayInputStream(data), StandardCharsets.UTF_8)) {
       return GSON.fromJson(reader, classOfT);
     } catch (JsonSyntaxException e) {
       throw new BadException("invalid JSON body");
-    } finally {
-      try {
-        reader.close();
-      } catch (IOException e) {
-        throw e;
-      }
     }
   }
 
@@ -309,10 +301,8 @@ public interface ApiGatewayRequestEventUtil {
    * @return {@link Map}
    */
   default Map<String, String> getQueryParameterMap(final ApiGatewayRequestEvent event) {
-    Map<String, String> q =
-        event.getQueryStringParameters() != null ? event.getQueryStringParameters()
-            : Collections.emptyMap();
-    return q;
+    return event.getQueryStringParameters() != null ? event.getQueryStringParameters()
+        : Collections.emptyMap();
   }
 
   /**
@@ -322,7 +312,7 @@ public interface ApiGatewayRequestEventUtil {
    * @return boolean
    */
   default boolean isNotBlank(final String s) {
-    return s != null && s.length() > 0;
+    return s != null && !s.isEmpty();
   }
 
   /**

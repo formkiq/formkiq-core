@@ -45,15 +45,6 @@ public interface DocumentVersionService {
   String VERSION_ATTRIBUTE = "version";
 
   /**
-   * Add Document Versioning Attributes to Previous / Current Objects.
-   * 
-   * @param previous {@link Map}
-   * @param current {@link Map}
-   */
-  void addDocumentVersionAttributes(Map<String, AttributeValue> previous,
-      Map<String, AttributeValue> current);
-
-  /**
    * Delete all document versions.
    * 
    * @param client {@link DynamoDbClient}

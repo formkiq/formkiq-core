@@ -5,17 +5,8 @@
 
 <import-control pkg="com.formkiq.plugins">
 	
-	<subpackage name="tagschema">
-	
-		<allow pkg="com.formkiq.aws.dynamodb.model" />
-		<allow pkg="com.formkiq.validation" />
-		<allow pkg="java.util" />
-		
-		<allow pkg="com.formkiq.module.lambdaservices" />
-	</subpackage>
-	
-	<subpackage name="validation">
+	<subpackage name="useractivity">
 		<allow pkg="java.util" />
 	</subpackage>
-	
+
 </import-control>

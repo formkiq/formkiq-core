@@ -21,9 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.services.lambda;
-
-import com.formkiq.aws.dynamodb.ApiPermission;
+package com.formkiq.aws.dynamodb;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,6 +33,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
+
 /**
  * 
  * Api Authorization Token.
@@ -42,8 +42,11 @@ import java.util.stream.Collectors;
  */
 public class ApiAuthorization {
 
+  /** {@link ThreadLocal}. */
+  private static final ThreadLocal<ApiAuthorization> CURRENT_AUTHORIZATION = new ThreadLocal<>();
+
   /** {@link Object} Cache. */
-  private Map<String, Object> cache = new HashMap<>();
+  private final Map<String, Object> cache = new HashMap<>();
   /** Get Default SiteId. */
   private String defaultSiteId;
   /** {@link ApiPermission} by SiteId. */
@@ -52,6 +55,31 @@ public class ApiAuthorization {
   private Collection<String> roles;
   /** {@link String}. */
   private String username;
+
+  /**
+   * Login user.
+   * 
+   * @param authorization {@link ApiAuthorization}
+   */
+  public static void login(final ApiAuthorization authorization) {
+    CURRENT_AUTHORIZATION.set(authorization);
+  }
+
+  /**
+   * Get Current User.
+   * 
+   * @return ApiAuthorization
+   */
+  public static ApiAuthorization getAuthorization() {
+    return CURRENT_AUTHORIZATION.get();
+  }
+
+  /**
+   * Logout current User.
+   */
+  public static void logout() {
+    CURRENT_AUTHORIZATION.remove();
+  }
 
   /**
    * Add Object to Cache.
@@ -101,13 +129,10 @@ public class ApiAuthorization {
   public String getAccessSummary() {
     List<String> sites = getSiteIds();
 
-    String s =
-        this.permissionsBySiteId.keySet().stream().sorted()
-            .map(e -> e + " ("
-                + this.permissionsBySiteId.get(e).stream().map(p -> p.name())
-                    .sorted(String::compareTo).collect(Collectors.joining(","))
-                + ")")
-            .collect(Collectors.joining(", "));
+    String s = this.permissionsBySiteId.keySet().stream().sorted()
+        .map(e -> e + " (" + this.permissionsBySiteId.get(e).stream().map(Enum::name)
+            .sorted(String::compareTo).collect(Collectors.joining(",")) + ")")
+        .collect(Collectors.joining(", "));
 
     return !sites.isEmpty() ? "groups: " + s : "no groups";
   }
@@ -119,7 +144,6 @@ public class ApiAuthorization {
    * @param key {@link String}
    * @return {@link Object}
    */
-  @SuppressWarnings("unchecked")
   public <T> T getCacheObject(final String key) {
     return (T) this.cache.get(key);
   }
@@ -148,8 +172,7 @@ public class ApiAuthorization {
 
       if (hasAdminPermission()) {
 
-        permissions =
-            Arrays.asList(ApiPermission.values()).stream().sorted().collect(Collectors.toList());
+        permissions = Arrays.stream(ApiPermission.values()).sorted().collect(Collectors.toList());
 
       } else if (!this.permissionsBySiteId.isEmpty()) {
         long count = this.permissionsBySiteId.values().stream()
@@ -198,7 +221,7 @@ public class ApiAuthorization {
    * @return {@link String}
    */
   public String getUsername() {
-    return this.username;
+    return !isEmpty(this.username) ? this.username : "System";
   }
 
   private boolean hasAdminPermission() {

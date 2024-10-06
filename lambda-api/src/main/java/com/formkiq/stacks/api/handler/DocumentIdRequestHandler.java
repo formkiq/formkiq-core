@@ -45,7 +45,7 @@ import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3Service;
-import com.formkiq.aws.services.lambda.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -57,7 +57,7 @@ import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
-import com.formkiq.aws.services.lambda.services.CacheService;
+import com.formkiq.aws.dynamodb.cache.CacheService;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.services.ActionsNotificationService;
 import com.formkiq.module.actions.services.ActionsService;
@@ -218,7 +218,8 @@ public class DocumentIdRequestHandler
     service.saveDocument(siteId, item, tags, documentAttributes, options);
 
     AddDocumentRequestToPresignedUrls addDocumentRequestToPresignedUrls =
-        new AddDocumentRequestToPresignedUrls(awsservice, siteId, null, Optional.empty());
+        new AddDocumentRequestToPresignedUrls(awsservice, authorization, siteId, null,
+            Optional.empty());
 
     Map<String, Object> uploadUrls = addDocumentRequestToPresignedUrls.apply(request);
     new PresignedUrlsToS3Bucket(request).apply(uploadUrls);

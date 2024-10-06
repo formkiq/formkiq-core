@@ -2312,8 +2312,8 @@ public class DocumentServiceImplTest implements DbKeys {
           Map.of("path", AttributeValue.fromS("sample.pdf"));
 
       // when
-      service.updateDocument(siteId, documentId, newAttributes, false);
-      service.updateDocument(siteId, documentId, newAttributes, true);
+      service.updateDocument(siteId, documentId, newAttributes);
+      service.updateDocument(siteId, documentId, newAttributes);
 
       // then
       assertEquals("sample.pdf", service.findDocument(siteId, documentId).getPath());

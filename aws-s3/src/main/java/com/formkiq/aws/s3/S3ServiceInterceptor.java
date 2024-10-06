@@ -21,36 +21,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.services.lambda.services;
-
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
-import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.module.lambdaservices.AwsServiceExtension;
+package com.formkiq.aws.s3;
 
 /**
- * 
- * {@link AwsServiceExtension} for {@link DynamoDbCacheService}.
- *
+ * Interface for adding interactions for S3Service.
  */
-public class DynamoDbCacheServiceExtension implements AwsServiceExtension<CacheService> {
-
-  /** {@link CacheService}. */
-  private CacheService service;
+public interface S3ServiceInterceptor {
 
   /**
-   * constructor.
+   * Put S3 Object Event.
+   *
+   * @param s3 {@link S3Service}
+   * @param bucket {@link String}
+   * @param key {@link String}
    */
-  public DynamoDbCacheServiceExtension() {}
-
-  @Override
-  public CacheService loadService(final AwsServiceCache awsServiceCache) {
-    if (this.service == null) {
-      DynamoDbConnectionBuilder connection =
-          awsServiceCache.getExtension(DynamoDbConnectionBuilder.class);
-      this.service =
-          new DynamoDbCacheService(connection, awsServiceCache.environment("CACHE_TABLE"));
-    }
-
-    return this.service;
-  }
+  void putObjectEvent(S3Service s3, String bucket, String key);
 }

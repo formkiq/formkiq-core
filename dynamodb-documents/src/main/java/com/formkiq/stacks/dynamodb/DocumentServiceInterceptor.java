@@ -21,48 +21,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.plugins.useractivity;
+package com.formkiq.stacks.dynamodb;
 
 import java.util.Map;
 
 /**
- * User Activity.
+ * Interceptor for {@link DocumentService}.
  */
-public interface UserActivityPlugin {
+public interface DocumentServiceInterceptor {
 
   /**
-   * Add User Activity View.
-   * 
+   * Save Document Interceptor.
+   *
    * @param siteId {@link String}
    * @param documentId {@link String}
-   * @param versionKey {@link String}
+   * @param current {@link Map}
+   * @param previous {@link Map}
    */
-  void addDocumentViewActivity(String siteId, String documentId, String versionKey);
-
-  /**
-   * Add Document Activity.
-   * 
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param record {@link Map}
-   */
-  void addDocumentActivity(String siteId, String documentId, Map<String, Object> record);
-
-  /**
-   * Add update Document Activity.
-   * 
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param record {@link Map}
-   */
-  void updateDocumentActivity(String siteId, String documentId, Map<String, Object> record);
-
-  /**
-   * Add delete Document Activity.
-   * 
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param record {@link Map}
-   */
-  void deleteDocumentActivity(String siteId, String documentId, Map<String, Object> record);
+  void saveDocument(String siteId, String documentId, Map<String, Object> current,
+      Map<String, Object> previous);
 }

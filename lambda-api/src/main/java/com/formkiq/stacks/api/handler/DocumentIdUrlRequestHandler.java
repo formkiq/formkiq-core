@@ -41,10 +41,11 @@ import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3PresignerService;
-import com.formkiq.aws.services.lambda.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -90,7 +91,7 @@ public class DocumentIdUrlRequestHandler
     if (url != null) {
       if (awsservice.containsExtension(UserActivityPlugin.class)) {
         UserActivityPlugin plugin = awsservice.getExtension(UserActivityPlugin.class);
-        plugin.addViewActivity(siteId, documentId, versionKey, authorization.getUsername());
+        plugin.addDocumentViewActivity(siteId, documentId, versionKey);
       }
     }
 
@@ -162,7 +163,7 @@ public class DocumentIdUrlRequestHandler
     }
 
     String s3Bucket = awsservice.environment("DOCUMENTS_S3_BUCKET");
-    String filename = Strings.getFilename(item.getPath());
+    String filename = getFilename(item);
 
     PresignGetUrlConfig config = new PresignGetUrlConfig();
 
@@ -190,6 +191,23 @@ public class DocumentIdUrlRequestHandler
     S3PresignerService s3Service = awsservice.getExtension(S3PresignerService.class);
     return s3Bucket != null ? s3Service.presignGetUrl(s3Bucket, s3key, duration, versionId, config)
         : new URL(s3key);
+  }
+
+  private String getFilename(final DocumentItem item) {
+
+    MimeType mt = MimeType.fromContentType(item.getContentType());
+
+    String ext = mt.getExtension();
+    String filename = item.getDocumentId();
+    if (!isEmpty(ext)) {
+      filename += "." + ext;
+    }
+
+    if (item.getPath() != null) {
+      filename = Strings.getFilename(item.getPath());
+    }
+
+    return filename;
   }
 
   private boolean isS3Link(final DocumentItem item) {

@@ -27,7 +27,7 @@ import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.objects.Strings;
-import com.formkiq.aws.services.lambda.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -286,10 +286,9 @@ public class DocumentsUploadRequestHandler
     String documentId = request.getDocumentId();
 
     AddDocumentRequestToPresignedUrls addDocumentRequestToPresignedUrls =
-        new AddDocumentRequestToPresignedUrls(awsservice, siteId,
+        new AddDocumentRequestToPresignedUrls(awsservice, authorization, siteId,
             caculateDuration(event.getQueryStringParameters()),
             calculateContentLength(awsservice, event.getQueryStringParameters(), siteId));
-
     final Map<String, Object> map = addDocumentRequestToPresignedUrls.apply(request);
 
     DocumentItem item =

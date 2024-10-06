@@ -44,7 +44,7 @@ import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
-import com.formkiq.aws.services.lambda.services.CacheService;
+import com.formkiq.aws.dynamodb.cache.CacheService;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.dynamodb.ConfigService;
 import com.formkiq.stacks.dynamodb.WebhooksService;
