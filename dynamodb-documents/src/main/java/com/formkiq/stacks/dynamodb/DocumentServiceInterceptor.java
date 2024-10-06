@@ -40,4 +40,13 @@ public interface DocumentServiceInterceptor {
    */
   void saveDocument(String siteId, String documentId, Map<String, Object> current,
       Map<String, Object> previous);
+
+  /**
+   * Delete Document Interceptor.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param softDelete boolean
+   */
+  void deleteDocument(String siteId, String documentId, boolean softDelete);
 }

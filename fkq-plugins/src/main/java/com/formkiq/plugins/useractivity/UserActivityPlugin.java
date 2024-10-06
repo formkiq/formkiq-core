@@ -62,7 +62,15 @@ public interface UserActivityPlugin {
    * 
    * @param siteId {@link String}
    * @param documentId {@link String}
-   * @param record {@link Map}
    */
-  void deleteDocumentActivity(String siteId, String documentId, Map<String, Object> record);
+  void deleteDocumentActivity(String siteId, String documentId);
+
+
+  /**
+   * Add soft delete Document Activity.
+   *
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   */
+  void deleteSoftDocumentActivity(String siteId, String documentId);
 }

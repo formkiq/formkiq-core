@@ -7919,6 +7919,7 @@
               - CREATE
               - UPDATE
               - DELETE
+              - SOFT_DELETE
             UserActivity:
               type: object
               properties:
