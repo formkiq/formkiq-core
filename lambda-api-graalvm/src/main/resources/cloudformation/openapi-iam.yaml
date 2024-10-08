@@ -165,6 +165,12 @@ Resources:
               summary: Get site(s) access
               tags:
                 - System Management
+              parameters:
+                - name: "status"
+                  in: "query"
+                  description: "Fetch sites with status (only valid when using SitePermissions 'defined'"
+                  schema:
+                    "$ref": "#/components/schemas/SiteStatus"
               responses:
                 '200':
                   description: "200 OK"
@@ -307,6 +313,22 @@ Resources:
                 - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+            delete:
+              operationId: DeleteSiteGroup
+              description: Deletes Site Group and permissions
+              summary: Deletes Site Group and permissions
+              tags:
+                - System Management
+              parameters:
+                - $ref: '#/components/parameters/siteIdPathParam'
+                - $ref: '#/components/parameters/groupNamePath'
+              responses:
+                '200':
+                  $ref: '#/components/responses/200CorsDeleteResponse'
+              security:
+                - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /sites/{siteId}/groups/{groupName}/permissions:
             put:
               operationId: SetSiteGroupPermissions
@@ -403,7 +425,7 @@ Resources:
             delete:
               operationId: DeleteOpensearchIndex
               description: Deletes the OpenSearch index
-              summary: Deletst site(s) OpenSearch index
+              summary: Deletes site(s) OpenSearch index
               tags:
                 - System Management
               parameters:
@@ -10294,6 +10316,8 @@ Resources:
                 title:
                   type: "string"
                   description: "Site Title"
+                status:
+                  $ref: "#/components/schemas/SiteStatus"
                 permission:
                   type: "string"
                   description: "SiteId permission level"
