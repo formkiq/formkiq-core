@@ -211,11 +211,12 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
         .getDocuments());
   }
 
-  @NotNull
-  private List<Document> getSoftDeletedDocuments(final String siteId) throws ApiException {
+  @NotNullprivate
+  List<Document> getSoftDeletedDocuments(final String siteId) throws ApiException {
     return notNull(this.documentsApi
         .getDocuments(siteId, null, Boolean.TRUE, null, null, null, null, null).getDocuments());
   }
+
 
   /**
    * PUT /documents/{documentId}/restore request.

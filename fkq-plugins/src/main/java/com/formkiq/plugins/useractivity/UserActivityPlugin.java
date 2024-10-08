@@ -73,4 +73,12 @@ public interface UserActivityPlugin {
    * @param documentId {@link String}
    */
   void deleteSoftDocumentActivity(String siteId, String documentId);
+
+  /**
+   * Restore Soft Delete Document Activity.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   */
+  void restoreSoftDeletedDocumentActivity(String siteId, String documentId);
 }

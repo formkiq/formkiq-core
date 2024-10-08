@@ -49,4 +49,12 @@ public interface DocumentServiceInterceptor {
    * @param softDelete boolean
    */
   void deleteDocument(String siteId, String documentId, boolean softDelete);
+
+  /**
+   * Restore Soft Deleted Document Inteerceptor.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   */
+  void restoreSoftDeletedDocument(String siteId, String documentId);
 }

@@ -234,7 +234,7 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
       // then
       ApiClient apiClientWithToken = getApiClientWithToken(response.getApiKey());
       api = new SystemManagementApi(apiClientWithToken);
-      List<Site> sites = notNull(api.getSites().getSites());
+      List<Site> sites = notNull(api.getSites(null).getSites());
       assertEquals(1, sites.size());
       assertEquals(siteId, sites.get(0).getSiteId());
       assertEquals("GOVERN",

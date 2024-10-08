@@ -138,7 +138,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     ssm.putParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/maildomain", "tryformkiq.com");
 
     // when
-    GetSitesResponse response = this.systemApi.getSites();
+    GetSitesResponse response = this.systemApi.getSites(null);
 
     // then
     List<Site> sites = response.getSites();
@@ -187,7 +187,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     setBearerToken(new String[] {"default", "Admins", "finance"});
 
     // when
-    GetSitesResponse response = this.systemApi.getSites();
+    GetSitesResponse response = this.systemApi.getSites(null);
 
     // then
     List<Site> sites = response.getSites();
@@ -216,7 +216,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     setBearerToken(new String[] {"default_read", "finance"});
 
     // when
-    GetSitesResponse response = this.systemApi.getSites();
+    GetSitesResponse response = this.systemApi.getSites(null);
 
     // then
     List<Site> sites = response.getSites();
@@ -256,7 +256,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     config.save(siteId, new DynamicObject(Map.of(MAX_DOCUMENTS, "5", MAX_WEBHOOKS, "10")));
 
     // when
-    GetSitesResponse response = this.systemApi.getSites();
+    GetSitesResponse response = this.systemApi.getSites(null);
 
     // then
     List<Site> sites = response.getSites();
@@ -278,7 +278,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
 
     // when
     try {
-      this.systemApi.getSites();
+      this.systemApi.getSites(null);
       fail();
     } catch (ApiException e) {
       // then

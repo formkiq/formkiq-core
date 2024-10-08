@@ -7942,6 +7942,7 @@
               - UPDATE
               - DELETE
               - SOFT_DELETE
+              - RESTORE
             UserActivity:
               type: object
               properties:

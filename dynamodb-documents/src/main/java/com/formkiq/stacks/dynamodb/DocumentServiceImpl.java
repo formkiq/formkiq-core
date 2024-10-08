@@ -1764,6 +1764,10 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       restored = this.dbService.moveItems(list,
           new DocumentRestoreMoveAttributeFunction(siteId, documentId));
 
+      if (this.interceptor != null) {
+        this.interceptor.restoreSoftDeletedDocument(siteId, documentId);
+      }
+
       String path = attr.get("path").s();
       String userId = attr.get("userId").s();
 

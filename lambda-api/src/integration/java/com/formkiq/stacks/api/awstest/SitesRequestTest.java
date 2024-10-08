@@ -62,7 +62,7 @@ public class SitesRequestTest extends AbstractAwsIntegrationTest {
       SystemManagementApi api = new SystemManagementApi(apiClient);
 
       // when
-      GetSitesResponse sites = api.getSites();
+      GetSitesResponse sites = api.getSites(null);
 
       // then
       assertEquals(1, sites.getSites().size());
