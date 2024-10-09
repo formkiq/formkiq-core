@@ -10433,6 +10433,9 @@
                   description: The current step workflow is on
                 status:
                   $ref: '#/components/schemas/DocumentWorkflowStatus'
+                insertedDate:
+                  type: string
+                  description: Inserted Timestamp
             AddDocumentWorkflowResponse:
               type: object
               properties:
