@@ -211,8 +211,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
         .getDocuments());
   }
 
-  @NotNullprivate
-  List<Document> getSoftDeletedDocuments(final String siteId) throws ApiException {
+  private List<Document> getSoftDeletedDocuments(final String siteId) throws ApiException {
     return notNull(this.documentsApi
         .getDocuments(siteId, null, Boolean.TRUE, null, null, null, null, null).getDocuments());
   }
