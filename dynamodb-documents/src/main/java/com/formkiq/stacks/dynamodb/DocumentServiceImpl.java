@@ -442,9 +442,11 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
     this.versionsService.deleteAllVersionIds(this.dbClient, siteId, documentId);
 
-    DocumentItem item = findDocument(siteId, documentId);
+    Map<String, AttributeValue> documentRecord = getDocumentRecord(siteId, documentId);
 
-    deleteFolderIndex(siteId, item);
+    if (documentRecord.containsKey("path")) {
+      deleteFolderIndex(siteId, documentRecord.get("path").s());
+    }
 
     Map<String, AttributeValue> keys = keysGeneric(siteId, PREFIX_DOCS + documentId, null);
     AttributeValue pk = keys.get(PK);
@@ -468,13 +470,27 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
       list.addAll(queryDocumentAttributes(pk, sk, false));
 
-      if (this.dbService.deleteItems(list)) {
+      List<Map<String, AttributeValue>> listKeys = list.stream()
+          .map(map -> map.entrySet().stream()
+              .filter(entry -> entry.getKey().equals(PK) || entry.getKey().equals(SK))
+              .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)))
+          .toList();
+
+      if (this.dbService.deleteItems(listKeys)) {
         deleted = true;
       }
     }
 
     if (this.interceptor != null) {
-      this.interceptor.deleteDocument(siteId, documentId, softDelete);
+
+      if (documentRecord.isEmpty()) {
+        documentRecord = list.stream().filter(l -> l.get(SK).s().startsWith("softdelete#document#"))
+            .findAny().orElse(null);
+      }
+
+      AttributeValueToMap transform = new AttributeValueToMap();
+      Map<String, Object> apply = transform.apply(documentRecord);
+      this.interceptor.deleteDocument(siteId, documentId, softDelete, apply);
     }
 
     return deleted;
@@ -613,13 +629,13 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
    * Delete Folder Index.
    *
    * @param siteId {@link String}
-   * @param item {@link DocumentItem}
+   * @param path {@link String}
    */
-  private void deleteFolderIndex(final String siteId, final DocumentItem item) {
-    if (item != null) {
+  private void deleteFolderIndex(final String siteId, final String path) {
+    if (!isEmpty(path)) {
 
       try {
-        Map<String, String> attr = this.folderIndexProcessor.getIndex(siteId, item.getPath());
+        Map<String, String> attr = this.folderIndexProcessor.getIndex(siteId, path);
 
         if (attr.containsKey("documentId")) {
           deleteItem(Map.of(PK, AttributeValue.builder().s(attr.get(PK)).build(), SK,
@@ -805,6 +821,14 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     return new PaginationResults<>(list, results.getToken());
   }
 
+  private Map<String, AttributeValue> getDocumentRecord(final String siteId,
+      final String documentId) {
+    GetItemRequest r = GetItemRequest.builder().key(keysDocument(siteId, documentId))
+        .tableName(this.documentTableName).consistentRead(Boolean.TRUE).build();
+
+    return this.dbClient.getItem(r).item();
+  }
+
   @Override
   public DocumentItem findDocument(final String siteId, final String documentId) {
     return findDocument(siteId, documentId, false, null, 0).getResult();
@@ -817,10 +841,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     DocumentItem item = null;
     PaginationMapToken pagination = null;
 
-    GetItemRequest r = GetItemRequest.builder().key(keysDocument(siteId, documentId))
-        .tableName(this.documentTableName).consistentRead(Boolean.TRUE).build();
-
-    Map<String, AttributeValue> result = this.dbClient.getItem(r).item();
+    Map<String, AttributeValue> result = getDocumentRecord(siteId, documentId);
 
     if (result != null && !result.isEmpty()) {
 
@@ -1579,7 +1600,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     final int limit = 100;
     Map<String, AttributeValue> startkey = null;
     List<Map<String, AttributeValue>> list = new ArrayList<>();
-    QueryConfig config = new QueryConfig().projectionExpression(softDelete ? null : "PK,SK");
+    QueryConfig config = new QueryConfig();
 
     do {
 
@@ -1765,7 +1786,8 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
           new DocumentRestoreMoveAttributeFunction(siteId, documentId));
 
       if (this.interceptor != null) {
-        this.interceptor.restoreSoftDeletedDocument(siteId, documentId);
+        Map<String, Object> apply = new AttributeValueToMap().apply(attr);
+        this.interceptor.restoreSoftDeletedDocument(siteId, documentId, apply);
       }
 
       String path = attr.get("path").s();

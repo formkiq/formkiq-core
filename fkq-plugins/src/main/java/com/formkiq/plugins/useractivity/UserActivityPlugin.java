@@ -53,17 +53,20 @@ public interface UserActivityPlugin {
    * 
    * @param siteId {@link String}
    * @param documentId {@link String}
-   * @param record {@link Map}
+   * @param current {@link Map}
+   * @param previous {@link Map}
    */
-  void updateDocumentActivity(String siteId, String documentId, Map<String, Object> record);
+  void updateDocumentActivity(String siteId, String documentId, Map<String, Object> current,
+      Map<String, Object> previous);
 
   /**
    * Add delete Document Activity.
    * 
    * @param siteId {@link String}
    * @param documentId {@link String}
+   * @param record {@link Map}
    */
-  void deleteDocumentActivity(String siteId, String documentId);
+  void deleteDocumentActivity(String siteId, String documentId, Map<String, Object> record);
 
 
   /**
@@ -71,14 +74,17 @@ public interface UserActivityPlugin {
    *
    * @param siteId {@link String}
    * @param documentId {@link String}
+   * @param record {@link Map}
    */
-  void deleteSoftDocumentActivity(String siteId, String documentId);
+  void deleteSoftDocumentActivity(String siteId, String documentId, Map<String, Object> record);
 
   /**
    * Restore Soft Delete Document Activity.
    * 
    * @param siteId {@link String}
    * @param documentId {@link String}
+   * @param record {@link Map}
    */
-  void restoreSoftDeletedDocumentActivity(String siteId, String documentId);
+  void restoreSoftDeletedDocumentActivity(String siteId, String documentId,
+      Map<String, Object> record);
 }
