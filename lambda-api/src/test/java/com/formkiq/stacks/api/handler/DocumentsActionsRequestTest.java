@@ -53,7 +53,6 @@ import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceExtension;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
-import com.formkiq.aws.services.lambda.GsonUtil;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAction;
 import com.formkiq.client.model.AddActionParameters;
@@ -81,11 +80,13 @@ import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
 import com.formkiq.validation.ValidationException;
-import software.amazon.awssdk.services.sqs.model.Message;
+import org.junit.jupiter.api.Timeout;
 
 /** Unit Tests for request /documents/{documentId}/actions. */
 public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
 
+  /** Timeout. */
+  private static final long TIMEOUT = 10;
   /** {@link ConfigService}. */
   private ConfigService configService;
   /** {@link DocumentService}. */
@@ -165,8 +166,8 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
+  @Timeout(TIMEOUT)
   public void testHandlePostDocumentActions01() throws Exception {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -208,16 +209,10 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       assertEquals(ActionStatus.PENDING, actions.get(i).status());
       assertEquals("{url=https://localhost}", actions.get(i).parameters().toString());
 
-      List<Message> sqsMessages = getSqsMessages();
-      assertEquals(1, sqsMessages.size());
-
-      Map<String, String> map =
-          GsonUtil.getInstance().fromJson(sqsMessages.get(0).body(), Map.class);
-
-      map = GsonUtil.getInstance().fromJson(map.get("Message"), Map.class);
-      assertNotNull(map.get("siteId"));
-      assertEquals(documentId, map.get("documentId"));
-      assertEquals("actions", map.get("type"));
+      Map<String, Object> sqsMessage = getSqsMessages("actions", documentId);
+      assertNotNull(sqsMessage.get("siteId"));
+      assertEquals(documentId, sqsMessage.get("documentId"));
+      assertEquals("actions", sqsMessage.get("type"));
     }
   }
 

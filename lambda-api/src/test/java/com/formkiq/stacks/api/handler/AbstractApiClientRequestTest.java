@@ -26,6 +26,7 @@ package com.formkiq.stacks.api.handler;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.services.lambda.ApiAuthorizationBuilder.COGNITO_READ_SUFFIX;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -137,6 +138,8 @@ public abstract class AbstractApiClientRequestTest {
   protected MappingsApi mappingsApi = new MappingsApi(this.client);
   /** {@link UserManagementApi}. */
   protected UserManagementApi userManagementApi = new UserManagementApi(this.client);
+  /** Sqs Messages. */
+  private final List<Map<String, Object>> sqsMessages = new ArrayList<>();
 
   /**
    * Convert JSON to Object.
@@ -152,11 +155,15 @@ public abstract class AbstractApiClientRequestTest {
 
   /**
    * Get Sqs Messages.
-   * 
-   * @return {@link List} {@link Message}
+   *
+   * @param eventType {@link String}
+   * @param documentId {@link String}
+   *
+   * @return {@link Map} {@link Message}
    * @throws InterruptedException InterruptedException
    */
-  public List<Message> getSqsMessages() throws InterruptedException {
+  public Map<String, Object> getSqsMessages(final String eventType, final String documentId)
+      throws InterruptedException {
 
     String sqsDocumentEventUrl = localstack.getSqsDocumentEventUrl();
 
@@ -165,24 +172,38 @@ public abstract class AbstractApiClientRequestTest {
     SqsService sqsService = awsServices.getExtension(SqsService.class);
 
     List<Message> msgs = sqsService.receiveMessages(sqsDocumentEventUrl).messages();
-    while (msgs.isEmpty()) {
+    List<Map<String, Object>> list = msgs.stream().map(this::transform).toList();
+    sqsMessages.addAll(list);
+
+    while (sqsMessages.isEmpty() || !isMatch(sqsMessages, eventType, documentId)) {
       Thread.sleep(SLEEP);
       msgs = sqsService.receiveMessages(sqsDocumentEventUrl).messages();
+      sqsMessages.addAll(msgs.stream().map(this::transform).toList());
     }
 
-    for (Message msg : msgs) {
-      sqsService.deleteMessage(sqsDocumentEventUrl, msg.receiptHandle());
-    }
+    return sqsMessages.stream().filter(m -> isMatch(m, eventType, documentId)).findAny().get();
+  }
 
-    return msgs;
+  private boolean isMatch(final List<Map<String, Object>> msgs, final String eventType,
+      final String documentId) {
+    return msgs.stream().anyMatch(m -> isMatch(m, eventType, documentId));
+  }
+
+  private static boolean isMatch(final Map<String, Object> m, final String eventType,
+      final String documentId) {
+    return eventType.equals(m.get("type")) && documentId.equals(m.get("documentId"));
+  }
+
+  private Map<String, Object> transform(final Message msg) {
+    Map<String, Object> map = fromJson(msg.body(), Map.class);
+    return fromJson((String) map.get("Message"), Map.class);
   }
 
   /**
    * Clear Sqs Messages.
    *
-   * @throws InterruptedException InterruptedException
    */
-  public void clearSqsMessages() throws InterruptedException {
+  public void clearSqsMessages() {
 
     String sqsDocumentEventUrl = localstack.getSqsDocumentEventUrl();
 
@@ -202,7 +223,6 @@ public abstract class AbstractApiClientRequestTest {
    * @param e {@link ApiException}
    * @return {@link ValidationException}
    */
-  @SuppressWarnings("unchecked")
   public Collection<Map<String, Object>> getValidationErrors(final ApiException e) {
     Gson gson = new GsonBuilder().create();
 

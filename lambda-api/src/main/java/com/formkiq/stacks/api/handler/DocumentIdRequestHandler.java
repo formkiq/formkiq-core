@@ -29,6 +29,8 @@ import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_FOUND;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
+import static com.formkiq.module.events.document.DocumentEventType.SOFT_DELETE;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -61,6 +63,8 @@ import com.formkiq.aws.dynamodb.cache.CacheService;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.services.ActionsNotificationService;
 import com.formkiq.module.actions.services.ActionsService;
+import com.formkiq.module.events.EventService;
+import com.formkiq.module.events.document.DocumentEvent;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.transformers.AddDocumentRequestToDocumentItem;
 import com.formkiq.stacks.api.transformers.AddDocumentRequestToPresignedUrls;
@@ -130,6 +134,10 @@ public class DocumentIdRequestHandler
         throw new NotFoundException("Document " + documentId + " not found.");
       }
 
+      if (softDelete) {
+        publishSoftDelete(awsservice, authorization, siteId, documentId);
+      }
+
       ApiResponse resp = new ApiMessageResponse("'" + documentId + "' object deleted");
       return new ApiRequestHandlerResponse(SC_OK, resp);
 
@@ -141,6 +149,14 @@ public class DocumentIdRequestHandler
 
       throw e;
     }
+  }
+
+  private void publishSoftDelete(final AwsServiceCache awsservice,
+      final ApiAuthorization authorization, final String siteId, final String documentId) {
+    EventService es = awsservice.getExtension(EventService.class);
+    DocumentEvent de = new DocumentEvent().siteId(siteId).documentId(documentId).type(SOFT_DELETE)
+        .userId(authorization.getUsername());
+    es.publish(de);
   }
 
   @Override

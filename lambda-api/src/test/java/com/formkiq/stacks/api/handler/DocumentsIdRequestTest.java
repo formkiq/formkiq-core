@@ -33,7 +33,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
-import com.formkiq.aws.services.lambda.GsonUtil;
 import com.formkiq.client.model.AddAttribute;
 import com.formkiq.client.model.AddAttributeRequest;
 import com.formkiq.client.model.AddDocumentAttribute;
@@ -62,7 +61,6 @@ import com.formkiq.client.model.GetDocumentUrlResponse;
 import com.formkiq.client.model.SetDocumentRestoreResponse;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
-import software.amazon.awssdk.services.sqs.model.Message;
 
 /** Unit Tests for request /documents/{documentId}. */
 @ExtendWith(DynamoDbExtension.class)
@@ -70,10 +68,10 @@ import software.amazon.awssdk.services.sqs.model.Message;
 public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
   /** Test Timeout. */
-  private static final int TEST_TIMEOUT = 30;
+  private static final int TEST_TIMEOUT = 10;
 
   @BeforeEach
-  void beforeEach() throws InterruptedException {
+  void beforeEach() {
     clearSqsMessages();
   }
 
@@ -223,6 +221,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
    * @throws Exception an error has occurred
    */
   @Test
+  @Timeout(TEST_TIMEOUT)
   public void testHandleSetDocumentRestore01() throws Exception {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -256,7 +255,17 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       documents = getDocuments(siteId);
       assertEquals(1, documents.size());
       assertEquals("test.txt", documents.get(0).getPath());
+      expectSoftDeleteSqsMessage(siteId, documentId);
     }
+  }
+
+  private void expectSoftDeleteSqsMessage(final String siteId, final String documentId)
+      throws InterruptedException {
+    Map<String, Object> message = getSqsMessages("softDelete", documentId);
+    assertEquals("softDelete", message.get("type"));
+    assertEquals(siteId != null ? siteId : "default", message.get("siteId"));
+    assertEquals(documentId, message.get("documentId"));
+    assertEquals("joesmith", message.get("userId"));
   }
 
   /**
@@ -757,15 +766,9 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       this.documentsApi.updateDocument(documentId, updateReq, siteId, null);
 
       // then
-      List<Message> sqsMessages = getSqsMessages();
-      assertEquals(1, sqsMessages.size());
-
-      Map<String, String> map =
-          GsonUtil.getInstance().fromJson(sqsMessages.get(0).body(), Map.class);
-
-      map = GsonUtil.getInstance().fromJson(map.get("Message"), Map.class);
-      assertEquals(documentId, map.get("documentId"));
-      assertEquals("actions", map.get("type"));
+      Map<String, Object> message = getSqsMessages("actions", documentId);
+      assertEquals(documentId, message.get("documentId"));
+      assertEquals("actions", message.get("type"));
     }
   }
 

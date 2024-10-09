@@ -30,7 +30,6 @@ import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.s3.S3ServiceExtension;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
-import com.formkiq.aws.services.lambda.GsonUtil;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.invoker.ApiResponse;
 import com.formkiq.client.model.AddAction;
@@ -66,7 +65,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
-import software.amazon.awssdk.services.sqs.model.Message;
 
 import java.util.Arrays;
 import java.util.List;
@@ -91,7 +89,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
   private static final int TEST_TIMEOUT = 10;
 
   @BeforeEach
-  void beforeEach() throws InterruptedException {
+  void beforeEach() {
     clearSqsMessages();
   }
 
@@ -532,15 +530,9 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       assertNull(response.getUploadUrl());
       String documentId = response.getDocumentId();
 
-      List<Message> sqsMessages = getSqsMessages();
-      assertEquals(1, sqsMessages.size());
-
-      Map<String, String> map =
-          GsonUtil.getInstance().fromJson(sqsMessages.get(0).body(), Map.class);
-
-      map = GsonUtil.getInstance().fromJson(map.get("Message"), Map.class);
-      assertEquals(documentId, map.get("documentId"));
-      assertEquals("actions", map.get("type"));
+      Map<String, Object> message = getSqsMessages("actions", documentId);
+      assertEquals("actions", message.get("type"));
+      assertEquals(documentId, message.get("documentId"));
     }
   }
 
@@ -550,7 +542,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
    */
   @Test
   @Timeout(TEST_TIMEOUT)
-  public void testPost13() throws ApiException, InterruptedException {
+  public void testPost13() throws ApiException {
     // given
     for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
 
@@ -580,7 +572,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
    */
   @Test
   @Timeout(TEST_TIMEOUT)
-  public void testPost14() throws InterruptedException {
+  public void testPost14() {
     // given
     for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
 
@@ -761,7 +753,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
    */
   @Test
   @Timeout(TEST_TIMEOUT)
-  public void testPost19() throws ApiException, InterruptedException {
+  public void testPost19() {
     // given
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 

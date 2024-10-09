@@ -35,6 +35,8 @@ public interface DocumentEventType {
   String UPDATE = "update";
   /** Delete Event Type. */
   String DELETE = "delete";
+  /** Soft Delete Event Type. */
+  String SOFT_DELETE = "softDelete";
   /** Actions Event Type. */
   String ACTIONS = "actions";
 }
