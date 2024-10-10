@@ -34,8 +34,6 @@ import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENT_SIZE_BYTES;
 import static com.formkiq.stacks.dynamodb.ConfigService.MAX_WEBHOOKS;
 import static com.formkiq.stacks.dynamodb.ConfigService.NOTIFICATION_EMAIL;
 
-import java.io.IOException;
-import java.io.StringReader;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
@@ -47,7 +45,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Properties;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
@@ -211,9 +208,9 @@ public class ConfigurationRequestHandler
     if (body.containsKey("docusign")) {
 
       Map<String, String> google = (Map<String, String>) body.get("docusign");
-      String docusignUserId = google.getOrDefault("userId", "");
-      String docusignIntegrationKey = google.getOrDefault("integrationKey", "");
-      String docusignRsaPrivateKey = google.getOrDefault("rsaPrivateKey", "");
+      String docusignUserId = google.getOrDefault("userId", "").trim();
+      String docusignIntegrationKey = google.getOrDefault("integrationKey", "").trim();
+      String docusignRsaPrivateKey = google.getOrDefault("rsaPrivateKey", "").trim();
 
       map.put(KEY_DOCUSIGN_USER_ID, docusignUserId);
       map.put(KEY_DOCUSIGN_INTEGRATION_KEY, docusignIntegrationKey);
@@ -304,9 +301,10 @@ public class ConfigurationRequestHandler
   private boolean isValidRsaPrivateKey(final String privateKeyPem) {
     try {
       // Remove the PEM header and footer
-      String privateKeyPemStripped = decodeUnicode(privateKeyPem)
-          .replace("-----BEGIN RSA PRIVATE KEY-----", "")
-          .replace("-----END RSA PRIVATE KEY-----", "").replace("\\n", "").replaceAll("\\s+", "");
+      String privateKeyPemStripped =
+          privateKeyPem.replace("\\u003d", "=").replace("-----BEGIN RSA PRIVATE KEY-----", "")
+              .replace("-----END RSA PRIVATE KEY-----", "").replace("\\n", "")
+              .replaceAll("\\s+", "").trim();
 
       byte[] privateKeyBytes = Base64.getDecoder().decode(privateKeyPemStripped);
 
@@ -319,27 +317,5 @@ public class ConfigurationRequestHandler
     } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
       return false;
     }
-  }
-
-  /**
-   * Decode Unicode sequences.
-   * 
-   * @param input {@link String}
-   * @return String
-   */
-  private String decodeUnicode(final String input) {
-
-    String result = input;
-    if (input != null) {
-      Properties properties = new Properties();
-      try {
-        properties.load(new StringReader("key=" + input));
-        result = properties.getProperty("key");
-      } catch (IOException e) {
-        // ignore
-      }
-    }
-
-    return result;
   }
 }

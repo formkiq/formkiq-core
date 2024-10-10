@@ -81,7 +81,7 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
       9i7pWanM1abM4es/tdATp56uTWntoa2ZQTHieFtSkYlufDbgLaCIb4HCStimbzye
       xm4Xo6+jDbifGOqFT4Ofeyc=
       -----END RSA PRIVATE KEY-----
-            """;
+           \s""";
 
   /**
    * Before Each.
@@ -362,9 +362,8 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     assertEquals("123", configuration.getDocusign().getUserId());
     assertEquals("""
         -----BEGIN RSA PRIVATE KEY-----
-        MIIEvQIB*******FT4Ofeyc=
-        -----END RSA PRIVATE KEY-----
-        """, configuration.getDocusign().getRsaPrivateKey());
+        MIIEvQIB*******qFT4Ofeyc=
+        -----END RSA PRIVATE KEY-----""", configuration.getDocusign().getRsaPrivateKey());
   }
 
   /**
