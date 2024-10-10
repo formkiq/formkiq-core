@@ -34,6 +34,8 @@ import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENT_SIZE_BYTES;
 import static com.formkiq.stacks.dynamodb.ConfigService.MAX_WEBHOOKS;
 import static com.formkiq.stacks.dynamodb.ConfigService.NOTIFICATION_EMAIL;
 
+import java.io.IOException;
+import java.io.StringReader;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
@@ -45,6 +47,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Properties;
+
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.objects.Strings;
@@ -300,7 +304,8 @@ public class ConfigurationRequestHandler
   private boolean isValidRsaPrivateKey(final String privateKeyPem) {
     try {
       // Remove the PEM header and footer
-      String privateKeyPemStripped = privateKeyPem.replace("-----BEGIN RSA PRIVATE KEY-----", "")
+      String privateKeyPemStripped = decodeUnicode(privateKeyPem)
+          .replace("-----BEGIN RSA PRIVATE KEY-----", "")
           .replace("-----END RSA PRIVATE KEY-----", "").replace("\\n", "").replaceAll("\\s+", "");
 
       byte[] privateKeyBytes = Base64.getDecoder().decode(privateKeyPemStripped);
@@ -314,5 +319,27 @@ public class ConfigurationRequestHandler
     } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
       return false;
     }
+  }
+
+  /**
+   * Decode Unicode sequences.
+   * 
+   * @param input {@link String}
+   * @return String
+   */
+  private String decodeUnicode(final String input) {
+
+    String result = input;
+    if (input != null) {
+      Properties properties = new Properties();
+      try {
+        properties.load(new StringReader("key=" + input));
+        result = properties.getProperty("key");
+      } catch (IOException e) {
+        // ignore
+      }
+    }
+
+    return result;
   }
 }
