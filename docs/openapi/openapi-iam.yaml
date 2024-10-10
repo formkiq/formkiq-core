@@ -10699,39 +10699,48 @@
               properties:
                 message:
                   type: string
-            DocusignRequestStatus:
+            DocusignEnvironment:
               type: string
-              description: Docusign Request status
+              description: Docusign Environment
               enum:
-              - CREATED
-              - SENT
+              - PRODUCTION
+              - DEVELOPMENT
+            DocusignSigningMethod:
+              type: string
+              description: Docusign Signing Method
+              enum:
+              - EMAIL
+              - EMBED
+            DocusignEmbed:
+              type: object
+              properties:
+                returnUrl:
+                  type: string
+                  description: Identifies the return point after sending the envelope
             AddDocusignRequest:
               type: object
+              required:
+              - environment
+              - signingMethod
+              - signers
               properties:
                 emailSubject:
                   type: string
-                  description: Email Subject
-                status:
-                  $ref: '#/components/schemas/DocusignRequestStatus'
-                developmentMode:
-                  type: boolean
-                  description: Whether to enable developer mode
+                  description: The subject line of the email message that is sent to all recipients
+                environment:
+                  $ref: '#/components/schemas/DocusignEnvironment'
+                signingMethod:
+                  $ref: '#/components/schemas/DocusignSigningMethod'
                 signers:
                   type: array
                   description: List of DocuSign Signers
                   items:
                     $ref: '#/components/schemas/DocusignSigner'
-                carbonCopies:
-                  type: array
-                  description: List of DocuSign Carbon Copies
-                  items:
-                    $ref: '#/components/schemas/DocusignCarbonCopy'
-                recipientTabs:
-                  type: array
-                  description: List of DocuSign Recipient Tabs
-                  items:
-                    $ref: '#/components/schemas/DocusignRecipientTab'
+                embed:
+                  $ref: '#/components/schemas/DocusignEmbed'
             DocusignSigner:
+              required:
+              - name
               type: object
               properties:
                 name:
@@ -10740,40 +10749,12 @@
                 email:
                   type: string
                   description: Email of Signer
-            DocusignCarbonCopy:
-              type: object
-              properties:
-                name:
-                  type: string
-                  description: Name of Signer
-                email:
-                  type: string
-                  description: Email of Signer
-            DocusignRecipientType:
-              type: string
-              description: Type of Recipient
-              enum:
-              - SIGNHERE
-            DocusignRecipientTab:
-              type: object
-              properties:
-                type:
-                  $ref: '#/components/schemas/DocusignRecipientType'
-                pageNumber:
-                  type: string
-                  description: Document Page Number
-                positionX:
-                  type: string
-                  description: Element X Position
-                positionY:
-                  type: string
-                  description: Element Y Position
             AddDocusignResponse:
               type: object
               properties:
-                redirect_url:
+                viewUrl:
                   type: string
-                  description: Redirect Url to complete DocuSign workflow
+                  description: The view URL to be navigated to complete DocuSign signing
                 message:
                   type: string
                   description: Result message
