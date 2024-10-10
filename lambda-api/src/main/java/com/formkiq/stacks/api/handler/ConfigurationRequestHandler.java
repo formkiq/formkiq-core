@@ -301,7 +301,7 @@ public class ConfigurationRequestHandler
     try {
       // Remove the PEM header and footer
       String privateKeyPemStripped = privateKeyPem.replace("-----BEGIN RSA PRIVATE KEY-----", "")
-          .replace("-----END RSA PRIVATE KEY-----", "").replaceAll("\\s", "");
+          .replace("-----END RSA PRIVATE KEY-----", "").replace("\\n", "").replaceAll("\\s+", "");
 
       byte[] privateKeyBytes = Base64.getDecoder().decode(privateKeyPemStripped);
 
