@@ -10823,6 +10823,16 @@ Resources:
                 returnUrl:
                   type: "string"
                   description: "Identifies the return point after sending the envelope"
+                frameAncestors:
+                  type: "array"
+                  description: "An array of ancestors that can embed the frame"
+                  items:
+                    type: "string"
+                messageOrigins:
+                  type: "array"
+                  description: "The originating domain for the signature request message"
+                  items:
+                    type: "string"
             AddDocusignRequest:
               type: "object"
               required:
