@@ -47,6 +47,17 @@ public class Strings {
   /** Scheme Authority. */
   private static final String SCHEME_AUTHORITY = "://";
 
+  /**
+   * Return text or elseText if the text is empty.
+   * 
+   * @param text {@link String}
+   * @param elseText {@link String}
+   * @return {@link String}
+   */
+  public static String isNotNullOrEmptyElse(final String text, final String elseText) {
+    return !isEmpty(text) ? text : elseText;
+  }
+
   private static String findMatch(final Collection<String> resourceUrls,
       final List<String[]> resourceSplits, final String path) {
 

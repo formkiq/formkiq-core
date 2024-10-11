@@ -8880,6 +8880,9 @@
                     $ref: '#/components/schemas/DocumentGenerateDataSource'
                 outputType:
                   $ref: '#/components/schemas/DocumentGenerateOutputType'
+                saveAsDocumentId:
+                  type: string
+                  description: Save the generated document with a specific documentId
             DocumentGenerateDataSource:
               type: object
               required:
