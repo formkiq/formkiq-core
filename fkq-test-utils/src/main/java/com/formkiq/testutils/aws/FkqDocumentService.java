@@ -42,6 +42,7 @@ import com.formkiq.client.api.AdvancedDocumentSearchApi;
 import com.formkiq.client.api.DocumentActionsApi;
 import com.formkiq.client.api.DocumentAttributesApi;
 import com.formkiq.client.api.DocumentTagsApi;
+import com.formkiq.client.api.DocumentVersionsApi;
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
@@ -58,6 +59,7 @@ import com.formkiq.client.model.GetDocumentFulltextResponse;
 import com.formkiq.client.model.GetDocumentResponse;
 import com.formkiq.client.model.GetDocumentTagResponse;
 import com.formkiq.client.model.GetDocumentUrlResponse;
+import com.formkiq.client.model.GetDocumentVersionsResponse;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -673,5 +675,38 @@ public class FkqDocumentService {
     DocumentAttributesApi documentAttributesApi = new DocumentAttributesApi(client);
     return documentAttributesApi.getDocumentAttributes(documentId, siteId, null, null)
         .getAttributes();
+  }
+
+  /**
+   * Wait For Document Versions.
+   *
+   * @param client {@link ApiClient}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param expectedNumbeOfVersions int
+   * @return {@link GetDocumentContentResponse}
+   * @throws InterruptedException InterruptedException
+   */
+  public static GetDocumentVersionsResponse waitForDocumentVersions(final ApiClient client,
+      final String siteId, final String documentId, final int expectedNumbeOfVersions)
+      throws InterruptedException {
+
+    DocumentVersionsApi api = new DocumentVersionsApi(client);
+
+    while (true) {
+
+      try {
+        GetDocumentVersionsResponse response =
+            api.getDocumentVersions(documentId, siteId, "100", null, null);
+        if (response.getDocuments().size() == expectedNumbeOfVersions) {
+          return response;
+        }
+
+      } catch (ApiException e) {
+        // ignore error
+      }
+
+      TimeUnit.SECONDS.sleep(1);
+    }
   }
 }
