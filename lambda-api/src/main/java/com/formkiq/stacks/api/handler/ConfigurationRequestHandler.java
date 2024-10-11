@@ -34,13 +34,7 @@ import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENT_SIZE_BYTES;
 import static com.formkiq.stacks.dynamodb.ConfigService.MAX_WEBHOOKS;
 import static com.formkiq.stacks.dynamodb.ConfigService.NOTIFICATION_EMAIL;
 
-import java.security.KeyFactory;
-import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -299,23 +293,7 @@ public class ConfigurationRequestHandler
   }
 
   private boolean isValidRsaPrivateKey(final String privateKeyPem) {
-    try {
-      // Remove the PEM header and footer
-      String privateKeyPemStripped =
-          privateKeyPem.replace("\\u003d", "=").replace("-----BEGIN RSA PRIVATE KEY-----", "")
-              .replace("-----END RSA PRIVATE KEY-----", "").replace("\\n", "")
-              .replaceAll("\\s+", "").trim();
-
-      byte[] privateKeyBytes = Base64.getDecoder().decode(privateKeyPemStripped);
-
-      PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(privateKeyBytes);
-      KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-      PrivateKey privateKey = keyFactory.generatePrivate(keySpec);
-
-      return privateKey != null;
-
-    } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
-      return false;
-    }
+    return privateKeyPem.contains("-----BEGIN RSA PRIVATE KEY-----")
+        && privateKeyPem.contains("-----END RSA PRIVATE KEY-----");
   }
 }
