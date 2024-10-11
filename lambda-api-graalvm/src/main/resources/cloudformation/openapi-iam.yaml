@@ -10814,7 +10814,7 @@ Resources:
               enum:
                 - EMAIL
                 - INPERSON
-            DocusignInPerson:
+            DocusignRecipientView:
               type: "object"
               properties:
                 returnUrl:
@@ -10839,8 +10839,13 @@ Resources:
                   description: "List of DocuSign Signers"
                   items:
                     $ref: "#/components/schemas/DocusignSigner"
-                inperson:
-                  $ref: "#/components/schemas/DocusignInPerson"
+                inpersonSigners:
+                  type: "array"
+                  description: "List of DocuSign Inperson Signers"
+                  items:
+                    $ref: "#/components/schemas/DocusignInpersonSigner"
+                recipientView:
+                  $ref: "#/components/schemas/DocusignRecipientView"
             DocusignSigner:
               required:
                 - "name"
@@ -10852,9 +10857,26 @@ Resources:
                 email:
                   type: "string"
                   description: "Email of Signer"
+            DocusignInpersonSigner:
+              required:
+                - "hostEmail"
+                - "hostName"
+                - "signerName"
+                - "clientUserId"
+              type: "object"
+              properties:
+                hostEmail:
+                  type: "string"
+                  description: "The email of the signing host"
+                hostName:
+                  type: "string"
+                  description: "The name of the signing host"
                 clientUserId:
                   type: "string"
-                  description: "Specifies unique identifier for signer (required if using InPerson)"
+                  description: "Specifies unique identifier for signer"
+                signerName:
+                  type: "string"
+                  description: "The full legal name of a signer"
             AddDocusignResponse:
               type: "object"
               properties:
