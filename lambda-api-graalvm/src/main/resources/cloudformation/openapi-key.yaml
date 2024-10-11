@@ -10813,8 +10813,8 @@ Resources:
               description: "Docusign Signing Method"
               enum:
                 - EMAIL
-                - EMBED
-            DocusignEmbed:
+                - INPERSON
+            DocusignInPerson:
               type: "object"
               properties:
                 returnUrl:
@@ -10839,8 +10839,8 @@ Resources:
                   description: "List of DocuSign Signers"
                   items:
                     $ref: "#/components/schemas/DocusignSigner"
-                embed:
-                  $ref: "#/components/schemas/DocusignEmbed"
+                inperson:
+                  $ref: "#/components/schemas/DocusignInPerson"
             DocusignSigner:
               required:
                 - "name"
@@ -10852,6 +10852,9 @@ Resources:
                 email:
                   type: "string"
                   description: "Email of Signer"
+                clientUserId:
+                  type: "string"
+                  description: "Specifies unique identifier for signer (required if using InPerson)"
             AddDocusignResponse:
               type: "object"
               properties:
