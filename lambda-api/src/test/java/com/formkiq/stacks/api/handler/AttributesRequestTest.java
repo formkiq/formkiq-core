@@ -2221,7 +2221,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       String documentId = addDocumentAttribute(siteId, "security", "confidential", null, null);
 
       List<SearchResultDocument> documents =
-          foldersApi.getFolderDocuments(siteId, null, null, null, null).getDocuments();
+          foldersApi.getFolderDocuments(siteId, null, null, null, null, null).getDocuments();
       assertEquals(1, documents.size());
 
       UpdateDocumentRequest updateReq = new UpdateDocumentRequest().path("somepath.txt")
@@ -2240,7 +2240,8 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
                 + "'security' is an access attribute, can only be changed by Admin\"}]}",
             e.getResponseBody());
 
-        documents = foldersApi.getFolderDocuments(siteId, null, null, null, null).getDocuments();
+        documents =
+            foldersApi.getFolderDocuments(siteId, null, null, null, null, null).getDocuments();
         assertEquals(1, documents.size());
       }
     }
@@ -2263,8 +2264,8 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       String documentId = addDocumentAttribute(siteId, "security", "confidential", null, null);
 
-      List<SearchResultDocument> documents =
-          notNull(foldersApi.getFolderDocuments(siteId, null, null, null, null).getDocuments());
+      List<SearchResultDocument> documents = notNull(
+          foldersApi.getFolderDocuments(siteId, null, null, null, null, null).getDocuments());
       assertEquals(1, documents.size());
 
       UpdateDocumentRequest updateReq = new UpdateDocumentRequest().path("somepath.txt")

@@ -108,7 +108,7 @@ public class FoldersRequestTest extends AbstractAwsIntegrationTest {
 
         // when
         GetFoldersResponse folderDocuments =
-            foldersApi.getFolderDocuments(siteId, null, null, null, null);
+            foldersApi.getFolderDocuments(siteId, null, null, null, null, null);
 
         // then
         assertNotNull(folderDocuments.getDocuments());
@@ -149,10 +149,10 @@ public class FoldersRequestTest extends AbstractAwsIntegrationTest {
         assertEquals("created folder", response.getMessage());
 
         GetFoldersResponse folderDocuments =
-            foldersApi.getFolderDocuments(siteId, null, "100", null, null);
+            foldersApi.getFolderDocuments(siteId, null, null, "100", null, null);
         assertFalse(folderDocuments.getDocuments().isEmpty());
         folderDocuments =
-            foldersApi.getFolderDocuments(siteId, response.getIndexKey(), "100", null, null);
+            foldersApi.getFolderDocuments(siteId, response.getIndexKey(), null, "100", null, null);
         assertEquals(1, folderDocuments.getDocuments().size());
         assertEquals(folder + "/test.txt", folderDocuments.getDocuments().get(0).getPath());
       }

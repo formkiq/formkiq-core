@@ -77,10 +77,11 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
 
       // when
       GetFoldersResponse response =
-          this.foldersApi.getFolderDocuments(siteId, null, null, null, null);
+          this.foldersApi.getFolderDocuments(siteId, null, null, null, null, null);
 
       // then
       List<SearchResultDocument> documents = response.getDocuments();
+      assertNotNull(documents);
       assertEquals(2, documents.size());
       assertEquals("Chicago", documents.get(0).getPath());
       assertEquals("NewYork", documents.get(1).getPath());
@@ -91,17 +92,19 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
 
       // when
       final GetFoldersResponse response0 =
-          this.foldersApi.getFolderDocuments(siteId, indexKey0, null, null, null);
+          this.foldersApi.getFolderDocuments(siteId, indexKey0, null, null, null, null);
       final GetFoldersResponse response1 =
-          this.foldersApi.getFolderDocuments(siteId, indexKey1, null, null, null);
+          this.foldersApi.getFolderDocuments(siteId, indexKey1, null, null, null, null);
 
       // then
       documents = response0.getDocuments();
+      assertNotNull(documents);
       assertEquals(2, documents.size());
       assertEquals("Chicago/sample1.txt", documents.get(0).getPath());
       assertEquals("Chicago/sample2.txt", documents.get(1).getPath());
 
       documents = response1.getDocuments();
+      assertNotNull(documents);
       assertEquals(1, documents.size());
       assertEquals("NewYork/sample1.txt", documents.get(0).getPath());
     }
@@ -160,29 +163,92 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
 
       // when
       GetFoldersResponse response =
-          this.foldersApi.getFolderDocuments(siteId, null, null, null, null);
+          this.foldersApi.getFolderDocuments(siteId, null, null, null, null, null);
 
       // then
       List<SearchResultDocument> documents = response.getDocuments();
+      assertNotNull(documents);
       assertEquals(1, documents.size());
       assertEquals("Chicago", documents.get(0).getPath());
 
       String indexKey0 = documents.get(0).getIndexKey();
 
-      response = this.foldersApi.getFolderDocuments(siteId, indexKey0, null, null, null);
+      response = this.foldersApi.getFolderDocuments(siteId, indexKey0, null, null, null, null);
       documents = response.getDocuments();
 
       final int expected = 10;
+      assertNotNull(documents);
       assertEquals(expected, documents.size());
       assertEquals("Chicago/sample_0", documents.get(0).getPath());
       assertEquals("Chicago/sample_1", documents.get(1).getPath());
 
-      response =
-          this.foldersApi.getFolderDocuments(siteId, indexKey0, null, null, response.getNext());
+      response = this.foldersApi.getFolderDocuments(siteId, indexKey0, null, null, null,
+          response.getNext());
       documents = response.getDocuments();
+      assertNotNull(documents);
       assertEquals(expected / 2, documents.size());
       assertEquals("Chicago/sample_5", documents.get(0).getPath());
       assertEquals("Chicago/sample_6", documents.get(1).getPath());
+    }
+  }
+
+  /**
+   * Test getting folders using path parameter.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  void testGetFolders04() throws Exception {
+    // given
+    final String content = "some content";
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+
+      for (String path : Arrays.asList("Chicago/sample1.txt", "Chicago/sample2.txt",
+          "NewYork/sample1.txt")) {
+        addDocument(this.client, siteId, path, content.getBytes(StandardCharsets.UTF_8),
+            "text/plain", null);
+      }
+
+      for (String path : List.of("/Chicago", "/Chicago/", "Chicago")) {
+
+        // when
+        GetFoldersResponse response =
+            this.foldersApi.getFolderDocuments(siteId, null, path, null, null, null);
+
+        // then
+        List<SearchResultDocument> documents = response.getDocuments();
+        assertNotNull(documents);
+        assertEquals(2, documents.size());
+        assertEquals("Chicago/sample1.txt", documents.get(0).getPath());
+        assertEquals("Chicago/sample2.txt", documents.get(1).getPath());
+      }
+    }
+  }
+
+  /**
+   * Test getting invalid folders using path parameter.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  void testGetFolders05() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+      String path = "Chicago";
+
+      // when
+      GetFoldersResponse response =
+          this.foldersApi.getFolderDocuments(siteId, null, path, null, null, null);
+
+      // then
+      List<SearchResultDocument> documents = response.getDocuments();
+      assertNotNull(documents);
+      assertEquals(0, documents.size());
     }
   }
 
@@ -212,9 +278,10 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
       // given
       // when
       GetFoldersResponse folders =
-          this.foldersApi.getFolderDocuments(siteId, null, null, null, null);
+          this.foldersApi.getFolderDocuments(siteId, null, null, null, null, null);
 
       // then
+      assertNotNull(folders.getDocuments());
       assertEquals(1, folders.getDocuments().size());
       assertEquals("Chicago", folders.getDocuments().get(0).getPath());
 
@@ -222,9 +289,10 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
       String folderIndexKey = folders.getDocuments().get(0).getIndexKey();
 
       // when
-      folders = this.foldersApi.getFolderDocuments(siteId, folderIndexKey, null, null, null);
+      folders = this.foldersApi.getFolderDocuments(siteId, folderIndexKey, null, null, null, null);
 
       // then
+      assertNotNull(folders.getDocuments());
       assertEquals(1, folders.getDocuments().size());
       assertEquals("Southside", folders.getDocuments().get(0).getPath());
       assertEquals(indexKey, folders.getDocuments().get(0).getIndexKey());
@@ -234,7 +302,8 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
 
       // then
       assertEquals("deleted folder", deleteResponse.getMessage());
-      folders = this.foldersApi.getFolderDocuments(siteId, folderIndexKey, null, null, null);
+      folders = this.foldersApi.getFolderDocuments(siteId, folderIndexKey, null, null, null, null);
+      assertNotNull(folders.getDocuments());
       assertTrue(folders.getDocuments().isEmpty());
     }
   }
@@ -292,7 +361,7 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
    */
   private void assertDocumentForbidden(final String siteId) {
     try {
-      this.foldersApi.getFolderDocuments(siteId, null, null, null, null);
+      this.foldersApi.getFolderDocuments(siteId, null, null, null, null, null);
       fail();
     } catch (ApiException e) {
       assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());

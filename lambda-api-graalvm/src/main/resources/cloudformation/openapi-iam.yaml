@@ -2678,6 +2678,7 @@ Resources:
               parameters:
                 - $ref: '#/components/parameters/siteIdParam'
                 - $ref: '#/components/parameters/indexKeyQueryParam'
+                - $ref: '#/components/parameters/pathQueryParam'
                 - $ref: '#/components/parameters/limitParam'
                 - $ref: '#/components/parameters/shareKeyParam'
                 - $ref: '#/components/parameters/nextParam'
@@ -6443,6 +6444,13 @@ Resources:
               name: indexKey
               in: query
               description: Index Key Identifier
+              required: false
+              schema:
+                type: string
+            pathQueryParam:
+              name: path
+              in: query
+              description: Path query parameter (must be URL Encoded)
               required: false
               schema:
                 type: string

@@ -24,6 +24,8 @@
 package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
+
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +34,7 @@ import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -45,6 +48,7 @@ import com.formkiq.aws.dynamodb.cache.CacheService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
 import com.formkiq.stacks.dynamodb.FolderIndexProcessor;
+import com.formkiq.stacks.dynamodb.FolderIndexRecordExtended;
 
 /** {@link ApiGatewayRequestHandler} for "/folders". */
 public class FoldersRequestHandler implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
@@ -94,10 +98,7 @@ public class FoldersRequestHandler implements ApiGatewayRequestHandler, ApiGatew
     DocumentSearchService documentSearchService =
         awsservice.getExtension(DocumentSearchService.class);
 
-    String indexKey = event.getQueryStringParameter("indexKey");
-    if (indexKey == null) {
-      indexKey = "";
-    }
+    String indexKey = getIndexKey(event, awsservice, siteId);
 
     PaginationResults<DynamicDocumentItem> results =
         documentSearchService.findInFolder(siteId, indexKey, ptoken, limit);
@@ -114,6 +115,31 @@ public class FoldersRequestHandler implements ApiGatewayRequestHandler, ApiGatew
 
     ApiMapResponse resp = new ApiMapResponse(map);
     return new ApiRequestHandlerResponse(SC_OK, resp);
+  }
+
+  private String getIndexKey(final ApiGatewayRequestEvent event, final AwsServiceCache awsservice,
+      final String siteId) {
+
+    String indexKey = event.getQueryStringParameter("indexKey");
+    String path = event.getQueryStringParameter("path");
+
+    if (!Strings.isEmpty(path)) {
+      FolderIndexProcessor indexProcessor = awsservice.getExtension(FolderIndexProcessor.class);
+
+      List<FolderIndexRecordExtended> folders =
+          indexProcessor.get(siteId, path, "folder", "", new Date());
+      FolderIndexRecordExtended folder = Objects.last(folders);
+
+      if (folder != null && folder.record() != null) {
+        indexKey = folder.record().createIndexKey(siteId);
+      }
+    }
+
+    if (indexKey == null) {
+      indexKey = "";
+    }
+
+    return indexKey;
   }
 
   @Override
