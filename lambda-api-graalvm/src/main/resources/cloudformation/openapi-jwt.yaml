@@ -7265,7 +7265,7 @@ Resources:
               properties:
                 documentId:
                   type: "string"
-                  description: "optional Document Identifier, if skipped one will be assigned"
+                  description: "optional Document Identifier (Version 4 UUID), if skipped one will be assigned"
                 path:
                   type: "string"
                   description: "Path or Name of document"
@@ -10825,7 +10825,7 @@ Resources:
                   description: "Identifies the return point after sending the envelope"
                 frameAncestors:
                   type: "array"
-                  description: "An array of ancestors that can embed the frame"
+                  description: "An array of ancestors that can embed the frame. Include the domain where the envelope will be embedded and the same URL as messageOrigins."
                   items:
                     type: "string"
                 messageOrigins:
@@ -10870,6 +10870,28 @@ Resources:
                 email:
                   type: "string"
                   description: "Email of Signer"
+                signingTabs:
+                  $ref: "#/components/schemas/DocusignSigningTabs"
+            DocusignSigningTabs:
+              type: "object"
+              properties:
+                signHereTabs:
+                  type: "array"
+                  description: "A list of Sign Here tabs"
+                  items:
+                    $ref: "#/components/schemas/DocusignSignHereTabs"
+            DocusignSignHereTabs:
+              type: "object"
+              properties:
+                xPosition:
+                  type: "string"
+                  description: "This property indicates the horizontal offset of the object on the page"
+                yPosition:
+                  type: "string"
+                  description: "This property indicates the vertical offset of the object on the page"
+                pageNumber:
+                  type: "string"
+                  description: "Specifies the page number on which the tab is located"
             DocusignInpersonSigner:
               required:
                 - "hostEmail"
@@ -10890,6 +10912,8 @@ Resources:
                 signerName:
                   type: "string"
                   description: "The full legal name of a signer"
+                signingTabs:
+                  $ref: "#/components/schemas/DocusignSigningTabs"
             AddDocusignResponse:
               type: "object"
               properties:
