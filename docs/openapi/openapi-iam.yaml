@@ -10767,7 +10767,7 @@
                 email:
                   type: string
                   description: Email of Signer
-                signingTabs:
+                tabs:
                   $ref: '#/components/schemas/DocusignSigningTabs'
             DocusignSigningTabs:
               type: object
@@ -10809,7 +10809,7 @@
                 signerName:
                   type: string
                   description: The full legal name of a signer
-                signingTabs:
+                tabs:
                   $ref: '#/components/schemas/DocusignSigningTabs'
             AddDocusignResponse:
               type: object
