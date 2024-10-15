@@ -10920,6 +10920,9 @@ Resources:
                 signerName:
                   type: "string"
                   description: "The full legal name of a signer"
+                signerEmail:
+                  type: "string"
+                  description: "The in-person signer's email address"
                 tabs:
                   $ref: "#/components/schemas/DocusignSigningTabs"
             AddDocusignResponse:
