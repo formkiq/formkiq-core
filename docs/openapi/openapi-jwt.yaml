@@ -4231,11 +4231,11 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
-          /esignature/docusign/{documentId}:
+          /esignature/docusign/{documentId}/envelopes:
             post:
-              operationId: AddEsignatureDocusign
-              summary: Create E-signature request
-              description: Create a DocuSign E-Signature request; ONLY available with FormKiQ Enterprise
+              operationId: AddDocusignEnvelopes
+              summary: Create Docusign Envelope request
+              description: DocuSign create Docusign Envelope request; ONLY available with FormKiQ Enterprise
               tags:
               - E-Signature
               parameters:
@@ -4246,7 +4246,7 @@
                 content:
                   application/json:
                     schema:
-                      $ref: '#/components/schemas/AddDocusignRequest'
+                      $ref: '#/components/schemas/AddDocusignEnvelopesRequest'
               responses:
                 "200":
                   description: 200 OK
@@ -4260,7 +4260,48 @@
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/AddDocusignResponse'
+                        $ref: '#/components/schemas/AddDocusignEnvelopesResponse'
+                "400":
+                  description: 400 OK
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/ValidationErrorsResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/esignatureLambdaApi200'
+          /esignature/docusign/{documentId}/envelopes/{envelopeId}/views/recipient:
+            post:
+              operationId: AddDocusignRecipientView
+              summary: Create Docusign Recipient View request
+              description: DocuSign create Docusign Recipient View request; ONLY available with FormKiQ Enterprise
+              tags:
+              - E-Signature
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/docusignEnvelopeIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/AddDocusignRecipientViewRequest'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/AddDocusignRecipientViewResponse'
                 "400":
                   description: 400 OK
                   content:
@@ -4291,7 +4332,7 @@
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/AddDocusignResponse'
+                        $ref: '#/components/schemas/AddResponse'
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/esignatureLambdaApi200'
           /groups:
@@ -6296,6 +6337,13 @@
               name: documentId
               in: path
               description: Document Identifier
+              required: true
+              schema:
+                type: string
+            docusignEnvelopeIdParam:
+              name: envelopeId
+              in: path
+              description: Docusign Envelope Id
               required: true
               schema:
                 type: string
@@ -10715,12 +10763,6 @@
               enum:
               - PRODUCTION
               - DEVELOPMENT
-            DocusignSigningMethod:
-              type: string
-              description: Docusign Signing Method
-              enum:
-              - EMAIL
-              - INPERSON
             DocusignRecipientView:
               type: object
               properties:
@@ -10730,6 +10772,12 @@
                 recipientId:
                   type: string
                   description: A reference used to map recipients to other objects, such as specific document tabs.
+                userName:
+                  type: string
+                  description: The username of the recipient. You can use either email and userName.
+                email:
+                  type: string
+                  description: Specifies the email of the recipient
                 frameAncestors:
                   type: array
                   description: An array of ancestors that can embed the frame. Include the domain where the envelope will be embedded and the same URL as messageOrigins.
@@ -10740,7 +10788,7 @@
                   description: The originating domain for the signature request message
                   items:
                     type: string
-            AddDocusignRequest:
+            AddDocusignEnvelopesRequest:
               type: object
               required:
               - environment
@@ -10752,8 +10800,6 @@
                   description: The subject line of the email message that is sent to all recipients
                 environment:
                   $ref: '#/components/schemas/DocusignEnvironment'
-                signingMethod:
-                  $ref: '#/components/schemas/DocusignSigningMethod'
                 signers:
                   type: array
                   description: List of DocuSign Signers
@@ -10845,15 +10891,28 @@
                   description: When true, email notifications are suppressed for the recipient, and they must access envelopes and documents from their Docusign inbox.
                 tabs:
                   $ref: '#/components/schemas/DocusignSigningTabs'
-            AddDocusignResponse:
+            AddDocusignEnvelopesResponse:
+              type: object
+              properties:
+                envelopeId:
+                  type: string
+                  description: Docusign Envelope Identifier
+            AddDocusignRecipientViewRequest:
+              type: object
+              required:
+              - environment
+              - recipientView
+              properties:
+                environment:
+                  $ref: '#/components/schemas/DocusignEnvironment'
+                recipientView:
+                  $ref: '#/components/schemas/DocusignRecipientView'
+            AddDocusignRecipientViewResponse:
               type: object
               properties:
                 viewUrl:
                   type: string
                   description: The view URL to be navigated to complete DocuSign signing
-                message:
-                  type: string
-                  description: Result message
           securitySchemes:
             ApiAuthorization:
               type: oauth2
