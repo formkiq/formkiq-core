@@ -49,6 +49,8 @@ public interface ConfigService {
   String KEY_DOCUSIGN_INTEGRATION_KEY = "docusignIntegrationKey";
   /** Docusign Rsa Private Key. */
   String KEY_DOCUSIGN_RSA_PRIVATE_KEY = "docusignRsaPrivateKey";
+  /** Docusign Rsa Private Key. */
+  String KEY_DOCUSIGN_HMAC_SIGNATURE = "docusignHmacSignature";
 
   /**
    * Delete Config.

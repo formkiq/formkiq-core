@@ -348,8 +348,9 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     String group = "Admins";
     setBearerToken(group);
 
-    UpdateConfigurationRequest req = new UpdateConfigurationRequest().docusign(
-        new DocusignConfig().userId("123").integrationKey("111").rsaPrivateKey(RSA_PRIVATE_KEY));
+    UpdateConfigurationRequest req = new UpdateConfigurationRequest()
+        .docusign(new DocusignConfig().userId("123").integrationKey("111")
+            .rsaPrivateKey(RSA_PRIVATE_KEY).hmacSignature("222ljasdlksjakldjsadlsa"));
 
     this.systemApi.updateConfiguration(siteId, req);
 
@@ -360,6 +361,7 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     assertNotNull(configuration.getDocusign());
     assertEquals("111", configuration.getDocusign().getIntegrationKey());
     assertEquals("123", configuration.getDocusign().getUserId());
+    assertEquals("222l*******dlsa", configuration.getDocusign().getHmacSignature());
     assertEquals("""
         -----BEGIN RSA PRIVATE KEY-----
         MIIEvQIB*******qFT4Ofeyc=

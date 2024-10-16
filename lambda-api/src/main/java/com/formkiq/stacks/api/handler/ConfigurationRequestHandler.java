@@ -26,6 +26,7 @@ package com.formkiq.stacks.api.handler;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import static com.formkiq.stacks.dynamodb.ConfigService.CHATGPT_API_KEY;
+import static com.formkiq.stacks.dynamodb.ConfigService.KEY_DOCUSIGN_HMAC_SIGNATURE;
 import static com.formkiq.stacks.dynamodb.ConfigService.KEY_DOCUSIGN_INTEGRATION_KEY;
 import static com.formkiq.stacks.dynamodb.ConfigService.KEY_DOCUSIGN_RSA_PRIVATE_KEY;
 import static com.formkiq.stacks.dynamodb.ConfigService.KEY_DOCUSIGN_USER_ID;
@@ -77,6 +78,8 @@ public class ConfigurationRequestHandler
    * Mask Value, must be even number.
    */
   private static final int RSA_PRIVATE_KEY_MASK = 40;
+  /** HMAC Signature Mask. */
+  private static final int HMAC_SIG_KEY_MASK = 4;
 
   /**
    * constructor.
@@ -133,11 +136,14 @@ public class ConfigurationRequestHandler
     String docusignUserId = (String) obj.getOrDefault(KEY_DOCUSIGN_USER_ID, "");
     String docusignIntegrationKey = (String) obj.getOrDefault(KEY_DOCUSIGN_INTEGRATION_KEY, "");
     String docusignRsaPrivateKey = (String) obj.getOrDefault(KEY_DOCUSIGN_RSA_PRIVATE_KEY, "");
+    String docusignHmacSignature = (String) obj.getOrDefault(KEY_DOCUSIGN_HMAC_SIGNATURE, "");
 
     if (!isEmpty(docusignUserId) && !isEmpty(docusignIntegrationKey)
         && !isEmpty(docusignRsaPrivateKey)) {
-      map.put("docusign", Map.of("userId", docusignUserId, "integrationKey", docusignIntegrationKey,
-          "rsaPrivateKey", mask(docusignRsaPrivateKey, RSA_PRIVATE_KEY_MASK)));
+      map.put("docusign",
+          Map.of("userId", docusignUserId, "integrationKey", docusignIntegrationKey,
+              "rsaPrivateKey", mask(docusignRsaPrivateKey, RSA_PRIVATE_KEY_MASK), "hmacSignature",
+              mask(docusignHmacSignature, HMAC_SIG_KEY_MASK)));
     }
   }
 
@@ -205,10 +211,12 @@ public class ConfigurationRequestHandler
       String docusignUserId = google.getOrDefault("userId", "").trim();
       String docusignIntegrationKey = google.getOrDefault("integrationKey", "").trim();
       String docusignRsaPrivateKey = google.getOrDefault("rsaPrivateKey", "").trim();
+      String docusignHmacSignature = google.getOrDefault("hmacSignature", "").trim();
 
       map.put(KEY_DOCUSIGN_USER_ID, docusignUserId);
       map.put(KEY_DOCUSIGN_INTEGRATION_KEY, docusignIntegrationKey);
       map.put(KEY_DOCUSIGN_RSA_PRIVATE_KEY, docusignRsaPrivateKey);
+      map.put(KEY_DOCUSIGN_HMAC_SIGNATURE, docusignHmacSignature);
     }
 
     validate(awsservice, map);

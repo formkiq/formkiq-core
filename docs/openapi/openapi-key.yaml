@@ -9952,6 +9952,9 @@
                 rsaPrivateKey:
                   type: string
                   description: Docusign Rsa Private Key
+                hmacSignature:
+                  type: string
+                  description: Enabled security with Docusign Connect using HMAC keys. When enabled these keys are known only by Docusign and your app, and will be used to sign all Connect messages sent from your Docusign account to your application.
             GetUsersInGroupResponse:
               type: object
               properties:
@@ -10724,6 +10727,9 @@
                 returnUrl:
                   type: string
                   description: Identifies the return point after sending the envelope
+                recipientId:
+                  type: string
+                  description: A reference used to map recipients to other objects, such as specific document tabs.
                 frameAncestors:
                   type: array
                   description: An array of ancestors that can embed the frame. Include the domain where the envelope will be embedded and the same URL as messageOrigins.
@@ -10771,6 +10777,18 @@
                 email:
                   type: string
                   description: Email of Signer
+                clientUserId:
+                  type: string
+                  description: Specifies unique identifier for signer
+                recipientId:
+                  type: string
+                  description: A reference used to map recipients to other objects, such as specific document tabs.
+                routingOrder:
+                  type: string
+                  description: Specifies the routing order of the recipient in the envelope.
+                suppressEmails:
+                  type: string
+                  description: When true, email notifications are suppressed for the recipient, and they must access envelopes and documents from their Docusign inbox.
                 tabs:
                   $ref: '#/components/schemas/DocusignSigningTabs'
             DocusignSigningTabs:
@@ -10816,6 +10834,15 @@
                 signerEmail:
                   type: string
                   description: The in-person signer's email address
+                recipientId:
+                  type: string
+                  description: A reference used to map recipients to other objects, such as specific document tabs.
+                routingOrder:
+                  type: string
+                  description: Specifies the routing order of the recipient in the envelope.
+                suppressEmails:
+                  type: string
+                  description: When true, email notifications are suppressed for the recipient, and they must access envelopes and documents from their Docusign inbox.
                 tabs:
                   $ref: '#/components/schemas/DocusignSigningTabs'
             AddDocusignResponse:
