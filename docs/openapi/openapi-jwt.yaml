@@ -10810,8 +10810,6 @@
                   description: List of DocuSign Inperson Signers
                   items:
                     $ref: '#/components/schemas/DocusignInpersonSigner'
-                recipientView:
-                  $ref: '#/components/schemas/DocusignRecipientView'
             DocusignSigner:
               required:
               - name
@@ -10862,7 +10860,6 @@
               - hostEmail
               - hostName
               - signerName
-              - clientUserId
               type: object
               properties:
                 hostEmail:
@@ -10871,9 +10868,6 @@
                 hostName:
                   type: string
                   description: The name of the signing host
-                clientUserId:
-                  type: string
-                  description: Specifies unique identifier for signer
                 signerName:
                   type: string
                   description: The full legal name of a signer
