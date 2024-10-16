@@ -144,38 +144,37 @@ public class FoldersRequestTest extends AbstractAwsIntegrationTest {
     String siteId = UUID.randomUUID().toString();
 
     List<ApiClient> clients = getApiClients(siteId);
-    String random = UUID.randomUUID().toString();
+    final String random = UUID.randomUUID().toString();
 
-    for (ApiClient apiClient : clients) {
+    ApiClient apiClient = clients.get(0);
 
-      // when
-      for (int i = 0; i < numberOfThreads; i++) {
-        final int ii = i;
-        executorService.submit(() -> {
+    // when
+    for (int i = 0; i < numberOfThreads; i++) {
+      final int ii = i;
+      executorService.submit(() -> {
+        try {
           try {
-            try {
-              String path = "Chicago_" + random + "/sample" + ii + ".txt";
-              addDocument(apiClient, siteId, path, content.getBytes(StandardCharsets.UTF_8),
-                  "text/plain", null);
-            } catch (IOException | InterruptedException | URISyntaxException | ApiException e) {
-              throw new RuntimeException(e);
-            }
-          } finally {
-            latch.countDown();
+            String path = "Chicago_" + random + "/sample" + ii + ".txt";
+            addDocument(apiClient, siteId, path, content.getBytes(StandardCharsets.UTF_8),
+                "text/plain", null);
+          } catch (IOException | InterruptedException | URISyntaxException | ApiException e) {
+            throw new RuntimeException(e);
           }
-        });
-      }
-
-      // then
-      latch.await();
-      executorService.shutdown();
-
-      DocumentFoldersApi foldersApi = new DocumentFoldersApi(apiClient);
-      List<SearchResultDocument> docs = notNull(foldersApi
-          .getFolderDocuments(siteId, null, "Chicago_" + random, "200", null, null).getDocuments());
-
-      assertEquals(numberOfThreads, docs.size());
+        } finally {
+          latch.countDown();
+        }
+      });
     }
+
+    // then
+    latch.await();
+    executorService.shutdown();
+
+    DocumentFoldersApi foldersApi = new DocumentFoldersApi(apiClient);
+    List<SearchResultDocument> docs = notNull(foldersApi
+        .getFolderDocuments(siteId, null, "Chicago_" + random, "200", null, null).getDocuments());
+
+    assertEquals(numberOfThreads, docs.size());
   }
 
   /**

@@ -658,7 +658,7 @@ class FolderIndexProcessorTest implements DbKeys {
   }
 
   private void verifyIndex(final String siteId, final FolderIndexRecord map, final String pk,
-                           final String sk, final String path, final boolean hasDates) {
+      final String sk, final String path, final boolean hasDates) {
 
     assertEquals(pk, map.pk(siteId));
     assertEquals(sk, map.sk());

@@ -516,9 +516,11 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
             .findAny().orElse(null);
       }
 
-      AttributeValueToMap transform = new AttributeValueToMap();
-      Map<String, Object> apply = transform.apply(documentRecord);
-      this.interceptor.deleteDocument(siteId, documentId, softDelete, apply);
+      if (documentRecord != null) {
+        AttributeValueToMap transform = new AttributeValueToMap();
+        Map<String, Object> apply = transform.apply(documentRecord);
+        this.interceptor.deleteDocument(siteId, documentId, softDelete, apply);
+      }
     }
 
     return deleted;
