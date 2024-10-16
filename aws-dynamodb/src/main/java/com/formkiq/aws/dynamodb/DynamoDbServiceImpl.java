@@ -25,6 +25,8 @@ package com.formkiq.aws.dynamodb;
 
 import static com.formkiq.aws.dynamodb.DbKeys.PK;
 import static com.formkiq.aws.dynamodb.DbKeys.SK;
+
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -32,6 +34,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.formkiq.aws.dynamodb.objects.Strings;
@@ -43,6 +46,7 @@ import software.amazon.awssdk.services.dynamodb.model.DeleteItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.DeleteRequest;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.GetItemResponse;
+import software.amazon.awssdk.services.dynamodb.model.Put;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.PutRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
@@ -50,6 +54,9 @@ import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 import software.amazon.awssdk.services.dynamodb.model.ReturnValue;
 import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
+import software.amazon.awssdk.services.dynamodb.model.TransactWriteItem;
+import software.amazon.awssdk.services.dynamodb.model.TransactWriteItemsRequest;
+import software.amazon.awssdk.services.dynamodb.model.TransactionCanceledException;
 import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.UpdateItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
@@ -60,6 +67,13 @@ import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
  *
  */
 public final class DynamoDbServiceImpl implements DynamoDbService {
+
+  /** Max Backoff in MS. */
+  private static final int MAX_BACKOFF_IN_MS = 2000;
+  /** Default Backoff In Ms. */
+  private static final int DEFAULT_BACKOFF_IN_MS = 200;
+  /** Thousand constant. */
+  private static final int TS = 1000;
 
   /** {@link DynamoDbClient}. */
   private final DynamoDbClient dbClient;
@@ -434,5 +448,62 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
         (key, value) -> values.put(key, AttributeValueUpdate.builder().value(value).build()));
 
     return updateItem(pk, sk, values);
+  }
+
+  @Override
+  public boolean acquireLock(final AttributeValue pk, final AttributeValue sk,
+      final long aquireLockTimeoutInMs, final long lockExpirationInMs) {
+
+    boolean lock = false;
+    long expirationTime = Instant.now().getEpochSecond() + lockExpirationInMs / TS;
+
+    Map<String, AttributeValue> item = new HashMap<>();
+    item.put(PK, pk);
+    item.put(SK, getLock(sk));
+    item.put("ExpirationTime", AttributeValue.builder().n(Long.toString(expirationTime)).build());
+
+    Put.Builder put = Put.builder().tableName(tableName).item(item).conditionExpression(
+        "(attribute_not_exists(PK) and attribute_not_exists(SK)) OR ExpirationTime < :currentTime");
+
+    long startTime = System.currentTimeMillis();
+    long waitInterval = DEFAULT_BACKOFF_IN_MS;
+
+    while (System.currentTimeMillis() - startTime < aquireLockTimeoutInMs) {
+
+      try {
+
+        put.expressionAttributeValues(Map.of(":currentTime",
+            AttributeValue.builder().n(Long.toString(Instant.now().getEpochSecond())).build()));
+
+        TransactWriteItemsRequest tx = TransactWriteItemsRequest.builder()
+            .transactItems(TransactWriteItem.builder().put(put.build()).build()).build();
+
+        this.dbClient.transactWriteItems(tx);
+        lock = true;
+        break;
+
+      } catch (TransactionCanceledException e) {
+        // Lock is already held or transaction was canceled, wait and retry with exponential backoff
+        try {
+          TimeUnit.MILLISECONDS.sleep(waitInterval);
+        } catch (InterruptedException ex) {
+          throw new RuntimeException(ex);
+        }
+
+        // Cap backoff at 1 second
+        waitInterval = Math.min(waitInterval * 2, MAX_BACKOFF_IN_MS);
+      }
+    }
+
+    return lock;
+  }
+
+  @Override
+  public boolean releaseLock(final AttributeValue pk, final AttributeValue sk) {
+    return deleteItem(pk, getLock(sk));
+  }
+
+  private AttributeValue getLock(final AttributeValue sk) {
+    return AttributeValue.fromS(sk.s() + ".lock");
   }
 }

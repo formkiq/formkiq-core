@@ -27,13 +27,12 @@ import java.io.IOException;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+
 import com.formkiq.aws.dynamodb.DynamicObject;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 
 /**
- * 
+ *
  * Generates Indexes Processor.
  *
  */
@@ -44,17 +43,29 @@ public interface FolderIndexProcessor {
 
   /**
    * Create Folder Paths.
-   * 
+   *
    * @param siteId {@link String}
    * @param path {@link String}
    * @param userId {@link String}
    * @return {@link List} {@link Map}
    */
-  List<Map<String, String>> createFolders(String siteId, String path, String userId);
+  List<FolderIndexRecord> createFolders(String siteId, String path, String userId);
+
+  /**
+   * Add Document To Folder.
+   *
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param parent {@link FolderIndexRecord}
+   * @param path {@link String}
+   * @return FolderIndexRecord
+   */
+  FolderIndexRecord addFileToFolder(String siteId, String documentId, FolderIndexRecord parent,
+      String path);
 
   /**
    * Delete Empty Directory.
-   * 
+   *
    * @param siteId {@link String}
    * @param indexKey {@link String}
    * @return boolean
@@ -64,7 +75,7 @@ public interface FolderIndexProcessor {
 
   /**
    * Delete Empty Directory.
-   * 
+   *
    * @param siteId {@link String}
    * @param parentId {@link String}
    * @param path {@link String}
@@ -75,7 +86,7 @@ public interface FolderIndexProcessor {
 
   /**
    * Delete Index Path.
-   * 
+   *
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param path {@link String}
@@ -83,17 +94,8 @@ public interface FolderIndexProcessor {
   void deletePath(String siteId, String documentId, String path);
 
   /**
-   * Generates DynamoDB {@link WriteRequest} for Index.
-   * 
-   * @param siteId {@link String}
-   * @param item {@link DocumentItem}
-   * @return {@link List} {@link Map} {@link AttributeValue}
-   */
-  List<Map<String, AttributeValue>> generateIndex(String siteId, DocumentItem item);
-
-  /**
    * Get {@link FolderIndexRecord} based on {@link String} path.
-   * 
+   *
    * @param siteId {@link String}
    * @param path {@link String}
    * @param pathType {@link String}
@@ -106,7 +108,7 @@ public interface FolderIndexProcessor {
 
   /**
    * Get Folder Index by documentId.
-   * 
+   *
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @return {@link FolderIndexRecord}
@@ -115,7 +117,7 @@ public interface FolderIndexProcessor {
 
   /**
    * Get Folder Index by documentIds.
-   * 
+   *
    * @param siteId {@link String}
    * @param documentIds {@link List} {@link String}
    * @return {@link Map} {@link FolderIndexRecord}
@@ -124,7 +126,7 @@ public interface FolderIndexProcessor {
 
   /**
    * Get Folders Index by documentId.
-   * 
+   *
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @return {@link List} {@link FolderIndexRecord}
@@ -133,7 +135,7 @@ public interface FolderIndexProcessor {
 
   /**
    * Generates DynamoDB {@link WriteRequest} for Index.
-   * 
+   *
    * @param siteId {@link String}
    * @param path {@link String}
    * @return {@link List} {@link Map} {@link String}
@@ -143,7 +145,7 @@ public interface FolderIndexProcessor {
 
   /**
    * Get Folder / File Index.
-   * 
+   *
    * @param siteId {@link String}
    * @param indexKey {@link String}
    * @param isFile boolean
@@ -153,7 +155,7 @@ public interface FolderIndexProcessor {
 
   /**
    * Is Folder in Path.
-   * 
+   *
    * @param siteId {@link String}
    * @param path {@link String}
    * @param folderId {@link String}
@@ -164,7 +166,7 @@ public interface FolderIndexProcessor {
 
   /**
    * Move Index from one to another.
-   * 
+   *
    * @param siteId {@link String}
    * @param sourcePath {@link String}
    * @param targetPath {@link String}

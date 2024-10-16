@@ -23,14 +23,25 @@
  */
 package com.formkiq.stacks.api.awstest;
 
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.testutils.aws.FkqDocumentService.addDocument;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContent;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
+import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.model.SearchResultDocument;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import com.formkiq.client.api.DocumentFoldersApi;
@@ -113,6 +124,57 @@ public class FoldersRequestTest extends AbstractAwsIntegrationTest {
         // then
         assertNotNull(folderDocuments.getDocuments());
       }
+    }
+  }
+
+  /**
+   * Test adding documents on multiple threads.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  void testGetFolders02() throws Exception {
+    // given
+    final int threadPool = 5;
+    final int numberOfThreads = 5;
+    final String content = "some content";
+    ExecutorService executorService = Executors.newFixedThreadPool(threadPool);
+    CountDownLatch latch = new CountDownLatch(numberOfThreads);
+
+    String siteId = UUID.randomUUID().toString();
+
+    List<ApiClient> clients = getApiClients(siteId);
+    String random = UUID.randomUUID().toString();
+
+    for (ApiClient apiClient : clients) {
+
+      // when
+      for (int i = 0; i < numberOfThreads; i++) {
+        final int ii = i;
+        executorService.submit(() -> {
+          try {
+            try {
+              String path = "Chicago_" + random + "/sample" + ii + ".txt";
+              addDocument(apiClient, siteId, path, content.getBytes(StandardCharsets.UTF_8),
+                  "text/plain", null);
+            } catch (IOException | InterruptedException | URISyntaxException | ApiException e) {
+              throw new RuntimeException(e);
+            }
+          } finally {
+            latch.countDown();
+          }
+        });
+      }
+
+      // then
+      latch.await();
+      executorService.shutdown();
+
+      DocumentFoldersApi foldersApi = new DocumentFoldersApi(apiClient);
+      List<SearchResultDocument> docs = notNull(foldersApi
+          .getFolderDocuments(siteId, null, "Chicago_" + random, "200", null, null).getDocuments());
+
+      assertEquals(numberOfThreads, docs.size());
     }
   }
 

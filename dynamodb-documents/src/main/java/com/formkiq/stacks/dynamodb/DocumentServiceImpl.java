@@ -384,6 +384,34 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     }
   }
 
+  private FolderIndexRecord createDocumentPath(final String siteId, final DocumentItem document,
+      final boolean isPathChanged) {
+
+    FolderIndexRecord folderIndexRecord = null;
+
+    if (isPathChanged) {
+      List<FolderIndexRecord> folders =
+          this.folderIndexProcessor.createFolders(siteId, document.getPath(), document.getUserId());
+
+      folderIndexRecord = this.folderIndexProcessor.addFileToFolder(siteId,
+          document.getDocumentId(), Objects.last(folders), document.getPath());
+
+      String filename = Strings.getFilename(document.getPath());
+      if (!filename.contains(folderIndexRecord.path())) {
+        String path = createPath(folders, folderIndexRecord);
+        document.setPath(path);
+      }
+    }
+
+    return folderIndexRecord;
+  }
+
+  private String createPath(final List<FolderIndexRecord> folders,
+      final FolderIndexRecord folderIndexRecord) {
+    return String.join("/", folders.stream().map(FolderIndexRecord::path).toList()) + "/"
+        + folderIndexRecord.path();
+  }
+
   private List<SchemaAttributes> getSchemaAttributes(final String siteId,
       final Collection<DocumentAttributeRecord> documentAttributeRecords) {
 
@@ -1552,14 +1580,14 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
    * Is Document Path Changed.
    *
    * @param previous {@link Map}
-   * @param current {@link Map}
+   * @param item {@link DocumentItem}
    * @return boolean
    */
   private boolean isPathChanges(final Map<String, AttributeValue> previous,
-      final Map<String, AttributeValue> current) {
+      final DocumentItem item) {
     String path0 = previous.containsKey("path") ? previous.get("path").s() : "";
-    String path1 = current.containsKey("path") ? current.get("path").s() : "";
-    return !path1.equals(path0) && !"".equals(path0);
+    String path1 = item.getPath();
+    return !path1.equals(path0);
   }
 
   @Override
@@ -1796,11 +1824,10 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), userId);
       item.setPath(path);
 
-      List<Map<String, AttributeValue>> folderIndex =
-          this.folderIndexProcessor.generateIndex(siteId, item);
+      FolderIndexRecord record = createDocumentPath(siteId, item, true);
 
       WriteRequestBuilder writeBuilder =
-          new WriteRequestBuilder().appends(this.documentTableName, folderIndex);
+          new WriteRequestBuilder().append(this.documentTableName, record.getAttributes(siteId));
 
       writeBuilder.batchWriteItem(this.dbClient);
     }
@@ -1905,16 +1932,9 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
     removeNullMetadata(document, documentValues);
 
-    // String documentVersionsTableName = this.versionsService.getDocumentVersionsTableName();
-    // boolean hasDocumentChanged = documentVersionsTableName != null && !previous.isEmpty()
-    // && isChangedMatching(previous, current);
+    boolean isPathChanged = isPathChanges(previous, document);
 
-    // if (hasDocumentChanged) {
-    // this.versionsService.addDocumentVersionAttributes(previous, documentValues);
-    // }
-
-    List<Map<String, AttributeValue>> folderIndex =
-        this.folderIndexProcessor.generateIndex(siteId, document);
+    FolderIndexRecord folderIndexRecord = createDocumentPath(siteId, document, isPathChanged);
     if (!isEmpty(document.getPath())) {
       documentValues.put("path", AttributeValue.fromS(document.getPath()));
     }
@@ -1923,23 +1943,25 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
         getSaveTagsAttributes(siteId, document.getDocumentId(), tags, options.timeToLive());
 
     WriteRequestBuilder writeBuilder = new WriteRequestBuilder()
-        .append(this.documentTableName, documentValues).appends(this.documentTableName, tagValues)
-        .appends(this.documentTableName, folderIndex);
+        .append(this.documentTableName, documentValues).appends(this.documentTableName, tagValues);
+
+    if (folderIndexRecord != null) {
+      writeBuilder.append(this.documentTableName, folderIndexRecord.getAttributes(siteId));
+    }
 
     appendDocumentAttributes(writeBuilder, siteId, document.getDocumentId(), attributes,
         documentExists, AttributeValidation.FULL, options.getValidationAccess());
-
-    // if (hasDocumentChanged) {
-    // writeBuilder = writeBuilder.appends(documentVersionsTableName, List.of(previous));
-    // }
 
     if (writeBuilder.batchWriteItem(this.dbClient)) {
 
       String documentId = document.getDocumentId();
       saveDocumentInterceptor(siteId, documentId, current, previous);
 
-      if (isPathChanges(previous, documentValues)) {
-        this.folderIndexProcessor.deletePath(siteId, documentId, previous.get("path").s());
+      if (isPathChanged) {
+        String path = previous.containsKey("path") ? previous.get("path").s() : null;
+        if (!Strings.isEmpty(path)) {
+          this.folderIndexProcessor.deletePath(siteId, documentId, previous.get("path").s());
+        }
       }
 
       List<String> tagKeys =

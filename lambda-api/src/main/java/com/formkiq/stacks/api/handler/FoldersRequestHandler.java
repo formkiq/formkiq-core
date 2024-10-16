@@ -48,6 +48,7 @@ import com.formkiq.aws.dynamodb.cache.CacheService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
 import com.formkiq.stacks.dynamodb.FolderIndexProcessor;
+import com.formkiq.stacks.dynamodb.FolderIndexRecord;
 import com.formkiq.stacks.dynamodb.FolderIndexRecordExtended;
 
 /** {@link ApiGatewayRequestHandler} for "/folders". */
@@ -76,8 +77,13 @@ public class FoldersRequestHandler implements ApiGatewayRequestHandler, ApiGatew
 
     String siteId = authorization.getSiteId();
     FolderIndexProcessor indexProcessor = awsservice.getExtension(FolderIndexProcessor.class);
-    List<Map<String, String>> list =
+    List<FolderIndexRecord> record =
         indexProcessor.createFolders(siteId, path, authorization.getUsername());
+
+    List<Map<String, String>> list = record.stream().map(r -> {
+      String indexKey = r.createIndexKey(siteId);
+      return Map.of("folder", r.path(), "indexKey", indexKey);
+    }).toList();
 
     ApiMapResponse resp = new ApiMapResponse(
         Map.of("message", "created folder", "indexKey", list.get(list.size() - 1).get("indexKey")));

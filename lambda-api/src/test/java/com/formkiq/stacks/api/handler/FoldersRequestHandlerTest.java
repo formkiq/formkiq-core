@@ -24,15 +24,23 @@
 package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.testutils.aws.FkqDocumentService.addDocument;
+import static java.lang.Boolean.TRUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import org.junit.jupiter.api.Test;
@@ -213,7 +221,6 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
       }
 
       for (String path : List.of("/Chicago", "/Chicago/", "Chicago")) {
-
         // when
         GetFoldersResponse response =
             this.foldersApi.getFolderDocuments(siteId, null, path, null, null, null);
@@ -250,6 +257,57 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
       assertNotNull(documents);
       assertEquals(0, documents.size());
     }
+  }
+
+  /**
+   * Test adding documents on multiple threads.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  void testGetFolders06() throws Exception {
+    // given
+    final int threadPool = 10;
+    final int numberOfThreads = 20;
+    final String content = "some content";
+    ExecutorService executorService = Executors.newFixedThreadPool(threadPool);
+    CountDownLatch latch = new CountDownLatch(numberOfThreads);
+
+    String siteId = UUID.randomUUID().toString();
+    setBearerToken(siteId);
+
+    // when
+    for (int i = 0; i < numberOfThreads; i++) {
+      final int ii = i;
+      executorService.submit(() -> {
+        try {
+          try {
+            String path = "Chicago/sample" + ii + ".txt";
+            addDocument(this.client, siteId, path, content.getBytes(StandardCharsets.UTF_8),
+                "text/plain", null);
+          } catch (IOException | InterruptedException | URISyntaxException | ApiException e) {
+            throw new RuntimeException(e);
+          }
+        } finally {
+          latch.countDown();
+        }
+      });
+    }
+
+    // then
+    latch.await();
+    executorService.shutdown();
+
+    List<SearchResultDocument> docs = notNull(
+        foldersApi.getFolderDocuments(siteId, null, null, "200", null, null).getDocuments());
+    assertEquals(1, docs.size());
+    assertEquals(docs.get(0).getFolder(), TRUE);
+    assertEquals("Chicago", docs.get(0).getPath());
+
+    docs = notNull(
+        foldersApi.getFolderDocuments(siteId, null, "Chicago", "200", null, null).getDocuments());
+
+    assertEquals(numberOfThreads, docs.size());
   }
 
   /**

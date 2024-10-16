@@ -264,4 +264,25 @@ public interface DynamoDbService {
    */
   Map<String, AttributeValue> updateValues(AttributeValue pk, AttributeValue sk,
       Map<String, AttributeValue> updateValues);
+
+  /**
+   * Aquire Lock.
+   *
+   * @param pk {@link AttributeValue}
+   * @param sk {@link AttributeValue}
+   * @param aquireLockTimeoutInMs long
+   * @param lockExpirationInMs long
+   * @return boolean
+   */
+  boolean acquireLock(AttributeValue pk, AttributeValue sk, long aquireLockTimeoutInMs,
+      long lockExpirationInMs);
+
+  /**
+   * Release Lock.
+   *
+   * @param pk {@link AttributeValue}
+   * @param sk {@link AttributeValue}
+   * @return boolean
+   */
+  boolean releaseLock(AttributeValue pk, AttributeValue sk);
 }
