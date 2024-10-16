@@ -1200,6 +1200,8 @@ Resources:
               summary: Update document
               description: |-
                 Update a document's details, i.e., metadata
+                
+                If no content is specified, the endpoint will return a S3 Presigned that will allow for the uploading of Large document data. 
 
                 NOTE:
                 - provided attributes will overwrite existing matching attribute keys in the document. Attributes not included in the request body will remain unchanged.
@@ -6133,7 +6135,7 @@ Resources:
             versionKeyPath:
               name: versionKey
               in: path
-              description: Version Key
+              description: Version Key (version key required URL encoding)
               required: true
               schema:
                 type: string
@@ -6147,7 +6149,7 @@ Resources:
             versionKeyParam:
               name: versionKey
               in: query
-              description: Version Key
+              description: Version Key (version key required URL encoding)
               required: false
               schema:
                 type: string

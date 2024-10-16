@@ -1184,11 +1184,7 @@
             patch:
               operationId: UpdateDocument
               summary: Update document
-              description: |-
-                Update a document's details, i.e., metadata
-
-                NOTE:
-                - provided attributes will overwrite existing matching attribute keys in the document. Attributes not included in the request body will remain unchanged.
+              description: "Update a document's details, i.e., metadata\n\nIf no content is specified, the endpoint will return a S3 Presigned that will allow for the uploading of Large document data. \n\nNOTE:\n- provided attributes will overwrite existing matching attribute keys in the document. Attributes not included in the request body will remain unchanged."
               tags:
               - Documents
               parameters:
@@ -6093,7 +6089,7 @@
             versionKeyPath:
               name: versionKey
               in: path
-              description: Version Key
+              description: Version Key (version key required URL encoding)
               required: true
               schema:
                 type: string
@@ -6107,7 +6103,7 @@
             versionKeyParam:
               name: versionKey
               in: query
-              description: Version Key
+              description: Version Key (version key required URL encoding)
               required: false
               schema:
                 type: string
