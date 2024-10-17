@@ -1,6 +1,6 @@
         openapi: 3.0.1
         info:
-          title: FormKiQ API
+          title: FormKiQ API JWT
           contact:
             name: FormKiQ
             url: https://formkiq.com

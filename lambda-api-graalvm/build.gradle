@@ -104,11 +104,15 @@ task assembleOpenApiTemplate {
 			for (int i = 0; i < 4; i++) {
 			  lines.removeAt(0)
 			}
-			
+
+			def apiTitle = fileName == "openapi-jwt" ? "FormKiQ API JWT" :
+					fileName == "openapi-iam" ? "FormKiQ API IAM" :
+							fileName == "openapi-key" ? "FormKiQ API Key" : "FormKiQ API"
+
 			def file = new File("${buildDir}/../../docs/openapi/${fileName}.yaml")
 			file.text = lines
 				.findAll { line -> !line.contains("API - ") }
-				.collect { e -> e.startsWith("          title:") ? "          title: FormKiQ API" : e}.join(System.lineSeparator())
+				.collect { e -> e.startsWith("          title:") ? "          title: ${apiTitle}" : e}.join(System.lineSeparator())
 			
 			javaexec { 
     			main="-jar";
