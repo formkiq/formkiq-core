@@ -709,4 +709,31 @@ public class FkqDocumentService {
       TimeUnit.SECONDS.sleep(1);
     }
   }
+
+  /**
+   * Wait for Document Attribute.
+   *
+   * @param client {@link ApiClient}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param attributeKey {@link String}
+   * @return DocumentAttribute
+   * @throws InterruptedException InterruptedException
+   */
+  public static DocumentAttribute waitForDocumentAtrribute(final ApiClient client, final String siteId,
+                                                       final String documentId, final String attributeKey) throws InterruptedException {
+    DocumentAttributesApi documentAttributesApi = new DocumentAttributesApi(client);
+
+    while (true) {
+
+      try {
+        return documentAttributesApi.getDocumentAttribute(documentId, attributeKey, siteId)
+                .getAttribute();
+      } catch (ApiException e) {
+        // ignore
+      }
+
+      TimeUnit.SECONDS.sleep(1);
+    }
+  }
 }
