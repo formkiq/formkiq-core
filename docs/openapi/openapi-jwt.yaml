@@ -10775,6 +10775,9 @@
                 userName:
                   type: string
                   description: The username of the recipient. You can use either email and userName.
+                clientUserId:
+                  type: string
+                  description: Specifies unique identifier for signer
                 email:
                   type: string
                   description: Specifies the email of the recipient

@@ -85,9 +85,13 @@ public class HttpRequestToApiHttpRequest implements Function<HttpRequest, ApiHtt
     String group = String.join(" ", decoder.getGroups());
     Map<String, List<String>> permissions = decoder.getPermissions();
 
-    return new ApiHttpRequest().httpMethod(httpRequest.getMethod().getValue()).resource(resource)
-        .path(path).pathParameters(pathParameters).queryParameters(queryParameters)
-        .user(decoder.getUsername()).group(group).permissions(permissions).body(body);
+    Map<String, String> httpHeaders = httpRequest.getHeaders().getEntries().stream().collect(
+        Collectors.toMap(h -> h.getName().getValue(), h -> h.getValues().get(0).getValue()));
+
+    return new ApiHttpRequest().headers(httpHeaders).httpMethod(httpRequest.getMethod().getValue())
+        .resource(resource).path(path).pathParameters(pathParameters)
+        .queryParameters(queryParameters).user(decoder.getUsername()).group(group)
+        .permissions(permissions).body(body);
   }
 
   /**
