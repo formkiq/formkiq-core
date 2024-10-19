@@ -720,15 +720,16 @@ public class FkqDocumentService {
    * @return DocumentAttribute
    * @throws InterruptedException InterruptedException
    */
-  public static DocumentAttribute waitForDocumentAtrribute(final ApiClient client, final String siteId,
-                                                       final String documentId, final String attributeKey) throws InterruptedException {
+  public static DocumentAttribute waitForDocumentAtrribute(final ApiClient client,
+      final String siteId, final String documentId, final String attributeKey)
+      throws InterruptedException {
     DocumentAttributesApi documentAttributesApi = new DocumentAttributesApi(client);
 
     while (true) {
 
       try {
         return documentAttributesApi.getDocumentAttribute(documentId, attributeKey, siteId)
-                .getAttribute();
+            .getAttribute();
       } catch (ApiException e) {
         // ignore
       }

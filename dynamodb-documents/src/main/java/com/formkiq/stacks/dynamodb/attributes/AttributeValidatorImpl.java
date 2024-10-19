@@ -27,6 +27,8 @@ import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -144,9 +146,11 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
       final Collection<DocumentAttributeRecord> documentAttributes,
       final AttributeValidationAccess access, final Collection<ValidationError> errors) {
 
+    Collection<String> savedReservedKeys = new HashSet<>();
+
     for (DocumentAttributeRecord da : documentAttributes) {
 
-      if (isProcessAttribute(da)) {
+      if (isProcessAttribute(da, savedReservedKeys)) {
 
         if (!attributesMap.containsKey(da.getKey())) {
 
@@ -154,8 +158,13 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
 
           if (reserved != null) {
 
-            attributeService.addAttribute(siteId, da.getKey(), AttributeDataType.STRING,
-                AttributeType.STANDARD);
+            Collection<ValidationError> elist = attributeService.addAttribute(siteId, da.getKey(),
+                AttributeDataType.STRING, AttributeType.STANDARD, true);
+
+            if (elist.isEmpty()) {
+              savedReservedKeys.add(da.getKey());
+            }
+            errors.addAll(elist);
 
           } else {
             String errorMsg = "attribute '" + da.getKey() + "' not found";
@@ -180,9 +189,15 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
     }
   }
 
-  private static boolean isProcessAttribute(final DocumentAttributeRecord da) {
+  private boolean isProcessAttribute(final DocumentAttributeRecord da) {
+    return isProcessAttribute(da, Collections.emptyList());
+  }
+
+  private boolean isProcessAttribute(final DocumentAttributeRecord da,
+      final Collection<String> savedReservedKeys) {
     return !DocumentAttributeValueType.COMPOSITE_STRING.equals(da.getValueType())
-        && !DocumentAttributeValueType.CLASSIFICATION.equals(da.getValueType());
+        && !DocumentAttributeValueType.CLASSIFICATION.equals(da.getValueType())
+        && !savedReservedKeys.contains(da.getKey());
   }
 
   private void validateDataType(final DocumentAttributeRecord a, final AttributeDataType dataType,
