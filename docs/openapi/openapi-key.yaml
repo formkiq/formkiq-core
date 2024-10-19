@@ -10795,8 +10795,6 @@
               type: object
               required:
               - environment
-              - signingMethod
-              - signers
               properties:
                 emailSubject:
                   type: string
