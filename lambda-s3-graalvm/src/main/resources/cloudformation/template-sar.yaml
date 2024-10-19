@@ -1063,6 +1063,8 @@ Resources:
       TimeToLiveSpecification:
         AttributeName: TimeToLive
         Enabled: TRUE
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
       Tags:
         - Key: "Application"
           Value: 
