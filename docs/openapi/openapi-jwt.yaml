@@ -2049,8 +2049,8 @@
                 | DOCUMENTTAGGING    | tags    | Comma-deliminted list of keywords | author,title,description |
                 | WEBHOOK    | url    | Webhook URL | https://yourdomain.com/webhook-endpoint |
                 | NOTIFICATION    | notificationType | Type of Notification | email |
-                | NOTIFICATION    | notificationToCc    | Notification Carbon Copy | `<email>@yourdomain.com` |
-                | NOTIFICATION    | notificationToBcc    | Notification Blind Carbon Copy | `<email>@yourdomain.com` |
+                | NOTIFICATION    | notificationToCc    | Notification Carbon Copy | email@yourdomain.com |
+                | NOTIFICATION    | notificationToBcc    | Notification Blind Carbon Copy | email@yourdomain.com |
                 | NOTIFICATION    | notificationSubject    | Notification Subject | Email Subject |
                 | NOTIFICATION    | notificationText    | Notification as Text | Email Text |
                 | NOTIFICATION    | notificationHtml    | Notification as Html | Email HTML Text |
