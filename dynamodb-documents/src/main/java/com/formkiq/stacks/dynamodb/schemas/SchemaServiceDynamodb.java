@@ -115,7 +115,7 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
   public SchemaCompositeKeyRecord getCompositeKey(final String siteId,
       final List<String> attributeKeys) {
 
-    QueryConfig config = new QueryConfig().indexName(GSI1);
+    QueryConfig config = new QueryConfig().indexName(GSI1).scanIndexForward(Boolean.TRUE);
     SchemaCompositeKeyRecord r = new SchemaCompositeKeyRecord().keys(attributeKeys);
 
     AttributeValue pk = r.fromS(r.pkGsi1(siteId));

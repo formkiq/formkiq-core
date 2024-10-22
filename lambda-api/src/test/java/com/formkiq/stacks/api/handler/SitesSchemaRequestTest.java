@@ -118,11 +118,15 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
     }
   }
 
-  private void addAttribute(final String siteId, final String key, final AttributeDataType dataType)
-      throws ApiException {
-    AddAttributeRequest req =
-        new AddAttributeRequest().attribute(new AddAttribute().key(key).dataType(dataType));
-    this.attributesApi.addAttribute(req, siteId);
+  private void addAttribute(final String siteId, final String key,
+      final AttributeDataType dataType) {
+    try {
+      AddAttributeRequest req =
+          new AddAttributeRequest().attribute(new AddAttribute().key(key).dataType(dataType));
+      this.attributesApi.addAttribute(req, siteId);
+    } catch (ApiException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   /**
@@ -177,8 +181,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
               .addRequiredItem(new AttributeSchemaRequired().attributeKey("strings")));
       this.schemasApi.setSitesSchema(siteId, req0);
 
-      req0 = new SetSitesSchemaRequest().name("joe").attributes(new SchemaAttributes()
-          .addOptionalItem(new AttributeSchemaOptional().attributeKey("strings")));
+      req0 = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SchemaAttributes().addOptionalItem(createOptional("strings")));
       this.schemasApi.setSitesSchema(siteId, req0);
 
       AddDocumentRequest areq = new AddDocumentRequest().content("adasd");
@@ -288,12 +292,9 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
         addAttribute(siteId, attribute, null);
       }
 
-      AttributeSchemaCompositeKey ckey0 =
-          new AttributeSchemaCompositeKey().attributeKeys(List.of("strings", "category"));
-      AttributeSchemaCompositeKey ckey1 =
-          new AttributeSchemaCompositeKey().attributeKeys(List.of("strings", "documentType"));
       SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe").attributes(
-          new SchemaAttributes().addCompositeKeysItem(ckey0).addCompositeKeysItem(ckey1));
+          new SchemaAttributes().addCompositeKeysItem(createCompositeKey("strings", "category"))
+              .addCompositeKeysItem(createCompositeKey("strings", "documentType")));
       this.schemasApi.setSitesSchema(siteId, req);
 
       AddDocumentRequest areq = new AddDocumentRequest().content("adasd");
@@ -670,10 +671,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
           .attributes(new SchemaAttributes()
-              .addOptionalItem(new AttributeSchemaOptional().attributeKey("strings")
-                  .allowedValues(List.of("123")))
-              .addOptionalItem(new AttributeSchemaOptional().attributeKey("category")
-                  .allowedValues(List.of("person"))));
+              .addOptionalItem(createOptional("strings").allowedValues(List.of("123")))
+              .addOptionalItem(createOptional("category").allowedValues(List.of("person"))));
       this.schemasApi.setSitesSchema(siteId, req);
 
       AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
@@ -722,10 +721,9 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       addAttribute(siteId, "strings", null);
       addAttribute(siteId, "category", null);
 
-      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
-          .attributes(new SchemaAttributes()
-              .addOptionalItem(new AttributeSchemaOptional().attributeKey("strings"))
-              .allowAdditionalAttributes(Boolean.TRUE));
+      SetSitesSchemaRequest req =
+          new SetSitesSchemaRequest().name("joe").attributes(new SchemaAttributes()
+              .addOptionalItem(createOptional("strings")).allowAdditionalAttributes(Boolean.TRUE));
       this.schemasApi.setSitesSchema(siteId, req);
 
       AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
@@ -744,10 +742,9 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
   /**
    * POST /documents/upload with site schema. Add attributes missing key.
    *
-   * @throws ApiException an error has occurred
    */
   @Test
-  public void testAddUploadDocumentWithSetSitesSchema07() throws ApiException {
+  public void testAddUploadDocumentWithSetSitesSchema07() {
     // given
     for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
 
@@ -789,10 +786,9 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       addAttribute(siteId, "strings", null);
       addAttribute(siteId, "category", null);
 
-      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
-          .attributes(new SchemaAttributes()
-              .addOptionalItem(new AttributeSchemaOptional().attributeKey("strings"))
-              .allowAdditionalAttributes(Boolean.FALSE));
+      SetSitesSchemaRequest req =
+          new SetSitesSchemaRequest().name("joe").attributes(new SchemaAttributes()
+              .addOptionalItem(createOptional("strings")).allowAdditionalAttributes(Boolean.FALSE));
       this.schemasApi.setSitesSchema(siteId, req);
 
       AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
@@ -1031,9 +1027,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       addAttribute(siteId, "strings", null);
 
-      SetSitesSchemaRequest req =
-          new SetSitesSchemaRequest().name("joe").attributes(new SchemaAttributes()
-              .addOptionalItem(new AttributeSchemaOptional().attributeKey("strings")));
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SchemaAttributes().addOptionalItem(createOptional("strings")));
       this.schemasApi.setSitesSchema(siteId, req);
 
       AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
@@ -1302,8 +1297,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
           .attributes(new SchemaAttributes().allowAdditionalAttributes(Boolean.FALSE)
               .addRequiredItem(new AttributeSchemaRequired().attributeKey("category"))
               .addRequiredItem(new AttributeSchemaRequired().attributeKey("strings"))
-              .addCompositeKeysItem(new AttributeSchemaCompositeKey()
-                  .attributeKeys(Arrays.asList("strings", "category"))));
+              .addCompositeKeysItem(createCompositeKey("strings", "category")));
       this.schemasApi.setSitesSchema(siteId, req);
 
       AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
@@ -1367,8 +1361,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
           .attributes(new SchemaAttributes().allowAdditionalAttributes(Boolean.FALSE)
               .addRequiredItem(new AttributeSchemaRequired().attributeKey("category"))
               .addRequiredItem(new AttributeSchemaRequired().attributeKey("strings"))
-              .addCompositeKeysItem(new AttributeSchemaCompositeKey()
-                  .attributeKeys(Arrays.asList("strings", "category"))));
+              .addCompositeKeysItem(createCompositeKey("strings", "category")));
       this.schemasApi.setSitesSchema(siteId, req);
 
       AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
@@ -1439,8 +1432,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
           .attributes(new SchemaAttributes().allowAdditionalAttributes(Boolean.FALSE)
               .addRequiredItem(new AttributeSchemaRequired().attributeKey("category"))
               .addRequiredItem(new AttributeSchemaRequired().attributeKey("date"))
-              .addCompositeKeysItem(new AttributeSchemaCompositeKey()
-                  .attributeKeys(Arrays.asList("category", "date"))));
+              .addCompositeKeysItem(createCompositeKey("category", "date")));
       this.schemasApi.setSitesSchema(siteId, req);
 
       for (String value : Arrays.asList("2024-01-03", "2024-01-04", "2024-01-05", "2024-01-10",
@@ -1463,14 +1455,20 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       List<SearchResultDocument> documents = notNull(response0.getDocuments());
       assertEquals(expected, documents.size());
 
-      assertEquals("category#date", documents.get(i).getMatchedAttribute().getKey());
-      assertEquals("person#2024-01-04", documents.get(i++).getMatchedAttribute().getStringValue());
+      assertEquals("category#date",
+          requireNonNull(documents.get(i).getMatchedAttribute()).getKey());
+      assertEquals("person#2024-01-04",
+          requireNonNull(documents.get(i++).getMatchedAttribute()).getStringValue());
 
-      assertEquals("category#date", documents.get(i).getMatchedAttribute().getKey());
-      assertEquals("person#2024-01-05", documents.get(i++).getMatchedAttribute().getStringValue());
+      assertEquals("category#date",
+          requireNonNull(documents.get(i).getMatchedAttribute()).getKey());
+      assertEquals("person#2024-01-05",
+          requireNonNull(documents.get(i++).getMatchedAttribute()).getStringValue());
 
-      assertEquals("category#date", documents.get(i).getMatchedAttribute().getKey());
-      assertEquals("person#2024-01-10", documents.get(i).getMatchedAttribute().getStringValue());
+      assertEquals("category#date",
+          requireNonNull(documents.get(i).getMatchedAttribute()).getKey());
+      assertEquals("person#2024-01-10",
+          requireNonNull(documents.get(i).getMatchedAttribute()).getStringValue());
 
       // when - invalid search
       DocumentSearchRequest sreq1 = new DocumentSearchRequest().query(new DocumentSearch()
@@ -1519,8 +1517,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
           .attributes(new SchemaAttributes().allowAdditionalAttributes(Boolean.FALSE)
               .addRequiredItem(new AttributeSchemaRequired().attributeKey("category"))
               .addRequiredItem(new AttributeSchemaRequired().attributeKey("date"))
-              .addCompositeKeysItem(new AttributeSchemaCompositeKey()
-                  .attributeKeys(Arrays.asList("category", "date"))));
+              .addCompositeKeysItem(createCompositeKey("category", "date")));
       this.schemasApi.setSitesSchema(siteId, req);
 
       for (String value : Arrays.asList("2024-01-03", "2024-01-04", "2024-01-05", "2024-01-10",
@@ -1567,8 +1564,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
           .attributes(new SchemaAttributes().allowAdditionalAttributes(Boolean.FALSE)
               .addRequiredItem(new AttributeSchemaRequired().attributeKey("category"))
               .addRequiredItem(new AttributeSchemaRequired().attributeKey("date"))
-              .addCompositeKeysItem(new AttributeSchemaCompositeKey()
-                  .attributeKeys(Arrays.asList("category", "date"))));
+              .addCompositeKeysItem(createCompositeKey("category", "date")));
       this.schemasApi.setSitesSchema(siteId, req);
 
       for (String value : Arrays.asList("100.12", "150.14", "200", "300", "1000")) {
@@ -1636,8 +1632,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
           .attributes(new SchemaAttributes().allowAdditionalAttributes(Boolean.FALSE)
               .addRequiredItem(new AttributeSchemaRequired().attributeKey("category"))
               .addRequiredItem(new AttributeSchemaRequired().attributeKey("strings"))
-              .addCompositeKeysItem(new AttributeSchemaCompositeKey()
-                  .attributeKeys(Arrays.asList("strings", "category"))));
+              .addCompositeKeysItem(createCompositeKey("strings", "category")));
       this.schemasApi.setSitesSchema(siteId, req);
 
       AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
@@ -1687,10 +1682,9 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
           .attributes(new SchemaAttributes().allowAdditionalAttributes(Boolean.FALSE)
-              .addOptionalItem(new AttributeSchemaOptional().attributeKey("category"))
+              .addOptionalItem(createOptional("category"))
               .addRequiredItem(new AttributeSchemaRequired().attributeKey("strings"))
-              .addCompositeKeysItem(new AttributeSchemaCompositeKey()
-                  .attributeKeys(Arrays.asList("strings", "category"))));
+              .addCompositeKeysItem(createCompositeKey("strings", "category")));
       this.schemasApi.setSitesSchema(siteId, req);
 
       AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
@@ -1737,16 +1731,14 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
           .attributes(new SchemaAttributes().allowAdditionalAttributes(Boolean.FALSE)
               .addRequiredItem(new AttributeSchemaRequired().attributeKey("category"))
               .addRequiredItem(new AttributeSchemaRequired().attributeKey("strings"))
-              .addCompositeKeysItem(new AttributeSchemaCompositeKey()
-                  .attributeKeys(Arrays.asList("strings", "category"))));
+              .addCompositeKeysItem(createCompositeKey("strings", "category")));
       this.schemasApi.setSitesSchema(siteId, req);
 
-      req = new SetSitesSchemaRequest().name("joe").attributes(new SchemaAttributes()
-          .allowAdditionalAttributes(Boolean.FALSE)
-          .addRequiredItem(new AttributeSchemaRequired().attributeKey("category"))
-          .addRequiredItem(new AttributeSchemaRequired().attributeKey("other"))
-          .addCompositeKeysItem(
-              new AttributeSchemaCompositeKey().attributeKeys(Arrays.asList("other", "category"))));
+      req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SchemaAttributes().allowAdditionalAttributes(Boolean.FALSE)
+              .addRequiredItem(new AttributeSchemaRequired().attributeKey("category"))
+              .addRequiredItem(new AttributeSchemaRequired().attributeKey("other"))
+              .addCompositeKeysItem(createCompositeKey("other", "category")));
       this.schemasApi.setSitesSchema(siteId, req);
 
       AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
@@ -1796,8 +1788,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       addAttribute(siteId, key1, null);
 
       SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
-          .attributes(new SchemaAttributes().addCompositeKeysItem(
-              new AttributeSchemaCompositeKey().attributeKeys(Arrays.asList(key0, key1))));
+          .attributes(new SchemaAttributes().addCompositeKeysItem(createCompositeKey(key0, key1)));
       this.schemasApi.setSitesSchema(siteId, req);
 
       AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
@@ -1820,6 +1811,75 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       assertEquals(1, notNull(response0.getDocuments()).size());
       assertEquals(documentId0, response0.getDocuments().get(0).getDocumentId());
     }
+  }
+
+  /**
+   * Search document by composite key by defined in optional/required attributes.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testSearchCompositeKey10() throws ApiException {
+    // given
+    List<String> attributeKeys =
+        Arrays.asList("key1", "key2", "customerId", "customerUUID", "transactionId");
+    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+
+      attributeKeys.forEach(a -> addAttribute(siteId, a, null));
+
+      SchemaAttributes schemaAttributes = new SchemaAttributes()
+          .addCompositeKeysItem(createCompositeKey("key1", "key2"))
+          .addCompositeKeysItem(createCompositeKey("customerId", "customerUUID"))
+          .addCompositeKeysItem(createCompositeKey("customerId", "transactionId"))
+          .addCompositeKeysItem(createCompositeKey("customerUUID", "transactionId"))
+          .addCompositeKeysItem(createCompositeKey("customerId", "customerUUID", "transactionId"))
+          .addOptionalItem(createOptional("key1")).addOptionalItem(createOptional("key2"))
+          .addOptionalItem(createOptional("customerId"))
+          .addOptionalItem(createOptional("customerUUID"))
+          .addOptionalItem(createOptional("transactionId")).allowAdditionalAttributes(false);
+
+      SetSitesSchemaRequest req =
+          new SetSitesSchemaRequest().name("joe").attributes(schemaAttributes);
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
+          .addAttributesItem(new AddDocumentAttribute(new AddDocumentAttributeStandard()
+              .key("customerId").stringValue("3697c70f9cfe44c9a56185ce224e35b6")))
+          .addAttributesItem(new AddDocumentAttribute(new AddDocumentAttributeStandard()
+              .key("customerUUID").stringValue("403cd39862564e36b490738c3c312b38")));
+
+      // when
+      String documentId0 =
+          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null).getDocumentId();
+
+      // then
+      DocumentSearchRequest sreq0 = new DocumentSearchRequest().query(new DocumentSearch()
+          .addAttributesItem(new DocumentSearchAttribute().key("customerId")
+              .eq("3697c70f9cfe44c9a56185ce224e35b6"))
+          .addAttributesItem(new DocumentSearchAttribute().key("customerUUID")
+              .eq("403cd39862564e36b490738c3c312b38")));
+
+      DocumentSearchResponse response0 =
+          this.searchApi.documentSearch(sreq0, siteId, null, null, null);
+      assertEquals(1, notNull(response0.getDocuments()).size());
+      assertEquals(documentId0, response0.getDocuments().get(0).getDocumentId());
+    }
+  }
+
+  private AttributeSchemaOptional createOptional(final String attributeKey) {
+    return new AttributeSchemaOptional().attributeKey(attributeKey);
+  }
+
+  /**
+   * Create Composite Key from {@link String}.
+   * 
+   * @param attributeKeys {@link String}
+   * @return AttributeSchemaCompositeKey
+   */
+  private AttributeSchemaCompositeKey createCompositeKey(final String... attributeKeys) {
+    return new AttributeSchemaCompositeKey().attributeKeys(List.of(attributeKeys));
   }
 
   /**
@@ -1917,12 +1977,9 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
         addAttribute(siteId, attribute, null);
       }
 
-      AttributeSchemaCompositeKey ckey0 =
-          new AttributeSchemaCompositeKey().attributeKeys(List.of("strings", "category"));
-      AttributeSchemaCompositeKey ckey1 =
-          new AttributeSchemaCompositeKey().attributeKeys(List.of("strings", "documentType"));
       SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe").attributes(
-          new SchemaAttributes().addCompositeKeysItem(ckey0).addCompositeKeysItem(ckey1));
+          new SchemaAttributes().addCompositeKeysItem(createCompositeKey("strings", "category"))
+              .addCompositeKeysItem(createCompositeKey("strings", "documentType")));
       this.schemasApi.setSitesSchema(siteId, req);
 
       AddDocumentRequest areq = new AddDocumentRequest().content("adasd")
@@ -2088,10 +2145,9 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
   /**
    * PUT /sites/{siteId}/schema/document with overlapping required/optional attribute.
    *
-   * @throws ApiException an error has occurred
    */
   @Test
-  public void testSetSitesSchema04() throws ApiException {
+  public void testSetSitesSchema04() {
     // given
     for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
 
@@ -2104,8 +2160,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
           .attributes(new SchemaAttributes()
               .addRequiredItem(new AttributeSchemaRequired().attributeKey("category"))
-              .addOptionalItem(new AttributeSchemaOptional().attributeKey("category"))
-              .addOptionalItem(new AttributeSchemaOptional().attributeKey("test")));
+              .addOptionalItem(createOptional("category")).addOptionalItem(createOptional("test")));
 
       // when
       try {
@@ -2140,7 +2195,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
           .attributes(new SchemaAttributes()
               .addRequiredItem(new AttributeSchemaRequired().attributeKey("category"))
-              .addOptionalItem(new AttributeSchemaOptional().attributeKey("test")));
+              .addOptionalItem(createOptional("test")));
 
       // when
       SetResponse response = this.schemasApi.setSitesSchema(siteId, req);
@@ -2171,10 +2226,9 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
           .attributes(new SchemaAttributes().allowAdditionalAttributes(Boolean.TRUE)
-              .addCompositeKeysItem(new AttributeSchemaCompositeKey()
-                  .attributeKeys(Arrays.asList("category", "test", "other")))
+              .addCompositeKeysItem(createCompositeKey("category", "test", "other"))
               .addRequiredItem(new AttributeSchemaRequired().attributeKey("category"))
-              .addOptionalItem(new AttributeSchemaOptional().attributeKey("test")));
+              .addOptionalItem(createOptional("test")));
 
       // when
       SetResponse response = this.schemasApi.setSitesSchema(siteId, req);
@@ -2202,10 +2256,9 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
   /**
    * PUT /sites/{siteId}/schema/document key only shouldn't allow allowed value or default values.
    *
-   * @throws ApiException an error has occurred
    */
   @Test
-  public void testSetSitesSchema07() throws ApiException {
+  public void testSetSitesSchema07() {
     // given
     for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
 
@@ -2236,10 +2289,9 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
   /**
    * PUT /sites/{siteId}/schema/document with single composite attribute.
    *
-   * @throws ApiException an error has occurred
    */
   @Test
-  public void testSetSitesSchema08() throws ApiException {
+  public void testSetSitesSchema08() {
     // given
     for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
 
@@ -2247,9 +2299,9 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       addAttribute(siteId, "category", null);
 
-      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe").attributes(
-          new SchemaAttributes().allowAdditionalAttributes(Boolean.TRUE).addCompositeKeysItem(
-              new AttributeSchemaCompositeKey().attributeKeys(List.of("category"))));
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SchemaAttributes().allowAdditionalAttributes(Boolean.TRUE)
+              .addCompositeKeysItem(createCompositeKey("category")));
 
       // when
       try {
@@ -2269,10 +2321,9 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
   /**
    * PUT /sites/{siteId}/schema/document with default value not in allowed values.
    *
-   * @throws ApiException an error has occurred
    */
   @Test
-  public void testSetSitesSchema09() throws ApiException {
+  public void testSetSitesSchema09() {
     // given
     for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
 
@@ -2302,10 +2353,9 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
   /**
    * PUT /sites/{siteId}/schema/document duplicate composite keys.
    *
-   * @throws ApiException an error has occurred
    */
   @Test
-  public void testSetSitesSchema10() throws ApiException {
+  public void testSetSitesSchema10() {
     // given
     for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
 
@@ -2314,8 +2364,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       addAttribute(siteId, "category", null);
       addAttribute(siteId, "id", null);
 
-      AttributeSchemaCompositeKey k0 =
-          new AttributeSchemaCompositeKey().attributeKeys(List.of("category", "id"));
+      AttributeSchemaCompositeKey k0 = createCompositeKey("category", "id");
       SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
           .attributes(new SchemaAttributes().allowAdditionalAttributes(Boolean.TRUE)
               .addCompositeKeysItem(k0).addCompositeKeysItem(k0));
