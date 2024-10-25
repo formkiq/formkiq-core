@@ -1272,7 +1272,12 @@
             get:
               operationId: GetDocumentContent
               summary: Get document's contents
-              description: Get a document's contents. Certain content types, text/*, application/json, and application/x-www-form-urlencoded. return the  "content" field, while all other content types return a 'contentUrl' for retrieving the content.
+              description: |
+                Retrieves the content of the document with the specified `documentId`.
+                - If the content is plain text and under 6 MB, the content will be returned directly.
+                - If the content is plain text but exceeds 6 MB, an error will be returned.
+                - For documents not in plain text format, pre-signed S3 URLs will be returned to download the content from S3.
+                It is recommended to use the `/documents/{documentId}/url` endpoint to retrieve pre-signed S3 URLs for downloading the content.
               tags:
               - Documents
               parameters:
@@ -2321,8 +2326,8 @@
                 | DOCUMENTTAGGING    | tags    | Comma-deliminted list of keywords | author,title,description |
                 | WEBHOOK    | url    | Webhook URL | https://yourdomain.com/webhook-endpoint |
                 | NOTIFICATION    | notificationType | Type of Notification | email |
-                | NOTIFICATION    | notificationToCc    | Notification Carbon Copy | <email>@yourdomain.com |
-                | NOTIFICATION    | notificationToBcc    | Notification Blind Carbon Copy | <email>@yourdomain.com |
+                | NOTIFICATION    | notificationToCc    | Notification Carbon Copy | email@yourdomain.com |
+                | NOTIFICATION    | notificationToBcc    | Notification Blind Carbon Copy | email@yourdomain.com |
                 | NOTIFICATION    | notificationSubject    | Notification Subject | Email Subject |
                 | NOTIFICATION    | notificationText    | Notification as Text | Email Text |
                 | NOTIFICATION    | notificationHtml    | Notification as Html | Email HTML Text |
@@ -3707,8 +3712,8 @@
           /documents/{documentId}/userActivities:
             get:
               operationId: GetDocumentUserActivities
-              summary: Get user activities
-              description: Retrieve a user's activities
+              summary: Get user activities for a document
+              description: Retrieve a user's activities for a document
               tags:
               - User Activities
               parameters:
@@ -11022,6 +11027,20 @@
               type: aws_proxy
               payloadFormatVersion: "1.0"
             esignatureLambdaApi200:
+              uri:
+                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
+              responses:
+                default:
+                  statusCode: "200"
+                  responseParameters:
+                    method.response.header.Access-Control-Allow-Methods: '''*'''
+                    method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key'''
+                    method.response.header.Access-Control-Allow-Origin: '''*'''
+              passthroughBehavior: when_no_templates
+              httpMethod: POST
+              type: aws_proxy
+              payloadFormatVersion: "1.0"
+            esignatureDockerLambdaApi200:
               uri:
                 Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
               responses:
