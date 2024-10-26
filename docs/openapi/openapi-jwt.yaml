@@ -8960,6 +8960,7 @@
               description: Document Generate Output Type
               enum:
               - DOCX
+              - PDF
             AddDocumentGenerateResponse:
               type: object
               properties:
