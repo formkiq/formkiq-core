@@ -552,8 +552,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       setBearerToken(siteId);
       String attributeKey = "test";
-      this.attributesApi.addAttribute(
-          new AddAttributeRequest().attribute(new AddAttribute().key(attributeKey)), siteId);
+      addAttribute(siteId, attributeKey);
 
       AddDocumentRequest req = new AddDocumentRequest().content(content0);
       String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
@@ -574,6 +573,11 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
     }
   }
 
+  private void addAttribute(String siteId, String attributeKey) throws ApiException {
+    this.attributesApi.addAttribute(
+        new AddAttributeRequest().attribute(new AddAttribute().key(attributeKey)), siteId);
+  }
+
   /**
    * Update Document with invalid schema allowed value.
    */
@@ -587,8 +591,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       String attributeKey = "test";
 
-      this.attributesApi.addAttribute(
-          new AddAttributeRequest().attribute(new AddAttribute().key(attributeKey)), siteId);
+      addAttribute(siteId, attributeKey);
 
       SetSitesSchemaRequest sitesSchema = new SetSitesSchemaRequest().name("test")
           .attributes(new SchemaAttributes().addOptionalItem(new AttributeSchemaOptional()
@@ -667,8 +670,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
     List<String> list = Arrays.asList("userId", "playerId", attributeKey0, attributeKey1);
 
     for (String attributeKey : list) {
-      this.attributesApi.addAttribute(
-          new AddAttributeRequest().attribute(new AddAttribute().key(attributeKey)), siteId);
+      addAttribute(siteId, attributeKey);
     }
 
     AttributeSchemaCompositeKey compositeKey0 = new AttributeSchemaCompositeKey()

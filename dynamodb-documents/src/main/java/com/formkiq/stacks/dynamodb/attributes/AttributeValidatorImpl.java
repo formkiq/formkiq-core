@@ -399,7 +399,7 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
     if (schema != null) {
 
       SchemaAttributes attributes = schema.getAttributes();
-      Optional<SchemaAttributesRequired> o = attributes.getRequired().stream()
+      Optional<SchemaAttributesRequired> o = notNull(attributes.getRequired()).stream()
           .filter(r -> r.getAttributeKey().equals(attributeKey)).findAny();
 
       if (o.isPresent()) {

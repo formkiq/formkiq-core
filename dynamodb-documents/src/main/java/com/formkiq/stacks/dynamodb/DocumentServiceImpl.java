@@ -325,6 +325,10 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
           documentId, documentAttributeRecords, schemaAttributes, validationAccess);
 
       Date date = new Date();
+
+      documentAttributes.stream().filter(a -> a.getInsertedDate() == null)
+          .forEach(a -> a.setInsertedDate(date));
+
       documentAttributeRecords.stream().filter(a -> a.getInsertedDate() == null)
           .forEach(a -> a.setInsertedDate(date));
 
@@ -546,6 +550,8 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     List<Map<String, AttributeValue>> keys = documentAttributes.stream()
         .map(a -> Map.of(PK, a.fromS(a.pk(siteId)), SK, a.fromS(a.sk()))).toList();
     this.dbService.deleteItems(keys);
+
+    this.versionsService.addRecords(siteId, documentAttributes);
 
     return documentAttributes;
   }

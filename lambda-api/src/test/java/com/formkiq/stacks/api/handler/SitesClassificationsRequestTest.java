@@ -31,6 +31,7 @@ import com.formkiq.client.model.AddClassification;
 import com.formkiq.client.model.AddClassificationRequest;
 import com.formkiq.client.model.AddDocumentAttribute;
 import com.formkiq.client.model.AddDocumentAttributeClassification;
+import com.formkiq.client.model.AddDocumentAttributeStandard;
 import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AttributeSchemaCompositeKey;
 import com.formkiq.client.model.AttributeSchemaOptional;
@@ -774,10 +775,10 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       assertEquals(expected, documentAttributes.size());
 
       int i = 0;
-      assertEquals("Classification", documentAttributes.get(i++).getKey());
-      assertEquals("invoiceNumber", documentAttributes.get(i++).getKey());
-      assertEquals("invoiceNumber#other", documentAttributes.get(i++).getKey());
-      assertEquals("other", documentAttributes.get(i).getKey());
+      assertDocumentAttributes(documentAttributes.get(i++), "Classification", classificationId);
+      assertDocumentAttributes(documentAttributes.get(i++), "invoiceNumber", "INV-001");
+      assertDocumentAttributes(documentAttributes.get(i++), "invoiceNumber#other", "INV-001#stuff");
+      assertDocumentAttributes(documentAttributes.get(i), "other", "stuff");
 
       DocumentSearchAttribute item0 = new DocumentSearchAttribute().key("other").eq("stuff");
       DocumentSearchAttribute item1 =
@@ -785,6 +786,14 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       List<SearchResultDocument> docs = search(siteId, item0, item1);
       assertEquals(1, docs.size());
     }
+  }
+
+  private void assertDocumentAttributes(final DocumentAttribute da,
+      final String expectedAttributeKey, final String expectedStringValue) {
+    assertEquals(expectedAttributeKey, da.getKey());
+    assertEquals(expectedStringValue, da.getStringValue());
+    assertNotNull(da.getInsertedDate());
+    assertNotNull(da.getUserId());
   }
 
   /**
@@ -831,11 +840,12 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       assertEquals(expected, documentAttributes.size());
 
       int i = 0;
-      assertEquals("Classification", documentAttributes.get(i++).getKey());
-      assertEquals("invoiceNumber", documentAttributes.get(i++).getKey());
-      assertEquals("invoiceNumber#type", documentAttributes.get(i++).getKey());
-      assertEquals("other", documentAttributes.get(i++).getKey());
-      assertEquals("type", documentAttributes.get(i).getKey());
+      assertDocumentAttributes(documentAttributes.get(i++), "Classification", classificationId);
+      assertDocumentAttributes(documentAttributes.get(i++), "invoiceNumber", "INV-001");
+      assertDocumentAttributes(documentAttributes.get(i++), "invoiceNumber#type",
+          "INV-001#important");
+      assertDocumentAttributes(documentAttributes.get(i++), "other", "stuff");
+      assertDocumentAttributes(documentAttributes.get(i), "type", "important");
 
       DocumentSearchAttribute item0 = new DocumentSearchAttribute().key("type").eq("important");
       DocumentSearchAttribute item1 =
@@ -1057,4 +1067,56 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
     }
   }
 
+  /**
+   * Delete Document attributes with composite keys.
+   */
+  @Test
+  void testDeleteDocumentAttribute01() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "test1");
+      addAttribute(siteId, "test2");
+
+      SchemaAttributes schemaAttributes =
+          new SchemaAttributes().required(null).optional(null).addCompositeKeysItem(
+              new AttributeSchemaCompositeKey().attributeKeys(List.of("test1", "test2")));
+      schemasApi.setSitesSchema(siteId,
+          new SetSitesSchemaRequest().name("test").attributes(schemaAttributes));
+
+      AddDocumentRequest req = new AddDocumentRequest().deepLinkPath("https://www.google.com")
+          .addAttributesItem(createAttribute("test1", "222"))
+          .addAttributesItem(createAttribute("test2", "333"));
+
+      String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+
+      // when
+      List<DocumentAttribute> documentAttributes = notNull(this.documentAttributesApi
+          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+
+      int expected = 3;
+      assertEquals(expected, documentAttributes.size());
+
+      // when
+      DeleteResponse deleteResponse =
+          this.documentAttributesApi.deleteDocumentAttribute(documentId, "test1", siteId);
+
+      // then
+      assertEquals("attribute 'test1' removed from document '" + documentId + "'",
+          deleteResponse.getMessage());
+
+      documentAttributes = notNull(this.documentAttributesApi
+          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+      assertEquals(1, documentAttributes.size());
+      assertDocumentAttributes(documentAttributes.get(0), "test2", "333");
+    }
+  }
+
+  private AddDocumentAttribute createAttribute(final String attributeKey,
+      final String stringValue) {
+    return new AddDocumentAttribute(
+        new AddDocumentAttributeStandard().key(attributeKey).stringValue(stringValue));
+  }
 }
