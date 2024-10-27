@@ -27,9 +27,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamodbVersionRecord;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
@@ -44,12 +44,11 @@ public interface DocumentVersionService {
 
   /**
    * Delete all document versions.
-   * 
-   * @param client {@link DynamoDbClient}
+   *
    * @param siteId {@link String}
    * @param documentId {@link String}
    */
-  void deleteAllVersionIds(DynamoDbClient client, String siteId, String documentId);
+  void deleteAllVersionIds(String siteId, String documentId);
 
   /**
    * Get DynamoDB Documents Versions Table Name.
@@ -68,32 +67,30 @@ public interface DocumentVersionService {
 
   /**
    * Get Version Record.
-   * 
-   * @param connection {@link DynamoDbConnectionBuilder}
+   *
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param versionKey {@link String}
    * @return Map
    */
-  Map<String, AttributeValue> get(DynamoDbConnectionBuilder connection, String siteId,
-      String documentId, String versionKey);
+  Map<String, AttributeValue> get(String siteId, String documentId, String versionKey);
 
   /**
    * Initialize Service.
-   * 
+   *
    * @param map {@link Map}
+   * @param connection {@link DynamoDbConnectionBuilder}
    */
-  void initialize(Map<String, String> map);
+  void initialize(Map<String, String> map, DynamoDbConnectionBuilder connection);
 
   /**
    * Add Versioning {@link DynamodbVersionRecord} records.
    *
-   * @param client {@link DynamoDbClient}
    * @param siteId {@link String}
    * @param records {@link Collection} {@link DynamodbVersionRecord}
    * @return List
    */
-  List<Map<String, AttributeValue>> addRecords(DynamoDbClient client, String siteId,
+  List<Map<String, AttributeValue>> addRecords(String siteId,
       Collection<? extends DynamodbVersionRecord<?>> records);
 
   /**
@@ -108,4 +105,11 @@ public interface DocumentVersionService {
    */
   DocumentItem getDocumentItem(DocumentService documentService, String siteId, String documentId,
       String versionKey, Map<String, AttributeValue> versionAttributes);
+
+  /**
+   * Get {@link DynamoDbService}.
+   * 
+   * @return {@link DynamoDbService}
+   */
+  DynamoDbService getDb();
 }

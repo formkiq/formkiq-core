@@ -573,7 +573,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
     }
   }
 
-  private void addAttribute(String siteId, String attributeKey) throws ApiException {
+  private void addAttribute(final String siteId, final String attributeKey) throws ApiException {
     this.attributesApi.addAttribute(
         new AddAttributeRequest().attribute(new AddAttribute().key(attributeKey)), siteId);
   }

@@ -39,7 +39,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.aws.dynamodb.objects.Strings;
@@ -217,8 +216,7 @@ public class DocumentIdUrlRequestHandler
   private Map<String, AttributeValue> getVersionAttributes(final AwsServiceCache awsservice,
       final String siteId, final String documentId, final String versionKey) {
     DocumentVersionService versionService = awsservice.getExtension(DocumentVersionService.class);
-    DynamoDbConnectionBuilder connection = awsservice.getExtension(DynamoDbConnectionBuilder.class);
-    return versionService.get(connection, siteId, documentId, versionKey);
+    return versionService.get(siteId, documentId, versionKey);
   }
 
   private DocumentItem getDocumentItem(final AwsServiceCache awsservice, final String siteId,

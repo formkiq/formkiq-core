@@ -391,6 +391,99 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * Test /delete existing folders.
+   *
+   */
+  @Test
+  void testDeletedFolders02() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+
+      AddFolderRequest req = new AddFolderRequest()
+          .path("e0647979-13f3-4c46-9f29-4b3984ef6bca/Order_Document_1123.pdf");
+
+      // when
+      AddFolderResponse addFolderResponse = this.foldersApi.addFolder(req, siteId, null);
+
+      // then
+      List<SearchResultDocument> docs0 = getSearchResultDocuments(siteId, null);
+      assertEquals(1, docs0.size());
+      assertEquals("e0647979-13f3-4c46-9f29-4b3984ef6bca", docs0.get(0).getPath());
+
+      String indexKey = addFolderResponse.getIndexKey();
+      List<SearchResultDocument> docs1 =
+          getSearchResultDocuments(siteId, docs0.get(0).getIndexKey());
+      assertEquals(1, docs1.size());
+      assertEquals("Order_Document_1123.pdf", docs1.get(0).getPath());
+      assertEquals(indexKey, docs1.get(0).getIndexKey());
+
+      // when
+      DeleteFolderResponse response = this.foldersApi.deleteFolder(indexKey, siteId, null);
+
+      // then
+      assertEquals("deleted folder", response.getMessage());
+      docs0 = getSearchResultDocuments(siteId, null);
+      assertEquals(1, docs0.size());
+      docs1 = getSearchResultDocuments(siteId, docs0.get(0).getIndexKey());
+      assertEquals(0, docs1.size());
+    }
+  }
+
+  /**
+   * Test /delete existing folders with file inside.
+   *
+   */
+  @Test
+  void testDeletedFolders03()
+      throws ApiException, IOException, URISyntaxException, InterruptedException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+
+      String content = "some content";
+      String folder = "e0647979-13f3-4c46-9f29-4b3984ef6bca/Order_Document_1123.pdf";
+
+      AddFolderRequest req = new AddFolderRequest().path(folder);
+
+      // when
+      final AddFolderResponse addFolderResponse = this.foldersApi.addFolder(req, siteId, null);
+      addDocument(this.client, siteId, folder + "/test.pdf",
+          content.getBytes(StandardCharsets.UTF_8), "text/plain", null);
+
+      // then
+      List<SearchResultDocument> docs0 = getSearchResultDocuments(siteId, null);
+      assertEquals(1, docs0.size());
+      assertEquals("e0647979-13f3-4c46-9f29-4b3984ef6bca", docs0.get(0).getPath());
+
+      String indexKey = addFolderResponse.getIndexKey();
+      List<SearchResultDocument> docs1 =
+          getSearchResultDocuments(siteId, docs0.get(0).getIndexKey());
+      assertEquals(1, docs1.size());
+      assertEquals("Order_Document_1123.pdf", docs1.get(0).getPath());
+      assertEquals(indexKey, docs1.get(0).getIndexKey());
+
+      // when
+      try {
+        this.foldersApi.deleteFolder(indexKey, siteId, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"message\":\"folder is not empty\"}", e.getResponseBody());
+      }
+    }
+  }
+
+  private List<SearchResultDocument> getSearchResultDocuments(final String siteId,
+      final String indexKey) throws ApiException {
+    return notNull(this.foldersApi.getFolderDocuments(siteId, indexKey, null, null, null, null)
+        .getDocuments());
+  }
+
+  /**
    * Test add folders - missing path.
    *
    */

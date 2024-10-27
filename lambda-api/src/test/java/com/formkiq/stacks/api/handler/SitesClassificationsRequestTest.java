@@ -1096,7 +1096,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       List<DocumentAttribute> documentAttributes = notNull(this.documentAttributesApi
           .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
 
-      int expected = 3;
+      final int expected = 3;
       assertEquals(expected, documentAttributes.size());
 
       // when

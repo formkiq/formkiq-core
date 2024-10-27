@@ -347,7 +347,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
           List<DocumentAttributeRecord> deletedValues = deleteDocumentAttribute(siteId, documentId,
               attributeKey, AttributeValidation.NONE, AttributeValidationAccess.NONE);
 
-          this.versionsService.addRecords(dbClient, siteId, deletedValues);
+          this.versionsService.addRecords(siteId, deletedValues);
         }
       }
 
@@ -357,7 +357,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
         List<DocumentAttributeRecord> deletedValues =
             deleteDocumentAttributes(siteId, documentId, validationAccess);
-        this.versionsService.addRecords(dbClient, siteId, deletedValues);
+        this.versionsService.addRecords(siteId, deletedValues);
       }
 
       writeBuilder.appends(this.documentTableName,
@@ -472,7 +472,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
     boolean deleted = false;
 
-    this.versionsService.deleteAllVersionIds(this.dbClient, siteId, documentId);
+    this.versionsService.deleteAllVersionIds(siteId, documentId);
 
     Map<String, AttributeValue> documentRecord = getDocumentRecord(siteId, documentId);
 

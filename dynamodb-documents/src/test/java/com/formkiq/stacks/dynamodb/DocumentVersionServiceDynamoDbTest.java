@@ -24,6 +24,7 @@
 package com.formkiq.stacks.dynamodb;
 
 import com.formkiq.aws.dynamodb.DbKeys;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
 import com.formkiq.testutils.aws.DynamoDbExtension;
@@ -59,9 +60,10 @@ class DocumentVersionServiceDynamoDbTest implements DbKeys {
    * Before All.
    */
   @BeforeAll
-  public static void beforeAll() {
+  public static void beforeAll() throws URISyntaxException {
     service = new DocumentVersionServiceDynamoDb();
-    service.initialize(Map.of("DOCUMENT_VERSIONS_TABLE", DOCUMENTS_VERSION_TABLE));
+    DynamoDbConnectionBuilder connection = DynamoDbTestServices.getDynamoDbConnection();
+    service.initialize(Map.of("DOCUMENT_VERSIONS_TABLE", DOCUMENTS_VERSION_TABLE), connection);
   }
 
   /**
@@ -85,7 +87,7 @@ class DocumentVersionServiceDynamoDbTest implements DbKeys {
         Map<String, AttributeValue> orig = r.getAttributes(siteId);
 
         // when
-        List<Map<String, AttributeValue>> list = service.addRecords(client, siteId, List.of(r));
+        List<Map<String, AttributeValue>> list = service.addRecords(siteId, List.of(r));
 
         // then
         assertEquals(1, list.size());

@@ -27,7 +27,6 @@
 
 		<allow pkg="com.formkiq.aws.sqs" />
 		<allow pkg="com.formkiq.module.ocr.pdf" />
-		<allow pkg="com.itextpdf.kernel.pdf" />
 
 		<subpackage name="pdf">
 			<allow pkg="org.apache.pdfbox.cos" />

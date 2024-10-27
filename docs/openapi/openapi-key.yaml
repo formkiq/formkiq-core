@@ -8003,9 +8003,6 @@
             UserActivity:
               type: object
               properties:
-                activityId:
-                  type: string
-                  description: Activity identifier
                 type:
                   $ref: '#/components/schemas/UserActivityType'
                 insertedDate:
@@ -8014,14 +8011,21 @@
                 userId:
                   type: string
                   description: User who added document
-                versionKey:
-                  type: string
-                  description: Document Version Identifier
-                timeToLive:
-                  type: string
-                  description: User activity time to live
                 document:
                   $ref: '#/components/schemas/Document'
+                changes:
+                  type: object
+                  additionalProperties:
+                    $ref: '#/components/schemas/UserActivityChanges'
+            UserActivityChanges:
+              type: object
+              properties:
+                oldValue:
+                  type: string
+                  description: Previous key value
+                newValue:
+                  type: string
+                  description: New key value
             GetFoldersResponse:
               type: object
               properties:
