@@ -10944,7 +10944,7 @@ Resources:
                 expirations:
                   $ref: "#/components/schemas/DocusignNotificationExpirations"
                 reminders:
-                  $ref: "#/components/schemas/DocusignNotificationExpirations"
+                  $ref: "#/components/schemas/DocusignNotificationReminders"
             DocusignNotificationExpirations:
               properties:
                 expireAfter:
