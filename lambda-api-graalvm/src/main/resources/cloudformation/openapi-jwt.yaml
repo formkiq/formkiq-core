@@ -9024,6 +9024,9 @@ Resources:
                 saveAsDocumentId:
                   type: "string"
                   description: "Save the generated document with a specific documentId"
+                path:
+                  type: "string"
+                  description: "The path of the generated document"
 
             DocumentGenerateDataSource:
               type: "object"
@@ -10931,6 +10934,39 @@ Resources:
                   description: "List of DocuSign Inperson Signers"
                   items:
                     $ref: "#/components/schemas/DocusignInpersonSigner"
+                notification:
+                  $ref: "#/components/schemas/DocusignNotification"
+            DocusignNotification:
+              properties:
+                useAccountDefaults:
+                  type: "string"
+                  description: "When true, the account default notification settings are used for the envelope, overriding the reminders and expirations settings. When false, the reminders and expirations settings specified in this request are used. The default value is false."
+                expirations:
+                  $ref: "#/components/schemas/DocusignNotificationExpirations"
+                reminders:
+                  $ref: "#/components/schemas/DocusignNotificationExpirations"
+            DocusignNotificationExpirations:
+              properties:
+                expireAfter:
+                  type: "string"
+                  description: "An integer that sets the number of days the envelope is active. For this value to be used, expireEnabled must be explicitly set to true."
+                expireEnabled:
+                  type: "string"
+                  description: "When true, the envelope expires in the number of days set by expireAfter."
+                expireWarn:
+                  type: "string"
+                  description: "An integer that specifying the number of days before the envelope expires that an expiration warning email is sent to the recipient."
+            DocusignNotificationReminders:
+              properties:
+                reminderDelay:
+                  type: "string"
+                  description: "An integer specifying the number of days after the recipient receives the envelope that reminder emails are sent to the recipient."
+                reminderEnabled:
+                  type: "string"
+                  description: "When true, reminders are enabled. The default value is false."
+                reminderFrequency:
+                  type: "string"
+                  description: "An integer specifying the interval in days between reminder emails."
             DocusignSigner:
               required:
                 - "name"
@@ -10967,6 +11003,21 @@ Resources:
             DocusignSignHereTabs:
               type: "object"
               properties:
+                anchorString:
+                  type: "string"
+                  description: "Specifies the string to find in the document and use as the basis for tab placement."
+                anchorXOffset:
+                  type: "string"
+                  description: "Specifies the X axis location of the tab in anchorUnits relative to the anchorString."
+                anchorYOffset:
+                  type: "string"
+                  description: "Specifies the Y axis location of the tab in anchorUnits relative to the anchorString."
+                anchorIgnoreIfNotPresent:
+                  type: "string"
+                  description: "When true, this tab is ignored if the anchorString is not found in the document."
+                anchorUnits:
+                  type: "string"
+                  description: "Specifies units of the anchorXOffset and anchorYOffset"
                 xPosition:
                   type: "string"
                   description: "This property indicates the horizontal offset of the object on the page"
