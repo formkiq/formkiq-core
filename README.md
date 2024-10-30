@@ -69,7 +69,7 @@ Follow our [Quickstart Guide](https://docs.formkiq.com/docs/getting-started/quic
 
 Then checkout out our [API Walkthrough](https://docs.formkiq.com/docs/getting-started/api-walkthrough)
 
-## Archecture
+## Architecture
 
 <div align="center" style="margin: 30px;">
 <br />
