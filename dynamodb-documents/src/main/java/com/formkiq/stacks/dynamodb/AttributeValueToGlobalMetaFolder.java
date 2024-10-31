@@ -39,9 +39,10 @@ public class AttributeValueToGlobalMetaFolder
     implements Function<Map<String, AttributeValue>, Map<String, Object>>, DbKeys {
 
   /** {@link AttributeValueToDate}. */
-  private AttributeValueToDate toInsertedDateDate = new AttributeValueToDate("inserteddate");
+  private final AttributeValueToDate toInsertedDateDate = new AttributeValueToDate("inserteddate");
   /** {@link AttributeValueToDate}. */
-  private AttributeValueToDate toLastModifiedDate = new AttributeValueToDate("lastModifiedDate");
+  private final AttributeValueToDate toLastModifiedDate =
+      new AttributeValueToDate("lastModifiedDate");
 
   /**
    * constructor.
@@ -54,15 +55,15 @@ public class AttributeValueToGlobalMetaFolder
 
     Map<String, Object> result = new HashMap<>();
 
-    if (map.get(PK).s().contains(GLOBAL_FOLDER_TAGS)) {
+    String pk = getString(map.get(PK));
 
+    if (pk != null && pk.contains(GLOBAL_FOLDER_TAGS)) {
       result.put("value", map.get("tagKey").s());
+    } else if (pk != null) {
 
-    } else {
-
-      String parent = map.get(PK).s().substring(map.get(PK).s().lastIndexOf(TAG_DELIMINATOR) + 1);
-      String documentId = map.get("documentId").s();
-      String path = map.get("path").s();
+      String parent = pk.substring(pk.lastIndexOf(TAG_DELIMINATOR) + 1);
+      String documentId = getString(map.get("documentId"));
+      String path = getString(map.get("path"));
 
       String key = parent + TAG_DELIMINATOR + path;
 
@@ -82,5 +83,9 @@ public class AttributeValueToGlobalMetaFolder
     }
 
     return result;
+  }
+
+  private String getString(final AttributeValue av) {
+    return av != null ? av.s() : null;
   }
 }
