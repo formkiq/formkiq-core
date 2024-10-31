@@ -878,7 +878,14 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
       final SearchMetaCriteria meta, final PaginationMapToken token, final int maxresults) {
 
     String value = getMetaDataKey(siteId, meta);
-    return searchByMeta(siteId, value, meta.indexFilterBeginsWith(), token, maxresults);
+    PaginationResults<DynamicDocumentItem> results =
+        searchByMeta(siteId, value, meta.indexFilterBeginsWith(), token, maxresults);
+
+    if ("folder".equals(meta.indexType())) {
+      results.getResults().removeIf(r -> r.get("documentId") == null);
+    }
+
+    return results;
   }
 
   private PaginationResults<DynamicDocumentItem> searchByMeta(final String siteId,
@@ -1057,16 +1064,17 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
     AttributeValueToGlobalMetaFolder metaFolder = new AttributeValueToGlobalMetaFolder();
     DocumentItemToDynamicDocumentItem transform = new DocumentItemToDynamicDocumentItem();
 
-    List<DynamicDocumentItem> results =
-        result.items().stream().filter(r -> r.get("documentId") != null).map(r -> {
+    List<DynamicDocumentItem> results = result.items().stream().map(r -> {
 
-          AttributeValue documentId = r.get("documentId");
-          boolean isDocument = documentId != null && documentMap.containsKey(documentId.s());
+      AttributeValue documentId = r.get("documentId");
+      boolean isDocument = documentId != null && documentMap.containsKey(documentId.s());
 
-          return isDocument ? transform.apply(documentMap.get(r.get("documentId").s()))
-              : new DynamicDocumentItem(metaFolder.apply(r));
+      return isDocument ? transform.apply(documentMap.get(r.get("documentId").s()))
+          : new DynamicDocumentItem(metaFolder.apply(r));
 
-        }).collect(Collectors.toList());
+    }).collect(Collectors.toList());
+
+
 
     return new PaginationResults<>(results, new QueryResponseToPagination().apply(result));
   }

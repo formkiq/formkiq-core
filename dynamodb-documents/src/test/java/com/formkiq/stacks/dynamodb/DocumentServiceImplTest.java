@@ -1873,13 +1873,13 @@ public class DocumentServiceImplTest implements DbKeys {
       doc.setContentType("text/plain");
 
       // when
-      DocumentItem item = service.saveDocumentItemWithTag(siteId, doc);
+      service.saveDocumentItemWithTag(siteId, doc);
 
       // then
       PaginationResult<DocumentItem> result =
           service.findDocument(siteId, doc.getDocumentId(), true, null, MAX_RESULTS);
       assertNull(result.getToken());
-      item = result.getResult();
+      DocumentItem item = result.getResult();
 
       assertNotNull(item);
       assertNotNull(item.getBelongsToDocumentId());
@@ -2223,8 +2223,6 @@ public class DocumentServiceImplTest implements DbKeys {
       DocumentItem item1 = new DocumentItemDynamoDb(documentId1, null, userId0);
       item1.setPath(path);
       service.saveDocument(siteId, item1, null);
-      final Date item1Date =
-          service.findDocument(siteId, item1.getDocumentId()).getLastModifiedDate();
 
       // then
       SearchMetaCriteria smc = new SearchMetaCriteria().folder("");

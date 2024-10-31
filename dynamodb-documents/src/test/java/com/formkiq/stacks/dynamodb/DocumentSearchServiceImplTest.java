@@ -32,7 +32,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.time.ZonedDateTime;
@@ -47,9 +46,6 @@ import java.util.TimeZone;
 import java.util.UUID;
 
 import com.formkiq.aws.dynamodb.DbKeys;
-import com.formkiq.aws.dynamodb.DynamoDbService;
-import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
-import com.formkiq.aws.dynamodb.objects.Objects;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -69,7 +65,6 @@ import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.formkiq.validation.ValidationException;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /** Unit Tests for {@link DocumentSearchServiceImpl}. */
 @ExtendWith(DynamoDbExtension.class)
@@ -81,10 +76,6 @@ public class DocumentSearchServiceImplTest implements DbKeys {
   private DocumentSearchService searchService;
   /** {@link DocumentService}. */
   private DocumentService service;
-  /** {@link DynamoDbService}. */
-  private DynamoDbService db;
-  /** {@link FolderIndexProcessor}. */
-  private FolderIndexProcessor folderIndex;
 
   /**
    * Before Test.
@@ -96,12 +87,10 @@ public class DocumentSearchServiceImplTest implements DbKeys {
 
     this.df.setTimeZone(TimeZone.getTimeZone("UTC"));
     DynamoDbConnectionBuilder dynamoDbConnection = DynamoDbTestServices.getDynamoDbConnection();
-    this.db = new DynamoDbServiceImpl(dynamoDbConnection, DOCUMENTS_TABLE);
     this.service = new DocumentServiceImpl(dynamoDbConnection, DOCUMENTS_TABLE,
         new DocumentVersionServiceNoVersioning());
     this.searchService =
         new DocumentSearchServiceImpl(dynamoDbConnection, this.service, DOCUMENTS_TABLE);
-    this.folderIndex = new FolderIndexProcessorImpl(dynamoDbConnection, DOCUMENTS_TABLE);
   }
 
   /**
@@ -326,7 +315,6 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       int limit = 1;
       String tagKey = "status";
       String tagValue = "active";
-      PaginationMapToken startkey;
       SearchTagCriteria c = new SearchTagCriteria(tagKey);
       c.eq(tagValue);
       SearchQuery q = new SearchQuery().tag(c);
@@ -340,7 +328,7 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       assertNotNull(results.getToken());
 
       // given
-      startkey = results.getToken();
+      PaginationMapToken startkey = results.getToken();
 
       // when
       PaginationResults<DynamicDocumentItem> results2 =
