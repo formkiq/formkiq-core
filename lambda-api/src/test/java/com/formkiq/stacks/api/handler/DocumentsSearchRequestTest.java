@@ -23,6 +23,9 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.model.DocumentMapToDocument;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.invoker.ApiException;
@@ -52,11 +55,18 @@ import com.formkiq.client.model.SearchResultDocument;
 import com.formkiq.client.model.SearchResultDocumentAttribute;
 import com.formkiq.module.lambda.typesense.TypesenseProcessor;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.stacks.dynamodb.FolderIndexProcessor;
+import com.formkiq.stacks.dynamodb.FolderIndexProcessorImpl;
+import com.formkiq.stacks.dynamodb.FolderIndexRecord;
+import com.formkiq.testutils.aws.DynamoDbTestServices;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -66,15 +76,34 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_BAD_REQUEST;
+import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
+import static com.formkiq.testutils.aws.FkqDocumentService.addDocument;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /** Unit Tests for request /search. */
 public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
+
+  /** {@link DynamoDbService}. */
+  private static DynamoDbService db;
+  /** {@link FolderIndexProcessor}. */
+  private static FolderIndexProcessor indexProcessor;
+
+  /**
+   * Before All.
+   */
+  @BeforeAll
+  public static void beforeAll() throws URISyntaxException {
+    DynamoDbConnectionBuilder dbConnection = DynamoDbTestServices.getDynamoDbConnection();
+    db = new DynamoDbServiceImpl(dbConnection, DOCUMENTS_TABLE);
+    indexProcessor = new FolderIndexProcessorImpl(dbConnection, DOCUMENTS_TABLE);
+  }
 
   /** JUnit Test Timeout. */
   private static final int TEST_TIMEOUT = 10;
@@ -1166,4 +1195,40 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
     }
   }
 
+  /**
+   * Test POST /search on a folder with a lock key that wasn't removed.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  void testHandleSearchRequest29() throws Exception {
+    // given
+    final String path = "/a/b/test2.pdf";
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+
+      AddDocumentUploadRequest uploadReq = new AddDocumentUploadRequest().path(path);
+      this.documentsApi.addDocumentUpload(uploadReq, siteId, null, null, null);
+
+      DocumentSearchRequest req = new DocumentSearchRequest().query(new DocumentSearch().meta(
+          new DocumentSearchMeta().indexType(DocumentSearchMeta.IndexTypeEnum.FOLDER).eq("/a/")));
+      req.setResponseFields(
+          new SearchResponseFields().tags(List.of("test1", "test2")).addAttributesItem("bleh"));
+
+      List<FolderIndexRecord> folders = indexProcessor.createFolders(siteId, path, "joe");
+      FolderIndexRecord a = folders.get(1);
+      final int timeout = 10000;
+      assertTrue(db.acquireLock(a.fromS(a.pk(siteId)), a.fromS(a.sk()), timeout, timeout));
+
+      // when
+      List<SearchResultDocument> documents =
+          notNull(searchApi.documentSearch(req, siteId, null, null, null).getDocuments());
+
+      // then
+      assertEquals(1, documents.size());
+      assertEquals("b", documents.get(0).getPath());
+    }
+  }
 }
