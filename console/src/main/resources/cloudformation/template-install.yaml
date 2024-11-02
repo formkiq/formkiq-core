@@ -129,9 +129,7 @@ Conditions:
 
   HasHostedZoneId:
     Fn::Not:
-      - Fn::Equals:
-        - Ref: HostedZoneId
-        - ''
+      - Condition: IsEmptyOrUnderscore
 
   IsNotGovCloud:
     Fn::Equals:
