@@ -1,24 +1,24 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: FormKiQ Core - Console Install
-        
+
 Parameters:
-    
+
   AppEnvironment:
     Type: String
     Description: The Document Stack Environment
     AllowedPattern: ".+"
-          
+
   ConsoleVersion:
     Type: String
     Description: Version of FormKiQ console to deploy
     AllowedPattern: ".+"
- 
+
   Domain:
     Description: Amazon Cognito domain to use (include full domain if CertificateArn used)
     AllowedPattern: ".+"
     Type: String
-    
+
   ConsoleBucket:
     Type: String
     Description: Console S3 Bucket
@@ -32,23 +32,23 @@ Parameters:
   ApiUrl:
     Type: String
     Description: API URL
-    AllowedPattern: ".+"  
-  
+    AllowedPattern: ".+"
+
   WebsocketApiUrl:
     Type: String
     Description: WebSocket URL
-    AllowedPattern: ".+" 
- 
+    AllowedPattern: ".+"
+
   AuthApiUrl:
     Type: String
     Description: Auth Api URL
-    AllowedPattern: ".+" 
+    AllowedPattern: ".+"
 
   Brand:
     Type: String
     Description: Console Installer Brand
     Default: "formkiq"
-    
+
   DistributionBucket:
     Type: String
     Description: FormKiQ Distribution BucketName
@@ -64,7 +64,7 @@ Parameters:
     Description: When true only Cognito Admin can create users, false users can register themselves
     AllowedPattern: ".+"
     Type: String
-    
+
   CognitoHostedUi:
     Description: Amazon Cognito Hosted UI Url
     AllowedPattern: ".+"
@@ -74,18 +74,18 @@ Parameters:
     Description: The Cognito User Pool Id
     AllowedPattern: ".+"
     Type: String
-    
+
   CognitoUserPoolClientId:
     Description: The Cognito User Pool Client Id
     AllowedPattern: ".+"
     Type: String
-    
+
   UserAuthentication:
     Description: How are the users authenticating
     AllowedPattern: ".+"
     Type: String
     Default: "cognito"
-    
+
   CertificateStackName:
     Type: String
     Description: The name of the FormKiQ Certificate Stack Name
@@ -95,12 +95,12 @@ Parameters:
     Description: "Route53 Hosted Zone Id in which to add A record"
     Type: String
     Default: ""
-    
+
   CloudFrontDistributionDomainName:
     Description: The cloudfront domain name of the resource
     Type: String
     Default: ""
-    
+
   Partition:
     Description: The partition in which the resource is located. A partition is a group of AWS Regions
     Type: String
@@ -109,23 +109,32 @@ Parameters:
     Description: Is Installation AWS Region gov cloud
     Type: String
     AllowedValues: ["true", "false"]
-    
+
 Conditions:
+
+  IsEmptyOrUnderscore:
+    Fn::Or:
+      - Fn::Equals:
+          - Ref: HostedZoneId
+          - ""
+      - Fn::Equals:
+          - Ref: HostedZoneId
+          - "_"
 
   HasCertificateStackName:
     Fn::Not:
-      - Fn::Equals: 
+      - Fn::Equals:
         - Ref: CertificateStackName
         - ''
 
   HasHostedZoneId:
     Fn::Not:
-      - Fn::Equals: 
+      - Fn::Equals:
         - Ref: HostedZoneId
         - ''
 
   IsNotGovCloud:
-    Fn::Equals: 
+    Fn::Equals:
       - Ref: IsGovCloud
       - 'false'
 
@@ -136,17 +145,17 @@ Resources:
     Type: AWS::SSM::Parameter
     Properties:
       Description: "Lambda for Console Installation"
-      Name: 
+      Name:
         Fn::Sub: "/formkiq/${AppEnvironment}/lambda/ConsoleInstaller"
       Type: String
-      Value: 
+      Value:
         Ref: ConsoleInstaller
       Tags:
-        Application: 
+        Application:
           Fn::Sub: "FormKiQ ${FormKiQType}"
-        AppEnvironment: 
+        AppEnvironment:
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
+        StackName:
           Fn::Sub: "${AWS::StackName}"
 
   ConsoleInstaller:
@@ -164,33 +173,33 @@ Resources:
         - Arn
       CodeUri: ./console-installer.zip
       Tags:
-        Application: 
+        Application:
           Fn::Sub: "FormKiQ ${FormKiQType}"
-        AppEnvironment: 
+        AppEnvironment:
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
+        StackName:
           Fn::Sub: "${AWS::StackName}"
       Environment:
         Variables:
-          CONSOLE_VERSION: 
+          CONSOLE_VERSION:
             Fn::Sub: "${ConsoleVersion}"
-          DISTRIBUTION_BUCKET: 
+          DISTRIBUTION_BUCKET:
             Fn::Sub: "${DistributionBucket}"
-          REGION: 
+          REGION:
             Fn::Sub: "${AWS::Region}"
-          CONSOLE_BUCKET: 
+          CONSOLE_BUCKET:
             Fn::Sub: "${ConsoleBucket}"
           COGNITO_CONFIG_BUCKET:
             Fn::Sub: "${CognitoConfigBucket}"
-          API_URL: 
+          API_URL:
             Fn::Sub: "${ApiUrl}"
-          API_WEBSOCKET_URL: 
+          API_WEBSOCKET_URL:
             Fn::Sub: "${WebsocketApiUrl}"
-          API_AUTH_URL: 
+          API_AUTH_URL:
             Fn::Sub: "${AuthApiUrl}"
-          BRAND: 
+          BRAND:
             Fn::Sub: "${Brand}"
-          ALLOW_ADMIN_CREATE_USER_ONLY: 
+          ALLOW_ADMIN_CREATE_USER_ONLY:
             Fn::Sub: "${AllowAdminCreateUserOnly}"
           COGNITO_HOSTED_UI:
             Ref: CognitoHostedUi
@@ -209,10 +218,10 @@ Resources:
     Properties:
       Tags:
         - Key: "Application"
-          Value: 
-            Fn::Sub: "FormKiQ ${FormKiQType}"        
+          Value:
+            Fn::Sub: "FormKiQ ${FormKiQType}"
         - Key: "AppEnvironment"
-          Value: 
+          Value:
             Fn::Sub: "${AppEnvironment}"
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
@@ -226,7 +235,7 @@ Resources:
       Path: /
       Policies:
         -
-          PolicyName: 
+          PolicyName:
             Fn::Sub: "${AWS::StackName}-ConsoleInstallPolicy"
           PolicyDocument:
             Version: '2012-10-17'
@@ -240,7 +249,7 @@ Resources:
             - Effect: Allow
               Action:
               - ssm:GetParameter
-              Resource: 
+              Resource:
               - Fn::Sub: "arn:${Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/formkiq/*"
             - Effect: Allow
               Action:
@@ -248,7 +257,7 @@ Resources:
               - s3:PutObject
               - s3:DeleteObject
               - s3:ListBucket
-              Resource: 
+              Resource:
               - Fn::Join:
                 - ''
                 - - Fn::Sub: "arn:${Partition}:s3:::"
@@ -276,7 +285,7 @@ Resources:
             - Effect: Allow
               Action:
               - s3:GetObject
-              Resource: 
+              Resource:
               - Fn::Join:
                 - ''
                 - - Fn::Sub: "arn:${Partition}:s3:::"
@@ -318,7 +327,7 @@ Resources:
     Condition: HasHostedZoneId
     Type: 'AWS::Route53::RecordSetGroup'
     Properties:
-      HostedZoneId: 
+      HostedZoneId:
         Ref: HostedZoneId
       RecordSets:
         - Name:
@@ -327,5 +336,5 @@ Resources:
           Type: A
           AliasTarget:
             HostedZoneId: "Z2FDTNDATAQYW2"
-            DNSName: 
+            DNSName:
               Ref: CloudFrontDistributionDomainName
