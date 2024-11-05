@@ -378,7 +378,7 @@ public class DocumentAttributeRecord
 
   @Override
   public String skVersion() {
-    String sk = ATTR + this.key + "##" + this.df.format(getInsertedDate()) + "#";
+    String sk = ATTR + this.key + "#" + this.df.format(getInsertedDate()) + "#";
     return getSkValue(sk);
   }
 

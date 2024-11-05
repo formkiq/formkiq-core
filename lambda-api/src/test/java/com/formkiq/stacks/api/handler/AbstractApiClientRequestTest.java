@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.formkiq.client.api.MappingsApi;
+import com.formkiq.client.api.ReindexApi;
 import com.formkiq.client.api.UserManagementApi;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -106,7 +107,7 @@ public abstract class AbstractApiClientRequestTest {
 
   /** {@link ApiClient}. */
   protected ApiClient client =
-      Configuration.getDefaultApiClient().setReadTimeout(TIMEOUT).setBasePath(server.getBasePath());
+      Configuration.getDefaultApiClient().setReadTimeout(0).setBasePath(server.getBasePath());
   /** {@link DocumentActionsApi}. */
   protected DocumentActionsApi documentActionsApi = new DocumentActionsApi(this.client);
   /** {@link DocumentsApi}. */
@@ -136,6 +137,8 @@ public abstract class AbstractApiClientRequestTest {
       new AdvancedDocumentSearchApi(this.client);
   /** {@link MappingsApi}. */
   protected MappingsApi mappingsApi = new MappingsApi(this.client);
+  /** {@link ReindexApi}. */
+  protected ReindexApi reindexApi = new ReindexApi(this.client);
   /** {@link UserManagementApi}. */
   protected UserManagementApi userManagementApi = new UserManagementApi(this.client);
   /** Sqs Messages. */

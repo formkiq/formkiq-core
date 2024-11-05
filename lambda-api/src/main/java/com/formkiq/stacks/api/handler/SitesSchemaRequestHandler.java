@@ -100,8 +100,7 @@ public class SitesSchemaRequestHandler
     String siteId = authorizer.getSiteId();
 
     Schema schema = fromBodyToObject(event, Schema.class);
-    Collection<ValidationError> errors =
-        service.setSitesSchema(siteId, schema.getName(), this.gson.toJson(schema), schema);
+    Collection<ValidationError> errors = service.setSitesSchema(siteId, schema.getName(), schema);
 
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);

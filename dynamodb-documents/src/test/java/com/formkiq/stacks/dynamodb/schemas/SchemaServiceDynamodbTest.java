@@ -35,7 +35,6 @@ import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
-import com.google.gson.GsonBuilder;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -83,16 +82,14 @@ public class SchemaServiceDynamodbTest {
       final SchemaAttributes schemaAttributes) {
     String name = "somesetschema";
     Schema schema = new Schema().name(name).attributes(schemaAttributes);
-    String schemaJson = new GsonBuilder().create().toJson(schema);
-    return service.setSitesSchema(siteId, name, schemaJson, schema);
+    return service.setSitesSchema(siteId, name, schema);
   }
 
   private static ClassificationRecord setClassification(final String siteId,
       final String classificationId, final String name, final SchemaAttributes schemaAttributes)
       throws ValidationException {
     Schema schema = new Schema().name(name).attributes(schemaAttributes);
-    String schemaJson = new GsonBuilder().create().toJson(schema);
-    return service.setClassification(siteId, classificationId, name, schemaJson, schema, "joe");
+    return service.setClassification(siteId, classificationId, name, schema, "joe");
   }
 
   private static SchemaAttributesRequired createDocTypeRequired() {

@@ -168,6 +168,11 @@ public class DocumentsS3UpdateTest implements DbKeys {
     db.close();
   }
 
+  private void login() {
+    ApiAuthorization authorization = new ApiAuthorization().username("firstwriter");
+    ApiAuthorization.login(authorization);
+  }
+
   /**
    * Before Class.
    * 
@@ -347,6 +352,8 @@ public class DocumentsS3UpdateTest implements DbKeys {
   @BeforeEach
   public void before() {
 
+    login();
+
     s3service.deleteAllFiles("example-bucket");
     s3service.deleteAllFiles("example-bucket");
 
@@ -436,6 +443,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
     handler.handleRequest(map, this.context);
 
     // then
+    login();
     return service.findDocument(siteId, documentId);
   }
 
@@ -447,9 +455,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
   @Test
   @Timeout(value = TEST_TIMEOUT)
   public void testHandleRequest01() throws Exception {
-
-    ApiAuthorization authorization = new ApiAuthorization().username("firstwriter");
-    ApiAuthorization.login(authorization);
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given

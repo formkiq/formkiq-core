@@ -119,7 +119,7 @@ public class DocumentAttributeRequestHandler
     Collection<ApiPermission> permissions = authorization.getPermissions(siteId);
     boolean isAdmin =
         permissions.contains(ApiPermission.ADMIN) || permissions.contains(ApiPermission.GOVERN);
-    return isAdmin ? AttributeValidationAccess.ADMIN_UPDATE : AttributeValidationAccess.UPDATE;
+    return isAdmin ? AttributeValidationAccess.ADMIN_SET : AttributeValidationAccess.SET;
   }
 
   private AttributeValidationAccess getAttributeValidationAccessDelete(
@@ -175,7 +175,7 @@ public class DocumentAttributeRequestHandler
     AttributeValidationAccess validationAccess =
         getAttributeValidationAccess(authorization, siteId);
 
-    documentService.saveDocumentAttributes(siteId, documentId, documentAttributes, true,
+    documentService.saveDocumentAttributes(siteId, documentId, documentAttributes,
         AttributeValidation.PARTIAL, validationAccess);
 
     ApiResponse resp = new ApiMessageResponse(

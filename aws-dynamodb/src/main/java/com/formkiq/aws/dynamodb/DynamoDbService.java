@@ -285,4 +285,11 @@ public interface DynamoDbService {
    * @return boolean
    */
   boolean releaseLock(AttributeValue pk, AttributeValue sk);
+
+  /**
+   * Put in transaction.
+   * 
+   * @param writeRequest {@link WriteRequestBuilder}
+   */
+  void putInTransaction(WriteRequestBuilder writeRequest);
 }

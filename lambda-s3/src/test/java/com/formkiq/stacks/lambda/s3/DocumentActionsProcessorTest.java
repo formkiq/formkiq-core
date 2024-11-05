@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.lambda.s3;
 
+import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
@@ -233,6 +234,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
    */
   @BeforeAll
   public static void beforeClass() throws Exception {
+
+    ApiAuthorization.login(new ApiAuthorization().username("System"));
 
     DynamoDbConnectionBuilder dbBuilder = DynamoDbTestServices.getDynamoDbConnection();
     DynamoDbService db = new DynamoDbServiceImpl(dbBuilder, DOCUMENTS_TABLE);

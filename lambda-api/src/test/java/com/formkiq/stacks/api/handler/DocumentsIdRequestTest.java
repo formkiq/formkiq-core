@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.model.AddAttribute;
 import com.formkiq.client.model.AddAttributeRequest;
@@ -655,10 +656,12 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       final int expected = 3;
       assertEquals(expected, attributes.size());
-      assertEquals(attributeKey0 + "#" + attributeKey1, attributes.get(0).getKey());
-      assertEquals("person#privacy", attributes.get(0).getStringValue());
-      assertEquals(attributeKey0, attributes.get(1).getKey());
-      assertEquals("person", attributes.get(1).getStringValue());
+      assertEquals(attributeKey0, attributes.get(0).getKey());
+      assertEquals("person", attributes.get(0).getStringValue());
+      assertEquals(attributeKey0 + DbKeys.COMPOSITE_KEY_DELIM + attributeKey1,
+          attributes.get(1).getKey());
+      assertEquals("person" + DbKeys.COMPOSITE_KEY_DELIM + "privacy",
+          attributes.get(1).getStringValue());
       assertEquals(attributeKey1, attributes.get(2).getKey());
       assertEquals("privacy", attributes.get(2).getStringValue());
     }
@@ -729,16 +732,21 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       final int expected = 5;
       int i = 0;
       assertEquals(expected, attributes.size());
-      assertEquals(attributeKey0 + "#" + attributeKey1, attributes.get(i).getKey());
-      assertEquals("person#privacy", attributes.get(i++).getStringValue());
       assertEquals(attributeKey0, attributes.get(i).getKey());
       assertEquals("person", attributes.get(i++).getStringValue());
+      assertEquals(attributeKey0 + DbKeys.COMPOSITE_KEY_DELIM + attributeKey1,
+          attributes.get(i).getKey());
+      assertEquals("person" + DbKeys.COMPOSITE_KEY_DELIM + "privacy",
+          attributes.get(i++).getStringValue());
       assertEquals(attributeKey1, attributes.get(i).getKey());
       assertEquals("privacy", attributes.get(i++).getStringValue());
       assertEquals("userId", attributes.get(i).getKey());
       assertEquals("123", attributes.get(i++).getStringValue());
-      assertEquals("userId#" + attributeKey0 + "#" + attributeKey1, attributes.get(i).getKey());
-      assertEquals("123#person#privacy", attributes.get(i).getStringValue());
+      assertEquals("userId" + DbKeys.COMPOSITE_KEY_DELIM + attributeKey0
+          + DbKeys.COMPOSITE_KEY_DELIM + attributeKey1, attributes.get(i).getKey());
+      assertEquals(
+          "123" + DbKeys.COMPOSITE_KEY_DELIM + "person" + DbKeys.COMPOSITE_KEY_DELIM + "privacy",
+          attributes.get(i).getStringValue());
     }
   }
 

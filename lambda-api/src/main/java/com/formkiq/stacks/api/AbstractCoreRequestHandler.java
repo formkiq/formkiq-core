@@ -114,6 +114,7 @@ import com.formkiq.stacks.api.handler.PublicWebhooksRequestHandler;
 import com.formkiq.stacks.api.handler.QueueDocumentsRequestHandler;
 import com.formkiq.stacks.api.handler.QueueIdRequestHandler;
 import com.formkiq.stacks.api.handler.QueuesRequestHandler;
+import com.formkiq.stacks.api.handler.ReindexDocumentsRequestHandler;
 import com.formkiq.stacks.api.handler.RulesetsIdRequestHandler;
 import com.formkiq.stacks.api.handler.RulesetsRequestHandler;
 import com.formkiq.stacks.api.handler.RulesetsRuleIdRequestHandler;
@@ -161,6 +162,8 @@ import com.formkiq.stacks.dynamodb.WebhooksService;
 import com.formkiq.stacks.dynamodb.WebhooksServiceExtension;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeServiceExtension;
+import com.formkiq.stacks.dynamodb.attributes.AttributeValidator;
+import com.formkiq.stacks.dynamodb.attributes.AttributeValidatorExtension;
 import com.formkiq.stacks.dynamodb.mappings.MappingService;
 import com.formkiq.stacks.dynamodb.mappings.MappingServiceExtension;
 import com.formkiq.stacks.dynamodb.schemas.SchemaService;
@@ -229,6 +232,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     serviceCache.register(DynamoDbService.class, new DynamoDbServiceExtension());
     serviceCache.register(WebhooksService.class, new WebhooksServiceExtension());
     serviceCache.register(AttributeService.class, new AttributeServiceExtension());
+    serviceCache.register(AttributeValidator.class, new AttributeValidatorExtension());
     serviceCache.register(SchemaService.class, new SchemaServiceExtension());
     serviceCache.register(MappingService.class, new MappingServiceExtension());
   }
@@ -296,14 +300,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addDocumentAttributeEndpoints();
 
     addSchemaEndpoints();
-  }
-
-  private static void addSchemaEndpoints() {
-    addRequestHandler(new SitesSchemaRequestHandler());
-    addRequestHandler(new SitesClassificationRequestHandler());
-    addRequestHandler(new SitesClassificationIdRequestHandler());
-    addRequestHandler(new SitesClassificationAllowedValuesRequestHandler());
-    addRequestHandler(new SitesSchemaAttributeAllowedValuesRequestHandler());
+    addReindexEndpoints();
   }
 
   private static void addSystemEndpoints() {
@@ -394,6 +391,18 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new DocumentAttributesRequestHandler());
     addRequestHandler(new DocumentAttributeRequestHandler());
     addRequestHandler(new DocumentAttributesValueRequestHandler());
+  }
+
+  private static void addSchemaEndpoints() {
+    addRequestHandler(new SitesSchemaRequestHandler());
+    addRequestHandler(new SitesClassificationRequestHandler());
+    addRequestHandler(new SitesClassificationIdRequestHandler());
+    addRequestHandler(new SitesClassificationAllowedValuesRequestHandler());
+    addRequestHandler(new SitesSchemaAttributeAllowedValuesRequestHandler());
+  }
+
+  private static void addReindexEndpoints() {
+    addRequestHandler(new ReindexDocumentsRequestHandler());
   }
 
   @Override

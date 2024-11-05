@@ -49,6 +49,9 @@ public interface DbKeys {
   /** Composite Tag Key Deliminator. */
   String TAG_DELIMINATOR = "#";
 
+  /** Composite Key Deliminator. */
+  String COMPOSITE_KEY_DELIM = "::";
+
   /** Global Secondary Index 1. */
   String GSI1 = "GSI1";
 

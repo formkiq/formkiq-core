@@ -36,6 +36,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
+import com.formkiq.aws.dynamodb.ApiAuthorization;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -72,6 +74,7 @@ public class ActionsServiceDynamoDbTest {
   @BeforeAll
   public static void beforeAll() throws Exception {
 
+    ApiAuthorization.login(new ApiAuthorization().username("System"));
     DynamoDbConnectionBuilder db = DynamoDbTestServices.getDynamoDbConnection();
     service = new ActionsServiceDynamoDb(db, DOCUMENTS_TABLE);
     documentService =

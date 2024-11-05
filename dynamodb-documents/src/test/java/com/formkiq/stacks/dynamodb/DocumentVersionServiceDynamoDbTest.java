@@ -99,8 +99,7 @@ class DocumentVersionServiceDynamoDbTest implements DbKeys {
       assertEquals(orig.get("userId"), attr.get("userId"));
       assertEquals(orig.get("stringValue"), attr.get("stringValue"));
       assertEquals(orig.get("inserteddate"), attr.get("inserteddate"));
-      assertEquals("attr#category##" + attr.get("inserteddate").s() + "#document",
-          attr.get(SK).s());
+      assertEquals("attr#category#" + attr.get("inserteddate").s() + "#document", attr.get(SK).s());
     }
   }
 }

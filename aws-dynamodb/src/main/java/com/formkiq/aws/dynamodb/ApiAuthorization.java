@@ -71,7 +71,11 @@ public class ApiAuthorization {
    * @return ApiAuthorization
    */
   public static ApiAuthorization getAuthorization() {
-    return CURRENT_AUTHORIZATION.get();
+    ApiAuthorization authorization = CURRENT_AUTHORIZATION.get();
+    if (authorization == null) {
+      authorization = new ApiAuthorization().username("System");
+    }
+    return authorization;
   }
 
   /**

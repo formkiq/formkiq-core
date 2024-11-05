@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.objects.Strings;
@@ -317,10 +318,12 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
       final int expected = 3;
       assertEquals(expected, attributes.size());
-      assertEquals(attributeKey0 + "#" + attributeKey1, attributes.get(0).getKey());
-      assertEquals("person#privacy", attributes.get(0).getStringValue());
-      assertEquals(attributeKey0, attributes.get(1).getKey());
-      assertEquals("person", attributes.get(1).getStringValue());
+      assertEquals(attributeKey0, attributes.get(0).getKey());
+      assertEquals("person", attributes.get(0).getStringValue());
+      assertEquals(attributeKey0 + DbKeys.COMPOSITE_KEY_DELIM + attributeKey1,
+          attributes.get(1).getKey());
+      assertEquals("person" + DbKeys.COMPOSITE_KEY_DELIM + "privacy",
+          attributes.get(1).getStringValue());
       assertEquals(attributeKey1, attributes.get(2).getKey());
       assertEquals("privacy", attributes.get(2).getStringValue());
     }

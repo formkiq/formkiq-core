@@ -503,6 +503,11 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
     return deleteItem(pk, getLock(sk));
   }
 
+  @Override
+  public void putInTransaction(final WriteRequestBuilder writeRequest) {
+    writeRequest.batchWriteItem(this.dbClient);
+  }
+
   private AttributeValue getLock(final AttributeValue sk) {
     return AttributeValue.fromS(sk.s() + ".lock");
   }

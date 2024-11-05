@@ -137,12 +137,13 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
 
   @Override
   public Collection<ValidationError> setSitesSchema(final String siteId, final String name,
-      final String schemaJson, final Schema schema) {
+      final Schema schema) {
 
-    Collection<ValidationError> errors = validate(siteId, null, name, schemaJson, schema);
+    Collection<ValidationError> errors = validate(siteId, null, name, schema);
 
     if (errors.isEmpty()) {
 
+      String schemaJson = gson.toJson(schema);
       SitesSchemaRecord r = new SitesSchemaRecord().name(name).schema(schemaJson);
 
       deleteSchemaCompositeKeys(siteId, null);
@@ -191,11 +192,10 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
 
   @Override
   public ClassificationRecord setClassification(final String siteId, final String classificationId,
-      final String name, final String schemaJson, final Schema schema, final String userId)
-      throws ValidationException {
+      final String name, final Schema schema, final String userId) throws ValidationException {
 
     Schema sitesSchema = getSitesSchema(siteId);
-    Collection<ValidationError> errors = validate(siteId, sitesSchema, name, schemaJson, schema);
+    Collection<ValidationError> errors = validate(siteId, sitesSchema, name, schema);
     errors.addAll(validateClassification(siteId, classificationId, name));
 
     if (!errors.isEmpty()) {
@@ -204,6 +204,7 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
 
     String documentId = classificationId != null ? classificationId : UUID.randomUUID().toString();
 
+    String schemaJson = gson.toJson(schema);
     ClassificationRecord r = new ClassificationRecord().setName(name).setSchema(schemaJson)
         .setDocumentId(documentId).setInsertedDate(new Date()).setUserId(userId);
 
@@ -496,9 +497,9 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
   }
 
   private Collection<ValidationError> validate(final String siteId, final Schema sitesSchema,
-      final String name, final String schemaJson, final Schema schema) {
+      final String name, final Schema schema) {
 
-    Collection<ValidationError> errors = validateSchema(schema, name, schemaJson);
+    Collection<ValidationError> errors = validateSchema(schema, name);
 
     if (errors.isEmpty()) {
       errors = validateAttributesAgainstSiteSchema(sitesSchema, schema);
@@ -574,8 +575,7 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
     this.db.deleteItemsBeginsWith(pk, sk);
   }
 
-  private Collection<ValidationError> validateSchema(final Schema schema, final String name,
-      final String schemaJson) {
+  private Collection<ValidationError> validateSchema(final Schema schema, final String name) {
 
     Collection<ValidationError> errors = new ArrayList<>();
 
@@ -583,7 +583,7 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
       errors.add(new ValidationErrorImpl().key("name").error("'name' is required"));
     }
 
-    if (isEmpty(schemaJson) || schema.getAttributes() == null) {
+    if (schema.getAttributes() == null) {
       errors.add(new ValidationErrorImpl().key("schema").error("'schema' is required"));
     } else {
 

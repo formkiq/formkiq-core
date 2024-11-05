@@ -45,7 +45,9 @@ import java.util.Map;
 import java.util.TimeZone;
 import java.util.UUID;
 
+import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.DbKeys;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -76,6 +78,14 @@ public class DocumentSearchServiceImplTest implements DbKeys {
   private DocumentSearchService searchService;
   /** {@link DocumentService}. */
   private DocumentService service;
+
+  /**
+   * Before All.
+   */
+  @BeforeAll
+  public static void beforeAll() {
+    ApiAuthorization.login(new ApiAuthorization().username("System"));
+  }
 
   /**
    * Before Test.

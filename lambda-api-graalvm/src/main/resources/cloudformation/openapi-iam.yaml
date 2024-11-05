@@ -6088,6 +6088,49 @@ Resources:
                 - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/googleLambdaApi201"
+          /reindex/documents/{documentId}:
+            post:
+              operationId: AddReindexDocument
+              description: |-
+                The API allows for the reindexing of a document's metadata determined by the target.
+                
+                ATTRIBUTE target will regenerate the composite keys for a document based on the Classification / SiteSchema
+              summary: Reindex metadata on a document
+              tags:
+                - Reindex
+              parameters:
+                - $ref: '#/components/parameters/siteIdParam'
+                - $ref: '#/components/parameters/documentIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/AddReindexDocumentRequest'
+              responses:
+                '201':
+                  description: 201 CREATED
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/AddResponse'
+                '400':
+                  description: 400 OK
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/ValidationErrorsResponse'
+              security:
+                - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
         components:
           headers:
             AccessControlAllowOrigin:
@@ -9010,6 +9053,18 @@ Resources:
                 documentId:
                   type: "string"
                   description: "Exported document identifier"
+
+            ReindexTarget:
+              type: string
+              description: Reindex object target
+              enum:
+                - ATTRIBUTES
+
+            AddReindexDocumentRequest:
+              type: "object"
+              properties:
+                target:
+                  $ref: "#/components/schemas/ReindexTarget"
 
             AddDocumentGenerateRequest:
               type: "object"

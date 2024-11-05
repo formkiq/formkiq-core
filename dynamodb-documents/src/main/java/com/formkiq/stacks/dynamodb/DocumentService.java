@@ -210,6 +210,16 @@ public interface DocumentService {
   boolean exists(String siteId, String documentId);
 
   /**
+   * Whether Document Attribute exists.
+   *
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param attributeKey {@link String}
+   * @return {@link List} {@link DocumentAttributeRecord}
+   */
+  boolean existsDocumentAttribute(String siteId, String documentId, String attributeKey);
+
+  /**
    * Find {@link DocumentItem}.
    * 
    * @param siteId Optional Grouping siteId
@@ -472,15 +482,13 @@ public interface DocumentService {
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param attributes {@link Collection} {@link DocumentAttributeRecord}
-   * @param isUpdate boolean
    * @param validation {@link AttributeValidation}
    * @param validationAccess {@link AttributeValidationAccess}
    * @throws ValidationException ValidationException
    */
   void saveDocumentAttributes(String siteId, String documentId,
-      Collection<DocumentAttributeRecord> attributes, boolean isUpdate,
-      AttributeValidation validation, AttributeValidationAccess validationAccess)
-      throws ValidationException;
+      Collection<DocumentAttributeRecord> attributes, AttributeValidation validation,
+      AttributeValidationAccess validationAccess) throws ValidationException;
 
   /**
    * Save Document Format.
@@ -555,4 +563,12 @@ public interface DocumentService {
    * @return boolean
    */
   boolean deletePublishDocument(String siteId, String documentId);
+
+  /**
+   * Reindex Document Attributes.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   */
+  void reindexDocumentAttributes(String siteId, String documentId) throws ValidationException;
 }

@@ -24,6 +24,7 @@
 package com.formkiq.stacks.dynamodb.attributes;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 import com.formkiq.stacks.dynamodb.schemas.Schema;
@@ -44,6 +45,19 @@ public interface AttributeValidator {
    */
   Map<String, AttributeRecord> getAttributeRecordMap(String siteId,
       Collection<DocumentAttributeRecord> documentAttributes);
+
+  /**
+   * Validates Deleting Attribute.
+   *
+   * @param schemaAttributes {@link List} {@link SchemaAttributes}
+   * @param attributeKeys {@link Collection} {@link String}
+   * @param attributeRecordMap {@link Map}
+   * @param validationAccess {@link AttributeValidationAccess}
+   * @return {@link Collection} {@link ValidationError}
+   */
+  Collection<ValidationError> validateDeleteAttributes(List<SchemaAttributes> schemaAttributes,
+      Collection<String> attributeKeys, Map<String, AttributeRecord> attributeRecordMap,
+      AttributeValidationAccess validationAccess);
 
   /**
    * Validates Deleting Attribute.
@@ -78,14 +92,12 @@ public interface AttributeValidator {
    * @param documentId {@link String}
    * @param documentAttributes {@link Collection} {@link DocumentAttributeRecord}
    * @param attributesMap {@link Map}
-   * @param isDocumentUpdate is updating document
    * @param access {@link AttributeValidationAccess}
    * @return {@link Collection} {@link ValidationError}
    */
   Collection<ValidationError> validateFullAttribute(Collection<SchemaAttributes> schemaAttributes,
       String siteId, String documentId, Collection<DocumentAttributeRecord> documentAttributes,
-      Map<String, AttributeRecord> attributesMap, boolean isDocumentUpdate,
-      AttributeValidationAccess access);
+      Map<String, AttributeRecord> attributesMap, AttributeValidationAccess access);
 
   /**
    * Validate {@link DocumentAttributeRecord}.

@@ -1975,10 +1975,9 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
         fail();
       } catch (ApiException e) {
         // then
-        assertEquals(
-            "{\"errors\":[{\"key\":\"security\","
-                + "\"error\":\"Cannot remove attribute 'security' type OPA\"}]}",
-            e.getResponseBody());
+        assertEquals("{\"errors\":[{\"key\":\"security\","
+            + "\"error\":\"attribute 'security' is an access attribute, "
+            + "can only be changed by Admin\"}]}", e.getResponseBody());
       }
 
       // given

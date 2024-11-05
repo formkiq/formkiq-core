@@ -777,7 +777,8 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       int i = 0;
       assertDocumentAttributes(documentAttributes.get(i++), "Classification", classificationId);
       assertDocumentAttributes(documentAttributes.get(i++), "invoiceNumber", "INV-001");
-      assertDocumentAttributes(documentAttributes.get(i++), "invoiceNumber#other", "INV-001#stuff");
+      assertDocumentAttributes(documentAttributes.get(i++), "invoiceNumber::other",
+          "INV-001::stuff");
       assertDocumentAttributes(documentAttributes.get(i), "other", "stuff");
 
       DocumentSearchAttribute item0 = new DocumentSearchAttribute().key("other").eq("stuff");
@@ -842,8 +843,8 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       int i = 0;
       assertDocumentAttributes(documentAttributes.get(i++), "Classification", classificationId);
       assertDocumentAttributes(documentAttributes.get(i++), "invoiceNumber", "INV-001");
-      assertDocumentAttributes(documentAttributes.get(i++), "invoiceNumber#type",
-          "INV-001#important");
+      assertDocumentAttributes(documentAttributes.get(i++), "invoiceNumber::type",
+          "INV-001::important");
       assertDocumentAttributes(documentAttributes.get(i++), "other", "stuff");
       assertDocumentAttributes(documentAttributes.get(i), "type", "important");
 
@@ -1098,6 +1099,10 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
 
       final int expected = 3;
       assertEquals(expected, documentAttributes.size());
+      int i = 0;
+      assertDocumentAttributes(documentAttributes.get(i++), "test1", "222");
+      assertDocumentAttributes(documentAttributes.get(i++), "test1::test2", "222::333");
+      assertDocumentAttributes(documentAttributes.get(i), "test2", "333");
 
       // when
       DeleteResponse deleteResponse =

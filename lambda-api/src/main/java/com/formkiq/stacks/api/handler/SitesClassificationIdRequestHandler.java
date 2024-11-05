@@ -97,8 +97,8 @@ public class SitesClassificationIdRequestHandler
     Schema schema = request.getClassification();
 
     SchemaService service = awsServices.getExtension(SchemaService.class);
-    service.setClassification(siteId, classificationId, schema.getName(), this.gson.toJson(schema),
-        schema, authorizer.getUsername());
+    service.setClassification(siteId, classificationId, schema.getName(), schema,
+        authorizer.getUsername());
 
     return new ApiRequestHandlerResponse(SC_OK,
         new ApiMapResponse(Map.of("message", "Set Classification")));

@@ -108,8 +108,8 @@ public class SitesClassificationRequestHandler
 
     AddClassificationRequest request = fromBodyToObject(event, AddClassificationRequest.class);
     Schema schema = request.getClassification();
-    ClassificationRecord classification = service.setClassification(siteId, null, schema.getName(),
-        this.gson.toJson(schema), schema, authorizer.getUsername());
+    ClassificationRecord classification =
+        service.setClassification(siteId, null, schema.getName(), schema, authorizer.getUsername());
 
     return new ApiRequestHandlerResponse(SC_OK,
         new ApiMapResponse(Map.of("classificationId", classification.getDocumentId())));

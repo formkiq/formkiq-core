@@ -23,14 +23,17 @@
  */
 package com.formkiq.stacks.dynamodb;
 
+import static com.formkiq.aws.dynamodb.DbKeys.COMPOSITE_KEY_DELIM;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
@@ -41,44 +44,44 @@ import com.formkiq.stacks.dynamodb.schemas.SchemaAttributesCompositeKey;
 /**
  * {@link Function} to create {@link DocumentAttributeRecord} from a {@link Schema}.
  */
-public class DocumentAttributeSchema
-    implements Function<Collection<DocumentAttributeRecord>, Collection<DocumentAttributeRecord>> {
+public class SchemaCompositeKeyGenerator {
 
-  /** Document Id. */
-  private final String docId;
-  /** Schema. */
-  private final SchemaAttributes attributes;
+  /** {@link Date}. */
+  private final Date now = new Date();
 
   /**
    * constructor.
-   * 
-   * @param schemaAttributes {@link SchemaAttributes}
-   * @param documentId {@link String}
    */
-  public DocumentAttributeSchema(final SchemaAttributes schemaAttributes, final String documentId) {
-    this.docId = documentId;
-    this.attributes = schemaAttributes;
-  }
+  public SchemaCompositeKeyGenerator() {}
 
-  @Override
-  public Collection<DocumentAttributeRecord> apply(final Collection<DocumentAttributeRecord> c) {
+  /**
+   * Generate a list of {@link DocumentAttributeRecord} from a {@link SchemaAttributes} and
+   * CompositeKeys.
+   * 
+   * @param schemaAttributes {@link Collection} {@link SchemaAttributes}
+   * @param documentId {@link String}
+   * @param documentAttributeRecords {@link Collection} {@link DocumentAttributeRecord}
+   * @return {@link Collection} {@link DocumentAttributeRecord}
+   */
+  public Collection<DocumentAttributeRecord> apply(
+      final Collection<SchemaAttributes> schemaAttributes, final String documentId,
+      final Collection<DocumentAttributeRecord> documentAttributeRecords) {
 
-    Collection<DocumentAttributeRecord> compositeKeys = Collections.emptyList();
-
-    if (this.attributes != null) {
-      compositeKeys = createCompositeKeys(c);
-    }
-
-    return compositeKeys;
+    return notNull(schemaAttributes).stream()
+        .flatMap(s -> createCompositeKeys(s, documentId, documentAttributeRecords).stream())
+        .toList();
   }
 
   /**
    * Create Composite Keys from {@link Collection} {@link DocumentAttributeRecord}.
-   * 
+   *
+   * @param schemaAttributes {@link SchemaAttributes}
+   * @param documentId {@link String}
    * @param list {@link Collection} {@link DocumentAttributeRecord}
    * @return {@link Collection} {@link DocumentAttributeRecord}
    */
   private Collection<DocumentAttributeRecord> createCompositeKeys(
+      final SchemaAttributes schemaAttributes, final String documentId,
       final Collection<DocumentAttributeRecord> list) {
 
     Map<String, List<DocumentAttributeRecord>> documentAttributeKeys = list.stream()
@@ -87,8 +90,9 @@ public class DocumentAttributeSchema
 
     Collection<DocumentAttributeRecord> compositeKeys = new ArrayList<>();
 
-    notNull(attributes.getCompositeKeys()).forEach(a -> {
-      Collection<DocumentAttributeRecord> keys = createCompositeKeys(a, documentAttributeKeys);
+    notNull(schemaAttributes.getCompositeKeys()).forEach(a -> {
+      Collection<DocumentAttributeRecord> keys =
+          createCompositeKeys(a, documentId, documentAttributeKeys);
       compositeKeys.addAll(keys);
     });
 
@@ -97,43 +101,47 @@ public class DocumentAttributeSchema
 
   /**
    * Create Composite Keys from Keys and Values.
-   * 
+   *
+   * @param documentId {@link String}
    * @param compositeKeys {@link List} {@link String}
    * @param compositeValues {@link List} {@link String}
    * @return {@link List} {@link DocumentAttributeRecord}
    */
-  private List<DocumentAttributeRecord> createCompositeKeys(final List<List<String>> compositeKeys,
-      final List<List<String>> compositeValues) {
+  private List<DocumentAttributeRecord> createCompositeKeys(final String documentId,
+      final List<List<String>> compositeKeys, final List<List<String>> compositeValues) {
 
+    String username = getUsername();
     List<DocumentAttributeRecord> records = new ArrayList<>();
 
     for (int i = 0; i < compositeKeys.size(); i++) {
 
-      String compositeKey = String.join("#", compositeKeys.get(i));
-      String stringValue = String.join("#", compositeValues.get(i));
+      String compositeKey = String.join(COMPOSITE_KEY_DELIM, compositeKeys.get(i));
+      String stringValue = String.join(COMPOSITE_KEY_DELIM, compositeValues.get(i));
 
       DocumentAttributeRecord r = new DocumentAttributeRecord();
       r.setKey(compositeKey);
-      r.setDocumentId(this.docId);
+      r.setDocumentId(documentId);
       r.setValueType(DocumentAttributeValueType.COMPOSITE_STRING);
       r.setStringValue(stringValue);
+      r.setInsertedDate(this.now);
+      r.setUserId(username);
       records.add(r);
     }
 
     return records;
   }
 
-
   /**
    * Create Composite Keys from {@link SchemaAttributesCompositeKey}.
-   * 
+   *
    * @param schemaAttributes {@link SchemaAttributesCompositeKey}
+   * @param documentId {@link String}
    * @param documentAttributeKeys {@link Map}
    * @return {@link Collection} {@link DocumentAttributeRecord}
    */
   @SuppressWarnings("boxing")
   private Collection<DocumentAttributeRecord> createCompositeKeys(
-      final SchemaAttributesCompositeKey schemaAttributes,
+      final SchemaAttributesCompositeKey schemaAttributes, final String documentId,
       final Map<String, List<DocumentAttributeRecord>> documentAttributeKeys) {
 
     Collection<DocumentAttributeRecord> compositeKeys = new ArrayList<>();
@@ -183,10 +191,14 @@ public class DocumentAttributeSchema
           }
         }
 
-        compositeKeys.addAll(createCompositeKeys(newCompositeKeys, newCompositeValues));
+        compositeKeys.addAll(createCompositeKeys(documentId, newCompositeKeys, newCompositeValues));
       }
     }
 
     return compositeKeys;
+  }
+
+  private String getUsername() {
+    return ApiAuthorization.getAuthorization().getUsername();
   }
 }

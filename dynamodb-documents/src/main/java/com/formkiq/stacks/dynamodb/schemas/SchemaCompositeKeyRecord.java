@@ -141,7 +141,7 @@ public class SchemaCompositeKeyRecord implements DynamodbRecord<SchemaCompositeK
 
     List<String> s = new ArrayList<>(this.keys);
     Collections.sort(s);
-    return GSI_SK + String.join("#", s);
+    return GSI_SK + String.join(DbKeys.COMPOSITE_KEY_DELIM, s) + "#";
   }
 
   @Override
