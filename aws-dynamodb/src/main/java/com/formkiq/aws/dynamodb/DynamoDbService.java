@@ -292,4 +292,13 @@ public interface DynamoDbService {
    * @param writeRequest {@link WriteRequestBuilder}
    */
   void putInTransaction(WriteRequestBuilder writeRequest);
+
+  /**
+   * Get Lock.
+   *
+   * @param pk {@link AttributeValue}
+   * @param sk {@link AttributeValue}
+   * @return Map
+   */
+  Map<String, AttributeValue> getAquiredLock(AttributeValue pk, AttributeValue sk);
 }

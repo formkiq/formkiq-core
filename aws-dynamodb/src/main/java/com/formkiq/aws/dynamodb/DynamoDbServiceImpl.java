@@ -74,6 +74,8 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
   private static final int DEFAULT_BACKOFF_IN_MS = 200;
   /** Thousand constant. */
   private static final int TS = 1000;
+  /** 1 Hour in Seconds. */
+  public static final int TIME_TO_LIVE_IN_SECONDS = 3600;
 
   /** {@link DynamoDbClient}. */
   private final DynamoDbClient dbClient;
@@ -462,6 +464,9 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
     item.put(SK, getLock(sk));
     item.put("ExpirationTime", AttributeValue.builder().n(Long.toString(expirationTime)).build());
 
+    long ttl = Instant.now().getEpochSecond() + TIME_TO_LIVE_IN_SECONDS;
+    item.put("TimeToLive", AttributeValue.builder().n(String.valueOf(ttl)).build());
+
     Put.Builder put = Put.builder().tableName(tableName).item(item).conditionExpression(
         "(attribute_not_exists(PK) and attribute_not_exists(SK)) OR ExpirationTime < :currentTime");
 
@@ -506,6 +511,12 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
   @Override
   public void putInTransaction(final WriteRequestBuilder writeRequest) {
     writeRequest.batchWriteItem(this.dbClient);
+  }
+
+  @Override
+  public Map<String, AttributeValue> getAquiredLock(final AttributeValue pk,
+      final AttributeValue sk) {
+    return get(pk, getLock(sk));
   }
 
   private AttributeValue getLock(final AttributeValue sk) {

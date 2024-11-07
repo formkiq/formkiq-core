@@ -31,8 +31,11 @@ import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
+import java.util.Map;
+
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Unit Tests for {@link DynamoDbService}. */
@@ -74,6 +77,9 @@ public class DynamoDbServiceTest {
 
     // then
     assertTrue(locked);
+
+    Map<String, AttributeValue> aquiredLock = this.service.getAquiredLock(pk, sk);
+    assertNotNull(aquiredLock.get("TimeToLive"));
     assertTrue(this.service.releaseLock(pk, sk));
 
     // when
