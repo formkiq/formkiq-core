@@ -8043,6 +8043,7 @@
               - DELETE
               - SOFT_DELETE
               - RESTORE
+              - NEW_VERSION
             UserActivity:
               type: object
               properties:

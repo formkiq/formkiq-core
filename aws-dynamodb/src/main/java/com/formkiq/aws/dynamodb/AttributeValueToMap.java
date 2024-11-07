@@ -28,6 +28,8 @@ import java.util.Map;
 import java.util.function.Function;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+
 /**
  * Convert {@link Map} {@link AttributeValue} to {@link Map}.
  *
@@ -40,7 +42,7 @@ public class AttributeValueToMap
 
     Map<String, Object> result = new HashMap<>();
 
-    for (Map.Entry<String, AttributeValue> e : map.entrySet()) {
+    for (Map.Entry<String, AttributeValue> e : notNull(map.entrySet())) {
 
       String key = getKey(e.getKey());
 
