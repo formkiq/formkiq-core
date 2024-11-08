@@ -42,12 +42,14 @@ public class AttributeValueToMap
 
     Map<String, Object> result = new HashMap<>();
 
-    for (Map.Entry<String, AttributeValue> e : notNull(map.entrySet())) {
+    if (map != null) {
+      for (Map.Entry<String, AttributeValue> e : notNull(map.entrySet())) {
 
-      String key = getKey(e.getKey());
+        String key = getKey(e.getKey());
 
-      Object obj = convert(e.getValue());
-      result.put(key, obj);
+        Object obj = convert(e.getValue());
+        result.put(key, obj);
+      }
     }
 
     return result;
