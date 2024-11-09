@@ -60,15 +60,15 @@ public class SchemaCompositeKeyGenerator {
    * 
    * @param schemaAttributes {@link Collection} {@link SchemaAttributes}
    * @param documentId {@link String}
-   * @param documentAttributeRecords {@link Collection} {@link DocumentAttributeRecord}
+   * @param allDocumentAttributeRecords {@link Collection} {@link DocumentAttributeRecord}
    * @return {@link Collection} {@link DocumentAttributeRecord}
    */
   public Collection<DocumentAttributeRecord> apply(
       final Collection<SchemaAttributes> schemaAttributes, final String documentId,
-      final Collection<DocumentAttributeRecord> documentAttributeRecords) {
+      final Collection<DocumentAttributeRecord> allDocumentAttributeRecords) {
 
     return notNull(schemaAttributes).stream()
-        .flatMap(s -> createCompositeKeys(s, documentId, documentAttributeRecords).stream())
+        .flatMap(s -> createCompositeKeys(s, documentId, allDocumentAttributeRecords).stream())
         .toList();
   }
 
@@ -77,20 +77,21 @@ public class SchemaCompositeKeyGenerator {
    *
    * @param schemaAttributes {@link SchemaAttributes}
    * @param documentId {@link String}
-   * @param list {@link Collection} {@link DocumentAttributeRecord}
+   * @param allDocumentAttributes {@link Collection} {@link DocumentAttributeRecord}
    * @return {@link Collection} {@link DocumentAttributeRecord}
    */
   private Collection<DocumentAttributeRecord> createCompositeKeys(
       final SchemaAttributes schemaAttributes, final String documentId,
-      final Collection<DocumentAttributeRecord> list) {
+      final Collection<DocumentAttributeRecord> allDocumentAttributes) {
 
-    Map<String, List<DocumentAttributeRecord>> documentAttributeKeys = list.stream()
-        .filter(a -> !DocumentAttributeValueType.CLASSIFICATION.equals(a.getValueType()))
+    Map<String, List<DocumentAttributeRecord>> documentAttributeKeys = allDocumentAttributes
+        .stream().filter(a -> !DocumentAttributeValueType.CLASSIFICATION.equals(a.getValueType()))
         .collect(Collectors.groupingBy(DocumentAttributeRecord::getKey));
 
     Collection<DocumentAttributeRecord> compositeKeys = new ArrayList<>();
 
     notNull(schemaAttributes.getCompositeKeys()).forEach(a -> {
+
       Collection<DocumentAttributeRecord> keys =
           createCompositeKeys(a, documentId, documentAttributeKeys);
       compositeKeys.addAll(keys);

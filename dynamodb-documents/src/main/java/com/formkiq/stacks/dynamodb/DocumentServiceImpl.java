@@ -56,6 +56,7 @@ import com.formkiq.stacks.dynamodb.attributes.AttributeValidation;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidator;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidatorImpl;
+import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeKeyPredicate;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecordPredicate;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecordsToSchemaAttributes;
@@ -93,6 +94,7 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -110,6 +112,7 @@ import java.util.stream.Collectors;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
+import static com.formkiq.aws.dynamodb.objects.Objects.concat;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static com.formkiq.aws.dynamodb.objects.Strings.isUuid;
@@ -263,12 +266,18 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   private Collection<DocumentAttributeRecord> generateDocumentAttributesToSave(final String siteId,
-      final String documentId,
-      final Collection<DocumentAttributeRecord> newDocumentAttributeRecords,
-      final Collection<DocumentAttributeRecord> previousDocumentAttributeRecords,
-      final Collection<DocumentAttributeRecord> attributesToBeDeleted,
+      final String documentId, final DocumentAttributeRecordListBuilder listBuilder,
       final AttributeValidation validation, final AttributeValidationAccess validationAccess)
       throws ValidationException {
+
+    Collection<DocumentAttributeRecord> newDocumentAttributeRecords =
+        listBuilder.getNewAttributes();
+    Collection<DocumentAttributeRecord> previousDocumentAttributeRecords =
+        listBuilder.getPreviousAttributes();
+    Collection<DocumentAttributeRecord> attributesToBeDeleted =
+        listBuilder.getToBeDeletedAttributes();
+    Collection<DocumentAttributeRecord> previousCompositeKeys =
+        listBuilder.getPreviousCompositeKeys();
 
     // Previous document attributes without the ones that are going to be removed, so we don't
     // generate composite keys for them
@@ -289,17 +298,40 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
         new SchemaRequiredDefaultValueKeyGenerator(this.attributeService).apply(schemaAttributes,
             siteId, documentId, attrkeys);
 
-    Collection<DocumentAttributeRecord> newCompositeKeys =
+    newDocumentAttributeRecords = concat(newDocumentAttributeRecords, defaultValues);
+    allAttributes = concat(allAttributes, defaultValues);
+
+    Collection<DocumentAttributeRecord> allCompositeKeys =
         new SchemaCompositeKeyGenerator().apply(schemaAttributes, documentId, allAttributes);
 
-    Collection<DocumentAttributeRecord> documentAttributes = Objects
-        .concat(newDocumentAttributeRecords, Objects.concat(newCompositeKeys, defaultValues));
+    Collection<DocumentAttributeRecord> newCompositeKeys =
+        getNewCompositeKeys(allCompositeKeys, previousCompositeKeys);
+
+    Collection<DocumentAttributeRecord> compositeKeysToBeDeleted = previousCompositeKeys.stream()
+        .filter(Predicate.not(new DocumentAttributeKeyPredicate(allCompositeKeys))).toList();
+
+    Collection<DocumentAttributeRecord> documentAttributes =
+        Objects.concat(newDocumentAttributeRecords, newCompositeKeys);
 
     // validation
     validateDocumentAttributes(schemaAttributes, siteId, documentId, documentAttributes,
         attributesToBeDeleted, validation, validationAccess);
 
+    listBuilder.setCompositeKeysToBeDeleted(compositeKeysToBeDeleted);
+
     return documentAttributes;
+  }
+
+  private Collection<DocumentAttributeRecord> getNewCompositeKeys(
+      final Collection<DocumentAttributeRecord> allCompositeKeys,
+      final Collection<DocumentAttributeRecord> previousCompositeKeys) {
+
+    Set<String> keys = createAttributeKeys(previousCompositeKeys);
+    Set<String> attributeKeys = previousCompositeKeys.stream().map(DocumentAttributeRecord::getKey)
+        .collect(Collectors.toSet());
+
+    return allCompositeKeys.stream().filter(a -> !attributeKeys.contains(a.getKey())
+        || isDocumentAttributeKeyMatchPredicate(a, attributeKeys, keys)).toList();
   }
 
   /**
@@ -1886,6 +1918,9 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     DynamodbRecordTx tx = null;
 
     if (allAttributes != null) {
+
+      DocumentAttributeRecordListBuilder listBuilder = new DocumentAttributeRecordListBuilder();
+
       Collection<DocumentAttributeRecord> previousAllAttributes =
           findAllAttributes(siteId, documentId);
 
@@ -1894,34 +1929,37 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
               new DocumentAttributeRecordPredicate(DocumentAttributeValueType.COMPOSITE_STRING)))
           .toList();
 
-      Collection<DocumentAttributeRecord> attributes =
+      Collection<DocumentAttributeRecord> newAttributes =
           filterAttributesByPrevious(allAttributes, previousAttributes);
+
+      List<DocumentAttributeRecord> previousCompositeKeys = previousAllAttributes.stream()
+          .filter(new DocumentAttributeRecordPredicate(DocumentAttributeValueType.COMPOSITE_STRING))
+          .toList();
 
       Collection<DocumentAttributeRecord> attributesToBeDeleted =
           getAttributesToBeDeleted(validationAccess, allAttributes, previousAttributes);
 
-      List<DocumentAttributeRecord> existingCompositeKeys = previousAllAttributes.stream()
-          .filter(new DocumentAttributeRecordPredicate(DocumentAttributeValueType.COMPOSITE_STRING))
-          .toList();
+      listBuilder.setNewAttributes(newAttributes);
+      listBuilder.setPreviousAttributes(previousAttributes);
+      listBuilder.setToBeDeletedAttributes(attributesToBeDeleted);
+      listBuilder.setPreviousCompositeKeys(previousCompositeKeys);
+
+      Collection<DocumentAttributeRecord> compositeKeysToBeDeleted =
+          getCompositeKeysToBeDeletedByAttributes(previousCompositeKeys, attributesToBeDeleted);
 
       // generate Document Attributes To Save
-      Collection<DocumentAttributeRecord> toSave =
-          generateDocumentAttributesToSave(siteId, documentId, attributes, previousAttributes,
-              attributesToBeDeleted, validation, validationAccess);
+      Collection<DocumentAttributeRecord> toSave = generateDocumentAttributesToSave(siteId,
+          documentId, listBuilder, validation, validationAccess);
+
+      compositeKeysToBeDeleted =
+          Objects.concat(compositeKeysToBeDeleted, listBuilder.getCompositeKeysToBeDeleted());
 
       // reset inserted date to match
       Date now = new Date();
       toSave.forEach(t -> t.setInsertedDate(now));
 
-      List<DocumentAttributeRecord> newCompositeKeys = toSave.stream()
-          .filter(new DocumentAttributeRecordPredicate(DocumentAttributeValueType.COMPOSITE_STRING))
-          .toList();
-
-      Collection<DocumentAttributeRecord> compositeKeysToBeDeleted =
-          getCompositeKeysToBeDeleted(newCompositeKeys, existingCompositeKeys);
-      attributesToBeDeleted = Objects.concat(attributesToBeDeleted, compositeKeysToBeDeleted);
-
-      tx = new DynamodbRecordTx(toSave, attributesToBeDeleted);
+      tx = new DynamodbRecordTx(toSave,
+          Objects.concat(attributesToBeDeleted, compositeKeysToBeDeleted));
     }
 
     return tx;
@@ -1946,19 +1984,17 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
         || isDocumentAttributeKeyMatchPredicate(a, attributeKeys, keys)).toList();
   }
 
-  private Collection<DocumentAttributeRecord> getCompositeKeysToBeDeleted(
-      final List<DocumentAttributeRecord> newCompositeKeys,
-      final List<DocumentAttributeRecord> existingCompositeKeys) {
+  private Collection<DocumentAttributeRecord> getCompositeKeysToBeDeletedByAttributes(
+      final Collection<DocumentAttributeRecord> previousCompositeKeys,
+      final Collection<DocumentAttributeRecord> attributesToBeDeleted) {
 
-    Set<String> keys = createAttributeKeys(newCompositeKeys);
-    Set<String> attributeKeys =
-        newCompositeKeys.stream().map(DocumentAttributeRecord::getKey).collect(Collectors.toSet());
+    Set<String> keys = attributesToBeDeleted.stream().map(DocumentAttributeRecord::getKey)
+        .collect(Collectors.toSet());
 
-    List<DocumentAttributeRecord> list =
-        existingCompositeKeys.stream().filter(a -> !attributeKeys.contains(a.getKey())
-            || isDocumentAttributeKeyMatchPredicate(a, attributeKeys, keys)).toList();
-
-    return list;
+    return previousCompositeKeys.stream().filter(c -> {
+      String[] ss = c.getKey().split(DbKeys.COMPOSITE_KEY_DELIM);
+      return Arrays.stream(ss).anyMatch(keys::contains);
+    }).toList();
   }
 
   /**
@@ -2383,7 +2419,9 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     if (AttributeValidationAccess.CREATE.equals(validationAccess)
         || AttributeValidationAccess.ADMIN_CREATE.equals(validationAccess)) {
 
-      Set<String> keys = documentAttributes.stream().map(DocumentAttributeRecord::getKey)
+      Set<String> keys = documentAttributes.stream()
+          // .filter(a -> !DocumentAttributeValueType.COMPOSITE_STRING.equals(a.getValueType()))
+          .map(DocumentAttributeRecord::getKey)
           .filter(k -> !AttributeKeyReserved.RELATIONSHIPS.getKey().equals(k))
           .collect(Collectors.toSet());
 
