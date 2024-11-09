@@ -125,6 +125,9 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
   /** Maximum number of Records DynamoDb can be queries for at a time. */
   private static final int MAX_QUERY_RECORDS = 100;
+  /** Prediciate CompositeKey. */
+  private static final DocumentAttributeRecordPredicate PREDICIATE_COMPOSITE_KEY =
+      new DocumentAttributeRecordPredicate(DocumentAttributeValueType.COMPOSITE_STRING);
   /** {@link AttributeService}. */
   private final AttributeService attributeService;
   /** {@link AttributeValidator}. */
@@ -505,7 +508,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
           boolean match = a.getKey().equals(attributeKey);
 
-          if (DocumentAttributeValueType.COMPOSITE_STRING.equals(a.getValueType())) {
+          if (PREDICIATE_COMPOSITE_KEY.test(a)) {
             for (String s : a.getKey().split(DbKeys.COMPOSITE_KEY_DELIM)) {
               if (attributeKey.equals(s)) {
                 match = true;
@@ -1924,17 +1927,14 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       Collection<DocumentAttributeRecord> previousAllAttributes =
           findAllAttributes(siteId, documentId);
 
-      List<DocumentAttributeRecord> previousAttributes = previousAllAttributes.stream()
-          .filter(Predicate.not(
-              new DocumentAttributeRecordPredicate(DocumentAttributeValueType.COMPOSITE_STRING)))
-          .toList();
+      List<DocumentAttributeRecord> previousAttributes =
+          previousAllAttributes.stream().filter(Predicate.not(PREDICIATE_COMPOSITE_KEY)).toList();
 
       Collection<DocumentAttributeRecord> newAttributes =
           filterAttributesByPrevious(allAttributes, previousAttributes);
 
-      List<DocumentAttributeRecord> previousCompositeKeys = previousAllAttributes.stream()
-          .filter(new DocumentAttributeRecordPredicate(DocumentAttributeValueType.COMPOSITE_STRING))
-          .toList();
+      List<DocumentAttributeRecord> previousCompositeKeys =
+          previousAllAttributes.stream().filter(PREDICIATE_COMPOSITE_KEY).toList();
 
       Collection<DocumentAttributeRecord> attributesToBeDeleted =
           getAttributesToBeDeleted(validationAccess, allAttributes, previousAttributes);
@@ -2021,9 +2021,9 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
           attributes.stream().map(DocumentAttributeRecord::getKey).collect(Collectors.toSet());
       Set<String> keys = createAttributeKeys(attributes);
 
-      attributesToBeDeleted = previousAttributes.stream()
-          .filter(a -> !DocumentAttributeValueType.COMPOSITE_STRING.equals(a.getValueType()))
-          .filter(a -> isDocumentAttributeKeyMatchPredicate(a, attributeKeys, keys)).toList();
+      attributesToBeDeleted =
+          previousAttributes.stream().filter(Predicate.not(PREDICIATE_COMPOSITE_KEY))
+              .filter(a -> isDocumentAttributeKeyMatchPredicate(a, attributeKeys, keys)).toList();
     }
 
     // when setting attributes remove existing attribute keys
@@ -2036,11 +2036,11 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
       // delete existing attribute keys, but if the key is exactly the same key/value as existing,
       // don't delete
-      attributesToBeDeleted = previousAttributes.stream()
-          .filter(a -> !DocumentAttributeValueType.COMPOSITE_STRING.equals(a.getValueType()))
-          .filter(a -> !attributeKeys.contains(a.getKey())
-              || isDocumentAttributeKeyMatchPredicate(a, attributeKeys, keys))
-          .toList();
+      attributesToBeDeleted =
+          previousAttributes.stream().filter(Predicate.not(PREDICIATE_COMPOSITE_KEY))
+              .filter(a -> !attributeKeys.contains(a.getKey())
+                  || isDocumentAttributeKeyMatchPredicate(a, attributeKeys, keys))
+              .toList();
     }
 
     return attributesToBeDeleted;
@@ -2419,9 +2419,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     if (AttributeValidationAccess.CREATE.equals(validationAccess)
         || AttributeValidationAccess.ADMIN_CREATE.equals(validationAccess)) {
 
-      Set<String> keys = documentAttributes.stream()
-          // .filter(a -> !DocumentAttributeValueType.COMPOSITE_STRING.equals(a.getValueType()))
-          .map(DocumentAttributeRecord::getKey)
+      Set<String> keys = documentAttributes.stream().map(DocumentAttributeRecord::getKey)
           .filter(k -> !AttributeKeyReserved.RELATIONSHIPS.getKey().equals(k))
           .collect(Collectors.toSet());
 
