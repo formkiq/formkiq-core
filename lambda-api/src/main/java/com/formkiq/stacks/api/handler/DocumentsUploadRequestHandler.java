@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api.handler;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.objects.Strings;
@@ -62,7 +63,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
@@ -97,7 +97,7 @@ public class DocumentsUploadRequestHandler
       final AwsServiceCache awsservice) throws Exception {
 
     AddDocumentRequest item = new AddDocumentRequest();
-    item.setDocumentId(UUID.randomUUID().toString());
+    item.setDocumentId(ID.uuid());
     item.setChecksum(event.getQueryStringParameter("checksum"));
     item.setChecksumType(event.getQueryStringParameter("checksumType"));
     item.setPath(event.getQueryStringParameter("path"));
@@ -158,12 +158,12 @@ public class DocumentsUploadRequestHandler
     validate(awsservice, siteId, request);
 
     if (isEmpty(request.getDocumentId())) {
-      request.setDocumentId(UUID.randomUUID().toString());
+      request.setDocumentId(ID.uuid());
     }
 
     notNull(request.getDocuments()).forEach(d -> {
       if (isEmpty(d.getDocumentId())) {
-        d.setDocumentId(UUID.randomUUID().toString());
+        d.setDocumentId(ID.uuid());
       }
     });
 

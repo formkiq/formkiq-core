@@ -23,7 +23,7 @@
  */
 package com.formkiq.aws.services.lambda;
 
-import java.util.UUID;
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.graalvm.annotations.Reflectable;
 
@@ -54,7 +54,7 @@ public class ApiPagination {
    * constructor.
    */
   public ApiPagination() {
-    this.next = UUID.randomUUID().toString();
+    this.next = ID.uuid();
   }
 
   /**

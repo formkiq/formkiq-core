@@ -42,6 +42,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -73,7 +74,7 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
     // given
     final String content = "some content";
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -128,7 +129,7 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
     // given
     final String content = "some content";
 
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -139,7 +140,7 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
       }
 
       // when
-      setBearerToken(UUID.randomUUID().toString());
+      setBearerToken(ID.uuid());
 
       // then
       assertDocumentForbidden(siteId);
@@ -157,7 +158,7 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
     final int count = 15;
     final String content = "some content";
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -210,7 +211,7 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
     // given
     final String content = "some content";
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -243,7 +244,7 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
   @Test
   void testGetFolders05() throws Exception {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       setBearerToken(siteId);
       String path = "Chicago";
@@ -273,7 +274,7 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
     ExecutorService executorService = Executors.newFixedThreadPool(threadPool);
     CountDownLatch latch = new CountDownLatch(numberOfThreads);
 
-    String siteId = UUID.randomUUID().toString();
+    String siteId = ID.uuid();
     setBearerToken(siteId);
 
     // when
@@ -320,7 +321,7 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
     // given
     final String path = "Chicago/Southside";
 
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -373,7 +374,7 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
   @Test
   void testDeletedFolders01() {
     // given
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -397,7 +398,7 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
   @Test
   void testDeletedFolders02() throws ApiException {
     // given
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -439,7 +440,7 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
   void testDeletedFolders03()
       throws ApiException, IOException, URISyntaxException, InterruptedException {
     // given
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -490,7 +491,7 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
   @Test
   void testAddFolders02() {
     // given
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 

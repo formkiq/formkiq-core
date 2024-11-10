@@ -41,7 +41,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.AttributeValueToDynamicObject;
 import com.formkiq.aws.dynamodb.DbKeys;
@@ -49,6 +48,7 @@ import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -149,7 +149,7 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
   private FolderIndexRecord createFolder(final String siteId, final String parentId,
       final String folder, final Date insertedDate, final String userId) {
 
-    String uuid = UUID.randomUUID().toString();
+    String uuid = ID.uuid();
 
     FolderIndexRecord record = new FolderIndexRecord().parentDocumentId(parentId).documentId(uuid)
         .insertedDate(insertedDate).lastModifiedDate(insertedDate).userId(userId).path(folder)
@@ -401,7 +401,7 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
 
       } else {
 
-        record.documentId(UUID.randomUUID().toString());
+        record.documentId(ID.uuid());
 
         if (!"file".equals(type)) {
           record.insertedDate(nowTimestamp);

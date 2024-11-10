@@ -30,6 +30,7 @@ import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceExtension;
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
@@ -104,7 +105,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
@@ -322,10 +322,10 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
     if (hasContent) {
       doc.setContentLength(null);
-      doc.setChecksum(UUID.randomUUID().toString());
+      doc.setChecksum(ID.uuid());
       doc.setDeepLinkPath(null);
     } else if (doc.getChecksum() == null) {
-      doc.setChecksum(UUID.randomUUID().toString());
+      doc.setChecksum(ID.uuid());
     }
 
     if (isEmpty(doc.getPath())) {
@@ -387,10 +387,10 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     try {
 
       Map<String, String> index = folderIndexProcesor.getIndex(siteId, path);
-      documentId = index.getOrDefault("documentId", UUID.randomUUID().toString());
+      documentId = index.getOrDefault("documentId", ID.uuid());
 
     } catch (IOException e) {
-      documentId = UUID.randomUUID().toString();
+      documentId = ID.uuid();
     }
 
     return documentId;

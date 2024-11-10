@@ -37,10 +37,10 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -86,7 +86,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testDeleteOpensearchIndex() {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(new String[] {siteId});
 
@@ -108,7 +108,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testGetOpensearchIndex() {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(new String[] {siteId});
 
@@ -132,7 +132,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testHandleGetSites01() throws Exception {
     // given
-    setBearerToken(new String[] {"default", "Admins", "finance"});
+    setBearerToken(new String[] {DEFAULT_SITE_ID, "Admins", "finance"});
     config.save(null, new DynamicObject(Map.of("chatGptApiKey", "somevalue")));
 
     ssm.putParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/maildomain", "tryformkiq.com");
@@ -184,7 +184,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
   public void testHandleGetSites02() throws Exception {
     // given
     ssm.removeParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/maildomain");
-    setBearerToken(new String[] {"default", "Admins", "finance"});
+    setBearerToken(new String[] {DEFAULT_SITE_ID, "Admins", "finance"});
 
     // when
     GetSitesResponse response = this.systemApi.getSites(null);
@@ -211,7 +211,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     // given
     ssm.putParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/maildomain", "tryformkiq.com");
     ssm.removeParameter(
-        String.format("/formkiq/%s/siteid/%s/email", FORMKIQ_APP_ENVIRONMENT, "default"));
+        String.format("/formkiq/%s/siteid/%s/email", FORMKIQ_APP_ENVIRONMENT, DEFAULT_SITE_ID));
 
     setBearerToken(new String[] {"default_read", "finance"});
 
@@ -294,7 +294,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testHandleVersion01() throws Exception {
     // given
-    setBearerToken(new String[] {"default", "Admins", "finance"});
+    setBearerToken(new String[] {DEFAULT_SITE_ID, "Admins", "finance"});
 
     // when
     GetVersionResponse response = this.systemApi.getVersion();
@@ -311,7 +311,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testPutOpensearchIndex() {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(new String[] {siteId});
       SetOpenSearchIndexRequest req = new SetOpenSearchIndexRequest();

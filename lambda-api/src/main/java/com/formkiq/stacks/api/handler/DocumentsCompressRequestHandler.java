@@ -35,9 +35,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
+
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.aws.s3.S3Service;
@@ -113,7 +114,7 @@ public class DocumentsCompressRequestHandler
       final AwsServiceCache awsServices) throws Exception {
 
     String siteId = authorization.getSiteId();
-    String documentId = UUID.randomUUID().toString();
+    String documentId = ID.uuid();
     String compressionTaskS3Key = getS3Key(siteId, documentId, false);
 
     S3Service s3 = awsServices.getExtension(S3Service.class);

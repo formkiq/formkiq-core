@@ -31,7 +31,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.AttributeValueToDynamicObject;
 import com.formkiq.aws.dynamodb.BatchGetConfig;
@@ -40,6 +39,7 @@ import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.PaginationToAttributeValue;
@@ -251,7 +251,7 @@ public final class WebhooksServiceImpl implements WebhooksService, DbKeys {
   public String saveWebhook(final String siteId, final String name, final String userId,
       final Date ttl, final String enabled) {
 
-    final String id = UUID.randomUUID().toString();
+    final String id = ID.uuid();
     final String fulldate = this.df.format(new Date());
 
     Map<String, AttributeValue> pkvalues = keysGeneric(siteId, PREFIX_WEBHOOK + id, "webhook");

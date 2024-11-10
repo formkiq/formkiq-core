@@ -30,8 +30,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.net.URISyntaxException;
 import java.util.Arrays;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+
+import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -71,9 +72,9 @@ public class DocumentSyncServiceDynamoDbTest {
     // given
     String userId = "joe";
 
-    String documentId = UUID.randomUUID().toString();
+    String documentId = ID.uuid();
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       // when
       syncService.saveSync(siteId, documentId, TYPESENSE, DocumentSyncStatus.FAILED,

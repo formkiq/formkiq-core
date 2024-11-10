@@ -27,8 +27,10 @@ import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentConten
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContentLength;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import java.util.UUID;
+
 import java.util.concurrent.TimeUnit;
+
+import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -71,7 +73,7 @@ class IntegrationTest {
   void testAddDocument01() throws Exception {
     // given
     String siteId = null;
-    String content = UUID.randomUUID().toString();
+    String content = ID.uuid();
     AddDocumentRequest req = new AddDocumentRequest().content(content).contentType("text/plain");
 
     setBearerToken("changeme");

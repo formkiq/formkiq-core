@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api.awstest;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocument;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -112,7 +113,7 @@ public class PrivateWebhooksRequestTest extends AbstractAwsIntegrationTest {
       GetWebhooksResponse webhooks = api.getWebhooks(siteId);
       List<GetWebhookResponse> list = webhooks.getWebhooks();
       assertFalse(list.isEmpty());
-      assertEquals("default", list.get(0).getSiteId());
+      assertEquals(DEFAULT_SITE_ID, list.get(0).getSiteId());
       assertEquals("paypal", list.get(0).getName());
       assertNotNull(list.get(0).getUrl());
       assertNotNull(list.get(0).getInsertedDate());

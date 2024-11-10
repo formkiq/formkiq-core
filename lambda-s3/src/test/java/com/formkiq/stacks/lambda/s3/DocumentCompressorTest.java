@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.lambda.s3;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFileAsByteArray;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
@@ -38,10 +39,11 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.zip.CRC32;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+
+import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -138,14 +140,14 @@ public class DocumentCompressorTest {
     for (final String path : filePathsToCompress) {
       final byte[] content = loadFileAsByteArray(this, path);
       final Long contentChecksum = getContentChecksum(content);
-      final String documentId = this.createDocument("default", "JohnDoe", content);
+      final String documentId = this.createDocument(DEFAULT_SITE_ID, "JohnDoe", content);
       fileChecksums.put(documentId, contentChecksum);
     }
     final String archiveKey = "tempfiles/665f0228-4fbc-4511-912b-6cb6f566e1c0.zip";
     final ArrayList<String> documentIds = new ArrayList<>(fileChecksums.keySet());
 
     this.compressor = new DocumentCompressor(serviceCache);
-    this.compressor.compressDocuments("default", BUCKET_NAME, STAGE_BUCKET_NAME, archiveKey,
+    this.compressor.compressDocuments(DEFAULT_SITE_ID, BUCKET_NAME, STAGE_BUCKET_NAME, archiveKey,
         documentIds);
 
     try (InputStream zipContent = s3.getContentAsInputStream(STAGE_BUCKET_NAME, archiveKey)) {
@@ -168,7 +170,7 @@ public class DocumentCompressorTest {
     final String archiveKey = "tempfiles/665f0228-4fbc-4511-912b-6cb6f566e1c0.zip";
     final ArrayList<String> documentIds = new ArrayList<>(fileChecksums.keySet());
 
-    this.compressor.compressDocuments("default", BUCKET_NAME, STAGE_BUCKET_NAME, archiveKey,
+    this.compressor.compressDocuments(DEFAULT_SITE_ID, BUCKET_NAME, STAGE_BUCKET_NAME, archiveKey,
         documentIds);
 
     try (InputStream zipContent = s3.getContentAsInputStream(STAGE_BUCKET_NAME, archiveKey)) {
@@ -179,7 +181,7 @@ public class DocumentCompressorTest {
   private String createDocument(final String siteId, final String userId, final byte[] content)
       throws ValidationException {
     final DynamicDocumentItem item = new DynamicDocumentItem(new HashMap<>());
-    item.setDocumentId(UUID.randomUUID().toString());
+    item.setDocumentId(ID.uuid());
     item.setUserId(userId);
     item.setInsertedDate(new Date());
     final String documentId = item.getDocumentId();

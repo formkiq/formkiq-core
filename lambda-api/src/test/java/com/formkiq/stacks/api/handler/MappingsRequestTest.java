@@ -25,6 +25,7 @@ package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAttribute;
@@ -44,7 +45,6 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -54,7 +54,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class MappingsRequestTest extends AbstractApiClientRequestTest {
 
   /** SiteId. */
-  private static final String SITE_ID = UUID.randomUUID().toString();
+  private static final String SITE_ID = ID.uuid();
 
   /**
    * POST /mappings empty body.

@@ -33,11 +33,11 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.PaginationToAttributeValue;
@@ -114,8 +114,7 @@ public final class DocumentSyncServiceDynamoDb implements DocumentSyncService {
 
     Map<String, AttributeValue> attrs = new HashMap<>();
     attrs.put(PK, AttributeValue.fromS(getPk(siteId, documentId)));
-    attrs.put(SK, AttributeValue
-        .fromS(SK_SYNCS + fullInsertedDate + TAG_DELIMINATOR + UUID.randomUUID().toString()));
+    attrs.put(SK, AttributeValue.fromS(SK_SYNCS + fullInsertedDate + TAG_DELIMINATOR + ID.uuid()));
 
     attrs.put("documentId", AttributeValue.fromS(documentId));
     attrs.put("service", AttributeValue.fromS(service.name()));

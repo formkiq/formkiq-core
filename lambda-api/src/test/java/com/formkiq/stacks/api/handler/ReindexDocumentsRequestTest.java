@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAttribute;
@@ -46,8 +47,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -65,11 +66,11 @@ public class ReindexDocumentsRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testAddReindexDocumentsAttributes01() {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       setBearerToken(siteId);
 
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       AddReindexDocumentRequest req = new AddReindexDocumentRequest();
 
       // when
@@ -93,7 +94,7 @@ public class ReindexDocumentsRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testAddReindexDocumentsAttributes02() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -135,7 +136,7 @@ public class ReindexDocumentsRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testAddReindexDocumentsAttributes03() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -193,7 +194,7 @@ public class ReindexDocumentsRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testAddReindexDocumentsAttributes04() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -237,7 +238,7 @@ public class ReindexDocumentsRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testAddReindexDocumentsAttributes05() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 

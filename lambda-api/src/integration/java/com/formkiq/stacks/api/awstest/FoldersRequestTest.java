@@ -35,11 +35,11 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.SearchResultDocument;
 import org.junit.jupiter.api.Test;
@@ -73,7 +73,7 @@ public class FoldersRequestTest extends AbstractAwsIntegrationTest {
   @Timeout(value = TEST_TIMEOUT)
   public void testDeleteFolders01() throws Exception {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       List<ApiClient> clients = getApiClients(siteId);
 
@@ -109,7 +109,7 @@ public class FoldersRequestTest extends AbstractAwsIntegrationTest {
   @Timeout(value = TEST_TIMEOUT)
   public void testGetFolders01() throws Exception {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       List<ApiClient> clients = getApiClients(siteId);
 
@@ -141,10 +141,10 @@ public class FoldersRequestTest extends AbstractAwsIntegrationTest {
     ExecutorService executorService = Executors.newFixedThreadPool(threadPool);
     CountDownLatch latch = new CountDownLatch(numberOfThreads);
 
-    String siteId = UUID.randomUUID().toString();
+    String siteId = ID.uuid();
 
     List<ApiClient> clients = getApiClients(siteId);
-    final String random = UUID.randomUUID().toString();
+    final String random = ID.uuid();
 
     ApiClient apiClient = clients.get(0);
 
@@ -186,14 +186,14 @@ public class FoldersRequestTest extends AbstractAwsIntegrationTest {
   @Timeout(value = TEST_TIMEOUT)
   public void testPostFolders01() throws Exception {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       List<ApiClient> clients = getApiClients(siteId);
 
       for (ApiClient apiClient : clients) {
 
         DocumentFoldersApi foldersApi = new DocumentFoldersApi(apiClient);
-        String folder = UUID.randomUUID().toString();
+        String folder = ID.uuid();
         AddFolderRequest req = new AddFolderRequest().path(folder);
 
         DocumentsApi documentsApi = new DocumentsApi(apiClient);

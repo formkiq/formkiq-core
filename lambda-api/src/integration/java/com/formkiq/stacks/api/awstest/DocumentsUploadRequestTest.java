@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api.awstest;
 
 import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.client.api.DocumentTagsApi;
 import com.formkiq.client.api.DocumentsApi;
@@ -55,7 +56,6 @@ import java.net.http.HttpResponse.BodyHandlers;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENTS;
@@ -76,9 +76,9 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
   /** {@link ConfigService}. */
   private static ConfigService configService;
   /** Random Site ID. */
-  private static final String SITEID0 = UUID.randomUUID().toString();
+  private static final String SITEID0 = ID.uuid();
   /** Random Site ID. */
-  private static final String SITEID1 = UUID.randomUUID().toString();
+  private static final String SITEID1 = ID.uuid();
   /** 400 Bad Request. */
   private static final int STATUS_BAD_REQUEST = 400;
   /** 200 OK. */
@@ -384,7 +384,7 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
     DocumentsApi api = new DocumentsApi(client);
     AddDocumentUploadRequest req = new AddDocumentUploadRequest();
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       // when
       GetDocumentUrlResponse response = api.addDocumentUpload(req, siteId, null, null, null);

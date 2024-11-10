@@ -32,8 +32,8 @@ import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-import java.util.UUID;
 
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -103,8 +103,8 @@ public class IndicesRequestHandlerTest {
    * @param siteId {@link String}
    */
   private void setBearerToken(final String siteId) {
-    String jwt = JwtTokenEncoder.encodeCognito(new String[] {siteId != null ? siteId : "default"},
-        "joesmith");
+    String jwt = JwtTokenEncoder
+        .encodeCognito(new String[] {siteId != null ? siteId : DEFAULT_SITE_ID}, "joesmith");
     this.client.addDefaultHeader("Authorization", jwt);
   }
 
@@ -116,10 +116,10 @@ public class IndicesRequestHandlerTest {
   @Test
   public void testHandleDelete01() throws Exception {
 
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
       // given
       setBearerToken(siteId);
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
       item.setPath("x/z/test.pdf");
       documentService.saveDocument(siteId, item, null);
@@ -151,11 +151,11 @@ public class IndicesRequestHandlerTest {
   @Test
   public void testHandleDelete02() throws Exception {
 
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
       // given
       setBearerToken(siteId);
 
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
       item.setPath("x/z/test.pdf");
       documentService.saveDocument(siteId, item, null);
@@ -188,7 +188,7 @@ public class IndicesRequestHandlerTest {
   @Test
   public void testHandleDelete03() {
 
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
       // given
       setBearerToken(siteId);
       String indexKey = "12345";
@@ -215,10 +215,10 @@ public class IndicesRequestHandlerTest {
     String indexType = "tags";
     SearchQuery q = new SearchQuery().meta(new SearchMetaCriteria().indexType(indexType));
 
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
       // given
       setBearerToken(siteId);
-      DocumentItem item = new DocumentItemDynamoDb(UUID.randomUUID().toString(), new Date(), "joe");
+      DocumentItem item = new DocumentItemDynamoDb(ID.uuid(), new Date(), "joe");
       String tagKey = "category";
       String tagValue = "person";
       DocumentTag tag = new DocumentTag(item.getDocumentId(), tagKey, tagValue, new Date(), "joe");
@@ -249,7 +249,7 @@ public class IndicesRequestHandlerTest {
   @Test
   public void testHandleDelete05() {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
       String indexKey = "12345";
@@ -273,10 +273,10 @@ public class IndicesRequestHandlerTest {
   @Test
   public void testHandleDelete06() throws Exception {
 
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
       // given
       setBearerToken(siteId);
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
       item.setPath("x/z/test.pdf");
       documentService.saveDocument(siteId, item, null);

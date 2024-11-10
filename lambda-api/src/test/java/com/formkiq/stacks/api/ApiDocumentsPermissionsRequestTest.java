@@ -27,7 +27,8 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.Arrays;
 import java.util.Map;
-import java.util.UUID;
+
+import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -54,7 +55,7 @@ public class ApiDocumentsPermissionsRequestTest extends AbstractRequestHandler {
     ApiGatewayRequestEvent event = new ApiGatewayRequestEventBuilder().method("delete")
         .resource("/documents/{documentId}/permissions/{permissionKey}")
         .path("/documents/" + documentId + "/permissions/" + permissionKey).user("joesmith")
-        .group(siteId != null ? siteId : "default")
+        .group(siteId != null ? siteId : DEFAULT_SITE_ID)
         .pathParameters(Map.of("documentId", documentId, "permissionKey", permissionKey))
         .queryParameters(siteId != null ? Map.of("siteId", siteId) : null).build();
     return event;
@@ -105,12 +106,11 @@ public class ApiDocumentsPermissionsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleDeleteDocumentPermissions01() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
 
-      ApiGatewayRequestEvent event =
-          deletePermissionsRequest(siteId, documentId, UUID.randomUUID().toString());
+      ApiGatewayRequestEvent event = deletePermissionsRequest(siteId, documentId, ID.uuid());
 
       // when
       String response = handleRequest(event);
@@ -133,9 +133,9 @@ public class ApiDocumentsPermissionsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocumentPermissions01() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
 
       ApiGatewayRequestEvent event =
           getRequest(siteId, documentId, siteId != null ? siteId : DEFAULT_SITE_ID);
@@ -161,9 +161,9 @@ public class ApiDocumentsPermissionsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandlePostDocumentPermissions01() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
 
       ApiGatewayRequestEvent event =
           postRequest(siteId, documentId, siteId != null ? siteId : DEFAULT_SITE_ID, "{}");

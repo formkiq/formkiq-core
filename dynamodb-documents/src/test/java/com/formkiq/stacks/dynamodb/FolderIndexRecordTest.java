@@ -29,7 +29,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.fromS;
 import java.util.Arrays;
 import java.util.Map;
-import java.util.UUID;
+
+import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.Test;
 import com.formkiq.aws.dynamodb.DbKeys;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -45,8 +46,8 @@ class FolderIndexRecordTest {
   @Test
   void testPk01() {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      String documentId = UUID.randomUUID().toString();
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      String documentId = ID.uuid();
 
       // when
       FolderIndexRecord record = new FolderIndexRecord().parentDocumentId("").path("test")
@@ -68,8 +69,8 @@ class FolderIndexRecordTest {
   @Test
   void testPk02() {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      String documentId = UUID.randomUUID().toString();
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      String documentId = ID.uuid();
 
       // when
       FolderIndexRecord record = new FolderIndexRecord().parentDocumentId("").path("test.txt")
@@ -91,7 +92,7 @@ class FolderIndexRecordTest {
   @Test
   void testGetFromAttributes01() {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       String documentId = "b423dec1-b30c-45b7-86ea-19569b475072";
 

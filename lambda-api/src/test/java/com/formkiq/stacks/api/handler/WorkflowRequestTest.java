@@ -27,7 +27,8 @@ import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_PAYMENT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 import java.util.Arrays;
-import java.util.UUID;
+
+import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.client.invoker.ApiException;
@@ -49,7 +50,7 @@ public class WorkflowRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testAddQueues() throws Exception {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -72,7 +73,7 @@ public class WorkflowRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testAddWorkflows() throws Exception {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       AddWorkflowRequest req = new AddWorkflowRequest();
       setBearerToken(siteId);
@@ -96,7 +97,7 @@ public class WorkflowRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testDeleteQueue() throws Exception {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -119,13 +120,13 @@ public class WorkflowRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testDeleteWorkflow() throws Exception {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       setBearerToken(siteId);
 
       try {
         // when
-        this.workflowApi.deleteWorkflow(UUID.randomUUID().toString(), siteId);
+        this.workflowApi.deleteWorkflow(ID.uuid(), siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -142,7 +143,7 @@ public class WorkflowRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testGetQueue() throws Exception {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -165,7 +166,7 @@ public class WorkflowRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testGetQueueDocuments() throws Exception {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -188,7 +189,7 @@ public class WorkflowRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testGetQueues() throws Exception {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -211,13 +212,13 @@ public class WorkflowRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testGetWorkflow() throws Exception {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       setBearerToken(siteId);
 
       try {
         // when
-        this.workflowApi.getWorkflow(UUID.randomUUID().toString(), siteId);
+        this.workflowApi.getWorkflow(ID.uuid(), siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -234,13 +235,13 @@ public class WorkflowRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testGetWorkflowDocuments() throws Exception {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       setBearerToken(siteId);
 
       try {
         // when
-        this.workflowApi.getWorkflowDocuments(UUID.randomUUID().toString(), siteId, null, null);
+        this.workflowApi.getWorkflowDocuments(ID.uuid(), siteId, null, null);
         fail();
       } catch (ApiException e) {
         // then
@@ -257,7 +258,7 @@ public class WorkflowRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testGetWorkflows() throws Exception {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       setBearerToken(siteId);
 

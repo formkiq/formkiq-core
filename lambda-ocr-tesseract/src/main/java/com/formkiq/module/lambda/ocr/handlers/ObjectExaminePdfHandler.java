@@ -24,6 +24,7 @@
 package com.formkiq.module.lambda.ocr.handlers;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -38,7 +39,6 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
@@ -58,7 +58,7 @@ public class ObjectExaminePdfHandler
     S3PresignerService service = awsservice.getExtension(S3PresignerService.class);
 
     String siteId = authorization.getSiteId();
-    String id = UUID.randomUUID().toString();
+    String id = ID.uuid();
 
     String bucket = awsservice.environment("STAGE_DOCUMENTS_S3_BUCKET");
     String s3key = String.format("tempfiles/%s", createS3Key(siteId, id));

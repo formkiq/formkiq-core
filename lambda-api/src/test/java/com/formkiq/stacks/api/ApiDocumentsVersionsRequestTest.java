@@ -23,13 +23,15 @@
  */
 package com.formkiq.stacks.api;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Map;
-import java.util.UUID;
+
+import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -51,10 +53,10 @@ public class ApiDocumentsVersionsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocumentVersions01() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId1 = UUID.randomUUID().toString();
-      String documentId2 = UUID.randomUUID().toString();
+      String documentId1 = ID.uuid();
+      String documentId2 = ID.uuid();
       String s3key1 = createDatabaseKey(siteId, documentId1);
       String s3key2 = createDatabaseKey(siteId, documentId2);
 
@@ -94,7 +96,7 @@ public class ApiDocumentsVersionsRequestTest extends AbstractRequestHandler {
     ApiGatewayRequestEvent event = new ApiGatewayRequestEventBuilder().method("delete")
         .resource("/documents/{documentId}/versions/{versionKey}")
         .path("/documents/" + documentId + "/versions/" + versionKey).user("joesmith")
-        .group(siteId != null ? siteId : "default")
+        .group(siteId != null ? siteId : DEFAULT_SITE_ID)
         .pathParameters(Map.of("documentId", documentId, "versionKey", versionKey))
         .queryParameters(siteId != null ? Map.of("siteId", siteId) : null).build();
     return event;
@@ -108,12 +110,11 @@ public class ApiDocumentsVersionsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleDeleteDocumentVersions01() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
 
-      ApiGatewayRequestEvent event =
-          deleteVersionsRequest(siteId, documentId, UUID.randomUUID().toString());
+      ApiGatewayRequestEvent event = deleteVersionsRequest(siteId, documentId, ID.uuid());
 
       // when
       String response = handleRequest(event);

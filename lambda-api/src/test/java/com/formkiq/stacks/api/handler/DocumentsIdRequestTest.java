@@ -30,9 +30,9 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 import com.formkiq.aws.dynamodb.DbKeys;
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.model.AddAttribute;
 import com.formkiq.client.model.AddAttributeRequest;
@@ -84,7 +84,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testDocumentDelete01() throws Exception {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
 
@@ -114,7 +114,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testDocumentDelete02() throws Exception {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
 
@@ -145,7 +145,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testDocumentDelete03() throws Exception {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
 
@@ -186,10 +186,10 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testDocumentDelete04() {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
 
       // when
       try {
@@ -225,7 +225,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
   @Timeout(TEST_TIMEOUT)
   public void testHandleSetDocumentRestore01() throws Exception {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
 
@@ -264,7 +264,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       throws InterruptedException {
     Map<String, Object> message = getSqsMessages("softDelete", documentId);
     assertEquals("softDelete", message.get("type"));
-    assertEquals(siteId != null ? siteId : "default", message.get("siteId"));
+    assertEquals(siteId != null ? siteId : DEFAULT_SITE_ID, message.get("siteId"));
     assertEquals(documentId, message.get("documentId"));
     assertEquals("joesmith", message.get("userId"));
   }
@@ -276,11 +276,11 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testHandleSetDocumentRestore02() {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
 
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
 
       // when
       try {
@@ -303,7 +303,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
    */
   @Test
   public void testHandleGetDocument01() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
 
@@ -328,7 +328,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
    */
   @Test
   public void testHandleGetDocument02() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
 
@@ -355,7 +355,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
    */
   @Test
   public void testHandleGetDocument03() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
 
@@ -382,7 +382,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
    */
   @Test
   public void testHandleAddDocument01() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
 
@@ -410,7 +410,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testHandleAddDocument03() {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       setBearerToken(siteId);
 
       AddDocumentRequest req =
@@ -439,7 +439,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
     // given
     String content0 = "test data";
     String content1 = "new data";
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -474,7 +474,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
   public void testUpdate02() throws Exception {
     // given
     String content0 = "test data";
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -512,7 +512,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
   public void testUpdate03() throws Exception {
     // given
     String content0 = "test data";
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -549,7 +549,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
   public void testUpdate04() throws Exception {
     // given
     String content0 = "test data";
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       setBearerToken(siteId);
       String attributeKey = "test";
@@ -586,7 +586,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
   public void testUpdate05() throws Exception {
     // given
     String content0 = "test data";
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -630,7 +630,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
   public void testUpdate06() throws Exception {
     // given
     String content0 = "test data";
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
       String attributeKey0 = "category";
@@ -703,7 +703,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
   public void testUpdate07() throws Exception {
     // given
     String content0 = "test data";
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
       String attributeKey0 = "category";
@@ -759,7 +759,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
   @Timeout(TEST_TIMEOUT)
   public void testUpdate08() throws Exception {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -791,7 +791,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
   @Timeout(TEST_TIMEOUT)
   public void testUpdate09() throws Exception {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       setBearerToken(siteId);
 

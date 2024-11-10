@@ -31,8 +31,9 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+
+import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
@@ -87,9 +88,9 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractRequestHandler {
     DocumentSyncService syncService = getAwsServices().getExtension(DocumentSyncService.class);
 
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
 
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), userId);
       service.saveDocument(siteId, item, null);

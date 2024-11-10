@@ -26,6 +26,7 @@ package com.formkiq.stacks.dynamodb.schemas;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.QueryConfig;
 import com.formkiq.stacks.dynamodb.attributes.AttributeDataType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
@@ -44,7 +45,6 @@ import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -116,7 +116,7 @@ public class SchemaServiceDynamodbTest {
   @Test
   public void testSetSitesSchema01() {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       addAttribute(siteId, "category");
       addAttribute(siteId, "docType");
@@ -172,7 +172,7 @@ public class SchemaServiceDynamodbTest {
   @Test
   void testSetSitesSchema02() {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       addAttribute(siteId, "category");
 
       SchemaAttributesRequired require0 = createCategoryRequired(List.of("Z", "Y"));
@@ -195,7 +195,7 @@ public class SchemaServiceDynamodbTest {
   @Test
   public void testSetClassification01() throws ValidationException {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       addAttribute(siteId, "category");
       addAttribute(siteId, "docType");
@@ -253,7 +253,7 @@ public class SchemaServiceDynamodbTest {
   @Test
   void testSetClassification02() throws ValidationException {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       addAttribute(siteId, "category");
 
       SchemaAttributesRequired require0 = createCategoryRequired(List.of("Z", "Y"));
@@ -280,7 +280,7 @@ public class SchemaServiceDynamodbTest {
   @Test
   void testGetAttributeAllowedValues01() throws ValidationException {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       addAttribute(siteId, "category");
 
       SchemaAttributesRequired require0 = createCategoryRequired(List.of("Z", "Y"));
@@ -308,7 +308,7 @@ public class SchemaServiceDynamodbTest {
   @Test
   void testSitesSchemaDelete01() {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       addAttribute(siteId, "category");
 
@@ -337,7 +337,7 @@ public class SchemaServiceDynamodbTest {
   @Test
   void testSitesClassificationDelete01() throws ValidationException {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       addAttribute(siteId, "category");
 

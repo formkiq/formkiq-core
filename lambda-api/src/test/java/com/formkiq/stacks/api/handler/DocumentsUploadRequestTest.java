@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddDocumentRequest;
@@ -49,9 +50,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_BAD_REQUEST;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_FOUND;
@@ -72,7 +73,7 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testGet01() throws Exception {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken("Admins");
 
@@ -102,7 +103,7 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testGet02() throws Exception {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -126,7 +127,7 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testGet03() {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -154,7 +155,7 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
     final String content = "dummy data123";
     final String reqChecksum = "797bb0abff798d7200af7685dca7901edffc52bf26500d5bd97282658ee24152";
 
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -189,7 +190,7 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
     final String content = "dummy data";
     final String reqChecksum = "611ff54ef4d8389cf982da9516804906d99389b6";
 
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -221,12 +222,12 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testGetUpload01() throws Exception {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken("Admins");
       setBearerToken(siteId);
 
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
 
       // when
       try {
@@ -249,7 +250,7 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testGetUpload02() throws Exception {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -275,7 +276,7 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testGetUpload03() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -306,7 +307,7 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
     final String content = "dummy data123";
     final String reqChecksum = "797bb0abff798d7200af7685dca7901edffc52bf26500d5bd97282658ee24152";
 
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -343,7 +344,7 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
     final String content = "dummy data";
     final String reqChecksum = "611ff54ef4d8389cf982da9516804906d99389b6";
 
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -377,7 +378,7 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testPost01() throws Exception {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken("Admins");
 
@@ -408,7 +409,7 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testPost02() throws Exception {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
       AddDocumentUploadRequest req = new AddDocumentUploadRequest();
@@ -435,7 +436,7 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testPost03() throws Exception {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
       AddDocumentUploadRequest req = new AddDocumentUploadRequest()
@@ -470,11 +471,11 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testPost04() throws Exception {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       AddDocumentUploadRequest req = new AddDocumentUploadRequest().documentId(documentId)
           .addTagsItem(new AddDocumentTag().key("category").value("person"));
 
@@ -508,7 +509,7 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
     final String content = "dummy data";
     final String reqChecksum = "797bb0abff798d7200af7685dca7901edffc52bf26500d5bd97282658ee24152";
 
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
       AddDocumentUploadRequest req =
@@ -541,7 +542,7 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testPost06() {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
       AddDocumentUploadRequest req =
@@ -571,7 +572,7 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
     final String content = "dummy data123";
     final String reqChecksum = "797bb0abff798d7200af7685dca7901edffc52bf26500d5bd97282658ee24152";
 
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
       AddDocumentUploadRequest req =
@@ -608,7 +609,7 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
     final String content = "dummy data";
     final String reqChecksum = "611ff54ef4d8389cf982da9516804906d99389b6";
 
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
       AddDocumentUploadRequest req =

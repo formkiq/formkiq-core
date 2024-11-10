@@ -31,8 +31,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
+
+import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -73,7 +74,7 @@ public class ApiKeysServiceDynamoDbTest {
     String userId = "joe";
     Collection<ApiKeyPermission> permissions = Arrays.asList(ApiKeyPermission.READ);
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       // when
       String apiKey0 = this.service.createApiKey(siteId, "test1", permissions, userId);
@@ -92,7 +93,7 @@ public class ApiKeysServiceDynamoDbTest {
 
       assertNotNull(this.service.get(apiKey0, false));
       assertNotNull(this.service.get(apiKey1, false));
-      assertNull(this.service.get(UUID.randomUUID().toString(), false));
+      assertNull(this.service.get(ID.uuid(), false));
 
       // when
       this.service.deleteApiKey(siteId, apiKey0);
@@ -118,7 +119,7 @@ public class ApiKeysServiceDynamoDbTest {
     String userId = "joe";
     Collection<ApiKeyPermission> permissions = Arrays.asList(ApiKeyPermission.READ);
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       for (int i = start; i < start + max; i++) {
         // when

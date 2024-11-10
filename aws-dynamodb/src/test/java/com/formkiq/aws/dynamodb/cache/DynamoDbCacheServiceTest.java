@@ -23,6 +23,7 @@
  */
 package com.formkiq.aws.dynamodb.cache;
 
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,7 +33,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Date;
-import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -68,7 +68,7 @@ public class DynamoDbCacheServiceTest {
     final Date after = Date.from(ZonedDateTime.now(ZoneOffset.UTC).plusDays(1).toInstant());
 
     String key = "testkey";
-    String value = UUID.randomUUID().toString();
+    String value = ID.uuid();
 
     // when
     this.service.write(key, value, 1);

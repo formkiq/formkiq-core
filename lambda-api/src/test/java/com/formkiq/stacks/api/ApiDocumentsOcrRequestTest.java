@@ -27,7 +27,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Map;
-import java.util.UUID;
+
+import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
@@ -51,7 +52,7 @@ public class ApiDocumentsOcrRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleDeleteDocumentOcr01() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = "1";
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
@@ -83,7 +84,7 @@ public class ApiDocumentsOcrRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocumentOcr01() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents-ocr01.json");
       addParameter(event, "siteId", siteId);
@@ -110,7 +111,7 @@ public class ApiDocumentsOcrRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandlePatchDocumentOcr01() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents-ocr01.json");
       addParameter(event, "siteId", siteId);
@@ -138,7 +139,7 @@ public class ApiDocumentsOcrRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandlePostDocumentOcr01() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents-ocr01.json");
       addParameter(event, "siteId", siteId);

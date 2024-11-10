@@ -27,7 +27,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Map;
-import java.util.UUID;
+
+import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
@@ -51,9 +52,9 @@ public class IndicesFolderMoveRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePost01() throws Exception {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
       item.setPath("x/z/test.pdf");
       getDocumentService().saveDocument(siteId, item, null);
@@ -90,7 +91,7 @@ public class IndicesFolderMoveRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePost02() throws Exception {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-indices-move.json");
       event.setPathParameters(Map.of("indexType", "folder"));
@@ -120,7 +121,7 @@ public class IndicesFolderMoveRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePost03() throws Exception {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-indices-move.json");
       event.setPathParameters(Map.of("indexType", "folder"));
@@ -151,9 +152,9 @@ public class IndicesFolderMoveRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePost04() throws Exception {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String path = UUID.randomUUID().toString() + ".txt";
+      String path = ID.uuid() + ".txt";
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-indices-move.json");
       event.setPathParameters(Map.of("indexType", "folder"));
@@ -184,11 +185,11 @@ public class IndicesFolderMoveRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePost05() throws Exception {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       for (String target : Arrays.asList("/")) {
 
-        String documentId = UUID.randomUUID().toString();
+        String documentId = ID.uuid();
         DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
         item.setPath("x/z/test.pdf");
         getDocumentService().saveDocument(siteId, item, null);

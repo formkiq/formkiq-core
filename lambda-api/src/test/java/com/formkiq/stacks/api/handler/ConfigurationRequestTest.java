@@ -24,7 +24,7 @@
 package com.formkiq.stacks.api.handler;
 
 import com.formkiq.aws.dynamodb.DynamicObject;
-import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.DocusignConfig;
@@ -39,8 +39,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
-import java.util.UUID;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.stacks.dynamodb.ConfigService.CHATGPT_API_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -101,7 +101,7 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testHandleGetConfiguration01() throws Exception {
     // given
-    String siteId = SiteIdKeyGenerator.DEFAULT_SITE_ID;
+    String siteId = DEFAULT_SITE_ID;
     String group = "Admins";
 
     this.config.save(siteId, new DynamicObject(Map.of("chatGptApiKey", "somevalue")));
@@ -130,7 +130,7 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testHandleGetConfiguration02() throws Exception {
     // given
-    String siteId = SiteIdKeyGenerator.DEFAULT_SITE_ID;
+    String siteId = DEFAULT_SITE_ID;
 
     this.config.save(siteId, new DynamicObject(Map.of(CHATGPT_API_KEY, "somevalue")));
 
@@ -157,7 +157,7 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testHandleGetConfiguration03() throws Exception {
     // given
-    String siteId = UUID.randomUUID().toString();
+    String siteId = ID.uuid();
     String group = "Admins";
     setBearerToken(group);
 
@@ -182,7 +182,7 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testHandleGetConfiguration04() throws Exception {
     // given
-    String siteId = UUID.randomUUID().toString();
+    String siteId = ID.uuid();
     String group = "Admins";
     setBearerToken(group);
 
@@ -208,7 +208,7 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testHandlePutConfiguration01() throws Exception {
     // given
-    String siteId = SiteIdKeyGenerator.DEFAULT_SITE_ID;
+    String siteId = DEFAULT_SITE_ID;
     String group = "Admins";
     setBearerToken(group);
 
@@ -236,8 +236,8 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testHandlePutConfiguration02() {
     // given
-    String siteId = SiteIdKeyGenerator.DEFAULT_SITE_ID;
-    String group = "default";
+    String siteId = DEFAULT_SITE_ID;
+    String group = DEFAULT_SITE_ID;
     setBearerToken(group);
 
     UpdateConfigurationRequest req = new UpdateConfigurationRequest().chatGptApiKey("anotherkey")
@@ -261,7 +261,7 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testHandlePutConfiguration03() throws Exception {
     // given
-    String siteId = SiteIdKeyGenerator.DEFAULT_SITE_ID;
+    String siteId = DEFAULT_SITE_ID;
     String group = "Admins";
     setBearerToken(group);
 
@@ -289,7 +289,7 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testHandlePutConfiguration04() {
     // given
-    String siteId = SiteIdKeyGenerator.DEFAULT_SITE_ID;
+    String siteId = DEFAULT_SITE_ID;
     String group = "Admins";
     setBearerToken(group);
 
@@ -317,7 +317,7 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testHandlePutConfiguration05() {
     // given
-    String siteId = SiteIdKeyGenerator.DEFAULT_SITE_ID;
+    String siteId = DEFAULT_SITE_ID;
     String group = "Admins";
     setBearerToken(group);
 
@@ -344,7 +344,7 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testHandlePutConfiguration06() throws ApiException {
     // given
-    String siteId = SiteIdKeyGenerator.DEFAULT_SITE_ID;
+    String siteId = DEFAULT_SITE_ID;
     String group = "Admins";
     setBearerToken(group);
 
@@ -375,7 +375,7 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testHandlePutConfiguration07() {
     // given
-    String siteId = SiteIdKeyGenerator.DEFAULT_SITE_ID;
+    String siteId = DEFAULT_SITE_ID;
     String group = "Admins";
     setBearerToken(group);
 

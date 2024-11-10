@@ -36,6 +36,8 @@ import java.util.Date;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+
+import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -71,9 +73,9 @@ public class DocumentIdUrlGetRequestHandlerTest extends AbstractRequestHandler {
 
     for (String contentType : Arrays.asList(null, "application/pdf", "text/plain")) {
 
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      for (String siteId : Arrays.asList(null, ID.uuid())) {
         // given
-        String documentId = UUID.randomUUID().toString();
+        String documentId = ID.uuid();
         String userId = "jsmith";
 
         if (contentType != null) {
@@ -139,9 +141,9 @@ public class DocumentIdUrlGetRequestHandlerTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocumentContent02() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents-documentid-url02.json");
       addParameter(event, "siteId", siteId);
       setPathParameter(event, "documentId", documentId);
@@ -184,7 +186,7 @@ public class DocumentIdUrlGetRequestHandlerTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocumentContent03() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents-documentid-url01.json");
       addParameter(event, "siteId", siteId);
@@ -223,9 +225,9 @@ public class DocumentIdUrlGetRequestHandlerTest extends AbstractRequestHandler {
     byte[] content = "Some data".getBytes(StandardCharsets.UTF_8);
     getS3().putObject("anotherbucket", "somefile.txt", content, "text/plain");
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents-documentid-url02.json");
       addParameter(event, "siteId", siteId);
       setPathParameter(event, "documentId", documentId);
@@ -277,9 +279,9 @@ public class DocumentIdUrlGetRequestHandlerTest extends AbstractRequestHandler {
   @Test
   public void testHandleGetDocumentContent05() throws Exception {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents-documentid-url02.json");
       addParameter(event, "siteId", siteId);
       setPathParameter(event, "documentId", documentId);

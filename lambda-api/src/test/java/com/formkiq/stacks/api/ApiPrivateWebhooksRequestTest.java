@@ -29,7 +29,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.util.Arrays;
 import java.util.Map;
-import java.util.UUID;
+
+import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamicObject;
@@ -60,8 +61,8 @@ public class ApiPrivateWebhooksRequestTest extends AbstractRequestHandler {
 
     for (String enabled : Arrays.asList("private", "true")) {
 
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-        String name = UUID.randomUUID().toString();
+      for (String siteId : Arrays.asList(null, ID.uuid())) {
+        String name = ID.uuid();
 
         String id = getAwsServices().getExtension(WebhooksService.class).saveWebhook(siteId, name,
             "joe", null, enabled);

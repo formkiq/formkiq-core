@@ -26,7 +26,8 @@ package com.formkiq.module.actions.services;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
+
+import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.Test;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
@@ -50,10 +51,10 @@ public class ActionsNotificationServiceImplTest {
   @Test
   void publishNextActionEvent01() {
     // given
-    String documentId = UUID.randomUUID().toString();
+    String documentId = ID.uuid();
     List<Action> actions = Arrays.asList(new Action().documentId(documentId).type(ActionType.OCR));
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       // when
       service.publishNextActionEvent(actions, siteId, documentId);
@@ -74,11 +75,11 @@ public class ActionsNotificationServiceImplTest {
   @Test
   void publishNextActionEvent02() {
     // given
-    String documentId = UUID.randomUUID().toString();
+    String documentId = ID.uuid();
     List<Action> actions = Arrays.asList(
         new Action().documentId(documentId).type(ActionType.OCR).status(ActionStatus.FAILED));
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       // when
       service.publishNextActionEvent(actions, siteId, documentId);
@@ -94,12 +95,12 @@ public class ActionsNotificationServiceImplTest {
   @Test
   void publishNextActionEvent03() {
     // given
-    String documentId = UUID.randomUUID().toString();
+    String documentId = ID.uuid();
     List<Action> actions = Arrays.asList(
         new Action().documentId(documentId).type(ActionType.OCR).status(ActionStatus.RUNNING),
         new Action().documentId(documentId).type(ActionType.OCR).status(ActionStatus.PENDING));
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       // when
       service.publishNextActionEvent(actions, siteId, documentId);

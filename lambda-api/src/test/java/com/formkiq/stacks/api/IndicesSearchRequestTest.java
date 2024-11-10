@@ -30,7 +30,8 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
+
+import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamicObject;
@@ -63,12 +64,12 @@ public class IndicesSearchRequestTest extends AbstractRequestHandler {
     this.indexWriter =
         new GlobalIndexService(DynamoDbTestServices.getDynamoDbConnection(), DOCUMENTS_TABLE);
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       Date now = new Date();
       String username = "joe";
 
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
 
       this.indexWriter.writeTagIndex(siteId, Arrays.asList("categoryId"));
 

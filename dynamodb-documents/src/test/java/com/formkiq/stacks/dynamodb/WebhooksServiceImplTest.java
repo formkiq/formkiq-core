@@ -33,7 +33,8 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
+
+import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -104,12 +105,11 @@ public class WebhooksServiceImplTest {
     // given
     try (DynamoDbClient client = this.db.build()) {
       final int numberOfTags = 100;
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      for (String siteId : Arrays.asList(null, ID.uuid())) {
         String id0 = this.service.saveWebhook(siteId, "test", "joe", null, "true");
 
         for (int i = 0; i < numberOfTags; i++) {
-          DocumentTag tag =
-              new DocumentTag(id0, UUID.randomUUID().toString(), null, new Date(), "joe");
+          DocumentTag tag = new DocumentTag(id0, ID.uuid(), null, new Date(), "joe");
           this.service.addTags(siteId, id0, Arrays.asList(tag), null);
         }
 
@@ -130,7 +130,7 @@ public class WebhooksServiceImplTest {
   public void testFindWebhook01() {
     // given
     try (DynamoDbClient client = this.db.build()) {
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      for (String siteId : Arrays.asList(null, ID.uuid())) {
         ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
         String id =
             this.service.saveWebhook(siteId, "test", "joe", Date.from(now.toInstant()), "true");
@@ -170,8 +170,8 @@ public class WebhooksServiceImplTest {
   public void testFindWebhook02() {
     // given
     try (DynamoDbClient client = this.db.build()) {
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-        String id = UUID.randomUUID().toString();
+      for (String siteId : Arrays.asList(null, ID.uuid())) {
+        String id = ID.uuid();
 
         // when
         DynamicObject o = this.service.findWebhook(siteId, id);
@@ -189,7 +189,7 @@ public class WebhooksServiceImplTest {
   public void testFindWebhooks01() {
     // given
     try (DynamoDbClient client = this.db.build()) {
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      for (String siteId : Arrays.asList(null, ID.uuid())) {
         this.service.saveWebhook(siteId, "test", "joe", null, "true");
         this.service.saveWebhook(siteId, "abc", "joe", null, "true");
 
@@ -223,7 +223,7 @@ public class WebhooksServiceImplTest {
   public void testFindWebhooks02() {
     // given
     try (DynamoDbClient client = this.db.build()) {
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      for (String siteId : Arrays.asList(null, ID.uuid())) {
 
         // when
         List<DynamicObject> list = this.service.findWebhooks(siteId);
@@ -247,7 +247,7 @@ public class WebhooksServiceImplTest {
       ZonedDateTime tomorrow = ZonedDateTime.now(ZoneOffset.UTC).plusDays(1);
       Date tomorrowttl = Date.from(tomorrow.toInstant());
 
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      for (String siteId : Arrays.asList(null, ID.uuid())) {
 
         String webhookId = this.service.saveWebhook(siteId, "test", "joe", ttl, "true");
         DocumentTag tag0 = new DocumentTag(webhookId, "category", "person", new Date(), "joe");
@@ -292,7 +292,7 @@ public class WebhooksServiceImplTest {
       ZonedDateTime tomorrow = ZonedDateTime.now(ZoneOffset.UTC).plusDays(1);
       Date tomorrowttl = Date.from(tomorrow.toInstant());
 
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      for (String siteId : Arrays.asList(null, ID.uuid())) {
 
         String webhookId = this.service.saveWebhook(siteId, "test", "joe", ttl, "true");
         DynamicObject obj = new DynamicObject(Map.of("name", "test2", "TimeToLive", tomorrowttl));

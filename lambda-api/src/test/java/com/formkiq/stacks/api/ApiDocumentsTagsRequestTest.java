@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static com.formkiq.testutils.aws.TestServices.getSqsWebsocketQueueUrl;
@@ -39,6 +40,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+
+import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -91,7 +94,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       final String documentId, final String group, final String body, final boolean isBase64) {
     return new ApiGatewayRequestEventBuilder().method(method)
         .resource("/documents/{documentId}/tags").path("/documents/" + documentId + "/tags")
-        .group(group != null ? group : "default").user("joesmith")
+        .group(group != null ? group : DEFAULT_SITE_ID).user("joesmith")
         .pathParameters(Map.of("documentId", documentId))
         .queryParameters(siteId != null ? Map.of("siteId", siteId) : null).body(body, isBase64)
         .build();
@@ -155,7 +158,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
     return new ApiGatewayRequestEventBuilder().method("put")
         .resource("/documents/{documentId}/tags/{tagKey}")
         .path("/documents/" + documentId + "/tags/" + tagKey)
-        .group(group != null ? group : "default").user("joesmith")
+        .group(group != null ? group : DEFAULT_SITE_ID).user("joesmith")
         .pathParameters(Map.of("documentId", documentId, "tagKey", tagKey))
         .queryParameters(siteId != null ? Map.of("siteId", siteId) : null).body(body, isBase64)
         .build();
@@ -169,10 +172,10 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleDeleteTagDocument01() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       final Date now = new Date();
-      final String documentId = UUID.randomUUID().toString();
+      final String documentId = ID.uuid();
       final String tagKey = "category";
       final String userId = "jsmith";
 
@@ -231,10 +234,10 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleDeleteTagDocument02() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       final Date now = new Date();
-      final String documentId = UUID.randomUUID().toString();
+      final String documentId = ID.uuid();
       final String tagKey = "category";
       final String userId = "jsmith";
 
@@ -288,10 +291,10 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleDeleteTagDocument03() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       final Date now = new Date();
-      final String documentId = UUID.randomUUID().toString();
+      final String documentId = ID.uuid();
       final String tagKey = "category";
       final String userId = "jsmith";
 
@@ -347,10 +350,10 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleDeleteTagValue01() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       final Date now = new Date();
-      final String documentId = UUID.randomUUID().toString();
+      final String documentId = ID.uuid();
       final String tagKey = "category";
       final String tagValue = "person";
       final String userId = "jsmith";
@@ -402,10 +405,10 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleDeleteTagValue02() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       final Date now = new Date();
-      final String documentId = UUID.randomUUID().toString();
+      final String documentId = ID.uuid();
       final String tagKey = "category";
       final String userId = "jsmith";
 
@@ -459,10 +462,10 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleDeleteTagValue03() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       final Date now = new Date();
-      final String documentId = UUID.randomUUID().toString();
+      final String documentId = ID.uuid();
       final String tagKey = "category";
       final String userId = "jsmith";
 
@@ -516,13 +519,13 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocumentTags01() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String userId = "jsmith";
       Date date = new Date();
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       String tagname = "category";
-      String tagvalue = UUID.randomUUID().toString();
+      String tagvalue = ID.uuid();
 
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), userId);
       getDocumentService().saveDocument(siteId, item, null);
@@ -569,11 +572,11 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocumentTags02() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       Date now = new Date();
       String userId = "jsmith";
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
 
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), userId);
       getDocumentService().saveDocument(siteId, item, null);
@@ -623,11 +626,11 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocumentTags03() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       Date now = new Date();
       String userId = "jsmith";
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
 
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), userId);
       getDocumentService().saveDocument(siteId, item, null);
@@ -728,9 +731,9 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetTags02() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, new Date(), "jsmith");
       DocumentTag tag = new DocumentTag(documentId, "category", "person", new Date(), "jsmith");
       getDocumentService().saveDocument(siteId, item, Arrays.asList(tag));
@@ -766,9 +769,9 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetTags03() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, new Date(), "jsmith");
       DocumentTag tag = new DocumentTag(documentId, "category", null, new Date(), "jsmith");
       getDocumentService().saveDocument(siteId, item, Arrays.asList(tag));
@@ -803,9 +806,9 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetTags04() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, new Date(), "jsmith");
       DocumentTag tag = new DocumentTag(documentId, "category", null, new Date(), "jsmith");
       tag.setValues(Arrays.asList("abc", "xyz"));
@@ -841,9 +844,9 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
    */
   @Test
   public void testHandlePatchDocumentTags01() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      final String documentId = UUID.randomUUID().toString();
+      final String documentId = ID.uuid();
       final String tagKey0 = "category";
       final String tagValue0 = "job";
       final String tagKey1 = "type";
@@ -857,7 +860,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       List<Map<String, String>> tags = Arrays.asList(Map.of("key", tagKey0, "value", tagValue0),
           Map.of("key", tagKey1, "value", tagValue1));
       ApiGatewayRequestEvent event = patchDocumentsTags(siteId, documentId,
-          siteId != null ? siteId : "default", toJson(Map.of("tags", tags)));
+          siteId != null ? siteId : DEFAULT_SITE_ID, toJson(Map.of("tags", tags)));
 
       // when
       String response = handleRequest(event);
@@ -896,8 +899,8 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
     // given
     for (String method : Arrays.asList("POST", "PATCH", "PUT")) {
 
-      ApiGatewayRequestEvent event = documentsTagsRequest(method, null,
-          UUID.randomUUID().toString(), "default", toJson(Map.of()), false);
+      ApiGatewayRequestEvent event =
+          documentsTagsRequest(method, null, ID.uuid(), DEFAULT_SITE_ID, toJson(Map.of()), false);
 
       String expected = "{" + getHeaders()
           + ",\"body\":\"{\\\"message\\\":\\\"invalid JSON body\\\"}\"" + ",\"statusCode\":400}";
@@ -918,18 +921,18 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
    */
   @Test
   public void testHandlePostDocumentTags02() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      final String documentId = UUID.randomUUID().toString();
+      final String documentId = ID.uuid();
       final String tagname = "category";
       final String tagvalue = "job";
 
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
       getDocumentService().saveDocument(siteId, item, null);
 
-      ApiGatewayRequestEvent event =
-          documentsTagsRequest("post", siteId, documentId, siteId != null ? siteId : "default",
-              "eyJrZXkiOiAiY2F0ZWdvcnkiLCJ2YWx1ZSI6ICJqb2IifQ==", true);
+      ApiGatewayRequestEvent event = documentsTagsRequest("post", siteId, documentId,
+          siteId != null ? siteId : DEFAULT_SITE_ID,
+          "eyJrZXkiOiAiY2F0ZWdvcnkiLCJ2YWx1ZSI6ICJqb2IifQ==", true);
 
       // when
       String response = handleRequest(event);
@@ -959,10 +962,10 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   @Test
   @Timeout(value = TEST_TIMEOUT, unit = TimeUnit.SECONDS)
   public void testHandlePostDocumentTags03() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       final long sleep = 500L;
-      final String documentId = "test" + UUID.randomUUID().toString() + ".pdf";
+      final String documentId = "test" + ID.uuid() + ".pdf";
       final String tagname = "category";
       final String tagvalue = "job";
 
@@ -1021,9 +1024,9 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
    */
   @Test
   public void testHandlePostDocumentTags04() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      final String documentId = "test" + UUID.randomUUID().toString() + ".pdf";
+      final String documentId = "test" + ID.uuid() + ".pdf";
       final String tagname = "category";
       final String tagvalue = "";
 
@@ -1061,9 +1064,9 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
    */
   @Test
   public void testHandlePostDocumentTags05() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       final String tagname = "category";
       final String tagvalue = "somevalue";
 
@@ -1104,9 +1107,9 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
    */
   @Test
   public void testHandlePostDocumentTags06() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      final String documentId = "test" + UUID.randomUUID().toString() + ".pdf";
+      final String documentId = "test" + ID.uuid() + ".pdf";
 
       String username = UUID.randomUUID() + "@formkiq.com";
 
@@ -1151,9 +1154,9 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
    */
   @Test
   public void testHandlePostDocumentTags07() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      final String documentId = UUID.randomUUID().toString();
+      final String documentId = ID.uuid();
       final String tagname = "category";
       final String expected = "{" + getHeaders() + ",\"body\":\""
           + "{\\\"message\\\":\\\"Created Tag 'category'.\\\"}\",\"statusCode\":201}";
@@ -1161,9 +1164,9 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
       getDocumentService().saveDocument(siteId, item, null);
 
-      ApiGatewayRequestEvent event =
-          documentsTagsRequest("post", siteId, documentId, siteId != null ? siteId : "default",
-              "eyJrZXkiOiAiY2F0ZWdvcnkiLCJ2YWx1ZXMiOiBbImpvYiIsIndob2tub3dzIl19", true);
+      ApiGatewayRequestEvent event = documentsTagsRequest("post", siteId, documentId,
+          siteId != null ? siteId : DEFAULT_SITE_ID,
+          "eyJrZXkiOiAiY2F0ZWdvcnkiLCJ2YWx1ZXMiOiBbImpvYiIsIndob2tub3dzIl19", true);
 
       // when
       String response = handleRequest(event);
@@ -1190,22 +1193,22 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
    */
   @Test
   public void testHandlePostDocumentTags08() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      final String documentId = UUID.randomUUID().toString();
+      final String documentId = ID.uuid();
       final String expected = "{" + getHeaders() + ",\"body\":\""
           + "{\\\"message\\\":\\\"Created Tags.\\\"}\",\"statusCode\":201}";
 
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
       getDocumentService().saveDocument(siteId, item, null);
 
-      ApiGatewayRequestEvent event =
-          documentsTagsRequest("post", siteId, documentId, siteId != null ? siteId : "default",
-              "ewogICJ0YWdzIjogWwogICAgewogICAgICAia2V5IjogIm1pbmUiCiAgICB9LAogICAge"
-                  + "wogICAgICAia2V5IjogInBsYXllcklkIiwKICAgICAgInZhbHVlIjogIjEiCiAgICB9"
-                  + "LAogICAgewogICAgICAia2V5IjogImNhc2VJZCIsCiAgICAgICJ2YWx1ZXMiOiBbCiAg"
-                  + "ICAgICAgIjEyMyIsCiAgICAgICAgIjk5OSIKICAgICAgXQogICAgfQogIF0KfQ==",
-              true);
+      ApiGatewayRequestEvent event = documentsTagsRequest("post", siteId, documentId,
+          siteId != null ? siteId : DEFAULT_SITE_ID,
+          "ewogICJ0YWdzIjogWwogICAgewogICAgICAia2V5IjogIm1pbmUiCiAgICB9LAogICAge"
+              + "wogICAgICAia2V5IjogInBsYXllcklkIiwKICAgICAgInZhbHVlIjogIjEiCiAgICB9"
+              + "LAogICAgewogICAgICAia2V5IjogImNhc2VJZCIsCiAgICAgICJ2YWx1ZXMiOiBbCiAg"
+              + "ICAgICAgIjEyMyIsCiAgICAgICAgIjk5OSIKICAgICAgXQogICAgfQogIF0KfQ==",
+          true);
 
       // when
       String response = handleRequest(event);
@@ -1243,15 +1246,15 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
    */
   @Test
   public void testHandlePostDocumentTags09() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      final String documentId = UUID.randomUUID().toString();
+      final String documentId = ID.uuid();
       final String expected = "{" + getHeaders()
           + ",\"body\":\"{\\\"message\\\":\\\"invalid JSON body\\\"}\"" + ",\"statusCode\":400}";
 
-      ApiGatewayRequestEvent event =
-          documentsTagsRequest("post", siteId, documentId, siteId != null ? siteId : "default",
-              "ewogICJ0YWdzIjogWwogICAgewogICAgICAia2V5MSI6ICJtaW5lIgogICAgfQogIF0KfQ==", true);
+      ApiGatewayRequestEvent event = documentsTagsRequest("post", siteId, documentId,
+          siteId != null ? siteId : DEFAULT_SITE_ID,
+          "ewogICJ0YWdzIjogWwogICAgewogICAgICAia2V5MSI6ICJtaW5lIgogICAgfQogIF0KfQ==", true);
 
       // when
       String response = handleRequest(event);
@@ -1276,15 +1279,15 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
 
     for (String method : Arrays.asList("post", "patch", "put")) {
 
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      for (String siteId : Arrays.asList(null, ID.uuid())) {
         // given
-        final String documentId = UUID.randomUUID().toString();
+        final String documentId = ID.uuid();
 
-        ApiGatewayRequestEvent event =
-            documentsTagsRequest(method, siteId, documentId, siteId != null ? siteId : "default",
-                "ewogICAgInRhZ3MiOgogICAgWwogICAgICAgIHsKICAgICAgICAgICAgImtleSI6ICJjYXRlZ29yeSIs"
-                    + "CiAgICAgICAgICAgICJ2YWx1ZSI6ICJqb2IiCiAgICAgICAgfQogICAgXQp9",
-                true);
+        ApiGatewayRequestEvent event = documentsTagsRequest(method, siteId, documentId,
+            siteId != null ? siteId : DEFAULT_SITE_ID,
+            "ewogICAgInRhZ3MiOgogICAgWwogICAgICAgIHsKICAgICAgICAgICAgImtleSI6ICJjYXRlZ29yeSIs"
+                + "CiAgICAgICAgICAgICJ2YWx1ZSI6ICJqb2IiCiAgICAgICAgfQogICAgXQp9",
+            true);
 
         // when
         String response = handleRequest(event);
@@ -1305,12 +1308,12 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandlePostDocumentTags12() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      final String documentId = UUID.randomUUID().toString();
+      final String documentId = ID.uuid();
 
       ApiGatewayRequestEvent event =
-          postDocumentsTags(siteId, documentId, siteId != null ? siteId : "default",
+          postDocumentsTags(siteId, documentId, siteId != null ? siteId : DEFAULT_SITE_ID,
               "{\"tags\":[{\"key\": \"author\", \"value\": \"William Shakespeare\"},"
                   + "{\"key\": \"author\", \"value\": \"Kevin Bacon\"}]}");
 
@@ -1334,15 +1337,15 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
    */
   @Test
   public void testHandlePostDocumentTags13() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      final String documentId = UUID.randomUUID().toString();
+      final String documentId = ID.uuid();
 
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
       getDocumentService().saveDocument(siteId, item, null);
 
       ApiGatewayRequestEvent event =
-          postDocumentsTags(siteId, documentId, siteId != null ? siteId : "default",
+          postDocumentsTags(siteId, documentId, siteId != null ? siteId : DEFAULT_SITE_ID,
               "{\"key\": \"CLAMAV_SCAN_STATUS\",\"value\": \"asdkjasd\"}");
 
       // when
@@ -1363,9 +1366,9 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
    */
   @Test
   public void testHandlePutDocumentTags01() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      final String documentId = UUID.randomUUID().toString();
+      final String documentId = ID.uuid();
       final String tagKey0 = "category";
       final String tagValue0 = "job";
       final String tagKey1 = "type";
@@ -1377,7 +1380,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
 
       List<Map<String, String>> tags = Arrays.asList(Map.of("key", tagKey1, "value", tagValue1));
       ApiGatewayRequestEvent event = putDocumentsTags(siteId, documentId,
-          siteId != null ? siteId : "default", toJson(Map.of("tags", tags)));
+          siteId != null ? siteId : DEFAULT_SITE_ID, toJson(Map.of("tags", tags)));
 
       // when
       String response = handleRequest(event);
@@ -1403,9 +1406,9 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
    */
   @Test
   public void testHandlePutTags01() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       String userId = "jsmith";
       String tagKey = "category";
 
@@ -1459,9 +1462,9 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
    */
   @Test
   public void testHandlePutTags03() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       String userId = "jsmith";
       final String expected = "{" + getHeaders() + "," + "\"body\":\""
           + "{\\\"message\\\":\\\"Updated tag 'category' on document '" + documentId + "'.\\\"}\""
@@ -1513,9 +1516,9 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
    */
   @Test
   public void testHandlePutTags05() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       String userId = "jsmith";
 
       final String expected = "{" + getHeaders() + "," + "\"body\":\""
@@ -1552,9 +1555,9 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
    */
   @Test
   public void testHandlePutTags06() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       String userId = "jsmith";
 
       final String expected = "{" + getHeaders() + "," + "\"body\":\""
@@ -1598,9 +1601,9 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
 
       DynamoDbService ds = new DynamoDbServiceImpl(client, DOCUMENTS_TABLE);
 
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      for (String siteId : Arrays.asList(null, ID.uuid())) {
         // given
-        String documentId = UUID.randomUUID().toString();
+        String documentId = ID.uuid();
         String userId = "jsmith";
 
         getDocumentService().saveDocument(siteId,

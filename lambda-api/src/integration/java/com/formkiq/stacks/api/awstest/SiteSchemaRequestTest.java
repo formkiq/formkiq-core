@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api.awstest;
 
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.client.api.AttributesApi;
 import com.formkiq.client.api.SchemasApi;
 import com.formkiq.client.invoker.ApiClient;
@@ -40,6 +41,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -61,7 +63,7 @@ public class SiteSchemaRequestTest extends AbstractAwsIntegrationTest {
   @Test
   public void testGetSitesSchema01() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       List<ApiClient> apiClients = getApiClients(siteId);
       for (ApiClient apiClient : apiClients) {
@@ -87,7 +89,7 @@ public class SiteSchemaRequestTest extends AbstractAwsIntegrationTest {
   @Test
   public void testPutSitesSchema01() throws ApiException {
     // given
-    String siteId = UUID.randomUUID().toString();
+    String siteId = ID.uuid();
 
     List<ApiClient> apiClients = getApiClients(siteId);
     for (ApiClient apiClient : apiClients) {

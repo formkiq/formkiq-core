@@ -32,7 +32,8 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
+
+import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -56,20 +57,20 @@ public class ApiWebhookIdRequestTest extends AbstractRequestHandler {
   public void testDeleteWebhooks01() throws Exception {
     // given
     ApiGatewayRequestEvent event = toRequestEvent("/request-post-webhooks01.json");
-    event.setQueryStringParameters(Map.of("siteId", "default"));
+    event.setQueryStringParameters(Map.of("siteId", DEFAULT_SITE_ID));
 
     String response = handleRequest(event);
     Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
     assertEquals("201.0", String.valueOf(m.get("statusCode")));
     Map<String, Object> result = GsonUtil.getInstance().fromJson(m.get("body"), Map.class);
-    assertEquals("default", result.get("siteId"));
+    assertEquals(DEFAULT_SITE_ID, result.get("siteId"));
     assertNotNull(result.get("webhookId"));
 
     String webhookId = result.get("webhookId").toString();
 
     event = toRequestEvent("/request-delete-webhooks-webhookid01.json");
     setPathParameter(event, "webhookId", webhookId);
-    event.setQueryStringParameters(Map.of("siteId", "default"));
+    event.setQueryStringParameters(Map.of("siteId", DEFAULT_SITE_ID));
 
     // when
     response = handleRequest(event);
@@ -92,7 +93,7 @@ public class ApiWebhookIdRequestTest extends AbstractRequestHandler {
   @Test
   public void testDeleteWebhooks02() throws Exception {
     // given
-    String id = UUID.randomUUID().toString();
+    String id = ID.uuid();
 
     ApiGatewayRequestEvent event = toRequestEvent("/request-delete-webhooks-webhookid01.json");
     setPathParameter(event, "webhookId", id);
@@ -119,19 +120,19 @@ public class ApiWebhookIdRequestTest extends AbstractRequestHandler {
   public void testDeleteWebhooks03() throws Exception {
     // given
     ApiGatewayRequestEvent req = toRequestEvent("/request-post-webhooks01.json");
-    req.setQueryStringParameters(Map.of("siteId", "default"));
+    req.setQueryStringParameters(Map.of("siteId", DEFAULT_SITE_ID));
     req.setBody("{\"name\":\"john smith\",tags:[{key:\"dynamodb\"}]}");
 
     String response = handleRequest(req);
     Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
     assertEquals("201.0", String.valueOf(m.get("statusCode")));
     Map<String, Object> result = GsonUtil.getInstance().fromJson(m.get("body"), Map.class);
-    assertEquals("default", result.get("siteId"));
+    assertEquals(DEFAULT_SITE_ID, result.get("siteId"));
     assertNotNull(result.get("webhookId"));
     String webhookId = result.get("webhookId").toString();
 
     ApiGatewayRequestEvent event = toRequestEvent("/request-delete-webhooks-webhookid01.json");
-    event.setQueryStringParameters(Map.of("siteId", "default"));
+    event.setQueryStringParameters(Map.of("siteId", DEFAULT_SITE_ID));
     setPathParameter(event, "webhookId", webhookId);
 
     // when
@@ -168,7 +169,7 @@ public class ApiWebhookIdRequestTest extends AbstractRequestHandler {
     putSsmParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/api/DocumentsPublicHttpUrl",
         "http://localhost:8080");
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-webhooks01.json");
       addParameter(event, "siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
@@ -198,10 +199,10 @@ public class ApiWebhookIdRequestTest extends AbstractRequestHandler {
       result = GsonUtil.getInstance().fromJson(m.get("body"), Map.class);
 
       if (siteId == null) {
-        assertEquals("default", result.get("siteId"));
+        assertEquals(DEFAULT_SITE_ID, result.get("siteId"));
       } else {
         assertNotNull(result.get("siteId"));
-        assertNotEquals("default", result.get("siteId"));
+        assertNotEquals(DEFAULT_SITE_ID, result.get("siteId"));
       }
 
       assertNotNull(result.get("id"));
@@ -226,7 +227,7 @@ public class ApiWebhookIdRequestTest extends AbstractRequestHandler {
     putSsmParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/api/DocumentsPublicHttpUrl",
         "http://localhost:8080");
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-webhooks01.json");
       addParameter(event, "siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
@@ -257,10 +258,10 @@ public class ApiWebhookIdRequestTest extends AbstractRequestHandler {
       result = GsonUtil.getInstance().fromJson(m.get("body"), Map.class);
 
       if (siteId == null) {
-        assertEquals("default", result.get("siteId"));
+        assertEquals(DEFAULT_SITE_ID, result.get("siteId"));
       } else {
         assertNotNull(result.get("siteId"));
-        assertNotEquals("default", result.get("siteId"));
+        assertNotEquals(DEFAULT_SITE_ID, result.get("siteId"));
       }
 
       assertNotNull(result.get("id"));
@@ -279,10 +280,10 @@ public class ApiWebhookIdRequestTest extends AbstractRequestHandler {
     String path = publicUrl ? "/public" : "/private";
     if (siteId == null) {
       assertEquals("http://localhost:8080" + path + "/webhooks/" + id, result.get("url"));
-      assertEquals("default", result.get("siteId"));
+      assertEquals(DEFAULT_SITE_ID, result.get("siteId"));
     } else {
       assertNotNull(result.get("siteId"));
-      assertNotEquals("default", result.get("siteId"));
+      assertNotEquals(DEFAULT_SITE_ID, result.get("siteId"));
       assertEquals("http://localhost:8080" + path + "/webhooks/" + id + "?siteId=" + siteId,
           result.get("url"));
     }
@@ -300,7 +301,7 @@ public class ApiWebhookIdRequestTest extends AbstractRequestHandler {
     putSsmParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/api/DocumentsPublicHttpUrl",
         "http://localhost:8080");
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String id = getAwsServices().getExtension(WebhooksService.class).saveWebhook(siteId, "test",
           "joe", date, "true");
@@ -342,10 +343,10 @@ public class ApiWebhookIdRequestTest extends AbstractRequestHandler {
           GsonUtil.getInstance().fromJson(m.get("body").toString(), Map.class);
 
       if (siteId == null) {
-        assertEquals("default", result.get("siteId"));
+        assertEquals(DEFAULT_SITE_ID, result.get("siteId"));
       } else {
         assertNotNull(result.get("siteId"));
-        assertNotEquals("default", result.get("siteId"));
+        assertNotEquals(DEFAULT_SITE_ID, result.get("siteId"));
       }
 
       assertNotNull(result.get("id"));

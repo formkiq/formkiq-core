@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAttribute;
@@ -74,6 +75,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.formatDouble;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.testutils.aws.FkqAttributeService.createNumberAttribute;
@@ -92,7 +94,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
   /** SiteId. */
-  private static final String SITE_ID = UUID.randomUUID().toString();
+  private static final String SITE_ID = ID.uuid();
 
   private static void assertAttributeValues(final DocumentAttribute attribute, final String key,
       final String stringValue, final String stringValues, final String numberValue,
@@ -484,7 +486,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       setBearerToken(siteId);
 
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
 
       // when
       try {
@@ -1055,8 +1057,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       query.setDocumentIds(null);
 
       // range with start
-      for (List<String> documentIds : Arrays.asList(null,
-          Collections.singletonList(UUID.randomUUID().toString()))) {
+      for (List<String> documentIds : Arrays.asList(null, Collections.singletonList(ID.uuid()))) {
         query.setDocumentIds(documentIds);
         attribute.range(new DocumentSearchRange().start("2024-01-03"));
         assertInvalidSearch(siteId, searchRequest,
@@ -1387,7 +1388,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testDeleteAttributes04() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -1422,7 +1423,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testDeleteAttributes05() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -1569,7 +1570,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testDeleteDocumentAttribute03() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", SITE_ID)) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, SITE_ID)) {
 
       setBearerToken(new String[] {siteId, siteId + "_govern"});
 
@@ -1646,7 +1647,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       setBearerToken(siteId);
 
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
 
       // when
       try {
@@ -1992,7 +1993,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testPutDocumentAttribute03() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", SITE_ID)) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, SITE_ID)) {
 
       setBearerToken(new String[] {siteId, siteId + "_govern"});
 
@@ -2072,7 +2073,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       setBearerToken(siteId);
 
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
 
       // when
       try {
@@ -2237,7 +2238,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testUpdateDocumentAttribute02() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", SITE_ID)) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, SITE_ID)) {
 
       // setBearerToken(siteId);
       setBearerToken(new String[] {siteId, siteId + "_govern"});

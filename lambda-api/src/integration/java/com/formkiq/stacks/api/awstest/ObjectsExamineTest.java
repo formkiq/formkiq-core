@@ -35,8 +35,9 @@ import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.util.Arrays;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+
+import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
@@ -67,7 +68,7 @@ class ObjectsExamineTest extends AbstractAwsIntegrationTest {
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   void testExaminePdf01() throws Exception {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       for (ApiClient client : getApiClients(siteId)) {
 
@@ -119,12 +120,12 @@ class ObjectsExamineTest extends AbstractAwsIntegrationTest {
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   void testExaminePdf02() throws Exception {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       for (ApiClient client : getApiClients(siteId)) {
 
         // given
-        String id = UUID.randomUUID().toString();
+        String id = ID.uuid();
         ExamineObjectsApi examineApi = new ExamineObjectsApi(client);
 
         // when

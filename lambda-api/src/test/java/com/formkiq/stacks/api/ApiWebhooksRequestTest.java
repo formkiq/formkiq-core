@@ -40,7 +40,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
+
+import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamicObject;
@@ -71,7 +72,7 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
   public void testGetWebhooks01() throws Exception {
     // given
     ApiGatewayRequestEvent event = toRequestEvent("/request-get-webhooks01.json");
-    addParameter(event, "siteId", UUID.randomUUID().toString());
+    addParameter(event, "siteId", ID.uuid());
 
     // when
     String response = handleRequest(event);
@@ -98,7 +99,7 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
     putSsmParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/api/DocumentsPublicHttpUrl",
         "http://localhost:8080");
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-webhooks01.json");
       addParameter(event, "siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
@@ -110,10 +111,10 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
       Map<String, Object> result = GsonUtil.getInstance().fromJson(m.get("body"), Map.class);
 
       if (siteId == null) {
-        assertEquals("default", result.get("siteId"));
+        assertEquals(DEFAULT_SITE_ID, result.get("siteId"));
       } else {
         assertNotNull(result.get("siteId"));
-        assertNotEquals("default", result.get("siteId"));
+        assertNotEquals(DEFAULT_SITE_ID, result.get("siteId"));
       }
 
       assertNotNull(result.get("webhookId"));
@@ -166,7 +167,7 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
         "http://localhost:8080");
     ApiGatewayRequestEvent event = toRequestEvent("/request-post-webhooks01.json");
     String ttl = "90000";
-    event.setQueryStringParameters(Map.of("siteId", "default"));
+    event.setQueryStringParameters(Map.of("siteId", DEFAULT_SITE_ID));
     event.setBody("{\"name\":\"john smith\",\"ttl\":\"" + ttl + "\"}");
 
     // when
@@ -176,7 +177,7 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
     Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
     assertEquals("201.0", String.valueOf(m.get("statusCode")));
     Map<String, Object> result = GsonUtil.getInstance().fromJson(m.get("body"), Map.class);
-    assertEquals("default", result.get("siteId"));
+    assertEquals(DEFAULT_SITE_ID, result.get("siteId"));
     final String webhookId = result.get("webhookId").toString();
 
     WebhooksService webhookService = getAwsServices().getExtension(WebhooksService.class);
@@ -240,7 +241,7 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
     putSsmParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/api/DocumentsPublicHttpUrl",
         "http://localhost:8080");
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-webhooks01.json");
       addParameter(event, "siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
 
@@ -259,7 +260,7 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
       if (siteId != null) {
         assertEquals(siteId, result.get("siteId"));
       } else {
-        assertEquals("default", result.get("siteId"));
+        assertEquals(DEFAULT_SITE_ID, result.get("siteId"));
       }
 
       assertNotNull(result.get("webhookId"));
@@ -304,7 +305,7 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
     putSsmParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/api/DocumentsPublicHttpUrl",
         "http://localhost:8080");
 
-    String siteId = UUID.randomUUID().toString();
+    String siteId = ID.uuid();
 
     ApiGatewayRequestEvent event = toRequestEvent("/request-post-webhooks01.json");
     setCognitoGroup(event, siteId);
@@ -342,7 +343,7 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
     ConfigService configService = getAwsServices().getExtension(ConfigService.class);
     for (String maxWebHooks : Arrays.asList("2", "0")) {
 
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      for (String siteId : Arrays.asList(null, ID.uuid())) {
 
         if (!"0".equals(maxWebHooks)) {
           configService.save(siteId, new DynamicObject(Map.of(MAX_WEBHOOKS, maxWebHooks)));
@@ -455,12 +456,12 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
     Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
     assertEquals("201.0", String.valueOf(m.get("statusCode")));
     Map<String, Object> result = GsonUtil.getInstance().fromJson(m.get("body"), Map.class);
-    assertEquals("default", result.get("siteId"));
+    assertEquals(DEFAULT_SITE_ID, result.get("siteId"));
     assertNotNull(result.get("webhookId"));
   }
 
   private String verifyPostWebhooks05(final Map<String, Object> result) {
-    assertEquals("default", result.get("siteId"));
+    assertEquals(DEFAULT_SITE_ID, result.get("siteId"));
     assertNotNull(result.get("webhookId"));
     final String webhookId = result.get("webhookId").toString();
 
@@ -470,10 +471,10 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
   private void verifyUrl(final String siteId, final String id, final Map<String, Object> result) {
     if (siteId == null) {
       assertEquals("http://localhost:8080/public/webhooks/" + id, result.get("url"));
-      assertEquals("default", result.get("siteId"));
+      assertEquals(DEFAULT_SITE_ID, result.get("siteId"));
     } else {
       assertNotNull(result.get("siteId"));
-      assertNotEquals("default", result.get("siteId"));
+      assertNotEquals(DEFAULT_SITE_ID, result.get("siteId"));
       assertEquals("http://localhost:8080/public/webhooks/" + id + "?siteId=" + siteId,
           result.get("url"));
     }

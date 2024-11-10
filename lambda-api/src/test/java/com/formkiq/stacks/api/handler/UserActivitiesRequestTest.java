@@ -27,7 +27,8 @@ import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_PAYMENT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 import java.util.Arrays;
-import java.util.UUID;
+
+import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.client.invoker.ApiException;
@@ -50,7 +51,7 @@ public class UserActivitiesRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testUserActivities() throws Exception {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -73,10 +74,10 @@ public class UserActivitiesRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testUserActivitiesDocumentId() throws Exception {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       setBearerToken(siteId);
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
 
       try {
         // when

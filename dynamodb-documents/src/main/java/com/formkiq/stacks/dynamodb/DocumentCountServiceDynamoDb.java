@@ -24,6 +24,8 @@
 package com.formkiq.stacks.dynamodb;
 
 import static com.formkiq.aws.dynamodb.DbKeys.TAG_DELIMINATOR;
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -97,7 +99,7 @@ public final class DocumentCountServiceDynamoDb implements DocumentCountService 
    */
   private String getPk(final String siteId) {
     return siteId != null ? "documentscount" + TAG_DELIMINATOR + siteId
-        : "documentcount" + TAG_DELIMINATOR + "default";
+        : "documentcount" + TAG_DELIMINATOR + DEFAULT_SITE_ID;
   }
 
   /**

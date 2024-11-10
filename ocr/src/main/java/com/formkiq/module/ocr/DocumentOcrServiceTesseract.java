@@ -29,13 +29,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.aws.s3.S3ObjectMetadata;
@@ -210,7 +210,7 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
 
     this.delete(siteId, documentId);
 
-    String jobId = UUID.randomUUID().toString();
+    String jobId = ID.uuid();
     String s3Key = getS3Key(siteId, documentId, jobId);
 
     this.s3.putObject(this.ocrBucket, s3Key, content.getBytes(StandardCharsets.UTF_8), contentType,
@@ -288,7 +288,7 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
       final String siteId, final String documentId, final String s3key,
       final String documentS3toConvert, final String contentType) {
 
-    String jobId = UUID.randomUUID().toString();
+    String jobId = ID.uuid();
 
     OcrSqsMessage msg = new OcrSqsMessage().jobId(jobId).siteId(siteId).documentId(documentId)
         .contentType(contentType).request(request);
@@ -345,7 +345,7 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
   private void updatePlainText(final AwsServiceCache awsservice, final String siteId,
       final String documentId, final String userId, final String s3Key, final String contentType) {
 
-    String jobId = UUID.randomUUID().toString();
+    String jobId = ID.uuid();
 
     String content = this.s3.getContentAsString(this.documentsBucket, s3Key, null);
 

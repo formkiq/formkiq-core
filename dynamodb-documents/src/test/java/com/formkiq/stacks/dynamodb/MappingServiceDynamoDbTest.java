@@ -35,8 +35,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.UUID;
 
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeServiceDynamodb;
 import com.formkiq.stacks.dynamodb.mappings.Mapping;
@@ -86,9 +86,9 @@ class MappingServiceDynamoDbTest implements DbKeys {
   @Test
   void testDelete01() {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
 
       // when
       boolean deleted = service.deleteMapping(siteId, documentId);
@@ -104,9 +104,9 @@ class MappingServiceDynamoDbTest implements DbKeys {
   @Test
   void testDelete02() throws ValidationException {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
 
       Mapping mapping = createMapping();
       attributeService.addAttribute(siteId, "number", null, null);
@@ -137,7 +137,7 @@ class MappingServiceDynamoDbTest implements DbKeys {
   @Test
   void testSave01() {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       Mapping mapping = new Mapping();
 
@@ -170,7 +170,7 @@ class MappingServiceDynamoDbTest implements DbKeys {
     // given
     final int count = 5;
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       attributeService.addAttribute(siteId, "number", null, null);
 
@@ -201,7 +201,7 @@ class MappingServiceDynamoDbTest implements DbKeys {
   @Test
   void testSave03() {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       Mapping mapping =
           new Mapping().setName("test").setAttributes(List.of(new MappingAttribute()));
@@ -241,7 +241,7 @@ class MappingServiceDynamoDbTest implements DbKeys {
   @Test
   void testSave04() {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       attributeService.addAttribute(siteId, "number", null, null);
 
@@ -272,7 +272,7 @@ class MappingServiceDynamoDbTest implements DbKeys {
   @Test
   void testSave05() {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       attributeService.addAttribute(siteId, "invoice", null, null);
 

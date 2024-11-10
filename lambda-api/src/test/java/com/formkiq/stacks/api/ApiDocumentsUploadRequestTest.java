@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api;
 
 import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -49,8 +50,8 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -107,7 +108,7 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
 
     String resource = documentId != null ? "/documents/{documentId}/upload" : "/documents/upload";
     String path = documentId != null ? "/documents/" + documentId + "/upload" : "/documents/upload";
-    String group = siteId != null ? siteId : "default";
+    String group = siteId != null ? siteId : DEFAULT_SITE_ID;
 
     group += "_read";
 
@@ -142,7 +143,7 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
   public void testHandleGetDocumentsUpload01() throws Exception {
     // given
     for (String path : Arrays.asList(null, "/bleh/test.txt")) {
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      for (String siteId : Arrays.asList(null, ID.uuid())) {
         ApiGatewayRequestEvent event =
             toRequestEvent("/request-get-documents-upload-documentid.json");
         addParameter(event, "siteId", siteId);
@@ -173,7 +174,7 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
    */
   @Test
   public void testHandleGetDocumentsUpload02() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-get-documents-upload-documentid01.json");
@@ -198,10 +199,10 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
    */
   @Test
   public void testHandleGetDocumentsUpload03() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       Date date = new Date();
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, "jsmith");
 
       ApiGatewayRequestEvent event =
@@ -236,7 +237,7 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
    */
   @Test
   public void testHandleGetDocumentsUpload04() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-get-documents-upload-documentid02.json");
@@ -296,7 +297,7 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
     this.configService.save(null,
         new DynamicObject(Map.of(ConfigService.MAX_DOCUMENT_SIZE_BYTES, maxContentLengthBytes)));
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       if (siteId != null) {
         this.configService.save(siteId, new DynamicObject(
@@ -334,7 +335,7 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
     this.configService.save(null,
         new DynamicObject(Map.of(ConfigService.MAX_DOCUMENT_SIZE_BYTES, maxContentLengthBytes)));
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       if (siteId != null) {
         this.configService.save(siteId, new DynamicObject(
@@ -367,7 +368,7 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePostDocumentsUpload01() throws Exception {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       String path = "/bleh/test.txt";
 
       com.formkiq.stacks.client.models.DocumentTag tag0 =
@@ -378,7 +379,7 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
           .tags(Collections.singletonList(tag0)).actions(Collections.singletonList(action0));
 
       ApiGatewayRequestEvent event = postDocumentsUploadRequest(siteId,
-          siteId != null ? siteId : "default", GsonUtil.getInstance().toJson(document));
+          siteId != null ? siteId : DEFAULT_SITE_ID, GsonUtil.getInstance().toJson(document));
 
       // when
       String response = handleRequest(event);
@@ -424,8 +425,8 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePostDocumentsUpload03() throws Exception {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      String tagSchemaId = UUID.randomUUID().toString();
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      String tagSchemaId = ID.uuid();
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-get-documents-upload-documentid.json");
       event.setHttpMethod("POST");
@@ -474,9 +475,9 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePostDocumentsUpload04() throws Exception {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      for (String documentId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      for (String documentId : Arrays.asList(null, ID.uuid())) {
 
         ApiGatewayRequestEvent event = getRequest(siteId, documentId);
 
@@ -501,7 +502,7 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePostDocumentsUpload05() throws Exception {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       com.formkiq.stacks.client.models.DocumentTag tag0 =
           new com.formkiq.stacks.client.models.DocumentTag().key("CLAMAV_SCAN_TIMESTAMP")
@@ -509,7 +510,7 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
       AddLargeDocument document = new AddLargeDocument().tags(Collections.singletonList(tag0));
 
       ApiGatewayRequestEvent event = postDocumentsUploadRequest(siteId,
-          siteId != null ? siteId : "default", GsonUtil.getInstance().toJson(document));
+          siteId != null ? siteId : DEFAULT_SITE_ID, GsonUtil.getInstance().toJson(document));
 
       // when
       String response = handleRequest(event);

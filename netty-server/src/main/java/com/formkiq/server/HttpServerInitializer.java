@@ -25,6 +25,7 @@ package com.formkiq.server;
 
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.dynamodb.schema.DocumentSchema;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
@@ -81,7 +82,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -271,7 +271,7 @@ public final class HttpServerInitializer extends ChannelInitializer<SocketChanne
 
     String apiKey = commandLine.getOptionValue("api-key");
     if (Strings.isEmpty(apiKey)) {
-      apiKey = UUID.randomUUID().toString();
+      apiKey = ID.uuid();
     }
 
     env.put("API_KEY", apiKey);

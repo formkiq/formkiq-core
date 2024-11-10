@@ -36,9 +36,10 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
+
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
@@ -86,7 +87,7 @@ public class PublicWebhooksRequestHandler
 
     DynamicObject item = new DynamicObject(new HashMap<>());
 
-    final String documentId = UUID.randomUUID().toString();
+    final String documentId = ID.uuid();
 
     if (contentType != null) {
       item.put("contentType", contentType);

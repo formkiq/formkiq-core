@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.lambda.s3;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.module.events.document.DocumentEventType.CREATE;
 import static com.formkiq.module.events.document.DocumentEventType.DELETE;
@@ -59,6 +60,7 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -342,7 +344,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       assertNotNull(map.get("userId"));
     }
 
-    assertEquals(Objects.requireNonNullElse(siteId, "default"), map.get("siteId"));
+    assertEquals(Objects.requireNonNullElse(siteId, DEFAULT_SITE_ID), map.get("siteId"));
   }
 
   /**
@@ -403,21 +405,21 @@ public class DocumentsS3UpdateTest implements DbKeys {
   private DynamicDocumentItem createSubDocuments(final Date now) {
     String username = UUID.randomUUID() + "@formkiq.com";
 
-    DynamicDocumentItem doc = new DynamicDocumentItem(Map.of("documentId",
-        UUID.randomUUID().toString(), "userId", username, "insertedDate", now));
+    DynamicDocumentItem doc = new DynamicDocumentItem(
+        Map.of("documentId", ID.uuid(), "userId", username, "insertedDate", now));
     doc.setContentType("text/plain");
     doc.put("tags",
         List.of(Map.of("documentId", doc.getDocumentId(), "key", "category", "value", "none",
             "insertedDate", now, "userId", username, "type", DocumentTagType.USERDEFINED.name())));
 
-    DynamicDocumentItem doc1 = new DynamicDocumentItem(Map.of("documentId",
-        UUID.randomUUID().toString(), "userId", username, "insertedDate", now));
+    DynamicDocumentItem doc1 = new DynamicDocumentItem(
+        Map.of("documentId", ID.uuid(), "userId", username, "insertedDate", now));
     doc1.setContentType("text/html");
     doc1.put("tags", List.of(Map.of("documentId", doc1.getDocumentId(), "key", "category1",
         "insertedDate", now, "userId", username, "type", DocumentTagType.USERDEFINED.name())));
 
-    DynamicDocumentItem doc2 = new DynamicDocumentItem(Map.of("documentId",
-        UUID.randomUUID().toString(), "userId", username, "insertedDate", now));
+    DynamicDocumentItem doc2 = new DynamicDocumentItem(
+        Map.of("documentId", ID.uuid(), "userId", username, "insertedDate", now));
     doc2.setContentType("application/json");
     doc2.put("tags", List.of(Map.of("documentId", doc2.getDocumentId(), "key", "category2",
         "insertedDate", now, "userId", username, "type", DocumentTagType.USERDEFINED.name())));
@@ -456,7 +458,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
   @Timeout(value = TEST_TIMEOUT)
   public void testHandleRequest01() throws Exception {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       this.logger.reset();
 
@@ -512,7 +514,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
     Date date = createDate2DaysAgo();
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       this.logger.reset();
 
@@ -575,7 +577,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
   @Timeout(value = TEST_TIMEOUT)
   public void testHandleRequest03() throws Exception {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       this.logger.reset();
 
@@ -613,7 +615,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
   @Timeout(value = TEST_TIMEOUT)
   public void testHandleRequest04() throws Exception {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       this.logger.reset();
 
@@ -650,9 +652,9 @@ public class DocumentsS3UpdateTest implements DbKeys {
   @Timeout(value = TEST_TIMEOUT)
   public void testHandleRequest05() throws Exception {
 
-    String documentId = UUID.randomUUID().toString();
+    String documentId = ID.uuid();
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       this.logger.reset();
 
@@ -713,7 +715,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
   @Test
   @Timeout(value = TEST_TIMEOUT)
   public void testHandleRequest06() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       this.logger.reset();
       Date now = new Date();
@@ -766,7 +768,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
   @Timeout(value = TEST_TIMEOUT)
   public void testHandleRequest07() throws Exception {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       this.logger.reset();
 
@@ -801,7 +803,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
   @Timeout(value = TEST_TIMEOUT)
   public void testHandleRequest08() throws Exception {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       this.logger.reset();
 
@@ -837,7 +839,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
   @Timeout(value = TEST_TIMEOUT)
   public void testHandleRequest09() throws Exception {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       this.logger.reset();
 
@@ -873,7 +875,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
   @Timeout(value = TEST_TIMEOUT)
   public void testHandleRequest10() throws Exception {
     String ttl = "1612061365";
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       this.logger.reset();
 
@@ -915,7 +917,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
   @Timeout(value = TEST_TIMEOUT)
   public void testHandleRequest11() throws Exception {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String key = createDatabaseKey(siteId, BUCKET_KEY);
       final Map<String, Object> map =
@@ -955,7 +957,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
     createMockServer(DocumentsS3Update.SERVER_ERROR);
     before();
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       this.logger.reset();
 
@@ -993,7 +995,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
     createMockServer(OK);
     before();
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       this.logger.reset();
 
@@ -1023,7 +1025,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
   @Timeout(value = TEST_TIMEOUT)
   public void testHandleRequest14() throws Exception {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String key = createDatabaseKey(siteId, BUCKET_KEY);
       final Map<String, Object> map =

@@ -36,8 +36,8 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.model.AddAttribute;
 import com.formkiq.client.model.AddAttributeRequest;
@@ -124,7 +124,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
    * @throws ValidationException ValidationException
    */
   private String saveDocument(final String siteId) throws ValidationException {
-    String documentId = UUID.randomUUID().toString();
+    String documentId = ID.uuid();
 
     DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
     this.documentService.saveDocument(siteId, item, null);
@@ -139,7 +139,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testHandleGetDocumentActions01() throws Exception {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
       String documentId = saveDocument(siteId);
@@ -170,7 +170,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
   @Timeout(TIMEOUT)
   public void testHandlePostDocumentActions01() throws Exception {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
       String documentId = saveDocument(siteId);
@@ -224,7 +224,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testHandlePostDocumentActions02() throws Exception {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
       String documentId = saveDocument(siteId);
@@ -262,7 +262,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testHandlePostDocumentActions03() throws Exception {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
       String documentId = saveDocument(siteId);
@@ -322,7 +322,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testHandlePostDocumentActions04() throws Exception {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
       String documentId = saveDocument(siteId);
@@ -359,7 +359,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testHandlePostDocumentActions05() throws Exception {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken("Admins");
       String documentId = saveDocument(siteId);
@@ -395,7 +395,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testHandlePostDocumentActions06() throws Exception {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken("Admins");
       String documentId = saveDocument(siteId);
@@ -425,7 +425,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testHandlePostDocumentActions07() throws Exception {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken("Admins");
       String documentId = saveDocument(siteId);
@@ -455,11 +455,11 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testHandlePostDocumentActions08() throws Exception {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken("Admins");
 
-      String queueId = UUID.randomUUID().toString();
+      String queueId = ID.uuid();
       this.db.putItem(new Queue().documentId(queueId).name("test").getAttributes(siteId));
 
       String documentId = saveDocument(siteId);
@@ -492,7 +492,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testHandlePostDocumentActions09() throws Exception {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = saveDocument(siteId);
 
@@ -539,7 +539,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testHandlePostDocumentActions10() throws Exception {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
 
@@ -584,7 +584,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testHandleAddtDocumentActionsRetry01() throws Exception {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
       String documentId = saveDocument(siteId);
@@ -619,7 +619,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testHandleAddtDocumentActionsRetry02() throws Exception {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
       String documentId = saveDocument(siteId);
@@ -666,7 +666,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testHandleAddtDocumentActionsRetry03() throws Exception {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
       String documentId = saveDocument(siteId);

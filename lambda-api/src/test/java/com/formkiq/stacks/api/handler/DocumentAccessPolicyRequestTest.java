@@ -23,14 +23,15 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_PAYMENT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 import java.util.Arrays;
-import java.util.UUID;
+
+import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.client.api.AccessControlApi;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.SetOpaAccessPolicyItemsRequest;
@@ -53,7 +54,7 @@ public class DocumentAccessPolicyRequestTest extends AbstractApiClientRequestTes
   @Test
   public void testDeleteOpaConfiguration() throws Exception {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -76,8 +77,7 @@ public class DocumentAccessPolicyRequestTest extends AbstractApiClientRequestTes
   @Test
   public void testGetOpaConfiguration() throws Exception {
     // given
-    for (String siteId : Arrays.asList(SiteIdKeyGenerator.DEFAULT_SITE_ID,
-        UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -121,7 +121,7 @@ public class DocumentAccessPolicyRequestTest extends AbstractApiClientRequestTes
   @Test
   public void testPutOpaConfiguration() throws Exception {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
       SetOpaAccessPolicyItemsRequest req = new SetOpaAccessPolicyItemsRequest();

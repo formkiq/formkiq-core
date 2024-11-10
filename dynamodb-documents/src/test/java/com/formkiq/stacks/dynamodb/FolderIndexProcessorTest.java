@@ -45,9 +45,10 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
+import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -113,9 +114,9 @@ class FolderIndexProcessorTest implements DbKeys {
   @Test
   void testCreateFolder01() {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
       item.setPath("/a/b/c/test.pdf");
 
@@ -152,9 +153,9 @@ class FolderIndexProcessorTest implements DbKeys {
   @Test
   void testCreateFolder02() {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
       item.setPath("/test.pdf");
 
@@ -173,9 +174,9 @@ class FolderIndexProcessorTest implements DbKeys {
   @Test
   void testCreateFolder03() {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
 
       // when
@@ -190,10 +191,10 @@ class FolderIndexProcessorTest implements DbKeys {
   @Test
   void testCreateFolder04() {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       String site = siteId != null ? siteId + "/" : "";
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
       item.setPath("formkiq:://sample/test.txt");
 
@@ -237,10 +238,10 @@ class FolderIndexProcessorTest implements DbKeys {
   @Test
   void testCreateFolder05() {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       String site = siteId != null ? siteId + "/" : "";
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
       item.setPath("/a/B/");
 
@@ -272,11 +273,11 @@ class FolderIndexProcessorTest implements DbKeys {
   @Test
   void testCreateFolder06() {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       for (String path : Arrays.asList("/", "")) {
 
-        String documentId = UUID.randomUUID().toString();
+        String documentId = ID.uuid();
         DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
         item.setPath(path);
 
@@ -296,9 +297,9 @@ class FolderIndexProcessorTest implements DbKeys {
   @Test
   void testCreateFolder07() {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
       item.setPath("/test.pdf");
 
@@ -326,9 +327,9 @@ class FolderIndexProcessorTest implements DbKeys {
   @Test
   void testCreateFolder08() {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
       item.setPath("./aa/b/c/test.pdf");
 
@@ -369,9 +370,9 @@ class FolderIndexProcessorTest implements DbKeys {
   @Test
   void testGetFolderByDocumentId01() {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
       item.setPath("/a/test.pdf");
 
@@ -398,9 +399,9 @@ class FolderIndexProcessorTest implements DbKeys {
   void testGetFoldersByDocumentId01() {
     // given
     final int expected = 3;
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
       item.setPath("/a/b/c/test.pdf");
 
@@ -430,12 +431,12 @@ class FolderIndexProcessorTest implements DbKeys {
   public void testMove01() throws Exception {
     // given
     String userId = "fred";
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       final String source = "/something/else/";
       final String destination = "/a/b/";
 
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
       item.setPath(source + "test.txt");
       service.saveDocument(siteId, item, null);
@@ -486,12 +487,12 @@ class FolderIndexProcessorTest implements DbKeys {
   public void testMove02() throws Exception {
     // given
     String userId = "fred";
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       final String source = "directory1/test.pdf";
       final String destination = "directory2/";
 
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
       item.setPath(source);
       service.saveDocument(siteId, item, null);
@@ -542,19 +543,19 @@ class FolderIndexProcessorTest implements DbKeys {
   public void testMove03() throws Exception {
     // given
     String userId = "fred";
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       String source0 = "directory1/test.pdf";
       String source1 = "directory1/test2.pdf";
 
       for (String destination : Arrays.asList("/", "")) {
 
-        String documentId0 = UUID.randomUUID().toString();
+        String documentId0 = ID.uuid();
         DocumentItem item0 = new DocumentItemDynamoDb(documentId0, new Date(), "joe");
         item0.setPath(source0);
         service.saveDocument(siteId, item0, null);
 
-        String documentId1 = UUID.randomUUID().toString();
+        String documentId1 = ID.uuid();
         DocumentItem item1 = new DocumentItemDynamoDb(documentId1, new Date(), "joe");
         item1.setPath(source1);
         service.saveDocument(siteId, item1, null);
@@ -599,18 +600,18 @@ class FolderIndexProcessorTest implements DbKeys {
   public void testMove04() throws Exception {
     // given
     String userId = "fred";
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       final String source0 = "d1/test1.pdf";
       final String source1 = "d2/test2.pdf";
       final String destination = "d2/";
 
-      String documentId0 = UUID.randomUUID().toString();
+      String documentId0 = ID.uuid();
       DocumentItem item0 = new DocumentItemDynamoDb(documentId0, new Date(), "joe");
       item0.setPath(source0);
       service.saveDocument(siteId, item0, null);
 
-      String documentId1 = UUID.randomUUID().toString();
+      String documentId1 = ID.uuid();
       DocumentItem item1 = new DocumentItemDynamoDb(documentId1, new Date(), "joe");
       item1.setPath(source1);
       service.saveDocument(siteId, item1, null);

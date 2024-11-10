@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api;
 
 import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
@@ -151,9 +152,9 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleDeleteDocument01() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
 
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
       getDocumentService().saveDocument(siteId, item, null);
@@ -189,9 +190,9 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleDeleteDocument02() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
 
       getDocumentService().saveDocument(siteId, item, null);
@@ -220,9 +221,9 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleDeleteDocument03() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-delete-documents-documentid01.json");
       addParameter(event, "siteId", siteId);
@@ -249,12 +250,12 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocuments01() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       Date date = new Date();
       final long contentLength = 1000L;
       String username = UUID.randomUUID() + "@formkiq.com";
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, username);
       item.setContentLength(Long.valueOf(contentLength));
 
@@ -294,7 +295,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocuments02() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       ByteArrayOutputStream outstream = new ByteArrayOutputStream();
       createTestData(siteId, DocumentService.MAX_RESULTS + 2);
@@ -337,7 +338,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocuments03() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       ByteArrayOutputStream outstream = new ByteArrayOutputStream();
       createTestData(siteId, DocumentService.MAX_RESULTS);
@@ -378,11 +379,11 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocuments04() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       Date date = new Date();
       String username = UUID.randomUUID() + "@formkiq.com";
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, username);
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents-tz.json");
@@ -415,11 +416,11 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocuments05() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       Date date = DateUtil.toDateFromString("2019-08-15", "0500");
       String username = UUID.randomUUID() + "@formkiq.com";
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, username);
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents-tz.json");
@@ -452,14 +453,14 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocuments06() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       ZoneOffset zone = ZoneOffset.of("-05:00");
       ZonedDateTime zdate = ZonedDateTime.now(zone);
       Date date = Date.from(zdate.toInstant());
 
       String username = UUID.randomUUID() + "@formkiq.com";
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, username);
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents-tz02.json");
@@ -493,7 +494,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocuments07() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       Date date0 = new Date();
       final int year = 2015;
@@ -504,8 +505,8 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       Date date1 = Date.from(localDate.atStartOfDay(ZoneOffset.UTC).toInstant());
 
       String username = UUID.randomUUID() + "@formkiq.com";
-      String documentId0 = UUID.randomUUID().toString();
-      String documentId1 = UUID.randomUUID().toString();
+      String documentId0 = ID.uuid();
+      String documentId1 = ID.uuid();
       DocumentItemDynamoDb item0 = new DocumentItemDynamoDb(documentId0, date0, username);
       item0.setContentLength(Long.valueOf(contentLength));
 
@@ -547,7 +548,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleGetDocuments08() throws Exception {
     // given
-    String siteId = UUID.randomUUID().toString();
+    String siteId = ID.uuid();
 
     ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents03.json");
     addParameter(event, "siteId", siteId);
@@ -576,7 +577,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleGetDocuments09() throws Exception {
     // given
-    String siteId = UUID.randomUUID().toString();
+    String siteId = ID.uuid();
 
     ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents03.json");
     addParameter(event, "siteId", siteId);
@@ -635,7 +636,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleGetDocuments11() throws Exception {
     // given
-    String siteId = "default";
+    String siteId = DEFAULT_SITE_ID;
 
     ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents03.json");
     addParameter(event, "siteId", siteId);
@@ -693,7 +694,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocuments13() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents04.json");
       addParameter(event, "siteId", siteId);
@@ -723,7 +724,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocuments14() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       final int year = 2020;
       Date date =
@@ -731,7 +732,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
 
       final long contentLength = 1000L;
       String username = UUID.randomUUID() + "@formkiq.com";
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, username);
       item.setContentLength(Long.valueOf(contentLength));
 
@@ -770,12 +771,12 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
 
     ActionsService actions = getAwsServices().getExtension(ActionsService.class);
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       Date date = new Date();
       final long contentLength = 1000L;
       String username = UUID.randomUUID() + "@formkiq.com";
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, username);
       item.setContentLength(Long.valueOf(contentLength));
 
@@ -814,12 +815,12 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleGetDocuments16() throws Exception {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       Date date = new Date();
       final long contentLength = 1000L;
       String username = UUID.randomUUID() + "@formkiq.com";
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, username);
       item.setContentLength(Long.valueOf(contentLength));
 
@@ -846,11 +847,11 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleOptionsDocuments01() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       Date date = new Date();
       String username = UUID.randomUUID() + "@formkiq.com";
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, username);
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-options-documents.json");
@@ -897,7 +898,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandlePostDocuments01() throws Exception {
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
       // given
       String body =
           "{\"isBase64\":true,\"content\": \"dGhpcyBpcyBhIHRlc3Q=\",\"path\": \"/file/test.txt\","
@@ -906,7 +907,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
 
       // when
       DynamicObject obj = handleRequestDynamic(
-          postDocumentsRequest(siteId, siteId != null ? siteId : "default", body));
+          postDocumentsRequest(siteId, siteId != null ? siteId : DEFAULT_SITE_ID, body));
 
       // then
       DynamicObject o = new DynamicObject(fromJson(obj.getString("body"), Map.class));
@@ -935,14 +936,14 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
    */
   @Test
   public void testHandlePostDocuments19() throws Exception {
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
       // given
       String body = "{\"content\": \"dGhpcyBpcyBhIHRlc3Q=\",\"path\": \"/file/test.txt\","
           + "\"actions\":[{\"type\":\"webhook\"}]}";
 
       // when
       DynamicObject obj = handleRequestDynamic(
-          postDocumentsRequest(siteId, siteId != null ? siteId : "default", body));
+          postDocumentsRequest(siteId, siteId != null ? siteId : DEFAULT_SITE_ID, body));
 
       // then
       assertEquals("400.0", obj.getString("statusCode"));
@@ -958,14 +959,14 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
    */
   @Test
   public void testHandlePostDocuments20() throws Exception {
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
       // given
       String body = "{\"content\": \"dGhpcyBpcyBhIHRlc3Q=\",\"path\": \"/file/test.txt\","
           + "\"actions\":[{\"type\":\"webhook\",\"parameters\":{\"url\":\"http://localhost\"}}]}";
 
       // when
       DynamicObject obj = handleRequestDynamic(
-          postDocumentsRequest(siteId, siteId != null ? siteId : "default", body));
+          postDocumentsRequest(siteId, siteId != null ? siteId : DEFAULT_SITE_ID, body));
 
       // then
       assertEquals("201.0", obj.getString("statusCode"));
@@ -979,14 +980,14 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
    */
   @Test
   public void testHandlePostDocuments21() throws Exception {
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
       // given
       String body = "{\"content\": \"dGhpcyBpcyBhIHRlc3Q=\",\"path\": \"/file/test.txt\","
           + "\"actions\":[{\"type\":\"something\"}]}";
 
       // when
       DynamicObject obj = handleRequestDynamic(
-          postDocumentsRequest(siteId, siteId != null ? siteId : "default", body));
+          postDocumentsRequest(siteId, siteId != null ? siteId : DEFAULT_SITE_ID, body));
 
       // then
       assertEquals("400.0", obj.getString("statusCode"));
@@ -1002,14 +1003,14 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
    */
   @Test
   public void testHandlePostDocuments22() throws Exception {
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
       // given
       String body = "{\"content\": \"dGhpcyBpcyBhIHRlc3Q=\",\"path\": \"/file/test.txt\","
           + "\"actions\":[{\"type2\":\"something\"}]}";
 
       // when
       DynamicObject obj = handleRequestDynamic(
-          postDocumentsRequest(siteId, siteId != null ? siteId : "default", body));
+          postDocumentsRequest(siteId, siteId != null ? siteId : DEFAULT_SITE_ID, body));
 
       // then
       assertEquals("400.0", obj.getString("statusCode"));
@@ -1026,7 +1027,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandlePostDocuments02() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents-documentid02.json");
       addParameter(event, "siteId", siteId);
@@ -1067,7 +1068,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
    */
   @Test
   public void testHandlePostDocuments03() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents-documentid03.json");
       addParameter(event, "siteId", siteId);
@@ -1091,7 +1092,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandlePostDocuments04() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents-documentid04.json");
       addParameter(event, "siteId", siteId);
@@ -1122,7 +1123,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandlePostDocuments05() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents-documentid05.json");
       addParameter(event, "siteId", siteId);
@@ -1152,7 +1153,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
    */
   @Test
   public void testHandlePostDocuments06() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents-documentid06.json");
       addParameter(event, "siteId", siteId);
@@ -1253,7 +1254,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandlePostDocuments10() throws Exception {
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
       // given
       String username = UUID.randomUUID() + "@formkiq.com";
 
@@ -1296,7 +1297,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandlePostDocuments11() throws Exception {
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
       // given
       String username = UUID.randomUUID() + "@formkiq.com";
 
@@ -1336,7 +1337,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandlePostDocuments12() throws Exception {
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
       // given
 
       // when
@@ -1370,12 +1371,12 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandlePostDocuments15() throws Exception {
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
       // given
       String body = "{\"path\":\"something/bleh/\"}";
 
       ApiGatewayRequestEvent event =
-          postDocumentsRequest(siteId, siteId != null ? siteId : "default", body);
+          postDocumentsRequest(siteId, siteId != null ? siteId : DEFAULT_SITE_ID, body);
 
       // when
       DynamicObject obj = handleRequestDynamic(event);
@@ -1424,12 +1425,12 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   public void testHandlePostDocuments16() throws Exception {
     // given
     final int count = 30;
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
       String body = "{\"content\": \"dGhpcyBpcyBhIHRlc3Q=\",\"path\": \"/file/test.txt\","
           + "\"tags\":[{\"key\":\"firstname\",\"value\":\"john\"},"
           + "{\"key\":\"lastname\",\"value\":\"smith\"}]}";
       ApiGatewayRequestEvent event =
-          postDocumentsRequest(siteId, siteId != null ? siteId : "default", body);
+          postDocumentsRequest(siteId, siteId != null ? siteId : DEFAULT_SITE_ID, body);
 
       // when
 
@@ -1464,7 +1465,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   public void testHandlePostDocuments17() throws Exception {
     // given
     final int count = 1001;
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
       String filled = StringUtils.repeat("*", count);
 
       String body = "{\"content\": \"dGhpcyBpcyBhIHRlc3Q=\",\"path\": \"/file/test.txt\","
@@ -1472,7 +1473,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
           + "{\"key\":\"lastname\",\"value\":\"smith\"}]}";
 
       ApiGatewayRequestEvent event =
-          postDocumentsRequest(siteId, siteId != null ? siteId : "default", body);
+          postDocumentsRequest(siteId, siteId != null ? siteId : DEFAULT_SITE_ID, body);
 
       Map<String, Object> data = fromJson(event.getBody(), Map.class);
       List<Map<String, Object>> metadata = new ArrayList<>();
@@ -1505,13 +1506,13 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePostDocuments18() throws Exception {
     // given
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       String body = "{\"content\": \"dGhpcyBpcyBhIHRlc3Q=\",\"path\": \"/file/test.txt\","
           + "\"tags\":[{\"key\":\"CLAMAV_SCAN_STATUS\",\"value\":\"john\"}]}";
 
       ApiGatewayRequestEvent event =
-          postDocumentsRequest(siteId, siteId != null ? siteId : "default", body);
+          postDocumentsRequest(siteId, siteId != null ? siteId : DEFAULT_SITE_ID, body);
 
       // when
       DynamicObject obj = handleRequestDynamic(event);

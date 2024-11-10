@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api.awstest;
 
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.api.UserManagementApi;
@@ -51,6 +52,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_UNAUTHORIZED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -165,7 +167,7 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
     for (ApiClient client : getAdminClients(clients)) {
 
       UserManagementApi userApi = new UserManagementApi(client);
-      String username = UUID.randomUUID().toString();
+      String username = ID.uuid();
 
       // when
       try {
@@ -373,7 +375,7 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
 
     // when
     try {
-      api.getDocuments("default", null, null, null, null, null, null, null);
+      api.getDocuments(DEFAULT_SITE_ID, null, null, null, null, null, null, null);
       fail();
     } catch (ApiException e) {
       // then

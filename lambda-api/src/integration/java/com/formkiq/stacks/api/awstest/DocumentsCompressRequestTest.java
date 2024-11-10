@@ -45,6 +45,8 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+
+import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.parallel.Execution;
@@ -116,7 +118,7 @@ public class DocumentsCompressRequestTest extends AbstractAwsIntegrationTest {
     final int fileCount = 10;
     final String content = "some data";
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       List<ApiClient> clients = getApiClients(siteId);
       DocumentsApi documentsApi = new DocumentsApi(clients.get(0));

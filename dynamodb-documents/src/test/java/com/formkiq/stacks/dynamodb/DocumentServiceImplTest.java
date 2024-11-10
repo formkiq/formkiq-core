@@ -61,6 +61,8 @@ import java.util.TimeZone;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
+import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -139,8 +141,8 @@ public class DocumentServiceImplTest implements DbKeys {
     DocumentItem item = new DocumentItemDynamoDb(uuid, Date.from(date.toInstant()), userId);
     item.setContentType("text/plain");
     item.setPath("test.txt");
-    item.setUserId(UUID.randomUUID().toString());
-    item.setChecksum(UUID.randomUUID().toString());
+    item.setUserId(ID.uuid());
+    item.setChecksum(ID.uuid());
     item.setContentLength(2L);
     return item;
   }
@@ -154,18 +156,18 @@ public class DocumentServiceImplTest implements DbKeys {
   private DynamicDocumentItem createSubDocuments(final Date now) {
     String username = UUID.randomUUID() + "@formkiq.com";
 
-    DynamicDocumentItem doc = new DynamicDocumentItem(Map.of("documentId",
-        UUID.randomUUID().toString(), "userId", username, "insertedDate", now));
+    DynamicDocumentItem doc = new DynamicDocumentItem(
+        Map.of("documentId", ID.uuid(), "userId", username, "insertedDate", now));
     doc.setContentType("text/plain");
 
-    DynamicDocumentItem doc1 = new DynamicDocumentItem(Map.of("documentId",
-        UUID.randomUUID().toString(), "userId", username, "insertedDate", now));
+    DynamicDocumentItem doc1 = new DynamicDocumentItem(
+        Map.of("documentId", ID.uuid(), "userId", username, "insertedDate", now));
     doc1.setContentType("text/html");
     doc1.put("tags", List.of(Map.of("documentId", doc1.getDocumentId(), "key", "category1",
         "insertedDate", now, "userId", username, "type", DocumentTagType.USERDEFINED.name())));
 
-    DynamicDocumentItem doc2 = new DynamicDocumentItem(Map.of("documentId",
-        UUID.randomUUID().toString(), "userId", username, "insertedDate", now));
+    DynamicDocumentItem doc2 = new DynamicDocumentItem(
+        Map.of("documentId", ID.uuid(), "userId", username, "insertedDate", now));
     doc2.setContentType("application/json");
     doc2.put("tags", List.of(Map.of("documentId", doc2.getDocumentId(), "key", "category2",
         "insertedDate", now, "userId", username, "type", DocumentTagType.USERDEFINED.name())));
@@ -194,7 +196,7 @@ public class DocumentServiceImplTest implements DbKeys {
 
     dates.forEach(date -> {
       ZonedDateTime zdate = DateUtil.toDateTimeFromString(date, null);
-      items.add(createDocument(UUID.randomUUID().toString(), zdate));
+      items.add(createDocument(ID.uuid(), zdate));
     });
 
     items.forEach(item -> {
@@ -217,12 +219,12 @@ public class DocumentServiceImplTest implements DbKeys {
    */
   @Test
   public void testAddTags01() throws ValidationException {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       DocumentItem document = createTestData(siteId).get(0);
       String documentId = document.getDocumentId();
       String tagKey = "tag" + TAG_DELIMINATOR;
-      String tagValue = UUID.randomUUID().toString();
+      String tagValue = ID.uuid();
       String userId = "jsmith";
 
       List<DocumentTag> tags = List
@@ -267,13 +269,13 @@ public class DocumentServiceImplTest implements DbKeys {
   @Test
   public void testAddTags02() throws ValidationException {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String tagKey = "tag";
       Date now = new Date();
       String userId = "jsmith";
 
-      DocumentItem item = new DocumentItemDynamoDb(UUID.randomUUID().toString(), now, userId);
+      DocumentItem item = new DocumentItemDynamoDb(ID.uuid(), now, userId);
       final String documentId = item.getDocumentId();
 
       DocumentTag ti = new DocumentTag(documentId, tagKey, null, now, userId);
@@ -315,7 +317,7 @@ public class DocumentServiceImplTest implements DbKeys {
   @Test
   public void testAddTags03() throws ValidationException {
     // given
-    String documentId = UUID.randomUUID().toString();
+    String documentId = ID.uuid();
     DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
     List<DocumentTag> tags = SYSTEM_DEFINED_TAGS.stream()
         .map(tag -> new DocumentTag(documentId, tag, "A", new Date(), "joe"))
@@ -337,7 +339,7 @@ public class DocumentServiceImplTest implements DbKeys {
   @Test
   public void testAddTags04() throws ValidationException {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       DocumentItem document = createTestData(siteId).get(0);
       String documentId = document.getDocumentId();
@@ -395,12 +397,12 @@ public class DocumentServiceImplTest implements DbKeys {
     // given
     final int count = 200;
     final String tagKey = "category123";
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       Map<String, Collection<DocumentTag>> tagMap = new HashMap<>();
 
       for (int i = 0; i < count; i++) {
-        String documentId = UUID.randomUUID().toString();
+        String documentId = ID.uuid();
         List<DocumentTag> tags = List.of(new DocumentTag(documentId, tagKey, "person", new Date(),
             "joe", DocumentTagType.USERDEFINED));
 
@@ -433,9 +435,9 @@ public class DocumentServiceImplTest implements DbKeys {
   @Test
   void testAddTags06() {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
 
       List<DocumentTag> tags0 = List.of(new DocumentTag(null, "category",
           Arrays.asList("person1", "person2"), new Date(), "joe", DocumentTagType.USERDEFINED));
@@ -463,19 +465,19 @@ public class DocumentServiceImplTest implements DbKeys {
    */
   @Test
   public void testDeleteDocument01() throws ValidationException {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       Date now = new Date();
       String userId = "jsmith";
 
       for (boolean softDelete : Arrays.asList(Boolean.FALSE, Boolean.TRUE)) {
 
-        DocumentItem item = new DocumentItemDynamoDb(UUID.randomUUID().toString(), now, userId);
+        DocumentItem item = new DocumentItemDynamoDb(ID.uuid(), now, userId);
         item.setPath("a/test.txt");
         String documentId = item.getDocumentId();
 
         DocumentTag tag = new DocumentTag(null, "status", "active", now, userId);
-        tag.setUserId(UUID.randomUUID().toString());
+        tag.setUserId(ID.uuid());
 
         service.saveDocument(siteId, item, List.of(tag));
 
@@ -514,13 +516,13 @@ public class DocumentServiceImplTest implements DbKeys {
   @Test
   public void testDeleteDocument02() throws IOException, ValidationException {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       final int tagCount = 200;
       Date now = new Date();
       String userId = "jsmith";
 
-      DocumentItem item = new DocumentItemDynamoDb(UUID.randomUUID().toString(), now, userId);
+      DocumentItem item = new DocumentItemDynamoDb(ID.uuid(), now, userId);
       item.setPath("a/test.txt");
       String documentId = item.getDocumentId();
 
@@ -528,7 +530,7 @@ public class DocumentServiceImplTest implements DbKeys {
 
       for (int i = 0; i < tagCount; i++) {
         DocumentTag tag = new DocumentTag(null, "status_" + i, "active", now, userId);
-        tag.setUserId(UUID.randomUUID().toString());
+        tag.setUserId(ID.uuid());
         tags.add(tag);
       }
 
@@ -576,17 +578,17 @@ public class DocumentServiceImplTest implements DbKeys {
   @Test
   public void testDeleteDocument03() throws ValidationException {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       Date now = new Date();
       String userId = "jsmith";
 
-      DocumentItem item = new DocumentItemDynamoDb(UUID.randomUUID().toString(), now, userId);
+      DocumentItem item = new DocumentItemDynamoDb(ID.uuid(), now, userId);
       item.setPath("a/test52.txt");
       String documentId = item.getDocumentId();
 
       DocumentTag tag = new DocumentTag(null, "status", "active", now, userId);
-      tag.setUserId(UUID.randomUUID().toString());
+      tag.setUserId(ID.uuid());
 
       service.saveDocument(siteId, item, List.of(tag));
 
@@ -628,10 +630,10 @@ public class DocumentServiceImplTest implements DbKeys {
    */
   @Test
   public void testExists01() throws ValidationException {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId0 = UUID.randomUUID().toString();
-      String documentId1 = UUID.randomUUID().toString();
+      String documentId0 = ID.uuid();
+      String documentId1 = ID.uuid();
       DocumentItem item0 = createDocument(documentId0, ZonedDateTime.now());
 
       // when
@@ -646,7 +648,7 @@ public class DocumentServiceImplTest implements DbKeys {
   /** Find valid document. */
   @Test
   public void testFindDocument01() {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       DocumentItem document = createTestData(siteId).get(0);
       String documentId = document.getDocumentId();
@@ -676,7 +678,7 @@ public class DocumentServiceImplTest implements DbKeys {
   @Test
   public void testFindDocument02() throws ValidationException {
     Date now = new Date();
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       final Collection<String> list = new HashSet<>();
       DynamicDocumentItem doc = createSubDocuments(now);
@@ -721,7 +723,7 @@ public class DocumentServiceImplTest implements DbKeys {
   /** Find documents. */
   @Test
   public void testFindDocuments01() {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       Iterator<DocumentItem> itr = createTestData(siteId).iterator();
       DocumentItem d0 = itr.next();
@@ -759,7 +761,7 @@ public class DocumentServiceImplTest implements DbKeys {
   /** Find all documents. */
   @Test
   public void testFindDocuments02() {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       createTestData("finance");
       List<String> documentIds = createTestData(siteId).stream().map(DocumentItem::getDocumentId)
@@ -782,7 +784,7 @@ public class DocumentServiceImplTest implements DbKeys {
    */
   @Test
   public void testFindDocumentsByDate01() {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       createTestData(siteId);
       createTestData("finance");
@@ -817,7 +819,7 @@ public class DocumentServiceImplTest implements DbKeys {
    */
   @Test
   public void testFindDocumentsByDate02() {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       createTestData(siteId);
 
@@ -878,7 +880,7 @@ public class DocumentServiceImplTest implements DbKeys {
    */
   @Test
   public void testFindDocumentsByDate03() {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       createTestData(siteId);
 
@@ -939,7 +941,7 @@ public class DocumentServiceImplTest implements DbKeys {
    */
   @Test
   public void testFindDocumentsByDate04() {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       createTestData(siteId);
 
@@ -999,11 +1001,11 @@ public class DocumentServiceImplTest implements DbKeys {
   @Test
   public void testFindDocumentsTags01() throws ValidationException {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       Date now = new Date();
       String userId = "jsmith";
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       DocumentItem document = new DocumentItemDynamoDb(documentId, now, userId);
       String tagKey0 = "category";
       String tagValue0 = "person";
@@ -1054,12 +1056,12 @@ public class DocumentServiceImplTest implements DbKeys {
   @Test
   public void testFindDocumentsTags02() throws ValidationException {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       final int count = 1000;
       Date now = new Date();
       String userId = "jsmith";
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       DocumentItem document = new DocumentItemDynamoDb(documentId, now, userId);
 
       String tagKey0 = "category";
@@ -1076,7 +1078,7 @@ public class DocumentServiceImplTest implements DbKeys {
       List<String> documentIds = new ArrayList<>();
       documentIds.add(documentId);
       for (int i = 0; i < count; i++) {
-        documentIds.add(UUID.randomUUID().toString());
+        documentIds.add(ID.uuid());
       }
 
       // when
@@ -1093,7 +1095,7 @@ public class DocumentServiceImplTest implements DbKeys {
   /** Test Finding Document's Tag && Remove one. */
   @Test
   public void testFindDocumentTags01() {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       createTestData("finance");
       String documentId = createTestData(siteId).get(0).getDocumentId();
@@ -1129,7 +1131,7 @@ public class DocumentServiceImplTest implements DbKeys {
   /** Test Finding Document's particular Tag. */
   @Test
   public void testFindDocumentTags02() {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String tagKey = "status";
       String tagValue = "active";
@@ -1146,7 +1148,7 @@ public class DocumentServiceImplTest implements DbKeys {
   /** Test Finding Document's Tag does not exist. */
   @Test
   public void testFindDocumentTags03() {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String tagKey = "status";
       String documentId = createTestData(siteId).get(0).getDocumentId();
@@ -1165,7 +1167,7 @@ public class DocumentServiceImplTest implements DbKeys {
    */
   @Test
   public void testFindMostDocumentDate01() {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       createTestData(siteId);
       createTestData("finance");
@@ -1208,7 +1210,7 @@ public class DocumentServiceImplTest implements DbKeys {
 
     String type = "tagging";
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       List<String> ids = new ArrayList<>();
 
       try {
@@ -1218,12 +1220,12 @@ public class DocumentServiceImplTest implements DbKeys {
 
         for (int i = 0; i < count; i++) {
 
-          String id = UUID.randomUUID().toString();
+          String id = ID.uuid();
           ids.add(id);
 
           preset = new Preset();
           preset.setId(id);
-          preset.setName(UUID.randomUUID().toString());
+          preset.setName(ID.uuid());
           preset.setType(type);
           preset.setInsertedDate(new Date());
           preset.setUserId("joe");
@@ -1284,15 +1286,15 @@ public class DocumentServiceImplTest implements DbKeys {
   public void testFindPresetTags01() {
     // given
     String type = "tagging";
-    String presetId = UUID.randomUUID().toString();
+    String presetId = ID.uuid();
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       PresetTag tag = new PresetTag();
 
       try {
         tag.setInsertedDate(new Date());
-        tag.setKey(UUID.randomUUID().toString());
+        tag.setKey(ID.uuid());
         tag.setUserId("joe");
 
         service.savePreset(siteId, presetId, type, null, List.of(tag));
@@ -1329,8 +1331,8 @@ public class DocumentServiceImplTest implements DbKeys {
     Date now = new Date();
     String contentType = "application/pdf";
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      String documentId = UUID.randomUUID().toString();
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      String documentId = ID.uuid();
       DocumentItem item = new DocumentItemDynamoDb(documentId, now, userId);
       item.setContentType(contentType);
       service.saveDocument(siteId, item, null);
@@ -1359,8 +1361,8 @@ public class DocumentServiceImplTest implements DbKeys {
     String contentType = "application/pdf";
     List<String> contentTypes = Arrays.asList("text/plain", "text/html");
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      String documentId = UUID.randomUUID().toString();
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      String documentId = ID.uuid();
       DocumentItem item = new DocumentItemDynamoDb(documentId, now, userId);
       item.setContentType(contentType);
       service.saveDocument(siteId, item, null);
@@ -1415,10 +1417,10 @@ public class DocumentServiceImplTest implements DbKeys {
    */
   @Test
   public void testRemoveTag01() throws ValidationException {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String tagKey = "category";
-      String docid = UUID.randomUUID().toString();
+      String docid = ID.uuid();
       DocumentItem item = new DocumentItemDynamoDb(docid, new Date(), "jsmith");
 
       DocumentTag tag = new DocumentTag(docid, tagKey, null, new Date(), "jsmith");
@@ -1450,10 +1452,10 @@ public class DocumentServiceImplTest implements DbKeys {
    */
   @Test
   public void testRemoveTag02() throws ValidationException {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String tagKey = "category";
-      String docid = UUID.randomUUID().toString();
+      String docid = ID.uuid();
       DocumentItem item = new DocumentItemDynamoDb(docid, new Date(), "jsmith");
 
       DocumentTag tag = new DocumentTag(docid, tagKey, null, new Date(), "jsmith");
@@ -1485,10 +1487,10 @@ public class DocumentServiceImplTest implements DbKeys {
    */
   @Test
   public void testRemoveTag03() throws ValidationException {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String tagKey = "category";
-      String docid = UUID.randomUUID().toString();
+      String docid = ID.uuid();
       DocumentItem item = new DocumentItemDynamoDb(docid, new Date(), "jsmith");
 
       DocumentTag tag = new DocumentTag(docid, tagKey, null, new Date(), "jsmith");
@@ -1518,11 +1520,11 @@ public class DocumentServiceImplTest implements DbKeys {
    */
   @Test
   public void testRemoveTag04() throws ValidationException {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String tagKey = "category";
       String tagValue = "person";
-      String docid = UUID.randomUUID().toString();
+      String docid = ID.uuid();
       DocumentItem item = new DocumentItemDynamoDb(docid, new Date(), "jsmith");
 
       DocumentTag tag = new DocumentTag(docid, tagKey, tagValue, new Date(), "jsmith");
@@ -1551,11 +1553,11 @@ public class DocumentServiceImplTest implements DbKeys {
    */
   @Test
   public void testRemoveTag05() throws ValidationException {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String tagKey = "category";
       String tagValue = "person";
-      String docid = UUID.randomUUID().toString();
+      String docid = ID.uuid();
       DocumentItem item = new DocumentItemDynamoDb(docid, new Date(), "jsmith");
 
       DocumentTag tag = new DocumentTag(docid, tagKey, tagValue, new Date(), "jsmith");
@@ -1584,9 +1586,9 @@ public class DocumentServiceImplTest implements DbKeys {
    */
   @Test
   public void testRemoveTags01() throws ValidationException {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String docid = UUID.randomUUID().toString();
+      String docid = ID.uuid();
       DocumentItem item = new DocumentItemDynamoDb(docid, new Date(), "jsmith");
 
       Collection<DocumentTag> tags =
@@ -1609,9 +1611,9 @@ public class DocumentServiceImplTest implements DbKeys {
    */
   @Test
   public void testRemoveTags02() throws ValidationException {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String docid = UUID.randomUUID().toString();
+      String docid = ID.uuid();
       DocumentItem item = new DocumentItemDynamoDb(docid, new Date(), "jsmith");
 
       DocumentTag tag0 = new DocumentTag(docid, "category", null, new Date(), "jsmith");
@@ -1643,7 +1645,7 @@ public class DocumentServiceImplTest implements DbKeys {
    */
   @Test
   public void testSaveDocumentItemWithMetadata01() throws ValidationException {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       final String content = "This is a test";
       final String username = UUID.randomUUID() + "@formkiq.com";
@@ -1656,8 +1658,8 @@ public class DocumentServiceImplTest implements DbKeys {
       m1.setKey("playerId");
       m1.setValues(Arrays.asList("111", "222"));
 
-      DynamicDocumentItem doc = new DynamicDocumentItem(
-          Map.of("documentId", UUID.randomUUID().toString(), "userId", username, "content",
+      DynamicDocumentItem doc =
+          new DynamicDocumentItem(Map.of("documentId", ID.uuid(), "userId", username, "content",
               Base64.getEncoder().encodeToString(content.getBytes(StandardCharsets.UTF_8))));
       doc.setMetadata(Arrays.asList(m0, m1));
 
@@ -1685,14 +1687,14 @@ public class DocumentServiceImplTest implements DbKeys {
   @Test
   public void testSaveDocumentItemWithTag01() throws ValidationException {
     final int year = Calendar.getInstance().get(Calendar.YEAR);
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String content = "This is a test";
       String username = UUID.randomUUID() + "@formkiq.com";
 
-      DynamicDocumentItem doc = new DynamicDocumentItem(Map.of("documentId",
-          UUID.randomUUID().toString(), "userId", username, "insertedDate", new Date(), "content",
-          Base64.getEncoder().encodeToString(content.getBytes(StandardCharsets.UTF_8))));
+      DynamicDocumentItem doc = new DynamicDocumentItem(
+          Map.of("documentId", ID.uuid(), "userId", username, "insertedDate", new Date(), "content",
+              Base64.getEncoder().encodeToString(content.getBytes(StandardCharsets.UTF_8))));
 
       // when
       DocumentItem item = service.saveDocumentItemWithTag(siteId, doc);
@@ -1719,14 +1721,14 @@ public class DocumentServiceImplTest implements DbKeys {
    */
   @Test
   public void testSaveDocumentItemWithTag02() throws ValidationException {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String content = "This is a test";
       String username = UUID.randomUUID() + "@formkiq.com";
 
-      DynamicDocumentItem doc = new DynamicDocumentItem(Map.of("documentId",
-          UUID.randomUUID().toString(), "userId", username, "insertedDate", new Date(), "content",
-          Base64.getEncoder().encodeToString(content.getBytes(StandardCharsets.UTF_8))));
+      DynamicDocumentItem doc = new DynamicDocumentItem(
+          Map.of("documentId", ID.uuid(), "userId", username, "insertedDate", new Date(), "content",
+              Base64.getEncoder().encodeToString(content.getBytes(StandardCharsets.UTF_8))));
 
       for (String tagValue : Arrays.asList("person", "thing")) {
 
@@ -1765,7 +1767,7 @@ public class DocumentServiceImplTest implements DbKeys {
     Date now = new Date();
     ZonedDateTime nowDate = ZonedDateTime.ofInstant(now.toInstant(), ZoneId.systemDefault());
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       DynamicDocumentItem doc = createSubDocuments(now);
 
@@ -1828,7 +1830,7 @@ public class DocumentServiceImplTest implements DbKeys {
   public void testSaveDocumentItemWithTag04() throws ValidationException {
     Date now = new Date();
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       DynamicDocumentItem doc = createSubDocuments(now);
       doc.put("tags",
@@ -1861,14 +1863,14 @@ public class DocumentServiceImplTest implements DbKeys {
   @Test
   public void testSaveDocumentItemWithTag05() throws ValidationException {
     Date now = new Date();
-    String belongsToDocumentId = UUID.randomUUID().toString();
+    String belongsToDocumentId = ID.uuid();
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String username = UUID.randomUUID() + "@formkiq.com";
 
-      DynamicDocumentItem doc = new DynamicDocumentItem(Map.of("documentId",
-          UUID.randomUUID().toString(), "userId", username, "insertedDate", now));
+      DynamicDocumentItem doc = new DynamicDocumentItem(
+          Map.of("documentId", ID.uuid(), "userId", username, "insertedDate", now));
       doc.setBelongsToDocumentId(belongsToDocumentId);
       doc.setContentType("text/plain");
 
@@ -1898,14 +1900,13 @@ public class DocumentServiceImplTest implements DbKeys {
     // given
     String ttl = "1612058378";
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       String content = "This is a test";
       String username = UUID.randomUUID() + "@formkiq.com";
 
-      DynamicDocumentItem doc =
-          new DynamicDocumentItem(Map.of("documentId", UUID.randomUUID().toString(), "TimeToLive",
-              ttl, "userId", username, "insertedDate", new Date(), "content",
-              Base64.getEncoder().encodeToString(content.getBytes(StandardCharsets.UTF_8))));
+      DynamicDocumentItem doc = new DynamicDocumentItem(Map.of("documentId", ID.uuid(),
+          "TimeToLive", ttl, "userId", username, "insertedDate", new Date(), "content",
+          Base64.getEncoder().encodeToString(content.getBytes(StandardCharsets.UTF_8))));
 
       // when
       DocumentItem item = service.saveDocumentItemWithTag(siteId, doc);
@@ -1930,15 +1931,15 @@ public class DocumentServiceImplTest implements DbKeys {
   @Test
   public void testSaveDocumentItemWithTag07() throws ValidationException {
     final int year = Calendar.getInstance().get(Calendar.YEAR);
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       final int numberOfTags = 500;
       String content = "This is a test";
       String username = UUID.randomUUID() + "@formkiq.com";
 
-      DynamicDocumentItem doc = new DynamicDocumentItem(Map.of("documentId",
-          UUID.randomUUID().toString(), "userId", username, "insertedDate", new Date(), "content",
-          Base64.getEncoder().encodeToString(content.getBytes(StandardCharsets.UTF_8))));
+      DynamicDocumentItem doc = new DynamicDocumentItem(
+          Map.of("documentId", ID.uuid(), "userId", username, "insertedDate", new Date(), "content",
+              Base64.getEncoder().encodeToString(content.getBytes(StandardCharsets.UTF_8))));
 
       List<Map<String, Object>> taglist = new ArrayList<>();
       for (int j = 0; j < numberOfTags; j++) {
@@ -1977,14 +1978,14 @@ public class DocumentServiceImplTest implements DbKeys {
   @Test
   public void testSaveDocumentItemWithTag08() throws ValidationException {
     final int year = Calendar.getInstance().get(Calendar.YEAR);
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String content = "This is a test";
       String username = UUID.randomUUID() + "@formkiq.com";
 
-      DynamicDocumentItem doc = new DynamicDocumentItem(Map.of("documentId",
-          UUID.randomUUID().toString(), "userId", username, "insertedDate", new Date(), "content",
-          Base64.getEncoder().encodeToString(content.getBytes(StandardCharsets.UTF_8))));
+      DynamicDocumentItem doc = new DynamicDocumentItem(
+          Map.of("documentId", ID.uuid(), "userId", username, "insertedDate", new Date(), "content",
+              Base64.getEncoder().encodeToString(content.getBytes(StandardCharsets.UTF_8))));
       doc.setPath("test.pdf");
 
       List<Map<String, Object>> taglist = new ArrayList<>();
@@ -2027,15 +2028,15 @@ public class DocumentServiceImplTest implements DbKeys {
   @Test
   public void testSaveDocumentItemWithTag09() throws ValidationException {
     final int year = Calendar.getInstance().get(Calendar.YEAR);
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       Date now = new Date();
       String content = "This is a test";
       String username = UUID.randomUUID() + "@formkiq.com";
 
-      DynamicDocumentItem doc = new DynamicDocumentItem(Map.of("documentId",
-          UUID.randomUUID().toString(), "userId", username, "insertedDate", new Date(), "content",
-          Base64.getEncoder().encodeToString(content.getBytes(StandardCharsets.UTF_8))));
+      DynamicDocumentItem doc = new DynamicDocumentItem(
+          Map.of("documentId", ID.uuid(), "userId", username, "insertedDate", new Date(), "content",
+              Base64.getEncoder().encodeToString(content.getBytes(StandardCharsets.UTF_8))));
       doc.put("tags", List
           .of(Map.of("documentId", doc.getDocumentId(), "insertedDate", now, "userId", username)));
 
@@ -2065,10 +2066,10 @@ public class DocumentServiceImplTest implements DbKeys {
   @Test
   public void testSaveDocumentItemWithTag10() throws ValidationException {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String username = UUID.randomUUID() + "@formkiq.com";
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
 
       List<String> tagKeys = Arrays.asList("filetype", "fileType");
 
@@ -2100,10 +2101,10 @@ public class DocumentServiceImplTest implements DbKeys {
    */
   @Test
   public void testSaveFolders01() throws InterruptedException, ValidationException {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String userId0 = "joe";
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), userId0);
       item.setPath("a/b/test.txt");
       service.saveDocument(siteId, item, null);
@@ -2126,7 +2127,7 @@ public class DocumentServiceImplTest implements DbKeys {
 
       // given
       String userId1 = "frank";
-      documentId = UUID.randomUUID().toString();
+      documentId = ID.uuid();
       item = new DocumentItemDynamoDb(documentId, new Date(), userId1);
       item.setPath("a/something.txt");
       service.saveDocument(siteId, item, null);
@@ -2152,10 +2153,10 @@ public class DocumentServiceImplTest implements DbKeys {
    */
   @Test
   public void testSaveFolders02() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String userId0 = "joe";
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), userId0);
       item.setPath("a/b/test.txt");
       service.saveDocument(siteId, item, null);
@@ -2178,7 +2179,7 @@ public class DocumentServiceImplTest implements DbKeys {
 
       // given
       String userId1 = "frank";
-      documentId = UUID.randomUUID().toString();
+      documentId = ID.uuid();
       item = new DocumentItemDynamoDb(documentId, new Date(), userId1);
       item.setPath("a/something.txt");
       service.saveDocument(siteId, item, null);
@@ -2204,11 +2205,11 @@ public class DocumentServiceImplTest implements DbKeys {
    */
   @Test
   public void testSaveFolders03() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String path = "a/b/test.txt";
       String userId0 = "joe";
-      String documentId0 = UUID.randomUUID().toString();
+      String documentId0 = ID.uuid();
       DocumentItem item0 = new DocumentItemDynamoDb(documentId0, null, userId0);
       item0.setPath(path);
 
@@ -2219,7 +2220,7 @@ public class DocumentServiceImplTest implements DbKeys {
 
       TimeUnit.SECONDS.sleep(1);
 
-      String documentId1 = UUID.randomUUID().toString();
+      String documentId1 = ID.uuid();
       DocumentItem item1 = new DocumentItemDynamoDb(documentId1, null, userId0);
       item1.setPath(path);
       service.saveDocument(siteId, item1, null);
@@ -2261,11 +2262,11 @@ public class DocumentServiceImplTest implements DbKeys {
    */
   @Test
   public void testSaveFolders04() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String path = "a/test.txt";
       String userId0 = "joe";
-      String documentId0 = UUID.randomUUID().toString();
+      String documentId0 = ID.uuid();
       DocumentItem item0 = new DocumentItemDynamoDb(documentId0, new Date(), userId0);
       item0.setPath(path);
 
@@ -2300,9 +2301,9 @@ public class DocumentServiceImplTest implements DbKeys {
   @Test
   public void updateDocument01() throws ValidationException {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
       item.setPath("test.pdf");
       service.saveDocument(siteId, item, null);

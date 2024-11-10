@@ -23,6 +23,7 @@
  */
 package com.formkiq.server;
 
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.model.AddDocumentRequest;
@@ -49,9 +50,9 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContent;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContentLength;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentFulltext;
@@ -107,7 +108,7 @@ public class HttpServerTest {
   @Timeout(value = TEST_TIME)
   void testAddDocument01() throws Exception {
     // given
-    String content = UUID.randomUUID().toString();
+    String content = ID.uuid();
     String path = "sometest123.txt";
     AddDocumentRequest req =
         new AddDocumentRequest().path(path).content(content).contentType("text/plain");
@@ -240,7 +241,7 @@ public class HttpServerTest {
     List<Map<String, Object>> sites = (List<Map<String, Object>>) results.get("sites");
     assertEquals(1, sites.size());
     assertEquals("[DELETE, READ, WRITE]", sites.get(0).get("permissions").toString());
-    assertEquals("default", sites.get(0).get("siteId"));
+    assertEquals(DEFAULT_SITE_ID, sites.get(0).get("siteId"));
     assertEquals("READ_WRITE", sites.get(0).get("permission"));
   }
 

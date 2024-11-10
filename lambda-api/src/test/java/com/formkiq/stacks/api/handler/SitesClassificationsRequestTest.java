@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAttribute;
@@ -59,8 +60,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.testutils.aws.FkqAttributeService.createStringAttribute;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -90,7 +91,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   @Test
   public void testGetClassifications01() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       final int limit = 4;
       final int count = 5;
@@ -146,7 +147,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   @Test
   public void testAddClassifications01() {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -176,7 +177,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   @Test
   public void testAddClassifications02() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -205,7 +206,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
 
       // when
       try {
-        this.schemasApi.setClassification(siteId, UUID.randomUUID().toString(), sreq);
+        this.schemasApi.setClassification(siteId, ID.uuid(), sreq);
         fail();
       } catch (ApiException e) {
         // then
@@ -223,7 +224,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   @Test
   public void testAddClassifications03() {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -261,7 +262,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   @Test
   public void testAddClassifications04() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -296,7 +297,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   @Test
   public void testAddClassifications05() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -325,7 +326,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   @Test
   public void testAddClassifications06() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -361,7 +362,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   @Test
   public void testDeleteClassifications01() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -401,7 +402,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   @Test
   public void testDeleteClassifications02() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -437,7 +438,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   @Test
   public void testPutClassifications01() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -496,7 +497,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   @Test
   public void testPutClassifications02() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -547,7 +548,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   @Test
   void testAddDocument01() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -602,7 +603,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   @Test
   void testAddDocument02() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -637,7 +638,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   @Test
   void testAddDocument03() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -676,7 +677,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   @Test
   void testAddDocument04() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -745,7 +746,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   @Test
   void testAddDocument05() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -803,7 +804,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   @Test
   void testAddDocument06() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -862,7 +863,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   @Test
   void testAddDocument07() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -898,7 +899,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   @Test
   void testAddDocument08() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -967,7 +968,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   @Test
   void testAllowedValues01() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
       String attributeKey = "invoiceNumber";
@@ -998,7 +999,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   @Test
   void testAllowedValues02() {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -1022,7 +1023,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   @Test
   void testAllowedValues03() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
       String attributeKey = "invoiceNumber";
@@ -1074,7 +1075,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   @Test
   void testDeleteDocumentAttribute01() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 

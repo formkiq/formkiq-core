@@ -29,10 +29,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamodbRecord;
+import com.formkiq.aws.dynamodb.ID;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
@@ -130,7 +130,7 @@ public class SchemaCompositeKeyRecord implements DynamodbRecord<SchemaCompositeK
 
   @Override
   public String sk() {
-    return SK + UUID.randomUUID();
+    return SK + ID.uuid();
   }
 
   @Override

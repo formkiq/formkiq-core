@@ -33,7 +33,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
+
+import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -69,12 +70,12 @@ public class ConfigServiceDynamoDbTest {
   @Test
   public void testConfig01() throws Exception {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString(), DEFAULT_SITE_ID)) {
+    for (String siteId : Arrays.asList(null, ID.uuid(), DEFAULT_SITE_ID)) {
 
       Map<String, Object> map = new HashMap<>();
-      map.put(DOCUMENT_TIME_TO_LIVE, "" + UUID.randomUUID().toString());
-      map.put(MAX_WEBHOOKS, "" + UUID.randomUUID().toString());
-      map.put(MAX_DOCUMENTS, "" + UUID.randomUUID().toString());
+      map.put(DOCUMENT_TIME_TO_LIVE, "" + ID.uuid());
+      map.put(MAX_WEBHOOKS, "" + ID.uuid());
+      map.put(MAX_DOCUMENTS, "" + ID.uuid());
 
       DynamicObject obj = new DynamicObject(map);
       this.service.save(siteId, obj);
@@ -90,7 +91,7 @@ public class ConfigServiceDynamoDbTest {
       if (siteId != null) {
         assertEquals(siteId, config.getString("SK"));
       } else {
-        assertEquals("default", config.getString("SK"));
+        assertEquals(DEFAULT_SITE_ID, config.getString("SK"));
       }
 
       assertEquals(map.get(DOCUMENT_TIME_TO_LIVE), config.getString(DOCUMENT_TIME_TO_LIVE));
@@ -107,7 +108,7 @@ public class ConfigServiceDynamoDbTest {
   @Test
   public void testConfig02() throws Exception {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString(), DEFAULT_SITE_ID)) {
+    for (String siteId : Arrays.asList(null, ID.uuid(), DEFAULT_SITE_ID)) {
 
       // when
       DynamicObject config = this.service.get(siteId);
@@ -125,7 +126,7 @@ public class ConfigServiceDynamoDbTest {
   @Test
   public void testConfig03() throws Exception {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString(), DEFAULT_SITE_ID)) {
+    for (String siteId : Arrays.asList(null, ID.uuid(), DEFAULT_SITE_ID)) {
 
       DynamicObject obj = new DynamicObject(Map.of());
       this.service.save(siteId, obj);
@@ -141,7 +142,7 @@ public class ConfigServiceDynamoDbTest {
       if (siteId != null) {
         assertEquals(siteId, config.getString("SK"));
       } else {
-        assertEquals("default", config.getString("SK"));
+        assertEquals(DEFAULT_SITE_ID, config.getString("SK"));
       }
 
       assertNull(config.getString(DOCUMENT_TIME_TO_LIVE));
@@ -159,14 +160,14 @@ public class ConfigServiceDynamoDbTest {
   public void testConfig04() throws Exception {
     // given
     Map<String, Object> map = new HashMap<>();
-    map.put(DOCUMENT_TIME_TO_LIVE, "" + UUID.randomUUID().toString());
-    map.put(MAX_WEBHOOKS, "" + UUID.randomUUID().toString());
-    map.put(MAX_DOCUMENTS, "" + UUID.randomUUID().toString());
+    map.put(DOCUMENT_TIME_TO_LIVE, "" + ID.uuid());
+    map.put(MAX_WEBHOOKS, "" + ID.uuid());
+    map.put(MAX_DOCUMENTS, "" + ID.uuid());
 
     DynamicObject obj = new DynamicObject(map);
     this.service.save(null, obj);
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString(), DEFAULT_SITE_ID)) {
+    for (String siteId : Arrays.asList(null, ID.uuid(), DEFAULT_SITE_ID)) {
 
       // when
       DynamicObject config = this.service.get(siteId);
@@ -176,7 +177,7 @@ public class ConfigServiceDynamoDbTest {
       assertEquals(count, config.keySet().size());
 
       assertEquals("configs#", config.getString("PK"));
-      assertEquals("default", config.getString("SK"));
+      assertEquals(DEFAULT_SITE_ID, config.getString("SK"));
 
       assertEquals(map.get(DOCUMENT_TIME_TO_LIVE), config.getString(DOCUMENT_TIME_TO_LIVE));
       assertEquals(map.get(MAX_WEBHOOKS), config.getString(MAX_WEBHOOKS));
@@ -192,12 +193,12 @@ public class ConfigServiceDynamoDbTest {
   @Test
   public void testDelete01() throws Exception {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString(), DEFAULT_SITE_ID)) {
+    for (String siteId : Arrays.asList(null, ID.uuid(), DEFAULT_SITE_ID)) {
 
       Map<String, Object> map = new HashMap<>();
-      map.put(DOCUMENT_TIME_TO_LIVE, "" + UUID.randomUUID().toString());
-      map.put(MAX_WEBHOOKS, "" + UUID.randomUUID().toString());
-      map.put(MAX_DOCUMENTS, "" + UUID.randomUUID().toString());
+      map.put(DOCUMENT_TIME_TO_LIVE, "" + ID.uuid());
+      map.put(MAX_WEBHOOKS, "" + ID.uuid());
+      map.put(MAX_DOCUMENTS, "" + ID.uuid());
 
       DynamicObject obj = new DynamicObject(map);
       this.service.save(siteId, obj);
@@ -212,7 +213,7 @@ public class ConfigServiceDynamoDbTest {
       assertEquals("configs#", config.getString("PK"));
 
       if (isDefaultSiteId(siteId)) {
-        assertEquals("default", config.getString("SK"));
+        assertEquals(DEFAULT_SITE_ID, config.getString("SK"));
       } else {
         assertEquals(siteId, config.getString("SK"));
       }

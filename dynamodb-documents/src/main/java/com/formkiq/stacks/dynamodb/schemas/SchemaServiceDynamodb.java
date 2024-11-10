@@ -26,6 +26,7 @@ package com.formkiq.stacks.dynamodb.schemas;
 import com.formkiq.aws.dynamodb.BatchGetConfig;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.QueryConfig;
 import com.formkiq.aws.dynamodb.QueryResponseToPagination;
@@ -50,7 +51,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -202,7 +202,7 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
       throw new ValidationException(errors);
     }
 
-    String documentId = classificationId != null ? classificationId : UUID.randomUUID().toString();
+    String documentId = classificationId != null ? classificationId : ID.uuid();
 
     String schemaJson = gson.toJson(schema);
     ClassificationRecord r = new ClassificationRecord().setName(name).setSchema(schemaJson)

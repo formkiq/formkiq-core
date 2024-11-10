@@ -25,6 +25,7 @@ package com.formkiq.stacks.dynamodb;
 
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
 import com.formkiq.testutils.aws.DynamoDbExtension;
@@ -39,7 +40,6 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_VERSION_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -74,9 +74,9 @@ class DocumentVersionServiceDynamoDbTest implements DbKeys {
     // given
     Date date = new Date();
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       DocumentAttributeRecord r = new DocumentAttributeRecord().setDocumentId(documentId)
           .setKey("category").setStringValue("document").setInsertedDate(date)
           .setValueType(DocumentAttributeValueType.STRING).setUserId("joe");

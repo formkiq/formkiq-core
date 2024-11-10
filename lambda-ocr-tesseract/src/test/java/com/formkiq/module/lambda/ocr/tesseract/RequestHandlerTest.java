@@ -23,6 +23,7 @@
  */
 package com.formkiq.module.lambda.ocr.tesseract;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -34,7 +35,8 @@ import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.util.Arrays;
-import java.util.UUID;
+
+import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -84,8 +86,8 @@ class RequestHandlerTest {
    * @param username {@link String}
    */
   private void setBearerToken(final String siteId, final String username) {
-    String jwt =
-        JwtTokenEncoder.encodeCognito(new String[] {siteId != null ? siteId : "default"}, username);
+    String jwt = JwtTokenEncoder
+        .encodeCognito(new String[] {siteId != null ? siteId : DEFAULT_SITE_ID}, username);
     this.apiClient.addDefaultHeader("Authorization", jwt);
   }
 
@@ -97,7 +99,7 @@ class RequestHandlerTest {
   @Test
   void testExaminePdf01() throws Exception {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -142,9 +144,9 @@ class RequestHandlerTest {
   @Test
   void testExaminePdf02() {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      String id = UUID.randomUUID().toString();
+      String id = ID.uuid();
       setBearerToken(siteId);
 
       // when

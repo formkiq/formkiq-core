@@ -36,6 +36,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.api.ReindexApi;
 import com.formkiq.client.api.SchemasApi;
@@ -179,7 +180,7 @@ public class DocumentAttributesRequestTest extends AbstractAwsIntegrationTest {
   @Timeout(value = TEST_TIMEOUT)
   public void testAddDocumentAttributes01() throws Exception {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       List<ApiClient> apiClients = getApiClients(siteId);
 
@@ -235,7 +236,7 @@ public class DocumentAttributesRequestTest extends AbstractAwsIntegrationTest {
   @Timeout(value = TEST_TIMEOUT)
   public void testReindexDocument01() throws Exception {
     // given
-    String siteId = UUID.randomUUID().toString();
+    String siteId = ID.uuid();
 
     List<ApiClient> apiClients = getApiClients(siteId);
 
@@ -300,13 +301,13 @@ public class DocumentAttributesRequestTest extends AbstractAwsIntegrationTest {
   @Timeout(value = TEST_TIMEOUT)
   public void testReindexDocument02() throws Exception {
     // given
-    String siteId = UUID.randomUUID().toString();
+    String siteId = ID.uuid();
 
     List<ApiClient> apiClients = getApiClients(siteId);
 
     for (ApiClient apiClient : apiClients) {
 
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
 
       AddReindexDocumentRequest reindexReq = new AddReindexDocumentRequest();
       ReindexApi reindexApi = new ReindexApi(apiClient);
@@ -333,7 +334,7 @@ public class DocumentAttributesRequestTest extends AbstractAwsIntegrationTest {
   @Timeout(value = TEST_TIMEOUT)
   public void testSearchDocumentAttributes01() throws Exception {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       List<ApiClient> apiClients = getApiClients(siteId);
 

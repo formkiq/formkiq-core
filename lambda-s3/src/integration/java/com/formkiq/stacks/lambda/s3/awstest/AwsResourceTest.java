@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.lambda.s3.awstest;
 
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
@@ -200,7 +201,7 @@ public class AwsResourceTest extends AbstractAwsTest {
   @Timeout(value = TEST_TIMEOUT * 2)
   public void testAddDeleteFile01() throws Exception {
     // given
-    String key = UUID.randomUUID().toString();
+    String key = ID.uuid();
 
     String contentType = "text/plain";
     String createQueue = "createtest-" + UUID.randomUUID();
@@ -247,7 +248,7 @@ public class AwsResourceTest extends AbstractAwsTest {
   public void testAddDeleteFile02() throws Exception {
     // given
     final Long contentLength = 36L;
-    String key = UUID.randomUUID().toString();
+    String key = ID.uuid();
     String contentType = "text/plain";
     DocumentItem item = new DocumentItemDynamoDb(key, new Date(), "test");
 
@@ -285,7 +286,7 @@ public class AwsResourceTest extends AbstractAwsTest {
     // given
     final int statusCode = 200;
     HttpClient http = HttpClient.newHttpClient();
-    String key = UUID.randomUUID().toString();
+    String key = ID.uuid();
 
     String createQueue = "createtest-" + UUID.randomUUID();
     String documentQueueUrl = createSqsQueue(createQueue).queueUrl();
@@ -335,11 +336,11 @@ public class AwsResourceTest extends AbstractAwsTest {
   @Timeout(value = TEST_TIMEOUT)
   public void testAddDeleteFile04() throws Exception {
     // given
-    final String key = UUID.randomUUID().toString();
+    final String key = ID.uuid();
 
     String contentType = "text/plain";
     String mycategory = "mycategory";
-    String myvalue = UUID.randomUUID().toString();
+    String myvalue = ID.uuid();
 
     Map<String, Object> data = new HashMap<>();
     data.put("userId", "joesmith");
@@ -575,7 +576,7 @@ public class AwsResourceTest extends AbstractAwsTest {
    * @return {@link String}
    */
   private String writeToDocuments(final String key, final String contentType) {
-    String data = UUID.randomUUID().toString();
+    String data = ID.uuid();
 
     getS3Service().putObject(getDocumentsbucketname(), key, data.getBytes(StandardCharsets.UTF_8),
         contentType);
@@ -591,7 +592,7 @@ public class AwsResourceTest extends AbstractAwsTest {
    * @return {@link String}
    */
   private String writeToStaging(final String key, final String contentType) {
-    String data = UUID.randomUUID().toString();
+    String data = ID.uuid();
 
     getS3Service().putObject(getStagingdocumentsbucketname(), key,
         data.getBytes(StandardCharsets.UTF_8), contentType);

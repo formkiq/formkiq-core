@@ -31,9 +31,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import com.amazonaws.services.lambda.runtime.Context;
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.lambda.runtime.graalvm.LambdaContext;
 import com.formkiq.module.lambda.typesense.TypesenseProcessor;
 import com.google.gson.Gson;
@@ -153,7 +153,7 @@ public class DynamoDbStreamToTypesense implements Closeable {
 
           Map<String, Object> map = transform(record);
 
-          Context context = new LambdaContext(UUID.randomUUID().toString());
+          Context context = new LambdaContext(ID.uuid());
 
           try {
             this.processor.handleRequest(map, context);

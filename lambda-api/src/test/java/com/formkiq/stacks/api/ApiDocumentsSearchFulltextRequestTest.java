@@ -26,7 +26,8 @@ package com.formkiq.stacks.api;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.Arrays;
 import java.util.Map;
-import java.util.UUID;
+
+import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -47,7 +48,7 @@ public class ApiDocumentsSearchFulltextRequestTest extends AbstractRequestHandle
   @SuppressWarnings("unchecked")
   @Test
   public void testHandlePostDocumentFulltext01() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-searchFulltext.json");
       addParameter(event, "siteId", siteId);

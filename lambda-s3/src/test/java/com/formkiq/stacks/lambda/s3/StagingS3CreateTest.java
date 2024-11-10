@@ -66,6 +66,8 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
+import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -433,13 +435,13 @@ public class StagingS3CreateTest implements DbKeys {
 
   private void createDocument(final byte[] content, final String docId) throws ValidationException {
     DynamicDocumentItem item = new DynamicDocumentItem(new HashMap<>());
-    item.setDocumentId(docId == null ? UUID.randomUUID().toString() : docId);
+    item.setDocumentId(docId == null ? ID.uuid() : docId);
     item.setUserId("JohnDoe");
     item.setInsertedDate(new Date());
     final String documentId = item.getDocumentId();
-    service.saveDocument("default", item, null);
+    service.saveDocument(DEFAULT_SITE_ID, item, null);
 
-    final String key = createS3Key("default", documentId);
+    final String key = createS3Key(DEFAULT_SITE_ID, documentId);
     s3.putObject(DOCUMENTS_BUCKET, key, content, null, null);
   }
 
@@ -452,7 +454,7 @@ public class StagingS3CreateTest implements DbKeys {
     String content = "This is a test";
 
     DynamicDocumentItem item = new DynamicDocumentItem(Collections.emptyMap());
-    item.setDocumentId(UUID.randomUUID().toString());
+    item.setDocumentId(ID.uuid());
     item.put("content", Base64.getEncoder().encodeToString(content.getBytes(UTF_8)));
     item.setContentLength((long) content.length());
     item.setContentType("plain/text");
@@ -559,7 +561,7 @@ public class StagingS3CreateTest implements DbKeys {
       final String expectedContentLength) throws IOException {
 
     // given
-    String documentId = UUID.randomUUID().toString();
+    String documentId = ID.uuid();
     this.logger.reset();
 
     String key = createDatabaseKey(siteId, documentId + FORMKIQ_B64_EXT);
@@ -675,8 +677,8 @@ public class StagingS3CreateTest implements DbKeys {
   @Test
   @Timeout(value = TEST_TIMEOUT)
   void testCopyFile01() throws Exception {
-    for (String siteId : Arrays.asList(null, DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
-      String documentId = UUID.randomUUID().toString();
+    for (String siteId : Arrays.asList(null, DEFAULT_SITE_ID, ID.uuid())) {
+      String documentId = ID.uuid();
       testCopyFile(siteId, documentId, documentId);
     }
   }
@@ -690,7 +692,7 @@ public class StagingS3CreateTest implements DbKeys {
   @Timeout(value = TEST_TIMEOUT)
   void testCopyFile02() throws Exception {
     int i = 0;
-    for (String siteId : Arrays.asList(null, DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, DEFAULT_SITE_ID, ID.uuid())) {
       final String documentId = "test" + i + ".pdf";
       testCopyFile(siteId, documentId, "test" + i + ".pdf");
       i++;
@@ -706,7 +708,7 @@ public class StagingS3CreateTest implements DbKeys {
   @Timeout(value = TEST_TIMEOUT)
   void testCopyFile03() throws Exception {
     final String documentId = "something/where/test.pdf";
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
       testCopyFile(siteId, documentId, "something/where/test.pdf");
     }
   }
@@ -765,7 +767,7 @@ public class StagingS3CreateTest implements DbKeys {
             "insertedDate", new Date(), "userId", "joe", "type",
             DocumentTagType.USERDEFINED.name())));
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       processFkB64File(siteId, item, null);
     }
   }
@@ -780,7 +782,7 @@ public class StagingS3CreateTest implements DbKeys {
   void testFkB64Extension02() throws IOException {
     DynamicDocumentItem item = createDocumentItem();
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       processFkB64File(siteId, item, null);
     }
   }
@@ -796,7 +798,7 @@ public class StagingS3CreateTest implements DbKeys {
     DynamicDocumentItem item = createDocumentItem();
     item.put("content", null);
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       processFkB64File(siteId, item, null);
     }
 
@@ -814,7 +816,7 @@ public class StagingS3CreateTest implements DbKeys {
     DynamicDocumentItem item = createDocumentItem();
     item.setDocumentId(null);
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       processFkB64File(siteId, item, null);
     }
   }
@@ -833,7 +835,7 @@ public class StagingS3CreateTest implements DbKeys {
 
     ZonedDateTime nowDate = ZonedDateTime.ofInstant(new Date().toInstant(), ZoneId.systemDefault());
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       String key = createDatabaseKey(siteId, documentId0 + FORMKIQ_B64_EXT);
 
@@ -905,7 +907,7 @@ public class StagingS3CreateTest implements DbKeys {
             "insertedDate", new Date(), "userId", "joe", "type",
             DocumentTagType.USERDEFINED.name())));
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       processFkB64File(siteId, item, null);
 
       String key = createDatabaseKey(siteId, item.getDocumentId());
@@ -942,7 +944,7 @@ public class StagingS3CreateTest implements DbKeys {
 
     DynamicDocumentItem ditem = new DynamicDocumentItem(data);
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       this.logger.reset();
 
       String key = createDatabaseKey(siteId, "documentId" + FORMKIQ_B64_EXT);
@@ -997,7 +999,7 @@ public class StagingS3CreateTest implements DbKeys {
   void testFkB64Extension08() throws IOException {
     Map<String, Object> data = new HashMap<>();
     data.put("userId", "joesmith");
-    data.put("tagSchemaId", UUID.randomUUID().toString());
+    data.put("tagSchemaId", ID.uuid());
     data.put("contentType", "text/plain");
     data.put("isBase64", Boolean.TRUE);
     data.put("newCompositeTags", Boolean.TRUE);
@@ -1007,7 +1009,7 @@ public class StagingS3CreateTest implements DbKeys {
 
     DynamicDocumentItem ditem = new DynamicDocumentItem(data);
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       this.logger.reset();
 
       String key = createDatabaseKey(siteId, "documentId" + FORMKIQ_B64_EXT);
@@ -1062,7 +1064,7 @@ public class StagingS3CreateTest implements DbKeys {
     data.put("documentId", documentId);
     data.put("userId", "joesmith");
     data.put("contentType", "text/plain");
-    data.put("tagSchemaId", UUID.randomUUID().toString());
+    data.put("tagSchemaId", ID.uuid());
     data.put("isBase64", Boolean.TRUE);
     data.put("content", "dGhpcyBpcyBhIHRlc3Q=");
     data.put("tags", Arrays.asList(Map.of("key", "category", "value", "document"),
@@ -1070,7 +1072,7 @@ public class StagingS3CreateTest implements DbKeys {
 
     DynamicDocumentItem ditem = new DynamicDocumentItem(data);
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       this.logger.reset();
 
       String key = createDatabaseKey(siteId, "documentId" + FORMKIQ_B64_EXT);
@@ -1125,11 +1127,11 @@ public class StagingS3CreateTest implements DbKeys {
     data.put("documentId", documentId);
     data.put("userId", "joesmith");
     data.put("contentType", "text/plain");
-    data.put("tagSchemaId", UUID.randomUUID().toString());
+    data.put("tagSchemaId", ID.uuid());
     data.put("isBase64", Boolean.TRUE);
     data.put("content", "dGhpcyBpcyBhIHRlc3Q=");
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       this.logger.reset();
 
       data.put("actions",
@@ -1208,7 +1210,7 @@ public class StagingS3CreateTest implements DbKeys {
 
     DynamicDocumentItem ditem = new DynamicDocumentItem(data);
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       this.logger.reset();
 
       String key = createDatabaseKey(siteId, path + FORMKIQ_B64_EXT);
@@ -1259,7 +1261,7 @@ public class StagingS3CreateTest implements DbKeys {
     final Date now = new Date();
     final String userId = "joesmith";
     final long contentLength = 1000;
-    String documentId = UUID.randomUUID().toString();
+    String documentId = ID.uuid();
     Map<String, Object> data = new HashMap<>();
     data.put("documentId", documentId);
     data.put("userId", userId);
@@ -1267,7 +1269,7 @@ public class StagingS3CreateTest implements DbKeys {
 
     DynamicDocumentItem ditem = new DynamicDocumentItem(data);
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       DocumentItem item = new DocumentItemDynamoDb(documentId, now, "joe");
       item.setContentLength(contentLength);
@@ -1332,7 +1334,7 @@ public class StagingS3CreateTest implements DbKeys {
     item.put("metadata", Arrays.asList(Map.of("key", "category", "value", "person"),
         Map.of("key", "playerId", "values", Arrays.asList("111", "222"))));
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       processFkB64File(siteId, item, null);
       DocumentItem doc = service.findDocument(siteId, item.getDocumentId());
       assertEquals(2, doc.getMetadata().size());
@@ -1356,7 +1358,7 @@ public class StagingS3CreateTest implements DbKeys {
   @Timeout(value = TEST_TIMEOUT)
   void testFkB64Extension14() throws IOException, ValidationException {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       DynamicDocumentItem item = createDocumentItem();
 
@@ -1391,7 +1393,7 @@ public class StagingS3CreateTest implements DbKeys {
   @Timeout(value = TEST_TIMEOUT)
   void testFkB64Extension15() throws IOException, ValidationException {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       DynamicDocumentItem item = createDocumentItem();
 
@@ -1421,7 +1423,7 @@ public class StagingS3CreateTest implements DbKeys {
   @Timeout(value = TEST_TIMEOUT)
   void testFkB64Extension16() throws IOException {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       DynamicDocumentItem item = createDocumentItem();
       item.setPath(null);
@@ -1447,7 +1449,7 @@ public class StagingS3CreateTest implements DbKeys {
   @Timeout(value = TEST_TIMEOUT)
   void testFkB64Extension17() throws IOException {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       DynamicDocumentItem item = createDocumentItem();
       item.remove("content");
@@ -1473,7 +1475,7 @@ public class StagingS3CreateTest implements DbKeys {
   @Timeout(value = TEST_TIMEOUT)
   void testFkB64Extension18() throws IOException, ValidationException {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       DynamicDocumentItem item = createDocumentItem();
       item.put("tags", List.of(Map.of("key", "category", "value", "document")));
@@ -1514,12 +1516,12 @@ public class StagingS3CreateTest implements DbKeys {
   void testFkB64Extension19() throws IOException {
     // given
     final int limit = 10;
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       attributeService.addAttribute(siteId, "security", AttributeDataType.STRING,
           AttributeType.STANDARD);
 
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       String json =
           "{\"metadata\":[],\"newCompositeTags\":false,\"accessAttributes\":[],\"documents\":[],"
               + "\"attributes\":[{\"key\":\"security\",\"stringValue\":\"confidential\","
@@ -1561,7 +1563,7 @@ public class StagingS3CreateTest implements DbKeys {
     // given
     final int maxDocuments = 150;
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       String key = "category";
       String value = "person";
@@ -1615,7 +1617,7 @@ public class StagingS3CreateTest implements DbKeys {
   @Timeout(value = TEST_TIMEOUT)
   void testPatchDocumentsTags02() throws ValidationException {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       String key = "category";
       String value = "person";

@@ -34,7 +34,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
+
+import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -111,7 +112,7 @@ class ApiKeyAuthorizerRequestHandlerTest {
   @Test
   void testHandleRequest01() throws Exception {
     // given
-    String apiKey = UUID.randomUUID().toString();
+    String apiKey = ID.uuid();
 
     try (InputStream is = getInput(apiKey)) {
 
@@ -141,9 +142,9 @@ class ApiKeyAuthorizerRequestHandlerTest {
   @Test
   void testHandleRequest02() throws Exception {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      String name = UUID.randomUUID().toString();
+      String name = ID.uuid();
 
       String apiKey = apiKeysService.createApiKey(siteId, name,
           Arrays.asList(ApiKeyPermission.READ, ApiKeyPermission.WRITE, ApiKeyPermission.DELETE),

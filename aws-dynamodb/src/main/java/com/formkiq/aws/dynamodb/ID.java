@@ -21,30 +21,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb.mappings;
+package com.formkiq.aws.dynamodb;
 
-import com.formkiq.aws.dynamodb.ID;
-import com.formkiq.aws.dynamodb.model.MappingRecord;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import java.util.UUID;
 
-import java.util.function.Function;
+/** Id Generator. */
+public class ID {
 
-/**
- * {@link Function} to convert {@link Mapping} to {@link MappingRecord}.
- */
-public class MappingToMappingRecord implements Function<Mapping, MappingRecord> {
-
-  /** {@link Gson}. */
-  private final Gson gson = new GsonBuilder().create();
-
-  @Override
-  public MappingRecord apply(final Mapping mapping) {
-    MappingRecord r = new MappingRecord();
-    r.setName(mapping.getName());
-    r.setDescription(mapping.getDescription());
-    r.setDocumentId(ID.uuid());
-    r.setAttributes(this.gson.toJson(mapping.getAttributes()));
-    return r;
+  /**
+   * UUID Generator.
+   * 
+   * @return String
+   */
+  public static String uuid() {
+    return UUID.randomUUID().toString();
   }
 }

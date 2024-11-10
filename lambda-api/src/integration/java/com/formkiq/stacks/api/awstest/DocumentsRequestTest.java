@@ -56,6 +56,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.client.api.AttributesApi;
 import com.formkiq.client.api.DocumentAttributesApi;
@@ -125,7 +126,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
   /** Cognito User Email. */
   private static final String READONLY_EMAIL = "readonly56@formkiq.com";
   /** Random Site ID. */
-  private static final String SITEID1 = UUID.randomUUID().toString();
+  private static final String SITEID1 = ID.uuid();
   /** 400 Bad Request. */
   private static final int STATUS_BAD_REQUEST = 400;
   /** 201 Created. */
@@ -213,7 +214,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
     for (ApiClient client : getApiClients(null)) {
       // given
       DocumentsApi api = new DocumentsApi(client);
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
 
       // when
       try {
@@ -894,7 +895,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
   public void testPost10() throws Exception {
     // given
     String content = "test data";
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       for (ApiClient client : getApiClients(siteId)) {
 
         DocumentsApi api = new DocumentsApi(client);
@@ -935,7 +936,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
   @Test
   public void testPost11() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       for (ApiClient client : getApiClients(siteId)) {
 
@@ -973,7 +974,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
   public void testPost12() throws Exception {
     // given
     String content0 = "test data";
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       for (ApiClient client : getApiClients(siteId)) {
 
@@ -1021,7 +1022,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
     AddDocumentRequest addReq =
         new AddDocumentRequest().content("test data").contentType("text/plain");
 
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       // when
       try {
@@ -1053,7 +1054,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
   void testPublishDocument() throws ApiException, InterruptedException {
     // given
     String content = "test data";
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       ApiClient client = getApiClients(siteId).get(0);
 
       DocumentsApi api = new DocumentsApi(client);
