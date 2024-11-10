@@ -163,7 +163,6 @@ public class DocumentSearchServiceImplTest implements DbKeys {
     dates.forEach(date -> {
       ZonedDateTime zdate = DateUtil.toDateTimeFromString(date, null);
       String id = ID.uuid();
-      System.out.println("UUID: " + id);
       items.add(createDocument(id, zdate));
     });
 
