@@ -8567,7 +8567,7 @@
                   description: Description of Task
                 plannedStartDate:
                   type: string
-                  description: Planned Start Date
+                  description: Planned Start Date of Task
                 startDate:
                   type: string
                   description: Start Date of Task
