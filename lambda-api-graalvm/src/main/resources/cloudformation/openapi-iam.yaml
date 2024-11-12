@@ -8357,12 +8357,18 @@ Resources:
                   description: "Case Name"
                 status:
                   $ref: "#/components/schemas/CaseStatus"
+                plannedStartDate:
+                  type: "string"
+                  description: "Planned Start Date"
                 startDate:
                   type: "string"
                   description: "Start Date"
                 endDate:
                   type: "string"
                   description: "End Date"
+                dueDate:
+                  type: "string"
+                  description: "Due Date"
                 description:
                   type: "string"
                   description: "Case Description"
@@ -8423,12 +8429,18 @@ Resources:
                   type: "object"
                   additionalProperties:
                     type: object
+                plannedStartDate:
+                  type: "string"
+                  description: "Planned Start Date"
                 startDate:
                   type: "string"
                   description: "Start Date"
                 endDate:
                   type: "string"
                   description: "End Date"
+                dueDate:
+                  type: "string"
+                  description: "Due Date"
                 documentIds:
                   type: "array"
                   items:
@@ -8499,12 +8511,18 @@ Resources:
                 description:
                   type: "string"
                   description: "Description of Task"
+                plannedStartDate:
+                  type: "string"
+                  description: "Planned Start Date"
                 startDate:
                   type: "string"
                   description: "Start Date"
                 endDate:
                   type: "string"
                   description: "End Date"
+                dueDate:
+                  type: "string"
+                  description: "Due Date"
                 status:
                   $ref: "#/components/schemas/TaskStatus"
                 metadata:
@@ -8535,12 +8553,18 @@ Resources:
                   description: "Description of Task"
                 status:
                   $ref: "#/components/schemas/TaskStatus"
+                plannedStartDate:
+                  type: "string"
+                  description: "Planned Start Date"
                 startDate:
                   type: "string"
                   description: "Start Date"
                 endDate:
                   type: "string"
                   description: "End Date"
+                dueDate:
+                  type: "string"
+                  description: "Due Date"
                 metadata:
                   type: "object"
                   additionalProperties:
@@ -8569,12 +8593,18 @@ Resources:
                 description:
                   type: "string"
                   description: "Description of Nigo"
+                plannedStartDate:
+                  type: "string"
+                  description: "Planned Start Date"
                 startDate:
                   type: "string"
                   description: "Start Date"
                 endDate:
                   type: "string"
                   description: "End Date"
+                dueDate:
+                  type: "string"
+                  description: "Due Date"
                 status:
                   $ref: "#/components/schemas/NigoStatus"
                 metadata:
@@ -8605,12 +8635,18 @@ Resources:
                   description: "Description of Nigo"
                 status:
                   $ref: "#/components/schemas/NigoStatus"
+                plannedStartDate:
+                  type: "string"
+                  description: "Planned Start Date"
                 startDate:
                   type: "string"
                   description: "Start Date"
                 endDate:
                   type: "string"
                   description: "End Date"
+                dueDate:
+                  type: "string"
+                  description: "Due Date"
                 metadata:
                   type: "object"
                   additionalProperties:
@@ -8634,12 +8670,18 @@ Resources:
                 description:
                   type: "string"
                   description: "Description of Task"
+                plannedStartDate:
+                  type: "string"
+                  description: "Planned Start Date of Task"
                 startDate:
                   type: "string"
                   description: "Start Date of Task"
                 endDate:
                   type: "string"
                   description: "End Date of Task"
+                dueDate:
+                  type: "string"
+                  description: "Due Date of Task"
                 userId:
                   type: "string"
                   description: "User who added Task"
@@ -8664,12 +8706,18 @@ Resources:
                 description:
                   type: "string"
                   description: "Description of Nigo"
+                plannedStartDate:
+                  type: "string"
+                  description: "Planned Start Date"
                 startDate:
                   type: "string"
                   description: "Start Date"
                 endDate:
                   type: "string"
                   description: "End Date"
+                dueDate:
+                  type: "string"
+                  description: "Due Date"
                 userId:
                   type: "string"
                   description: "User who added Nigo"
@@ -8750,12 +8798,18 @@ Resources:
                 documentNumber:
                   type: "string"
                   description: "Document Number"
+                plannedStartDate:
+                  type: "string"
+                  description: "Planned Start Date"
                 startDate:
                   type: "string"
                   description: "Start Date"
                 endDate:
                   type: "string"
                   description: "End Date"
+                dueDate:
+                  type: "string"
+                  description: "Due Date"
                 insertedDate:
                   type: "string"
                   description: "Inserted Timestamp"
