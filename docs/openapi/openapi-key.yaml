@@ -6916,6 +6916,10 @@
                 uploadUrl:
                   type: string
                   description: Url to upload document to
+                headers:
+                  type: object
+                  additionalProperties:
+                    type: object
                 documents:
                   type: array
                   description: List of child documents
@@ -6930,6 +6934,10 @@
                 uploadUrl:
                   type: string
                   description: Url to upload document to
+                headers:
+                  type: object
+                  additionalProperties:
+                    type: object
             GetDocumentUrlResponse:
               type: object
               properties:
@@ -7389,6 +7397,11 @@
                 content:
                   type: string
                   description: Document content
+                checksum:
+                  type: string
+                  description: Document checksum, changes when document file changes
+                checksumType:
+                  $ref: '#/components/schemas/ChecksumType'
                 tags:
                   type: array
                   description: List of document tags
@@ -8629,7 +8642,7 @@
                   description: End Date of Task
                 dueDate:
                   type: string
-                  description: Due Date
+                  description: Due Date of Task
                 userId:
                   type: string
                   description: User who added Task

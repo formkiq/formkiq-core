@@ -63,6 +63,7 @@ import com.formkiq.client.model.GetDocumentVersionsResponse;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 
 /**
@@ -128,8 +129,7 @@ public class FkqDocumentService {
     String s3url = response.getUrl();
 
     if (content.length > 0) {
-      HTTP.send(HttpRequest.newBuilder(new URI(s3url)).header("Content-Type", contentType)
-          .method("PUT", BodyPublishers.ofByteArray(content)).build(), BodyHandlers.ofString());
+      uploadDocumentContent(s3url, content, contentType, Map.of());
     }
 
     return response.getDocumentId();
@@ -137,7 +137,7 @@ public class FkqDocumentService {
 
   /**
    * Add Document.
-   * 
+   *
    * @param apiClient {@link ApiClient}
    * @param siteId {@link String}
    * @param path {@link String}
@@ -157,6 +157,29 @@ public class FkqDocumentService {
             .path(path).actions(actions);
     AddDocumentResponse response = api.addDocument(req, siteId, null);
     return response.getDocumentId();
+  }
+
+  /**
+   * Upload File to S3 presigned Url.
+   * 
+   * @param s3url {@link String}
+   * @param content byte[]
+   * @param contentType {@link String}
+   * @param headers {@link Map}
+   * @throws IOException IOException
+   * @throws InterruptedException InterruptedException
+   * @throws URISyntaxException URISyntaxException
+   */
+  public static void uploadDocumentContent(final String s3url, final byte[] content,
+      final String contentType, final Map<String, String> headers)
+      throws IOException, InterruptedException, URISyntaxException {
+    HttpRequest.Builder builder =
+        HttpRequest.newBuilder(new URI(s3url)).header("Content-Type", contentType);
+
+    headers.forEach(builder::header);
+
+    HTTP.send(builder.method("PUT", BodyPublishers.ofByteArray(content)).build(),
+        BodyHandlers.ofString());
   }
 
   /**
@@ -235,7 +258,6 @@ public class FkqDocumentService {
    * @param response {@link HttpResponse}
    * @return {@link Map}
    */
-  @SuppressWarnings("unchecked")
   public static Map<String, Object> toMap(final HttpResponse<String> response) {
     return GSON.fromJson(response.body(), Map.class);
   }
@@ -264,8 +286,8 @@ public class FkqDocumentService {
       try {
         response = api.getDocumentActions(documentId, siteId, null, null, null);
 
-        o = response.getActions().stream().filter(a -> actionStatus.contains(a.getStatus()))
-            .toList();
+        o = notNull(response.getActions()).stream()
+            .filter(a -> actionStatus.contains(a.getStatus())).toList();
 
       } catch (ApiException e) {
         // ignore
@@ -337,7 +359,7 @@ public class FkqDocumentService {
       try {
         response = api.getDocumentActions(documentId, siteId, null, null, null);
 
-        List<DocumentAction> actions = response.getActions();
+        List<DocumentAction> actions = notNull(response.getActions());
         o = actions.stream().filter(a -> actionStatus.contains(a.getStatus()))
             .collect(Collectors.toList());
 
@@ -698,7 +720,7 @@ public class FkqDocumentService {
       try {
         GetDocumentVersionsResponse response =
             api.getDocumentVersions(documentId, siteId, "100", null, null);
-        if (response.getDocuments().size() == expectedNumbeOfVersions) {
+        if (notNull(response.getDocuments()).size() == expectedNumbeOfVersions) {
           return response;
         }
 

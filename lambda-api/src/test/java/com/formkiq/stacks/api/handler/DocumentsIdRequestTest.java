@@ -26,10 +26,16 @@ package com.formkiq.stacks.api.handler;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
+
+import java.io.IOException;
+import java.net.http.HttpHeaders;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.ID;
@@ -40,11 +46,14 @@ import com.formkiq.client.model.AddDocumentAttribute;
 import com.formkiq.client.model.AddDocumentAttributeStandard;
 import com.formkiq.client.model.AttributeSchemaCompositeKey;
 import com.formkiq.client.model.AttributeSchemaOptional;
+import com.formkiq.client.model.ChecksumType;
 import com.formkiq.client.model.DocumentAction;
 import com.formkiq.client.model.DocumentAttribute;
 import com.formkiq.client.model.SchemaAttributes;
 import com.formkiq.client.model.SetSitesSchemaRequest;
 import com.formkiq.client.model.UpdateDocumentRequest;
+import com.formkiq.stacks.client.HttpService;
+import com.formkiq.stacks.client.HttpServiceJava;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -62,6 +71,7 @@ import com.formkiq.client.model.GetDocumentUrlResponse;
 import com.formkiq.client.model.SetDocumentRestoreResponse;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
+import software.amazon.awssdk.core.sync.RequestBody;
 
 /** Unit Tests for request /documents/{documentId}. */
 @ExtendWith(DynamoDbExtension.class)
@@ -815,5 +825,142 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
             e.getResponseBody());
       }
     }
+  }
+
+  /**
+   * Save new File with valid SHA-256 and then update content.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testUpdate10() throws ApiException {
+    // given
+    final String content0 = "dummy data";
+    final String checksum0 = "797bb0abff798d7200af7685dca7901edffc52bf26500d5bd97282658ee24152";
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      for (String checksum : Arrays.asList(null, checksum0)) {
+        setBearerToken(siteId);
+
+        AddDocumentRequest req = new AddDocumentRequest().content(content0)
+            .contentType("text/plain").checksum(checksum).checksumType(ChecksumType.SHA256);
+
+        // when
+        AddDocumentResponse response = this.documentsApi.addDocument(req, siteId, null);
+
+        // then
+        String documentId = response.getDocumentId();
+        assertNotNull(documentId);
+        assertEquals(siteId, response.getSiteId());
+
+        GetDocumentResponse doc =
+            this.documentsApi.getDocument(response.getDocumentId(), siteId, null);
+        assertEquals("text/plain", doc.getContentType());
+        assertEquals(ChecksumType.SHA256, doc.getChecksumType());
+        assertEquals(checksum0, doc.getChecksum());
+        assertNotNull(doc.getPath());
+        assertNotNull(doc.getDocumentId());
+        assertEquals(content0,
+            this.documentsApi.getDocumentContent(documentId, siteId, null, null).getContent());
+
+        // given
+        String content1 = "new content";
+        String checksum1 = "fe32608c9ef5b6cf7e3f946480253ff76f24f4ec0678f3d0f07f9844cbff9601";
+        UpdateDocumentRequest updateReq = new UpdateDocumentRequest().content(content1)
+            .contentType("text/plain").checksum(checksum1).checksumType(ChecksumType.SHA256);
+
+        // when
+        this.documentsApi.updateDocument(documentId, updateReq, siteId, null);
+
+        // then
+        doc = this.documentsApi.getDocument(documentId, siteId, null);
+        assertEquals("text/plain", doc.getContentType());
+        assertEquals(ChecksumType.SHA256, doc.getChecksumType());
+        assertEquals(checksum1, doc.getChecksum());
+        assertEquals(content1,
+            this.documentsApi.getDocumentContent(documentId, siteId, null, null).getContent());
+      }
+    }
+  }
+
+  /**
+   * Save new File with valid SHA-256 and then update content using presigned url.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testUpdate11() throws ApiException, IOException, InterruptedException {
+    // given
+    final String content0 = "dummy data";
+    final String checksum0 = "797bb0abff798d7200af7685dca7901edffc52bf26500d5bd97282658ee24152";
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      for (String checksum : Arrays.asList(null, checksum0)) {
+        setBearerToken(siteId);
+
+        AddDocumentRequest req = new AddDocumentRequest().content(content0)
+            .contentType("text/plain").checksum(checksum).checksumType(ChecksumType.SHA256);
+
+        // when
+        AddDocumentResponse response = this.documentsApi.addDocument(req, siteId, null);
+
+        // then
+        String documentId = response.getDocumentId();
+        assertNotNull(documentId);
+        assertEquals(siteId, response.getSiteId());
+
+        GetDocumentResponse doc =
+            this.documentsApi.getDocument(response.getDocumentId(), siteId, null);
+        assertEquals("text/plain", doc.getContentType());
+        assertEquals(ChecksumType.SHA256, doc.getChecksumType());
+        assertEquals(checksum0, doc.getChecksum());
+        assertNotNull(doc.getPath());
+        assertNotNull(doc.getDocumentId());
+        assertEquals(content0,
+            this.documentsApi.getDocumentContent(documentId, siteId, null, null).getContent());
+
+        // given
+        String checksum1 = "fe32608c9ef5b6cf7e3f946480253ff76f24f4ec0678f3d0f07f9844cbff9601";
+        UpdateDocumentRequest updateReq =
+            new UpdateDocumentRequest().checksum(checksum1).checksumType(ChecksumType.SHA256);
+
+        // when
+        response = this.documentsApi.updateDocument(documentId, updateReq, siteId, null);
+
+        // then
+        assertNotNull(response);
+        assertNotNull(response.getHeaders());
+        assertEquals(2, response.getHeaders().size());
+
+        // given
+        String content1 = "new content";
+
+        // when
+        putS3Request(response.getUploadUrl(), response.getHeaders(), content1);
+
+        // then
+        doc = this.documentsApi.getDocument(documentId, siteId, null);
+        assertEquals("text/plain", doc.getContentType());
+        assertEquals(ChecksumType.SHA256, doc.getChecksumType());
+        assertEquals(checksum1, doc.getChecksum());
+        assertEquals(content1,
+            this.documentsApi.getDocumentContent(documentId, siteId, null, null).getContent());
+      }
+    }
+  }
+
+  private void putS3Request(final String presignedUrl, final Map<String, Object> headerMap,
+      final String content) throws IOException, InterruptedException {
+
+    HttpService http = new HttpServiceJava();
+    RequestBody payload = RequestBody.fromString(content);
+
+    Map<String, List<String>> headers = headerMap.entrySet().stream()
+        .collect(Collectors.toMap(Map.Entry::getKey, entry -> List.of((String) entry.getValue())));
+
+    Optional<HttpHeaders> o = Optional.of(HttpHeaders.of(headers, (t, u) -> true));
+    http.put(presignedUrl, o, payload);
   }
 }
