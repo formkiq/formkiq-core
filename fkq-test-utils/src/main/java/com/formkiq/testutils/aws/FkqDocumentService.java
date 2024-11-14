@@ -171,15 +171,21 @@ public class FkqDocumentService {
    * @throws URISyntaxException URISyntaxException
    */
   public static void uploadDocumentContent(final String s3url, final byte[] content,
-      final String contentType, final Map<String, String> headers)
+      final String contentType, final Map<String, Object> headers)
       throws IOException, InterruptedException, URISyntaxException {
     HttpRequest.Builder builder =
         HttpRequest.newBuilder(new URI(s3url)).header("Content-Type", contentType);
 
-    headers.forEach(builder::header);
+    headers.forEach((k, v) -> builder.header(k, v.toString()));
 
-    HTTP.send(builder.method("PUT", BodyPublishers.ofByteArray(content)).build(),
-        BodyHandlers.ofString());
+    HttpResponse<String> response =
+        HTTP.send(builder.method("PUT", BodyPublishers.ofByteArray(content)).build(),
+            BodyHandlers.ofString());
+
+    final int statusCode = 200;
+    if (response.statusCode() != statusCode) {
+      throw new IOException("Status Code: " + response.statusCode());
+    }
   }
 
   /**

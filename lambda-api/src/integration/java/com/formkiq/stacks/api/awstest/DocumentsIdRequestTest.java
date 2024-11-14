@@ -23,18 +23,30 @@
  */
 package com.formkiq.stacks.api.awstest;
 
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_FOUND;
+import static com.formkiq.testutils.aws.FkqDocumentService.addDocument;
+import static com.formkiq.testutils.aws.FkqDocumentService.uploadDocumentContent;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocument;
+import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContent;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.client.model.AddDocumentResponse;
+import com.formkiq.client.model.ChecksumType;
+import com.formkiq.client.model.UpdateDocumentRequest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import com.formkiq.client.api.AdvancedDocumentSearchApi;
@@ -80,8 +92,8 @@ public class DocumentsIdRequestTest extends AbstractAwsIntegrationTest {
       api.deleteDocument(documentId, siteId, Boolean.TRUE);
 
       // then
-      List<Document> softDeletedDocuments = api
-          .getDocuments(siteId, null, Boolean.TRUE, null, null, null, null, "100").getDocuments();
+      List<Document> softDeletedDocuments = notNull(api
+          .getDocuments(siteId, null, Boolean.TRUE, null, null, null, null, "100").getDocuments());
       assertFalse(softDeletedDocuments.isEmpty());
 
       try {
@@ -134,8 +146,81 @@ public class DocumentsIdRequestTest extends AbstractAwsIntegrationTest {
 
         // then
         assertEquals(deepLink, document.getDeepLinkPath());
-        assertTrue(document.getPath().contains("sample"));
+        assertTrue(Objects.requireNonNull(document.getPath()).contains("sample"));
         assertEquals("application/pdf", document.getContentType());
+      }
+    }
+  }
+
+  /**
+   * Save new File and update content.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  public void testDocumentUpdate01() throws Exception {
+    // given
+    byte[] content = "ajlsdkjsald".getBytes(StandardCharsets.UTF_8);
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      for (ApiClient client : getApiClients(siteId)) {
+        String documentId =
+            addDocument(client, siteId, "askljdkalsd.txt", content, "text/plain", null, null);
+
+        DocumentsApi api = new DocumentsApi(client);
+        UpdateDocumentRequest updateReq = new UpdateDocumentRequest();
+
+        // when
+        AddDocumentResponse response = api.updateDocument(documentId, updateReq, siteId, null);
+
+        // then
+        String newContent = "new content";
+        assertNotNull(response.getUploadUrl());
+        uploadDocumentContent(response.getUploadUrl(), newContent.getBytes(StandardCharsets.UTF_8),
+            "text/plain", Map.of());
+        waitForDocumentContent(client, siteId, documentId, newContent);
+      }
+    }
+  }
+
+  /**
+   * Save new File and update content using SHA256.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  public void testDocumentUpdate02() throws Exception {
+    // given
+    String contentType = "text/plain";
+    String content0Hash = "1d4c375d631fdb1072f2299458b3882561fd86c31ec13a8aebe642e7196b01c9";
+    byte[] content = "ajlsdkjsald".getBytes(StandardCharsets.UTF_8);
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      for (ApiClient client : getApiClients(siteId)) {
+
+        DocumentsApi api = new DocumentsApi(client);
+        AddDocumentRequest req = new AddDocumentRequest()
+            .content(Base64.getEncoder().encodeToString(content)).contentType(contentType)
+            .isBase64(Boolean.TRUE).checksum(content0Hash).checksumType(ChecksumType.SHA256);
+        AddDocumentResponse response = api.addDocument(req, siteId, null);
+        String documentId = response.getDocumentId();
+
+        String newContentHash = "fe32608c9ef5b6cf7e3f946480253ff76f24f4ec0678f3d0f07f9844cbff9601";
+        UpdateDocumentRequest updateReq =
+            new UpdateDocumentRequest().checksum(newContentHash).checksumType(ChecksumType.SHA256);
+
+        // when
+        response = api.updateDocument(documentId, updateReq, siteId, null);
+
+        // then
+        assertNotNull(response.getUploadUrl());
+        assertEquals(2, notNull(response.getHeaders()).size());
+        String newContent = "new content";
+
+        uploadDocumentContent(response.getUploadUrl(), newContent.getBytes(StandardCharsets.UTF_8),
+            contentType, response.getHeaders());
+        waitForDocumentContent(client, siteId, documentId, newContent);
+
       }
     }
   }
