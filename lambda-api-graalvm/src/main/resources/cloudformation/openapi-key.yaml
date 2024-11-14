@@ -9137,6 +9137,8 @@ Resources:
             AddDocumentGenerateRequest:
               type: "object"
               properties:
+                locale:
+                  $ref: "#/components/schemas/Locale"
                 datasources:
                   type: "array"
                   description: "List of data sources"
@@ -9166,6 +9168,16 @@ Resources:
                   type: "string"
                   description: "The default JSON object path for the data object"
                   default: "data"
+
+            Locale:
+              type: "object"
+              properties:
+                language:
+                  type: "string"
+                  description: "ISO 639-1 language code (eg: en (English), fr (French), de (German))"
+                country:
+                  type: "string"
+                  description: "ISO 3166-1 country code (eg: US, CA, DE, FR)"
 
             DocumentGenerateOutputType:
               type: string
