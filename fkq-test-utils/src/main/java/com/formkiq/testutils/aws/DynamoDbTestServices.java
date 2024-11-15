@@ -74,14 +74,12 @@ public final class DynamoDbTestServices {
 
   /**
    * Get Singleton Instance of {@link DynamoDbHelper}.
-   * 
-   * @param dynamoDb {@link GenericContainer}
+   *
    * @return {@link DynamoDbConnectionBuilder}
    * @throws URISyntaxException URISyntaxException
    * @throws IOException IOException
    */
-  public static DynamoDbHelper getDynamoDbHelper(final GenericContainer<?> dynamoDb)
-      throws URISyntaxException, IOException {
+  public static DynamoDbHelper getDynamoDbHelper() throws URISyntaxException, IOException {
     if (dbHelper == null) {
       dbHelper = new DynamoDbHelper(getDynamoDbConnection());
     }
@@ -97,7 +95,7 @@ public final class DynamoDbTestServices {
   @SuppressWarnings("resource")
   public static GenericContainer<?> getDynamoDbLocal() {
     if (dynamoDbLocal == null && isPortAvailable()) {
-      final Integer exposedPort = Integer.valueOf(DEFAULT_PORT);
+      final Integer exposedPort = DEFAULT_PORT;
       dynamoDbLocal = new GenericContainer<>(DYNAMODB_IMAGE_NAME).withExposedPorts(exposedPort)
           .withCommand("-jar DynamoDBLocal.jar -sharedDb");
     }

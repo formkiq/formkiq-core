@@ -186,7 +186,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
     dbBuilder = DynamoDbTestServices.getDynamoDbConnection();
     db = dbBuilder.build();
-    dbHelper = DynamoDbTestServices.getDynamoDbHelper(null);
+    dbHelper = DynamoDbTestServices.getDynamoDbHelper();
 
     SqsConnectionBuilder sqsBuilder = TestServices.getSqsConnection(null);
     sqsService = new SqsServiceImpl(sqsBuilder);
