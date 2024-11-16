@@ -108,6 +108,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
 
   private void addAttribute(final String siteId) throws ApiException {
     addAttribute(siteId, "category");
+    addAttribute(siteId, "other");
   }
 
   private void addAttribute(final String siteId, final String attributeKey) throws ApiException {
@@ -971,7 +972,9 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
       AddDocumentUploadRequest uploadReq = new AddDocumentUploadRequest().path(path)
           .addTagsItem(new AddDocumentTag().key("documentType").value("invoice"))
           .addAttributesItem(new AddDocumentAttribute(
-              new AddDocumentAttributeStandard().key("category").stringValue("document")));
+              new AddDocumentAttributeStandard().key("category").stringValue("document")))
+          .addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key("other").stringValue("thing")));
       this.documentsApi.addDocumentUpload(uploadReq, siteId, null, null, null);
 
       DocumentSearchRequest dsq = new DocumentSearchRequest()

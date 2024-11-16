@@ -407,6 +407,7 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
     QueryRequest q =
         QueryRequest.builder().tableName(this.tableName).keyConditionExpression(expression)
             .expressionAttributeValues(values).scanIndexForward(config.isScanIndexForward())
+            .expressionAttributeNames(config.expressionAttributeNames())
             .projectionExpression(config.projectionExpression()).indexName(config.indexName())
             .exclusiveStartKey(exclusiveStartKey).limit(limit).build();
 
