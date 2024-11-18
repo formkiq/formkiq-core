@@ -2201,7 +2201,7 @@
             post:
               operationId: SearchFulltext
               summary: Document full-text search
-              description: Document full-text search (and more robust multi-tag search queries, powered by OpenSearch); ONLY available with FormKiQ Enterprise
+              description: Document full-text search (and more robust multi-tag search queries, powered by OpenSearch); available as an Add-On Module
               tags:
               - Advanced Document Search
               parameters:
@@ -2242,7 +2242,7 @@
               operationId: QueryFulltext
               summary: Direct opensearch search API
               description: |-
-                Endpoint for allowing custom, complex queries using the OpenSearch search API (https://opensearch.org/docs/latest/opensearch/rest-api/search/); ONLY available with FormKiQ Enterprise
+                Endpoint for allowing custom, complex queries using the OpenSearch search API (https://opensearch.org/docs/latest/opensearch/rest-api/search/); available as an Add-On Module
 
                 Example Request Body: { "query": { "match_all": {} }}
               tags:
@@ -2407,7 +2407,7 @@
             get:
               operationId: GetDocumentOcr
               summary: Get document ocr content
-              description: "Get a document's optical character recognition (OCR) result, if exists; \n\nTesseract available for all editions, but Textract engine and tables and forms options ONLY available with FormKiQ Pro and Enterprise"
+              description: "Get a document's optical character recognition (OCR) result, if exists; \n\nTesseract available for all editions, but Textract engine and tables and forms options available as an Add-On Module"
               tags:
               - Document OCR
               parameters:
@@ -2438,7 +2438,7 @@
             post:
               operationId: AddDocumentOcr
               summary: Perform document ocr
-              description: "Document optical character recognition (OCR) request; extract text and data from a document; \n\nTesseract available for all editions, but Textract engine and tables and forms options ONLY available with FormKiQ Pro and Enterprise"
+              description: "Document optical character recognition (OCR) request; extract text and data from a document; \n\nTesseract available for all editions, but Textract engine and tables and forms options available as an Add-On Module"
               tags:
               - Document OCR
               parameters:
@@ -2471,7 +2471,7 @@
             put:
               operationId: SetDocumentOcr
               summary: Set document ocr result
-              description: "Set a document's optical character recognition (OCR) result for a document; \n\nTesseract available for all editions, but Textract engine and tables and forms options ONLY available with FormKiQ Pro and Enterprise"
+              description: "Set a document's optical character recognition (OCR) result for a document; \n\nTesseract available for all editions, but Textract engine and tables and forms options available as an Add-On Module"
               tags:
               - Document OCR
               parameters:
@@ -2504,7 +2504,7 @@
             delete:
               operationId: DeleteDocumentOcr
               summary: Delete document ocr
-              description: "Delete a document's optical character recognition (OCR) result, if exists; \n\nTesseract available for all editions, but Textract engine and tables and forms options ONLY available with FormKiQ Pro and Enterprise"
+              description: "Delete a document's optical character recognition (OCR) result, if exists; \n\nTesseract available for all editions, but Textract engine and tables and forms options available as an Add-On Module"
               tags:
               - Document OCR
               parameters:
@@ -2521,7 +2521,7 @@
             get:
               operationId: GetDocumentVersions
               summary: Get document's versions
-              description: Get a listing of document content and metadata versions; ONLY available with FormKiQ Pro and Enterprise
+              description: Get a listing of document content and metadata versions; available as an Add-On Module
               tags:
               - Document Versions
               parameters:
@@ -2551,7 +2551,7 @@
             put:
               operationId: SetDocumentVersion
               summary: Set version of document
-              description: Set document to a previous document version; ONLY available with FormKiQ Pro and Enterprise
+              description: Set document to a previous document version; available as an Add-On Module
               tags:
               - Document Versions
               parameters:
@@ -2591,7 +2591,7 @@
             delete:
               operationId: DeleteDocumentVersion
               summary: Delete document version
-              description: Delete a specific previous document version; ONLY available with FormKiQ Pro and Enterprise
+              description: Delete a specific previous document version; available as an Add-On Module
               tags:
               - Document Versions
               parameters:
@@ -2610,7 +2610,7 @@
             get:
               operationId: GetDocumentAttributeVersions
               summary: Get document attribute's versions
-              description: Get a listing of a document's attribute versions; ONLY available with FormKiQ Pro and Enterprise
+              description: Get a listing of a document's attribute versions; available as an Add-On Module
               tags:
               - Document Attributes
               parameters:
@@ -2735,7 +2735,7 @@
             get:
               operationId: GetUserShares
               summary: Get user shared folders
-              description: Get a listing of user folder/document shares; ONLY available with FormKiQ Enterprise
+              description: Get a listing of user folder/document shares; available as an Add-On Module
               parameters:
               - $ref: '#/components/parameters/groupParam'
               - $ref: '#/components/parameters/limitParam'
@@ -2764,7 +2764,7 @@
             post:
               operationId: AddFolderShare
               summary: Add folder share
-              description: Creates a new folder share; ONLY available with FormKiQ Enterprise
+              description: Creates a new folder share; available as an Add-On Module
               tags:
               - Document Shares
               parameters:
@@ -2804,7 +2804,7 @@
             delete:
               operationId: DeleteShare
               summary: Delete folder share
-              description: Delete a specific document share; ONLY available with FormKiQ Enterprise
+              description: Delete a specific document share; available as an Add-On Module
               tags:
               - Document Shares
               parameters:
@@ -2831,7 +2831,7 @@
             get:
               operationId: GetWorkflows
               summary: Get workflows
-              description: Get a listing of workflows; ONLY available with FormKiQ Enterprise
+              description: Get a listing of workflows; available as an Add-On Module
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/nextParam'
@@ -2860,7 +2860,7 @@
             post:
               operationId: AddWorkflow
               summary: Add workflow
-              description: Creates a new Workflow; ONLY available with FormKiQ Pro and Enterprise
+              description: Creates a new Workflow; available as an Add-On Module
               tags:
               - Document Workflows
               parameters:
@@ -2906,7 +2906,7 @@
             get:
               operationId: GetWorkflow
               summary: Get workflow
-              description: Get a workflow; ONLY available with FormKiQ Enterprise
+              description: Get a workflow; available as an Add-On Module
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/workflowIdParam'
@@ -2933,7 +2933,7 @@
             delete:
               operationId: DeleteWorkflow
               summary: Delete workflow
-              description: Delete a Workflow; ONLY available with FormKiQ Pro and Enterprise
+              description: Delete a Workflow; available as an Add-On Module
               tags:
               - Document Workflows
               parameters:
@@ -2960,7 +2960,7 @@
             put:
               operationId: SetWorkflow
               summary: Set workflow
-              description: Set a Workflow details; ONLY available with FormKiQ Pro and Enterprise
+              description: Set a Workflow details; available as an Add-On Module
               tags:
               - Document Workflows
               parameters:
@@ -3006,7 +3006,7 @@
             patch:
               operationId: UpdateWorkflow
               summary: Update workflow
-              description: Update a Workflow details; ONLY available with FormKiQ Pro and Enterprise
+              description: Update a Workflow details; available as an Add-On Module
               tags:
               - Document Workflows
               parameters:
@@ -3053,7 +3053,7 @@
             get:
               operationId: GetWorkflowDocuments
               summary: Get list of documents in workflow
-              description: List documents in Workflow; ONLY available with FormKiQ Pro and Enterprise
+              description: List documents in Workflow; available as an Add-On Module
               tags:
               - Document Workflows
               parameters:
@@ -3083,7 +3083,7 @@
             get:
               operationId: GetQueues
               summary: Get queues
-              description: Get a listing of queues; ONLY available with FormKiQ Enterprise
+              description: Get a listing of queues; available as an Add-On Module
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/nextParam'
@@ -3111,7 +3111,7 @@
             post:
               operationId: AddQueue
               summary: Add queue
-              description: Creates a new Queue; ONLY available with FormKiQ Pro and Enterprise
+              description: Creates a new Queue; available as an Add-On Module
               tags:
               - Document Workflows
               parameters:
@@ -3157,7 +3157,7 @@
             get:
               operationId: GetQueue
               summary: Get queue
-              description: Get a queue; ONLY available with FormKiQ Enterprise
+              description: Get a queue; available as an Add-On Module
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/queueIdParam'
@@ -3184,7 +3184,7 @@
             delete:
               operationId: DeleteQueue
               summary: Delete queue
-              description: Delete a Queue; ONLY available with FormKiQ Pro and Enterprise
+              description: Delete a Queue; available as an Add-On Module
               tags:
               - Document Workflows
               parameters:
@@ -3212,7 +3212,7 @@
             get:
               operationId: GetWorkflowQueueDocuments
               summary: Get list of documents in queue
-              description: List documents in Workflow Queue; ONLY available with FormKiQ Pro and Enterprise
+              description: List documents in Workflow Queue; available as an Add-On Module
               tags:
               - Document Workflows
               parameters:
@@ -3242,7 +3242,7 @@
             get:
               operationId: GetDocumentWorkflows
               summary: Get document workflows
-              description: Gets a document workflows; ONLY available with FormKiQ Pro and Enterprise
+              description: Gets a document workflows; available as an Add-On Module
               tags:
               - Document Workflows
               parameters:
@@ -3282,7 +3282,7 @@
             post:
               operationId: AddDocumentWorkflow
               summary: Add document workflow
-              description: Creates a document workflow; ONLY available with FormKiQ Pro and Enterprise
+              description: Creates a document workflow; available as an Add-On Module
               tags:
               - Document Workflows
               parameters:
@@ -3329,7 +3329,7 @@
             get:
               operationId: GetDocumentWorkflow
               summary: Get document workflow
-              description: Gets a document workflow; ONLY available with FormKiQ Pro and Enterprise
+              description: Gets a document workflow; available as an Add-On Module
               tags:
               - Document Workflows
               parameters:
@@ -3371,7 +3371,7 @@
             post:
               operationId: AddDocumentWorkflowDecisions
               summary: Approve/Reject document in approval queue
-              description: Approve/Reject document in approval queue; ONLY available with FormKiQ Pro and Enterprise
+              description: Approve/Reject document in approval queue; available as an Add-On Module
               tags:
               - Document Workflows
               parameters:
@@ -3419,7 +3419,7 @@
             put:
               operationId: SetAntivirus
               summary: Antivirus document scan
-              description: Perform an Anti-Malware / Antivirus scan on a document; ONLY available with FormKiQ Pro and Enterprise
+              description: Perform an Anti-Malware / Antivirus scan on a document; available as an Add-On Module
               tags:
               - Antivirus
               parameters:
@@ -3482,7 +3482,7 @@
             delete:
               operationId: DeleteDocumentFulltext
               summary: Delete document full-text
-              description: Remove full text search for a document from OpenSearch; ONLY available with FormKiQ Enterprise
+              description: Remove full text search for a document from OpenSearch; available as an Add-On Module
               tags:
               - Advanced Document Search
               parameters:
@@ -3509,7 +3509,7 @@
             put:
               operationId: SetDocumentFulltext
               summary: Set document's full-text
-              description: Set all text/tags found within a document to OpenSearch; ONLY available with FormKiQ Enterprise
+              description: Set all text/tags found within a document to OpenSearch; available as an Add-On Module
               tags:
               - Advanced Document Search
               parameters:
@@ -3542,7 +3542,7 @@
             post:
               operationId: AddDocumentFulltext
               summary: Add document's full-text
-              description: Adde a document to OpenSearch; ONLY available with FormKiQ Enterprise
+              description: Adde a document to OpenSearch; available as an Add-On Module
               tags:
               - Advanced Document Search
               parameters:
@@ -3575,7 +3575,7 @@
             patch:
               operationId: UpdateDocumentFulltext
               summary: Update document's full-text
-              description: Update a document in OpenSearch; ONLY available with FormKiQ Enterprise
+              description: Update a document in OpenSearch; available as an Add-On Module
               tags:
               - Advanced Document Search
               parameters:
@@ -3609,7 +3609,7 @@
             delete:
               operationId: DeleteDocumentFulltextTag
               summary: Delete document full-text tag
-              description: Remove document tags from OpenSearch; ONLY available with FormKiQ Enterprise
+              description: Remove document tags from OpenSearch; available as an Add-On Module
               tags:
               - Advanced Document Search
               parameters:
@@ -3628,7 +3628,7 @@
             delete:
               operationId: DeleteDocumentFulltextTagAndValue
               summary: Delete document full-text tag/value
-              description: Remove document tag/value from OpenSearch; ONLY available with FormKiQ Enterprise
+              description: Remove document tag/value from OpenSearch; available as an Add-On Module
               tags:
               - Advanced Document Search
               parameters:
@@ -4028,7 +4028,7 @@
             post:
               operationId: OnlyOfficeDocumentEdit
               summary: Edit onlyoffice document
-              description: Provide ONLYOFFICE integration for editing documents; ONLY available with FormKiQ Enterprise
+              description: Provide ONLYOFFICE integration for editing documents; available as an Add-On Module
               tags:
               - Onlyoffice
               parameters:
@@ -4062,7 +4062,7 @@
             post:
               operationId: OnlyOfficeDocumentNew
               summary: Create onlyoffice document
-              description: Provide ONLYOFFICE integration for the creation of new documents; ONLY available with FormKiQ Enterprise
+              description: Provide ONLYOFFICE integration for the creation of new documents; available as an Add-On Module
               tags:
               - Onlyoffice
               parameters:
@@ -4095,7 +4095,7 @@
             post:
               operationId: OnlyOfficeDocumentSave
               summary: Save onlyoffice document
-              description: Save an updated document for ONLYOFFICE integration. ONLY available with FormKiQ Enterprise
+              description: Save an updated document for ONLYOFFICE integration. available as an Add-On Module
               tags:
               - Onlyoffice
               parameters:
@@ -4240,7 +4240,7 @@
             post:
               operationId: AddDocusignEnvelopes
               summary: Create Docusign Envelope request
-              description: DocuSign create Docusign Envelope request; ONLY available with FormKiQ Enterprise
+              description: DocuSign create Docusign Envelope request; available as an Add-On Module
               tags:
               - E-Signature
               parameters:
@@ -4280,7 +4280,7 @@
             post:
               operationId: AddDocusignRecipientView
               summary: Create Docusign Recipient View request
-              description: DocuSign create Docusign Recipient View request; ONLY available with FormKiQ Enterprise
+              description: DocuSign create Docusign Recipient View request; available as an Add-On Module
               tags:
               - E-Signature
               parameters:
@@ -4321,7 +4321,7 @@
             post:
               operationId: AddEsignatureDocusignEvents
               summary: Add E-signature event
-              description: DocuSign callback URL handler; ONLY available with FormKiQ Enterprise
+              description: DocuSign callback URL handler; available as an Add-On Module
               tags:
               - E-Signature
               responses:
@@ -4713,7 +4713,7 @@
               operationId: GetCases
               tags:
               - Case Management
-              description: Returns a list of the Cases; ONLY available with FormKiQ Enterprise
+              description: Returns a list of the Cases; available as an Add-On Module
               summary: Get Case listing
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
@@ -4744,7 +4744,7 @@
             post:
               operationId: AddCase
               summary: Add New Case
-              description: Adds new case; ONLY available with FormKiQ Enterprise
+              description: Adds new case; available as an Add-On Module
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               tags:
@@ -4778,7 +4778,7 @@
               operationId: GetCase
               tags:
               - Case Management
-              description: Returns a Case; ONLY available with FormKiQ Enterprise
+              description: Returns a Case; available as an Add-On Module
               summary: Get Case details
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
@@ -4804,7 +4804,7 @@
             patch:
               operationId: UpdateCase
               summary: Update existing Case
-              description: Updates existing case; ONLY available with FormKiQ Enterprise
+              description: Updates existing case; available as an Add-On Module
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/caseIdParam'
@@ -4866,7 +4866,7 @@
               operationId: GetCaseDocuments
               tags:
               - Case Management
-              description: Returns documents in a Case; ONLY available with FormKiQ Enterprise
+              description: Returns documents in a Case; available as an Add-On Module
               summary: Get list of document in a case
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
@@ -4929,7 +4929,7 @@
               operationId: GetCaseTask
               tags:
               - Case Management
-              description: Returns a Task in Case; ONLY available with FormKiQ Enterprise
+              description: Returns a Task in Case; available as an Add-On Module
               summary: Get task in a case
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
@@ -4956,7 +4956,7 @@
             patch:
               operationId: UpdateTask
               summary: Update existing Task
-              description: Updates existing task; ONLY available with FormKiQ Enterprise
+              description: Updates existing task; available as an Add-On Module
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/caseIdParam'
@@ -5020,7 +5020,7 @@
               operationId: GetTaskDocuments
               tags:
               - Case Management
-              description: Returns a list documents in a Case; ONLY available with FormKiQ Enterprise
+              description: Returns a list documents in a Case; available as an Add-On Module
               summary: Get list of document in a task
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
@@ -5085,7 +5085,7 @@
               operationId: GetCaseNigo
               tags:
               - Case Management
-              description: Returns a Nigo in Case; ONLY available with FormKiQ Enterprise
+              description: Returns a Nigo in Case; available as an Add-On Module
               summary: Get nigo in a case
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
@@ -5112,7 +5112,7 @@
             patch:
               operationId: UpdateNigo
               summary: Update existing Nigo
-              description: Updates existing nigo; ONLY available with FormKiQ Enterprise
+              description: Updates existing nigo; available as an Add-On Module
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/caseIdParam'
@@ -5176,7 +5176,7 @@
               operationId: GetNigoDocuments
               tags:
               - Case Management
-              description: Returns a list documents in a Case; ONLY available with FormKiQ Enterprise
+              description: Returns a list documents in a Case; available as an Add-On Module
               summary: Get list of document in a task
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
@@ -5241,7 +5241,7 @@
               operationId: GetCaseTasks
               tags:
               - Case Management
-              description: Returns a Case; ONLY available with FormKiQ Enterprise
+              description: Returns a Case; available as an Add-On Module
               summary: Get list of tasks in a case
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
@@ -5273,7 +5273,7 @@
             post:
               operationId: AddTask
               summary: Add New Task
-              description: Adds new task; ONLY available with FormKiQ Enterprise
+              description: Adds new task; available as an Add-On Module
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/caseIdParam'
@@ -5308,7 +5308,7 @@
               operationId: GetCaseNigos
               tags:
               - Case Management
-              description: Returns a Nigos of Case; ONLY available with FormKiQ Enterprise
+              description: Returns a Nigos of Case; available as an Add-On Module
               summary: Get list of Nigos in a case
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
@@ -5340,7 +5340,7 @@
             post:
               operationId: AddNigo
               summary: Add New Nigo
-              description: Adds new nigo; ONLY available with FormKiQ Enterprise
+              description: Adds new nigo; available as an Add-On Module
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/caseIdParam'
@@ -5375,7 +5375,7 @@
               operationId: GetMappings
               tags:
               - Mappings
-              description: Returns a list of mappings; ONLY available with FormKiQ Enterprise
+              description: Returns a list of mappings; available as an Add-On Module
               summary: Get Mappings
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
@@ -5401,7 +5401,7 @@
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
             post:
               operationId: AddMapping
-              description: Creates a new mapping; ONLY available with FormKiQ Enterprise
+              description: Creates a new mapping; available as an Add-On Module
               summary: Add New Mapping
               tags:
               - Mappings
@@ -5442,7 +5442,7 @@
               operationId: GetMapping
               tags:
               - Mappings
-              description: Get a mapping; ONLY available with FormKiQ Enterprise
+              description: Get a mapping; available as an Add-On Module
               summary: Get Mapping
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
@@ -5467,7 +5467,7 @@
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
             put:
               operationId: SetMapping
-              description: Sets an mapping; ONLY available with FormKiQ Enterprise
+              description: Sets an mapping; available as an Add-On Module
               summary: Set Mapping
               tags:
               - Mappings
@@ -5506,7 +5506,7 @@
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
             delete:
               operationId: DeleteMapping
-              description: Delete Mapping; ONLY available with FormKiQ Enterprise
+              description: Delete Mapping; available as an Add-On Module
               summary: Delete Mapping
               tags:
               - Mappings
@@ -5536,7 +5536,7 @@
               operationId: GetRulesets
               tags:
               - Rulesets
-              description: Returns a list of rule sets; ONLY available with FormKiQ Enterprise
+              description: Returns a list of rule sets; available as an Add-On Module
               summary: Get Rulesets
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
@@ -5566,7 +5566,7 @@
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
             post:
               operationId: AddRuleset
-              description: Creates a new ruleset; ONLY available with FormKiQ Enterprise
+              description: Creates a new ruleset; available as an Add-On Module
               summary: Add New Ruleset
               tags:
               - Rulesets
@@ -5607,7 +5607,7 @@
               operationId: GetRuleset
               tags:
               - Rulesets
-              description: Get a rule sets; ONLY available with FormKiQ Enterprise
+              description: Get a rule sets; available as an Add-On Module
               summary: Get Ruleset
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
@@ -5632,7 +5632,7 @@
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
             patch:
               operationId: UpdateRuleset
-              description: Updates an existing ruleset; ONLY available with FormKiQ Enterprise
+              description: Updates an existing ruleset; available as an Add-On Module
               summary: Update Ruleset
               tags:
               - Rulesets
@@ -5671,7 +5671,7 @@
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
             delete:
               operationId: DeleteRuleset
-              description: Delete Ruleset; ONLY available with FormKiQ Enterprise
+              description: Delete Ruleset; available as an Add-On Module
               summary: Delete Ruleset
               tags:
               - Rulesets
@@ -5701,7 +5701,7 @@
               operationId: GetRules
               tags:
               - Rulesets
-              description: Returns a list of rules in a ruleset; ONLY available with FormKiQ Enterprise
+              description: Returns a list of rules in a ruleset; available as an Add-On Module
               summary: Get Rules
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
@@ -5728,7 +5728,7 @@
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
             post:
               operationId: AddRule
-              description: Creates a new rule; ONLY available with FormKiQ Enterprise
+              description: Creates a new rule; available as an Add-On Module
               summary: Add New Rule
               tags:
               - Rulesets
@@ -5770,7 +5770,7 @@
               operationId: GetRule
               tags:
               - Rulesets
-              description: Returns a rule in a ruleset; ONLY available with FormKiQ Enterprise
+              description: Returns a rule in a ruleset; available as an Add-On Module
               summary: Get Rule
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
@@ -5796,7 +5796,7 @@
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
             patch:
               operationId: UpdateRule
-              description: Update Rule; ONLY available with FormKiQ Enterprise
+              description: Update Rule; available as an Add-On Module
               summary: Update Rule
               tags:
               - Rulesets
@@ -5836,7 +5836,7 @@
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
             delete:
               operationId: DeleteRule
-              description: Delete Rule; ONLY available with FormKiQ Enterprise
+              description: Delete Rule; available as an Add-On Module
               summary: Delete Rule
               tags:
               - Rulesets
@@ -5965,7 +5965,7 @@
 
                 By Default data source must include a `data` object, which contains key-value pairs that will be merged into the template. The value can be any valid JSON object. { "data":{}}. The data path can be adjusted via the "dataRoot" field.
 
-                ; ONLY available with FormKiQ Enterprise
+                ; available as an Add-On Module
               summary: Add Document Generate
               tags:
               - Document Generation
@@ -6005,7 +6005,7 @@
           /integrations/google/drive/documents/{documentId}/export:
             post:
               operationId: AddGoogleDocumentExport
-              description: Exports a Google Document; ONLY available with FormKiQ Enterprise
+              description: Exports a Google Document; available as an Add-On Module
               summary: Add Google Document Export
               tags:
               - Google Integration
