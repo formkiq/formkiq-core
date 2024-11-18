@@ -25,7 +25,6 @@ package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_PAYMENT;
 import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENTS;
 import static com.formkiq.stacks.dynamodb.ConfigService.MAX_WEBHOOKS;
 import static com.formkiq.testutils.aws.TestServices.FORMKIQ_APP_ENVIRONMENT;
@@ -34,13 +33,12 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import java.util.Arrays;
+
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,7 +48,6 @@ import com.formkiq.aws.ssm.SsmServiceExtension;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.GetSitesResponse;
 import com.formkiq.client.model.GetVersionResponse;
-import com.formkiq.client.model.SetOpenSearchIndexRequest;
 import com.formkiq.client.model.Site;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.ConfigService;
@@ -78,50 +75,6 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
 
     config = awsServices.getExtension(ConfigService.class);
     ssm = awsServices.getExtension(SsmService.class);
-  }
-
-  /**
-   * DELETE /sites/{siteId}/opensearch/index.
-   */
-  @Test
-  public void testDeleteOpensearchIndex() {
-    // given
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-
-      setBearerToken(new String[] {siteId});
-
-      try {
-        // when
-        this.systemApi.deleteOpensearchIndex(siteId);
-        fail();
-
-        // then
-      } catch (ApiException e) {
-        assertEquals(SC_PAYMENT.getStatusCode(), e.getCode());
-      }
-    }
-  }
-
-  /**
-   * GET /sites/{siteId}/opensearch/index.
-   */
-  @Test
-  public void testGetOpensearchIndex() {
-    // given
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-
-      setBearerToken(new String[] {siteId});
-
-      try {
-        // when
-        this.systemApi.getOpensearchIndex(siteId);
-        fail();
-
-        // then
-      } catch (ApiException e) {
-        assertEquals(SC_PAYMENT.getStatusCode(), e.getCode());
-      }
-    }
   }
 
   /**
@@ -303,28 +256,5 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     assertNotNull(response.getVersion());
     assertEquals("typesense,site_permissions_automatic",
         String.join(",", notNull(response.getModules())));
-  }
-
-  /**
-   * PUT /sites/{siteId}/opensearch/index.
-   */
-  @Test
-  public void testPutOpensearchIndex() {
-    // given
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-
-      setBearerToken(new String[] {siteId});
-      SetOpenSearchIndexRequest req = new SetOpenSearchIndexRequest();
-
-      try {
-        // when
-        this.systemApi.setOpensearchIndex(siteId, req);
-        fail();
-
-        // then
-      } catch (ApiException e) {
-        assertEquals(SC_PAYMENT.getStatusCode(), e.getCode());
-      }
-    }
   }
 }
