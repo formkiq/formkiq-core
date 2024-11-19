@@ -31,6 +31,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import com.formkiq.client.api.CustomIndexApi;
 import com.formkiq.client.api.MappingsApi;
 import com.formkiq.client.api.ReindexApi;
 import com.formkiq.client.api.UserManagementApi;
@@ -132,6 +133,8 @@ public abstract class AbstractApiClientRequestTest {
   protected ReindexApi reindexApi = new ReindexApi(this.client);
   /** {@link UserManagementApi}. */
   protected UserManagementApi userManagementApi = new UserManagementApi(this.client);
+  /** {@link CustomIndexApi}. */
+  protected CustomIndexApi indexApi = new CustomIndexApi(this.client);
   /** Sqs Messages. */
   private final List<Map<String, Object>> sqsMessages = new ArrayList<>();
 

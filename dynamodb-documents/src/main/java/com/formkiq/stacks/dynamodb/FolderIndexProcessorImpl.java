@@ -298,8 +298,7 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
       String documentId = attr.get("documentId").s();
 
       if (!hasFiles(siteId, documentId)) {
-        this.db.deleteItem(fromS(pk), fromS(sk));
-        deleted = true;
+        deleted = this.db.deleteItem(fromS(pk), fromS(sk));
       } else {
         throw new IOException("folder is not empty");
       }

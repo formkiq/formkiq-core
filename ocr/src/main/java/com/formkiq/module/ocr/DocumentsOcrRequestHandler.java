@@ -121,7 +121,7 @@ public class DocumentsOcrRequestHandler
 
     final boolean contentUrl = isContentUrl(event);
     final boolean textOnly = isTextOnly(event);
-    final boolean keyValue = isKeyValue(event);
+    final boolean keyValue = !textOnly && isKeyValue(event);
 
     DocumentOcrService ocrService = awsservice.getExtension(DocumentOcrService.class);
 

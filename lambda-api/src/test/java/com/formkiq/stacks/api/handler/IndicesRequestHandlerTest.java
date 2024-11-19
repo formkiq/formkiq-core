@@ -21,12 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api;
+package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
 import java.net.URISyntaxException;
 import java.util.Arrays;
@@ -35,10 +37,14 @@ import java.util.List;
 
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
+import com.formkiq.client.model.AddDocumentRequest;
+import com.formkiq.client.model.DocumentSearch;
+import com.formkiq.client.model.DocumentSearchMeta;
+import com.formkiq.client.model.DocumentSearchRequest;
+import com.formkiq.client.model.SearchResultDocument;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
@@ -46,12 +52,8 @@ import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
-import com.formkiq.client.api.CustomIndexApi;
-import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
-import com.formkiq.client.invoker.Configuration;
 import com.formkiq.client.model.DeleteIndicesResponse;
-import com.formkiq.stacks.api.handler.FormKiQResponseCallback;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
 import com.formkiq.stacks.dynamodb.DocumentSearchServiceImpl;
@@ -60,25 +62,13 @@ import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
-import com.formkiq.testutils.aws.FormKiqApiExtension;
-import com.formkiq.testutils.aws.JwtTokenEncoder;
 import com.formkiq.testutils.aws.LocalStackExtension;
 
 /** Unit Tests for request /indices/{type}/{key}. */
 @ExtendWith(DynamoDbExtension.class)
 @ExtendWith(LocalStackExtension.class)
-public class IndicesRequestHandlerTest {
+public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
 
-  /** {@link FormKiQResponseCallback}. */
-  private static final FormKiQResponseCallback CALLBACK = new FormKiQResponseCallback();
-  /** FormKiQ Server. */
-  @RegisterExtension
-  static FormKiqApiExtension server = new FormKiqApiExtension(null, null, null, CALLBACK);
-  /** {@link ApiClient}. */
-  private final ApiClient client =
-      Configuration.getDefaultApiClient().setReadTimeout(0).setBasePath(server.getBasePath());
-  /** {@link CustomIndexApi}. */
-  private final CustomIndexApi indexApi = new CustomIndexApi(this.client);
   /** {@link DocumentService}. */
   private static DocumentService documentService;
   /** {@link DocumentSearchService}. */
@@ -95,17 +85,6 @@ public class IndicesRequestHandlerTest {
     documentService =
         new DocumentServiceImpl(db, DOCUMENTS_TABLE, new DocumentVersionServiceNoVersioning());
     dss = new DocumentSearchServiceImpl(db, documentService, DOCUMENTS_TABLE);
-  }
-
-  /**
-   * Set BearerToken.
-   * 
-   * @param siteId {@link String}
-   */
-  private void setBearerToken(final String siteId) {
-    String jwt = JwtTokenEncoder
-        .encodeCognito(new String[] {siteId != null ? siteId : DEFAULT_SITE_ID}, "joesmith");
-    this.client.addDefaultHeader("Authorization", jwt);
   }
 
   /**
@@ -300,6 +279,91 @@ public class IndicesRequestHandlerTest {
 
       results = dss.search(siteId, q, null, null, MAX_RESULTS);
       assertEquals(1, results.getResults().size());
+    }
+  }
+
+  /**
+   * DELETE /indices/{type}/{key} with folder.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleDelete07() throws Exception {
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+      String path = "test/4000007025   text .pdf/";
+
+      AddDocumentRequest req = new AddDocumentRequest().content("test").path(path);
+
+      try {
+        this.documentsApi.addDocument(req, siteId, null);
+      } catch (IllegalArgumentException e) {
+        // bug in API AddDocumentResponse doesn't support messages for created folders
+        // safe to ignore
+      }
+
+      DocumentSearchMeta meta = new DocumentSearchMeta().folder("");
+      DocumentSearchRequest sreq =
+          new DocumentSearchRequest().query(new DocumentSearch().meta(meta));
+
+      // when
+      List<SearchResultDocument> docs =
+          notNull(this.searchApi.documentSearch(sreq, siteId, null, null, null).getDocuments());
+
+      // then
+      assertEquals(1, docs.size());
+      assertNotNull(docs.get(0).getIndexKey());
+      assertEquals("test", docs.get(0).getPath());
+      assertEquals(Boolean.TRUE, docs.get(0).getFolder());
+      assertNotNull(docs.get(0).getDocumentId());
+
+      // given
+      meta.folder("test");
+
+      // when
+      docs = notNull(this.searchApi.documentSearch(sreq, siteId, null, null, null).getDocuments());
+
+      // then
+      assertEquals(1, docs.size());
+      assertEquals(Boolean.TRUE, docs.get(0).getFolder());
+      assertEquals("4000007025   text .pdf", docs.get(0).getPath());
+      assertNotNull(docs.get(0).getIndexKey());
+      System.out.println("!! INDEX KEY: " + docs.get(0).getIndexKey());
+
+      // when
+      DeleteIndicesResponse response =
+          this.indexApi.deleteIndex(docs.get(0).getIndexKey(), "folder", siteId);
+
+      // then
+      assertEquals("Folder deleted", response.getMessage());
+      docs = notNull(this.searchApi.documentSearch(sreq, siteId, null, null, null).getDocuments());
+      assertEquals(0, docs.size());
+    }
+  }
+
+  /**
+   * DELETE /indices/{type}/{key} with invalid key.
+   *
+   */
+  @Test
+  public void testHandleDelete08() {
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+      String indexKey = "7b893efa-8ab4-4745-b72a-f23c99fdf917#4000007025   text .pdf";
+
+      // when
+      try {
+        this.indexApi.deleteIndex(indexKey, "folder", siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
+        assertEquals("{\"message\":\"invalid indexKey '" + indexKey + "'\"}", e.getResponseBody());
+      }
     }
   }
 }
