@@ -40,5 +40,7 @@ public enum DocumentAttributeValueType {
   /** Publication. */
   PUBLICATION,
   /** Classification. */
-  CLASSIFICATION
+  CLASSIFICATION,
+  /** Relationships. */
+  RELATIONSHIPS
 }

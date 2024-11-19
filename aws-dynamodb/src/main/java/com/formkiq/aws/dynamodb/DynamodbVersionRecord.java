@@ -23,6 +23,7 @@
  */
 package com.formkiq.aws.dynamodb;
 
+import com.formkiq.aws.dynamodb.objects.Strings;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.HashMap;
@@ -67,5 +68,10 @@ public interface DynamodbVersionRecord<T> extends DynamodbRecord<T> {
     attrs.put(SK, AttributeValue.fromS(skVersion()));
 
     return attrs;
+  }
+
+  default String truncateSk(final String sk) {
+    final int len = 800;
+    return Strings.truncate(sk, len);
   }
 }

@@ -39,6 +39,7 @@ import java.util.function.Function;
  */
 public class UsersResponseToMap implements Function<UserType, Map<String, Object>> {
 
+
   /** {@link SimpleDateFormat}. */
   private final SimpleDateFormat df = DateUtil.getIsoDateFormatter();
 
@@ -47,9 +48,11 @@ public class UsersResponseToMap implements Function<UserType, Map<String, Object
 
     String email = getEmail(ut.attributes());
 
+    Map<String, Object> attributes = new UserAttributesToMap().apply(ut.attributes());
+
     return Map.of("username", ut.username(), "email", email, "userStatus", ut.userStatus().name(),
         "enabled", ut.enabled(), "insertedDate", toString(ut.userCreateDate()), "lastModifiedDate",
-        toString(ut.userLastModifiedDate()));
+        toString(ut.userLastModifiedDate()), "attributes", attributes);
   }
 
   /**

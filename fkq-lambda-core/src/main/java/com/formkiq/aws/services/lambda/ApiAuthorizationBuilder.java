@@ -31,7 +31,11 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
+
+import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.exceptions.ForbiddenException;
 
 /**
@@ -45,6 +49,8 @@ public class ApiAuthorizationBuilder {
   private static final String COGNITO_ADMIN_GROUP = "Admins";
   /** The suffix for the 'readonly' Cognito group. */
   public static final String COGNITO_READ_SUFFIX = "_read";
+  /** The suffix for the 'readonly' Cognito group. */
+  public static final String COGNITO_GOVERN_SUFFIX = "_govern";
 
   /** {@link List} {@link ApiAuthorizationInterceptor}. */
   private List<ApiAuthorizationInterceptor> interceptors = null;
@@ -73,6 +79,9 @@ public class ApiAuthorizationBuilder {
         if (group.endsWith(COGNITO_READ_SUFFIX)) {
           authorization.addPermission(group.replace(COGNITO_READ_SUFFIX, ""),
               List.of(ApiPermission.READ));
+        } else if (group.endsWith(COGNITO_GOVERN_SUFFIX)) {
+          authorization.addPermission(group.replace(COGNITO_GOVERN_SUFFIX, ""),
+              List.of(ApiPermission.GOVERN));
         } else if (admin) {
           authorization.addPermission(group, Arrays.asList(ApiPermission.READ, ApiPermission.WRITE,
               ApiPermission.DELETE, ApiPermission.ADMIN));
@@ -80,14 +89,33 @@ public class ApiAuthorizationBuilder {
 
           String[] list = claims.get("permissions").toString().split(",");
           List<ApiPermission> permissions = Arrays.stream(list)
-              .map(p -> ApiPermission.valueOf(p.toUpperCase())).collect(Collectors.toList());
+              .map(ApiAuthorizationBuilder::toApiPermission).collect(Collectors.toList());
           authorization.addPermission(group, permissions);
+
+        } else if (claims.containsKey("permissionsMap")) {
+
+          Map<String, List<String>> map = (Map<String, List<String>>) claims.get("permissionsMap");
+
+          if (map.containsKey(group)) {
+            List<String> strs = map.get(group);
+            List<ApiPermission> permissions = strs.stream()
+                .map(ApiAuthorizationBuilder::toApiPermission).filter(Objects::nonNull).toList();
+            authorization.addPermission(group, permissions);
+          }
 
         } else {
           authorization.addPermission(group,
               Arrays.asList(ApiPermission.READ, ApiPermission.WRITE, ApiPermission.DELETE));
         }
       }
+    }
+  }
+
+  private static ApiPermission toApiPermission(final String val) {
+    try {
+      return ApiPermission.valueOf(val.toUpperCase());
+    } catch (IllegalArgumentException e) {
+      return null;
     }
   }
 
@@ -162,6 +190,10 @@ public class ApiAuthorizationBuilder {
       claims = (Map<String, Object>) authorizer.get("apiKeyClaims");
     }
 
+    if (authorizer != null && authorizer.containsKey("sitesClaims")) {
+      claims = (Map<String, Object>) authorizer.get("sitesClaims");
+    }
+
     return claims;
   }
 
@@ -186,6 +218,8 @@ public class ApiAuthorizationBuilder {
       Collection<String> filteredGroups =
           groups.stream().filter(g -> !g.equalsIgnoreCase(COGNITO_ADMIN_GROUP))
               .map(g -> g.endsWith(COGNITO_READ_SUFFIX) ? g.replace(COGNITO_READ_SUFFIX, "") : g)
+              .map(
+                  g -> g.endsWith(COGNITO_GOVERN_SUFFIX) ? g.replace(COGNITO_GOVERN_SUFFIX, "") : g)
               .collect(Collectors.toSet());
 
       siteId = filteredGroups.size() == 1 ? filteredGroups.iterator().next() : null;
@@ -195,7 +229,8 @@ public class ApiAuthorizationBuilder {
   }
 
   private boolean isValidSiteId(final String siteId, final Collection<String> groups) {
-    return groups.contains(siteId) || groups.contains(siteId + "_read");
+    return groups.contains(siteId) || groups.contains(siteId + COGNITO_READ_SUFFIX)
+        || groups.contains(siteId + COGNITO_GOVERN_SUFFIX);
   }
 
   /**

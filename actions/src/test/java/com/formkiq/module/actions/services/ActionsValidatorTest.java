@@ -183,4 +183,24 @@ class ActionsValidatorTest {
     assertEquals("queueId", error.key());
     assertEquals("'queueId' does not exist", error.error());
   }
+
+  /**
+   * Event Bridge Missing eventBusName.
+   */
+  @Test
+  void testValidation08() {
+    // given
+    String siteId = null;
+    Action action = new Action().type(ActionType.EVENTBRIDGE).userId("joe");
+    DynamicObject obj = new DynamicObject(Map.of());
+
+    // when
+    Collection<ValidationError> errors = validator.validation(siteId, action, obj);
+
+    // then
+    assertEquals(1, errors.size());
+    ValidationError error = errors.iterator().next();
+    assertEquals("parameters.eventBusName", error.key());
+    assertEquals("'eventBusName' parameter is required", error.error());
+  }
 }

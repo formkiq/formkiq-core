@@ -26,11 +26,19 @@ package com.formkiq.stacks.api.handler;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
+
+import java.io.IOException;
+import java.net.http.HttpHeaders;
 import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
+import com.formkiq.aws.dynamodb.DbKeys;
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.model.AddAttribute;
 import com.formkiq.client.model.AddAttributeRequest;
@@ -38,13 +46,18 @@ import com.formkiq.client.model.AddDocumentAttribute;
 import com.formkiq.client.model.AddDocumentAttributeStandard;
 import com.formkiq.client.model.AttributeSchemaCompositeKey;
 import com.formkiq.client.model.AttributeSchemaOptional;
+import com.formkiq.client.model.ChecksumType;
 import com.formkiq.client.model.DocumentAction;
 import com.formkiq.client.model.DocumentAttribute;
 import com.formkiq.client.model.SchemaAttributes;
 import com.formkiq.client.model.SetSitesSchemaRequest;
 import com.formkiq.client.model.UpdateDocumentRequest;
+import com.formkiq.stacks.client.HttpService;
+import com.formkiq.stacks.client.HttpServiceJava;
 import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAction;
@@ -58,11 +71,20 @@ import com.formkiq.client.model.GetDocumentUrlResponse;
 import com.formkiq.client.model.SetDocumentRestoreResponse;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
+import software.amazon.awssdk.core.sync.RequestBody;
 
 /** Unit Tests for request /documents/{documentId}. */
 @ExtendWith(DynamoDbExtension.class)
 @ExtendWith(LocalStackExtension.class)
 public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
+
+  /** Test Timeout. */
+  private static final int TEST_TIMEOUT = 10;
+
+  @BeforeEach
+  void beforeEach() {
+    clearSqsMessages();
+  }
 
   /**
    * DELETE /documents/{documentId} request.
@@ -72,7 +94,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testDocumentDelete01() throws Exception {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
 
@@ -102,7 +124,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testDocumentDelete02() throws Exception {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
 
@@ -133,7 +155,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testDocumentDelete03() throws Exception {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
 
@@ -170,15 +192,14 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
   /**
    * DELETE /documents/{documentId} document not found.
    *
-   * @throws Exception an error has occurred
    */
   @Test
-  public void testDocumentDelete04() throws Exception {
+  public void testDocumentDelete04() {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
 
       // when
       try {
@@ -199,11 +220,11 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
         .getDocuments());
   }
 
-  @NotNull
   private List<Document> getSoftDeletedDocuments(final String siteId) throws ApiException {
     return notNull(this.documentsApi
         .getDocuments(siteId, null, Boolean.TRUE, null, null, null, null, null).getDocuments());
   }
+
 
   /**
    * PUT /documents/{documentId}/restore request.
@@ -211,9 +232,10 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
    * @throws Exception an error has occurred
    */
   @Test
+  @Timeout(TEST_TIMEOUT)
   public void testHandleSetDocumentRestore01() throws Exception {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
 
@@ -244,7 +266,17 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       documents = getDocuments(siteId);
       assertEquals(1, documents.size());
       assertEquals("test.txt", documents.get(0).getPath());
+      expectSoftDeleteSqsMessage(siteId, documentId);
     }
+  }
+
+  private void expectSoftDeleteSqsMessage(final String siteId, final String documentId)
+      throws InterruptedException {
+    Map<String, Object> message = getSqsMessages("softDelete", documentId);
+    assertEquals("softDelete", message.get("type"));
+    assertEquals(siteId != null ? siteId : DEFAULT_SITE_ID, message.get("siteId"));
+    assertEquals(documentId, message.get("documentId"));
+    assertEquals("joesmith", message.get("userId"));
   }
 
   /**
@@ -254,11 +286,11 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testHandleSetDocumentRestore02() {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
 
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
 
       // when
       try {
@@ -281,7 +313,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
    */
   @Test
   public void testHandleGetDocument01() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
 
@@ -306,7 +338,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
    */
   @Test
   public void testHandleGetDocument02() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
 
@@ -333,7 +365,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
    */
   @Test
   public void testHandleGetDocument03() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
 
@@ -360,7 +392,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
    */
   @Test
   public void testHandleAddDocument01() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
 
@@ -388,7 +420,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testHandleAddDocument03() {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       setBearerToken(siteId);
 
       AddDocumentRequest req =
@@ -417,7 +449,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
     // given
     String content0 = "test data";
     String content1 = "new data";
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -452,7 +484,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
   public void testUpdate02() throws Exception {
     // given
     String content0 = "test data";
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -490,7 +522,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
   public void testUpdate03() throws Exception {
     // given
     String content0 = "test data";
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -527,12 +559,11 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
   public void testUpdate04() throws Exception {
     // given
     String content0 = "test data";
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       setBearerToken(siteId);
       String attributeKey = "test";
-      this.attributesApi.addAttribute(
-          new AddAttributeRequest().attribute(new AddAttribute().key(attributeKey)), siteId);
+      addAttribute(siteId, attributeKey);
 
       AddDocumentRequest req = new AddDocumentRequest().content(content0);
       String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
@@ -553,6 +584,11 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
     }
   }
 
+  private void addAttribute(final String siteId, final String attributeKey) throws ApiException {
+    this.attributesApi.addAttribute(
+        new AddAttributeRequest().attribute(new AddAttribute().key(attributeKey)), siteId);
+  }
+
   /**
    * Update Document with invalid schema allowed value.
    */
@@ -560,14 +596,13 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
   public void testUpdate05() throws Exception {
     // given
     String content0 = "test data";
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
       String attributeKey = "test";
 
-      this.attributesApi.addAttribute(
-          new AddAttributeRequest().attribute(new AddAttribute().key(attributeKey)), siteId);
+      addAttribute(siteId, attributeKey);
 
       SetSitesSchemaRequest sitesSchema = new SetSitesSchemaRequest().name("test")
           .attributes(new SchemaAttributes().addOptionalItem(new AttributeSchemaOptional()
@@ -605,7 +640,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
   public void testUpdate06() throws Exception {
     // given
     String content0 = "test data";
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
       String attributeKey0 = "category";
@@ -631,10 +666,12 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       final int expected = 3;
       assertEquals(expected, attributes.size());
-      assertEquals(attributeKey0 + "#" + attributeKey1, attributes.get(0).getKey());
-      assertEquals("person#privacy", attributes.get(0).getStringValue());
-      assertEquals(attributeKey0, attributes.get(1).getKey());
-      assertEquals("person", attributes.get(1).getStringValue());
+      assertEquals(attributeKey0, attributes.get(0).getKey());
+      assertEquals("person", attributes.get(0).getStringValue());
+      assertEquals(attributeKey0 + DbKeys.COMPOSITE_KEY_DELIM + attributeKey1,
+          attributes.get(1).getKey());
+      assertEquals("person" + DbKeys.COMPOSITE_KEY_DELIM + "privacy",
+          attributes.get(1).getStringValue());
       assertEquals(attributeKey1, attributes.get(2).getKey());
       assertEquals("privacy", attributes.get(2).getStringValue());
     }
@@ -646,8 +683,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
     List<String> list = Arrays.asList("userId", "playerId", attributeKey0, attributeKey1);
 
     for (String attributeKey : list) {
-      this.attributesApi.addAttribute(
-          new AddAttributeRequest().attribute(new AddAttribute().key(attributeKey)), siteId);
+      addAttribute(siteId, attributeKey);
     }
 
     AttributeSchemaCompositeKey compositeKey0 = new AttributeSchemaCompositeKey()
@@ -677,7 +713,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
   public void testUpdate07() throws Exception {
     // given
     String content0 = "test data";
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
       String attributeKey0 = "category";
@@ -706,16 +742,225 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       final int expected = 5;
       int i = 0;
       assertEquals(expected, attributes.size());
-      assertEquals(attributeKey0 + "#" + attributeKey1, attributes.get(i).getKey());
-      assertEquals("person#privacy", attributes.get(i++).getStringValue());
       assertEquals(attributeKey0, attributes.get(i).getKey());
       assertEquals("person", attributes.get(i++).getStringValue());
+      assertEquals(attributeKey0 + DbKeys.COMPOSITE_KEY_DELIM + attributeKey1,
+          attributes.get(i).getKey());
+      assertEquals("person" + DbKeys.COMPOSITE_KEY_DELIM + "privacy",
+          attributes.get(i++).getStringValue());
       assertEquals(attributeKey1, attributes.get(i).getKey());
       assertEquals("privacy", attributes.get(i++).getStringValue());
       assertEquals("userId", attributes.get(i).getKey());
       assertEquals("123", attributes.get(i++).getStringValue());
-      assertEquals("userId#" + attributeKey0 + "#" + attributeKey1, attributes.get(i).getKey());
-      assertEquals("123#person#privacy", attributes.get(i).getStringValue());
+      assertEquals("userId" + DbKeys.COMPOSITE_KEY_DELIM + attributeKey0
+          + DbKeys.COMPOSITE_KEY_DELIM + attributeKey1, attributes.get(i).getKey());
+      assertEquals(
+          "123" + DbKeys.COMPOSITE_KEY_DELIM + "person" + DbKeys.COMPOSITE_KEY_DELIM + "privacy",
+          attributes.get(i).getStringValue());
     }
+  }
+
+  /**
+   * Update Document actions.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(TEST_TIMEOUT)
+  public void testUpdate08() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      AddDocumentRequest req = new AddDocumentRequest().deepLinkPath("https://www.google.com");
+
+      String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+
+      // when
+      UpdateDocumentRequest updateReq =
+          new UpdateDocumentRequest().deepLinkPath("https://www.google.com/2")
+              .addActionsItem(new AddAction().type(DocumentActionType.PDFEXPORT));
+
+      // when
+      this.documentsApi.updateDocument(documentId, updateReq, siteId, null);
+
+      // then
+      Map<String, Object> message = getSqsMessages("actions", documentId);
+      assertEquals(documentId, message.get("documentId"));
+      assertEquals("actions", message.get("type"));
+    }
+  }
+
+  /**
+   * Update Document deeplink and content.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(TEST_TIMEOUT)
+  public void testUpdate09() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      AddDocumentRequest req = new AddDocumentRequest().deepLinkPath("https://www.google.com");
+
+      String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+
+      // when
+      UpdateDocumentRequest updateReq =
+          new UpdateDocumentRequest().deepLinkPath("https://www.google.com/2").content("test");
+
+      // when
+      try {
+        this.documentsApi.updateDocument(documentId, updateReq, siteId, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"error\":\"both 'content', and 'deepLinkPath' cannot be set\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * Save new File with valid SHA-256 and then update content.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testUpdate10() throws ApiException {
+    // given
+    final String content0 = "dummy data";
+    final String checksum0 = "797bb0abff798d7200af7685dca7901edffc52bf26500d5bd97282658ee24152";
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      for (String checksum : Arrays.asList(null, checksum0)) {
+        setBearerToken(siteId);
+
+        AddDocumentRequest req = new AddDocumentRequest().content(content0)
+            .contentType("text/plain").checksum(checksum).checksumType(ChecksumType.SHA256);
+
+        // when
+        AddDocumentResponse response = this.documentsApi.addDocument(req, siteId, null);
+
+        // then
+        String documentId = response.getDocumentId();
+        assertNotNull(documentId);
+        assertEquals(siteId, response.getSiteId());
+
+        GetDocumentResponse doc =
+            this.documentsApi.getDocument(response.getDocumentId(), siteId, null);
+        assertEquals("text/plain", doc.getContentType());
+        assertEquals(ChecksumType.SHA256, doc.getChecksumType());
+        assertEquals(checksum0, doc.getChecksum());
+        assertNotNull(doc.getPath());
+        assertNotNull(doc.getDocumentId());
+        assertEquals(content0,
+            this.documentsApi.getDocumentContent(documentId, siteId, null, null).getContent());
+
+        // given
+        String content1 = "new content";
+        String checksum1 = "fe32608c9ef5b6cf7e3f946480253ff76f24f4ec0678f3d0f07f9844cbff9601";
+        UpdateDocumentRequest updateReq = new UpdateDocumentRequest().content(content1)
+            .contentType("text/plain").checksum(checksum1).checksumType(ChecksumType.SHA256);
+
+        // when
+        this.documentsApi.updateDocument(documentId, updateReq, siteId, null);
+
+        // then
+        doc = this.documentsApi.getDocument(documentId, siteId, null);
+        assertEquals("text/plain", doc.getContentType());
+        assertEquals(ChecksumType.SHA256, doc.getChecksumType());
+        assertEquals(checksum1, doc.getChecksum());
+        assertEquals(content1,
+            this.documentsApi.getDocumentContent(documentId, siteId, null, null).getContent());
+      }
+    }
+  }
+
+  /**
+   * Save new File with valid SHA-256 and then update content using presigned url.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testUpdate11() throws ApiException, IOException, InterruptedException {
+    // given
+    final String content0 = "dummy data";
+    final String checksum0 = "797bb0abff798d7200af7685dca7901edffc52bf26500d5bd97282658ee24152";
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      for (String checksum : Arrays.asList(null, checksum0)) {
+        setBearerToken(siteId);
+
+        AddDocumentRequest req = new AddDocumentRequest().content(content0)
+            .contentType("text/plain").checksum(checksum).checksumType(ChecksumType.SHA256);
+
+        // when
+        AddDocumentResponse response = this.documentsApi.addDocument(req, siteId, null);
+
+        // then
+        String documentId = response.getDocumentId();
+        assertNotNull(documentId);
+        assertEquals(siteId, response.getSiteId());
+
+        GetDocumentResponse doc =
+            this.documentsApi.getDocument(response.getDocumentId(), siteId, null);
+        assertEquals("text/plain", doc.getContentType());
+        assertEquals(ChecksumType.SHA256, doc.getChecksumType());
+        assertEquals(checksum0, doc.getChecksum());
+        assertNotNull(doc.getPath());
+        assertNotNull(doc.getDocumentId());
+        assertEquals(content0,
+            this.documentsApi.getDocumentContent(documentId, siteId, null, null).getContent());
+
+        // given
+        String checksum1 = "fe32608c9ef5b6cf7e3f946480253ff76f24f4ec0678f3d0f07f9844cbff9601";
+        UpdateDocumentRequest updateReq =
+            new UpdateDocumentRequest().checksum(checksum1).checksumType(ChecksumType.SHA256);
+
+        // when
+        response = this.documentsApi.updateDocument(documentId, updateReq, siteId, null);
+
+        // then
+        assertNotNull(response);
+        assertNotNull(response.getHeaders());
+        assertEquals(2, response.getHeaders().size());
+
+        // given
+        String content1 = "new content";
+
+        // when
+        putS3Request(response.getUploadUrl(), response.getHeaders(), content1);
+
+        // then
+        doc = this.documentsApi.getDocument(documentId, siteId, null);
+        assertEquals("text/plain", doc.getContentType());
+        assertEquals(ChecksumType.SHA256, doc.getChecksumType());
+        assertEquals(checksum1, doc.getChecksum());
+        assertEquals(content1,
+            this.documentsApi.getDocumentContent(documentId, siteId, null, null).getContent());
+      }
+    }
+  }
+
+  private void putS3Request(final String presignedUrl, final Map<String, Object> headerMap,
+      final String content) throws IOException, InterruptedException {
+
+    HttpService http = new HttpServiceJava();
+    RequestBody payload = RequestBody.fromString(content);
+
+    Map<String, List<String>> headers = headerMap.entrySet().stream()
+        .collect(Collectors.toMap(Map.Entry::getKey, entry -> List.of((String) entry.getValue())));
+
+    Optional<HttpHeaders> o = Optional.of(HttpHeaders.of(headers, (t, u) -> true));
+    http.put(presignedUrl, o, payload);
   }
 }

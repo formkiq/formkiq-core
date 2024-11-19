@@ -36,7 +36,6 @@ import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
-import com.formkiq.plugins.tagschema.DocumentTagLoader;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidation;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
@@ -45,7 +44,7 @@ import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /** Services for Querying, Updating Documents. */
-public interface DocumentService extends DocumentTagLoader {
+public interface DocumentService {
 
   /** The Default maximum results returned. */
   int MAX_RESULTS = 10;
@@ -209,6 +208,16 @@ public interface DocumentService extends DocumentTagLoader {
    * @return boolean
    */
   boolean exists(String siteId, String documentId);
+
+  /**
+   * Whether Document Attribute exists.
+   *
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param attributeKey {@link String}
+   * @return {@link List} {@link DocumentAttributeRecord}
+   */
+  boolean existsDocumentAttribute(String siteId, String documentId, String attributeKey);
 
   /**
    * Find {@link DocumentItem}.
@@ -473,15 +482,13 @@ public interface DocumentService extends DocumentTagLoader {
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param attributes {@link Collection} {@link DocumentAttributeRecord}
-   * @param isUpdate boolean
    * @param validation {@link AttributeValidation}
    * @param validationAccess {@link AttributeValidationAccess}
    * @throws ValidationException ValidationException
    */
   void saveDocumentAttributes(String siteId, String documentId,
-      Collection<DocumentAttributeRecord> attributes, boolean isUpdate,
-      AttributeValidation validation, AttributeValidationAccess validationAccess)
-      throws ValidationException;
+      Collection<DocumentAttributeRecord> attributes, AttributeValidation validation,
+      AttributeValidationAccess validationAccess) throws ValidationException;
 
   /**
    * Save Document Format.
@@ -523,10 +530,8 @@ public interface DocumentService extends DocumentTagLoader {
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param attributes {@link Map}
-   * @param updateVersioning boolean
    */
-  void updateDocument(String siteId, String documentId, Map<String, AttributeValue> attributes,
-      boolean updateVersioning);
+  void updateDocument(String siteId, String documentId, Map<String, AttributeValue> attributes);
 
   /**
    * Publish Document.
@@ -558,4 +563,12 @@ public interface DocumentService extends DocumentTagLoader {
    * @return boolean
    */
   boolean deletePublishDocument(String siteId, String documentId);
+
+  /**
+   * Reindex Document Attributes.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   */
+  void reindexDocumentAttributes(String siteId, String documentId) throws ValidationException;
 }

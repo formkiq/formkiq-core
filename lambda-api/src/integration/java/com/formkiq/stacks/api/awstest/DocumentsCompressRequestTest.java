@@ -45,6 +45,8 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+
+import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.parallel.Execution;
@@ -80,11 +82,11 @@ public class DocumentsCompressRequestTest extends AbstractAwsIntegrationTest {
   private static final int TEST_TIMEOUT = 60;
 
   /** {@link FileGenerator}. */
-  private FileGenerator fileGenerator = new FileGenerator();
+  private final FileGenerator fileGenerator = new FileGenerator();
   /** {@link HttpService}. */
-  private HttpService http = new HttpServiceJdk11();
+  private final HttpService http = new HttpServiceJdk11();
   /** {@link HttpClient}. */
-  private HttpClient httpClient = HttpClient.newHttpClient();
+  private final HttpClient httpClient = HttpClient.newHttpClient();
 
   private HttpResponse<InputStream> fetchDownloadUrl(final String downloadUrl)
       throws IOException, InterruptedException {
@@ -110,13 +112,13 @@ public class DocumentsCompressRequestTest extends AbstractAwsIntegrationTest {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  @Timeout(value = TEST_TIMEOUT)
   public void testPostDocumentsCompresss01() throws Exception {
     // given
     final int fileCount = 10;
     final String content = "some data";
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       List<ApiClient> clients = getApiClients(siteId);
       DocumentsApi documentsApi = new DocumentsApi(clients.get(0));
@@ -168,19 +170,20 @@ public class DocumentsCompressRequestTest extends AbstractAwsIntegrationTest {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  @Timeout(value = TEST_TIMEOUT)
   public void testPostDocumentsCompresss02() throws Exception {
     // given
     File file1 = this.fileGenerator.generateZipFile(MB * MB);
     final int numberOfMb = 5;
     File file2 = this.fileGenerator.generateZipFile(numberOfMb * MB * MB);
 
-    String siteId = null;
     ApiClient apiClient = getApiClients(null).get(0);
 
     DocumentsApi documentsApi = new DocumentsApi(apiClient);
-    GetDocumentUrlResponse upload1 = documentsApi.getDocumentUpload(null, siteId, null, null, null);
-    GetDocumentUrlResponse upload2 = documentsApi.getDocumentUpload(null, siteId, null, null, null);
+    GetDocumentUrlResponse upload1 =
+        documentsApi.getDocumentUpload(null, null, null, null, null, null, null);
+    GetDocumentUrlResponse upload2 =
+        documentsApi.getDocumentUpload(null, null, null, null, null, null, null);
 
     // when
     HttpResponse<String> response1 =
@@ -196,7 +199,7 @@ public class DocumentsCompressRequestTest extends AbstractAwsIntegrationTest {
     // when
     DocumentsCompressRequest compressReq = new DocumentsCompressRequest()
         .documentIds(Arrays.asList(upload1.getDocumentId(), upload2.getDocumentId()));
-    DocumentsCompressResponse response = documentsApi.compressDocuments(compressReq, siteId);
+    DocumentsCompressResponse response = documentsApi.compressDocuments(compressReq, null);
 
     // then
     String downloadUrl = response.getDownloadUrl();

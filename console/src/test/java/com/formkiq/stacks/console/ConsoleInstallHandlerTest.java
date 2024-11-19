@@ -73,7 +73,7 @@ public class ConsoleInstallHandlerTest {
 
   /**
    * Before Class.
-   * 
+   *
    * @throws IOException IOException
    * @throws InterruptedException InterruptedException
    * @throws URISyntaxException URISyntaxException
@@ -440,7 +440,7 @@ public class ConsoleInstallHandlerTest {
 
   /**
    * Verify Config File is written.
-   * 
+   *
    * @param cognitoSingleSignOnUrl {@link String}
    */
   private void verifyConfigWritten(final String cognitoSingleSignOnUrl) {

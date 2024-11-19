@@ -33,8 +33,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.UUID;
+
 import com.amazonaws.services.lambda.runtime.Context;
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestContext;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -49,6 +50,8 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.QueryStringDecoder;
+
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 
 /**
  * Http Method 'Options' {@link HttpRequestHandler}.
@@ -169,7 +172,7 @@ public class ApiGatewayHttpRequestHandler implements HttpRequestHandler {
     apiEvent.setPathParameters(pathParams);
     apiEvent.setQueryStringParameters(queryParameters);
 
-    String group = "default";
+    String group = DEFAULT_SITE_ID;
     ApiGatewayRequestContext requestContext = new ApiGatewayRequestContext();
     requestContext.setAuthorizer(
         Map.of("claims", Map.of("cognito:username", "admin", "cognito:groups", "[" + group + "]")));
@@ -182,7 +185,7 @@ public class ApiGatewayHttpRequestHandler implements HttpRequestHandler {
 
     InputStream is = new ByteArrayInputStream(event.getBytes(StandardCharsets.UTF_8));
     ByteArrayOutputStream os = new ByteArrayOutputStream();
-    Context context = new LambdaContext(UUID.randomUUID().toString());
+    Context context = new LambdaContext(ID.uuid());
 
     this.handler.handleRequest(is, os, context);
 

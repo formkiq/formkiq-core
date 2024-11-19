@@ -707,6 +707,10 @@ Resources:
           Ref: AppEnvironment
         Partition:
           Ref: Partition
+        OcrQueueArn:
+          Fn::GetAtt:
+            - OcrQueue
+            - Arn
           
 Outputs:
   ApiGatewayInvokeRole:

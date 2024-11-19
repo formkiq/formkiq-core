@@ -28,6 +28,8 @@ import java.util.Map;
 import java.util.function.Function;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+
 /**
  * Convert {@link Map} {@link AttributeValue} to {@link Map}.
  *
@@ -40,16 +42,32 @@ public class AttributeValueToMap
 
     Map<String, Object> result = new HashMap<>();
 
-    for (Map.Entry<String, AttributeValue> e : map.entrySet()) {
-      String s = e.getValue().s();
-      String n = e.getValue().n();
-      String v = s == null && n != null ? n : s;
+    if (map != null) {
+      for (Map.Entry<String, AttributeValue> e : notNull(map.entrySet())) {
 
-      String key = getKey(e.getKey());
-      result.put(key, v);
+        String key = getKey(e.getKey());
+
+        Object obj = convert(e.getValue());
+        result.put(key, obj);
+      }
     }
 
     return result;
+  }
+
+  private Object convert(final AttributeValue val) {
+    Object obj;
+
+    switch (val.type()) {
+      case S -> obj = val.s();
+      case N -> obj = val.n();
+      case BOOL -> obj = val.b();
+      case L -> obj = val.l().stream().map(this::convert).toList();
+      default -> throw new IllegalArgumentException(
+          "Unsupported attribute value map conversion " + val.type());
+    }
+
+    return obj;
   }
 
   private String getKey(final String key) {

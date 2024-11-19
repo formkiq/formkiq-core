@@ -26,7 +26,7 @@ package com.formkiq.stacks.api.handler;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3PresignerService;
-import com.formkiq.aws.services.lambda.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -106,7 +106,7 @@ public class PublicationsDocumentIdRequestHandler
 
     if (awsservice.containsExtension(UserActivityPlugin.class)) {
       UserActivityPlugin plugin = awsservice.getExtension(UserActivityPlugin.class);
-      plugin.addViewActivity(siteId, documentId, s3VersionKey, authorization.getUsername());
+      plugin.addDocumentViewActivity(siteId, documentId, s3VersionKey);
     }
 
     return new ApiRequestHandlerResponse(SC_TEMPORARY_REDIRECT, response);

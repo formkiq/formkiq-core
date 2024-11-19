@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -40,6 +41,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamicObject;
@@ -84,18 +86,18 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
    */
   @Test
   public void testHandlePatchDocuments01() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       // given
       String userId = "jsmith";
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       String body = "{\"contentType\":\"application/pdf\",\"path\":\"/documents/test2.txt\"}";
 
       getDocumentService().saveDocument(siteId,
           new DocumentItemDynamoDb(documentId, new Date(), userId), new ArrayList<>());
 
-      ApiGatewayRequestEvent event =
-          patchDocumentsRequest(siteId, documentId, siteId != null ? siteId : "default", body);
+      ApiGatewayRequestEvent event = patchDocumentsRequest(siteId, documentId,
+          siteId != null ? siteId : DEFAULT_SITE_ID, body);
 
       // when
       String response = handleRequest(event);
@@ -119,12 +121,12 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
    */
   @Test
   public void testHandlePatchDocuments02() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       String body = "{\"contentType\":\"application/pdf\",\"path\":\"/documents/test2.txt\"}";
-      ApiGatewayRequestEvent event =
-          patchDocumentsRequest(siteId, documentId, siteId != null ? siteId : "default", body);
+      ApiGatewayRequestEvent event = patchDocumentsRequest(siteId, documentId,
+          siteId != null ? siteId : DEFAULT_SITE_ID, body);
 
       // when
       String response = handleRequest(event);
@@ -141,10 +143,10 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
    */
   @Test
   public void testHandlePatchDocuments03() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       // given
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       String userId = "jsmith";
       final long contentLength = 1000;
 
@@ -179,7 +181,7 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandlePatchDocuments04() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       // given
       Map<String, String> map = new HashMap<>(getMap());
@@ -208,18 +210,18 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
    */
   @Test
   public void testHandlePatchDocuments05() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       // given
       String userId = "jsmith";
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
 
       getDocumentService().saveDocument(siteId,
           new DocumentItemDynamoDb(documentId, new Date(), userId), new ArrayList<>());
 
       String body = "{\"tags\":[{\"key\":\"author\",\"value\":\"Bacon\"}]}";
-      ApiGatewayRequestEvent event =
-          patchDocumentsRequest(siteId, documentId, siteId != null ? siteId : "default", body);
+      ApiGatewayRequestEvent event = patchDocumentsRequest(siteId, documentId,
+          siteId != null ? siteId : DEFAULT_SITE_ID, body);
 
       // ApiGatewayRequestEvent event =
       // toRequestEvent("/request-patch-documents-documentid01.json");
@@ -265,11 +267,11 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
    */
   @Test
   public void testHandlePatchDocuments06() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       // given
       String userId = "jsmith";
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
 
       DocumentItemDynamoDb doc = new DocumentItemDynamoDb(documentId, new Date(), userId);
       doc.setMetadata(Arrays.asList(new DocumentMetadata("person", "something"),
@@ -278,8 +280,8 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
 
       String body = "{\"metadata\":[{\"key\":\"person\",\"value\":\"category\"},"
           + "{\"key\":\"playerId\",\"values\":[\"111\",\"222\"]}]}";
-      ApiGatewayRequestEvent event =
-          patchDocumentsRequest(siteId, documentId, siteId != null ? siteId : "default", body);
+      ApiGatewayRequestEvent event = patchDocumentsRequest(siteId, documentId,
+          siteId != null ? siteId : DEFAULT_SITE_ID, body);
 
       // when
       String response = handleRequest(event);
@@ -316,11 +318,11 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandlePatchDocuments07() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       final int count = 30;
       String userId = "jsmith";
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
 
       DocumentItemDynamoDb doc = new DocumentItemDynamoDb(documentId, new Date(), userId);
       doc.setMetadata(Arrays.asList(new DocumentMetadata("person", "something"),
@@ -335,8 +337,8 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
       data.put("metadata", metadata);
 
       String body = GsonUtil.getInstance().toJson(data);
-      ApiGatewayRequestEvent event =
-          patchDocumentsRequest(siteId, documentId, siteId != null ? siteId : "default", body);
+      ApiGatewayRequestEvent event = patchDocumentsRequest(siteId, documentId,
+          siteId != null ? siteId : DEFAULT_SITE_ID, body);
 
       // when
       String response = handleRequest(event);
@@ -357,18 +359,18 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandlePatchDocuments08() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       // given
       String userId = "jsmith";
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
 
       getDocumentService().saveDocument(siteId,
           new DocumentItemDynamoDb(documentId, new Date(), userId), new ArrayList<>());
 
       String body = "{\"tags\":[{\"key\":\"CLAMAV_SCAN_TIMESTAMP\",\"value\":\"Bacon\"}]}";
-      ApiGatewayRequestEvent event =
-          patchDocumentsRequest(siteId, documentId, siteId != null ? siteId : "default", body);
+      ApiGatewayRequestEvent event = patchDocumentsRequest(siteId, documentId,
+          siteId != null ? siteId : DEFAULT_SITE_ID, body);
 
       // when
       String response = handleRequest(event);

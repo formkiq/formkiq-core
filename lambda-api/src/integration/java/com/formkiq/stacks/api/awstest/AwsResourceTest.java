@@ -136,7 +136,7 @@ public class AwsResourceTest extends AbstractAwsIntegrationTest {
         new CognitoIdentityProviderService(userBuilder);
 
     // when
-    userCognitoService.addUser(email, USER_TEMP_PASSWORD, Boolean.TRUE);
+    userCognitoService.addUser(email, USER_TEMP_PASSWORD, null, Boolean.TRUE);
     userCognitoService.addUserToGroup(email, group);
 
     // then

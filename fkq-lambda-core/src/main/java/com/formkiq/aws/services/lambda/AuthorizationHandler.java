@@ -24,6 +24,8 @@
 package com.formkiq.aws.services.lambda;
 
 import java.util.Optional;
+
+import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 
 /**

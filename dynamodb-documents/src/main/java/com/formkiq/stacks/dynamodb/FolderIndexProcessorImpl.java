@@ -26,12 +26,13 @@ package com.formkiq.stacks.dynamodb;
 import static com.formkiq.aws.dynamodb.objects.Objects.last;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static com.formkiq.aws.dynamodb.objects.Strings.removeBackSlashes;
+import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.fromS;
+
 import java.io.IOException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Deque;
@@ -40,7 +41,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.AttributeValueToDynamicObject;
 import com.formkiq.aws.dynamodb.DbKeys;
@@ -48,19 +48,18 @@ import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-import software.amazon.awssdk.services.dynamodb.model.CancellationReason;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
 import software.amazon.awssdk.services.dynamodb.model.Put;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 import software.amazon.awssdk.services.dynamodb.model.ReturnValuesOnConditionCheckFailure;
 import software.amazon.awssdk.services.dynamodb.model.TransactWriteItem;
 import software.amazon.awssdk.services.dynamodb.model.TransactWriteItemsRequest;
-import software.amazon.awssdk.services.dynamodb.model.TransactionCanceledException;
 import software.amazon.awssdk.utils.StringUtils;
 
 /**
@@ -69,6 +68,11 @@ import software.amazon.awssdk.utils.StringUtils;
  *
  */
 public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
+
+  /** Lock Timeout in MS. */
+  private static final long LOCK_ACQUIRE_TIMEOUT_IN_MS = 10000;
+  /** Lock Expiration in MS. */
+  private static final long LOCK_EXPIRATION_IN_MS = 20000;
 
   /**
    * Is File Token.
@@ -94,7 +98,8 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
 
     if (!StringUtils.isEmpty(path) && !"/".equals(path)) {
 
-      String p = path.replaceAll(":://", DELIMINATOR).replaceAll("/+", "/");
+      String p =
+          path.replaceAll(":://", DELIMINATOR).replaceFirst("^\\.+", "").replaceAll("/+", "/");
       String ss = p.startsWith(DELIMINATOR) ? p.substring(DELIMINATOR.length()) : p;
       strs = ss.split(DELIMINATOR);
 
@@ -106,11 +111,11 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
   }
 
   /** {@link DynamoDbClient}. */
-  private DynamoDbClient dbClient;
+  private final DynamoDbClient dbClient;
   /** Documents Table Name. */
-  private String documentTableName;
+  private final String documentTableName;
   /** {@link DynamoDbService}. */
-  private DynamoDbService dynamoDb;
+  private final DynamoDbService db;
 
   /**
    * constructor.
@@ -122,7 +127,7 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
       final String documentsTable) {
     this.dbClient = connection.build();
     this.documentTableName = documentsTable;
-    this.dynamoDb = new DynamoDbServiceImpl(connection, documentsTable);
+    this.db = new DynamoDbServiceImpl(connection, documentsTable);
   }
 
   private void checkParentId(final FolderIndexRecord record, final String parentId) {
@@ -144,60 +149,76 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
   private FolderIndexRecord createFolder(final String siteId, final String parentId,
       final String folder, final Date insertedDate, final String userId) {
 
-    String uuid;
-
-    uuid = UUID.randomUUID().toString();
+    String uuid = ID.uuid();
 
     FolderIndexRecord record = new FolderIndexRecord().parentDocumentId(parentId).documentId(uuid)
         .insertedDate(insertedDate).lastModifiedDate(insertedDate).userId(userId).path(folder)
         .type("folder");
-    Map<String, AttributeValue> values = new HashMap<>(record.getAttributes(siteId));
 
-    String conditionExpression = "attribute_not_exists(" + PK + ")";
+    AttributeValue pk = fromS(record.pk(siteId));
+    AttributeValue sk = fromS(record.sk());
 
-    Put put = Put.builder().tableName(this.documentTableName)
-        .conditionExpression(conditionExpression).item(values)
-        .returnValuesOnConditionCheckFailure(ReturnValuesOnConditionCheckFailure.ALL_OLD).build();
+    Map<String, AttributeValue> attrs = this.db.get(pk, sk);
+    if (!attrs.isEmpty()) {
 
-    try {
-      this.dbClient.transactWriteItems(TransactWriteItemsRequest.builder()
-          .transactItems(TransactWriteItem.builder().put(put).build()).build());
-    } catch (TransactionCanceledException e) {
-      if (!e.cancellationReasons().isEmpty()) {
-        CancellationReason cr = e.cancellationReasons().get(0);
-        if (cr.item() != null && cr.item().containsKey("documentId")) {
-          values = cr.item();
-          record = record.getFromAttributes(siteId, values);
+      record = record.getFromAttributes(siteId, attrs);
+
+    } else {
+
+      boolean acquireLock = false;
+
+      try {
+        acquireLock =
+            this.db.acquireLock(pk, sk, LOCK_ACQUIRE_TIMEOUT_IN_MS, LOCK_EXPIRATION_IN_MS);
+
+        attrs = this.db.get(pk, sk);
+
+        if (!attrs.isEmpty()) {
+
+          record = record.getFromAttributes(siteId, attrs);
+
         } else {
-          throw e;
+
+          String conditionExpression = "attribute_not_exists(" + PK + ")";
+          Put put = Put.builder().tableName(this.documentTableName)
+              .conditionExpression(conditionExpression).item(record.getAttributes(siteId))
+              .returnValuesOnConditionCheckFailure(ReturnValuesOnConditionCheckFailure.ALL_OLD)
+              .build();
+
+          this.dbClient.transactWriteItems(TransactWriteItemsRequest.builder()
+              .transactItems(TransactWriteItem.builder().put(put).build()).build());
         }
-      } else {
-        throw e;
+
+      } finally {
+
+        if (acquireLock) {
+          this.db.releaseLock(pk, sk);
+        }
       }
     }
 
     return record;
   }
 
-  private List<Map<String, String>> createFolderPaths(final String siteId, final String[] folders,
+  private List<FolderIndexRecord> createFolderPaths(final String siteId, final String[] folders,
       final Date insertedDate, final String userId, final boolean allDirectories) {
 
     int i = 0;
-    String lastUuid = "";
+    String parentId = "";
     int len = folders.length;
-    List<Map<String, String>> list = new ArrayList<>();
+
+    List<FolderIndexRecord> list = new ArrayList<>();
 
     for (String folder : folders) {
 
       if (allDirectories || !isFileToken(folder, i, len)) {
 
-        FolderIndexRecord record = createFolder(siteId, lastUuid, folder, insertedDate, userId);
-        record.parentDocumentId(lastUuid);
+        FolderIndexRecord record = createFolder(siteId, parentId, folder, insertedDate, userId);
+        parentId = record.documentId();
 
-        String indexKey = record.createIndexKey(siteId);
-        list.add(Map.of("folder", folder, "indexKey", indexKey));
+        list.add(record);
 
-        lastUuid = record.documentId();
+        parentId = record.documentId();
       }
 
       i++;
@@ -207,12 +228,44 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
   }
 
   @Override
-  public List<Map<String, String>> createFolders(final String siteId, final String path,
+  public List<FolderIndexRecord> createFolders(final String siteId, final String path,
       final String userId) {
-    boolean allDirectories = true;
+    boolean allDirectories = path != null && path.endsWith("/");
     Date insertedDate = new Date();
     String[] folders = tokens(path);
+
     return createFolderPaths(siteId, folders, insertedDate, userId, allDirectories);
+  }
+
+  @Override
+  public FolderIndexRecord addFileToFolder(final String siteId, final String documentId,
+      final FolderIndexRecord parent, final String path) {
+
+    String filename = Strings.getFilename(path);
+
+    String parentId = parent != null ? parent.documentId() : "";
+
+    // update last modified timestamp on folder.
+    if (parent != null) {
+      parent.lastModifiedDate(new Date());
+      Map<String, AttributeValue> attributes = parent.getAttributes(siteId);
+      Map<String, AttributeValueUpdate> values = Map.of("lastModifiedDate",
+          AttributeValueUpdate.builder().value(attributes.get("lastModifiedDate")).build());
+      this.db.updateItem(parent.fromS(parent.pk(siteId)), parent.fromS(parent.sk()), values);
+    }
+
+    FolderIndexRecord r = new FolderIndexRecord().parentDocumentId(parentId).documentId(documentId)
+        .path(filename).type("file");
+
+    Map<String, AttributeValue> a = this.db.get(r.fromS(r.pk(siteId)), r.fromS(r.sk()));
+    if (!a.isEmpty() && !documentId.equals(a.get("documentId").s())) {
+      String extension = Strings.getExtension(r.path());
+      String newFilename =
+          r.path().replaceAll("\\." + extension, " (" + documentId + ")" + "." + extension);
+      r.path(newFilename);
+    }
+
+    return r;
   }
 
   @Override
@@ -239,14 +292,13 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
     String pk = getPk(siteId, parentId);
     String sk = getSk(path, false);
 
-    Map<String, AttributeValue> attr =
-        this.dynamoDb.get(AttributeValue.fromS(pk), AttributeValue.fromS(sk));
+    Map<String, AttributeValue> attr = this.db.get(fromS(pk), fromS(sk));
 
     if (attr.containsKey("documentId")) {
       String documentId = attr.get("documentId").s();
 
       if (!hasFiles(siteId, documentId)) {
-        this.dynamoDb.deleteItem(AttributeValue.fromS(pk), AttributeValue.fromS(sk));
+        this.db.deleteItem(fromS(pk), fromS(sk));
         deleted = true;
       } else {
         throw new IOException("folder is not empty");
@@ -265,12 +317,12 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
       Map<String, Map<String, AttributeValue>> map =
           generateFileKeys(siteId, path, folders, documentId);
 
-      List<Map<String, AttributeValue>> files =
-          map.entrySet().stream().filter(f -> "file".equals(f.getValue().get("type").s()))
-              .map(e -> e.getValue()).collect(Collectors.toList());
+      List<Map<String, AttributeValue>> files = map.values().stream()
+          .filter(stringAttributeValueMap -> "file".equals(stringAttributeValueMap.get("type").s()))
+          .toList();
 
       for (Map<String, AttributeValue> file : files) {
-        this.dynamoDb.deleteItem(file.get(PK), file.get(SK));
+        this.db.deleteItem(file.get(PK), file.get(SK));
       }
 
     } catch (IOException e) {
@@ -296,7 +348,7 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
 
         String sk = getSk(folder, true);
         String docId = documentId;
-        FolderIndexRecord record = null;
+        FolderIndexRecord record;
         if (docId == null) {
           record = getFolderId(siteId, pk, sk, folder);
         } else {
@@ -322,41 +374,6 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
   }
 
   @Override
-  public List<Map<String, AttributeValue>> generateIndex(final String siteId,
-      final DocumentItem item) {
-
-    Date now = new Date();
-    List<FolderIndexRecordExtended> records =
-        get(siteId, item.getPath(), "file", item.getUserId(), now);
-
-    if (!records.isEmpty()) {
-      FolderIndexRecordExtended extended = last(records);
-      FolderIndexRecord record = extended.record();
-
-      if (!extended.isChanged() && !item.getDocumentId().equals(record.documentId())) {
-        String extension = Strings.getExtension(record.path());
-        String newFilename = record.path().replaceAll("\\." + extension,
-            " (" + item.getDocumentId() + ")" + "." + extension);
-        record.path(newFilename);
-
-        if (records.size() > 1) {
-          String path = records.subList(0, records.size() - 1).stream().map(s -> s.record().path())
-              .collect(Collectors.joining("/"));
-          newFilename = path + "/" + newFilename;
-        }
-
-        item.setPath(newFilename);
-        extended.changed(true);
-      }
-
-      record.documentId(item.getDocumentId());
-    }
-
-    return records.stream().filter(r -> r.isChanged()).map(r -> r.record().getAttributes(siteId))
-        .collect(Collectors.toList());
-  }
-
-  @Override
   public List<FolderIndexRecordExtended> get(final String siteId, final String path,
       final String pathType, final String userId, final Date nowTimestamp) {
 
@@ -370,13 +387,12 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
 
     for (String token : tokens) {
 
-      boolean isRecordChanged = false;
+      boolean isRecordChanged;
       String type = "file".equals(pathType) && (i == len - 1) ? "file" : "folder";
       FolderIndexRecord record =
           new FolderIndexRecord().parentDocumentId(parentId).documentId("").path(token).type(type);
 
-      Map<String, AttributeValue> attrs = this.dynamoDb.get(AttributeValue.fromS(record.pk(siteId)),
-          AttributeValue.fromS(record.sk()));
+      Map<String, AttributeValue> attrs = this.db.get(fromS(record.pk(siteId)), fromS(record.sk()));
 
       if (!attrs.isEmpty()) {
 
@@ -385,7 +401,7 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
 
       } else {
 
-        record.documentId(UUID.randomUUID().toString());
+        record.documentId(ID.uuid());
 
         if (!"file".equals(type)) {
           record.insertedDate(nowTimestamp);
@@ -424,25 +440,21 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
   @Override
   public FolderIndexRecord getFolderByDocumentId(final String siteId, final String documentId) {
 
-    Map<String, FolderIndexRecord> map = getFolderByDocumentIds(siteId, Arrays.asList(documentId));
-    return map.containsKey(documentId) ? map.get(documentId) : null;
+    Map<String, FolderIndexRecord> map = getFolderByDocumentIds(siteId, List.of(documentId));
+    return map.getOrDefault(documentId, null);
   }
 
   @Override
   public Map<String, FolderIndexRecord> getFolderByDocumentIds(final String siteId,
       final List<String> documentIds) {
 
-    List<Map<String, AttributeValue>> responses = documentIds.stream()
-        .map(documentId -> queryForFolderByDocumentId(siteId, documentId))
-        .filter(r -> !r.items().isEmpty()).map(r -> r.items().get(0)).collect(Collectors.toList());
+    List<Map<String, AttributeValue>> responses =
+        documentIds.stream().map(documentId -> queryForFolderByDocumentId(siteId, documentId))
+            .filter(r -> !r.items().isEmpty()).map(r -> r.items().get(0)).toList();
 
-    Map<String, FolderIndexRecord> recordMap =
-        responses.stream().map(map -> this.dynamoDb.get(map.get(PK), map.get(SK)))
-            .map(attr -> new FolderIndexRecord().getFromAttributes(siteId, attr))
-            .collect(Collectors.toMap(r -> r.documentId(), r -> r));
-
-    return recordMap;
-
+    return responses.stream().map(map -> this.db.get(map.get(PK), map.get(SK)))
+        .map(attr -> new FolderIndexRecord().getFromAttributes(siteId, attr))
+        .collect(Collectors.toMap(FolderIndexRecord::documentId, r -> r));
   }
 
   /**
@@ -458,16 +470,13 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
   private FolderIndexRecord getFolderId(final String siteId, final String pk, final String sk,
       final String folder) throws IOException {
 
-    Map<String, AttributeValue> map =
-        this.dynamoDb.get(AttributeValue.fromS(pk), AttributeValue.fromS(sk));
+    Map<String, AttributeValue> map = this.db.get(fromS(pk), fromS(sk));
 
     if (!map.containsKey("documentId")) {
       throw new IOException(String.format("index for '%s' does not exist", folder));
     }
 
-    FolderIndexRecord record = new FolderIndexRecord().getFromAttributes(siteId, map);
-
-    return record;
+    return new FolderIndexRecord().getFromAttributes(siteId, map);
   }
 
   @Override
@@ -518,7 +527,7 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
 
       String key = folders[folders.length - 1];
       map = keys.get(key).entrySet().stream()
-          .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue().s()));
+          .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().s()));
     }
 
     return map;
@@ -538,8 +547,7 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
       String pk = getPk(siteId, parentId);
       String sk = getSk(path, isFile);
 
-      Map<String, AttributeValue> attr =
-          this.dynamoDb.get(AttributeValue.fromS(pk), AttributeValue.fromS(sk));
+      Map<String, AttributeValue> attr = this.db.get(fromS(pk), fromS(sk));
 
       o = new AttributeValueToDynamicObject().apply(attr);
     }
@@ -560,11 +568,10 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
     String pk = getPk(siteId, documentId);
     String expression = PK + " = :pk";
 
-    Map<String, AttributeValue> values = Map.of(":pk", AttributeValue.fromS(pk));
+    Map<String, AttributeValue> values = Map.of(":pk", fromS(pk));
 
-    QueryRequest q =
-        QueryRequest.builder().tableName(this.documentTableName).keyConditionExpression(expression)
-            .expressionAttributeValues(values).limit(Integer.valueOf(1)).build();
+    QueryRequest q = QueryRequest.builder().tableName(this.documentTableName)
+        .keyConditionExpression(expression).expressionAttributeValues(values).limit(1).build();
 
     QueryResponse response = this.dbClient.query(q);
 
@@ -617,7 +624,7 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
     if (targetRecords.isEmpty()) {
       FolderIndexRecord record =
           new FolderIndexRecord().parentDocumentId("").type("folder").documentId("").path("");
-      targetRecords = Arrays.asList(new FolderIndexRecordExtended(record, false));
+      targetRecords = List.of(new FolderIndexRecordExtended(record, false));
     }
 
     FolderIndexRecordExtended sourceRecord = last(sourceRecords);
@@ -626,16 +633,16 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
     FolderIndexRecord source = sourceRecord.record();
     FolderIndexRecord target = targetRecord.record();
 
-    this.dynamoDb.deleteItem(AttributeValue.fromS(source.pk(siteId)),
-        AttributeValue.fromS(source.sk()));
+    this.db.deleteItem(fromS(source.pk(siteId)), fromS(source.sk()));
 
     source.parentDocumentId(target.documentId());
 
     // save target folder if needed and source
-    List<Map<String, AttributeValue>> toBeSaved = targetRecords.stream().filter(r -> r.isChanged())
-        .map(r -> r.record().getAttributes(siteId)).collect(Collectors.toList());
+    List<Map<String, AttributeValue>> toBeSaved =
+        targetRecords.stream().filter(FolderIndexRecordExtended::isChanged)
+            .map(r -> r.record().getAttributes(siteId)).collect(Collectors.toList());
     toBeSaved.add(source.getAttributes(siteId));
-    this.dynamoDb.putItems(toBeSaved);
+    this.db.putItems(toBeSaved);
 
     // update path on document
     String newPath =
@@ -643,17 +650,15 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
             .collect(Collectors.joining("")) + source.path();
 
     Map<String, AttributeValue> keys = keysDocument(siteId, source.documentId());
-    this.dynamoDb.updateValues(keys.get(PK), keys.get(SK),
-        Map.of("path", AttributeValue.fromS(newPath)));
+    this.db.updateValues(keys.get(PK), keys.get(SK), Map.of("path", fromS(newPath)));
 
     // update parent folder lastModifiedDate
     if (!isEmpty(target.documentId())) {
       SimpleDateFormat df = DateUtil.getIsoDateFormatter();
 
       String lastModifiedDate = df.format(new Date());
-      this.dynamoDb.updateValues(AttributeValue.fromS(target.pk(siteId)),
-          AttributeValue.fromS(target.sk()),
-          Map.of("lastModifiedDate", AttributeValue.fromS(lastModifiedDate)));
+      this.db.updateValues(fromS(target.pk(siteId)), fromS(target.sk()),
+          Map.of("lastModifiedDate", fromS(lastModifiedDate)));
     }
   }
 
@@ -684,21 +689,17 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
     FolderIndexRecord source = last(sourceRecords).record();
     FolderIndexRecord target = last(targetRecords).record();
 
-    this.dynamoDb.deleteItem(AttributeValue.fromS(source.pk(siteId)),
-        AttributeValue.fromS(source.sk()));
-
-    // String site = siteId != null ? siteId : DEFAULT_SITE_ID;
-    // final FolderEvent event = new FolderEvent().siteId(site).documentId(source.documentId())
-    // .sourcePath(source.path()).destinationPath(destinationPath).type(FolderEventType.MOVE);
+    this.db.deleteItem(fromS(source.pk(siteId)), fromS(source.sk()));
 
     source.parentDocumentId(target.documentId());
     source.path(newPath);
 
     // save target folder if needed and source
-    List<Map<String, AttributeValue>> toBeSaved = targetRecords.stream().filter(r -> r.isChanged())
-        .map(r -> r.record().getAttributes(siteId)).collect(Collectors.toList());
+    List<Map<String, AttributeValue>> toBeSaved =
+        targetRecords.stream().filter(FolderIndexRecordExtended::isChanged)
+            .map(r -> r.record().getAttributes(siteId)).collect(Collectors.toList());
     toBeSaved.add(source.getAttributes(siteId));
-    this.dynamoDb.putItems(toBeSaved);
+    this.db.putItems(toBeSaved);
 
     // this.eventService.publish(event);
   }
@@ -707,8 +708,8 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
   public void moveIndex(final String siteId, final String sourcePath, final String targetPath,
       final String userId) throws IOException {
 
-    String sourceType = sourcePath.endsWith("/") || "".equals(sourcePath) ? "folder" : "file";
-    String targetType = targetPath.endsWith("/") || "".equals(targetPath) ? "folder" : "file";
+    String sourceType = sourcePath.endsWith("/") || sourcePath.isEmpty() ? "folder" : "file";
+    String targetType = targetPath.endsWith("/") || targetPath.isEmpty() ? "folder" : "file";
 
     if ("file".equals(sourceType) && "folder".equals(targetType)) {
 
@@ -734,8 +735,7 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
   private QueryResponse queryForFolderByDocumentId(final String siteId, final String documentId) {
     FolderIndexRecord record = new FolderIndexRecord().documentId(documentId);
     String pk = record.pkGsi1(siteId);
-    QueryResponse response = this.dynamoDb.queryIndex(GSI1, AttributeValue.fromS(pk), null, 1);
-    return response;
+    return this.db.queryIndex(GSI1, fromS(pk), null, 1);
   }
 
   /**
@@ -749,7 +749,7 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
       final List<FolderIndexRecordExtended> sourceRecords) throws IOException {
 
     Optional<FolderIndexRecordExtended> o =
-        sourceRecords.stream().filter(r -> r.isChanged()).findAny();
+        sourceRecords.stream().filter(FolderIndexRecordExtended::isChanged).findAny();
     if (o.isPresent()) {
       String msg = "folder '" + path + "' does not exist";
       throw new IOException(msg);

@@ -27,7 +27,8 @@ import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Map;
-import java.util.UUID;
+
+import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -78,7 +79,7 @@ public class DocumentsRestrictionsMaxContentLengthTest {
   @Test
   public void testEnforced01() {
     // given
-    String siteId = UUID.randomUUID().toString();
+    String siteId = ID.uuid();
     Long contentLength = null;
 
     // when
@@ -97,7 +98,7 @@ public class DocumentsRestrictionsMaxContentLengthTest {
     // given
     ConfigService configService = awsservice.getExtension(ConfigService.class);
     Long contentLength = null;
-    String siteId = UUID.randomUUID().toString();
+    String siteId = ID.uuid();
 
     DynamicObject ob = configService.get(siteId);
     ob.put(ConfigService.MAX_DOCUMENT_SIZE_BYTES, "10");
@@ -119,7 +120,7 @@ public class DocumentsRestrictionsMaxContentLengthTest {
     // given
     ConfigService configService = awsservice.getExtension(ConfigService.class);
     Long contentLength = Long.valueOf("10");
-    String siteId = UUID.randomUUID().toString();
+    String siteId = ID.uuid();
 
     DynamicObject ob = configService.get(siteId);
     ob.put(ConfigService.MAX_DOCUMENT_SIZE_BYTES, "10");
@@ -141,7 +142,7 @@ public class DocumentsRestrictionsMaxContentLengthTest {
     // given
     ConfigService configService = awsservice.getExtension(ConfigService.class);
     Long contentLength = Long.valueOf("15");
-    String siteId = UUID.randomUUID().toString();
+    String siteId = ID.uuid();
 
     DynamicObject ob = configService.get(siteId);
     ob.put(ConfigService.MAX_DOCUMENT_SIZE_BYTES, "10");
@@ -162,7 +163,7 @@ public class DocumentsRestrictionsMaxContentLengthTest {
   public void testEnforced05() {
     // given
     Long contentLength = Long.valueOf(0);
-    String siteId = UUID.randomUUID().toString();
+    String siteId = ID.uuid();
     ConfigService configService = awsservice.getExtension(ConfigService.class);
 
     DynamicObject ob = configService.get(siteId);

@@ -23,18 +23,10 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
-import com.formkiq.aws.services.lambda.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -45,14 +37,22 @@ import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
-import com.formkiq.plugins.tagschema.TagSchemaInterface;
 import com.formkiq.stacks.api.ApiDocumentTagItemResponse;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentTagValidator;
 import com.formkiq.stacks.dynamodb.DocumentTagValidatorImpl;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/tags/{tagKey}". */
 public class DocumentTagRequestHandler
@@ -85,17 +85,6 @@ public class DocumentTagRequestHandler
     throwIfNull(document, new DocumentNotFoundException(documentId));
 
     List<String> tags = Arrays.asList(tagKey);
-
-    if (document.getTagSchemaId() != null) {
-
-      DocumentTagSchemaPlugin plugin = awsservice.getExtension(DocumentTagSchemaPlugin.class);
-      TagSchemaInterface tagSchema = plugin.getTagSchema(siteId, document.getTagSchemaId());
-
-      Collection<ValidationError> errors = plugin.validateRemoveTags(tagSchema, tags);
-      if (!errors.isEmpty()) {
-        throw new ValidationException(errors);
-      }
-    }
 
     documentService.removeTags(siteId, documentId, tags);
 
@@ -202,28 +191,6 @@ public class DocumentTagRequestHandler
     }
 
     List<DocumentTag> tags = new ArrayList<>(Arrays.asList(tag));
-
-    if (document.getTagSchemaId() != null) {
-      Collection<ValidationError> errors = new ArrayList<>();
-
-      DocumentTagSchemaPlugin plugin = awsservice.getExtension(DocumentTagSchemaPlugin.class);
-      TagSchemaInterface tagSchema = plugin.getTagSchema(siteId, document.getTagSchemaId());
-
-      throwIfNull(tagSchema,
-          new BadException("TagschemaId " + document.getTagSchemaId() + " not found"));
-
-      plugin.updateInUse(siteId, tagSchema);
-
-      Collection<DocumentTag> newTags = plugin.addCompositeKeys(tagSchema, siteId,
-          document.getDocumentId(), tags, userId, false, errors);
-
-      if (!errors.isEmpty()) {
-        throw new ValidationException(errors);
-      }
-
-      tags.addAll(newTags);
-    }
-
 
     validateTags(tags);
 

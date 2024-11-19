@@ -24,12 +24,14 @@
 package com.formkiq.stacks.dynamodb;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamodbVersionRecord;
+import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.graalvm.annotations.Reflectable;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
@@ -41,14 +43,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 public class DocumentVersionServiceNoVersioning implements DocumentVersionService {
 
   @Override
-  public void addDocumentVersionAttributes(final Map<String, AttributeValue> previous,
-      final Map<String, AttributeValue> current) {
-    // empty
-  }
-
-  @Override
-  public void deleteAllVersionIds(final DynamoDbClient client, final String siteId,
-      final String documentId) {
+  public void deleteAllVersionIds(final String siteId, final String documentId) {
     // empty
   }
 
@@ -58,26 +53,38 @@ public class DocumentVersionServiceNoVersioning implements DocumentVersionServic
   }
 
   @Override
-  public String getVersionId(final DynamoDbConnectionBuilder connection, final String siteId,
-      final String documentId, final String versionKey) {
+  public String getVersionId(final Map<String, AttributeValue> attrs) {
     return null;
   }
 
   @Override
-  public void initialize(final Map<String, String> map) {
+  public Map<String, AttributeValue> get(final String siteId, final String documentId,
+      final String versionKey) {
+    return Collections.emptyMap();
+  }
+
+  @Override
+  public void initialize(final Map<String, String> map,
+      final DynamoDbConnectionBuilder connection) {
     // empty
   }
 
   @Override
-  public void revertDocumentVersionAttributes(final Map<String, AttributeValue> previous,
-      final Map<String, AttributeValue> current) {
+  public List<Map<String, AttributeValue>> addRecords(final String siteId,
+      final Collection<? extends DynamodbVersionRecord<?>> records) {
     // empty
+    return null;
   }
 
   @Override
-  public List<Map<String, AttributeValue>> addRecords(final DynamoDbClient client,
-      final String siteId, final Collection<? extends DynamodbVersionRecord<?>> records) {
-    // empty
+  public DocumentItem getDocumentItem(final DocumentService documentService, final String siteId,
+      final String documentId, final String versionKey,
+      final Map<String, AttributeValue> versionAttributes) {
+    return documentService.findDocument(siteId, documentId);
+  }
+
+  @Override
+  public DynamoDbService getDb() {
     return null;
   }
 }

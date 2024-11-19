@@ -26,7 +26,6 @@ package com.formkiq.stacks.lambda.s3;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.getSiteId;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
-import static com.formkiq.aws.dynamodb.objects.Strings.removeQuotes;
 import static com.formkiq.module.events.document.DocumentEventType.CREATE;
 import static com.formkiq.module.events.document.DocumentEventType.DELETE;
 import static com.formkiq.module.events.document.DocumentEventType.UPDATE;
@@ -35,7 +34,6 @@ import static com.formkiq.stacks.dynamodb.DocumentVersionService.S3VERSION_ATTRI
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.http.HttpResponse;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -46,18 +44,22 @@ import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
+import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
+import com.formkiq.aws.dynamodb.cache.CacheService;
+import com.formkiq.aws.dynamodb.cache.CacheServiceExtension;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
-import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.dynamodb.objects.MimeType;
+import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.s3.S3ServiceExtension;
+import com.formkiq.aws.s3.S3ServiceInterceptor;
 import com.formkiq.aws.sns.SnsAwsServiceRegistry;
 import com.formkiq.aws.ssm.SsmAwsServiceRegistry;
 import com.formkiq.aws.ssm.SsmService;
@@ -81,6 +83,7 @@ import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
+import com.formkiq.stacks.dynamodb.s3.S3ServiceInterceptorExtension;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
@@ -116,6 +119,10 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
   private static AwsServiceCache serviceCache;
   /** SNS Document Event Arn. */
   private static String snsDocumentEvent;
+  /** {@link S3ServiceInterceptor}. */
+  private static S3ServiceInterceptor s3ServiceInterceptor;
+  /** {@link CacheService}. */
+  private static CacheService cacheService;
 
   static {
 
@@ -136,13 +143,10 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
    * @param event {@link Map}
    * @return {@link String}
    */
-  @SuppressWarnings("unchecked")
   private static String getBucketName(final Map<String, Object> event) {
     Map<String, Object> s3 = (Map<String, Object>) event.get("s3");
     Map<String, Object> bucket = (Map<String, Object>) s3.get("bucket");
-
-    String bucketName = bucket.get("name").toString();
-    return bucketName;
+    return (String) bucket.get("name");
   }
 
   /**
@@ -151,13 +155,24 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
    * @param event {@link Map}
    * @return {@link String}
    */
-  @SuppressWarnings("unchecked")
   private static String getObjectKey(final Map<String, Object> event) {
     Map<String, Object> s3 = (Map<String, Object>) event.get("s3");
     Map<String, Object> object = (Map<String, Object>) s3.get("object");
 
-    String key = object.get("key").toString();
-    return key;
+    return (String) object.get("key");
+  }
+
+  /**
+   * Get Version Id.
+   *
+   * @param event {@link Map}
+   * @return {@link String}
+   */
+  private static String getVersionId(final Map<String, Object> event) {
+    Map<String, Object> s3 = (Map<String, Object>) event.get("s3");
+    Map<String, Object> object = (Map<String, Object>) s3.get("object");
+
+    return (String) object.get("versionId");
   }
 
   /**
@@ -175,9 +190,11 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     awsServiceCache.register(EventService.class, new EventServiceSnsExtension());
     awsServiceCache.register(ActionsNotificationService.class,
         new ActionsNotificationServiceExtension());
+    awsServiceCache.register(S3ServiceInterceptor.class, new S3ServiceInterceptorExtension());
+    awsServiceCache.register(CacheService.class, new CacheServiceExtension());
 
     AwsCredentials awsCredentials = awsServiceCache.getExtension(AwsCredentials.class);
-    awsServiceCache.register(HttpService.class, new ClassServiceExtension<HttpService>(
+    awsServiceCache.register(HttpService.class, new ClassServiceExtension<>(
         new HttpServiceSigv4(awsServiceCache.region(), awsCredentials)));
 
     service = awsServiceCache.getExtension(DocumentService.class);
@@ -186,6 +203,8 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     s3service = awsServiceCache.getExtension(S3Service.class);
     documentEventService = awsServiceCache.getExtension(EventService.class);
     notificationService = awsServiceCache.getExtension(ActionsNotificationService.class);
+    s3ServiceInterceptor = awsServiceCache.getExtension(S3ServiceInterceptor.class);
+    cacheService = awsServiceCache.getExtension(CacheService.class);
 
     if (isEmpty(awsServiceCache.environment("DOCUMENTS_IAM_URL"))) {
       SsmService ssm = awsServiceCache.getExtension(SsmService.class);
@@ -208,11 +227,8 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     return SdkHttpUtils.urlDecode(value);
   }
 
-  /** {@link SimpleDateFormat} in ISO Standard format. */
-  private SimpleDateFormat df = DateUtil.getIsoDateFormatter();
-
   /** {@link Gson}. */
-  private Gson gson = new GsonBuilder().create();
+  private final Gson gson = new GsonBuilder().create();
 
   /** constructor. */
   public DocumentsS3Update() {
@@ -225,6 +241,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
    * @param awsServiceCache {@link AwsServiceCache}
    */
   public DocumentsS3Update(final AwsServiceCache awsServiceCache) {
+    this();
     initialize(awsServiceCache);
     serviceCache = awsServiceCache;
   }
@@ -245,11 +262,8 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     String site = siteId != null ? siteId : SiteIdKeyGenerator.DEFAULT_SITE_ID;
     String documentId = resetDatabaseKey(siteId, doc.getDocumentId());
 
-    DocumentEvent event =
-        new DocumentEvent().siteId(site).documentId(documentId).s3bucket(s3Bucket).s3key(s3Key)
-            .type(eventType).userId(doc.getUserId()).contentType(contentType).path(doc.getPath());
-
-    return event;
+    return new DocumentEvent().siteId(site).documentId(documentId).s3bucket(s3Bucket).s3key(s3Key)
+        .type(eventType).userId(doc.getUserId()).contentType(contentType).path(doc.getPath());
   }
 
   /**
@@ -276,7 +290,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     String content = null;
 
     if (MimeType.isPlainText(contentType) && resp.getContentLength() != null
-        && resp.getContentLength().longValue() < EventServiceSns.MAX_SNS_MESSAGE_SIZE) {
+        && resp.getContentLength() < EventServiceSns.MAX_SNS_MESSAGE_SIZE) {
       content = s3service.getContentAsString(s3bucket, key, null);
     }
 
@@ -309,6 +323,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
   public Void handleRequest(final Map<String, Object> map, final Context context) {
 
     LambdaLogger logger = context.getLogger();
+    ApiAuthorization.logout();
 
     boolean debug = "true".equals(System.getenv("DEBUG"));
     if (debug) {
@@ -320,9 +335,12 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
     for (Map<String, Object> e : list) {
 
-      Object eventName = e.getOrDefault("eventName", null);
-      Object bucket = e.getOrDefault("s3bucket", null);
-      Object key = e.getOrDefault("s3key", null);
+      String eventName = (String) e.getOrDefault("eventName", null);
+      String bucket = (String) e.getOrDefault("s3bucket", null);
+      String key = (String) e.getOrDefault("s3key", null);
+      String s3VersionId = (String) e.getOrDefault("s3VersionId", null);
+
+      login(bucket, key);
 
       String s = String.format("{\"eventName\": \"%s\",\"bucket\": \"%s\",\"key\": \"%s\"}",
           eventName, bucket, key);
@@ -330,11 +348,9 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
       if (bucket != null && key != null) {
 
-        boolean create =
-            eventName != null && eventName.toString().toLowerCase().contains("objectcreated");
+        boolean create = eventName != null && eventName.toLowerCase().contains("objectcreated");
 
-        boolean remove =
-            eventName != null && eventName.toString().toLowerCase().contains("objectremove");
+        boolean remove = eventName != null && eventName.toLowerCase().contains("objectremove");
 
         if (debug) {
           logger.log(String.format("processing event %s for file %s in bucket %s", eventName,
@@ -345,14 +361,17 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
           if (remove) {
 
-            processS3Delete(logger, bucket.toString(), key.toString());
+            processS3Delete(logger, bucket, key);
 
           } else {
-            processS3File(logger, create, bucket.toString(), key.toString(), debug);
+            processS3File(logger, create, bucket, key, s3VersionId, debug);
           }
 
         } catch (IOException | InterruptedException ex) {
           throw new RuntimeException(ex);
+
+        } finally {
+          ApiAuthorization.logout();
         }
       }
     }
@@ -360,29 +379,35 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     return null;
   }
 
-  private boolean isChecksumChanged(final S3ObjectMetadata resp, final DocumentItem doc) {
-    String s3Checksum = resp.getMetadata().getOrDefault("checksum", "");
-    return doc.getChecksum() != null && !s3Checksum.contains(doc.getChecksum());
+  private void login(final String s3Bucket, final String s3Key) {
+
+    String cacheKey = "s3PresignedUrl#" + s3Bucket + "#" + s3Key;
+    String username = cacheService.read(cacheKey);
+    if (!isEmpty(username)) {
+      username = "System";
+    }
+
+    ApiAuthorization authorization = new ApiAuthorization().username(username);
+    ApiAuthorization.login(authorization);
   }
 
   /**
    * Process S3 Event.
    * 
-   * @param logger {@link LambdaLogger}
    * @param event {@link Map}
    * @return {@link Map}
-   * @throws FileNotFoundException FileNotFoundException
    */
-  private Map<String, Object> processEvent(final LambdaLogger logger,
-      final Map<String, Object> event) {
+  private Map<String, Object> processEvent(final Map<String, Object> event) {
 
     Map<String, Object> map = new HashMap<>();
     String eventName = event.get("eventName").toString();
 
     String bucket = getBucketName(event);
     String key = getObjectKey(event);
+    String versionId = getVersionId(event);
     map.put("s3bucket", bucket);
     map.put("s3key", key);
+    map.put("s3VersionId", versionId);
     map.put("eventName", eventName);
 
     return map;
@@ -394,9 +419,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
    * @param logger {@link LambdaLogger}
    * @param records {@link List} {@link Map}
    * @return {@link Map}
-   * @throws FileNotFoundException FileNotFoundException
    */
-  @SuppressWarnings("unchecked")
   private List<Map<String, Object>> processRecords(final LambdaLogger logger,
       final List<Map<String, Object>> records) {
 
@@ -412,7 +435,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
         list.addAll(processRecords(logger, map));
 
       } else if (event.containsKey("eventName")) {
-        list.add(processEvent(logger, event));
+        list.add(processEvent(event));
       } else {
         list.addAll(processRecords(logger, event));
       }
@@ -427,9 +450,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
    * @param logger {@link LambdaLogger}
    * @param map {@link Map}
    * @return {@link List} {@link Map}
-   * @throws FileNotFoundException FileNotFoundException
    */
-  @SuppressWarnings("unchecked")
   private List<Map<String, Object>> processRecords(final LambdaLogger logger,
       final Map<String, Object> map) {
 
@@ -466,8 +487,8 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
     if (!s3service.getObjectMetadata(bucket, key, null).isObjectExists()) {
 
-      String siteId = getSiteId(key.toString());
-      String documentId = resetDatabaseKey(siteId, key.toString());
+      String siteId = getSiteId(key);
+      String documentId = resetDatabaseKey(siteId, key);
 
       String msg = String.format("Removing %s from bucket %s.", key, bucket);
       logger.log(msg);
@@ -519,11 +540,13 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
    * @param create boolean
    * @param s3bucket {@link String}
    * @param s3key {@link String}
+   * @param s3VersionId {@link String}
    * @param debug boolean
    * @throws FileNotFoundException FileNotFoundException
    */
   private void processS3File(final LambdaLogger logger, final boolean create, final String s3bucket,
-      final String s3key, final boolean debug) throws FileNotFoundException {
+      final String s3key, final String s3VersionId, final boolean debug)
+      throws FileNotFoundException {
 
     String key = urlDecode(s3key);
 
@@ -539,46 +562,31 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     String contentType = resp.getContentType();
     Long contentLength = resp.getContentLength();
 
-    DocumentItem item = service.findDocument(siteId, documentId);
+    DocumentItem item = findDocument(siteId, documentId);
 
     if (item != null) {
 
-      Map<String, AttributeValue> attributes = new HashMap<>();
-
-      boolean isChecksumChanged = isChecksumChanged(resp, item);
-
       if (debug) {
         logger.log("metadata: " + resp.getMetadata());
-        logger.log("item checksum: " + item.getChecksum());
-        logger.log("item content-type: " + item.getContentType());
+        logger.log("item checksum: " + resp.getChecksum());
+        logger.log("item content-type: " + resp.getContentType());
         logger.log("content-type: " + contentType);
+        logger.log("s3 version id: " + s3VersionId);
+        logger.log("s3 file version id: " + resp.getVersionId());
       }
 
-      if (isChecksumChanged) {
-        attributes.put("lastModifiedDate", AttributeValue.fromS(this.df.format(new Date())));
+      Map<String, AttributeValue> attributes = buildAttributes(resp, contentType, contentLength);
+
+      // if the event and s3 version id match, then correct event to process
+      if (s3VersionId == null || s3VersionId.equals(resp.getVersionId())) {
+        service.updateDocument(siteId, documentId, attributes);
+        s3ServiceInterceptor.putObjectEvent(s3service, s3bucket, s3key);
+
+        List<DocumentTag> tags = getObjectTags(s3bucket, key);
+        service.addTags(siteId, documentId, tags, null);
+
+        service.deleteDocumentFormats(siteId, documentId);
       }
-
-      if (contentType != null && contentType.length() > 0) {
-        attributes.put("contentType", AttributeValue.fromS(contentType));
-      }
-
-      String checksum = removeQuotes(resp.getEtag());
-      attributes.put("checksum", AttributeValue.fromS(checksum));
-
-      if (contentLength != null) {
-        attributes.put("contentLength", AttributeValue.fromN("" + contentLength));
-      }
-
-      if (resp.getVersionId() != null) {
-        attributes.put(S3VERSION_ATTRIBUTE, AttributeValue.fromS(resp.getVersionId()));
-      }
-
-      service.updateDocument(siteId, documentId, attributes, isChecksumChanged);
-
-      List<DocumentTag> tags = getObjectTags(s3bucket, key);
-      service.addTags(siteId, documentId, tags, null);
-
-      service.deleteDocumentFormats(siteId, documentId);
 
       DocumentEvent event =
           buildDocumentEvent(create ? CREATE : UPDATE, siteId, item, s3bucket, key, contentType);
@@ -587,6 +595,35 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     } else {
       logger.log("Cannot find document " + documentId + " in site " + siteId);
     }
+  }
+
+  private static Map<String, AttributeValue> buildAttributes(final S3ObjectMetadata resp,
+      final String contentType, final Long contentLength) {
+    Map<String, AttributeValue> attributes = new HashMap<>();
+
+    if (!Strings.isEmpty(contentType)) {
+      attributes.put("contentType", AttributeValue.fromS(contentType));
+    }
+
+    String checksum = resp.getChecksum();
+    attributes.put("checksum", AttributeValue.fromS(checksum));
+
+    if (resp.getChecksumType() != null) {
+      attributes.put("checksumType", AttributeValue.fromS(resp.getChecksumType()));
+    }
+
+    if (contentLength != null) {
+      attributes.put("contentLength", AttributeValue.fromN("" + contentLength));
+    }
+
+    if (resp.getVersionId() != null) {
+      attributes.put(S3VERSION_ATTRIBUTE, AttributeValue.fromS(resp.getVersionId()));
+    }
+    return attributes;
+  }
+
+  private DocumentItem findDocument(final String siteId, final String documentId) {
+    return service.findDocument(siteId, documentId);
   }
 
   /**

@@ -25,8 +25,9 @@ package com.formkiq.server;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.UUID;
+
 import com.amazonaws.services.lambda.runtime.Context;
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.lambda.runtime.graalvm.LambdaContext;
 import com.formkiq.stacks.lambda.s3.DocumentsS3Update;
 import com.formkiq.stacks.lambda.s3.StagingS3Create;
@@ -66,7 +67,7 @@ public class MinioS3HttpRequestHandler implements HttpRequestHandler {
       throws IOException {
 
     String body = getBody(request.content());
-    Context context = new LambdaContext(UUID.randomUUID().toString());
+    Context context = new LambdaContext(ID.uuid());
 
     Map<String, Object> map = this.gson.fromJson(body, Map.class);
 

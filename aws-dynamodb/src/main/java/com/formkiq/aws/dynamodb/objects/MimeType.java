@@ -30,37 +30,53 @@ package com.formkiq.aws.dynamodb.objects;
 public enum MimeType {
 
   /** image/bmp. */
-  MIME_BMP("image/bmp"),
+  MIME_BMP("image/bmp", "bmp"),
   /** application/msword. */
-  MIME_DOC("application/msword"),
+  MIME_DOC("application/msword", "doc"),
   /** application/vnd.openxmlformats-officedocument.wordprocessingml.document. */
-  MIME_DOCX("application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
+  MIME_DOCX("application/vnd.openxmlformats-officedocument.wordprocessingml.document", "docx"),
   /** image/gif. */
-  MIME_GIF("image/gif"),
+  MIME_GIF("image/gif", "gif"),
   /** text/html. */
-  MIME_HTML("text/html"),
+  MIME_HTML("text/html", "html"),
   /** image/jpeg. */
-  MIME_JPEG("image/jpeg"),
+  MIME_JPEG("image/jpeg", "jpg"),
   /** image/jpg. */
-  MIME_JPG("image/jpg"),
+  MIME_JPG("image/jpg", "jpg"),
   /** application/json. */
-  MIME_JSON("application/json"),
+  MIME_JSON("application/json", "json"),
   /** application/octet-stream. */
-  MIME_OCTET_STREAM("application/octet-stream"),
+  MIME_OCTET_STREAM("application/octet-stream", ""),
   /** application/pdf. */
-  MIME_PDF("application/pdf"),
+  MIME_PDF("application/pdf", "pdf"),
   /** text/plain. */
-  MIME_PLAIN_TEXT("text/plain"),
+  MIME_PLAIN_TEXT("text/plain", "txt"),
   /** image/png. */
-  MIME_PNG("image/png"),
+  MIME_PNG("image/png", "png"),
   /** image/tif. */
-  MIME_TIF("image/tif"),
+  MIME_TIF("image/tif", "tif"),
   /** image/tiff. */
-  MIME_TIFF("image/tiff"),
+  MIME_TIFF("image/tiff", "tif"),
+  /** application/xml. */
+  MIME_XML("application/xml", "xml"),
+  /** application/zip. */
+  MIME_ZIP("application/zip", "zip"),
+  /** application/vnd.ms-excel. */
+  MIME_XLS("application/vnd.ms-excel", "xls"),
+  /** application/vnd.ms-excel. */
+  MIME_XLSX("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "xlsx"),
+  /** application/vnd.openxmlformats-officedocument.presentationml.presentation. */
+  MIME_PPTX("application/vnd.openxmlformats-officedocument.presentationml.presentation", "pptx"),
+  /** application/javascript. */
+  MIME_JS("application/javascript", "js"),
+  /** application/x-rar-compressed. */
+  MIME_RAR("application/x-rar-compressed", "rar"),
+  /** application/gzip. */
+  MIME_GZIP("application/gzip", "gz"),
   /** Unknown Mime. */
-  MIME_UNKNOWN("UNKNOWN"),
+  MIME_UNKNOWN("UNKNOWN", ""),
   /** image/webp. */
-  MIME_WEBP("image/webp");
+  MIME_WEBP("image/webp", "webp");
 
   /**
    * Find {@link MimeType} from Content-Type.
@@ -98,14 +114,19 @@ public enum MimeType {
 
   /** Content Type. */
   private String contentType;
+  /** Extension. */
+  private String extension;
 
   /**
    * constructor.
    * 
    * @param type {@link String}
+   * @param ext {@link String}
    */
-  MimeType(final String type) {
+  MimeType(final String type, final String ext) {
+
     this.contentType = type;
+    this.extension = ext;
   }
 
   /**
@@ -123,7 +144,6 @@ public enum MimeType {
    * @return {@link String}
    */
   public String getExtension() {
-    int pos = this.contentType.lastIndexOf("/");
-    return pos > -1 ? this.contentType.substring(pos + 1).toLowerCase() : null;
+    return this.extension;
   }
 }

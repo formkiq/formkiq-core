@@ -3,12 +3,12 @@ plugins {
   id 'java-library'
   id 'checkstyle'
   id 'distribution'
-  id 'com.github.spotbugs'  version '5.0.14'
-  id 'com.diffplug.spotless' version '6.21.0'
-  id 'com.github.ben-manes.versions' version '0.47.0'
+  id 'com.github.spotbugs'  version '6.0.22'
+  id 'com.diffplug.spotless' version '6.25.0'
+  id 'com.github.ben-manes.versions' version '0.51.0'
   id 'com.formkiq.gradle.graalvm-native-plugin' version '1.6.0'
-  id 'de.undercouch.download' version '5.5.0'
-  id 'org.openapi.generator' version '7.0.0'
+  id 'de.undercouch.download' version '5.6.0'
+  id 'org.openapi.generator' version '7.8.0'
 }
 
 def moduleName = "formkiq-core"
@@ -27,12 +27,17 @@ repositories { mavenCentral() }
 
 allprojects {
 
-  version = '1.15.1'
+  version = '1.16.0'
   
-  ext.awsCognitoVersion = '1.5.4'
+  ext.awsCognitoVersion = '1.5.5'
   group = 'com.formkiq.stacks'
   
 	apply plugin: 'com.diffplug.spotless'
+    apply plugin: 'java-library'
+    apply plugin: 'checkstyle'
+    apply plugin: 'com.github.spotbugs'
+    apply plugin: 'com.github.ben-manes.versions'
+    apply plugin: 'com.formkiq.gradle.graalvm-native-plugin'
 	
 	java {
 		toolchain {
@@ -46,7 +51,15 @@ allprojects {
 	    licenseHeaderFile project.rootProject.file("LICENSE")  
 	  } 
 	}
-	
+
+    checkstyle {
+        toolVersion = '10.12.1'
+        configFile file("config/checkstyle/checkstyle.xml")
+        configProperties = [project_loc: "${projectDir}"]
+        maxWarnings = 0
+        maxErrors = 0
+    }
+
 	spotlessJavaCheck.dependsOn 'spotlessJavaApply'
 }
 
@@ -59,12 +72,6 @@ subprojects {
       url "https://oss.sonatype.org/content/repositories/snapshots/"
     }
   }
-
-  apply plugin: 'java-library'
-  apply plugin: 'checkstyle'
-  apply plugin: 'com.github.spotbugs'
-  apply plugin: 'com.github.ben-manes.versions'
-  apply plugin: 'com.formkiq.gradle.graalvm-native-plugin'
   
   compileJava.dependsOn 'spotlessCheck'
 
@@ -73,6 +80,7 @@ subprojects {
     systemProperties['testprofile'] = project.getProperty('testprofile')
     systemProperties['testappenvironment'] = project.getProperty('testappenvironment')
     systemProperties['testchatgptapikey'] = project.getProperty('testchatgptapikey')
+    systemProperties['testeventbridgename'] = project.getProperty('testeventbridgename')
   }
 
   spotbugs {
@@ -93,16 +101,7 @@ subprojects {
             enabled = true
         }
     }
-  } 
-  
-  checkstyle {
-    toolVersion '9.3'
-    configFile file("config/checkstyle/checkstyle.xml")
-    configProperties = [project_loc: "${projectDir}"]
-    maxWarnings = 0
-    maxErrors = 0
   }
-
 }
 
 description = "FormKiQ Core"

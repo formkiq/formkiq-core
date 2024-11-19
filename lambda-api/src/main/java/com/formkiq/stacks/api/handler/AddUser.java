@@ -25,6 +25,8 @@ package com.formkiq.stacks.api.handler;
 
 import com.formkiq.graalvm.annotations.Reflectable;
 
+import java.util.Map;
+
 /**
  * Add User.
  */
@@ -32,11 +34,33 @@ import com.formkiq.graalvm.annotations.Reflectable;
 public class AddUser {
   /** Username. */
   private String username;
+  /** User Attribute. */
+  private Map<String, String> attributes;
 
   /**
    * constructor.
    */
   public AddUser() {}
+
+  /**
+   * Get User Attributes.
+   * 
+   * @return Map
+   */
+  public Map<String, String> getAttributes() {
+    return this.attributes;
+  }
+
+  /**
+   * Set Attribute.
+   * 
+   * @param userAttributes {@link Map}
+   * @return AddUser
+   */
+  public AddUser setAttributes(final Map<String, String> userAttributes) {
+    this.attributes = userAttributes;
+    return this;
+  }
 
   /**
    * Get Username.

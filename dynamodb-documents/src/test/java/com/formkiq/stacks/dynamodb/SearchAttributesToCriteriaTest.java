@@ -151,8 +151,8 @@ public class SearchAttributesToCriteriaTest {
     SearchAttributeCriteria sac = apply(List.of(attribute0, attribute1));
 
     // then
-    assertEquals("category#userId", sac.getKey());
-    assertEquals("person#111", sac.getEq());
+    assertEquals("category::userId", sac.getKey());
+    assertEquals("person::111", sac.getEq());
     assertNull(sac.getRange());
     assertNull(sac.getBeginsWith());
     assertNull(sac.getEqOr());
@@ -172,10 +172,10 @@ public class SearchAttributesToCriteriaTest {
     SearchAttributeCriteria sac = apply(List.of(attribute0, attribute1));
 
     // then
-    assertEquals("category#player", sac.getKey());
+    assertEquals("category::player", sac.getKey());
     assertNull(sac.getEq());
     assertNull(sac.getRange());
-    assertEquals("o#111", sac.getBeginsWith());
+    assertEquals("o::111", sac.getBeginsWith());
     assertNull(sac.getEqOr());
   }
 
@@ -193,11 +193,11 @@ public class SearchAttributesToCriteriaTest {
     SearchAttributeCriteria sac = apply(List.of(attribute0, attribute1));
 
     // then
-    assertEquals("category#player", sac.getKey());
+    assertEquals("category::player", sac.getKey());
     assertNull(sac.getEq());
     assertEquals("string", sac.getRange().getType());
-    assertEquals("person#A", sac.getRange().getStart());
-    assertEquals("person#B", sac.getRange().getEnd());
+    assertEquals("person::A", sac.getRange().getStart());
+    assertEquals("person::B", sac.getRange().getEnd());
     assertNull(sac.getBeginsWith());
     assertNull(sac.getEqOr());
   }
@@ -216,11 +216,11 @@ public class SearchAttributesToCriteriaTest {
     SearchAttributeCriteria sac = apply(List.of(attribute0, attribute1));
 
     // then
-    assertEquals("category#player", sac.getKey());
+    assertEquals("category::player", sac.getKey());
     assertNull(sac.getEq());
     assertEquals("number", sac.getRange().getType());
-    assertEquals("person#000000020100101.0000", sac.getRange().getStart());
-    assertEquals("person#000000020100131.0000", sac.getRange().getEnd());
+    assertEquals("person::000000020100101.0000", sac.getRange().getStart());
+    assertEquals("person::000000020100131.0000", sac.getRange().getEnd());
     assertNull(sac.getBeginsWith());
     assertNull(sac.getEqOr());
   }
@@ -240,14 +240,14 @@ public class SearchAttributesToCriteriaTest {
     SearchAttributeCriteria sac = apply(List.of(attribute0, attribute1));
 
     // then
-    assertEquals("category#player", sac.getKey());
+    assertEquals("category::player", sac.getKey());
     assertNull(sac.getEq());
     assertNull(sac.getRange());
     assertNull(sac.getBeginsWith());
 
     final int expected = 6;
     assertEquals(expected, sac.getEqOr().size());
-    assertEquals("A#111,A#222,B#111,B#222,C#111,C#222", String.join(",", sac.getEqOr()));
+    assertEquals("A::111,A::222,B::111,B::222,C::111,C::222", String.join(",", sac.getEqOr()));
   }
 
   /**
@@ -267,7 +267,7 @@ public class SearchAttributesToCriteriaTest {
     SearchAttributeCriteria sac = apply(List.of(attribute0, attribute1, attribute2));
 
     // then
-    assertEquals("category#player#user", sac.getKey());
+    assertEquals("category::player::user", sac.getKey());
     assertNull(sac.getEq());
     assertNull(sac.getRange());
     assertNull(sac.getBeginsWith());
@@ -275,8 +275,8 @@ public class SearchAttributesToCriteriaTest {
     final int expected = 12;
     assertEquals(expected, sac.getEqOr().size());
     assertEquals(
-        "A#111#55,A#111#66,A#222#55,A#222#66,B#111#55,B#111#66,"
-            + "B#222#55,B#222#66,C#111#55,C#111#66,C#222#55,C#222#66",
+        "A::111::55,A::111::66,A::222::55,A::222::66,B::111::55,B::111::66,"
+            + "B::222::55,B::222::66,C::111::55,C::111::66,C::222::55,C::222::66",
         String.join(",", sac.getEqOr()));
   }
 

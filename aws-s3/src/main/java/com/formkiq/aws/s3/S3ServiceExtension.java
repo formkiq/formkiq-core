@@ -46,7 +46,9 @@ public class S3ServiceExtension implements AwsServiceExtension<S3Service> {
 
     if (this.service == null) {
       S3ConnectionBuilder connection = awsServiceCache.getExtension(S3ConnectionBuilder.class);
-      this.service = new S3Service(connection);
+      S3ServiceInterceptor interceptor =
+          awsServiceCache.getExtensionOrNull(S3ServiceInterceptor.class);
+      this.service = new S3Service(connection, interceptor);
     }
 
     return this.service;

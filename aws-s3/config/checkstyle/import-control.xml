@@ -6,10 +6,11 @@
 <import-control pkg="com.formkiq.aws">
 	
 	<subpackage name="s3">
-	
+
 		<allow pkg="java.io" />
 		<allow pkg="java.net" />
 		<allow pkg="java.nio" />
+		<allow pkg="java.security" />
 		<allow pkg="java.time" />
 		<allow pkg="java.util" />
 		

@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api.awstest;
 
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.client.api.DocumentSearchApi;
 import com.formkiq.client.api.DocumentTagsApi;
 import com.formkiq.client.api.DocumentsApi;
@@ -47,7 +48,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import static com.formkiq.testutils.aws.FkqDocumentService.addDocument;
@@ -154,7 +154,7 @@ public class DocumentsSearchRequestTest extends AbstractAwsIntegrationTest {
 
       DocumentSearchRequest req = new DocumentSearchRequest()
           .query(new DocumentSearch().tag(new DocumentSearchTag().key("untagged"))
-              .documentIds(Collections.singletonList(UUID.randomUUID().toString())));
+              .documentIds(Collections.singletonList(ID.uuid())));
 
       DocumentSearchApi api = new DocumentSearchApi(client);
 
@@ -285,7 +285,7 @@ public class DocumentsSearchRequestTest extends AbstractAwsIntegrationTest {
       DocumentSearchApi api = new DocumentSearchApi(client);
       DocumentTagsApi tagApi = new DocumentTagsApi(client);
 
-      String tagKey = UUID.randomUUID().toString();
+      String tagKey = ID.uuid();
       String documentId = addDocument(client, siteId, "data.txt", content, "text/plain", null);
 
       AddDocumentTagsRequest addReq = new AddDocumentTagsRequest()

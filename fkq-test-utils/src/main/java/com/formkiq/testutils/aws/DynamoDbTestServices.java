@@ -43,6 +43,8 @@ public final class DynamoDbTestServices {
 
   /** Aws Region. */
   private static final Region AWS_REGION = Region.US_EAST_1;
+  /** Dynamodb Image Name. */
+  private static final String DYNAMODB_IMAGE_NAME = "amazon/dynamodb-local:2.5.2";
   /** {@link DynamoDbConnectionBuilder}. */
   private static DynamoDbConnectionBuilder dbConnection;
   /** {@link DynamoDbHelper}. */
@@ -72,14 +74,12 @@ public final class DynamoDbTestServices {
 
   /**
    * Get Singleton Instance of {@link DynamoDbHelper}.
-   * 
-   * @param dynamoDb {@link GenericContainer}
+   *
    * @return {@link DynamoDbConnectionBuilder}
    * @throws URISyntaxException URISyntaxException
    * @throws IOException IOException
    */
-  public static DynamoDbHelper getDynamoDbHelper(final GenericContainer<?> dynamoDb)
-      throws URISyntaxException, IOException {
+  public static DynamoDbHelper getDynamoDbHelper() throws URISyntaxException, IOException {
     if (dbHelper == null) {
       dbHelper = new DynamoDbHelper(getDynamoDbConnection());
     }
@@ -95,9 +95,9 @@ public final class DynamoDbTestServices {
   @SuppressWarnings("resource")
   public static GenericContainer<?> getDynamoDbLocal() {
     if (dynamoDbLocal == null && isPortAvailable()) {
-      final Integer exposedPort = Integer.valueOf(DEFAULT_PORT);
-      dynamoDbLocal = new GenericContainer<>("amazon/dynamodb-local:1.24.0")
-          .withExposedPorts(exposedPort).withCommand("-jar DynamoDBLocal.jar -sharedDb");
+      final Integer exposedPort = DEFAULT_PORT;
+      dynamoDbLocal = new GenericContainer<>(DYNAMODB_IMAGE_NAME).withExposedPorts(exposedPort)
+          .withCommand("-jar DynamoDBLocal.jar -sharedDb");
     }
 
     return dynamoDbLocal;

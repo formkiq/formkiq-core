@@ -26,7 +26,6 @@ package com.formkiq.stacks.dynamodb;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceExtension;
-import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 
 /**
  * 
@@ -47,15 +46,12 @@ public class DocumentSearchServiceExtension implements AwsServiceExtension<Docum
   public DocumentSearchService loadService(final AwsServiceCache awsServiceCache) {
     if (this.service == null) {
 
-      DocumentTagSchemaPlugin documentTagSchemaPlugin =
-          awsServiceCache.getExtensionOrNull(DocumentTagSchemaPlugin.class);
-
       DynamoDbConnectionBuilder connection =
           awsServiceCache.getExtension(DynamoDbConnectionBuilder.class);
       DocumentService documentService = awsServiceCache.getExtension(DocumentService.class);
 
       this.service = new DocumentSearchServiceImpl(connection, documentService,
-          awsServiceCache.environment("DOCUMENTS_TABLE"), documentTagSchemaPlugin);
+          awsServiceCache.environment("DOCUMENTS_TABLE"));
     }
 
     return this.service;

@@ -35,7 +35,13 @@ public enum AttributeKeyReserved {
   /** Classification. */
   CLASSIFICATION("Classification"),
   /** Malware Scan Result. */
-  MALWARE_SCAN_RESULT("MalwareScanResult");
+  MALWARE_SCAN_RESULT("MalwareScanResult"),
+  /** Relationships. */
+  RELATIONSHIPS("Relationships"),
+  /** Esignature Docusign Envelope id. */
+  ESIGNATURE_DOCUSIGN_ENVELOPE_ID("EsignatureDocusignEnvelopeId"),
+  /** Esignature Docusign Status. */
+  ESIGNATURE_DOCUSIGN_STATUS("EsignatureDocusignStatus");
 
   /** Key Name. */
   private final String key;

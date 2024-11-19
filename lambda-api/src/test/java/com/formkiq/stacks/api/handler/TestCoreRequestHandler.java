@@ -23,7 +23,6 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import java.util.Map;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.sns.SnsAwsServiceRegistry;
@@ -31,12 +30,13 @@ import com.formkiq.aws.sqs.SqsAwsServiceRegistry;
 import com.formkiq.aws.ssm.SsmAwsServiceRegistry;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
-import com.formkiq.plugins.tagschema.DocumentTagSchemaPluginEmpty;
 import com.formkiq.stacks.api.AbstractCoreRequestHandler;
 import com.formkiq.testutils.aws.TestServices;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+
+import java.util.Map;
 
 /**
  * Test {@link AbstractCoreRequestHandler}.
@@ -44,7 +44,7 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 public class TestCoreRequestHandler extends AbstractCoreRequestHandler {
 
   /** {@link AwsServiceCache}. */
-  private AwsServiceCache serviceCache;
+  private final AwsServiceCache serviceCache;
 
   /**
    * constructor.
@@ -62,7 +62,7 @@ public class TestCoreRequestHandler extends AbstractCoreRequestHandler {
                 new SsmAwsServiceRegistry())
             .build();
 
-    initialize(this.serviceCache, new DocumentTagSchemaPluginEmpty());
+    initialize(this.serviceCache);
   }
 
   @Override

@@ -164,12 +164,23 @@ public abstract class AbstractAwsIntegrationTest {
       iamClient.setAWS4Configuration(credentials.accessKeyId(), credentials.secretAccessKey(),
           cognito.getAwsregion().toString(), "execute-api");
 
-      ApiClient keyClient = new ApiClient().setReadTimeout(0).setBasePath(cognito.getRootKeyUrl());
       String token = getApiKey(iamClient, siteId);
-      keyClient.addDefaultHeader("Authorization", token);
+      ApiClient keyClient = getApiClientWithToken(token);
 
       return Arrays.asList(jwtClient, iamClient, keyClient);
     }
+  }
+
+  /**
+   * Get {@link ApiClient} with Token.
+   * 
+   * @param token {@link String}
+   * @return ApiClient
+   */
+  public static ApiClient getApiClientWithToken(final String token) {
+    ApiClient keyClient = new ApiClient().setReadTimeout(0).setBasePath(cognito.getRootKeyUrl());
+    keyClient.addDefaultHeader("Authorization", token);
+    return keyClient;
   }
 
   /**

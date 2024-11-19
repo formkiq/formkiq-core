@@ -23,26 +23,44 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_BAD_REQUEST;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.fail;
-import java.util.Arrays;
-import java.util.UUID;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AddDocumentTag;
 import com.formkiq.client.model.AddDocumentUploadRequest;
+import com.formkiq.client.model.ChecksumType;
+import com.formkiq.client.model.DocumentTag;
 import com.formkiq.client.model.GetDocumentResponse;
 import com.formkiq.client.model.GetDocumentTagsResponse;
 import com.formkiq.client.model.GetDocumentUrlResponse;
 import com.formkiq.client.model.UpdateConfigurationRequest;
+import com.formkiq.stacks.client.HttpService;
+import com.formkiq.stacks.client.HttpServiceJava;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import software.amazon.awssdk.core.sync.RequestBody;
 
-/** Unit Tests for request /documents/upload. */
+import java.io.IOException;
+import java.net.http.HttpHeaders;
+import java.net.http.HttpResponse;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_BAD_REQUEST;
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_FOUND;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
+
+/** Unit Tests for request /documents/upload, /documents/{documentId}/upload . */
 @ExtendWith(DynamoDbExtension.class)
 @ExtendWith(LocalStackExtension.class)
 public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
@@ -55,7 +73,7 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testGet01() throws Exception {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken("Admins");
 
@@ -63,11 +81,11 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
       this.systemApi.updateConfiguration(siteId, config);
 
       setBearerToken(siteId);
-      this.documentsApi.getDocumentUpload(null, siteId, 1, null, null);
+      this.documentsApi.getDocumentUpload(null, siteId, null, null, 1, null, null);
 
       // when
       try {
-        this.documentsApi.getDocumentUpload(null, siteId, 1, null, null);
+        this.documentsApi.getDocumentUpload(null, siteId, null, null, 1, null, null);
         fail();
       } catch (ApiException e) {
         // then
@@ -85,13 +103,13 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testGet02() throws Exception {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       setBearerToken(siteId);
 
       // when
       GetDocumentUrlResponse response =
-          this.documentsApi.getDocumentUpload(null, siteId, 1, null, null);
+          this.documentsApi.getDocumentUpload(null, siteId, null, null, 1, null, null);
 
       // then
       String documentId = response.getDocumentId();
@@ -103,6 +121,256 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * GET Request Upload Document with SHA256 missing checksum.
+   *
+   */
+  @Test
+  public void testGet03() {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      // when
+      try {
+        this.documentsApi.getDocumentUpload(null, siteId, "sha256", null, 1, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"errors\":[{\"key\":\"checksum\",\"error\":\"'checksum' is required\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * GET Request Upload Document with SHA256 and checksum != body text.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  public void testGet04() throws Exception {
+    // given
+    final String content = "dummy data123";
+    final String reqChecksum = "797bb0abff798d7200af7685dca7901edffc52bf26500d5bd97282658ee24152";
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      // when
+      GetDocumentUrlResponse response =
+          this.documentsApi.getDocumentUpload(null, siteId, "sha256", reqChecksum, 1, null, null);
+
+      // then
+      assertNotNull(response.getUrl());
+      assertEquals(2, notNull(response.getHeaders()).size());
+      assertEquals("eXuwq/95jXIAr3aF3KeQHt/8Ur8mUA1b2XKCZY7iQVI=",
+          response.getHeaders().get("x-amz-checksum-sha256"));
+      assertEquals("SHA256", response.getHeaders().get("x-amz-sdk-checksum-algorithm"));
+
+      String documentId = response.getDocumentId();
+      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
+      assertEquals(documentId, document.getDocumentId());
+
+      HttpResponse<String> put = putS3Request(response, content);
+      assertEquals(SC_BAD_REQUEST.getStatusCode(), put.statusCode());
+    }
+  }
+
+  /**
+   * POST Request Upload Document with SHA1.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  public void testGet05() throws Exception {
+    // given
+    final String content = "dummy data";
+    final String reqChecksum = "611ff54ef4d8389cf982da9516804906d99389b6";
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      // when
+      GetDocumentUrlResponse response =
+          this.documentsApi.getDocumentUpload(null, siteId, "sha1", reqChecksum, 1, null, null);
+
+      // then
+      assertNotNull(response.getUrl());
+      assertEquals(2, notNull(response.getHeaders()).size());
+      assertEquals("YR/1TvTYOJz5gtqVFoBJBtmTibY=",
+          response.getHeaders().get("x-amz-checksum-sha1"));
+      assertEquals("SHA1", response.getHeaders().get("x-amz-sdk-checksum-algorithm"));
+
+      String documentId = response.getDocumentId();
+      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
+      assertEquals(documentId, document.getDocumentId());
+
+      HttpResponse<String> put = putS3Request(response, content);
+      assertEquals(ApiResponseStatus.SC_OK.getStatusCode(), put.statusCode());
+    }
+  }
+
+  /**
+   * Get Request Upload Document Url, invalid documentId.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  public void testGetUpload01() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken("Admins");
+      setBearerToken(siteId);
+
+      String documentId = ID.uuid();
+
+      // when
+      try {
+        this.documentsApi.getDocumentIdUpload(documentId, siteId, null, null, 1, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(SC_NOT_FOUND.getStatusCode(), e.getCode());
+        assertEquals("{\"message\":\"Document " + documentId + " not found.\"}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * Get Request Upload Document Url.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  public void testGetUpload02() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      AddDocumentRequest req = new AddDocumentRequest().content("akldajds");
+      String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+
+      // when
+      GetDocumentUrlResponse response =
+          this.documentsApi.getDocumentIdUpload(documentId, siteId, null, null, 1, null, null);
+
+      // then
+      assertNotNull(response.getUrl());
+
+      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
+      assertEquals(documentId, document.getDocumentId());
+    }
+  }
+
+  /**
+   * GET Request Upload Document with SHA256 missing checksum.
+   *
+   */
+  @Test
+  public void testGetUpload03() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      AddDocumentRequest req = new AddDocumentRequest().content("akldajds");
+      String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+
+      // when
+      try {
+        this.documentsApi.getDocumentIdUpload(documentId, siteId, "sha256", null, 1, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"errors\":[{\"key\":\"checksum\",\"error\":\"'checksum' is required\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * GET Request Upload Document with SHA256 and checksum != body text.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  public void testGetUpload04() throws Exception {
+    // given
+    final String content = "dummy data123";
+    final String reqChecksum = "797bb0abff798d7200af7685dca7901edffc52bf26500d5bd97282658ee24152";
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      AddDocumentRequest req = new AddDocumentRequest().content("akldajds");
+      String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+
+      // when
+      GetDocumentUrlResponse response = this.documentsApi.getDocumentIdUpload(documentId, siteId,
+          "sha256", reqChecksum, 1, null, null);
+
+      // then
+      assertNotNull(response.getUrl());
+      assertEquals(2, notNull(response.getHeaders()).size());
+      assertEquals("eXuwq/95jXIAr3aF3KeQHt/8Ur8mUA1b2XKCZY7iQVI=",
+          response.getHeaders().get("x-amz-checksum-sha256"));
+      assertEquals("SHA256", response.getHeaders().get("x-amz-sdk-checksum-algorithm"));
+
+      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
+      assertEquals(documentId, document.getDocumentId());
+
+      HttpResponse<String> put = putS3Request(response, content);
+      assertEquals(SC_BAD_REQUEST.getStatusCode(), put.statusCode());
+    }
+  }
+
+  /**
+   * POST Request Upload Document with SHA1.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  public void testGetUpload05() throws Exception {
+    // given
+    final String content = "dummy data";
+    final String reqChecksum = "611ff54ef4d8389cf982da9516804906d99389b6";
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      AddDocumentRequest req = new AddDocumentRequest().content("akldajds");
+      String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+
+      // when
+      GetDocumentUrlResponse response = this.documentsApi.getDocumentIdUpload(documentId, siteId,
+          "sha1", reqChecksum, 1, null, null);
+
+      // then
+      assertNotNull(response.getUrl());
+      assertEquals(2, notNull(response.getHeaders()).size());
+      assertEquals("YR/1TvTYOJz5gtqVFoBJBtmTibY=",
+          response.getHeaders().get("x-amz-checksum-sha1"));
+      assertEquals("SHA1", response.getHeaders().get("x-amz-sdk-checksum-algorithm"));
+
+      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
+      assertEquals(documentId, document.getDocumentId());
+
+      HttpResponse<String> put = putS3Request(response, content);
+      assertEquals(ApiResponseStatus.SC_OK.getStatusCode(), put.statusCode());
+    }
+  }
+
+  /**
    * POST Request Upload Document Url, MAX DocumentGreater than allowed.
    * 
    * @throws Exception Exception
@@ -110,7 +378,7 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testPost01() throws Exception {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken("Admins");
 
@@ -141,7 +409,7 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testPost02() throws Exception {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
       AddDocumentUploadRequest req = new AddDocumentUploadRequest();
@@ -168,7 +436,7 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testPost03() throws Exception {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
       AddDocumentUploadRequest req = new AddDocumentUploadRequest()
@@ -186,12 +454,12 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
       GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
       assertEquals(documentId, document.getDocumentId());
 
-      GetDocumentTagsResponse tags =
-          this.tagsApi.getDocumentTags(documentId, siteId, null, null, null, null);
-      assertEquals(1, tags.getTags().size());
-      assertEquals("category", tags.getTags().get(0).getKey());
-      assertEquals("person", tags.getTags().get(0).getValue());
-      assertEquals("userdefined", tags.getTags().get(0).getType());
+      List<DocumentTag> tags = notNull(
+          this.tagsApi.getDocumentTags(documentId, siteId, null, null, null, null).getTags());
+      assertEquals(1, tags.size());
+      assertEquals("category", tags.get(0).getKey());
+      assertEquals("person", tags.get(0).getValue());
+      assertEquals("userdefined", tags.get(0).getType());
     }
   }
 
@@ -203,11 +471,11 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testPost04() throws Exception {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       AddDocumentUploadRequest req = new AddDocumentUploadRequest().documentId(documentId)
           .addTagsItem(new AddDocumentTag().key("category").value("person"));
 
@@ -228,5 +496,154 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
       assertEquals("person", tags.getTags().get(0).getValue());
       assertEquals("userdefined", tags.getTags().get(0).getType());
     }
+  }
+
+  /**
+   * POST Request Upload Document with SHA256.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  public void testPost05() throws Exception {
+    // given
+    final String content = "dummy data";
+    final String reqChecksum = "797bb0abff798d7200af7685dca7901edffc52bf26500d5bd97282658ee24152";
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+      AddDocumentUploadRequest req =
+          new AddDocumentUploadRequest().checksumType(ChecksumType.SHA256).checksum(reqChecksum);
+
+      // when
+      GetDocumentUrlResponse response =
+          this.documentsApi.addDocumentUpload(req, siteId, 1, null, null);
+
+      // then
+      assertNotNull(response.getUrl());
+      assertEquals(2, notNull(response.getHeaders()).size());
+      assertEquals("eXuwq/95jXIAr3aF3KeQHt/8Ur8mUA1b2XKCZY7iQVI=",
+          response.getHeaders().get("x-amz-checksum-sha256"));
+      assertEquals("SHA256", response.getHeaders().get("x-amz-sdk-checksum-algorithm"));
+
+      String documentId = response.getDocumentId();
+      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
+      assertEquals(documentId, document.getDocumentId());
+
+      HttpResponse<String> put = putS3Request(response, content);
+      assertEquals(ApiResponseStatus.SC_OK.getStatusCode(), put.statusCode());
+    }
+  }
+
+  /**
+   * POST Request Upload Document with SHA256 missing checksum.
+   *
+   */
+  @Test
+  public void testPost06() {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+      AddDocumentUploadRequest req =
+          new AddDocumentUploadRequest().checksumType(ChecksumType.SHA256);
+
+      // when
+      try {
+        this.documentsApi.addDocumentUpload(req, siteId, 1, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"errors\":[{\"key\":\"checksum\",\"error\":\"'checksum' is required\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * POST Request Upload Document with SHA256 and checksum != body text.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  public void testPost07() throws Exception {
+    // given
+    final String content = "dummy data123";
+    final String reqChecksum = "797bb0abff798d7200af7685dca7901edffc52bf26500d5bd97282658ee24152";
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+      AddDocumentUploadRequest req =
+          new AddDocumentUploadRequest().checksumType(ChecksumType.SHA256).checksum(reqChecksum);
+
+      // when
+      GetDocumentUrlResponse response =
+          this.documentsApi.addDocumentUpload(req, siteId, 1, null, null);
+
+      // then
+      assertNotNull(response.getUrl());
+      assertEquals(2, notNull(response.getHeaders()).size());
+      assertEquals("eXuwq/95jXIAr3aF3KeQHt/8Ur8mUA1b2XKCZY7iQVI=",
+          response.getHeaders().get("x-amz-checksum-sha256"));
+      assertEquals("SHA256", response.getHeaders().get("x-amz-sdk-checksum-algorithm"));
+
+      String documentId = response.getDocumentId();
+      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
+      assertEquals(documentId, document.getDocumentId());
+
+      HttpResponse<String> put = putS3Request(response, content);
+      assertEquals(SC_BAD_REQUEST.getStatusCode(), put.statusCode());
+    }
+  }
+
+  /**
+   * POST Request Upload Document with SHA1.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  public void testPost08() throws Exception {
+    // given
+    final String content = "dummy data";
+    final String reqChecksum = "611ff54ef4d8389cf982da9516804906d99389b6";
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+      AddDocumentUploadRequest req =
+          new AddDocumentUploadRequest().checksumType(ChecksumType.SHA1).checksum(reqChecksum);
+
+      // when
+      GetDocumentUrlResponse response =
+          this.documentsApi.addDocumentUpload(req, siteId, 1, null, null);
+
+      // then
+      assertNotNull(response.getUrl());
+      assertEquals(2, notNull(response.getHeaders()).size());
+      assertEquals("YR/1TvTYOJz5gtqVFoBJBtmTibY=",
+          response.getHeaders().get("x-amz-checksum-sha1"));
+      assertEquals("SHA1", response.getHeaders().get("x-amz-sdk-checksum-algorithm"));
+
+      String documentId = response.getDocumentId();
+      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
+      assertEquals(documentId, document.getDocumentId());
+
+      HttpResponse<String> put = putS3Request(response, content);
+      assertEquals(ApiResponseStatus.SC_OK.getStatusCode(), put.statusCode());
+    }
+  }
+
+  private HttpResponse<String> putS3Request(final GetDocumentUrlResponse response,
+      final String content) throws IOException, InterruptedException {
+    HttpService http = new HttpServiceJava();
+    RequestBody payload = RequestBody.fromString(content);
+
+    Map<String, List<String>> headers = notNull(response.getHeaders()).entrySet().stream()
+        .collect(Collectors.toMap(Map.Entry::getKey, entry -> List.of((String) entry.getValue())));
+
+    Optional<HttpHeaders> o = Optional.of(HttpHeaders.of(headers, (t, u) -> true));
+    return http.put(response.getUrl(), o, payload);
   }
 }

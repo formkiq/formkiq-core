@@ -54,18 +54,18 @@ import software.amazon.awssdk.regions.Region;
  * SigV4 implementation of {@link HttpService}.
  *
  */
-public class HttpServiceSigv4 implements HttpService {
+public final class HttpServiceSigv4 implements HttpService {
 
   /** Headers that are not allowed to be added to {@link HttpClient}. */
   private static final Set<String> NOT_ALLOWED_HEADERS = Set.of("connection", "content-length",
       "date", "expect", "from", "host", "upgrade", "via", "warning");
 
   /** {@link HttpClient}. */
-  private HttpClient client;
+  private final HttpClient client;
   /** {@link AwsCredentials}. */
-  private AwsCredentials signingCredentials;
+  private final AwsCredentials signingCredentials;
   /** {@link Region}. */
-  private Region signingRegion;
+  private final Region signingRegion;
 
   /**
    * constructor.
@@ -207,6 +207,13 @@ public class HttpServiceSigv4 implements HttpService {
         buildRequest(url, SdkHttpMethod.GET, headers, parameters, Optional.empty());
     SdkHttpFullRequest req = sign(request);
     return execute(req);
+  }
+
+  @Override
+  public HttpResponse<InputStream> getAsInputStream(final String url,
+      final Optional<HttpHeaders> headers, final Optional<Map<String, String>> parameters)
+      throws IOException {
+    throw new UnsupportedOperationException();
   }
 
   @Override

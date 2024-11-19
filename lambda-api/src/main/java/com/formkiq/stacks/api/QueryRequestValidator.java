@@ -30,6 +30,7 @@ import java.util.Collection;
 import java.util.List;
 import com.formkiq.aws.dynamodb.model.QueryRequest;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
+import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
 import software.amazon.awssdk.utils.StringUtils;
@@ -46,8 +47,16 @@ public class QueryRequestValidator {
   }
 
   private boolean isQueryEmpty(final QueryRequest q) {
-    return isTagsEmpty(q) && isAttributesEmpty(q) && q.query().getMeta() == null
-        && StringUtils.isEmpty(q.query().getText());
+    return isMetaDataEmpty(q) && isEmpty(q.query().getText())
+        && Objects.isEmpty(q.query().getDocumentIds());
+  }
+
+  private boolean isMetaDataEmpty(final QueryRequest q) {
+    return isTagsEmpty(q) && isAttributesEmpty(q) && isQueryMetaDataEmpty(q);
+  }
+
+  private boolean isQueryMetaDataEmpty(final QueryRequest q) {
+    return q.query().getMeta() == null;
   }
 
   private boolean isAttributesEmpty(final QueryRequest q) {
@@ -61,13 +70,7 @@ public class QueryRequestValidator {
   private void validateMultiTags(final List<SearchTagCriteria> tags,
       final Collection<ValidationError> errors) {
     if (tags.size() > 1) {
-      // every tag must use "eq" except last one
-      for (int i = 0; i < tags.size() - 1; i++) {
-        if (tags.get(i).beginsWith() != null || tags.get(i).range() != null) {
-          errors.add(new ValidationErrorImpl().key("tag/eq")
-              .error("'beginsWith','range' is only supported on the last tag"));
-        }
-      }
+      errors.add(new ValidationErrorImpl().key("tags").error("multiple tags search not supported"));
     }
   }
 
@@ -104,7 +107,7 @@ public class QueryRequestValidator {
 
       boolean isTagsEmpty = isTagsEmpty(q);
       boolean isAttributesEmpty = isAttributesEmpty(q);
-      boolean isMetaEmpty = q.query().getMeta() == null;
+      boolean isMetaEmpty = isQueryMetaDataEmpty(q);
       boolean hasText = !isEmpty(q.query().getText());
 
       if (!isMetaEmpty && (!isTagsEmpty || !isAttributesEmpty)) {

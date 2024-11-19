@@ -24,6 +24,8 @@
 package com.formkiq.stacks.dynamodb;
 
 import com.formkiq.aws.dynamodb.DbKeys;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
 import com.formkiq.testutils.aws.DynamoDbExtension;
@@ -31,7 +33,6 @@ import com.formkiq.testutils.aws.DynamoDbTestServices;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.net.URISyntaxException;
@@ -39,12 +40,9 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
-import static com.formkiq.stacks.dynamodb.DocumentVersionService.VERSION_ATTRIBUTE;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_VERSION_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * 
@@ -61,150 +59,47 @@ class DocumentVersionServiceDynamoDbTest implements DbKeys {
    * Before All.
    */
   @BeforeAll
-  public static void beforeAll() {
+  public static void beforeAll() throws URISyntaxException {
     service = new DocumentVersionServiceDynamoDb();
-    service.initialize(Map.of("DOCUMENT_VERSIONS_TABLE", DOCUMENTS_VERSION_TABLE));
-  }
-
-  /**
-   * Test First Time.
-   */
-  @Test
-  void testAddDocumentVersionAttributes01() {
-    // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-
-      String documentId = UUID.randomUUID().toString();
-
-      Map<String, AttributeValue> previous = keysDocument(siteId, documentId);
-      previous.put("path", AttributeValue.fromS("previous.txt"));
-
-      Map<String, AttributeValue> current = keysDocument(siteId, documentId);
-      current.put("path", AttributeValue.fromS("current.txt"));
-
-      // when
-      service.addDocumentVersionAttributes(previous, current);
-
-      // then
-      assertTrue(previous.get(SK).s().startsWith("document#"));
-      assertTrue(previous.get(SK).s().endsWith("#v1"));
-      assertEquals("1", previous.get(VERSION_ATTRIBUTE).s());
-      assertEquals("1", previous.get(VERSION_ATTRIBUTE).s());
-
-      assertEquals("document", current.get(SK).s());
-      assertEquals("2", current.get(VERSION_ATTRIBUTE).s());
-      assertEquals("2", current.get(VERSION_ATTRIBUTE).s());
-
-      // when - revert
-      service.revertDocumentVersionAttributes(previous, current);
-
-      // then
-      assertEquals("document", previous.get(SK).s());
-      assertEquals("3", previous.get(VERSION_ATTRIBUTE).s());
-
-      assertTrue(current.get(SK).s().endsWith("#v2"));
-      assertEquals("2", current.get(VERSION_ATTRIBUTE).s());
-    }
-  }
-
-  /**
-   * Test 2nd Time.
-   */
-  @Test
-  void testAddDocumentVersionAttributes02() {
-    // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-
-      String documentId = UUID.randomUUID().toString();
-      Map<String, AttributeValue> previous = keysDocument(siteId, documentId);
-
-      Map<String, AttributeValue> current = keysDocument(siteId, documentId);
-      current.put(VERSION_ATTRIBUTE, AttributeValue.fromS("2"));
-
-      // when
-      service.addDocumentVersionAttributes(previous, current);
-
-      // then
-      assertTrue(previous.get(SK).s().startsWith("document#"));
-      assertTrue(previous.get(SK).s().endsWith("#v2"));
-      assertEquals("2", previous.get(VERSION_ATTRIBUTE).s());
-      assertEquals("2", previous.get(VERSION_ATTRIBUTE).s());
-
-      assertEquals("document", current.get(SK).s());
-      assertEquals("3", current.get(VERSION_ATTRIBUTE).s());
-      assertEquals("3", current.get(VERSION_ATTRIBUTE).s());
-    }
-  }
-
-  /**
-   * Test 100th Time.
-   */
-  @Test
-  void testAddDocumentVersionAttributes03() {
-    // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-
-      String documentId = UUID.randomUUID().toString();
-      Map<String, AttributeValue> previous = keysDocument(siteId, documentId);
-
-      Map<String, AttributeValue> current = keysDocument(siteId, documentId);
-      current.put(VERSION_ATTRIBUTE, AttributeValue.fromS("100"));
-
-      // when
-      service.addDocumentVersionAttributes(previous, current);
-
-      // then
-      assertTrue(previous.get(SK).s().startsWith("document#"));
-      assertTrue(previous.get(SK).s().endsWith("#v100"));
-      assertEquals("100", previous.get(VERSION_ATTRIBUTE).s());
-      assertEquals("100", previous.get(VERSION_ATTRIBUTE).s());
-
-      assertEquals("document", current.get(SK).s());
-      assertEquals("101", current.get(VERSION_ATTRIBUTE).s());
-      assertEquals("101", current.get(VERSION_ATTRIBUTE).s());
-    }
+    DynamoDbConnectionBuilder connection = DynamoDbTestServices.getDynamoDbConnection();
+    service.initialize(Map.of("DOCUMENT_VERSIONS_TABLE", DOCUMENTS_VERSION_TABLE), connection);
   }
 
   /**
    * Add Records Version.
-   * 
-   * @throws URISyntaxException URISyntaxException
+   *
    */
   @Test
-  void testAddRecords01() throws URISyntaxException {
+  void testAddRecords01() {
     // given
     Date date = new Date();
 
-    try (DynamoDbClient client = DynamoDbTestServices.getDynamoDbConnection().build()) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      String documentId = ID.uuid();
+      DocumentAttributeRecord r = new DocumentAttributeRecord().setDocumentId(documentId)
+          .setKey("category").setStringValue("document").setInsertedDate(date)
+          .setValueType(DocumentAttributeValueType.STRING).setUserId("joe");
+      Map<String, AttributeValue> orig = r.getAttributes(siteId);
 
-        String documentId = UUID.randomUUID().toString();
-        DocumentAttributeRecord r = new DocumentAttributeRecord().setDocumentId(documentId)
-            .setKey("category").setStringValue("document").setInsertedDate(date)
-            .setValueType(DocumentAttributeValueType.STRING).setUserId("joe");
-        Map<String, AttributeValue> orig = r.getAttributes(siteId);
+      // when
+      List<Map<String, AttributeValue>> list = service.addRecords(siteId, List.of(r));
 
-        // when
-        List<Map<String, AttributeValue>> list = service.addRecords(client, siteId, List.of(r));
+      // then
+      assertEquals(1, list.size());
 
-        // then
-        assertEquals(1, list.size());
-
-        Map<String, AttributeValue> attr = list.get(0);
-        assertEquals(orig.keySet().size() + 1, attr.keySet().size());
-        assertEquals(orig.get(PK), attr.get(PK));
-        assertEquals(orig.get(SK), attr.get("archive#" + SK));
-        assertEquals(orig.get(GSI1_PK), attr.get(GSI1_PK));
-        assertEquals(orig.get(GSI1_SK), attr.get(GSI1_SK));
-        assertEquals(orig.get("key"), attr.get("key"));
-        assertEquals(orig.get("documentId"), attr.get("documentId"));
-        assertEquals(orig.get("userId"), attr.get("userId"));
-        assertEquals(orig.get("stringValue"), attr.get("stringValue"));
-        assertEquals(orig.get("inserteddate"), attr.get("inserteddate"));
-        assertEquals("attr#category#" + attr.get("inserteddate").s() + "#document",
-            attr.get(SK).s());
-      }
+      Map<String, AttributeValue> attr = list.get(0);
+      assertEquals(orig.keySet().size() + 1, attr.keySet().size());
+      assertEquals(orig.get(PK), attr.get(PK));
+      assertEquals(orig.get(SK), attr.get("archive#" + SK));
+      assertEquals(orig.get(GSI1_PK), attr.get(GSI1_PK));
+      assertEquals(orig.get(GSI1_SK), attr.get(GSI1_SK));
+      assertEquals(orig.get("key"), attr.get("key"));
+      assertEquals(orig.get("documentId"), attr.get("documentId"));
+      assertEquals(orig.get("userId"), attr.get("userId"));
+      assertEquals(orig.get("stringValue"), attr.get("stringValue"));
+      assertEquals(orig.get("inserteddate"), attr.get("inserteddate"));
+      assertEquals("attr#category#" + attr.get("inserteddate").s() + "#document", attr.get(SK).s());
     }
   }
 }

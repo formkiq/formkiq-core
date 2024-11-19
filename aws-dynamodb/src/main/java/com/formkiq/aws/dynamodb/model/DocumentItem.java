@@ -45,6 +45,13 @@ public interface DocumentItem {
   String getChecksum();
 
   /**
+   * Get Entity Checksum type.
+   *
+   * @return {@link String}
+   */
+  String getChecksumType();
+
+  /**
    * Get Content Length.
    *
    * @return {@link Long}
@@ -115,13 +122,6 @@ public interface DocumentItem {
   String getS3version();
 
   /**
-   * Get Tag Schema Id.
-   * 
-   * @return {@link String}
-   */
-  String getTagSchemaId();
-
-  /**
    * Get Time To Live.
    *
    * @return {@link String}
@@ -155,6 +155,13 @@ public interface DocumentItem {
    * @param checksum {@link String}
    */
   void setChecksum(String checksum);
+
+  /**
+   * Set Entity Checksum Type.
+   *
+   * @param checksumType {@link String}
+   */
+  void setChecksumType(String checksumType);
 
   /**
    * Set Content Length.
@@ -225,13 +232,6 @@ public interface DocumentItem {
    * @param version {@link String}
    */
   void setS3version(String version);
-
-  /**
-   * Set TagSchema Id.
-   * 
-   * @param id {@link String}
-   */
-  void setTagSchemaId(String id);
 
   /**
    * Set Time To Live.

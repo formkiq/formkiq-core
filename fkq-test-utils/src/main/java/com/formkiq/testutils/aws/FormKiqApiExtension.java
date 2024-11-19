@@ -153,6 +153,7 @@ public class FormKiqApiExtension
     map.put("DISTRIBUTION_BUCKET", "formkiq-distribution-us-east-pro");
     map.put("FORMKIQ_TYPE", "core");
     map.put("USER_AUTHENTICATION", "cognito");
+    map.put("MODULE_site_permissions", "automatic");
 
     if (this.typeSenseExtension != null) {
       map.put("TYPESENSE_HOST", "http://localhost:" + this.typeSenseExtension.getFirstMappedPort());

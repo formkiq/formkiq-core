@@ -56,8 +56,15 @@ For a detailed description of spotbugs bug categories, see https://spotbugs.read
             <Class name="com.formkiq.testutils.aws.TestServices"/>
         </OR>
     </Match>
-    
-        <Match>
+
+    <Match>
+        <Bug pattern="CT_CONSTRUCTOR_THROW"/>
+        <OR>
+            <Class name="com.formkiq.module.ocr.DocumentOcrServiceTesseract"/>
+        </OR>
+    </Match>
+
+    <Match>
         <Bug pattern="ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD"/>
         <OR>
             <Class name="com.formkiq.testutils.aws.TypeSenseExtension"/>

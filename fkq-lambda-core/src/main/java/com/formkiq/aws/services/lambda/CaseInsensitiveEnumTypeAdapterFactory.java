@@ -39,7 +39,6 @@ import com.google.gson.stream.JsonWriter;
  * {@link TypeAdapterFactory} to convert {@link String} {@link Enum}.
  */
 public class CaseInsensitiveEnumTypeAdapterFactory implements TypeAdapterFactory {
-  @SuppressWarnings("unchecked")
   @Override
   public <T> TypeAdapter<T> create(final Gson gson, final TypeToken<T> type) {
     Class<T> rawType = (Class<T>) type.getRawType();
@@ -47,13 +46,12 @@ public class CaseInsensitiveEnumTypeAdapterFactory implements TypeAdapterFactory
       return null;
     }
 
-    final Map<String, T> lowercaseToConstant = new HashMap<String, T>();
+    final Map<String, T> lowercaseToConstant = new HashMap<>();
     for (T constant : rawType.getEnumConstants()) {
       lowercaseToConstant.put(toUpperCase(constant), constant);
     }
 
-    return new TypeAdapter<T>() {
-      @SuppressWarnings("resource")
+    return new TypeAdapter<>() {
       @Override
       public void write(final JsonWriter out, final T value) throws IOException {
         if (value == null) {

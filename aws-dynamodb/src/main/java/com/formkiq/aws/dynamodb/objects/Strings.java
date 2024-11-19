@@ -28,6 +28,7 @@ import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -45,6 +46,17 @@ import java.util.stream.Collectors;
 public class Strings {
   /** Scheme Authority. */
   private static final String SCHEME_AUTHORITY = "://";
+
+  /**
+   * Return text or elseText if the text is empty.
+   * 
+   * @param text {@link String}
+   * @param elseText {@link String}
+   * @return {@link String}
+   */
+  public static String isNotNullOrEmptyElse(final String text, final String elseText) {
+    return !isEmpty(text) ? text : elseText;
+  }
 
   private static String findMatch(final Collection<String> resourceUrls,
       final List<String[]> resourceSplits, final String path) {
@@ -149,7 +161,7 @@ public class Strings {
   }
 
   public static boolean isUrl(final String s) {
-    String regex = "^[a-zA-Z][a-zA-Z0-9]+" + SCHEME_AUTHORITY + "[a-zA-Z]+.*$";
+    String regex = "^[a-zA-Z][a-zA-Z0-9]+" + SCHEME_AUTHORITY + "[a-zA-Z0-9]+.*$";
     Pattern pattern = Pattern.compile(regex);
     Matcher matcher = pattern.matcher(s);
     return matcher.matches();
@@ -235,5 +247,35 @@ public class Strings {
     PrintWriter pw = new PrintWriter(sw);
     e.printStackTrace(pw);
     return sw.toString();
+  }
+
+  /**
+   * XOR {@link String} {@link List}.
+   * 
+   * @param strs {@link Collection} {@link String}
+   * @return boolean
+   */
+  public static boolean isEmptyOrHasValues(final String... strs) {
+
+    int len = strs.length;
+    long countEmpty = Arrays.stream(strs).filter(s -> isEmpty(s)).count();
+    return len == countEmpty || countEmpty == 0;
+  }
+
+  /**
+   * Truncates a string to a specified maximum number of characters. If the string is shorter than
+   * or equal to the maximum length, it is returned unchanged.
+   *
+   * @param input the string to be truncated
+   * @param maxLength the maximum number of characters to retain
+   * @return the truncated string
+   */
+  public static String truncate(final String input, final int maxLength) {
+    if (input == null || maxLength < 0) {
+      throw new IllegalArgumentException(
+          "Input cannot be null and maxLength must be non-negative.");
+    }
+
+    return input.length() <= maxLength ? input : input.substring(0, maxLength);
   }
 }

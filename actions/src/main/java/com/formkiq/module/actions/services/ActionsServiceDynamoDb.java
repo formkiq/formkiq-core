@@ -70,7 +70,7 @@ import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
  * DynamoDB implemenation of {@link ActionsService}.
  *
  */
-public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
+public final class ActionsServiceDynamoDb implements ActionsService, DbKeys {
 
   /** {@link DynamoDbService}. */
   private final DynamoDbService db;

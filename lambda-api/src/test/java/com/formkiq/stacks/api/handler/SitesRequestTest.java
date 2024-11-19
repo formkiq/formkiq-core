@@ -24,7 +24,7 @@
 package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_PAYMENT;
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENTS;
 import static com.formkiq.stacks.dynamodb.ConfigService.MAX_WEBHOOKS;
 import static com.formkiq.testutils.aws.TestServices.FORMKIQ_APP_ENVIRONMENT;
@@ -33,10 +33,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import java.util.Arrays;
+
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -49,15 +48,12 @@ import com.formkiq.aws.ssm.SsmServiceExtension;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.GetSitesResponse;
 import com.formkiq.client.model.GetVersionResponse;
-import com.formkiq.client.model.SetOpenSearchIndexRequest;
 import com.formkiq.client.model.Site;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.ConfigService;
 import com.formkiq.stacks.dynamodb.ConfigServiceExtension;
 
 /** Unit Tests for request /sites. */
-// @ExtendWith(DynamoDbExtension.class)
-// @ExtendWith(LocalStackExtension.class)
 public class SitesRequestTest extends AbstractApiClientRequestTest {
 
   /** {@link ConfigService}. */
@@ -82,50 +78,6 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * DELETE /sites/{siteId}/opensearch/index.
-   */
-  @Test
-  public void testDeleteOpensearchIndex() {
-    // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
-
-      setBearerToken(new String[] {siteId});
-
-      try {
-        // when
-        this.systemApi.deleteOpensearchIndex(siteId);
-        fail();
-
-        // then
-      } catch (ApiException e) {
-        assertEquals(SC_PAYMENT.getStatusCode(), e.getCode());
-      }
-    }
-  }
-
-  /**
-   * GET /sites/{siteId}/opensearch/index.
-   */
-  @Test
-  public void testGetOpensearchIndex() {
-    // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
-
-      setBearerToken(new String[] {siteId});
-
-      try {
-        // when
-        this.systemApi.getOpensearchIndex(siteId);
-        fail();
-
-        // then
-      } catch (ApiException e) {
-        assertEquals(SC_PAYMENT.getStatusCode(), e.getCode());
-      }
-    }
-  }
-
-  /**
    * Get /sites with SES support.
    *
    * @throws Exception an error has occurred
@@ -133,13 +85,13 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testHandleGetSites01() throws Exception {
     // given
-    setBearerToken(new String[] {"default", "Admins", "finance"});
+    setBearerToken(new String[] {DEFAULT_SITE_ID, "Admins", "finance"});
     config.save(null, new DynamicObject(Map.of("chatGptApiKey", "somevalue")));
 
     ssm.putParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/maildomain", "tryformkiq.com");
 
     // when
-    GetSitesResponse response = this.systemApi.getSites();
+    GetSitesResponse response = this.systemApi.getSites(null);
 
     // then
     List<Site> sites = response.getSites();
@@ -185,10 +137,10 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
   public void testHandleGetSites02() throws Exception {
     // given
     ssm.removeParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/maildomain");
-    setBearerToken(new String[] {"default", "Admins", "finance"});
+    setBearerToken(new String[] {DEFAULT_SITE_ID, "Admins", "finance"});
 
     // when
-    GetSitesResponse response = this.systemApi.getSites();
+    GetSitesResponse response = this.systemApi.getSites(null);
 
     // then
     List<Site> sites = response.getSites();
@@ -212,12 +164,12 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     // given
     ssm.putParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/maildomain", "tryformkiq.com");
     ssm.removeParameter(
-        String.format("/formkiq/%s/siteid/%s/email", FORMKIQ_APP_ENVIRONMENT, "default"));
+        String.format("/formkiq/%s/siteid/%s/email", FORMKIQ_APP_ENVIRONMENT, DEFAULT_SITE_ID));
 
     setBearerToken(new String[] {"default_read", "finance"});
 
     // when
-    GetSitesResponse response = this.systemApi.getSites();
+    GetSitesResponse response = this.systemApi.getSites(null);
 
     // then
     List<Site> sites = response.getSites();
@@ -257,7 +209,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     config.save(siteId, new DynamicObject(Map.of(MAX_DOCUMENTS, "5", MAX_WEBHOOKS, "10")));
 
     // when
-    GetSitesResponse response = this.systemApi.getSites();
+    GetSitesResponse response = this.systemApi.getSites(null);
 
     // then
     List<Site> sites = response.getSites();
@@ -279,7 +231,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
 
     // when
     try {
-      this.systemApi.getSites();
+      this.systemApi.getSites(null);
       fail();
     } catch (ApiException e) {
       // then
@@ -295,35 +247,14 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testHandleVersion01() throws Exception {
     // given
-    setBearerToken(new String[] {"default", "Admins", "finance"});
+    setBearerToken(new String[] {DEFAULT_SITE_ID, "Admins", "finance"});
 
     // when
     GetVersionResponse response = this.systemApi.getVersion();
 
     // then
     assertNotNull(response.getVersion());
-  }
-
-  /**
-   * PUT /sites/{siteId}/opensearch/index.
-   */
-  @Test
-  public void testPutOpensearchIndex() {
-    // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
-
-      setBearerToken(new String[] {siteId});
-      SetOpenSearchIndexRequest req = new SetOpenSearchIndexRequest();
-
-      try {
-        // when
-        this.systemApi.setOpensearchIndex(siteId, req);
-        fail();
-
-        // then
-      } catch (ApiException e) {
-        assertEquals(SC_PAYMENT.getStatusCode(), e.getCode());
-      }
-    }
+    assertEquals("typesense,site_permissions_automatic",
+        String.join(",", notNull(response.getModules())));
   }
 }

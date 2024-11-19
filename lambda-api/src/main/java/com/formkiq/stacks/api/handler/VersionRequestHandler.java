@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.formkiq.aws.services.lambda.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -52,11 +52,16 @@ public class VersionRequestHandler implements ApiGatewayRequestHandler, ApiGatew
 
     String version = getVersion(awsservice);
     List<String> modules = awsservice.environment().entrySet().stream()
-        .filter(e -> e.getKey().startsWith("MODULE_") && "true".equals(e.getValue()))
-        .map(e -> e.getKey().replaceAll("MODULE_", "")).collect(Collectors.toList());
+        .filter(e -> e.getKey().startsWith("MODULE_") && !"false".equalsIgnoreCase(e.getValue()))
+        .map(e -> {
+          String key = "true".equals(e.getValue()) ? e.getKey() : e.getKey() + "_" + e.getValue();
+          return key.replaceAll("MODULE_", "");
+        }).collect(Collectors.toList());
 
-    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(Map.of("version", version,
-        "type", awsservice.environment("FORMKIQ_TYPE"), "modules", modules)));
+    return new ApiRequestHandlerResponse(SC_OK,
+        new ApiMapResponse(
+            Map.of("version", version, "type", awsservice.environment("FORMKIQ_TYPE"),
+                "appEnvironment", awsservice.environment("APP_ENVIRONMENT"), "modules", modules)));
   }
 
   @Override

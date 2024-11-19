@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api.awstest;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -30,23 +31,23 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
 import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
 
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.client.model.AddApiKeyRequest;
 import com.formkiq.client.model.AddApiKeyResponse;
+import com.formkiq.client.model.AddDocumentRequest;
+import com.formkiq.client.model.AddDocumentResponse;
+import com.formkiq.client.model.GetApiKeysResponse;
+import com.formkiq.client.model.Site;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.api.SystemManagementApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddApiKeyRequest.PermissionsEnum;
-import com.formkiq.client.model.AddDocumentRequest;
-import com.formkiq.client.model.AddDocumentResponse;
-import com.formkiq.client.model.GetApiKeysResponse;
 import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthenticationResultType;
 
@@ -102,8 +103,7 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
     List<ApiClient> apiClients = getApiClients(null);
     assertEquals(expected, apiClients.size());
 
-    for (String siteId : Arrays.asList(SiteIdKeyGenerator.DEFAULT_SITE_ID,
-        UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       for (ApiClient client : Arrays.asList(apiClients.get(0), apiClients.get(1))) {
         AddApiKeyRequest apiReq = new AddApiKeyRequest().name(name);
@@ -127,7 +127,7 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
 
     // when
     try {
-      api.getApiKeys(SiteIdKeyGenerator.DEFAULT_SITE_ID);
+      api.getApiKeys(DEFAULT_SITE_ID);
       // then
       fail();
     } catch (ApiException e) {
@@ -153,7 +153,7 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
 
     // when
     try {
-      api.getApiKeys(SiteIdKeyGenerator.DEFAULT_SITE_ID);
+      api.getApiKeys(DEFAULT_SITE_ID);
 
       // then
       fail();
@@ -179,7 +179,7 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
     com.formkiq.client.model.AddApiKeyRequest req = new com.formkiq.client.model.AddApiKeyRequest()
         .name(name).addPermissionsItem(PermissionsEnum.READ);
 
-    for (String siteId : List.of("default")) {
+    for (String siteId : List.of(DEFAULT_SITE_ID)) {
 
       // when
       this.jwtApiClient.addDefaultHeader("Authorization", token.accessToken());
@@ -208,6 +208,36 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
 
       // then
       assertNotNull(response.getDocumentId());
+    }
+  }
+
+  /**
+   * Test Add API key.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  public void testAddApiKey01() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      ApiClient apiClient = getApiClients(siteId).get(0);
+      SystemManagementApi api = new SystemManagementApi(apiClient);
+
+      AddApiKeyRequest req =
+          new AddApiKeyRequest().name(ID.uuid()).addPermissionsItem(PermissionsEnum.GOVERN);
+
+      // when
+      AddApiKeyResponse response = api.addApiKey(siteId, req);
+
+      // then
+      ApiClient apiClientWithToken = getApiClientWithToken(response.getApiKey());
+      api = new SystemManagementApi(apiClientWithToken);
+      List<Site> sites = notNull(api.getSites(null).getSites());
+      assertEquals(1, sites.size());
+      assertEquals(siteId, sites.get(0).getSiteId());
+      assertEquals("GOVERN",
+          String.join(",", sites.get(0).getPermissions().stream().map(Enum::name).toList()));
     }
   }
 }

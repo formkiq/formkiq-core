@@ -26,8 +26,11 @@ package com.formkiq.stacks.api.handler;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_FOUND;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
+import static com.formkiq.module.events.document.DocumentEventType.SOFT_DELETE;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -41,22 +44,27 @@ import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentMetadata;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3Service;
-import com.formkiq.aws.services.lambda.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiMessageResponse;
 import com.formkiq.aws.services.lambda.ApiPagination;
-import com.formkiq.aws.services.lambda.ApiPermission;
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
-import com.formkiq.aws.services.lambda.services.CacheService;
+import com.formkiq.aws.dynamodb.cache.CacheService;
+import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.services.ActionsNotificationService;
 import com.formkiq.module.actions.services.ActionsService;
+import com.formkiq.module.events.EventService;
+import com.formkiq.module.events.document.DocumentEvent;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.transformers.AddDocumentRequestToDocumentItem;
 import com.formkiq.stacks.api.transformers.AddDocumentRequestToPresignedUrls;
@@ -72,6 +80,7 @@ import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.validation.ValidationError;
+import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
@@ -125,6 +134,10 @@ public class DocumentIdRequestHandler
         throw new NotFoundException("Document " + documentId + " not found.");
       }
 
+      if (softDelete) {
+        publishSoftDelete(awsservice, authorization, siteId, documentId);
+      }
+
       ApiResponse resp = new ApiMessageResponse("'" + documentId + "' object deleted");
       return new ApiRequestHandlerResponse(SC_OK, resp);
 
@@ -136,6 +149,14 @@ public class DocumentIdRequestHandler
 
       throw e;
     }
+  }
+
+  private void publishSoftDelete(final AwsServiceCache awsservice,
+      final ApiAuthorization authorization, final String siteId, final String documentId) {
+    EventService es = awsservice.getExtension(EventService.class);
+    DocumentEvent de = new DocumentEvent().siteId(siteId).documentId(documentId).type(SOFT_DELETE)
+        .userId(authorization.getUsername());
+    es.publish(de);
   }
 
   @Override
@@ -196,7 +217,7 @@ public class DocumentIdRequestHandler
         new AddDocumentRequestToDocumentItem(existingItem, authorization.getUsername(), null)
             .apply(request);
 
-    validatePatch(awsservice, siteId, documentId, item);
+    validatePatch(awsservice, siteId, documentId, item, request);
 
     logger.log("setting userId: " + item.getUserId() + " contentType: " + item.getContentType());
 
@@ -213,14 +234,22 @@ public class DocumentIdRequestHandler
     service.saveDocument(siteId, item, tags, documentAttributes, options);
 
     AddDocumentRequestToPresignedUrls addDocumentRequestToPresignedUrls =
-        new AddDocumentRequestToPresignedUrls(awsservice, siteId, null, Optional.empty());
+        new AddDocumentRequestToPresignedUrls(awsservice, authorization, siteId, null,
+            Optional.empty());
 
     Map<String, Object> uploadUrls = addDocumentRequestToPresignedUrls.apply(request);
     new PresignedUrlsToS3Bucket(request).apply(uploadUrls);
 
     ActionsService actionsService = awsservice.getExtension(ActionsService.class);
-    notNull(request.getActions()).forEach(a -> a.userId(authorization.getUsername()));
+    List<Action> actions = notNull(request.getActions());
+    actions.forEach(a -> a.userId(authorization.getUsername()));
     actionsService.saveNewActions(siteId, documentId, request.getActions());
+
+    if (!Strings.isEmpty(item.getDeepLinkPath()) && !actions.isEmpty()) {
+      ActionsNotificationService notificationService =
+          awsservice.getExtension(ActionsNotificationService.class);
+      notificationService.publishNextActionEvent(siteId, documentId);
+    }
 
     uploadUrls.put("siteId", siteId);
     return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(uploadUrls));
@@ -233,10 +262,12 @@ public class DocumentIdRequestHandler
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param doc {@link DocumentItem}
+   * @param request {@link AddDocumentRequest}
    * @throws Exception Exception
    */
   private void validatePatch(final AwsServiceCache awsservice, final String siteId,
-      final String documentId, final DocumentItem doc) throws Exception {
+      final String documentId, final DocumentItem doc, final AddDocumentRequest request)
+      throws Exception {
 
     DocumentService docService = awsservice.getExtension(DocumentService.class);
     DocumentItem item = docService.findDocument(siteId, documentId);
@@ -249,6 +280,15 @@ public class DocumentIdRequestHandler
     }
 
     Collection<ValidationError> errors = this.documentValidator.validate(metadata);
+
+    boolean emptyDeepLink = isEmpty(doc.getDeepLinkPath()) && isEmpty(item.getDeepLinkPath());
+    boolean emptyContent = isEmpty(request.getContent());
+
+    if (!emptyDeepLink && !emptyContent) {
+      errors
+          .add(new ValidationErrorImpl().error("both 'content', and 'deepLinkPath' cannot be set"));
+    }
+
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }
@@ -274,7 +314,9 @@ public class DocumentIdRequestHandler
   private AttributeValidationAccess getAttributeValidationAccess(
       final ApiAuthorization authorization, final String siteId) {
 
-    boolean isAdmin = authorization.getPermissions(siteId).contains(ApiPermission.ADMIN);
+    Collection<ApiPermission> permissions = authorization.getPermissions(siteId);
+    boolean isAdmin =
+        permissions.contains(ApiPermission.ADMIN) || permissions.contains(ApiPermission.GOVERN);
     return isAdmin ? AttributeValidationAccess.ADMIN_UPDATE : AttributeValidationAccess.UPDATE;
   }
 }

@@ -23,10 +23,14 @@
  */
 package com.formkiq.module.actions;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamodbRecord;
+import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.graalvm.annotations.Reflectable;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
@@ -59,6 +63,9 @@ public class DocumentWorkflowRecord implements DynamodbRecord<DocumentWorkflowRe
   /** Cuurent Workflow Name. */
   @Reflectable
   private String workflowName;
+  /** Record inserted date. */
+  @Reflectable
+  private Date insertedDate;
 
   /**
    * constructor.
@@ -161,6 +168,11 @@ public class DocumentWorkflowRecord implements DynamodbRecord<DocumentWorkflowRe
     map.put("actionSk", AttributeValue.fromS(this.actionSk));
     map.put("currentStepId", AttributeValue.fromS(this.currentStepId));
 
+    if (this.insertedDate != null) {
+      SimpleDateFormat df = DateUtil.getIsoDateFormatter();
+      map.put("inserteddate", AttributeValue.fromS(df.format(this.insertedDate)));
+    }
+
     map.put(DbKeys.GSI1_PK, AttributeValue.fromS(pkGsi1(siteIdParam)));
     map.put(DbKeys.GSI1_SK, AttributeValue.fromS(skGsi1()));
 
@@ -183,6 +195,13 @@ public class DocumentWorkflowRecord implements DynamodbRecord<DocumentWorkflowRe
         .workflowId(ss(attrs, "workflowId")).status(ss(attrs, "status"))
         .workflowName(ss(attrs, "workflowName")).actionPk(ss(attrs, "actionPk"))
         .actionSk(ss(attrs, "actionSk")).currentStepId(ss(attrs, "currentStepId"));
+
+    try {
+      SimpleDateFormat df = DateUtil.getIsoDateFormatter();
+      record = record.insertedDate(df.parse(ss(attrs, "inserteddate")));
+    } catch (ParseException e) {
+      throw new IllegalArgumentException("invalid 'inserteddate'");
+    }
 
     return record;
   }
@@ -292,6 +311,26 @@ public class DocumentWorkflowRecord implements DynamodbRecord<DocumentWorkflowRe
    */
   public DocumentWorkflowRecord workflowName(final String name) {
     this.workflowName = name;
+    return this;
+  }
+
+  /**
+   * Get Inserted Date.
+   *
+   * @return {@link Date}
+   */
+  public Date insertedDate() {
+    return this.insertedDate;
+  }
+
+  /**
+   * Set Inserted Date.
+   *
+   * @param date {@link Date}
+   * @return {@link DocumentWorkflowRecord}
+   */
+  public DocumentWorkflowRecord insertedDate(final Date date) {
+    this.insertedDate = date;
     return this;
   }
 }

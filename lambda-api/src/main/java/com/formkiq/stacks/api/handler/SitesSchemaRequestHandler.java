@@ -27,7 +27,7 @@ import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.util.Collection;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.formkiq.aws.services.lambda.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -100,8 +100,7 @@ public class SitesSchemaRequestHandler
     String siteId = authorizer.getSiteId();
 
     Schema schema = fromBodyToObject(event, Schema.class);
-    Collection<ValidationError> errors =
-        service.setSitesSchema(siteId, schema.getName(), this.gson.toJson(schema), schema);
+    Collection<ValidationError> errors = service.setSitesSchema(siteId, schema.getName(), schema);
 
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);

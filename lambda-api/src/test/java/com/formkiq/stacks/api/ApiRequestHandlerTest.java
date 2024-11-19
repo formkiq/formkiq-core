@@ -37,7 +37,8 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
+
+import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamicObject;
@@ -63,7 +64,7 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
    */
   @Test
   public void testHandleGetRequest01() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents-documentid01.json");
       addParameter(event, "siteId", siteId);
@@ -89,10 +90,10 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetRequest02() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       Date date = new Date();
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       String userId = "jsmith";
 
       DocumentItem item = new DocumentItemDynamoDb(documentId, date, userId);
@@ -160,7 +161,7 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
    */
   @Test
   public void testHandleGetRequest04() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-invalid-resource.json");
       addParameter(event, "siteId", siteId);
@@ -228,7 +229,7 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
     // given
     Date date = new Date();
     String documentId0 = "1a1d1938-451e-4e20-bf95-e0e7a749505a";
-    String documentId1 = UUID.randomUUID().toString();
+    String documentId1 = ID.uuid();
     String userId = "jsmith";
 
     DocumentItem item = new DocumentItemDynamoDb(documentId0, date, userId);

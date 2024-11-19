@@ -24,6 +24,8 @@
 package com.formkiq.stacks.dynamodb;
 
 import java.lang.reflect.InvocationTargetException;
+
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceExtension;
 
@@ -53,7 +55,10 @@ public class DocumentVersionServiceExtension
         this.service = (DocumentVersionService) Class
             .forName(awsServiceCache.environment("DOCUMENT_VERSIONS_PLUGIN")).getConstructor()
             .newInstance();
-        this.service.initialize(awsServiceCache.environment());
+
+        DynamoDbConnectionBuilder connection =
+            awsServiceCache.getExtension(DynamoDbConnectionBuilder.class);
+        this.service.initialize(awsServiceCache.environment(), connection);
 
       } catch (InstantiationException | IllegalAccessException | IllegalArgumentException
           | InvocationTargetException | NoSuchMethodException | SecurityException

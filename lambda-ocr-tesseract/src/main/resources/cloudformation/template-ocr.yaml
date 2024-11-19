@@ -34,6 +34,10 @@ Parameters:
     Description: The partition in which the resource is located. A partition is a group of AWS Regions
     Type: String
 
+  OcrQueueArn:
+    Description: The partition in which the resource is located. A partition is a group of AWS Regions
+    Type: String
+
 Resources:
 
   OcrProcessorLogGroup:
@@ -110,7 +114,7 @@ Resources:
           Type: SQS
           Properties:
             Queue:
-              Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/sqs/OcrQueueArn}}"
+              Ref: OcrQueueArn
             BatchSize: 1
 
   OcrProcessorParameter:
@@ -190,7 +194,7 @@ Resources:
             - sqs:DeleteMessage
             - sqs:GetQueueAttributes
             Resource:
-              Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/sqs/OcrQueueArn}}"
+              Ref: OcrQueueArn
           - Effect: Allow
             Action:
             - dynamodb:GetItem

@@ -183,4 +183,16 @@ public class Objects {
   public static <T> List<T> concat(final List<T> t0, final List<T> t1) {
     return Stream.concat(notNull(t0).stream(), notNull(t1).stream()).toList();
   }
+
+  /**
+   * Merge two {@link Collection} together.
+   *
+   * @param <T> Type of {@link Collection}
+   * @param t0 {@link Collection}
+   * @param t1 {@link Collection}
+   * @return {@link Collection}
+   */
+  public static <T> Collection<T> concat(final Collection<T> t0, final Collection<T> t1) {
+    return Stream.concat(notNull(t0).stream(), notNull(t1).stream()).toList();
+  }
 }

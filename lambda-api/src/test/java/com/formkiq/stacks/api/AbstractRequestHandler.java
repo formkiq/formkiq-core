@@ -42,13 +42,13 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -124,12 +124,12 @@ public abstract class AbstractRequestHandler {
   private AwsServiceCache awsServices;
 
   /** {@link Context}. */
-  private Context context = new LambdaContextRecorder();
+  private final Context context = new LambdaContextRecorder();
 
   /** {@link LambdaLogger}. */
-  private LambdaLoggerRecorder logger = (LambdaLoggerRecorder) this.context.getLogger();
+  private final LambdaLoggerRecorder logger = (LambdaLoggerRecorder) this.context.getLogger();
   /** System Environment Map. */
-  private Map<String, String> map = new HashMap<>();
+  private final Map<String, String> map = new HashMap<>();
   /** {@link ClientAndServer}. */
   private ClientAndServer mockServer = null;
 
@@ -210,9 +210,9 @@ public abstract class AbstractRequestHandler {
 
     SqsService sqsservice = this.awsServices.getExtension(SqsService.class);
 
-    for (String queue : Arrays.asList(TestServices.getSqsDocumentFormatsQueueUrl(null))) {
+    for (String queue : List.of(TestServices.getSqsDocumentFormatsQueueUrl(null))) {
       ReceiveMessageResponse response = sqsservice.receiveMessages(queue);
-      while (response.messages().size() > 0) {
+      while (!response.messages().isEmpty()) {
         for (Message msg : response.messages()) {
           sqsservice.deleteMessage(queue, msg.receiptHandle());
         }
@@ -226,9 +226,8 @@ public abstract class AbstractRequestHandler {
    * Create Api Request Handler.
    * 
    * @param prop {@link Map}
-   * @throws URISyntaxException URISyntaxException
    */
-  public void createApiRequestHandler(final Map<String, String> prop) throws URISyntaxException {
+  public void createApiRequestHandler(final Map<String, String> prop) {
     handler = new TestCoreRequestHandler(prop);
     this.awsServices = handler.getAwsServices();
   }
@@ -438,8 +437,7 @@ public abstract class AbstractRequestHandler {
 
     handler.handleRequest(is, outstream, getMockContext());
 
-    String response = new String(outstream.toByteArray(), "UTF-8");
-    return response;
+    return new String(outstream.toByteArray(), StandardCharsets.UTF_8);
   }
 
   /**
@@ -514,7 +512,6 @@ public abstract class AbstractRequestHandler {
    * @param event {@link ApiGatewayRequestEvent}
    * @param cognitoGroups {@link String}
    */
-  @SuppressWarnings("unchecked")
   public void setCognitoGroup(final ApiGatewayRequestEvent event, final String... cognitoGroups) {
 
     ApiGatewayRequestContext requestContext = event.getRequestContext();
@@ -569,7 +566,6 @@ public abstract class AbstractRequestHandler {
    * @param event {@link ApiGatewayRequestEvent}
    * @param username {@link String}
    */
-  @SuppressWarnings("unchecked")
   public void setUsername(final ApiGatewayRequestEvent event, final String username) {
     ApiGatewayRequestContext requestContext = event.getRequestContext();
     Map<String, Object> authorizer = requestContext.getAuthorizer();
@@ -593,7 +589,7 @@ public abstract class AbstractRequestHandler {
    * Start Mock Server.
    */
   public void startMockServer() {
-    this.mockServer = startClientAndServer(Integer.valueOf(PORT));
+    this.mockServer = startClientAndServer(PORT);
   }
 
   /**

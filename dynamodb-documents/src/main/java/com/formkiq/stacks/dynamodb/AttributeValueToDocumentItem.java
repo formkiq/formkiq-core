@@ -114,16 +114,12 @@ public class AttributeValueToDocumentItem
       item.setBelongsToDocumentId(map.get("belongsToDocumentId").s());
     }
 
-    if (map.containsKey("tagSchemaId")) {
-      item.setTagSchemaId(map.get("tagSchemaId").s());
+    if (map.containsKey("checksumType")) {
+      item.setChecksumType(map.get("checksumType").s());
     }
 
     item.setVersion(getString(map.get("version")));
     item.setS3version(getString(map.get(DocumentVersionService.S3VERSION_ATTRIBUTE)));
-
-    if (map.containsKey("tagSchemaId")) {
-      item.setTagSchemaId(map.get("tagSchemaId").s());
-    }
 
     if (map.containsKey("TimeToLive")) {
       item.setTimeToLive(map.get("TimeToLive").n());

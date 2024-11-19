@@ -23,6 +23,8 @@
  */
 package com.formkiq.plugins.useractivity;
 
+import java.util.Map;
+
 /**
  * User Activity.
  */
@@ -34,7 +36,55 @@ public interface UserActivityPlugin {
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param versionKey {@link String}
-   * @param userId {@link String}
    */
-  void addViewActivity(String siteId, String documentId, String versionKey, String userId);
+  void addDocumentViewActivity(String siteId, String documentId, String versionKey);
+
+  /**
+   * Add Document Activity.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param record {@link Map}
+   */
+  void addDocumentActivity(String siteId, String documentId, Map<String, Object> record);
+
+  /**
+   * Add update Document Activity.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param current {@link Map}
+   * @param previous {@link Map}
+   */
+  void updateDocumentActivity(String siteId, String documentId, Map<String, Object> current,
+      Map<String, Object> previous);
+
+  /**
+   * Add delete Document Activity.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param record {@link Map}
+   */
+  void deleteDocumentActivity(String siteId, String documentId, Map<String, Object> record);
+
+
+  /**
+   * Add soft delete Document Activity.
+   *
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param record {@link Map}
+   */
+  void deleteSoftDocumentActivity(String siteId, String documentId, Map<String, Object> record);
+
+  /**
+   * Restore Soft Delete Document Activity.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param record {@link Map}
+   */
+  void restoreSoftDeletedDocumentActivity(String siteId, String documentId,
+      Map<String, Object> record);
 }

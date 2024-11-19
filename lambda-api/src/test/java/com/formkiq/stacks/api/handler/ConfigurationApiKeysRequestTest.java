@@ -23,23 +23,23 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import java.util.Arrays;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
-import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddApiKeyRequest;
 import com.formkiq.client.model.AddApiKeyResponse;
 import com.formkiq.client.model.DeleteApiKeyResponse;
 import com.formkiq.client.model.GetApiKeysResponse;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import com.formkiq.client.invoker.ApiException;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 
@@ -55,7 +55,7 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
   @Test
   public void testHandleDeleteApiKeys01() {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       // when
       setBearerToken(siteId);
@@ -78,7 +78,7 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
   @Test
   public void testHandlePostApiKeys01() {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       AddApiKeyRequest req = new AddApiKeyRequest().name("test key");
 
@@ -107,8 +107,7 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
     // given
     String group = "Admins";
 
-    for (String siteId : Arrays.asList(SiteIdKeyGenerator.DEFAULT_SITE_ID,
-        UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       String apiKeyName = "test key";
       AddApiKeyRequest req = new AddApiKeyRequest().name(apiKeyName);
@@ -153,8 +152,8 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
   @Test
   public void testHandleGetApiKeys02() {
     // given
-    String siteId = SiteIdKeyGenerator.DEFAULT_SITE_ID;
-    String group = "default";
+    String siteId = DEFAULT_SITE_ID;
+    String group = DEFAULT_SITE_ID;
 
     // when
     setBearerToken(group);
@@ -175,8 +174,8 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
   @Test
   public void testHandleGetApiKeys03() throws Exception {
     // given
-    String siteId = SiteIdKeyGenerator.DEFAULT_SITE_ID;
-    String group = "default";
+    String siteId = DEFAULT_SITE_ID;
+    String group = DEFAULT_SITE_ID;
 
     setBearerToken("Admins opa " + group);
 
@@ -185,5 +184,45 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
 
     // then
     assertEquals(0, response.getApiKeys().size());
+  }
+
+  /**
+   * Add API Key with Govern permission.
+   *
+   * @throws Exception an error has occurred
+   */
+  // @SuppressWarnings("unchecked")
+  @Test
+  public void testHandleGetApiKeys04() throws Exception {
+    // given
+    String group = "Admins";
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(group);
+
+      String apiKeyName = "test key";
+      AddApiKeyRequest req = new AddApiKeyRequest().name(apiKeyName)
+          .addPermissionsItem(AddApiKeyRequest.PermissionsEnum.GOVERN);
+
+      // when
+      AddApiKeyResponse response = this.systemApi.addApiKey(siteId, req);
+
+      // then
+      String apiKey = response.getApiKey();
+      assertNotNull(response.getApiKey());
+
+      // when
+      GetApiKeysResponse apiKeys = this.systemApi.getApiKeys(siteId);
+
+      // then
+      assertEquals(1, apiKeys.getApiKeys().size());
+      assertTrue(apiKeys.getApiKeys().get(0).getApiKey().contains("**************"));
+      assertNotNull(apiKeys.getApiKeys().get(0).getInsertedDate());
+      assertEquals(apiKeyName, apiKeys.getApiKeys().get(0).getName());
+      assertEquals("GOVERN", apiKeys.getApiKeys().get(0).getPermissions().stream().map(Enum::name)
+          .sorted().collect(Collectors.joining(",")));
+      assertEquals(siteId, apiKeys.getApiKeys().get(0).getSiteId());
+    }
   }
 }

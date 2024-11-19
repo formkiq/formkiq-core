@@ -225,7 +225,18 @@ public class AwsServiceCache {
    * @return boolean
    */
   public boolean hasModule(final String module) {
-    return "true".equals(environment("MODULE_" + module));
+    return hasModule(module, "true");
+  }
+
+  /**
+   * Has Module.
+   *
+   * @param module {@link String}
+   * @param value {@link String}
+   * @return boolean
+   */
+  public boolean hasModule(final String module, final String value) {
+    return value.equals(environment("MODULE_" + module));
   }
 
   /**

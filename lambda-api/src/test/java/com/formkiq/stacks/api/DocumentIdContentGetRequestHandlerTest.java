@@ -33,7 +33,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Map;
-import java.util.UUID;
+
+import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.testcontainers.containers.localstack.LocalStackContainer.Service;
@@ -59,9 +60,9 @@ public class DocumentIdContentGetRequestHandlerTest extends AbstractRequestHandl
   @Test
   public void testHandleGetDocumentContent01() throws Exception {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       String userId = "jsmith";
 
       ApiGatewayRequestEvent event =
@@ -111,9 +112,9 @@ public class DocumentIdContentGetRequestHandlerTest extends AbstractRequestHandl
   @Test
   public void testHandleGetDocumentContent02() throws Exception {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
 
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-get-documents-documentid-content01.json");
@@ -167,9 +168,9 @@ public class DocumentIdContentGetRequestHandlerTest extends AbstractRequestHandl
   @Test
   public void testHandleGetDocumentContent05() throws Exception {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       String userId = "jsmith";
 
       ApiGatewayRequestEvent event =
@@ -201,9 +202,9 @@ public class DocumentIdContentGetRequestHandlerTest extends AbstractRequestHandl
   @SuppressWarnings("unchecked")
   private void testReturnContent(final String contentType) throws Exception {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
 
       String content = "this is a test";
       String s3key = createS3Key(siteId, documentId);

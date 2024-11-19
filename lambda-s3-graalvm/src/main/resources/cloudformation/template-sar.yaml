@@ -430,6 +430,8 @@ Resources:
         Variables:
           DOCUMENTS_TABLE: 
             Ref: Documents
+          CACHE_TABLE:
+            Ref: Cache
           APP_ENVIRONMENT: 
             Fn::Sub: "${AppEnvironment}"
           DEBUG: false
@@ -439,6 +441,8 @@ Resources:
           FormKiQType:
             Ref: FormKiQType
           DOCUMENT_VERSIONS_PLUGIN: "com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning"
+          DOCUMENTS_S3_BUCKET:
+            Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-documents-${AWS::AccountId}"
           DOCUMENT_SYNC_TABLE: 
             Ref: DocumentSyncs
           MODULE_typesense:
@@ -795,7 +799,12 @@ Resources:
             Resource: "*"
           - Effect: Allow
             Action:
+              - events:PutEvents
+            Resource: "*"
+          - Effect: Allow
+            Action:
             - s3:ListBucket
+            - s3:ListBucketVersions
             Resource:
             - Fn::Join:
               - ''
@@ -821,6 +830,11 @@ Resources:
               - - Fn::Sub: "arn:${Partition}:s3:::"
                 - Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-staging-${AWS::AccountId}"
                 - '/*'
+          - Effect: Allow
+            Action:
+              - dynamodb:GetItem
+            Resource:
+              - Fn::Sub: "arn:${Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Cache}"
           - Effect: Allow
             Action:
             - dynamodb:BatchGetItem
@@ -1049,6 +1063,8 @@ Resources:
       TimeToLiveSpecification:
         AttributeName: TimeToLive
         Enabled: TRUE
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
       Tags:
         - Key: "Application"
           Value: 
@@ -1091,8 +1107,16 @@ Resources:
 Outputs:
 
   DocumentsTableName:
+    Description: Documents DynamoDb Table Name.
     Value:
       Ref: Documents
+
+  DocumentsTableArn:
+    Description: Documents DynamoDb Table Arn.
+    Value:
+      Fn::GetAtt:
+        - Documents
+        - Arn
 
   DocumentSyncsTableName:
     Value:

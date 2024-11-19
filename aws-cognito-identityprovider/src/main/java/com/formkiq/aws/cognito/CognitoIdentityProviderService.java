@@ -23,10 +23,7 @@
  */
 package com.formkiq.aws.cognito;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminAddUserToGroupRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminConfirmSignUpRequest;
@@ -69,12 +66,49 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersRe
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UserType;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 /**
  * 
  * Cognito Services.
  *
  */
 public class CognitoIdentityProviderService {
+
+  /** Cognito User Attributes. */
+  public static final Map<String, String> COGNITO_USER_ATTRIBUTES = initCognitoAttributes();
+
+  private static Map<String, String> initCognitoAttributes() {
+    Map<String, String> map = new HashMap<>();
+    map.put("address", "address");
+    map.put("birthdate", "birthdate");
+    map.put("familyName", "family_name");
+    map.put("family_name", "familyName");
+    map.put("gender", "gender");
+    map.put("givenName", "given_name");
+    map.put("given_name", "givenName");
+    map.put("locale", "locale");
+    map.put("middleName", "middle_name");
+    map.put("middle_name", "middleName");
+    map.put("name", "name");
+    map.put("nickname", "nickname");
+    map.put("phoneNumber", "phone_number");
+    map.put("phone_number", "phoneNumber");
+    map.put("picture", "picture");
+    map.put("preferredUsername", "preferred_username");
+    map.put("preferred_username", "preferredUsername");
+    map.put("profile", "profile");
+    map.put("zoneinfo", "zoneinfo");
+    map.put("updatedAt", "updated_at");
+    map.put("updated_at", "updatedAt");
+    map.put("website", "website");
+
+    return map;
+  }
 
   /** {@link String}. */
   private final String clientId;
@@ -112,11 +146,13 @@ public class CognitoIdentityProviderService {
    * Add Cognito User.
    *
    * @param username {@link String}
+   * @param userAttributes {@link Map}
    * @param emailVerified boolean
    * @return {@link UserType}
    */
-  public UserType addUser(final String username, final boolean emailVerified) {
-    return addUser(username, null, emailVerified);
+  public UserType addUser(final String username, final Map<String, String> userAttributes,
+      final boolean emailVerified) {
+    return addUser(username, null, userAttributes, emailVerified);
   }
 
   /**
@@ -124,18 +160,32 @@ public class CognitoIdentityProviderService {
    * 
    * @param username {@link String}
    * @param temporaryPassword {@link String}
+   * @param userAttributes {@link Map}
    * @param emailVerified boolean
    * @return {@link UserType}
    */
   public UserType addUser(final String username, final String temporaryPassword,
-      final boolean emailVerified) {
+      final Map<String, String> userAttributes, final boolean emailVerified) {
 
-    AdminCreateUserRequest cognitoRequest = AdminCreateUserRequest.builder()
-        .userPoolId(this.userPoolId).username(username).temporaryPassword(temporaryPassword)
-        .userAttributes(Arrays.asList(AttributeType.builder().name("email").value(username).build(),
-            AttributeType.builder().name("email_verified").value(String.valueOf(emailVerified))
-                .build()))
-        .build();
+    List<AttributeType> attributes = new ArrayList<>();
+
+    attributes.add(AttributeType.builder().name("email").value(username).build());
+    attributes.add(AttributeType.builder().name("email_verified")
+        .value(String.valueOf(emailVerified)).build());
+
+    if (userAttributes != null) {
+      for (Map.Entry<String, String> e : userAttributes.entrySet()) {
+
+        if (COGNITO_USER_ATTRIBUTES.containsKey(e.getKey())) {
+          attributes.add(AttributeType.builder().name(COGNITO_USER_ATTRIBUTES.get(e.getKey()))
+              .value(e.getValue()).build());
+        }
+      }
+    }
+
+    AdminCreateUserRequest cognitoRequest =
+        AdminCreateUserRequest.builder().userPoolId(this.userPoolId).username(username)
+            .temporaryPassword(temporaryPassword).userAttributes(attributes).build();
 
     AdminCreateUserResponse createUserResult = this.cognitoProvider.adminCreateUser(cognitoRequest);
     return createUserResult.user();

@@ -31,6 +31,7 @@ import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
@@ -38,17 +39,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import com.formkiq.aws.dynamodb.objects.MimeType;
+import com.formkiq.aws.services.lambda.exceptions.BadException;
+import com.formkiq.module.http.HttpResponseStatus;
 import com.formkiq.stacks.api.handler.AddDocumentRequest;
 
 /**
  * Upload Documents to an S3 Presigned Url {@link Function}.
  */
-public class PresignedUrlsToS3Bucket implements Function<Map<String, Object>, Void> {
+public class PresignedUrlsToS3Bucket {
 
   /** {@link HttpClient}. */
-  private HttpClient http = HttpClient.newHttpClient();
+  private final HttpClient http = HttpClient.newHttpClient();
   /** {@link AddDocumentRequest}. */
-  private AddDocumentRequest request;
+  private final AddDocumentRequest request;
 
   /**
    * constructor.
@@ -59,14 +62,15 @@ public class PresignedUrlsToS3Bucket implements Function<Map<String, Object>, Vo
     this.request = addDocumentRequest;
   }
 
-  @SuppressWarnings("unchecked")
-  @Override
-  public Void apply(final Map<String, Object> mapResponse) {
-
-    String content = this.request.getContent();
+  /**
+   * Uploads documents using the S3 Presigned url.
+   * 
+   * @param mapResponse {@link Map}
+   */
+  public void apply(final Map<String, Object> mapResponse) throws BadException {
 
     try {
-      postContent(mapResponse, this.request.isBase64(), content, this.request.getContentType());
+      postContent(mapResponse, this.request);
 
       int i = 0;
 
@@ -75,23 +79,24 @@ public class PresignedUrlsToS3Bucket implements Function<Map<String, Object>, Vo
       for (Map<String, Object> map : notNull(docs)) {
 
         AddDocumentRequest childReq = this.request.getDocuments().get(i);
-        postContent(map, childReq.isBase64(), childReq.getContent(), childReq.getContentType());
+        postContent(map, childReq);
 
         i++;
       }
-
     } catch (IOException | InterruptedException | URISyntaxException e) {
-      throw new RuntimeException(e);
+      throw new BadException(e.getMessage());
     }
-
-    return null;
   }
 
-  private void postContent(final Map<String, Object> map, final boolean isBase64,
-      final String content, final String contentType)
+  private void postContent(final Map<String, Object> map, final AddDocumentRequest req)
       throws IOException, InterruptedException, URISyntaxException {
 
+    String content = req.getContent();
+
     if (!isEmpty(content)) {
+
+      String contentType = req.getContentType();
+      boolean isBase64 = req.isBase64();
 
       String url = (String) map.get("url");
       String ct = !isEmpty(contentType) ? contentType : MimeType.MIME_OCTET_STREAM.getContentType();
@@ -99,8 +104,21 @@ public class PresignedUrlsToS3Bucket implements Function<Map<String, Object>, Vo
       byte[] bytes = isBase64 ? Base64.getDecoder().decode(content.getBytes(StandardCharsets.UTF_8))
           : content.getBytes(StandardCharsets.UTF_8);
 
-      this.http.send(HttpRequest.newBuilder(new URI(url)).header("Content-Type", ct)
-          .method("PUT", BodyPublishers.ofByteArray(bytes)).build(), BodyHandlers.ofString());
+      HttpRequest.Builder put = HttpRequest.newBuilder(new URI(url)).header("Content-Type", ct)
+          .method("PUT", BodyPublishers.ofByteArray(bytes));
+
+      if (map.containsKey("headers")) {
+        Map<String, String> headers = (Map<String, String>) map.get("headers");
+        for (Map.Entry<String, String> header : headers.entrySet()) {
+          put = put.setHeader(header.getKey(), header.getValue());
+        }
+      }
+
+      HttpResponse<String> response = this.http.send(put.build(), BodyHandlers.ofString());
+
+      if (!HttpResponseStatus.is2XX(response)) {
+        throw new IOException(response.body());
+      }
 
     } else {
       map.put("uploadUrl", map.get("url"));

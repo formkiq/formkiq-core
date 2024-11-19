@@ -218,7 +218,7 @@ public class EmailSendingTest {
     String data = UUID.randomUUID().toString();
 
     s3Service.putObject(stagingdocumentsbucketname, key, data.getBytes(StandardCharsets.UTF_8),
-        contentType);
+        contentType, null);
 
     return key;
   }

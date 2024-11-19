@@ -23,23 +23,13 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_CREATED;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
-import com.formkiq.aws.services.lambda.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -49,10 +39,8 @@ import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
-import com.formkiq.aws.services.lambda.services.CacheService;
+import com.formkiq.aws.dynamodb.cache.CacheService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
-import com.formkiq.plugins.tagschema.TagSchemaInterface;
 import com.formkiq.stacks.api.ApiDocumentTagItemResponse;
 import com.formkiq.stacks.api.ApiDocumentTagsItemResponse;
 import com.formkiq.stacks.dynamodb.DocumentService;
@@ -60,6 +48,17 @@ import com.formkiq.stacks.dynamodb.DocumentTagValidatorImpl;
 import com.formkiq.stacks.dynamodb.DocumentTags;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_CREATED;
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/tags". */
 public class DocumentTagsRequestHandler
@@ -86,7 +85,7 @@ public class DocumentTagsRequestHandler
 
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
-    verifyDocument(awsservice, event, siteId, documentId);
+    verifyDocument(awsservice, siteId, documentId);
 
     PaginationResults<DocumentTag> results =
         documentService.findDocumentTags(siteId, documentId, ptoken, limit);
@@ -160,9 +159,9 @@ public class DocumentTagsRequestHandler
     DocumentTags tags = fromBodyToObject(event, DocumentTags.class);
 
     validate(tags);
-    verifyDocument(awsservice, event, siteId, documentId);
+    verifyDocument(awsservice, siteId, documentId);
 
-    updateTagsMetadata(event, authorization, tags);
+    updateTagsMetadata(authorization, tags);
 
     validateTags(tags);
 
@@ -200,20 +199,16 @@ public class DocumentTagsRequestHandler
 
     if (!tagsValid) {
       tags = new DocumentTags();
-      tags.setTags(Arrays.asList(tag));
+      tags.setTags(List.of(tag));
     }
 
-    String userId = updateTagsMetadata(event, authorization, tags);
-
+    updateTagsMetadata(authorization, tags);
     validateTags(tags);
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
-    DocumentItem item = verifyDocument(awsservice, event, siteId, documentId);
-
-    Collection<DocumentTag> newTags = tagSchemaValidation(awsservice, siteId, tags, item, userId);
+    verifyDocument(awsservice, siteId, documentId);
 
     List<DocumentTag> allTags = new ArrayList<>(tags.getTags());
-    allTags.addAll(newTags);
 
     documentService.addTags(siteId, documentId, allTags, null);
 
@@ -235,11 +230,11 @@ public class DocumentTagsRequestHandler
 
     validate(tags);
 
-    verifyDocument(awsservice, event, siteId, documentId);
+    verifyDocument(awsservice, siteId, documentId);
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
     documentService.deleteDocumentTags(siteId, documentId);
-    updateTagsMetadata(event, authorization, tags);
+    updateTagsMetadata(authorization, tags);
 
     validateTags(tags);
 
@@ -249,57 +244,13 @@ public class DocumentTagsRequestHandler
   }
 
   /**
-   * Added Any TagSchema Composite Keys and Validate.
-   * 
-   * @param coreServices {@link AwsServiceCache}
-   * @param siteId {@link String}
-   * @param tags {@link DocumentTags}
-   * @param item {@link DocumentItem}
-   * @param userId {@link String}
-   * @return {@link Collection} {@link DocumentTag}
-   * @throws ValidationException ValidationException
-   * @throws BadException BadException
-   */
-  private Collection<DocumentTag> tagSchemaValidation(final AwsServiceCache coreServices,
-      final String siteId, final DocumentTags tags, final DocumentItem item, final String userId)
-      throws ValidationException, BadException {
-
-    Collection<DocumentTag> newTags = Collections.emptyList();
-
-    DocumentTagSchemaPlugin plugin = coreServices.getExtension(DocumentTagSchemaPlugin.class);
-
-    if (item.getTagSchemaId() != null) {
-
-      Collection<ValidationError> errors = new ArrayList<>();
-
-      TagSchemaInterface tagSchema = plugin.getTagSchema(siteId, item.getTagSchemaId());
-
-      if (tagSchema == null) {
-        throw new BadException("TagschemaId " + item.getTagSchemaId() + " not found");
-      }
-
-      plugin.updateInUse(siteId, tagSchema);
-      newTags = plugin.addCompositeKeys(tagSchema, siteId, item.getDocumentId(), tags.getTags(),
-          userId, false, errors);
-
-      if (!errors.isEmpty()) {
-        throw new ValidationException(errors);
-      }
-    }
-
-    return newTags;
-  }
-
-  /**
    * Update {@link DocumentTags} metadata.
    * 
-   * @param event {@link ApiGatewayRequestEvent}
    * @param authorization {@link ApiAuthorization}
    * @param tags {@link DocumentTags}
    * @return {@link String}
    */
-  private String updateTagsMetadata(final ApiGatewayRequestEvent event,
-      final ApiAuthorization authorization, final DocumentTags tags) {
+  private String updateTagsMetadata(final ApiAuthorization authorization, final DocumentTags tags) {
 
     String userId = authorization.getUsername();
 
@@ -338,9 +289,8 @@ public class DocumentTagsRequestHandler
     }
   }
 
-  private DocumentItem verifyDocument(final AwsServiceCache awsservice,
-      final ApiGatewayRequestEvent event, final String siteId, final String documentId)
-      throws Exception {
+  private DocumentItem verifyDocument(final AwsServiceCache awsservice, final String siteId,
+      final String documentId) throws Exception {
     DocumentService ds = awsservice.getExtension(DocumentService.class);
     DocumentItem item = ds.findDocument(siteId, documentId);
     throwIfNull(item, new DocumentNotFoundException(documentId));

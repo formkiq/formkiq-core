@@ -46,8 +46,8 @@ import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteriaRange;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.objects.Strings;
-import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
+import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecordToMap;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
 import com.formkiq.stacks.dynamodb.schemas.SchemaCompositeKeyRecord;
 import com.formkiq.stacks.dynamodb.schemas.SchemaService;
@@ -69,9 +69,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -97,7 +99,7 @@ import static com.formkiq.stacks.dynamodb.attributes.AttributeRecord.ATTR;
  * Implementation {@link DocumentSearchService}.
  *
  */
-public class DocumentSearchServiceImpl implements DocumentSearchService {
+public final class DocumentSearchServiceImpl implements DocumentSearchService {
 
   /** {@link DynamoDbService}. */
   private final DynamoDbService db;
@@ -111,8 +113,6 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
   private final FolderIndexProcessor folderIndexProcesor;
   /** {@link SchemaService}. */
   private final SchemaService schemaService;
-  /** {@link DocumentTagSchemaPlugin}. */
-  private final DocumentTagSchemaPlugin tagSchemaPlugin;
 
   /**
    * constructor.
@@ -120,16 +120,12 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
    * @param connection {@link DynamoDbConnectionBuilder}
    * @param documentService {@link DocumentService}
    * @param documentsTable {@link String}
-   * @param plugin {@link DocumentTagSchemaPlugin}
    */
   public DocumentSearchServiceImpl(final DynamoDbConnectionBuilder connection,
-      final DocumentService documentService, final String documentsTable,
-      final DocumentTagSchemaPlugin plugin) {
+      final DocumentService documentService, final String documentsTable) {
 
     this.dbClient = connection.build();
     this.docService = documentService;
-    this.tagSchemaPlugin = plugin;
-
 
     if (documentsTable == null) {
       throw new IllegalArgumentException("Table name is null");
@@ -173,49 +169,61 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
   private void addResponseFields(final String siteId, final List<DynamicDocumentItem> results,
       final SearchResponseFields searchResponseFields) {
 
-    final int limit = 10;
+    final int limit = 1000;
     if (searchResponseFields != null) {
 
-      List<String> attributes = Objects.notNull(searchResponseFields.getAttributes());
+      Set<String> keyNames = new HashSet<>(notNull(searchResponseFields.getAttributes()));
 
       for (DynamicDocumentItem item : results) {
 
         DocumentAttributeRecord sr = new DocumentAttributeRecord();
         sr.setDocumentId(item.getDocumentId());
 
-        Map<String, Object> attributeFields = new HashMap<>();
+        QueryConfig config = new QueryConfig().scanIndexForward(Boolean.TRUE)
+            .projectionExpression("#key,valueType,stringValue,numberValue,booleanValue")
+            .expressionAttributeNames(Map.of("#key", "key"));
 
-        for (String key : attributes) {
+        AttributeValue pk = sr.fromS(sr.pk(siteId));
+        AttributeValue sk = sr.fromS(ATTR);
+        QueryResponse response = this.db.queryBeginsWith(config, pk, sk, null, limit);
 
-          QueryConfig config = new QueryConfig().scanIndexForward(Boolean.TRUE)
-              .projectionExpression("valueType,stringValue,numberValue,booleanValue");
-
-          sr.setKey(key);
-          AttributeValue pk = sr.fromS(sr.pk(siteId));
-          AttributeValue sk = sr.fromS(ATTR + key + "#");
-          QueryResponse response = this.db.queryBeginsWith(config, pk, sk, null, limit);
-
-          if (!response.items().isEmpty()) {
-
-            List<DocumentAttributeRecord> records = response.items().stream()
+        List<DocumentAttributeRecord> records =
+            notNull(response.items()).stream().filter(a -> keyNames.contains(a.get("key").s()))
                 .map(a -> new DocumentAttributeRecord().getFromAttributes(siteId, a)).toList();
 
-            List<String> stringValues =
-                records.stream().map(DocumentAttributeRecord::getStringValue).toList();
-            List<Double> numberValues =
-                records.stream().map(DocumentAttributeRecord::getNumberValue).toList();
-            Boolean booleanValue = records.get(0).getBooleanValue();
-            DocumentAttributeValueType valueType = records.get(0).getValueType();
+        Collection<Map<String, Object>> attributes =
+            new DocumentAttributeRecordToMap(true).apply(records);
 
-            Map<String, Object> values = new HashMap<>();
-            values.put("stringValues", stringValues);
-            values.put("numberValues", numberValues);
-            values.put("booleanValue", booleanValue);
-            values.put("valueType", valueType);
+        Map<String, Object> attributeFields = new HashMap<>();
 
-            attributeFields.put(key, values);
+        attributes.forEach(a -> {
+          if (a.containsKey("stringValue")) {
+            a.put("stringValues", List.of(a.get("stringValue")));
+            a.remove("stringValue");
+          } else if (a.containsKey("numberValue")) {
+            a.put("numberValues", List.of(a.get("numberValue")));
+            a.remove("numberValue");
           }
-        }
+        });
+
+        attributes.forEach(a -> {
+
+          DocumentAttributeValueType vt =
+              DocumentAttributeValueType.valueOf((String) a.get("valueType"));
+          switch (vt) {
+            case BOOLEAN -> attributeFields.put((String) a.get("key"),
+                Map.of("valueType", a.get("valueType"), "booleanValue", a.get("booleanValue")));
+            case KEY_ONLY ->
+              attributeFields.put((String) a.get("key"), Map.of("valueType", a.get("valueType")));
+            case NUMBER -> attributeFields.put((String) a.get("key"),
+                Map.of("valueType", a.get("valueType"), "numberValues", a.get("numberValues")));
+            case STRING, COMPOSITE_STRING, RELATIONSHIPS, CLASSIFICATION, PUBLICATION ->
+              attributeFields.put((String) a.get("key"),
+                  Map.of("stringValues", a.get("stringValues"), "valueType", a.get("valueType")));
+            default ->
+              throw new IllegalArgumentException("Unexpected value: " + a.get("valueType"));
+          }
+        });
 
         item.put("attributes", attributeFields);
       }
@@ -638,14 +646,30 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
 
       results = searchByAttribute(siteId, query, search, token, maxresults);
 
-    } else {
+    } else if (query.getTag() != null) {
 
       SearchTagCriteria search = query.getTag();
       results = searchByTag(siteId, query, search, token, maxresults, null);
+
+    } else {
+
+      results = searchByDocumentIds(siteId, query.getDocumentIds());
     }
 
     addResponseFields(siteId, results.getResults(), searchResponseFields);
     return results;
+  }
+
+  private PaginationResults<DynamicDocumentItem> searchByDocumentIds(final String siteId,
+      final Collection<String> documentIds) {
+
+    List<DocumentItem> list = this.docService.findDocuments(siteId, new ArrayList<>(documentIds));
+
+    List<DynamicDocumentItem> results = list != null
+        ? list.stream().map(l -> new DocumentItemToDynamicDocumentItem().apply(l)).toList()
+        : Collections.emptyList();
+
+    return new PaginationResults<>(results, null);
   }
 
   private QueryResponse searchAttributeBeginsWith(final String siteId,
@@ -852,7 +876,6 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
             .collect(Collectors.toList()) : Collections.emptyList();
 
     addMatchAttributes(items, results);
-    // addResponseFields(siteId, results, searchResponseFields);
 
     return new PaginationResults<>(results, pagination);
   }
@@ -870,7 +893,14 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
       final SearchMetaCriteria meta, final PaginationMapToken token, final int maxresults) {
 
     String value = getMetaDataKey(siteId, meta);
-    return searchByMeta(siteId, value, meta.indexFilterBeginsWith(), token, maxresults);
+    PaginationResults<DynamicDocumentItem> results =
+        searchByMeta(siteId, value, meta.indexFilterBeginsWith(), token, maxresults);
+
+    if ("folder".equals(meta.indexType())) {
+      results.getResults().removeIf(r -> r.get("documentId") == null);
+    }
+
+    return results;
   }
 
   private PaginationResults<DynamicDocumentItem> searchByMeta(final String siteId,
@@ -907,10 +937,6 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
       final int maxresults, final String projectionExpression) {
 
     SearchTagCriteria search = csearch;
-
-    if (this.tagSchemaPlugin != null) {
-      search = this.tagSchemaPlugin.createMultiTagSearch(query);
-    }
 
     String key = getSearchKey(search);
 
@@ -1062,6 +1088,8 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
           : new DynamicDocumentItem(metaFolder.apply(r));
 
     }).collect(Collectors.toList());
+
+
 
     return new PaginationResults<>(results, new QueryResponseToPagination().apply(result));
   }

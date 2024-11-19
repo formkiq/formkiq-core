@@ -23,25 +23,6 @@
  */
 package com.formkiq.stacks.lambda.s3;
 
-import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
-import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.getSiteId;
-import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
-import static com.formkiq.aws.dynamodb.objects.Strings.isUuid;
-import static software.amazon.awssdk.utils.StringUtils.isEmpty;
-import java.io.IOException;
-import java.lang.reflect.Type;
-import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
@@ -49,6 +30,7 @@ import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceExtension;
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
@@ -85,8 +67,6 @@ import com.formkiq.module.httpsigv4.HttpServiceSigv4;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.module.lambdaservices.ClassServiceExtension;
-import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
-import com.formkiq.plugins.tagschema.DocumentTagSchemaPluginExtension;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
 import com.formkiq.stacks.dynamodb.DocumentSearchServiceExtension;
@@ -112,6 +92,26 @@ import software.amazon.awssdk.services.s3.model.GetObjectTaggingResponse;
 import software.amazon.awssdk.services.s3.model.Tag;
 import software.amazon.awssdk.utils.StringUtils;
 import software.amazon.awssdk.utils.http.SdkHttpUtils;
+
+import java.io.IOException;
+import java.lang.reflect.Type;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.getSiteId;
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
+import static com.formkiq.aws.dynamodb.objects.Strings.isUuid;
+import static software.amazon.awssdk.utils.StringUtils.isEmpty;
 
 /** {@link RequestHandler} for handling Document Staging Create Events. */
 @Reflectable
@@ -199,8 +199,6 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     awsServiceCache.register(EventService.class, new EventServiceSnsExtension());
     awsServiceCache.register(ActionsNotificationService.class,
         new ActionsNotificationServiceExtension());
-    awsServiceCache.register(DocumentTagSchemaPlugin.class,
-        new DocumentTagSchemaPluginExtension(null));
     awsServiceCache.register(DynamoDbService.class, new DynamoDbServiceExtension());
     awsServiceCache.register(AttributeService.class, new AttributeServiceExtension());
 
@@ -324,10 +322,10 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
     if (hasContent) {
       doc.setContentLength(null);
-      doc.setChecksum(UUID.randomUUID().toString());
+      doc.setChecksum(ID.uuid());
       doc.setDeepLinkPath(null);
     } else if (doc.getChecksum() == null) {
-      doc.setChecksum(UUID.randomUUID().toString());
+      doc.setChecksum(ID.uuid());
     }
 
     if (isEmpty(doc.getPath())) {
@@ -389,10 +387,10 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     try {
 
       Map<String, String> index = folderIndexProcesor.getIndex(siteId, path);
-      documentId = index.getOrDefault("documentId", UUID.randomUUID().toString());
+      documentId = index.getOrDefault("documentId", ID.uuid());
 
     } catch (IOException e) {
-      documentId = UUID.randomUUID().toString();
+      documentId = ID.uuid();
     }
 
     return documentId;

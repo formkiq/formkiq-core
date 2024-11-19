@@ -143,8 +143,7 @@ public abstract class AbstractAwsTest {
         new DynamoDbConnectionBuilder(false).setCredentials(awsprofile).setRegion(awsregion);
     documentService = new DocumentServiceImpl(dbConnection, documentsTable,
         new DocumentVersionServiceNoVersioning());
-    searchService =
-        new DocumentSearchServiceImpl(dbConnection, documentService, documentsTable, null);
+    searchService = new DocumentSearchServiceImpl(dbConnection, documentService, documentsTable);
   }
 
   /**

@@ -27,6 +27,8 @@ import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -62,8 +64,8 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
   public Map<String, AttributeRecord> getAttributeRecordMap(final String siteId,
       final Collection<DocumentAttributeRecord> documentAttributes) {
 
-    List<String> attributeKeys = documentAttributes.stream().filter(a -> !isEmpty(a.getKey()))
-        .map(DocumentAttributeRecord::getKey).toList();
+    List<String> attributeKeys = documentAttributes.stream().map(DocumentAttributeRecord::getKey)
+        .filter(key -> !isEmpty(key)).toList();
 
     return this.attributeService.getAttributes(siteId, attributeKeys);
   }
@@ -132,24 +134,42 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
 
   /**
    * Validate Attribute exists and has the correct data type.
-   * 
+   *
+   * @param siteId {@link String}
    * @param attributesMap {@link Map} {@link AttributeRecord}
    * @param documentAttributes {@link Collection} {@link DocumentAttributeRecord}
    * @param access {@link AttributeValidationAccess}
    * @param errors {@link Collection} {@link ValidationError}
    */
-  private void validateAttributeExistsAndDataType(final Map<String, AttributeRecord> attributesMap,
+  private void validateAttributeExistsAndDataType(final String siteId,
+      final Map<String, AttributeRecord> attributesMap,
       final Collection<DocumentAttributeRecord> documentAttributes,
       final AttributeValidationAccess access, final Collection<ValidationError> errors) {
 
+    Collection<String> savedReservedKeys = new HashSet<>();
+
     for (DocumentAttributeRecord da : documentAttributes) {
 
-      if (isProcessAttribute(da)) {
+      if (isProcessAttribute(da, savedReservedKeys)) {
 
         if (!attributesMap.containsKey(da.getKey())) {
 
-          String errorMsg = "attribute '" + da.getKey() + "' not found";
-          errors.add(new ValidationErrorImpl().key(da.getKey()).error(errorMsg));
+          AttributeKeyReserved reserved = AttributeKeyReserved.find(da.getKey());
+
+          if (reserved != null) {
+
+            Collection<ValidationError> elist = attributeService.addAttribute(siteId, da.getKey(),
+                AttributeDataType.STRING, AttributeType.STANDARD, true);
+
+            if (elist.isEmpty()) {
+              savedReservedKeys.add(da.getKey());
+            }
+            errors.addAll(elist);
+
+          } else {
+            String errorMsg = "attribute '" + da.getKey() + "' not found";
+            errors.add(new ValidationErrorImpl().key(da.getKey()).error(errorMsg));
+          }
 
         } else {
 
@@ -157,21 +177,28 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
           AttributeDataType dataType = attribute.getDataType();
           validateDataType(da, dataType, errors);
 
-          if (AttributeValidationAccess.UPDATE.equals(access)
-              && AttributeType.OPA.equals(attribute.getType())) {
+          if (AttributeType.OPA.equals(attribute.getType())) {
+            if (isUpdateDeleteOrSet(access)) {
 
-            String errorMsg = "attribute '" + da.getKey()
-                + "' is an access attribute, can only be changed by Admin";
-            errors.add(new ValidationErrorImpl().key(da.getKey()).error(errorMsg));
+              String errorMsg = "attribute '" + da.getKey()
+                  + "' is an access attribute, can only be changed by Admin";
+              errors.add(new ValidationErrorImpl().key(da.getKey()).error(errorMsg));
+            }
           }
         }
       }
     }
   }
 
-  private static boolean isProcessAttribute(final DocumentAttributeRecord da) {
+  private boolean isProcessAttribute(final DocumentAttributeRecord da) {
+    return isProcessAttribute(da, Collections.emptyList());
+  }
+
+  private boolean isProcessAttribute(final DocumentAttributeRecord da,
+      final Collection<String> savedReservedKeys) {
     return !DocumentAttributeValueType.COMPOSITE_STRING.equals(da.getValueType())
-        && !DocumentAttributeValueType.CLASSIFICATION.equals(da.getValueType());
+        && !DocumentAttributeValueType.CLASSIFICATION.equals(da.getValueType())
+        && !savedReservedKeys.contains(da.getKey());
   }
 
   private void validateDataType(final DocumentAttributeRecord a, final AttributeDataType dataType,
@@ -212,6 +239,36 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
   }
 
   @Override
+  public Collection<ValidationError> validateDeleteAttributes(
+      final List<SchemaAttributes> schemaAttributes, final Collection<String> attributeKeys,
+      final Map<String, AttributeRecord> attributeRecordMap,
+      final AttributeValidationAccess validationAccess) {
+
+    Collection<ValidationError> errors = new ArrayList<>();
+
+    for (String attributeKey : attributeKeys) {
+
+      if (Strings.isEmpty(attributeKey)) {
+
+        errors.add(new ValidationErrorImpl().key("key").error("'key' is required"));
+
+      } else {
+
+        AttributeRecord attributeRecord = attributeRecordMap.get(attributeKey);
+        validateOpaAttribute(attributeRecord, validationAccess, errors);
+
+        if (errors.isEmpty()) {
+          for (SchemaAttributes schemaAttribute : schemaAttributes) {
+            validateRequiredAttribute(schemaAttribute, attributeKey, errors);
+          }
+        }
+      }
+    }
+
+    return errors;
+  }
+
+  @Override
   public Collection<ValidationError> validateDeleteAttribute(final Schema schema,
       final String siteId, final String attributeKey,
       final AttributeValidationAccess validationAccess) {
@@ -226,8 +283,8 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
 
       validateOpaAttribute(siteId, attributeKey, validationAccess, errors);
 
-      if (errors.isEmpty()) {
-        validateRequiredAttribute(schema, attributeKey, errors);
+      if (errors.isEmpty() && schema != null) {
+        validateRequiredAttribute(schema.getAttributes(), attributeKey, errors);
       }
     }
 
@@ -239,13 +296,28 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
 
     if (AttributeValidationAccess.DELETE.equals(validationAccess)) {
       AttributeRecord attribute = this.attributeService.getAttribute(siteId, attributeKey);
+      validateOpaAttribute(attribute, validationAccess, errors);
+    }
+  }
+
+  private void validateOpaAttribute(final AttributeRecord attribute,
+      final AttributeValidationAccess validationAccess, final Collection<ValidationError> errors) {
+
+    if (isUpdateDeleteOrSet(validationAccess)) {
 
       if (attribute != null && AttributeType.OPA.equals(attribute.getType())) {
+        String attributeKey = attribute.getKey();
         String errorMsg =
             "attribute '" + attributeKey + "' is an access attribute, can only be changed by Admin";
         errors.add(new ValidationErrorImpl().key(attributeKey).error(errorMsg));
       }
     }
+  }
+
+  private boolean isUpdateDeleteOrSet(final AttributeValidationAccess validationAccess) {
+    return AttributeValidationAccess.DELETE.equals(validationAccess)
+        || AttributeValidationAccess.UPDATE.equals(validationAccess)
+        || AttributeValidationAccess.SET.equals(validationAccess);
   }
 
   @Override
@@ -269,8 +341,8 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
 
       validateOpaAttribute(siteId, attributeKey, validationAccess, errors);
 
-      if (errors.isEmpty()) {
-        validateRequiredAttribute(schema, attributeKey, errors);
+      if (errors.isEmpty() && schema != null) {
+        validateRequiredAttribute(schema.getAttributes(), attributeKey, errors);
       }
     }
 
@@ -281,8 +353,7 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
   public Collection<ValidationError> validateFullAttribute(
       final Collection<SchemaAttributes> schemaAttributes, final String siteId,
       final String documentId, final Collection<DocumentAttributeRecord> documentAttributes,
-      final Map<String, AttributeRecord> attributesMap, final boolean isUpdate,
-      final AttributeValidationAccess access) {
+      final Map<String, AttributeRecord> attributesMap, final AttributeValidationAccess access) {
 
     Collection<ValidationError> errors = new ArrayList<>();
 
@@ -290,14 +361,12 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
 
     if (errors.isEmpty()) {
 
-      validateAttributeExistsAndDataType(attributesMap, documentAttributes, access, errors);
+      validateAttributeExistsAndDataType(siteId, attributesMap, documentAttributes, access, errors);
 
       if (errors.isEmpty()) {
 
-        if (!isUpdate || !notNull(documentAttributes).isEmpty()) {
-          notNull(schemaAttributes).forEach(schemaAttribute -> validateSitesSchema(schemaAttribute,
-              siteId, attributesMap, documentAttributes, errors));
-        }
+        notNull(schemaAttributes).forEach(schemaAttribute -> validateSitesSchema(schemaAttribute,
+            siteId, attributesMap, documentAttributes, errors));
       }
     }
 
@@ -340,7 +409,7 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
     validateRequired(documentAttributes, errors);
 
     if (errors.isEmpty()) {
-      validateAttributeExistsAndDataType(attributesMap, documentAttributes, access, errors);
+      validateAttributeExistsAndDataType(siteId, attributesMap, documentAttributes, access, errors);
     }
 
     if (errors.isEmpty() && schemaAttributes != null) {
@@ -357,6 +426,7 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
     for (DocumentAttributeRecord a : documentAttributes) {
 
       if (!DocumentAttributeValueType.CLASSIFICATION.equals(a.getValueType())
+          && !DocumentAttributeValueType.RELATIONSHIPS.equals(a.getValueType())
           && Strings.isEmpty(a.getKey())) {
         errors.add(new ValidationErrorImpl().key("key").error("'key' is missing from attribute"));
       }
@@ -368,19 +438,15 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
     }
   }
 
-  private void validateRequiredAttribute(final Schema schema, final String attributeKey,
-      final Collection<ValidationError> errors) {
+  private void validateRequiredAttribute(final SchemaAttributes attributes,
+      final String attributeKey, final Collection<ValidationError> errors) {
 
-    if (schema != null) {
+    Optional<SchemaAttributesRequired> o = notNull(attributes.getRequired()).stream()
+        .filter(r -> r.getAttributeKey().equals(attributeKey)).findAny();
 
-      SchemaAttributes attributes = schema.getAttributes();
-      Optional<SchemaAttributesRequired> o = attributes.getRequired().stream()
-          .filter(r -> r.getAttributeKey().equals(attributeKey)).findAny();
-
-      if (o.isPresent()) {
-        errors.add(new ValidationErrorImpl().key(attributeKey)
-            .error("'" + attributeKey + "' is a required attribute"));
-      }
+    if (o.isPresent()) {
+      errors.add(new ValidationErrorImpl().key(attributeKey)
+          .error("'" + attributeKey + "' is a required attribute"));
     }
   }
 

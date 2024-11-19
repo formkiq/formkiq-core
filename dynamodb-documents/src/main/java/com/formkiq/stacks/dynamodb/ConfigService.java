@@ -43,9 +43,18 @@ public interface ConfigService {
   /** Notification Email. */
   String NOTIFICATION_EMAIL = "NotificationEmail";
 
+  /** Docusign User Id. */
+  String KEY_DOCUSIGN_USER_ID = "docusignUserId";
+  /** Docusign Integration Key / Client Id. */
+  String KEY_DOCUSIGN_INTEGRATION_KEY = "docusignIntegrationKey";
+  /** Docusign Rsa Private Key. */
+  String KEY_DOCUSIGN_RSA_PRIVATE_KEY = "docusignRsaPrivateKey";
+  /** Docusign Rsa Private Key. */
+  String KEY_DOCUSIGN_HMAC_SIGNATURE = "docusignHmacSignature";
+
   /**
    * Delete Config.
-   * 
+   *
    * @param siteId {@link String}
    */
   void delete(String siteId);

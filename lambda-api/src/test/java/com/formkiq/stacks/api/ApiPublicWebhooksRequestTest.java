@@ -37,14 +37,15 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
+
+import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
-import com.formkiq.aws.services.lambda.services.CacheService;
+import com.formkiq.aws.dynamodb.cache.CacheService;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.dynamodb.ConfigService;
 import com.formkiq.stacks.dynamodb.WebhooksService;
@@ -80,8 +81,8 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
     // given
     enablePublicEnpoint();
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      String name = UUID.randomUUID().toString();
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      String name = ID.uuid();
 
       String id = getWebhooksService().saveWebhook(siteId, name, "joe", null, "true");
 
@@ -112,9 +113,9 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
     // given
     enablePublicEnpoint();
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      String name = UUID.randomUUID().toString();
+      String name = ID.uuid();
       String id = getWebhooksService().saveWebhook(siteId, name, "joe", null, "true");
 
       ApiGatewayRequestEvent event =
@@ -166,8 +167,8 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   public void testPostWebhooks04() throws Exception {
     enablePublicEnpoint();
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      String name = UUID.randomUUID().toString();
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      String name = ID.uuid();
 
       ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC).plusSeconds(Long.parseLong("-1000"));
       Date ttl = Date.from(now.toInstant());
@@ -196,9 +197,9 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
     // given
     enablePublicEnpoint();
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      String name = UUID.randomUUID().toString();
+      String name = ID.uuid();
 
       ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC).plusSeconds(Long.parseLong("1000"));
       Date ttl = Date.from(now.toInstant());
@@ -232,9 +233,9 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   public void testPostWebhooks06() throws Exception {
     enablePublicEnpoint();
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      String name = UUID.randomUUID().toString();
+      String name = ID.uuid();
 
       String id = getWebhooksService().saveWebhook(siteId, name, "joe", null, "true");
 
@@ -264,9 +265,9 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   public void testPostWebhooks07() throws Exception {
     enablePublicEnpoint();
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      String name = UUID.randomUUID().toString();
+      String name = ID.uuid();
 
       String id = getWebhooksService().saveWebhook(siteId, name, "joe", null, "true");
 
@@ -299,9 +300,9 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   public void testPostWebhooks08() throws Exception {
     enablePublicEnpoint();
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      String name = UUID.randomUUID().toString();
+      String name = ID.uuid();
 
       String id = getWebhooksService().saveWebhook(siteId, name, "joe", null, "true");
 
@@ -335,9 +336,9 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   public void testPostWebhooks09() throws Exception {
     enablePublicEnpoint();
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      String name = UUID.randomUUID().toString();
+      String name = ID.uuid();
 
       String id = getWebhooksService().saveWebhook(siteId, name, "joe", null, "true");
 
@@ -375,9 +376,9 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   public void testPostWebhooks10() throws Exception {
     enablePublicEnpoint();
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      String name = UUID.randomUUID().toString();
+      String name = ID.uuid();
 
       String id = getWebhooksService().saveWebhook(siteId, name, "joe", null, "false");
 
@@ -403,9 +404,9 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   public void testPostWebhooks11() throws Exception {
     enablePublicEnpoint();
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      String name = UUID.randomUUID().toString();
+      String name = ID.uuid();
 
       String id = getWebhooksService().saveWebhook(siteId, name, "joe", null, "true");
 
@@ -435,9 +436,9 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   public void testPostWebhooks12() throws Exception {
     enablePublicEnpoint();
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      String name = UUID.randomUUID().toString();
+      String name = ID.uuid();
 
       ConfigService configService = getAwsServices().getExtension(ConfigService.class);
       configService.save(siteId, new DynamicObject(Map.of(DOCUMENT_TIME_TO_LIVE, "1000")));
@@ -480,11 +481,11 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   public void testPostWebhooks13() throws Exception {
     enablePublicEnpoint();
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      String idempotencyKey = UUID.randomUUID().toString();
+      String idempotencyKey = ID.uuid();
 
-      String name = UUID.randomUUID().toString();
+      String name = ID.uuid();
 
       String id = getWebhooksService().saveWebhook(siteId, name, "joe", null, "true");
 
@@ -532,9 +533,9 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   public void testPostWebhooks14() throws Exception {
     enablePublicEnpoint();
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      String name = UUID.randomUUID().toString();
+      String name = ID.uuid();
 
       String id = getWebhooksService().saveWebhook(siteId, name, "joe", null, "private");
 

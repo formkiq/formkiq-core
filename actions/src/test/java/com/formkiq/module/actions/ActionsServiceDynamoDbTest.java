@@ -35,7 +35,9 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
+
+import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -72,6 +74,7 @@ public class ActionsServiceDynamoDbTest {
   @BeforeAll
   public static void beforeAll() throws Exception {
 
+    ApiAuthorization.login(new ApiAuthorization().username("System"));
     DynamoDbConnectionBuilder db = DynamoDbTestServices.getDynamoDbConnection();
     service = new ActionsServiceDynamoDb(db, DOCUMENTS_TABLE);
     documentService =
@@ -83,11 +86,11 @@ public class ActionsServiceDynamoDbTest {
    */
   @Test
   public void hasActions01() {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String userId0 = "joe";
-      String documentId0 = UUID.randomUUID().toString();
-      String documentId1 = UUID.randomUUID().toString();
+      String documentId0 = ID.uuid();
+      String documentId1 = ID.uuid();
 
       Action action0 = new Action().type(ActionType.OCR).userId(userId0);
 
@@ -107,9 +110,9 @@ public class ActionsServiceDynamoDbTest {
    */
   @Test
   public void testDeleteDocument() throws ValidationException {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
       documentService.saveDocument(siteId, item, null);
 
@@ -133,9 +136,9 @@ public class ActionsServiceDynamoDbTest {
    */
   @Test
   public void testDeleteDocumentActions() throws ValidationException {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
       documentService.saveDocument(siteId, item, null);
 
@@ -158,10 +161,10 @@ public class ActionsServiceDynamoDbTest {
   @Test
   public void testInsertAction01() {
     // given
-    String documentId = UUID.randomUUID().toString();
+    String documentId = ID.uuid();
     String user = "joe";
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       Action action0 = new Action().type(ActionType.DOCUMENTTAGGING).userId(user)
           .parameters(Map.of("tags", "type")).status(ActionStatus.COMPLETE);
@@ -200,12 +203,12 @@ public class ActionsServiceDynamoDbTest {
    */
   @Test
   public void testSave01() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String userId0 = "joe";
       String userId1 = "jane";
-      String documentId0 = UUID.randomUUID().toString();
-      String documentId1 = UUID.randomUUID().toString();
+      String documentId0 = ID.uuid();
+      String documentId1 = ID.uuid();
 
       Action action0 =
           new Action().type(ActionType.OCR).userId(userId0).parameters(Map.of("test", "1234"));
@@ -259,9 +262,9 @@ public class ActionsServiceDynamoDbTest {
   public void testSave02() {
     // given
     final int numberOfActions = 15;
-    String documentId = UUID.randomUUID().toString();
+    String documentId = ID.uuid();
     String user = "joe";
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       List<Action> actions = new ArrayList<>();
       for (int i = 0; i < numberOfActions; i++) {
@@ -290,11 +293,11 @@ public class ActionsServiceDynamoDbTest {
    */
   @Test
   public void testSave03() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String userId0 = "joe";
       String name = "test94832";
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
 
       Action action0 = new Action().type(ActionType.QUEUE).userId(userId0).queueId(name);
 
@@ -319,9 +322,9 @@ public class ActionsServiceDynamoDbTest {
    */
   @Test
   public void testUpdateActionStatus01() {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       String userId0 = "joe";
       Action action0 =
           new Action().type(ActionType.OCR).userId(userId0).parameters(Map.of("test", "1234"));
@@ -346,10 +349,10 @@ public class ActionsServiceDynamoDbTest {
    */
   @Test
   public void testUpdateActionStatus02() {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String queueId = "queue1234";
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       String userId0 = "joe";
       Action action0 = new Action().type(ActionType.QUEUE).userId(userId0).queueId(queueId);
       service.saveNewActions(siteId, documentId, Arrays.asList(action0));
@@ -394,10 +397,10 @@ public class ActionsServiceDynamoDbTest {
    */
   @Test
   public void testUpdateActionStatus03() {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String name = "queue1234";
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       String userId0 = "joe";
       Action action0 = new Action().type(ActionType.QUEUE).userId(userId0).queueId(name);
       service.saveNewActions(siteId, documentId, Arrays.asList(action0));

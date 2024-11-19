@@ -44,6 +44,10 @@ public class AddDocumentRequest {
   private String contentType;
   /** Deep Link Path. */
   private String deepLinkPath;
+  /** Checksum Type. */
+  private String checksumType;
+  /** Checksum. */
+  private String checksum;
   /** Document Id. */
   private String documentId;
   /** Child documents. */
@@ -56,14 +60,50 @@ public class AddDocumentRequest {
   private String path;
   /** Document Tags. */
   private List<AddDocumentTag> tags;
-  /** Tag Schema Id. */
-  private String tagSchemaId;
 
   /**
    * constructor.
    */
   public AddDocumentRequest() {
 
+  }
+
+  /**
+   * Get Checksum Type.
+   * 
+   * @return String
+   */
+  public String getChecksumType() {
+    return this.checksumType != null ? this.checksumType.toUpperCase() : null;
+  }
+
+  /**
+   * Set Checksum Type.
+   * 
+   * @param type {@link String}
+   * @return {@link AddDocumentRequest}
+   */
+  public AddDocumentRequest setChecksumType(final String type) {
+    this.checksumType = type;
+    return this;
+  }
+
+  /**
+   * Get Checksum.
+   * 
+   * @return String
+   */
+  public String getChecksum() {
+    return checksum;
+  }
+
+  /**
+   * Set Checksum.
+   * 
+   * @param documentChecksum {@link String}
+   */
+  public void setChecksum(final String documentChecksum) {
+    this.checksum = documentChecksum;
   }
 
   /**
@@ -76,107 +116,8 @@ public class AddDocumentRequest {
   }
 
   /**
-   * Get Document Attributes.
-   * 
-   * @return {@link List} {@link DocumentAttribute}
-   */
-  public List<DocumentAttribute> getAttributes() {
-    return this.attributes;
-  }
-
-  /**
-   * Document Content.
-   * 
-   * @return {@link String}
-   */
-  public String getContent() {
-    return this.content;
-  }
-
-  /**
-   * Get Content Type.
-   * 
-   * @return {@link String}
-   */
-  public String getContentType() {
-    return this.contentType;
-  }
-
-  /**
-   * Get Deep Link Path.
-   * 
-   * @return {@link String}
-   */
-  public String getDeepLinkPath() {
-    return this.deepLinkPath;
-  }
-
-  /**
-   * Get Document Id.
-   * 
-   * @return {@link String}
-   */
-  public String getDocumentId() {
-    return this.documentId;
-  }
-
-  /**
-   * Get Child Documents.
-   * 
-   * @return {@link List} {@link AddDocumentRequest}
-   */
-  public List<AddDocumentRequest> getDocuments() {
-    return this.documents;
-  }
-
-  /**
-   * Get Document Metadata.
-   * 
-   * @return {@link List} {@link DocumentMetadata}
-   */
-  public List<DocumentMetadata> getMetadata() {
-    return this.metadata;
-  }
-
-  /**
-   * Get Document Path.
-   * 
-   * @return {@link String}
-   */
-  public String getPath() {
-    return this.path;
-  }
-
-  /**
-   * Get Document Tags.
-   * 
-   * @return {@link List} {@link AddDocumentTag}
-   */
-  public List<AddDocumentTag> getTags() {
-    return this.tags;
-  }
-
-  /**
-   * Get Tag Schema Id.
-   * 
-   * @return {@link String}
-   */
-  public String getTagSchemaId() {
-    return this.tagSchemaId;
-  }
-
-  /**
-   * Is Base 64.
-   * 
-   * @return boolean
-   */
-  public boolean isBase64() {
-    return this.isBase64;
-  }
-
-  /**
    * Set Document Actions.
-   * 
+   *
    * @param documentActions {@link List} {@link Action}
    */
   public void setActions(final List<Action> documentActions) {
@@ -184,8 +125,17 @@ public class AddDocumentRequest {
   }
 
   /**
+   * Get Document Attributes.
+   *
+   * @return {@link List} {@link DocumentAttribute}
+   */
+  public List<DocumentAttribute> getAttributes() {
+    return this.attributes;
+  }
+
+  /**
    * Set Document Attributes.
-   * 
+   *
    * @param documentAttributes {@link List} {@link DocumentAttribute}
    */
   public void setAttributes(final List<DocumentAttribute> documentAttributes) {
@@ -193,17 +143,17 @@ public class AddDocumentRequest {
   }
 
   /**
-   * Set Base 64.
-   * 
-   * @param contentIsBase64 boolean
+   * Document Content.
+   *
+   * @return {@link String}
    */
-  public void setBase64(final boolean contentIsBase64) {
-    this.isBase64 = contentIsBase64;
+  public String getContent() {
+    return this.content;
   }
 
   /**
    * Set Document Content.
-   * 
+   *
    * @param documentContent {@link String}
    */
   public void setContent(final String documentContent) {
@@ -211,8 +161,17 @@ public class AddDocumentRequest {
   }
 
   /**
+   * Get Content Type.
+   *
+   * @return {@link String}
+   */
+  public String getContentType() {
+    return this.contentType;
+  }
+
+  /**
    * Set Content Type.
-   * 
+   *
    * @param documentContentType {@link String}
    */
   public void setContentType(final String documentContentType) {
@@ -220,8 +179,17 @@ public class AddDocumentRequest {
   }
 
   /**
+   * Get Deep Link Path.
+   *
+   * @return {@link String}
+   */
+  public String getDeepLinkPath() {
+    return this.deepLinkPath;
+  }
+
+  /**
    * Set Deep Link Path.
-   * 
+   *
    * @param documentDeepLinkPath {@link String}
    */
   public void setDeepLinkPath(final String documentDeepLinkPath) {
@@ -229,8 +197,17 @@ public class AddDocumentRequest {
   }
 
   /**
+   * Get Document Id.
+   *
+   * @return {@link String}
+   */
+  public String getDocumentId() {
+    return this.documentId;
+  }
+
+  /**
    * Set Document Id.
-   * 
+   *
    * @param id {@link String}
    */
   public void setDocumentId(final String id) {
@@ -238,8 +215,17 @@ public class AddDocumentRequest {
   }
 
   /**
+   * Get Child Documents.
+   *
+   * @return {@link List} {@link AddDocumentRequest}
+   */
+  public List<AddDocumentRequest> getDocuments() {
+    return this.documents;
+  }
+
+  /**
    * Set Child Documents.
-   * 
+   *
    * @param childDocuments {@link List} {@link AddDocumentRequest}
    */
   public void setDocuments(final List<AddDocumentRequest> childDocuments) {
@@ -247,8 +233,17 @@ public class AddDocumentRequest {
   }
 
   /**
+   * Get Document Metadata.
+   *
+   * @return {@link List} {@link DocumentMetadata}
+   */
+  public List<DocumentMetadata> getMetadata() {
+    return this.metadata;
+  }
+
+  /**
    * Set Document Metadata.
-   * 
+   *
    * @param documentMetadata {@link List} {@link DocumentMetadata}
    */
   public void setMetadata(final List<DocumentMetadata> documentMetadata) {
@@ -256,8 +251,17 @@ public class AddDocumentRequest {
   }
 
   /**
+   * Get Document Path.
+   *
+   * @return {@link String}
+   */
+  public String getPath() {
+    return this.path;
+  }
+
+  /**
    * Set Document Path.
-   * 
+   *
    * @param documentPath {@link String}
    */
   public void setPath(final String documentPath) {
@@ -265,8 +269,17 @@ public class AddDocumentRequest {
   }
 
   /**
+   * Get Document Tags.
+   *
+   * @return {@link List} {@link AddDocumentTag}
+   */
+  public List<AddDocumentTag> getTags() {
+    return this.tags;
+  }
+
+  /**
    * Set Document Tags.
-   * 
+   *
    * @param documentTags {@link List} {@link AddDocumentTag}
    */
   public void setTags(final List<AddDocumentTag> documentTags) {
@@ -274,11 +287,20 @@ public class AddDocumentRequest {
   }
 
   /**
-   * Set Tag Schema Id.
-   * 
-   * @param documentTagSchemaId {@link String}
+   * Is Base 64.
+   *
+   * @return boolean
    */
-  public void setTagSchemaId(final String documentTagSchemaId) {
-    this.tagSchemaId = documentTagSchemaId;
+  public boolean isBase64() {
+    return this.isBase64;
+  }
+
+  /**
+   * Set Base 64.
+   *
+   * @param contentIsBase64 boolean
+   */
+  public void setBase64(final boolean contentIsBase64) {
+    this.isBase64 = contentIsBase64;
   }
 }

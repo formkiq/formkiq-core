@@ -23,15 +23,18 @@
  */
 package com.formkiq.stacks.api.transformers;
 
-import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
-import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.function.Function;
 import com.formkiq.stacks.api.handler.DocumentAttribute;
 import com.formkiq.stacks.dynamodb.attributes.AttributeKeyReserved;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
+import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecordBuilder;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.function.Function;
+
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 
 /**
  * Convert {@link DocumentAttribute} to {@link DocumentAttributeRecord}.
@@ -73,6 +76,11 @@ public class DocumentAttributeToDocumentAttributeRecord
       boolean used = false;
       String key = a.getKey();
 
+      if (isRelationship(a)) {
+        used = true;
+        addRelationship(a, c);
+      }
+
       if (!isEmpty(a.getClassificationId())) {
         used = true;
         addToList(c, DocumentAttributeValueType.CLASSIFICATION,
@@ -112,13 +120,31 @@ public class DocumentAttributeToDocumentAttributeRecord
     return c;
   }
 
+  private static boolean isRelationship(final DocumentAttribute a) {
+    return !isEmpty(a.getDocumentId()) && a.getRelationship() != null;
+  }
+
+  private void addRelationship(final DocumentAttribute a,
+      final Collection<DocumentAttributeRecord> c) {
+
+    Collection<DocumentAttributeRecord> records = new DocumentAttributeRecordBuilder().apply(
+        this.docId, a.getDocumentId(), a.getRelationship(), a.getInverseRelationship(), this.user);
+    c.addAll(records);
+  }
+
   private void addToList(final Collection<DocumentAttributeRecord> list,
+      final DocumentAttributeValueType valueType, final String key, final String stringValue,
+      final Boolean boolValue, final Double numberValue) {
+    addToList(list, this.docId, valueType, key, stringValue, boolValue, numberValue);
+  }
+
+  private void addToList(final Collection<DocumentAttributeRecord> list, final String documentId,
       final DocumentAttributeValueType valueType, final String key, final String stringValue,
       final Boolean boolValue, final Double numberValue) {
 
     DocumentAttributeRecord a = new DocumentAttributeRecord();
     a.setKey(key);
-    a.setDocumentId(this.docId);
+    a.setDocumentId(documentId);
     a.setStringValue(stringValue);
     a.setBooleanValue(boolValue);
     a.setNumberValue(numberValue);

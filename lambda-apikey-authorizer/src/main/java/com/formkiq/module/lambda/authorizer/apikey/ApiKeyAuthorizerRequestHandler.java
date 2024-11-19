@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -56,7 +57,7 @@ public class ApiKeyAuthorizerRequestHandler implements RequestStreamHandler {
   /** {@link AwsServiceCache}. */
   private static AwsServiceCache awsServices;
   /** {@link Gson}. */
-  private Gson gson = new GsonBuilder().disableHtmlEscaping().create();
+  private final Gson gson = new GsonBuilder().disableHtmlEscaping().create();
 
   static {
     if (System.getenv().containsKey("AWS_REGION")) {
@@ -83,15 +84,6 @@ public class ApiKeyAuthorizerRequestHandler implements RequestStreamHandler {
   public ApiKeyAuthorizerRequestHandler(final AwsServiceCache awsServiceCache) {
     awsServices = awsServiceCache;
     awsServices.register(ApiKeysService.class, new ApiKeysServiceExtension());
-  }
-
-  /**
-   * Get {@link AwsServiceCache}.
-   * 
-   * @return {@link AwsServiceCache}
-   */
-  public AwsServiceCache getAwsServices() {
-    return awsServices;
   }
 
   @SuppressWarnings("unchecked")
@@ -129,15 +121,15 @@ public class ApiKeyAuthorizerRequestHandler implements RequestStreamHandler {
     String apiKeyName = api.name();
     String group = isAuthorized ? "[" + siteId + "]" : "[]";
     String permissions =
-        api.permissions().stream().map(p -> p.name()).sorted().collect(Collectors.joining(","));
+        api.permissions().stream().map(Enum::name).sorted().collect(Collectors.joining(","));
 
     log(logger, map, isAuthorized, group);
 
-    Map<String, Object> response = Map.of("isAuthorized", Boolean.valueOf(isAuthorized), "context",
-        Map.of("apiKeyClaims", Map.of("permissions", permissions, "cognito:groups", group,
-            "cognito:username", apiKeyName)));
+    Map<String, Object> response =
+        Map.of("isAuthorized", isAuthorized, "context", Map.of("apiKeyClaims", Map.of("permissions",
+            permissions, "cognito:groups", group, "cognito:username", apiKeyName)));
 
-    OutputStreamWriter writer = new OutputStreamWriter(output, "UTF-8");
+    OutputStreamWriter writer = new OutputStreamWriter(output, StandardCharsets.UTF_8);
     writer.write(this.gson.toJson(response));
     writer.close();
   }
@@ -157,7 +149,7 @@ public class ApiKeyAuthorizerRequestHandler implements RequestStreamHandler {
             + "\"routeKey\": \"%s\","
             + "\"protocol\": \"%s\",\"siteId\":\"%s\",\"isAuthorized\":\"%s\"}",
         map.get("requestId"), http.get("sourceIp"), requestContext.get("time"), http.get("method"),
-        map.get("routeKey"), requestContext.get("protocol"), group, String.valueOf(isAuthorized));
+        map.get("routeKey"), requestContext.get("protocol"), group, isAuthorized);
 
     logger.log(s);
   }

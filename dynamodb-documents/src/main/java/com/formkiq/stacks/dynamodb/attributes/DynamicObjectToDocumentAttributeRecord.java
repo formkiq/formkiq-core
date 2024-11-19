@@ -30,6 +30,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.objects.Strings;
@@ -199,8 +201,8 @@ public class DynamicObjectToDocumentAttributeRecord
 
     for (int i = 0; i < compositeKeys.size(); i++) {
 
-      String compositeKey = String.join("#", compositeKeys.get(i));
-      String stringValue = String.join("#", compositeValues.get(i));
+      String compositeKey = String.join(DbKeys.COMPOSITE_KEY_DELIM, compositeKeys.get(i));
+      String stringValue = String.join(DbKeys.COMPOSITE_KEY_DELIM, compositeValues.get(i));
 
       DocumentAttributeRecord r = new DocumentAttributeRecord();
       r.setKey(compositeKey);

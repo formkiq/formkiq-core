@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAttribute;
@@ -31,6 +32,7 @@ import com.formkiq.client.model.AddClassification;
 import com.formkiq.client.model.AddClassificationRequest;
 import com.formkiq.client.model.AddDocumentAttribute;
 import com.formkiq.client.model.AddDocumentAttributeClassification;
+import com.formkiq.client.model.AddDocumentAttributeStandard;
 import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AttributeSchemaCompositeKey;
 import com.formkiq.client.model.AttributeSchemaOptional;
@@ -58,9 +60,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.testutils.aws.FkqAttributeService.createStringAttribute;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -90,7 +91,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   @Test
   public void testGetClassifications01() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       final int limit = 4;
       final int count = 5;
@@ -146,7 +147,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   @Test
   public void testAddClassifications01() {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -176,7 +177,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   @Test
   public void testAddClassifications02() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -205,7 +206,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
 
       // when
       try {
-        this.schemasApi.setClassification(siteId, UUID.randomUUID().toString(), sreq);
+        this.schemasApi.setClassification(siteId, ID.uuid(), sreq);
         fail();
       } catch (ApiException e) {
         // then
@@ -223,7 +224,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   @Test
   public void testAddClassifications03() {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -261,7 +262,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   @Test
   public void testAddClassifications04() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -296,7 +297,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   @Test
   public void testAddClassifications05() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -325,7 +326,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   @Test
   public void testAddClassifications06() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -361,7 +362,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   @Test
   public void testDeleteClassifications01() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -401,7 +402,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   @Test
   public void testDeleteClassifications02() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -437,7 +438,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   @Test
   public void testPutClassifications01() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -496,7 +497,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   @Test
   public void testPutClassifications02() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -547,7 +548,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   @Test
   void testAddDocument01() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -602,7 +603,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   @Test
   void testAddDocument02() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -637,7 +638,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   @Test
   void testAddDocument03() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -676,7 +677,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   @Test
   void testAddDocument04() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -745,7 +746,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   @Test
   void testAddDocument05() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -775,10 +776,11 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       assertEquals(expected, documentAttributes.size());
 
       int i = 0;
-      assertEquals("Classification", documentAttributes.get(i++).getKey());
-      assertEquals("invoiceNumber", documentAttributes.get(i++).getKey());
-      assertEquals("invoiceNumber#other", documentAttributes.get(i++).getKey());
-      assertEquals("other", documentAttributes.get(i).getKey());
+      assertDocumentAttributes(documentAttributes.get(i++), "Classification", classificationId);
+      assertDocumentAttributes(documentAttributes.get(i++), "invoiceNumber", "INV-001");
+      assertDocumentAttributes(documentAttributes.get(i++), "invoiceNumber::other",
+          "INV-001::stuff");
+      assertDocumentAttributes(documentAttributes.get(i), "other", "stuff");
 
       DocumentSearchAttribute item0 = new DocumentSearchAttribute().key("other").eq("stuff");
       DocumentSearchAttribute item1 =
@@ -788,13 +790,21 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
     }
   }
 
+  private void assertDocumentAttributes(final DocumentAttribute da,
+      final String expectedAttributeKey, final String expectedStringValue) {
+    assertEquals(expectedAttributeKey, da.getKey());
+    assertEquals(expectedStringValue, da.getStringValue());
+    assertNotNull(da.getInsertedDate());
+    assertNotNull(da.getUserId());
+  }
+
   /**
    * Test with classification with changed composite keys.
    */
   @Test
   void testAddDocument06() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -832,11 +842,12 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       assertEquals(expected, documentAttributes.size());
 
       int i = 0;
-      assertEquals("Classification", documentAttributes.get(i++).getKey());
-      assertEquals("invoiceNumber", documentAttributes.get(i++).getKey());
-      assertEquals("invoiceNumber#type", documentAttributes.get(i++).getKey());
-      assertEquals("other", documentAttributes.get(i++).getKey());
-      assertEquals("type", documentAttributes.get(i).getKey());
+      assertDocumentAttributes(documentAttributes.get(i++), "Classification", classificationId);
+      assertDocumentAttributes(documentAttributes.get(i++), "invoiceNumber", "INV-001");
+      assertDocumentAttributes(documentAttributes.get(i++), "invoiceNumber::type",
+          "INV-001::important");
+      assertDocumentAttributes(documentAttributes.get(i++), "other", "stuff");
+      assertDocumentAttributes(documentAttributes.get(i), "type", "important");
 
       DocumentSearchAttribute item0 = new DocumentSearchAttribute().key("type").eq("important");
       DocumentSearchAttribute item1 =
@@ -852,7 +863,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   @Test
   void testAddDocument07() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -888,20 +899,20 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   @Test
   void testAddDocument08() throws ApiException {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
       addAttribute(siteId, "invoiceNumber");
 
       SchemaAttributes attr0 = createSchemaAttributes(List.of("invoiceNumber"), null);
-      Objects.requireNonNull(attr0.getRequired()).get(0).addAllowedValuesItem("123");
+      notNull(attr0.getRequired()).get(0).addAllowedValuesItem("123");
 
       setSiteSchema(siteId, attr0);
 
       SchemaAttributes attr1 = createSchemaAttributes(List.of("invoiceNumber"), null);
-      Objects.requireNonNull(attr1.getRequired()).get(0).addAllowedValuesItem("INV-001");
-      String classificationId = addClassification(siteId, "doc", attr1);
+      notNull(attr1.getRequired()).get(0).addAllowedValuesItem("INV-001");
+      String classificationId = addClassification(siteId, attr1);
 
       AddDocumentAttribute attribute = createStringAttribute("invoiceNumber", "INV-001");
       AddDocumentAttributeClassification classification =
@@ -930,6 +941,11 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
     return this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
   }
 
+  private String addClassification(final String siteId, final SchemaAttributes attr0)
+      throws ApiException {
+    return addClassification(siteId, "doc", attr0);
+  }
+
   private String addClassification(final String siteId, final String name,
       final SchemaAttributes attr0) throws ApiException {
     AddClassificationRequest req = new AddClassificationRequest()
@@ -942,5 +958,171 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
     SetClassificationRequest req = new SetClassificationRequest()
         .classification(new AddClassification().name("setDoc").attributes(attr0));
     this.schemasApi.setClassification(siteId, classificationId, req);
+  }
+
+  /**
+   * Add Site Schema with allowed values.
+   * 
+   * @throws ApiException ApiException
+   */
+  @Test
+  void testAllowedValues01() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+      String attributeKey = "invoiceNumber";
+
+      addAttribute(siteId, attributeKey);
+
+      SchemaAttributes attr0 = createSchemaAttributes(List.of(attributeKey), null);
+      notNull(attr0.getRequired()).get(0).setAllowedValues(List.of("123", "A", "B"));
+
+      this.schemasApi.setSitesSchema(siteId,
+          new SetSitesSchemaRequest().name("test").attributes(attr0));
+
+      // when
+      List<String> allowedValues = notNull(
+          this.attributesApi.getAttributeAllowedValues(attributeKey, siteId).getAllowedValues());
+
+      // then
+      final int expected = 3;
+      assertEquals(expected, allowedValues.size());
+      assertEquals("123,A,B", String.join(",", allowedValues));
+    }
+  }
+
+  /**
+   * Missing attribute.
+   *
+   */
+  @Test
+  void testAllowedValues02() {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      // when
+      try {
+        this.attributesApi.getAttributeAllowedValues("test", siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
+        assertEquals("{\"message\":\"Attribute test not found\"}", e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * Add Classification with allowed values.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  void testAllowedValues03() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+      String attributeKey = "invoiceNumber";
+
+      addAttribute(siteId, attributeKey);
+
+      SchemaAttributes attr0 = createSchemaAttributes(List.of(attributeKey), null);
+      notNull(attr0.getRequired()).get(0).setAllowedValues(List.of("123", "A", "B"));
+      this.schemasApi.setSitesSchema(siteId,
+          new SetSitesSchemaRequest().name("test").attributes(attr0));
+
+      SchemaAttributes attr1 = createSchemaAttributes(List.of(attributeKey), null);
+      notNull(attr1.getRequired()).get(0).addAllowedValuesItem("INV-001");
+      String classificationId = addClassification(siteId, attr1);
+
+      SchemaAttributes attr2 = createSchemaAttributes(List.of(attributeKey), null);
+      notNull(attr2.getRequired()).get(0).addAllowedValuesItem("OTHER");
+      addClassification(siteId, "doc2", attr2);
+
+      // when
+      final List<String> allowedValues0 = notNull(
+          this.attributesApi.getAttributeAllowedValues(attributeKey, siteId).getAllowedValues());
+
+      final List<String> allowedValues1 = notNull(this.schemasApi
+          .getSitesSchemaAttributeAllowedValues(siteId, attributeKey).getAllowedValues());
+
+      final List<String> allowedValues2 = notNull(this.schemasApi
+          .getClassificationAttributeAllowedValues(siteId, classificationId, attributeKey)
+          .getAllowedValues());
+
+      // then
+      final int expected0 = 5;
+      assertEquals(expected0, allowedValues0.size());
+      assertEquals("123,A,B,INV-001,OTHER", String.join(",", allowedValues0));
+
+      final int expected1 = 3;
+      assertEquals(expected1, allowedValues1.size());
+      assertEquals("123,A,B", String.join(",", allowedValues1));
+
+      final int expected2 = 3;
+      assertEquals(expected2, allowedValues2.size());
+      assertEquals("123,A,B", String.join(",", allowedValues2));
+    }
+  }
+
+  /**
+   * Delete Document attributes with composite keys.
+   */
+  @Test
+  void testDeleteDocumentAttribute01() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "test1");
+      addAttribute(siteId, "test2");
+
+      SchemaAttributes schemaAttributes =
+          new SchemaAttributes().required(null).optional(null).addCompositeKeysItem(
+              new AttributeSchemaCompositeKey().attributeKeys(List.of("test1", "test2")));
+      schemasApi.setSitesSchema(siteId,
+          new SetSitesSchemaRequest().name("test").attributes(schemaAttributes));
+
+      AddDocumentRequest req = new AddDocumentRequest().deepLinkPath("https://www.google.com")
+          .addAttributesItem(createAttribute("test1", "222"))
+          .addAttributesItem(createAttribute("test2", "333"));
+
+      String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+
+      // when
+      List<DocumentAttribute> documentAttributes = notNull(this.documentAttributesApi
+          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+
+      final int expected = 3;
+      assertEquals(expected, documentAttributes.size());
+      int i = 0;
+      assertDocumentAttributes(documentAttributes.get(i++), "test1", "222");
+      assertDocumentAttributes(documentAttributes.get(i++), "test1::test2", "222::333");
+      assertDocumentAttributes(documentAttributes.get(i), "test2", "333");
+
+      // when
+      DeleteResponse deleteResponse =
+          this.documentAttributesApi.deleteDocumentAttribute(documentId, "test1", siteId);
+
+      // then
+      assertEquals("attribute 'test1' removed from document '" + documentId + "'",
+          deleteResponse.getMessage());
+
+      documentAttributes = notNull(this.documentAttributesApi
+          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+      assertEquals(1, documentAttributes.size());
+      assertDocumentAttributes(documentAttributes.get(0), "test2", "333");
+    }
+  }
+
+  private AddDocumentAttribute createAttribute(final String attributeKey,
+      final String stringValue) {
+    return new AddDocumentAttribute(
+        new AddDocumentAttributeStandard().key(attributeKey).stringValue(stringValue));
   }
 }

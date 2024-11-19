@@ -28,7 +28,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 import java.util.Arrays;
 import java.util.Map;
-import java.util.UUID;
+
+import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.Test;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddDocumentMetadata;
@@ -50,10 +51,10 @@ public class ApiDocumentsFulltextRequestTest extends AbstractApiClientRequestTes
   @Test
   public void testHandleGetDocumentFulltext01() throws Exception {
 
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
       // given
       setBearerToken(siteId);
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
 
       // when
       try {
@@ -75,9 +76,9 @@ public class ApiDocumentsFulltextRequestTest extends AbstractApiClientRequestTes
   public void testHandleGetDocumentFulltext02() throws Exception {
     String content = "some content";
 
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
       // given
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       setBearerToken(siteId);
 
       SetDocumentFulltextRequest req =
@@ -113,9 +114,9 @@ public class ApiDocumentsFulltextRequestTest extends AbstractApiClientRequestTes
   public void testHandlePutDocumentFulltext01() throws Exception {
     String content = "some content";
 
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
       // given
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       setBearerToken(siteId);
 
       SetDocumentFulltextRequest req = new SetDocumentFulltextRequest().content(content)
@@ -142,9 +143,9 @@ public class ApiDocumentsFulltextRequestTest extends AbstractApiClientRequestTes
   public void testHandlePutDocumentFulltext02() throws Exception {
     String content = "some content";
 
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
       // given
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       setBearerToken(siteId);
 
       SetDocumentFulltextRequest req = new SetDocumentFulltextRequest().content(content)
@@ -171,9 +172,9 @@ public class ApiDocumentsFulltextRequestTest extends AbstractApiClientRequestTes
   public void testHandleDeleteDocumentFulltext01() throws Exception {
     String content = "some content";
 
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
       // given
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       setBearerToken(siteId);
 
       SetDocumentFulltextRequest req =
@@ -199,9 +200,9 @@ public class ApiDocumentsFulltextRequestTest extends AbstractApiClientRequestTes
     String content = "some content";
     String content2 = "new content";
 
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
       // given
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       setBearerToken(siteId);
 
       SetDocumentFulltextRequest req =

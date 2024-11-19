@@ -24,6 +24,7 @@
 package com.formkiq.module.http;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
@@ -123,6 +124,17 @@ public class HttpServiceJdk11 implements HttpService {
     }
   }
 
+  @Override
+  public HttpResponse<InputStream> getAsInputStream(final String url,
+      final Optional<HttpHeaders> headers, final Optional<Map<String, String>> parameters)
+      throws IOException {
+    HttpRequest request = build(url, headers, parameters).GET().build();
+    try {
+      return this.client.send(request, HttpResponse.BodyHandlers.ofInputStream());
+    } catch (InterruptedException e) {
+      throw new IOException(e);
+    }
+  }
 
   @Override
   public HttpResponse<String> patch(final String url, final Optional<HttpHeaders> headers,

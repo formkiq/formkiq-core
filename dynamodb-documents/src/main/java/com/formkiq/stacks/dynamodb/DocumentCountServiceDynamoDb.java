@@ -24,6 +24,8 @@
 package com.formkiq.stacks.dynamodb;
 
 import static com.formkiq.aws.dynamodb.DbKeys.TAG_DELIMINATOR;
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,7 +41,7 @@ import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest;
  * Service for keeping track of number of documents.
  *
  */
-public class DocumentCountServiceDynamoDb implements DocumentCountService {
+public final class DocumentCountServiceDynamoDb implements DocumentCountService {
 
   /** Documents Table Name. */
   private String documentTableName;
@@ -97,7 +99,7 @@ public class DocumentCountServiceDynamoDb implements DocumentCountService {
    */
   private String getPk(final String siteId) {
     return siteId != null ? "documentscount" + TAG_DELIMINATOR + siteId
-        : "documentcount" + TAG_DELIMINATOR + "default";
+        : "documentcount" + TAG_DELIMINATOR + DEFAULT_SITE_ID;
   }
 
   /**

@@ -24,6 +24,8 @@
 package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
+
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,8 +34,9 @@ import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.objects.Strings;
-import com.formkiq.aws.services.lambda.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -41,10 +44,12 @@ import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
-import com.formkiq.aws.services.lambda.services.CacheService;
+import com.formkiq.aws.dynamodb.cache.CacheService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
 import com.formkiq.stacks.dynamodb.FolderIndexProcessor;
+import com.formkiq.stacks.dynamodb.FolderIndexRecord;
+import com.formkiq.stacks.dynamodb.FolderIndexRecordExtended;
 
 /** {@link ApiGatewayRequestHandler} for "/folders". */
 public class FoldersRequestHandler implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
@@ -72,8 +77,13 @@ public class FoldersRequestHandler implements ApiGatewayRequestHandler, ApiGatew
 
     String siteId = authorization.getSiteId();
     FolderIndexProcessor indexProcessor = awsservice.getExtension(FolderIndexProcessor.class);
-    List<Map<String, String>> list =
+    List<FolderIndexRecord> record =
         indexProcessor.createFolders(siteId, path, authorization.getUsername());
+
+    List<Map<String, String>> list = record.stream().map(r -> {
+      String indexKey = r.createIndexKey(siteId);
+      return Map.of("folder", r.path(), "indexKey", indexKey);
+    }).toList();
 
     ApiMapResponse resp = new ApiMapResponse(
         Map.of("message", "created folder", "indexKey", list.get(list.size() - 1).get("indexKey")));
@@ -94,10 +104,7 @@ public class FoldersRequestHandler implements ApiGatewayRequestHandler, ApiGatew
     DocumentSearchService documentSearchService =
         awsservice.getExtension(DocumentSearchService.class);
 
-    String indexKey = event.getQueryStringParameter("indexKey");
-    if (indexKey == null) {
-      indexKey = "";
-    }
+    String indexKey = getIndexKey(event, awsservice, siteId);
 
     PaginationResults<DynamicDocumentItem> results =
         documentSearchService.findInFolder(siteId, indexKey, ptoken, limit);
@@ -114,6 +121,31 @@ public class FoldersRequestHandler implements ApiGatewayRequestHandler, ApiGatew
 
     ApiMapResponse resp = new ApiMapResponse(map);
     return new ApiRequestHandlerResponse(SC_OK, resp);
+  }
+
+  private String getIndexKey(final ApiGatewayRequestEvent event, final AwsServiceCache awsservice,
+      final String siteId) {
+
+    String indexKey = event.getQueryStringParameter("indexKey");
+    String path = event.getQueryStringParameter("path");
+
+    if (!Strings.isEmpty(path)) {
+      FolderIndexProcessor indexProcessor = awsservice.getExtension(FolderIndexProcessor.class);
+
+      List<FolderIndexRecordExtended> folders =
+          indexProcessor.get(siteId, path, "folder", "", new Date());
+      FolderIndexRecordExtended folder = Objects.last(folders);
+
+      if (folder != null && folder.record() != null) {
+        indexKey = folder.record().createIndexKey(siteId);
+      }
+    }
+
+    if (indexKey == null) {
+      indexKey = "";
+    }
+
+    return indexKey;
   }
 
   @Override

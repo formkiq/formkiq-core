@@ -23,15 +23,6 @@
  */
 package com.formkiq.aws.s3;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Map;
 import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -68,12 +59,24 @@ import software.amazon.awssdk.services.s3.model.Tagging;
 import software.amazon.awssdk.services.s3.model.VersioningConfiguration;
 import software.amazon.awssdk.utils.IoUtils;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+
 /**
  * 
  * S3 Services.
  *
  */
 public class S3Service {
+
+  /** {@link S3ServiceInterceptor}. */
+  private final S3ServiceInterceptor interceptor;
 
   /**
    * URL Decode {@link String}.
@@ -82,11 +85,7 @@ public class S3Service {
    * @return {@link String}
    */
   public static String decode(final String string) {
-    try {
-      return URLDecoder.decode(string, StandardCharsets.UTF_8.toString());
-    } catch (UnsupportedEncodingException e) {
-      throw new RuntimeException(e);
-    }
+    return URLDecoder.decode(string, StandardCharsets.UTF_8);
   }
 
   /**
@@ -96,11 +95,7 @@ public class S3Service {
    * @return {@link String}
    */
   public static String encode(final String string) {
-    try {
-      return URLEncoder.encode(string, StandardCharsets.UTF_8.toString());
-    } catch (UnsupportedEncodingException e) {
-      throw new RuntimeException(e);
-    }
+    return URLEncoder.encode(string, StandardCharsets.UTF_8);
   }
 
   /**
@@ -111,12 +106,11 @@ public class S3Service {
    * @throws IOException IOException
    */
   public static byte[] toByteArray(final InputStream is) throws IOException {
-    byte[] byteArray = IoUtils.toByteArray(is);
-    return byteArray;
+    return IoUtils.toByteArray(is);
   }
 
   /** {@link S3Client}. */
-  private S3Client s3Client;
+  private final S3Client s3Client;
 
   /**
    * Constructor.
@@ -124,7 +118,19 @@ public class S3Service {
    * @param s3connectionBuilder {@link S3ConnectionBuilder}
    */
   public S3Service(final S3ConnectionBuilder s3connectionBuilder) {
+    this(s3connectionBuilder, null);
+  }
+
+  /**
+   * Constructor.
+   *
+   * @param s3connectionBuilder {@link S3ConnectionBuilder}
+   * @param s3Interceptor {@link S3ServiceInterceptor}
+   */
+  public S3Service(final S3ConnectionBuilder s3connectionBuilder,
+      final S3ServiceInterceptor s3Interceptor) {
     this.s3Client = s3connectionBuilder.build();
+    this.interceptor = s3Interceptor;
   }
 
   /**
@@ -141,6 +147,7 @@ public class S3Service {
   public CopyObjectResponse copyObject(final String sourcebucket, final String sourcekey,
       final String destinationBucket, final String destinationKey, final String contentType,
       final Map<String, String> metadata) {
+
     CopyObjectRequest.Builder req = CopyObjectRequest.builder().sourceBucket(sourcebucket)
         .sourceKey(sourcekey).destinationBucket(destinationBucket).destinationKey(destinationKey);
 
@@ -195,7 +202,7 @@ public class S3Service {
         deleteObject(bucket, s3Object.key(), null);
       }
 
-      isDone = !resp.isTruncated().booleanValue();
+      isDone = !resp.isTruncated();
     }
   }
 
@@ -279,8 +286,7 @@ public class S3Service {
         GetObjectRequest.builder().bucket(bucket).key(key).versionId(versionId).build();
     ResponseBytes<GetObjectResponse> response = this.s3Client.getObjectAsBytes(gr);
 
-    String s = response.asUtf8String();
-    return s;
+    return response.asUtf8String();
   }
 
   /**
@@ -336,6 +342,8 @@ public class S3Service {
       md.setEtag(resp.eTag());
       md.setContentLength(resp.contentLength());
       md.setVersionId(resp.versionId());
+      md.setChecksumSha1(resp.checksumSHA1());
+      md.setChecksumSha256(resp.checksumSHA256());
 
     } catch (NoSuchKeyException e) {
       md.setObjectExists(false);
@@ -353,8 +361,7 @@ public class S3Service {
    */
   public GetObjectTaggingResponse getObjectTags(final String bucket, final String key) {
     GetObjectTaggingRequest req = GetObjectTaggingRequest.builder().bucket(bucket).key(key).build();
-    GetObjectTaggingResponse response = this.s3Client.getObjectTagging(req);
-    return response;
+    return this.s3Client.getObjectTagging(req);
   }
 
   /**
@@ -363,14 +370,14 @@ public class S3Service {
    * @param bucket {@link String}
    * @param prefix {@link String}
    * @param keyMarker {@link String}
+   * @param maxKeys {@link Integer}
    * @return {@link ListObjectVersionsResponse}
    */
   public ListObjectVersionsResponse getObjectVersions(final String bucket, final String prefix,
-      final String keyMarker) {
+      final String keyMarker, final Integer maxKeys) {
     ListObjectVersionsRequest req = ListObjectVersionsRequest.builder().bucket(bucket)
-        .prefix(prefix).keyMarker(keyMarker).build();
-    ListObjectVersionsResponse response = this.s3Client.listObjectVersions(req);
-    return response;
+        .prefix(prefix).keyMarker(keyMarker).maxKeys(maxKeys).build();
+    return this.s3Client.listObjectVersions(req);
   }
 
   /**
@@ -387,8 +394,7 @@ public class S3Service {
       listbuilder = listbuilder.prefix(prefix);
     }
 
-    ListObjectsResponse listObjects = this.s3Client.listObjects(listbuilder.build());
-    return listObjects;
+    return this.s3Client.listObjects(listbuilder.build());
   }
 
   /**
@@ -418,8 +424,8 @@ public class S3Service {
   public PutObjectResponse putObject(final String bucket, final String key, final byte[] data,
       final String contentType, final Map<String, String> metadata) {
     int contentLength = data.length;
-    PutObjectRequest.Builder build = PutObjectRequest.builder().bucket(bucket).key(key)
-        .contentLength(Long.valueOf(contentLength));
+    PutObjectRequest.Builder build =
+        PutObjectRequest.builder().bucket(bucket).key(key).contentLength((long) contentLength);
 
     if (contentType != null) {
       build.contentType(contentType);
@@ -429,9 +435,13 @@ public class S3Service {
       build.metadata(metadata);
     }
 
-    PutObjectResponse response =
-        this.s3Client.putObject(build.build(), RequestBody.fromBytes(data));
-    return response;
+    PutObjectRequest request = build.build();
+
+    if (this.interceptor != null) {
+      this.interceptor.putObjectEvent(this, bucket, key);
+    }
+
+    return this.s3Client.putObject(request, RequestBody.fromBytes(data));
   }
 
   /**
@@ -447,7 +457,7 @@ public class S3Service {
   public PutObjectResponse putObject(final String bucket, final String key, final InputStream is,
       final String contentType) throws IOException {
     byte[] data = toByteArray(is);
-    return putObject(bucket, key, data, contentType, null);
+    return putObject(bucket, key, data, contentType);
   }
 
   /**
@@ -460,7 +470,7 @@ public class S3Service {
    */
   public void setObjectTag(final String bucket, final String key, final String tagKey,
       final String tagValue) {
-    Collection<Tag> tagSet = Arrays.asList(Tag.builder().key(tagKey).value(tagValue).build());
+    Collection<Tag> tagSet = List.of(Tag.builder().key(tagKey).value(tagValue).build());
     setObjectTags(bucket, key, tagSet);
   }
 

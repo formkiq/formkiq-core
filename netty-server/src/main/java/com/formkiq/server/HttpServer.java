@@ -43,12 +43,12 @@ import io.netty.handler.logging.LoggingHandler;
 /**
  * FormKiQ Http Server.
  */
-public class HttpServer {
+public final class HttpServer {
 
   /** Default Server Port. */
   private static final int DEFAULT_PORT = 8080;
   /** {@link Logger}. */
-  private static Logger logger = Logger.getLogger(HttpServer.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(HttpServer.class.getName());
 
   /**
    * Create Options.
@@ -109,14 +109,14 @@ public class HttpServer {
    * @throws InterruptedException InterruptedException
    */
   public static void main(final String[] args) throws ParseException, InterruptedException {
-    logger.info("Starting FormKiQ server");
+    LOGGER.info("Starting FormKiQ server");
     new HttpServer(args).run();
   }
 
   /** {@link CommandLine}. */
-  private CommandLine commandLine;
+  private final CommandLine commandLine;
   /** Server Port. */
-  private int port;
+  private final int port;
 
   /**
    * constructor.
@@ -158,8 +158,7 @@ public class HttpServer {
       }
     }
 
-    String[] newargs = set.toArray(new String[0]);
-    return newargs;
+    return set.toArray(new String[0]);
   }
 
   /**

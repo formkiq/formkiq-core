@@ -37,5 +37,7 @@ public enum ApiKeyPermission {
   /** Read Permission. */
   READ,
   /** Write Permission. */
-  WRITE;
+  WRITE,
+  /** Govern. */
+  GOVERN
 }

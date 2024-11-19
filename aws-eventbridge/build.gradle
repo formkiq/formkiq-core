@@ -1,0 +1,22 @@
+
+description = "AWS EventBridge"
+
+dependencies {
+	
+  api 'software.amazon.awssdk:eventbridge:2.27.7'
+  implementation group: 'software.amazon.awssdk', name: 'url-connection-client', version: '2.27.18'
+	//implementation project(':aws-xray')
+	implementation project(':fkq-lambda-services')
+	
+	configurations.all {
+   		exclude group: 'software.amazon.awssdk', module: 'apache-client'
+   		exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
+	}
+	
+	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.11.0'
+}
+
+test {
+  failFast = true
+  useJUnitPlatform() 
+}

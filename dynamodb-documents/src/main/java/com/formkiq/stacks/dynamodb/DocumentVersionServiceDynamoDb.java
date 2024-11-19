@@ -26,22 +26,24 @@ package com.formkiq.stacks.dynamodb;
 import static com.formkiq.aws.dynamodb.DbKeys.PK;
 import static com.formkiq.aws.dynamodb.DbKeys.PREFIX_DOCS;
 import static com.formkiq.aws.dynamodb.DbKeys.SK;
-import static com.formkiq.aws.dynamodb.DbKeys.TAG_DELIMINATOR;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static software.amazon.awssdk.utils.StringUtils.isEmpty;
-import java.text.SimpleDateFormat;
+
 import java.util.Collection;
-import java.util.Date;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+
+import com.formkiq.aws.dynamodb.AttributeValueToMap;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.DynamodbVersionRecord;
 import com.formkiq.aws.dynamodb.QueryConfig;
-import com.formkiq.aws.dynamodb.objects.DateUtil;
+import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.graalvm.annotations.Reflectable;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 
@@ -55,48 +57,26 @@ public class DocumentVersionServiceDynamoDb implements DocumentVersionService {
 
   /** The Default maximum results returned. */
   private static final int MAX_RESULTS = 100;
-  /** {@link SimpleDateFormat} in ISO Standard format. */
-  private final SimpleDateFormat df = DateUtil.getIsoDateFormatter();
   /** DynamoDB Document Versions Table Name. */
   private String tableName = null;
+  /** {@link DynamoDbService}. */
+  private DynamoDbService db;
 
   @Override
-  public void addDocumentVersionAttributes(final Map<String, AttributeValue> previous,
-      final Map<String, AttributeValue> current) {
-
-    if (!previous.isEmpty()) {
-
-      String version = current.getOrDefault(VERSION_ATTRIBUTE, AttributeValue.fromS("1")).s();
-      String nextVersion = String.valueOf(Integer.parseInt(version) + 1);
-
-      previous.put(VERSION_ATTRIBUTE, AttributeValue.fromS(version));
-
-      String sk = getSk(previous, version);
-      previous.put(SK, AttributeValue.fromS(sk));
-
-      current.put(VERSION_ATTRIBUTE, AttributeValue.fromS(nextVersion));
-    }
-  }
-
-  @Override
-  public void deleteAllVersionIds(final DynamoDbClient client, final String siteId,
-      final String documentId) {
+  public void deleteAllVersionIds(final String siteId, final String documentId) {
 
     Map<String, AttributeValue> startkey = null;
     String pk = createDatabaseKey(siteId, PREFIX_DOCS + documentId);
 
-    String documentVersionsTable = getDocumentVersionsTableName();
-    DynamoDbService db = new DynamoDbServiceImpl(client, documentVersionsTable);
-
     do {
 
       QueryResponse response =
-          db.query(new QueryConfig(), AttributeValue.fromS(pk), startkey, MAX_RESULTS);
+          this.db.query(new QueryConfig(), AttributeValue.fromS(pk), startkey, MAX_RESULTS);
 
       List<Map<String, AttributeValue>> results = response.items();
 
       for (Map<String, AttributeValue> map : results) {
-        db.deleteItem(map.get(PK), map.get(SK));
+        this.db.deleteItem(map.get(PK), map.get(SK));
       }
 
       startkey = response.lastEvaluatedKey();
@@ -110,63 +90,64 @@ public class DocumentVersionServiceDynamoDb implements DocumentVersionService {
   }
 
   @Override
-  public String getVersionId(final DynamoDbConnectionBuilder connection, final String siteId,
-      final String documentId, final String versionKey) {
+  public String getVersionId(final Map<String, AttributeValue> attrs) {
+    return attrs.containsKey(S3VERSION_ATTRIBUTE) ? attrs.get(S3VERSION_ATTRIBUTE).s() : null;
+  }
 
-    String versionId = null;
+  @Override
+  public Map<String, AttributeValue> get(final String siteId, final String documentId,
+      final String versionKey) {
+
+    Map<String, AttributeValue> attrs = Collections.emptyMap();
     String documentVersionsTable = getDocumentVersionsTableName();
 
     if (!isEmpty(documentVersionsTable) && !isEmpty(versionKey)) {
 
       String pk = createDatabaseKey(siteId, PREFIX_DOCS + documentId);
-      String sk = versionKey;
-
-      DynamoDbService db = new DynamoDbServiceImpl(connection, documentVersionsTable);
-
-      Map<String, AttributeValue> attrs =
-          db.get(AttributeValue.fromS(pk), AttributeValue.fromS(sk));
-
-      if (attrs.containsKey(S3VERSION_ATTRIBUTE)) {
-        versionId = attrs.get(S3VERSION_ATTRIBUTE).s();
-      }
+      attrs = this.db.get(AttributeValue.fromS(pk), AttributeValue.fromS(versionKey));
     }
-
-    return versionId;
-  }
-
-  @Override
-  public void initialize(final Map<String, String> map) {
-    this.tableName = map.get("DOCUMENT_VERSIONS_TABLE");
-  }
-
-  @Override
-  public void revertDocumentVersionAttributes(final Map<String, AttributeValue> previous,
-      final Map<String, AttributeValue> current) {
-
-    String nextVersion = String.valueOf(Integer.parseInt(current.get(VERSION_ATTRIBUTE).s()) + 1);
-
-    previous.put(SK, current.get(SK));
-    previous.put(VERSION_ATTRIBUTE, AttributeValue.fromS(nextVersion));
-
-    String sk = getSk(current, current.get(VERSION_ATTRIBUTE).s());
-    current.put(SK, AttributeValue.fromS(sk));
-  }
-
-  @Override
-  public List<Map<String, AttributeValue>> addRecords(final DynamoDbClient client,
-      final String siteId, final Collection<? extends DynamodbVersionRecord<?>> records) {
-
-    List<Map<String, AttributeValue>> attrs =
-        records.stream().map(r -> r.getVersionedAttributes(siteId)).toList();
-
-    DynamoDbService db = new DynamoDbServiceImpl(client, getDocumentVersionsTableName());
-    db.putItems(attrs);
 
     return attrs;
   }
 
-  private String getSk(final Map<String, AttributeValue> previous, final String version) {
-    return previous.get(SK).s() + TAG_DELIMINATOR + this.df.format(new Date()) + TAG_DELIMINATOR
-        + "v" + version;
+  @Override
+  public void initialize(final Map<String, String> map,
+      final DynamoDbConnectionBuilder connection) {
+    this.tableName = map.get("DOCUMENT_VERSIONS_TABLE");
+    this.db = new DynamoDbServiceImpl(connection, this.tableName);
+  }
+
+  @Override
+  public List<Map<String, AttributeValue>> addRecords(final String siteId,
+      final Collection<? extends DynamodbVersionRecord<?>> records) {
+
+    List<Map<String, AttributeValue>> attrs =
+        records.stream().map(r -> r.getVersionedAttributes(siteId)).toList();
+
+    this.db.putItems(attrs);
+
+    return attrs;
+  }
+
+  @Override
+  public DocumentItem getDocumentItem(final DocumentService documentService, final String siteId,
+      final String documentId, final String versionKey,
+      final Map<String, AttributeValue> versionAttributes) {
+
+    DocumentItem item;
+
+    if (!Strings.isEmpty(versionKey)) {
+      item = new DynamicDocumentItem(new AttributeValueToMap().apply(versionAttributes));
+      item.setDocumentId(documentId);
+    } else {
+      item = documentService.findDocument(siteId, documentId);
+    }
+
+    return item;
+  }
+
+  @Override
+  public DynamoDbService getDb() {
+    return this.db;
   }
 }

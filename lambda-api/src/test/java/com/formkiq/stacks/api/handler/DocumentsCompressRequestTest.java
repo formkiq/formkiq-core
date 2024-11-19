@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.testutils.aws.TestServices.STAGE_BUCKET_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -33,7 +34,8 @@ import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
+
+import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -90,13 +92,13 @@ public class DocumentsCompressRequestTest extends AbstractApiClientRequestTest {
   @Test
   void testHandlePostDocumentsCompress01() throws ApiException {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       for (Boolean read : Arrays.asList(Boolean.FALSE, Boolean.TRUE)) {
 
         setBearerToken(siteId, read.booleanValue());
 
-        String doc1 = UUID.randomUUID().toString();
+        String doc1 = ID.uuid();
         List<String> documentIds = Arrays.asList(doc1);
         DocumentsCompressRequest req = new DocumentsCompressRequest().documentIds(documentIds);
 
@@ -121,7 +123,7 @@ public class DocumentsCompressRequestTest extends AbstractApiClientRequestTest {
   @Test
   void testHandlePostDocumentsCompress02() throws ApiException {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -147,7 +149,7 @@ public class DocumentsCompressRequestTest extends AbstractApiClientRequestTest {
   @Test
   void testHandlePostDocumentsCompress03() throws Exception {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -182,7 +184,7 @@ public class DocumentsCompressRequestTest extends AbstractApiClientRequestTest {
       final URI downloadUrl = new URI(s3FileMap.get("downloadUrl").toString());
       assertTrue(url.contains(downloadUrl.getPath()));
 
-      assertEquals(siteId != null ? siteId : "default", s3FileMap.get("siteId"));
+      assertEquals(siteId != null ? siteId : DEFAULT_SITE_ID, s3FileMap.get("siteId"));
       assertEquals(documentIds, s3FileMap.get("documentIds"));
     }
   }

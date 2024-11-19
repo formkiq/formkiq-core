@@ -28,8 +28,9 @@ import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentTag;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+
+import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import com.formkiq.client.api.DocumentTagsApi;
@@ -70,7 +71,7 @@ public class DocumentsTagsRequestTest extends AbstractAwsIntegrationTest {
     final String tagValue = "person";
 
     int count = 0;
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       List<ApiClient> clients = getApiClients(siteId);
 

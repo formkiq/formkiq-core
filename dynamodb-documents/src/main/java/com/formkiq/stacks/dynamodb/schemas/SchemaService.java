@@ -67,12 +67,10 @@ public interface SchemaService {
    * 
    * @param siteId {@link String}
    * @param name {@link String}
-   * @param schemaJson {@link String}
    * @param schema {@link Schema}
    * @return {@link Collection} {@link ValidationError}
    */
-  Collection<ValidationError> setSitesSchema(String siteId, String name, String schemaJson,
-      Schema schema);
+  Collection<ValidationError> setSitesSchema(String siteId, String name, Schema schema);
 
   /**
    * Find {@link ClassificationRecord}.
@@ -91,14 +89,13 @@ public interface SchemaService {
    * @param siteId {@link String}
    * @param classificationId {@link String}
    * @param name {@link String}
-   * @param schemaJson {@link String}
    * @param schema {@link Schema}
    * @param userId {@link String}
    * @return ClassificationRecord
    * @throws ValidationException ValidationException
    */
   ClassificationRecord setClassification(String siteId, String classificationId, String name,
-      String schemaJson, Schema schema, String userId) throws ValidationException;
+      Schema schema, String userId) throws ValidationException;
 
   /**
    * Find Classification.
@@ -134,4 +131,33 @@ public interface SchemaService {
    * @return {@link ClassificationRecord}
    */
   Schema mergeSchemaIntoClassification(Schema from, Schema to);
+
+  /**
+   * Get Attribute Allowed Values for SiteSchema.
+   * 
+   * @param siteId {@link String}
+   * @param attributeKey {@link String}
+   * @return {@link List} {@link String}
+   */
+  List<String> getSitesSchemaAttributeAllowedValues(String siteId, String attributeKey);
+
+  /**
+   * Get Attribute Allowed Values for Classification.
+   *
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param attributeKey {@link String}
+   * @return {@link List} {@link String}
+   */
+  List<String> getClassificationAttributeAllowedValues(String siteId, String documentId,
+      String attributeKey);
+
+  /**
+   * Get Attribute Allowed Values across SiteSchema and all classifications.
+   * 
+   * @param siteId {@link String}
+   * @param attributeKey {@link String}
+   * @return {@link List} {@link String}
+   */
+  List<String> getAttributeAllowedValues(String siteId, String attributeKey);
 }

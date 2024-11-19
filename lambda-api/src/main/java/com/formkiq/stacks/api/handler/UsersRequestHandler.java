@@ -25,12 +25,12 @@ package com.formkiq.stacks.api.handler;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.cognito.CognitoIdentityProviderService;
-import com.formkiq.aws.services.lambda.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
-import com.formkiq.aws.services.lambda.ApiPermission;
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -93,7 +93,7 @@ public class UsersRequestHandler implements ApiGatewayRequestHandler, ApiGateway
     String username = request.getUser().getUsername();
 
     try {
-      service.addUser(username, Boolean.TRUE);
+      service.addUser(username, request.getUser().getAttributes(), Boolean.TRUE);
     } catch (InvalidParameterException e) {
       throw new BadException(e.getMessage());
     }

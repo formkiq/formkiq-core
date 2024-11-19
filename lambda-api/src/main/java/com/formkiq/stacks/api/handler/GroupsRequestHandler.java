@@ -25,16 +25,18 @@ package com.formkiq.stacks.api.handler;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.cognito.CognitoIdentityProviderService;
-import com.formkiq.aws.services.lambda.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
-import com.formkiq.aws.services.lambda.ApiPermission;
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.transformers.GroupNameComparator;
 import com.formkiq.stacks.api.transformers.GroupsResponseToMap;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.InvalidParameterException;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ListGroupsResponse;
 
 import java.util.HashMap;
@@ -71,17 +73,21 @@ public class GroupsRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
     CognitoIdentityProviderService service =
         awsservice.getExtension(CognitoIdentityProviderService.class);
 
-    ListGroupsResponse response = service.listGroups(token, limit);
+    try {
+      ListGroupsResponse response = service.listGroups(token, limit);
 
-    List<Map<String, Object>> groups = response.groups().stream().sorted(new GroupNameComparator())
-        .map(new GroupsResponseToMap()).toList();
+      List<Map<String, Object>> groups = response.groups().stream()
+          .sorted(new GroupNameComparator()).map(new GroupsResponseToMap()).toList();
 
-    Map<String, Object> map = new HashMap<>();
-    map.put("groups", groups);
-    map.put("next", response.nextToken());
+      Map<String, Object> map = new HashMap<>();
+      map.put("groups", groups);
+      map.put("next", response.nextToken());
 
-    ApiMapResponse resp = new ApiMapResponse(map);
-    return new ApiRequestHandlerResponse(SC_OK, resp);
+      ApiMapResponse resp = new ApiMapResponse(map);
+      return new ApiRequestHandlerResponse(SC_OK, resp);
+    } catch (InvalidParameterException e) {
+      throw new BadException(e.getMessage());
+    }
   }
 
   @Override
@@ -98,7 +104,12 @@ public class GroupsRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
 
     CognitoIdentityProviderService service =
         awsservice.getExtension(CognitoIdentityProviderService.class);
-    service.addGroup(request.getGroupName(), request.getGroupDescription());
+
+    try {
+      service.addGroup(request.getGroupName(), request.getGroupDescription());
+    } catch (InvalidParameterException e) {
+      throw new BadException(e.getMessage());
+    }
 
     ApiMapResponse resp =
         new ApiMapResponse(Map.of("message", "Group " + request.getGroupName() + " created"));

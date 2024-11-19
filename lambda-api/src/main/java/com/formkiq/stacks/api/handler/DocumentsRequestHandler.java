@@ -29,8 +29,11 @@ import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_CREATED;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
+import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
 import java.time.zone.ZoneRulesException;
+import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -46,7 +49,8 @@ import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.dynamodb.objects.Strings;
-import com.formkiq.aws.services.lambda.ApiAuthorization;
+import com.formkiq.aws.s3.S3PresignerService;
+import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -54,7 +58,7 @@ import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
-import com.formkiq.aws.services.lambda.services.CacheService;
+import com.formkiq.aws.dynamodb.cache.CacheService;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -65,6 +69,7 @@ import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.s3.model.ChecksumAlgorithm;
 
 /** {@link ApiGatewayRequestHandler} for "/documents". */
 public class DocumentsRequestHandler
@@ -258,7 +263,9 @@ public class DocumentsRequestHandler
 
     } else {
 
-      ApiRequestHandlerResponse response = handler.post(logger, event, authorization, awsservice);
+      updatePost(awsservice, request);
+
+      ApiRequestHandlerResponse response = handler.post(event, authorization, awsservice, request);
 
       Map<String, Object> mapResponse = ((ApiMapResponse) response.getResponse()).getMap();
 
@@ -268,8 +275,30 @@ public class DocumentsRequestHandler
     }
 
     Map<String, Object> hashMap = new HashMap<>(apiMapResponse.getMap());
+    hashMap.remove("headers");
     hashMap.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
     return new ApiRequestHandlerResponse(SC_CREATED, new ApiMapResponse(hashMap));
+  }
+
+  /**
+   * Update {@link AddDocumentRequest} request object.
+   *
+   * @param awsservice {@link AwsServiceCache}
+   * @param o {@link AddDocumentRequest}
+   */
+  private void updatePost(final AwsServiceCache awsservice, final AddDocumentRequest o) {
+
+    if (!isEmpty(o.getContent()) && isEmpty(o.getChecksum()) && !isEmpty(o.getChecksumType())) {
+      S3PresignerService s3PresignerService = awsservice.getExtension(S3PresignerService.class);
+      ChecksumAlgorithm checksumAlgorithm =
+          s3PresignerService.getChecksumAlgorithm(o.getChecksumType());
+
+      byte[] bytes =
+          o.isBase64() ? Base64.getDecoder().decode(o.getContent().getBytes(StandardCharsets.UTF_8))
+              : o.getContent().getBytes(StandardCharsets.UTF_8);
+      String checksum = s3PresignerService.calculateChecksumAsHex(checksumAlgorithm, bytes);
+      o.setChecksum(checksum);
+    }
   }
 
   /**
@@ -325,11 +354,19 @@ public class DocumentsRequestHandler
 
     boolean isFolder = isFolder(item);
 
-    if (!isFolder && isEmpty(item.getContent()) && notNull(item.getDocuments()).isEmpty()
-        && isEmpty(item.getDeepLinkPath())) {
+    boolean emptyContent = isEmpty(item.getContent());
+    boolean emptyDeepLink = isEmpty(item.getDeepLinkPath());
+    Collection<ValidationError> errors = new ArrayList<>();
 
-      Collection<ValidationError> errors = Collections.singletonList(new ValidationErrorImpl()
+    if (!isFolder && emptyContent && notNull(item.getDocuments()).isEmpty() && emptyDeepLink) {
+      errors.add(new ValidationErrorImpl()
           .error("either 'content', 'documents', or 'deepLinkPath' are required"));
+    } else if (!emptyDeepLink && !emptyContent) {
+      errors
+          .add(new ValidationErrorImpl().error("both 'content', and 'deepLinkPath' cannot be set"));
+    }
+
+    if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }
   }

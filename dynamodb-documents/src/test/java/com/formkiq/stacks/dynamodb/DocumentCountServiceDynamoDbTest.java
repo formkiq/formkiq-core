@@ -26,7 +26,8 @@ package com.formkiq.stacks.dynamodb;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import java.util.UUID;
+
+import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -60,7 +61,7 @@ public class DocumentCountServiceDynamoDbTest {
   @Test
   public void testIncrementDocumentCount01() {
     // given
-    String siteId = UUID.randomUUID().toString();
+    String siteId = ID.uuid();
 
     try {
       // when

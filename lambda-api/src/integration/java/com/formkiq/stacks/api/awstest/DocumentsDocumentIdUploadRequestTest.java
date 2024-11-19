@@ -27,8 +27,10 @@ import static com.formkiq.testutils.aws.FkqDocumentService.addDocument;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
-import java.util.UUID;
+
 import java.util.concurrent.TimeUnit;
+
+import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
@@ -58,12 +60,12 @@ public class DocumentsDocumentIdUploadRequestTest extends AbstractAwsIntegration
     // given
     String siteId = null;
     for (ApiClient client : getApiClients(siteId)) {
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
       DocumentsApi api = new DocumentsApi(client);
 
       // when
       try {
-        api.getDocumentIdUpload(documentId, siteId, Integer.valueOf(1), null, null);
+        api.getDocumentIdUpload(documentId, siteId, null, null, Integer.valueOf(1), null, null);
         fail();
       } catch (ApiException e) {
         // then
@@ -88,7 +90,7 @@ public class DocumentsDocumentIdUploadRequestTest extends AbstractAwsIntegration
 
       // when
       GetDocumentUrlResponse response =
-          api.getDocumentIdUpload(documentId, siteId, Integer.valueOf(1), null, null);
+          api.getDocumentIdUpload(documentId, siteId, null, null, Integer.valueOf(1), null, null);
 
       // then
       assertNotNull(response.getUrl());

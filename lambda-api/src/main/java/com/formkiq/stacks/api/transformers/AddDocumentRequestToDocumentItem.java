@@ -40,11 +40,11 @@ public class AddDocumentRequestToDocumentItem
     implements Function<AddDocumentRequest, DocumentItem> {
 
   /** BelongsToDocumentId. */
-  private String belongsToDocumentId;
+  private final String belongsToDocumentId;
   /** User Id. */
-  private String userId;
+  private final String userId;
   /** {@link DocumentItem}. */
-  private DocumentItem existing;
+  private final DocumentItem existing;
 
   /**
    * constructor.
@@ -96,7 +96,6 @@ public class AddDocumentRequestToDocumentItem
     if (this.existing == null) {
       item.setDocumentId(r.getDocumentId());
       item.setUserId(this.userId);
-      item.setTagSchemaId(r.getTagSchemaId());
     } else {
       item.setLastModifiedDate(new Date());
     }
@@ -108,6 +107,9 @@ public class AddDocumentRequestToDocumentItem
     if (!isEmpty(r.getPath())) {
       item.setPath(r.getPath());
     }
+
+    item.setChecksum(r.getChecksum());
+    item.setChecksumType(r.getChecksumType());
 
     return item;
   }

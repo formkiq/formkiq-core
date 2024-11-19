@@ -25,6 +25,8 @@ package com.formkiq.aws.services.lambda;
 
 import java.util.Optional;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -272,7 +274,7 @@ public interface ApiGatewayRequestHandler {
   default void checkPermission(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final ApiPermission permission)
       throws UnauthorizedException {
-    String siteId = event.getPathParameters().get("siteId");
+    String siteId = event.getPathParameter("siteId");
     if (!authorization.getPermissions(siteId).contains(permission)) {
       throw new UnauthorizedException("user is unauthorized");
     }

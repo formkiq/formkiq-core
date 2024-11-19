@@ -49,6 +49,11 @@
 			<allow pkg="com.google.gson" />
 		</subpackage>
 
+		<subpackage name="s3">
+			<allow pkg="com.formkiq.aws.s3" />
+			<allow pkg="software.amazon.awssdk.services.s3.model" />
+		</subpackage>
+
 	</subpackage>
 
 	<subpackage name="common">

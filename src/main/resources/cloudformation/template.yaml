@@ -696,6 +696,12 @@ Outputs:
       Fn::GetAtt: 
       - CoreStorage
       - Outputs.DocumentsTableName
+  DocumentsTableArn:
+    Description: Document DynamoDb Table Arn
+    Value:
+      Fn::GetAtt:
+        - CoreStorage
+        - Outputs.DocumentsTableArn
   CognitoApiEndpoint:
     Description: The Cognito Login API endpoint
     Value: 

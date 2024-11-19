@@ -35,21 +35,21 @@ import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
-import com.formkiq.aws.services.lambda.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiMessageResponse;
 import com.formkiq.aws.services.lambda.ApiPagination;
-import com.formkiq.aws.services.lambda.ApiPermission;
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
-import com.formkiq.aws.services.lambda.services.CacheService;
+import com.formkiq.aws.dynamodb.cache.CacheService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.api.transformers.DocumentAttributeRecordToMap;
+import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecordToMap;
 import com.formkiq.stacks.api.transformers.DocumentAttributeToDocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidation;
@@ -151,8 +151,8 @@ public class DocumentAttributesRequestHandler
         AttributeValidationAccess.ADMIN_CREATE, AttributeValidationAccess.CREATE);
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
-    documentService.saveDocumentAttributes(siteId, documentId, attributes, false,
-        AttributeValidation.FULL, validationAccess);
+    documentService.saveDocumentAttributes(siteId, documentId, attributes, AttributeValidation.FULL,
+        validationAccess);
 
     ApiResponse resp =
         new ApiMessageResponse("added attributes to documentId '" + documentId + "'");
@@ -163,7 +163,9 @@ public class DocumentAttributesRequestHandler
       final ApiAuthorization authorization, final String siteId,
       final AttributeValidationAccess admin, final AttributeValidationAccess regular) {
 
-    boolean isAdmin = authorization.getPermissions(siteId).contains(ApiPermission.ADMIN);
+    Collection<ApiPermission> permissions = authorization.getPermissions(siteId);
+    boolean isAdmin =
+        permissions.contains(ApiPermission.ADMIN) || permissions.contains(ApiPermission.GOVERN);
     return isAdmin ? admin : regular;
   }
 
@@ -184,8 +186,8 @@ public class DocumentAttributesRequestHandler
     AttributeValidationAccess validationAccess = getAttributeValidationAccess(authorization, siteId,
         AttributeValidationAccess.ADMIN_SET, AttributeValidationAccess.SET);
 
-    documentService.saveDocumentAttributes(siteId, documentId, attributes, false,
-        AttributeValidation.FULL, validationAccess);
+    documentService.saveDocumentAttributes(siteId, documentId, attributes, AttributeValidation.FULL,
+        validationAccess);
 
     ApiResponse resp = new ApiMessageResponse("set attributes on documentId '" + documentId + "'");
     return new ApiRequestHandlerResponse(SC_CREATED, resp);

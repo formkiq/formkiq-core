@@ -54,7 +54,7 @@ public class NettyExtension implements BeforeAllCallback, AfterAllCallback {
   /** {@link Thread}. */
   private Thread serverThread;
   /** {@link TypesenseExtension}. */
-  private TypesenseExtension typesense;
+  private final TypesenseExtension typesense;
 
   /**
    * constructor.
@@ -66,7 +66,7 @@ public class NettyExtension implements BeforeAllCallback, AfterAllCallback {
   }
 
   @Override
-  public void afterAll(final ExtensionContext context) throws IOException {
+  public void afterAll(final ExtensionContext context) {
     this.serverThread.interrupt();
   }
 

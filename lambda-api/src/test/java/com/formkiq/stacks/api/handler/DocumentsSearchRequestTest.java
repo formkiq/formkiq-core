@@ -23,38 +23,21 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_BAD_REQUEST;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_PAYMENT;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.fail;
-import java.io.IOException;
-import java.net.http.HttpResponse;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-
-import com.formkiq.client.model.AddDocumentAttributeStandard;
-import com.formkiq.client.model.AttributeValueType;
-import com.formkiq.client.model.SearchResultDocumentAttribute;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.model.DocumentMapToDocument;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAttribute;
 import com.formkiq.client.model.AddAttributeRequest;
 import com.formkiq.client.model.AddDocumentAttribute;
+import com.formkiq.client.model.AddDocumentAttributeStandard;
 import com.formkiq.client.model.AddDocumentTag;
 import com.formkiq.client.model.AddDocumentTagsRequest;
 import com.formkiq.client.model.AddDocumentUploadRequest;
+import com.formkiq.client.model.AttributeValueType;
 import com.formkiq.client.model.DocumentSearch;
 import com.formkiq.client.model.DocumentSearchAttribute;
 import com.formkiq.client.model.DocumentSearchMatchTag;
@@ -70,18 +53,67 @@ import com.formkiq.client.model.GetDocumentFulltextResponse;
 import com.formkiq.client.model.GetDocumentSyncResponse;
 import com.formkiq.client.model.SearchResponseFields;
 import com.formkiq.client.model.SearchResultDocument;
+import com.formkiq.client.model.SearchResultDocumentAttribute;
 import com.formkiq.module.lambda.typesense.TypesenseProcessor;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.stacks.dynamodb.FolderIndexProcessor;
+import com.formkiq.stacks.dynamodb.FolderIndexProcessorImpl;
+import com.formkiq.stacks.dynamodb.FolderIndexRecord;
+import com.formkiq.testutils.aws.DynamoDbTestServices;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.http.HttpResponse;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
+
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_BAD_REQUEST;
+import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /** Unit Tests for request /search. */
 public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
+
+  /** {@link DynamoDbService}. */
+  private static DynamoDbService db;
+  /** {@link FolderIndexProcessor}. */
+  private static FolderIndexProcessor indexProcessor;
+
+  /**
+   * Before All.
+   */
+  @BeforeAll
+  public static void beforeAll() throws URISyntaxException {
+    DynamoDbConnectionBuilder dbConnection = DynamoDbTestServices.getDynamoDbConnection();
+    db = new DynamoDbServiceImpl(dbConnection, DOCUMENTS_TABLE);
+    indexProcessor = new FolderIndexProcessorImpl(dbConnection, DOCUMENTS_TABLE);
+  }
 
   /** JUnit Test Timeout. */
   private static final int TEST_TIMEOUT = 10;
 
   private void addAttribute(final String siteId) throws ApiException {
+    addAttribute(siteId, "category");
+    addAttribute(siteId, "other");
+  }
+
+  private void addAttribute(final String siteId, final String attributeKey) throws ApiException {
     AddAttributeRequest req =
-        new AddAttributeRequest().attribute(new AddAttribute().key("category"));
+        new AddAttributeRequest().attribute(new AddAttribute().key(attributeKey));
     this.attributesApi.addAttribute(req, siteId);
   }
 
@@ -154,7 +186,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
    */
   @Test
   public void testHandleSearchRequest01() {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
       DocumentSearchRequest req = new DocumentSearchRequest();
@@ -177,7 +209,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
    */
   @Test
   public void testHandleSearchRequest02() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
 
@@ -201,7 +233,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testHandleSearchRequest03() throws Exception {
     for (String op : Arrays.asList("eq", "eqOr")) {
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      for (String siteId : Arrays.asList(null, ID.uuid())) {
         // given
         setBearerToken(siteId);
 
@@ -250,7 +282,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
    */
   @Test
   public void testHandleSearchRequest05() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
       String tagKey = "category";
@@ -287,7 +319,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testHandleSearchRequest06() throws Exception {
     for (String op : Arrays.asList("eq", "eqOr")) {
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      for (String siteId : Arrays.asList(null, ID.uuid())) {
         // given
         setBearerToken(siteId);
 
@@ -350,13 +382,13 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
   public void testHandleSearchRequest07() {
     final int count = 101;
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
 
       List<String> ids = new ArrayList<>();
       for (int i = 0; i < count; i++) {
-        ids.add(UUID.randomUUID().toString());
+        ids.add(ID.uuid());
       }
 
       // when
@@ -378,7 +410,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
    */
   @Test
   public void testHandleSearchRequest08() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
       final int count = 13;
@@ -415,7 +447,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
    */
   @Test
   public void testHandleSearchRequest09() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
 
@@ -437,7 +469,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
    */
   @Test
   public void testHandleSearchRequest10() {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
 
@@ -451,8 +483,9 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
         fail();
       } catch (ApiException e) {
         // then
-        assertEquals(SC_PAYMENT.getStatusCode(), e.getCode());
-        assertEquals("{\"message\":\"Feature only available in FormKiQ Enterprise\"}",
+        assertEquals(SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"tags\",\"error\":\"multiple tags search not supported\"}]}",
             e.getResponseBody());
       }
     }
@@ -464,7 +497,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
    */
   @Test
   public void testHandleSearchRequest11() {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
 
@@ -491,7 +524,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
    */
   @Test
   public void testHandleSearchRequest12() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
 
@@ -536,7 +569,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
    */
   @Test
   public void testHandleSearchRequest13() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
 
@@ -579,7 +612,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
    */
   @Test
   public void testHandleSearchRequest14() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
 
@@ -687,11 +720,11 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
    */
   @Test
   public void testHandleSearchRequest16() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
 
-      String text = UUID.randomUUID().toString();
+      String text = ID.uuid();
 
       DocumentSearchRequest dsq =
           new DocumentSearchRequest().query(new DocumentSearch().text(text));
@@ -712,7 +745,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
    */
   @Test
   public void testHandleSearchRequest17() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
 
@@ -743,7 +776,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
    */
   @Test
   public void testHandleSearchRequest18() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
 
@@ -773,7 +806,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
    */
   @Test
   public void testHandleSearchRequest19() {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
 
@@ -800,7 +833,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
    */
   @Test
   public void testHandleSearchRequest20() {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
 
@@ -817,8 +850,8 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
       } catch (ApiException e) {
         // then
         assertEquals(SC_BAD_REQUEST.getStatusCode(), e.getCode());
-        assertEquals("{\"errors\":[{\"key\":\"tag/eq\",\"error\":\"'beginsWith','range' "
-            + "is only supported on the last tag\"}]}", e.getResponseBody());
+        assertEquals("{\"errors\":[{\"key\":\"tags\","
+            + "\"error\":\"multiple tags search not supported\"}]}", e.getResponseBody());
       }
     }
   }
@@ -831,7 +864,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testHandleSearchRequest21() throws Exception {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
 
@@ -873,7 +906,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testHandleSearchRequest22() {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
 
@@ -902,7 +935,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testHandleSearchRequest23() {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
 
@@ -930,7 +963,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
    */
   @Test
   public void testHandleSearchRequest24() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
 
@@ -939,7 +972,9 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
       AddDocumentUploadRequest uploadReq = new AddDocumentUploadRequest().path(path)
           .addTagsItem(new AddDocumentTag().key("documentType").value("invoice"))
           .addAttributesItem(new AddDocumentAttribute(
-              new AddDocumentAttributeStandard().key("category").stringValue("document")));
+              new AddDocumentAttributeStandard().key("category").stringValue("document")))
+          .addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key("other").stringValue("thing")));
       this.documentsApi.addDocumentUpload(uploadReq, siteId, null, null, null);
 
       DocumentSearchRequest dsq = new DocumentSearchRequest()
@@ -978,7 +1013,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testHandleSearchRequest25() {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
 
@@ -1021,7 +1056,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testHandleSearchRequest26() throws Exception {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
 
@@ -1053,8 +1088,148 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
         assertEquals(documentId1, documents.get(1).getDocumentId());
       }
 
-      // documentId filter
+      // given - documentId filter
+      dsq0.getQuery().setDocumentIds(List.of(documentId1));
+
+      // when
+      response0 = this.searchApi.documentSearch(dsq0, siteId, null, null, null);
+
+      // then
+      List<SearchResultDocument> documents = notNull(response0.getDocuments());
+      assertEquals(1, documents.size());
+      assertEquals(documentId1, documents.get(0).getDocumentId());
     }
   }
 
+  /**
+   * Post search by attribute, responsefields.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleSearchRequest27() throws Exception {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      addAttribute(siteId);
+      addAttribute(siteId, "playerId");
+
+      AddDocumentUploadRequest uploadReq = new AddDocumentUploadRequest();
+
+      AddDocumentAttribute attr0 = new AddDocumentAttribute(
+          new AddDocumentAttributeStandard().key("category").stringValue("person"));
+      AddDocumentAttribute attr1 = new AddDocumentAttribute(
+          new AddDocumentAttributeStandard().key("playerId").stringValue("12345"));
+      uploadReq.addAttributesItem(attr0).addAttributesItem(attr1);
+
+      String documentId0 =
+          this.documentsApi.addDocumentUpload(uploadReq, siteId, null, null, null).getDocumentId();
+      addDocumentWithAttributes(siteId, "other");
+
+      DocumentSearchAttribute attributes =
+          new DocumentSearchAttribute().key("category").eq("person");
+
+      DocumentSearchRequest dsq =
+          new DocumentSearchRequest().query(new DocumentSearch().attribute(attributes))
+              .responseFields(new SearchResponseFields().addAttributesItem("playerId"));
+
+      // when
+      DocumentSearchResponse response =
+          this.searchApi.documentSearch(dsq, siteId, null, null, null);
+
+      // then
+      List<SearchResultDocument> documents = notNull(response.getDocuments());
+      assertEquals(1, documents.size());
+      assertEquals(documentId0, documents.get(0).getDocumentId());
+      Map<String, SearchResultDocumentAttribute> map = documents.get(0).getAttributes();
+      assertNotNull(map);
+      assertEquals(1, map.size());
+      assertEquals("12345", String.join(",", notNull(map.get("playerId").getStringValues())));
+    }
+  }
+
+  /**
+   * Post search by documentIds only.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleSearchRequest28() throws Exception {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      addAttribute(siteId);
+      addAttribute(siteId, "playerId");
+
+      AddDocumentAttribute attr0 = new AddDocumentAttribute(
+          new AddDocumentAttributeStandard().key("category").stringValue("person"));
+      AddDocumentAttribute attr1 = new AddDocumentAttribute(
+          new AddDocumentAttributeStandard().key("playerId").stringValue("12345"));
+      AddDocumentUploadRequest uploadReq =
+          new AddDocumentUploadRequest().addAttributesItem(attr0).addAttributesItem(attr1);
+
+      String documentId0 =
+          this.documentsApi.addDocumentUpload(uploadReq, siteId, null, null, null).getDocumentId();
+      assertNotNull(documentId0);
+      addDocumentWithAttributes(siteId, "other");
+
+      DocumentSearchRequest dsq = new DocumentSearchRequest()
+          .responseFields(new SearchResponseFields().addAttributesItem("playerId"))
+          .query(new DocumentSearch().documentIds(List.of(documentId0)));
+
+      // when
+      DocumentSearchResponse response =
+          this.searchApi.documentSearch(dsq, siteId, null, null, null);
+
+      // then
+      List<SearchResultDocument> documents = notNull(response.getDocuments());
+      assertEquals(1, documents.size());
+      assertEquals(documentId0, documents.get(0).getDocumentId());
+      Map<String, SearchResultDocumentAttribute> map = documents.get(0).getAttributes();
+      assertNotNull(map);
+      assertEquals(1, map.size());
+      assertEquals("12345", String.join(",", notNull(map.get("playerId").getStringValues())));
+    }
+  }
+
+  /**
+   * Test POST /search on a folder with a lock key that wasn't removed.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  void testHandleSearchRequest29() throws Exception {
+    // given
+    final String path = "/a/b/test2.pdf";
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      AddDocumentUploadRequest uploadReq = new AddDocumentUploadRequest().path(path);
+      this.documentsApi.addDocumentUpload(uploadReq, siteId, null, null, null);
+
+      DocumentSearchRequest req = new DocumentSearchRequest().query(new DocumentSearch().meta(
+          new DocumentSearchMeta().indexType(DocumentSearchMeta.IndexTypeEnum.FOLDER).eq("/a/")));
+      req.setResponseFields(
+          new SearchResponseFields().tags(List.of("test1", "test2")).addAttributesItem("bleh"));
+
+      List<FolderIndexRecord> folders = indexProcessor.createFolders(siteId, path, "joe");
+      FolderIndexRecord a = folders.get(1);
+      final int timeout = 10000;
+      assertTrue(db.acquireLock(a.fromS(a.pk(siteId)), a.fromS(a.sk()), timeout, timeout));
+
+      // when
+      List<SearchResultDocument> documents =
+          notNull(searchApi.documentSearch(req, siteId, null, null, null).getDocuments());
+
+      // then
+      assertEquals(1, documents.size());
+      assertEquals("b", documents.get(0).getPath());
+    }
+  }
 }

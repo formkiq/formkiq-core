@@ -30,7 +30,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.UUID;
+
+import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -71,7 +72,7 @@ class AttributeServiceDynamoDbTest implements DbKeys {
   @Test
   void testDelete01() {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       String key = "category";
       service.addAttribute(siteId, key, AttributeDataType.STRING, AttributeType.STANDARD);
@@ -93,7 +94,7 @@ class AttributeServiceDynamoDbTest implements DbKeys {
   @Test
   void testDelete02() {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       String key = "category";
 
@@ -112,7 +113,7 @@ class AttributeServiceDynamoDbTest implements DbKeys {
   @Test
   void testSetAttributeType01() {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       String key = "category";
       service.addAttribute(siteId, key, AttributeDataType.STRING, AttributeType.STANDARD);

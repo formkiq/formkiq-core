@@ -61,6 +61,11 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
   }
 
   @Override
+  public String getChecksumType() {
+    return getString("checksumType");
+  }
+
+  @Override
   public Long getContentLength() {
     return getLong("contentLength");
   }
@@ -131,11 +136,6 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
   }
 
   @Override
-  public String getTagSchemaId() {
-    return getString("tagSchemaId");
-  }
-
-  @Override
   public String getTimeToLive() {
     return getString("TimeToLive");
   }
@@ -158,6 +158,11 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
   @Override
   public void setChecksum(final String checksum) {
     put("checksum", checksum);
+  }
+
+  @Override
+  public void setChecksumType(final String checksumType) {
+    put("checksumType", checksumType);
   }
 
   @Override
@@ -216,11 +221,6 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
   @Override
   public void setS3version(final String version) {
     put("s3version", version);
-  }
-
-  @Override
-  public void setTagSchemaId(final String id) {
-    put("tagSchemaId", id);
   }
 
   @Override

@@ -49,5 +49,9 @@ public enum ActionType {
   /** WebHook. */
   WEBHOOK,
   /** Publish. */
-  PUBLISH
+  PUBLISH,
+  /** Pdf Export. */
+  PDFEXPORT,
+  /** Event Bridge. */
+  EVENTBRIDGE
 }

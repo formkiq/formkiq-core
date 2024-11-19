@@ -31,7 +31,8 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.getSiteId;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import java.util.UUID;
+
+import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.Test;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 
@@ -47,8 +48,8 @@ public class SiteIdKeyGeneratorTest {
    */
   @Test
   public void testCreateDatabaseKey01() {
-    String siteId = UUID.randomUUID().toString();
-    String id = UUID.randomUUID().toString();
+    String siteId = ID.uuid();
+    String id = ID.uuid();
     assertNull(createDatabaseKey(null, null));
     assertEquals(id, createDatabaseKey(DEFAULT_SITE_ID, id));
     assertEquals(siteId + "/" + id, createDatabaseKey(siteId, id));
@@ -59,8 +60,8 @@ public class SiteIdKeyGeneratorTest {
    */
   @Test
   public void testCreateS3Key01() {
-    String siteId = UUID.randomUUID().toString();
-    String id = UUID.randomUUID().toString();
+    String siteId = ID.uuid();
+    String id = ID.uuid();
     assertEquals(id, createS3Key(null, id));
     assertEquals(id, createS3Key(DEFAULT_SITE_ID, id));
     assertEquals(siteId + "/" + id, createS3Key(siteId, id));
@@ -72,8 +73,8 @@ public class SiteIdKeyGeneratorTest {
   @Test
   public void testCreateS3Key02() {
     String contentType = "application/pdf";
-    String siteId = UUID.randomUUID().toString();
-    String id = UUID.randomUUID().toString();
+    String siteId = ID.uuid();
+    String id = ID.uuid();
     assertEquals(id + "/application/pdf", createS3Key(null, id, contentType));
     assertEquals(id + "/application/pdf", createS3Key(DEFAULT_SITE_ID, id, contentType));
     assertEquals(siteId + "/" + id + "/application/pdf", createS3Key(siteId, id, contentType));
@@ -84,8 +85,8 @@ public class SiteIdKeyGeneratorTest {
    */
   @Test
   public void testGetDocumentId() {
-    String siteId = UUID.randomUUID().toString();
-    String id = UUID.randomUUID().toString();
+    String siteId = ID.uuid();
+    String id = ID.uuid();
     assertNull(getDocumentId(null));
     assertEquals(id, getDocumentId(id));
     assertEquals(id, getDocumentId(siteId + "/" + id));
@@ -97,8 +98,8 @@ public class SiteIdKeyGeneratorTest {
    */
   @Test
   public void testGetSiteId() {
-    String siteId = UUID.randomUUID().toString();
-    String id = UUID.randomUUID().toString();
+    String siteId = ID.uuid();
+    String id = ID.uuid();
     assertNull(getSiteId(null));
     assertNull(getSiteId(id));
     assertEquals(siteId, getSiteId(siteId + "/" + id));
@@ -112,8 +113,8 @@ public class SiteIdKeyGeneratorTest {
    */
   @Test
   public void testResetDatabaseKey01() {
-    String siteId = UUID.randomUUID().toString();
-    String id = UUID.randomUUID().toString();
+    String siteId = ID.uuid();
+    String id = ID.uuid();
     assertEquals(id, resetDatabaseKey(siteId, siteId + "/" + id));
     assertEquals("asdas/" + id, resetDatabaseKey(siteId, "asdas/" + id));
     assertEquals(id, resetDatabaseKey(siteId, id));

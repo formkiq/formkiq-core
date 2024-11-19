@@ -23,6 +23,7 @@
  */
 package com.formkiq.module.lambda.ocr.tesseract;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static com.formkiq.testutils.aws.TestServices.AWS_REGION;
@@ -38,7 +39,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
+
+import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -130,10 +132,10 @@ class OcrTesseractProcessorTest {
   @Test
   void testHandleRequest01() throws Exception {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
-      String documentId = UUID.randomUUID().toString();
-      String jobId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
+      String jobId = ID.uuid();
 
       List<Action> actions = Collections.singletonList(
           new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
@@ -172,10 +174,10 @@ class OcrTesseractProcessorTest {
   @Test
   void testHandleRequest02() throws Exception {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
-      String documentId = UUID.randomUUID().toString();
-      String jobId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
+      String jobId = ID.uuid();
 
       List<Action> actions = Collections.singletonList(
           new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
@@ -221,10 +223,10 @@ class OcrTesseractProcessorTest {
   @Test
   void testHandleRequest03() throws Exception {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
-      String documentId = UUID.randomUUID().toString();
-      String jobId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
+      String jobId = ID.uuid();
 
       List<Action> actions = Collections.singletonList(
           new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
@@ -263,10 +265,10 @@ class OcrTesseractProcessorTest {
   @Test
   void testHandleRequest04() throws Exception {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
-      String documentId = UUID.randomUUID().toString();
-      String jobId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
+      String jobId = ID.uuid();
 
       List<Action> actions = Collections.singletonList(
           new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
@@ -315,10 +317,10 @@ class OcrTesseractProcessorTest {
   @Test
   void testHandleRequest05() throws Exception {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
-      String documentId = UUID.randomUUID().toString();
-      String jobId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
+      String jobId = ID.uuid();
 
       List<Action> actions = Collections.singletonList(
           new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
@@ -367,10 +369,10 @@ class OcrTesseractProcessorTest {
   @Test
   void testHandleRequest06() throws Exception {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
-      String documentId = UUID.randomUUID().toString();
-      String jobId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
+      String jobId = ID.uuid();
 
       List<Action> actions = Collections.singletonList(
           new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
@@ -417,10 +419,10 @@ class OcrTesseractProcessorTest {
   @Test
   void testHandleRequest07() throws Exception {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
-      String documentId = UUID.randomUUID().toString();
-      String jobId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
+      String jobId = ID.uuid();
 
       List<Action> actions = Collections.singletonList(
           new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
@@ -469,10 +471,10 @@ class OcrTesseractProcessorTest {
     // given
     final int ocrNumberOfPages = 2;
 
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
-      String documentId = UUID.randomUUID().toString();
-      String jobId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
+      String jobId = ID.uuid();
 
       List<Action> actions = Collections.singletonList(
           new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
@@ -524,10 +526,10 @@ class OcrTesseractProcessorTest {
     // given
     final int ocrNumberOfPages = 2;
 
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
-      String documentId = UUID.randomUUID().toString();
-      String jobId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
+      String jobId = ID.uuid();
 
       List<Action> actions = Collections.singletonList(
           new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));

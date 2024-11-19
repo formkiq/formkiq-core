@@ -51,8 +51,11 @@ public class DocumentServiceExtension implements AwsServiceExtension<DocumentSer
       DocumentVersionService versionService =
           awsServiceCache.getExtension(DocumentVersionService.class);
 
+      DocumentServiceInterceptor interceptor =
+          awsServiceCache.getExtensionOrNull(DocumentServiceInterceptor.class);
+
       this.service = new DocumentServiceImpl(connection,
-          awsServiceCache.environment("DOCUMENTS_TABLE"), versionService);
+          awsServiceCache.environment("DOCUMENTS_TABLE"), versionService, interceptor);
     }
 
     return this.service;

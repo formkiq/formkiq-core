@@ -23,11 +23,11 @@
  */
 package com.formkiq.stacks.dynamodb.mappings;
 
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.model.MappingRecord;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-import java.util.UUID;
 import java.util.function.Function;
 
 /**
@@ -43,7 +43,7 @@ public class MappingToMappingRecord implements Function<Mapping, MappingRecord> 
     MappingRecord r = new MappingRecord();
     r.setName(mapping.getName());
     r.setDescription(mapping.getDescription());
-    r.setDocumentId(UUID.randomUUID().toString());
+    r.setDocumentId(ID.uuid());
     r.setAttributes(this.gson.toJson(mapping.getAttributes()));
     return r;
   }

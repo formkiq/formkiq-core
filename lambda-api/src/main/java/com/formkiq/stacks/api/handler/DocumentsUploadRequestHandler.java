@@ -24,18 +24,21 @@
 package com.formkiq.stacks.api.handler;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.objects.Strings;
-import com.formkiq.aws.services.lambda.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
-import com.formkiq.aws.services.lambda.ApiPermission;
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.ConflictException;
+import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.services.ActionsNotificationService;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.transformers.AddDocumentRequestToDocumentItem;
@@ -51,6 +54,7 @@ import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.validation.ValidationError;
+import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
 
 import java.time.Duration;
@@ -59,7 +63,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
@@ -94,14 +97,14 @@ public class DocumentsUploadRequestHandler
       final AwsServiceCache awsservice) throws Exception {
 
     AddDocumentRequest item = new AddDocumentRequest();
-    item.setDocumentId(UUID.randomUUID().toString());
-
-    Map<String, String> query = event.getQueryStringParameters();
+    item.setDocumentId(ID.uuid());
+    item.setChecksum(event.getQueryStringParameter("checksum"));
+    item.setChecksumType(event.getQueryStringParameter("checksumType"));
+    item.setPath(event.getQueryStringParameter("path"));
 
     String siteId = authorization.getSiteId();
 
-    String path = query != null && query.containsKey("path") ? query.get("path") : null;
-    item.setPath(path);
+    validate(awsservice, siteId, item);
 
     String maxDocumentCount = validateMaxDocuments(awsservice, siteId);
 
@@ -133,19 +136,34 @@ public class DocumentsUploadRequestHandler
   public ApiRequestHandlerResponse post(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
-
     AddDocumentRequest request = fromBodyToObject(event, AddDocumentRequest.class);
+    return post(event, authorization, awsservice, request);
+  }
+
+  /**
+   * Handle POST event interally.
+   * 
+   * @param event {@link ApiGatewayRequestEvent}
+   * @param authorization {@link ApiAuthorization}
+   * @param awsservice {@link AwsServiceCache}
+   * @param request {@link AddDocumentRequest}
+   * @return ApiRequestHandlerResponse
+   * @throws Exception Exception
+   */
+  protected ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice,
+      final AddDocumentRequest request) throws Exception {
 
     String siteId = authorization.getSiteId();
-    validateDocumentIds(awsservice, siteId, request);
+    validate(awsservice, siteId, request);
 
     if (isEmpty(request.getDocumentId())) {
-      request.setDocumentId(UUID.randomUUID().toString());
+      request.setDocumentId(ID.uuid());
     }
 
     notNull(request.getDocuments()).forEach(d -> {
       if (isEmpty(d.getDocumentId())) {
-        d.setDocumentId(UUID.randomUUID().toString());
+        d.setDocumentId(ID.uuid());
       }
     });
 
@@ -174,6 +192,26 @@ public class DocumentsUploadRequestHandler
     }
 
     return response;
+  }
+
+  private void validate(final AwsServiceCache awsservice, final String siteId,
+      final AddDocumentRequest request)
+      throws ConflictException, BadException, ValidationException {
+
+    Collection<ValidationError> errors = new ArrayList<>();
+
+    if (!isEmpty(request.getChecksumType())) {
+
+      if (isEmpty(request.getChecksum())) {
+        errors.add(new ValidationErrorImpl().key("checksum").error("'checksum' is required"));
+      }
+    }
+
+    validateDocumentIds(awsservice, siteId, request);
+
+    if (!errors.isEmpty()) {
+      throw new ValidationException(errors);
+    }
   }
 
   private void validateDocumentIds(final AwsServiceCache awsservice, final String siteId,
@@ -248,13 +286,10 @@ public class DocumentsUploadRequestHandler
     String documentId = request.getDocumentId();
 
     AddDocumentRequestToPresignedUrls addDocumentRequestToPresignedUrls =
-        new AddDocumentRequestToPresignedUrls(awsservice, siteId,
+        new AddDocumentRequestToPresignedUrls(awsservice, authorization, siteId,
             caculateDuration(event.getQueryStringParameters()),
             calculateContentLength(awsservice, event.getQueryStringParameters(), siteId));
-
     final Map<String, Object> map = addDocumentRequestToPresignedUrls.apply(request);
-
-    DocumentService service = awsservice.getExtension(DocumentService.class);
 
     DocumentItem item =
         new AddDocumentRequestToDocumentItem(null, authorization.getUsername(), null)
@@ -264,11 +299,20 @@ public class DocumentsUploadRequestHandler
         getAttributeValidationAccess(authorization, siteId);
     SaveDocumentOptions options =
         new SaveDocumentOptions().saveDocumentDate(true).validationAccess(validationAccess);
+
+    DocumentService service = awsservice.getExtension(DocumentService.class);
     service.saveDocument(siteId, item, tags, documentAttributes, options);
 
     ActionsService actionsService = awsservice.getExtension(ActionsService.class);
-    notNull(request.getActions()).forEach(a -> a.userId(authorization.getUsername()));
-    actionsService.saveNewActions(siteId, documentId, request.getActions());
+    List<Action> actions = notNull(request.getActions());
+    actions.forEach(a -> a.userId(authorization.getUsername()));
+    actionsService.saveNewActions(siteId, documentId, actions);
+
+    if (!Strings.isEmpty(item.getDeepLinkPath()) && !actions.isEmpty()) {
+      ActionsNotificationService notificationService =
+          awsservice.getExtension(ActionsNotificationService.class);
+      notificationService.publishNextActionEvent(siteId, documentId);
+    }
 
     return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
   }
@@ -323,7 +367,9 @@ public class DocumentsUploadRequestHandler
   private AttributeValidationAccess getAttributeValidationAccess(
       final ApiAuthorization authorization, final String siteId) {
 
-    boolean isAdmin = authorization.getPermissions(siteId).contains(ApiPermission.ADMIN);
+    Collection<ApiPermission> permissions = authorization.getPermissions(siteId);
+    boolean isAdmin =
+        permissions.contains(ApiPermission.ADMIN) || permissions.contains(ApiPermission.GOVERN);
     return isAdmin ? AttributeValidationAccess.ADMIN_CREATE : AttributeValidationAccess.CREATE;
   }
 }

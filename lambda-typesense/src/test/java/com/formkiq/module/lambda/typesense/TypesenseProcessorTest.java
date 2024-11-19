@@ -33,8 +33,9 @@ import java.net.http.HttpResponse;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+
+import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -151,7 +152,7 @@ class TypesenseProcessorTest {
     // given
     String siteId = null;
     String oldDocumentId = "acd4be1b-9466-4dcd-b8b8-e5b19135b460";
-    String documentId = UUID.randomUUID().toString();
+    String documentId = ID.uuid();
 
     Map<String, Object> map = loadRequest("/insert.json", oldDocumentId, documentId);
 
@@ -269,7 +270,7 @@ class TypesenseProcessorTest {
     // given
     String siteId = "5da6c0ef-20ff-45d1-8c08-d5fb0cfcf9b4";
     String oldDocumentId = "666b7588-fc01-4ed3-8b3d-3e8d13264997";
-    String documentId = UUID.randomUUID().toString();
+    String documentId = ID.uuid();
 
     Map<String, Object> map = loadRequest("/insert_siteId.json", oldDocumentId, documentId);
 
@@ -307,7 +308,7 @@ class TypesenseProcessorTest {
 
     for (String caseType : Arrays.asList("case2", "case3")) {
 
-      String documentId = UUID.randomUUID().toString();
+      String documentId = ID.uuid();
 
       Map<String, Object> map0 =
           loadRequest("/" + caseType + "_insert.json", oldDocumentId, documentId);
@@ -475,7 +476,7 @@ class TypesenseProcessorTest {
     // given
     String siteId = null;
     String oldDocumentId = "acd4be1b-9466-4dcd-b8b8-e5b19135b460";
-    String documentId = UUID.randomUUID().toString();
+    String documentId = ID.uuid();
 
     Map<String, Object> map = loadRequest("/insert_deeplink.json", oldDocumentId, documentId);
 

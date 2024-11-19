@@ -30,7 +30,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
+
+import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import com.formkiq.aws.s3.S3Service;
@@ -77,7 +78,7 @@ public class UpdateDocumentMatchingRequestHandlerTest extends AbstractApiClientR
   @Test
   void testUpdateMatchingDocumentTags01() throws Exception {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       setBearerToken(siteId);
 
@@ -117,7 +118,7 @@ public class UpdateDocumentMatchingRequestHandlerTest extends AbstractApiClientR
   @Test
   void testUpdateMatchingDocumentTags02() throws Exception {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       setBearerToken(siteId);
 

@@ -23,13 +23,31 @@
  */
 package com.formkiq.stacks.lambda.s3.awstest;
 
-import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
-import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.PaginationResults;
+import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.model.DocumentTag;
+import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
+import com.formkiq.aws.dynamodb.model.SearchQuery;
+import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
+import com.formkiq.aws.s3.S3ObjectMetadata;
+import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
+import com.formkiq.stacks.dynamodb.DocumentService;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.parallel.Isolated;
+import software.amazon.awssdk.services.s3.model.Event;
+import software.amazon.awssdk.services.s3.model.GetBucketNotificationConfigurationResponse;
+import software.amazon.awssdk.services.s3.model.LambdaFunctionConfiguration;
+import software.amazon.awssdk.services.s3.model.QueueConfiguration;
+import software.amazon.awssdk.services.sqs.model.CreateQueueRequest;
+import software.amazon.awssdk.services.sqs.model.CreateQueueResponse;
+import software.amazon.awssdk.services.sqs.model.QueueAttributeName;
+import software.amazon.awssdk.services.sqs.model.SetQueueAttributesRequest;
+
 import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -49,32 +67,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
-import org.junit.jupiter.api.parallel.Isolated;
-import com.formkiq.aws.dynamodb.PaginationResults;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
-import com.formkiq.aws.dynamodb.model.DocumentTag;
-import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
-import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
-import com.formkiq.aws.dynamodb.model.SearchQuery;
-import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
-import com.formkiq.aws.s3.S3ObjectMetadata;
-import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
-import com.formkiq.stacks.dynamodb.DocumentService;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import software.amazon.awssdk.services.s3.model.Event;
-import software.amazon.awssdk.services.s3.model.GetBucketNotificationConfigurationResponse;
-import software.amazon.awssdk.services.s3.model.LambdaFunctionConfiguration;
-import software.amazon.awssdk.services.s3.model.QueueConfiguration;
-import software.amazon.awssdk.services.sns.SnsClient;
-import software.amazon.awssdk.services.sqs.SqsClient;
-import software.amazon.awssdk.services.sqs.model.CreateQueueRequest;
-import software.amazon.awssdk.services.sqs.model.CreateQueueResponse;
-import software.amazon.awssdk.services.sqs.model.QueueAttributeName;
-import software.amazon.awssdk.services.sqs.model.SetQueueAttributesRequest;
+
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test CloudFormation.
@@ -88,14 +88,13 @@ public class AwsResourceTest extends AbstractAwsTest {
 
   /**
    * Assert {@link LambdaFunctionConfiguration}.
-   * 
+   *
    * @param c {@link LambdaFunctionConfiguration}
-   * @param arn {@link String}
    * @param event {@link String}
    */
   private static void assertLambdaFunctionConfigurations(final LambdaFunctionConfiguration c,
-      final String arn, final String event) {
-    assertTrue(c.lambdaFunctionArn().contains(arn));
+      final String event) {
+    assertTrue(c.lambdaFunctionArn().contains("DocumentsS3Update"));
     assertEquals(1, c.events().size());
     Event e = c.events().get(0);
     assertEquals(event, e.toString());
@@ -103,14 +102,12 @@ public class AwsResourceTest extends AbstractAwsTest {
 
   /**
    * Assert Received Message.
-   * 
+   *
    * @param queueUrl {@link String}
    * @param type {@link String}
-   * @return {@link String}
    * @throws InterruptedException InterruptedException
    */
-  @SuppressWarnings("unchecked")
-  private static String assertSnsMessage(final String queueUrl, final String type)
+  private static void assertSnsMessage(final String queueUrl, final String type)
       throws InterruptedException {
 
     List<Map<String, String>> receiveMessages;
@@ -122,8 +119,7 @@ public class AwsResourceTest extends AbstractAwsTest {
         String body = m.body();
         Map<String, String> map = gson.fromJson(body, Map.class);
         String message = map.get("Message");
-        Map<String, String> snsMessage = gson.fromJson(message, Map.class);
-        return snsMessage;
+        return (Map<String, String>) gson.fromJson(message, Map.class);
       }).filter(m -> type.equals(m.get("type"))).toList();
 
       if (receiveMessages.size() != 1) {
@@ -146,19 +142,16 @@ public class AwsResourceTest extends AbstractAwsTest {
     } else {
       assertSnsMessage(queueUrl, type);
     }
-
-    return message.get("documentId");
   }
 
   /** {@link Gson}. */
-  private Gson gson = new GsonBuilder().create();
+  private final Gson gson = new GsonBuilder().create();
 
-  private void assertQueueConfigurations(final QueueConfiguration q, final String arn,
-      final String event) {
-    assertTrue(q.queueArn().contains(arn));
+  private void assertQueueConfigurations(final QueueConfiguration q) {
+    assertTrue(q.queueArn().contains("DocumentsStagingQueue"));
     assertEquals(1, q.events().size());
     Event e = q.events().get(0);
-    assertEquals(event, e.toString());
+    assertEquals("s3:ObjectCreated:*", e.toString());
   }
 
   /**
@@ -196,8 +189,7 @@ public class AwsResourceTest extends AbstractAwsTest {
         SetQueueAttributesRequest.builder().queueUrl(queueUrl).attributes(attributes).build();
     getSqsService().setQueueAttributes(setAttributes);
 
-    String subscriptionArn = getSnsService().subscribe(topicArn, "sqs", queueArn).subscriptionArn();
-    return subscriptionArn;
+    return getSnsService().subscribe(topicArn, "sqs", queueArn).subscriptionArn();
   }
 
   /**
@@ -206,46 +198,43 @@ public class AwsResourceTest extends AbstractAwsTest {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT * 2)
+  @Timeout(value = TEST_TIMEOUT * 2)
   public void testAddDeleteFile01() throws Exception {
     // given
-    String key = UUID.randomUUID().toString();
+    String key = ID.uuid();
 
-    try (SnsClient snsClient = getSnsClient(); SqsClient sqsClient = getSqsClient()) {
+    String contentType = "text/plain";
+    String createQueue = "createtest-" + UUID.randomUUID();
+    String documentEventQueueUrl = createSqsQueue(createQueue).queueUrl();
+    String snsDocumentEventArn = subscribeToSns(getSnsDocumentEventArn(), documentEventQueueUrl);
 
-      String contentType = "text/plain";
-      String createQueue = "createtest-" + UUID.randomUUID();
-      String documentEventQueueUrl = createSqsQueue(createQueue).queueUrl();
-      String snsDocumentEventArn = subscribeToSns(getSnsDocumentEventArn(), documentEventQueueUrl);
+    try {
 
-      try {
+      // when
+      key = writeToStaging(key, contentType);
 
-        // when
-        key = writeToStaging(key, contentType);
+      // then
+      verifyFileExistsInDocumentsS3(key, contentType);
+      verifyFileNotExistInStagingS3(key);
+      assertSnsMessage(documentEventQueueUrl, "create");
 
-        // then
-        verifyFileExistsInDocumentsS3(key, contentType);
-        verifyFileNotExistInStagingS3(key);
-        assertSnsMessage(documentEventQueueUrl, "create");
+      // when
+      key = writeToStaging(key, contentType);
 
-        // when
-        key = writeToStaging(key, contentType);
+      // then
+      verifyFileExistsInDocumentsS3(key, contentType);
+      verifyFileNotExistInStagingS3(key);
+      assertSnsMessage(documentEventQueueUrl, "create");
 
-        // then
-        verifyFileExistsInDocumentsS3(key, contentType);
-        verifyFileNotExistInStagingS3(key);
-        assertSnsMessage(documentEventQueueUrl, "create");
+      // when
+      getS3Service().deleteObject(getDocumentsbucketname(), key, null);
 
-        // when
-        getS3Service().deleteObject(getDocumentsbucketname(), key, null);
+      // then
+      assertSnsMessage(documentEventQueueUrl, "delete");
 
-        // then
-        assertSnsMessage(documentEventQueueUrl, "delete");
-
-      } finally {
-        getSnsService().unsubscribe(snsDocumentEventArn);
-        getSqsService().deleteQueue(documentEventQueueUrl);
-      }
+    } finally {
+      getSnsService().unsubscribe(snsDocumentEventArn);
+      getSqsService().deleteQueue(documentEventQueueUrl);
     }
   }
 
@@ -255,11 +244,11 @@ public class AwsResourceTest extends AbstractAwsTest {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  @Timeout(value = TEST_TIMEOUT)
   public void testAddDeleteFile02() throws Exception {
     // given
-    final Long contentLength = Long.valueOf(36);
-    String key = UUID.randomUUID().toString();
+    final Long contentLength = 36L;
+    String key = ID.uuid();
     String contentType = "text/plain";
     DocumentItem item = new DocumentItemDynamoDb(key, new Date(), "test");
 
@@ -292,51 +281,49 @@ public class AwsResourceTest extends AbstractAwsTest {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  @Timeout(value = TEST_TIMEOUT)
   public void testAddDeleteFile03() throws Exception {
     // given
     final int statusCode = 200;
     HttpClient http = HttpClient.newHttpClient();
-    String key = UUID.randomUUID().toString();
+    String key = ID.uuid();
 
-    try (SnsClient snsClient = getSnsClient(); SqsClient sqsClient = getSqsClient()) {
-      String createQueue = "createtest-" + UUID.randomUUID();
-      String documentQueueUrl = createSqsQueue(createQueue).queueUrl();
-      String subscriptionDocumentArn = subscribeToSns(getSnsDocumentEventArn(), documentQueueUrl);
+    String createQueue = "createtest-" + UUID.randomUUID();
+    String documentQueueUrl = createSqsQueue(createQueue).queueUrl();
+    String subscriptionDocumentArn = subscribeToSns(getSnsDocumentEventArn(), documentQueueUrl);
 
-      String contentType = "text/plain";
-      String content = "test content";
+    String contentType = "text/plain";
+    String content = "test content";
 
-      try {
+    try {
 
-        DynamicDocumentItem doc = new DynamicDocumentItem(
-            Map.of("documentId", key, "insertedDate", new Date(), "userId", "joe"));
-        getDocumentService().saveDocumentItemWithTag(null, doc);
+      DynamicDocumentItem doc = new DynamicDocumentItem(
+          Map.of("documentId", key, "insertedDate", new Date(), "userId", "joe"));
+      getDocumentService().saveDocumentItemWithTag(null, doc);
 
-        // when
-        URL url = getS3PresignerService().presignPutUrl(getDocumentsbucketname(), key,
-            Duration.ofHours(1), Optional.empty(), null);
-        HttpResponse<String> put =
-            http.send(
-                HttpRequest.newBuilder(url.toURI()).header("Content-Type", contentType)
-                    .method("PUT", BodyPublishers.ofString(content)).build(),
-                BodyHandlers.ofString());
+      // when
+      URL url = getS3PresignerService().presignPutUrl(getDocumentsbucketname(), key,
+          Duration.ofHours(1), null, null, Optional.empty(), null);
+      HttpResponse<String> put =
+          http.send(
+              HttpRequest.newBuilder(url.toURI()).header("Content-Type", contentType)
+                  .method("PUT", BodyPublishers.ofString(content)).build(),
+              BodyHandlers.ofString());
 
-        // then
-        assertEquals(statusCode, put.statusCode());
-        verifyFileExistsInDocumentsS3(key, contentType);
-        assertSnsMessage(documentQueueUrl, "create");
+      // then
+      assertEquals(statusCode, put.statusCode());
+      verifyFileExistsInDocumentsS3(key, contentType);
+      assertSnsMessage(documentQueueUrl, "create");
 
-        // when
-        getS3Service().deleteObject(getDocumentsbucketname(), key, null);
+      // when
+      getS3Service().deleteObject(getDocumentsbucketname(), key, null);
 
-        // then
-        assertSnsMessage(documentQueueUrl, "delete");
+      // then
+      assertSnsMessage(documentQueueUrl, "delete");
 
-      } finally {
-        getSnsService().unsubscribe(subscriptionDocumentArn);
-        getSqsService().deleteQueue(documentQueueUrl);
-      }
+    } finally {
+      getSnsService().unsubscribe(subscriptionDocumentArn);
+      getSqsService().deleteQueue(documentQueueUrl);
     }
   }
 
@@ -346,15 +333,14 @@ public class AwsResourceTest extends AbstractAwsTest {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  @Timeout(value = TEST_TIMEOUT)
   public void testAddDeleteFile04() throws Exception {
     // given
-    final String siteId = null;
-    final String key = UUID.randomUUID().toString();
+    final String key = ID.uuid();
 
     String contentType = "text/plain";
     String mycategory = "mycategory";
-    String myvalue = UUID.randomUUID().toString();
+    String myvalue = ID.uuid();
 
     Map<String, Object> data = new HashMap<>();
     data.put("userId", "joesmith");
@@ -373,10 +359,10 @@ public class AwsResourceTest extends AbstractAwsTest {
     // then
     SearchQuery query = new SearchQuery().tag(new SearchTagCriteria().key(mycategory).eq(myvalue));
 
-    PaginationResults<DynamicDocumentItem> results = null;
+    PaginationResults<DynamicDocumentItem> results;
 
     do {
-      results = getSearchService().search(siteId, query, null, null, MAX_RESULTS);
+      results = getSearchService().search(null, query, null, null, MAX_RESULTS);
       TimeUnit.SECONDS.sleep(1);
     } while (results.getResults().isEmpty());
 
@@ -406,19 +392,18 @@ public class AwsResourceTest extends AbstractAwsTest {
     // then
     List<LambdaFunctionConfiguration> list =
         new ArrayList<>(response0.lambdaFunctionConfigurations());
-    Collections.sort(list, new LambdaFunctionConfigurationComparator());
+    list.sort(new LambdaFunctionConfigurationComparator());
 
     assertEquals(0, response0.queueConfigurations().size());
     assertEquals(2, list.size());
 
-    assertLambdaFunctionConfigurations(list.get(0), "DocumentsS3Update", "s3:ObjectCreated:*");
-    assertLambdaFunctionConfigurations(list.get(1), "DocumentsS3Update", "s3:ObjectRemoved:*");
+    assertLambdaFunctionConfigurations(list.get(0), "s3:ObjectCreated:*");
+    assertLambdaFunctionConfigurations(list.get(1), "s3:ObjectRemoved:*");
 
     assertEquals(1, response1.queueConfigurations().size());
     assertEquals(0, response1.lambdaFunctionConfigurations().size());
 
-    assertQueueConfigurations(response1.queueConfigurations().get(0), "DocumentsStagingQueue",
-        "s3:ObjectCreated:*");
+    assertQueueConfigurations(response1.queueConfigurations().get(0));
   }
 
   /**
@@ -469,19 +454,18 @@ public class AwsResourceTest extends AbstractAwsTest {
     // then
     List<LambdaFunctionConfiguration> list =
         new ArrayList<>(response0.lambdaFunctionConfigurations());
-    Collections.sort(list, new LambdaFunctionConfigurationComparator());
+    list.sort(new LambdaFunctionConfigurationComparator());
 
     assertEquals(0, response0.queueConfigurations().size());
     assertEquals(2, list.size());
 
-    assertLambdaFunctionConfigurations(list.get(0), "DocumentsS3Update", "s3:ObjectCreated:*");
-    assertLambdaFunctionConfigurations(list.get(1), "DocumentsS3Update", "s3:ObjectRemoved:*");
+    assertLambdaFunctionConfigurations(list.get(0), "s3:ObjectCreated:*");
+    assertLambdaFunctionConfigurations(list.get(1), "s3:ObjectRemoved:*");
 
     assertEquals(1, response1.queueConfigurations().size());
     assertEquals(0, response1.lambdaFunctionConfigurations().size());
 
-    assertQueueConfigurations(response1.queueConfigurations().get(0), "DocumentsStagingQueue",
-        "s3:ObjectCreated:*");
+    assertQueueConfigurations(response1.queueConfigurations().get(0));
   }
 
   /**
@@ -490,7 +474,7 @@ public class AwsResourceTest extends AbstractAwsTest {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  @Timeout(value = TEST_TIMEOUT)
   public void testUpdateStagingFile01() throws Exception {
     // given
     final String siteId = DEFAULT_SITE_ID;
@@ -501,7 +485,7 @@ public class AwsResourceTest extends AbstractAwsTest {
     String subDocumentArn = subscribeToSns(getSnsDocumentEventArn(), documentQueueUrl);
 
     String contentType = "text/plain";
-    String path = "user/home/test_" + UUID.randomUUID().toString() + ".txt";
+    String path = "user/home/test_" + UUID.randomUUID() + ".txt";
 
     try {
 
@@ -529,7 +513,7 @@ public class AwsResourceTest extends AbstractAwsTest {
 
       // given
       Collection<DocumentTag> tags =
-          Arrays.asList(new DocumentTag(documentId, "status", "active", new Date(), "testuser"));
+          List.of(new DocumentTag(documentId, "status", "active", new Date(), "testuser"));
       getDocumentService().addTags(siteId, documentId, tags, null);
 
       // when
@@ -537,7 +521,7 @@ public class AwsResourceTest extends AbstractAwsTest {
           txt2.getBytes(StandardCharsets.UTF_8), contentType);
 
       // then
-      waitForText(documentId, txt2);
+      waitForText(documentId);
 
       assertEquals(txt2,
           getS3Service().getContentAsString(getDocumentsbucketname(), documentId, null));
@@ -545,7 +529,7 @@ public class AwsResourceTest extends AbstractAwsTest {
       PaginationResults<DocumentTag> list =
           getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
       assertEquals("[status]",
-          list.getResults().stream().map(m -> m.getKey()).collect(Collectors.toList()).toString());
+          list.getResults().stream().map(DocumentTag::getKey).toList().toString());
 
       item = getDocumentService().findDocument(siteId, documentId);
       assertNotEquals(item.getInsertedDate(), item.getLastModifiedDate());
@@ -575,10 +559,10 @@ public class AwsResourceTest extends AbstractAwsTest {
     }
   }
 
-  private void waitForText(final String documentId, final String text) {
+  private void waitForText(final String documentId) {
     while (true) {
       String txt = getS3Service().getContentAsString(getDocumentsbucketname(), documentId, null);
-      if (txt.equals(text)) {
+      if ("this is a another test".equals(txt)) {
         break;
       }
     }
@@ -592,7 +576,7 @@ public class AwsResourceTest extends AbstractAwsTest {
    * @return {@link String}
    */
   private String writeToDocuments(final String key, final String contentType) {
-    String data = UUID.randomUUID().toString();
+    String data = ID.uuid();
 
     getS3Service().putObject(getDocumentsbucketname(), key, data.getBytes(StandardCharsets.UTF_8),
         contentType);
@@ -608,7 +592,7 @@ public class AwsResourceTest extends AbstractAwsTest {
    * @return {@link String}
    */
   private String writeToStaging(final String key, final String contentType) {
-    String data = UUID.randomUUID().toString();
+    String data = ID.uuid();
 
     getS3Service().putObject(getStagingdocumentsbucketname(), key,
         data.getBytes(StandardCharsets.UTF_8), contentType);

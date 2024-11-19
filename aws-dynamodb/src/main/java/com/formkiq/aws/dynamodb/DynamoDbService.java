@@ -88,6 +88,15 @@ public interface DynamoDbService {
   boolean deleteItemsBeginsWith(AttributeValue pk, AttributeValue sk);
 
   /**
+   * Delete all records that beginsWith PK.
+   *
+   * @param indexName {@link String}
+   * @param pk {@link AttributeValue}
+   * @return boolean
+   */
+  boolean deleteItemsBeginsWith(String indexName, AttributeValue pk);
+
+  /**
    * Whether Database Record Exist.
    * 
    * @param pk {@link AttributeValue}
@@ -255,4 +264,41 @@ public interface DynamoDbService {
    */
   Map<String, AttributeValue> updateValues(AttributeValue pk, AttributeValue sk,
       Map<String, AttributeValue> updateValues);
+
+  /**
+   * Aquire Lock.
+   *
+   * @param pk {@link AttributeValue}
+   * @param sk {@link AttributeValue}
+   * @param aquireLockTimeoutInMs long
+   * @param lockExpirationInMs long
+   * @return boolean
+   */
+  boolean acquireLock(AttributeValue pk, AttributeValue sk, long aquireLockTimeoutInMs,
+      long lockExpirationInMs);
+
+  /**
+   * Release Lock.
+   *
+   * @param pk {@link AttributeValue}
+   * @param sk {@link AttributeValue}
+   * @return boolean
+   */
+  boolean releaseLock(AttributeValue pk, AttributeValue sk);
+
+  /**
+   * Put in transaction.
+   * 
+   * @param writeRequest {@link WriteRequestBuilder}
+   */
+  void putInTransaction(WriteRequestBuilder writeRequest);
+
+  /**
+   * Get Lock.
+   *
+   * @param pk {@link AttributeValue}
+   * @param sk {@link AttributeValue}
+   * @return Map
+   */
+  Map<String, AttributeValue> getAquiredLock(AttributeValue pk, AttributeValue sk);
 }

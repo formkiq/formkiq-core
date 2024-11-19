@@ -37,14 +37,14 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
+
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3PresignerService;
-import com.formkiq.aws.services.lambda.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -55,9 +55,9 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.useractivity.UserActivityPlugin;
 import com.formkiq.stacks.api.ApiEmptyResponse;
 import com.formkiq.stacks.api.ApiUrlResponse;
-import com.formkiq.stacks.dynamodb.DocumentFormat;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/url". */
 public class DocumentIdUrlRequestHandler
@@ -76,23 +76,13 @@ public class DocumentIdUrlRequestHandler
 
     String documentId = event.getPathParameters().get("documentId");
     String siteId = authorization.getSiteId();
+    String versionKey = getVersionKey(event);
 
-    DocumentService documentService = awsservice.getExtension(DocumentService.class);
-    DocumentItem item = documentService.findDocument(siteId, documentId);
-    throwIfNull(item, new DocumentNotFoundException(documentId));
-
-    String versionKey = getParameter(event, "versionKey");
-    if (!isEmpty(versionKey) && !versionKey.startsWith("document#")) {
-      versionKey = URLDecoder.decode(versionKey, StandardCharsets.UTF_8);
-    }
-
-    DocumentVersionService versionService = awsservice.getExtension(DocumentVersionService.class);
-    DynamoDbConnectionBuilder connection = awsservice.getExtension(DynamoDbConnectionBuilder.class);
-    String versionId = versionService.getVersionId(connection, siteId, documentId, versionKey);
-
-    if (versionId == null && !isEmpty(versionKey)) {
-      throw new BadException("invalid versionKey '" + versionKey + "'");
-    }
+    Map<String, AttributeValue> versionAttributes =
+        getVersionAttributes(awsservice, siteId, documentId, versionKey);
+    DocumentItem item =
+        getDocumentItem(awsservice, siteId, documentId, versionKey, versionAttributes);
+    String versionId = getVersionId(awsservice, versionAttributes, versionKey);
 
     boolean inline = "true".equals(getParameter(event, "inline"));
     URL url = getS3Url(logger, authorization, awsservice, event, item, versionId, inline);
@@ -100,13 +90,21 @@ public class DocumentIdUrlRequestHandler
     if (url != null) {
       if (awsservice.containsExtension(UserActivityPlugin.class)) {
         UserActivityPlugin plugin = awsservice.getExtension(UserActivityPlugin.class);
-        plugin.addViewActivity(siteId, documentId, versionKey, authorization.getUsername());
+        plugin.addDocumentViewActivity(siteId, documentId, versionKey);
       }
     }
 
     return url != null
         ? new ApiRequestHandlerResponse(SC_OK, new ApiUrlResponse(url.toString(), documentId))
         : new ApiRequestHandlerResponse(SC_NOT_FOUND, new ApiEmptyResponse());
+  }
+
+  private String getVersionKey(final ApiGatewayRequestEvent event) {
+    String versionKey = getParameter(event, "versionKey");
+    if (!isEmpty(versionKey) && !versionKey.startsWith("document#")) {
+      versionKey = URLDecoder.decode(versionKey, StandardCharsets.UTF_8);
+    }
+    return versionKey;
   }
 
   /**
@@ -147,17 +145,15 @@ public class DocumentIdUrlRequestHandler
    * @param inline boolean
    * @return {@link URL}
    * @throws URISyntaxException URISyntaxException
-   * @throws DocumentNotFoundException DocumentIdUrlGetRequestHandlerTest
    * @throws MalformedURLException MalformedURLException
    */
   private URL getS3Url(final LambdaLogger logger, final ApiAuthorization authorization,
       final AwsServiceCache awsservice, final ApiGatewayRequestEvent event, final DocumentItem item,
       final String versionId, final boolean inline)
-      throws URISyntaxException, DocumentNotFoundException, MalformedURLException {
+      throws URISyntaxException, MalformedURLException {
 
     final String documentId = item.getDocumentId();
 
-    String contentType = getContentType(event);
     String siteId = authorization.getSiteId();
 
     if (awsservice.debug()) {
@@ -165,49 +161,25 @@ public class DocumentIdUrlRequestHandler
           + versionId + "'");
     }
 
-    S3PresignerService s3Service = awsservice.getExtension(S3PresignerService.class);
-
-    String s3key = null;
     String s3Bucket = awsservice.environment("DOCUMENTS_S3_BUCKET");
-    String filename = Strings.getFilename(item.getPath());
+    String filename = getFilename(item);
 
     PresignGetUrlConfig config = new PresignGetUrlConfig();
 
-    if (contentType != null && !contentType.equals(item.getContentType())) {
+    config.contentType(item.getContentType());
+    String s3key = createS3Key(siteId, documentId);
 
-      config.contentType(item.getContentType());
+    if (isS3Link(item)) {
+      URI u = new URI(item.getDeepLinkPath());
+      s3Bucket = u.getHost();
+      s3key = u.getPath().startsWith("/") ? u.getPath().substring(1) : u.getPath();
+      filename = Strings.getFilename(item.getDeepLinkPath());
 
-      DocumentService documentService = awsservice.getExtension(DocumentService.class);
-      Optional<DocumentFormat> format =
-          documentService.findDocumentFormat(siteId, documentId, contentType);
+    } else if (!isEmpty(item.getDeepLinkPath())) {
 
-      if (format.isPresent()) {
-
-        s3key = createS3Key(siteId, documentId, contentType);
-
-      } else if (awsservice.debug()) {
-
-        throw new DocumentNotFoundException("Cannot find format " + contentType + " for siteId: "
-            + siteId + " documentId: " + documentId);
-      }
-
-    } else {
-
-      config.contentType(item.getContentType());
-      s3key = createS3Key(siteId, documentId);
-
-      if (isS3Link(item)) {
-        URI u = new URI(item.getDeepLinkPath());
-        s3Bucket = u.getHost();
-        s3key = u.getPath().startsWith("/") ? u.getPath().substring(1) : u.getPath();
-        filename = Strings.getFilename(item.getDeepLinkPath());
-
-      } else if (!isEmpty(item.getDeepLinkPath())) {
-
-        s3Bucket = null;
-        s3key = item.getDeepLinkPath();
-        filename = Strings.getFilename(item.getDeepLinkPath());
-      }
+      s3Bucket = null;
+      s3key = item.getDeepLinkPath();
+      filename = Strings.getFilename(item.getDeepLinkPath());
     }
 
     config.contentDispositionByPath(filename, inline);
@@ -215,11 +187,64 @@ public class DocumentIdUrlRequestHandler
     int hours = getDurationHours(event);
     Duration duration = Duration.ofHours(hours);
 
+    S3PresignerService s3Service = awsservice.getExtension(S3PresignerService.class);
     return s3Bucket != null ? s3Service.presignGetUrl(s3Bucket, s3key, duration, versionId, config)
         : new URL(s3key);
   }
 
+  private String getFilename(final DocumentItem item) {
+
+    MimeType mt = MimeType.fromContentType(item.getContentType());
+
+    String ext = mt.getExtension();
+    String filename = item.getDocumentId();
+    if (!isEmpty(ext)) {
+      filename += "." + ext;
+    }
+
+    if (item.getPath() != null) {
+      filename = Strings.getFilename(item.getPath());
+    }
+
+    return filename;
+  }
+
   private boolean isS3Link(final DocumentItem item) {
     return !isEmpty(item.getDeepLinkPath()) && item.getDeepLinkPath().startsWith("s3://");
+  }
+
+  private Map<String, AttributeValue> getVersionAttributes(final AwsServiceCache awsservice,
+      final String siteId, final String documentId, final String versionKey) {
+    DocumentVersionService versionService = awsservice.getExtension(DocumentVersionService.class);
+    return versionService.get(siteId, documentId, versionKey);
+  }
+
+  private DocumentItem getDocumentItem(final AwsServiceCache awsservice, final String siteId,
+      final String documentId, final String versionKey,
+      final Map<String, AttributeValue> versionAttributes) throws Exception {
+
+    DocumentVersionService versionService = awsservice.getExtension(DocumentVersionService.class);
+    DocumentService documentService = awsservice.getExtension(DocumentService.class);
+
+    DocumentItem item = versionService.getDocumentItem(documentService, siteId, documentId,
+        versionKey, versionAttributes);
+    throwIfNull(item, new DocumentNotFoundException(documentId));
+    return item;
+  }
+
+  private String getVersionId(final AwsServiceCache awsservice,
+      final Map<String, AttributeValue> versionAttributes, final String versionKey)
+      throws Exception {
+
+    String versionId = null;
+    if (versionKey != null) {
+
+      DocumentVersionService versionService = awsservice.getExtension(DocumentVersionService.class);
+      versionId = versionService.getVersionId(versionAttributes);
+
+      throwIfNull(versionId, new BadException("invalid versionKey '" + versionKey + "'"));
+    }
+
+    return versionId;
   }
 }

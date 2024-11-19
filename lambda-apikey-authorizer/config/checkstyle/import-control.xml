@@ -13,6 +13,7 @@
 				
 				<allow pkg="java.io" />
 				<allow pkg="java.util" />
+				<allow pkg="java.nio.charset" />
 				
 				<allow pkg="com.google.gson" />
 				

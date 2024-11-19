@@ -36,7 +36,7 @@ public interface AttributeService {
 
   /**
    * Add Attribute.
-   * 
+   *
    * @param siteId {@link String}
    * @param key {@link String}
    * @param dataType {@link AttributeDataType}
@@ -45,6 +45,19 @@ public interface AttributeService {
    */
   Collection<ValidationError> addAttribute(String siteId, String key, AttributeDataType dataType,
       AttributeType type);
+
+  /**
+   * Add Attribute.
+   * 
+   * @param siteId {@link String}
+   * @param key {@link String}
+   * @param dataType {@link AttributeDataType}
+   * @param type {@link AttributeType}
+   * @param allowReservedAttributeKey boolean
+   * @return {@link Collection} {@link ValidationError}
+   */
+  Collection<ValidationError> addAttribute(String siteId, String key, AttributeDataType dataType,
+      AttributeType type, boolean allowReservedAttributeKey);
 
   /**
    * Delete Attribute.
@@ -74,6 +87,15 @@ public interface AttributeService {
    * @return {@link AttributeRecord}
    */
   AttributeRecord getAttribute(String siteId, String key);
+
+  /**
+   * Does Attribute exist.
+   * 
+   * @param siteId {@link String}
+   * @param key {@link String}
+   * @return boolean
+   */
+  boolean existsAttribute(String siteId, String key);
 
   /**
    * Get {@link AttributeRecord} by {@link Map}.

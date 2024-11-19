@@ -23,17 +23,31 @@
  */
 package com.formkiq.stacks.api.awstest;
 
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.testutils.aws.FkqDocumentService.addDocument;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContent;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
+import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.services.lambda.ApiResponseStatus;
+import com.formkiq.client.api.ReindexApi;
+import com.formkiq.client.api.SchemasApi;
 import com.formkiq.client.model.AddDocumentAttributeStandard;
+import com.formkiq.client.model.AddReindexDocumentRequest;
+import com.formkiq.client.model.AttributeSchemaCompositeKey;
+import com.formkiq.client.model.DocumentSearchMatchAttribute;
+import com.formkiq.client.model.ReindexTarget;
+import com.formkiq.client.model.SchemaAttributes;
+import com.formkiq.client.model.SearchResultDocument;
+import com.formkiq.client.model.SetSitesSchemaRequest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import com.formkiq.client.api.AttributesApi;
@@ -53,12 +67,10 @@ import com.formkiq.client.model.DocumentAttribute;
 import com.formkiq.client.model.DocumentSearch;
 import com.formkiq.client.model.DocumentSearchAttribute;
 import com.formkiq.client.model.DocumentSearchRequest;
-import com.formkiq.client.model.DocumentSearchResponse;
 import com.formkiq.client.model.SetDocumentAttributeRequest;
 import com.formkiq.client.model.SetDocumentAttributesRequest;
 import com.formkiq.client.model.SetResponse;
 import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
-import joptsimple.internal.Strings;
 
 /**
  * GET, POST /documents/{documentId}/attributes tests. GET, PUT, DELETE
@@ -98,23 +110,23 @@ public class DocumentAttributesRequestTest extends AbstractAwsIntegrationTest {
         deleteResponse.getMessage());
 
     List<DocumentAttribute> attributes =
-        api.getDocumentAttributes(documentId, siteId, null, null).getAttributes();
+        notNull(api.getDocumentAttributes(documentId, siteId, null, null).getAttributes());
     assertEquals(0, attributes.size());
   }
 
   private void deleteDocumentAttributeValue(final DocumentAttributesApi api, final String siteId,
-      final String documentId, final String key, final String value) throws ApiException {
+      final String documentId, final String key) throws ApiException {
     DeleteResponse deleteResponse =
-        api.deleteDocumentAttributeAndValue(documentId, key, value, siteId);
-    assertEquals("attribute value '" + value + "' removed from attribute '" + key + "', document '"
+        api.deleteDocumentAttributeAndValue(documentId, key, "987", siteId);
+    assertEquals("attribute value '" + "987" + "' removed from attribute '" + key + "', document '"
         + documentId + "'", deleteResponse.getMessage());
 
     List<DocumentAttribute> attributes =
-        api.getDocumentAttributes(documentId, siteId, null, null).getAttributes();
+        notNull(api.getDocumentAttributes(documentId, siteId, null, null).getAttributes());
     assertEquals(1, attributes.size());
     assertEquals(key, attributes.get(0).getKey());
     assertEquals("xyz", attributes.get(0).getStringValue());
-    assertTrue(attributes.get(0).getStringValues().isEmpty());
+    assertTrue(notNull(attributes.get(0).getStringValues()).isEmpty());
   }
 
   private void setDocumentAttributes(final DocumentAttributesApi api, final String siteId,
@@ -130,11 +142,11 @@ public class DocumentAttributesRequestTest extends AbstractAwsIntegrationTest {
     // then
     assertEquals("set attributes on documentId '" + documentId + "'", setResponse.getMessage());
     List<DocumentAttribute> attributes =
-        api.getDocumentAttributes(documentId, siteId, null, null).getAttributes();
+        notNull(api.getDocumentAttributes(documentId, siteId, null, null).getAttributes());
     assertEquals(1, attributes.size());
     assertEquals(key, attributes.get(0).getKey());
     assertNull(attributes.get(0).getStringValue());
-    assertEquals("123,abc", Strings.join(attributes.get(0).getStringValues(), ","));
+    assertEquals("123,abc", String.join(",", notNull(attributes.get(0).getStringValues())));
   }
 
   private void setDocumentAttributeValues(final DocumentAttributesApi api, final String siteId,
@@ -151,11 +163,11 @@ public class DocumentAttributesRequestTest extends AbstractAwsIntegrationTest {
     assertEquals("Updated attribute '" + key + "' on document '" + documentId + "'",
         response.getMessage());
     List<DocumentAttribute> attributes =
-        api.getDocumentAttributes(documentId, siteId, null, null).getAttributes();
+        notNull(api.getDocumentAttributes(documentId, siteId, null, null).getAttributes());
     assertEquals(1, attributes.size());
     assertEquals(key, attributes.get(0).getKey());
     assertNull(attributes.get(0).getStringValue());
-    assertEquals("987,xyz", Strings.join(attributes.get(0).getStringValues(), ","));
+    assertEquals("987,xyz", String.join(",", notNull(attributes.get(0).getStringValues())));
   }
 
   /**
@@ -165,10 +177,10 @@ public class DocumentAttributesRequestTest extends AbstractAwsIntegrationTest {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  @Timeout(value = TEST_TIMEOUT)
   public void testAddDocumentAttributes01() throws Exception {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       List<ApiClient> apiClients = getApiClients(siteId);
 
@@ -195,20 +207,120 @@ public class DocumentAttributesRequestTest extends AbstractAwsIntegrationTest {
         assertEquals("added attributes to documentId '" + documentId + "'", response.getMessage());
 
         List<DocumentAttribute> attributes =
-            api.getDocumentAttributes(documentId, siteId, null, null).getAttributes();
+            notNull(api.getDocumentAttributes(documentId, siteId, null, null).getAttributes());
         assertEquals(1, attributes.size());
         assertEquals(key1, attributes.get(0).getKey());
         assertEquals(value, attributes.get(0).getStringValue());
 
-        assertEquals(value,
-            api.getDocumentAttribute(documentId, key1, siteId).getAttribute().getStringValue());
+        DocumentAttribute attribute =
+            api.getDocumentAttribute(documentId, key1, siteId).getAttribute();
+        assertNotNull(attribute);
+        assertEquals(value, attribute.getStringValue());
 
         setDocumentAttributes(api, siteId, documentId, key2);
 
         setDocumentAttributeValues(api, siteId, documentId, key2, Arrays.asList("987", "xyz"));
 
-        deleteDocumentAttributeValue(api, siteId, documentId, key2, "987");
+        deleteDocumentAttributeValue(api, siteId, documentId, key2);
         deleteDocumentAttribute(api, siteId, documentId, key2);
+      }
+    }
+  }
+
+  /**
+   * Test add document with attributes, add a composite key to schema and then reindex.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  public void testReindexDocument01() throws Exception {
+    // given
+    String siteId = ID.uuid();
+
+    List<ApiClient> apiClients = getApiClients(siteId);
+
+    final String key1 = "test_" + UUID.randomUUID();
+    final String key2 = "test2_" + UUID.randomUUID();
+    final String value1 = "val1";
+    final String value2 = "val2";
+
+    AttributesApi attributeApi = new AttributesApi(apiClients.get(0));
+    addAttribute(attributeApi, siteId, key1);
+    addAttribute(attributeApi, siteId, key2);
+
+    for (ApiClient apiClient : apiClients) {
+
+      String documentId = createDocument(apiClient, siteId);
+
+      DocumentAttributesApi api = new DocumentAttributesApi(apiClient);
+
+      AddDocumentAttributesRequest req = new AddDocumentAttributesRequest()
+          .addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key(key1).addStringValuesItem(value1)))
+          .addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key(key2).addStringValuesItem(value2)));
+
+      // when
+      AddResponse response = api.addDocumentAttributes(documentId, req, siteId, null);
+
+      // then
+      assertEquals("added attributes to documentId '" + documentId + "'", response.getMessage());
+
+      // given
+      SchemasApi schemasApi = new SchemasApi(apiClient);
+      SetSitesSchemaRequest sreq = new SetSitesSchemaRequest().name("test")
+          .attributes(new SchemaAttributes().addCompositeKeysItem(
+              new AttributeSchemaCompositeKey().attributeKeys(List.of(key1, key2))));
+      schemasApi.setSitesSchema(siteId, sreq);
+
+      ReindexApi reindexApi = new ReindexApi(apiClient);
+      AddReindexDocumentRequest reindexReq =
+          new AddReindexDocumentRequest().target(ReindexTarget.ATTRIBUTES);
+
+      // when
+      AddResponse addResponse = reindexApi.addReindexDocument(documentId, reindexReq, siteId);
+
+      // then
+      assertEquals("Reindex started for documentId '" + documentId + "' on target 'ATTRIBUTES'",
+          addResponse.getMessage());
+
+      final int expected = 3;
+      List<DocumentAttribute> attributes =
+          notNull(api.getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+      assertEquals(expected, attributes.size());
+    }
+  }
+
+  /**
+   * Reindex missing TARGET.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  public void testReindexDocument02() throws Exception {
+    // given
+    String siteId = ID.uuid();
+
+    List<ApiClient> apiClients = getApiClients(siteId);
+
+    for (ApiClient apiClient : apiClients) {
+
+      String documentId = ID.uuid();
+
+      AddReindexDocumentRequest reindexReq = new AddReindexDocumentRequest();
+      ReindexApi reindexApi = new ReindexApi(apiClient);
+
+      // when
+      try {
+        reindexApi.addReindexDocument(documentId, reindexReq, siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"errors\":[{\"key\":\"target\",\"error\":\"'target' is required\"}]}",
+            e.getResponseBody());
       }
     }
   }
@@ -222,7 +334,7 @@ public class DocumentAttributesRequestTest extends AbstractAwsIntegrationTest {
   @Timeout(value = TEST_TIMEOUT)
   public void testSearchDocumentAttributes01() throws Exception {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       List<ApiClient> apiClients = getApiClients(siteId);
 
@@ -245,14 +357,16 @@ public class DocumentAttributesRequestTest extends AbstractAwsIntegrationTest {
             .addAttributesItem(new DocumentSearchAttribute().key(key).eq(value)));
 
         // when EQ
-        DocumentSearchResponse response = searchApi.documentSearch(sreq, siteId, null, null, null);
+        List<SearchResultDocument> response =
+            notNull(searchApi.documentSearch(sreq, siteId, null, null, null).getDocuments());
 
         // then
-        assertEquals(1, response.getDocuments().size());
-        assertEquals(documentId, response.getDocuments().get(0).getDocumentId());
-        assertEquals(key, response.getDocuments().get(0).getMatchedAttribute().getKey());
-        assertEquals("person",
-            response.getDocuments().get(0).getMatchedAttribute().getStringValue());
+        assertEquals(1, response.size());
+        assertEquals(documentId, response.get(0).getDocumentId());
+        DocumentSearchMatchAttribute matchedAttribute = response.get(0).getMatchedAttribute();
+        assertNotNull(matchedAttribute);
+        assertEquals(key, matchedAttribute.getKey());
+        assertEquals("person", matchedAttribute.getStringValue());
       }
     }
   }

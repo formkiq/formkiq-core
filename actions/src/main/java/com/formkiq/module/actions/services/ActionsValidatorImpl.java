@@ -179,6 +179,17 @@ public class ActionsValidatorImpl implements ActionsValidator {
     }
   }
 
+  private void validateEventBridge(final String siteId, final Action action,
+      final Collection<ValidationError> errors) {
+
+    Map<String, String> parameters = getParameters(action);
+
+    if (!hasValue(parameters, "eventBusName")) {
+      errors.add(new ValidationErrorImpl().key("parameters.eventBusName")
+          .error("'eventBusName' parameter is required"));
+    }
+  }
+
   @Override
   public Collection<ValidationError> validation(final String siteId, final Action action,
       final DynamicObject configs) {
@@ -200,19 +211,7 @@ public class ActionsValidatorImpl implements ActionsValidator {
 
       } else {
 
-        Map<String, String> parameters = getParameters(action);
-        if (ActionType.WEBHOOK.equals(action.type()) && !parameters.containsKey("url")) {
-          errors.add(new ValidationErrorImpl().key("parameters.url")
-              .error("action 'url' parameter is required"));
-        } else if (ActionType.DOCUMENTTAGGING.equals(action.type())) {
-          validateDocumentTagging(configs, parameters, errors);
-        } else if (ActionType.NOTIFICATION.equals(action.type())) {
-          validateNotificationEmail(configs, action, errors);
-        } else if (ActionType.QUEUE.equals(action.type())) {
-          validateQueue(siteId, action, errors);
-        } else if (ActionType.IDP.equals(action.type())) {
-          validateIdp(siteId, action, errors);
-        }
+        validateActionParameters(siteId, action, configs, errors);
       }
     }
 
@@ -227,4 +226,23 @@ public class ActionsValidatorImpl implements ActionsValidator {
     return errors;
   }
 
+  private void validateActionParameters(final String siteId, final Action action,
+      final DynamicObject configs, final Collection<ValidationError> errors) {
+
+    Map<String, String> parameters = getParameters(action);
+    if (ActionType.WEBHOOK.equals(action.type()) && !parameters.containsKey("url")) {
+      errors.add(new ValidationErrorImpl().key("parameters.url")
+          .error("action 'url' parameter is required"));
+    } else if (ActionType.DOCUMENTTAGGING.equals(action.type())) {
+      validateDocumentTagging(configs, parameters, errors);
+    } else if (ActionType.NOTIFICATION.equals(action.type())) {
+      validateNotificationEmail(configs, action, errors);
+    } else if (ActionType.QUEUE.equals(action.type())) {
+      validateQueue(siteId, action, errors);
+    } else if (ActionType.IDP.equals(action.type())) {
+      validateIdp(siteId, action, errors);
+    } else if (ActionType.EVENTBRIDGE.equals(action.type())) {
+      validateEventBridge(siteId, action, errors);
+    }
+  }
 }

@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.dynamodb;
 
+import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.model.SearchAttributeCriteria;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteriaRange;
 import com.formkiq.aws.dynamodb.objects.Objects;
@@ -68,8 +69,10 @@ public class SearchAttributesToCriteria
     List<String> compositeKeys = compositeKey != null ? compositeKey.getKeys()
         : searchAttributes.stream().map(SearchAttributeCriteria::getKey).toList();
 
-    String eq = compositeKeys.stream().map(map::get).map(SearchAttributeCriteria::getEq)
-        .filter(java.util.Objects::nonNull).collect(Collectors.joining("#"));
+    String eq = compositeKeys.stream().map(map::get).filter(java.util.Objects::nonNull)
+        .map(SearchAttributeCriteria::getEq).filter(java.util.Objects::nonNull)
+        .collect(Collectors.joining(DbKeys.COMPOSITE_KEY_DELIM));
+
     Collection<String> eqOrs = generateEqOr(compositeKeys, map);
 
     String lastKey = last(compositeKeys);
@@ -78,7 +81,7 @@ public class SearchAttributesToCriteria
     SearchTagCriteriaRange range = last.getRange();
 
     if (!isEmpty(beginsWith) && !isEmpty(eq)) {
-      beginsWith = eq + "#" + beginsWith;
+      beginsWith = eq + DbKeys.COMPOSITE_KEY_DELIM + beginsWith;
       eq = null;
     }
 
@@ -91,7 +94,7 @@ public class SearchAttributesToCriteria
       eq = null;
     }
 
-    String attributeKey = String.join("#", compositeKeys);
+    String attributeKey = String.join(DbKeys.COMPOSITE_KEY_DELIM, compositeKeys);
     return new SearchAttributeCriteria().key(attributeKey).eq(eq).beginsWith(beginsWith)
         .range(range).eqOr(eqOrs);
   }
@@ -123,7 +126,7 @@ public class SearchAttributesToCriteria
         increment(eqOrs, positions);
       }
 
-      strs = sbs.stream().map(l -> String.join("#", l)).sorted().toList();
+      strs = sbs.stream().map(l -> String.join(DbKeys.COMPOSITE_KEY_DELIM, l)).sorted().toList();
 
     } else if (size == 1) {
       strs = eqOrs.get(0);
@@ -154,7 +157,7 @@ public class SearchAttributesToCriteria
       sb.add(strs.get(i).get(pos));
     }
 
-    return String.join("#", sb);
+    return String.join(DbKeys.COMPOSITE_KEY_DELIM, sb);
   }
 
   private void generateRange(final SearchTagCriteriaRange range, final String eq) {
@@ -174,7 +177,7 @@ public class SearchAttributesToCriteria
       }
     }
 
-    range.start(!isEmpty(eq) ? eq + "#" + start : start);
-    range.end(!isEmpty(eq) ? eq + "#" + end : end);
+    range.start(!isEmpty(eq) ? eq + DbKeys.COMPOSITE_KEY_DELIM + start : start);
+    range.end(!isEmpty(eq) ? eq + DbKeys.COMPOSITE_KEY_DELIM + end : end);
   }
 }

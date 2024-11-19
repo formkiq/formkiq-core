@@ -40,6 +40,8 @@ public class Document implements DocumentItem {
   private String belongsToDocumentId;
   /** Checksum. */
   private String checksum;
+  /** Checksum Type. */
+  private String checksumType;
   /** Content Length. */
   private Long contentLength;
   /** Content Type. */
@@ -60,8 +62,6 @@ public class Document implements DocumentItem {
   private String path;
   /** S3 Version. */
   private String s3version;
-  /** Tag Schema Id. */
-  private String tagSchemaId;
   /** Time to Live. */
   private String timeToLive;
   /** User Id. */
@@ -82,6 +82,11 @@ public class Document implements DocumentItem {
   @Override
   public String getChecksum() {
     return this.checksum;
+  }
+
+  @Override
+  public String getChecksumType() {
+    return this.checksumType;
   }
 
   @Override
@@ -135,11 +140,6 @@ public class Document implements DocumentItem {
   }
 
   @Override
-  public String getTagSchemaId() {
-    return this.tagSchemaId;
-  }
-
-  @Override
   public String getTimeToLive() {
     return this.timeToLive;
   }
@@ -162,6 +162,11 @@ public class Document implements DocumentItem {
   @Override
   public void setChecksum(final String documentChecksum) {
     this.checksum = documentChecksum;
+  }
+
+  @Override
+  public void setChecksumType(final String documentChecksumType) {
+    this.checksumType = documentChecksumType;
   }
 
   @Override
@@ -212,11 +217,6 @@ public class Document implements DocumentItem {
   @Override
   public void setS3version(final String documentVersion) {
     this.s3version = documentVersion;
-  }
-
-  @Override
-  public void setTagSchemaId(final String documentTagSchemaId) {
-    this.tagSchemaId = documentTagSchemaId;
   }
 
   @Override

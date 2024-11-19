@@ -23,32 +23,33 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-import java.util.Collections;
+import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
+import com.formkiq.aws.services.lambda.ApiMapResponse;
+import com.formkiq.aws.dynamodb.ApiPermission;
+import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.ssm.SsmService;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.formkiq.aws.dynamodb.DynamicObject;
-import com.formkiq.aws.services.lambda.ApiAuthorization;
-import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
-import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
-import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
-import com.formkiq.aws.services.lambda.ApiPermission;
-import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
-import com.formkiq.aws.ssm.SsmService;
-import com.formkiq.module.lambdaservices.AwsServiceCache;
+
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
 /** {@link ApiGatewayRequestHandler} for "/sites". */
 public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
   /** {@link Random}. */
-  private Random rnd = new Random();
+  private final Random rnd = new Random();
 
   /**
    * constructor.
@@ -58,18 +59,16 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
 
   /**
    * Generate Upload Email address.
-   * 
-   * @param logger {@link LambdaLogger}
+   *
    * @param awsservice {@link AwsServiceCache}
    * @param mailDomain {@link String}
    * @return {@link String}
    */
-  private String generateUploadEmail(final LambdaLogger logger, final AwsServiceCache awsservice,
-      final String mailDomain) {
+  private String generateUploadEmail(final AwsServiceCache awsservice, final String mailDomain) {
     final int emaillength = 8;
     String email = getSaltString(emaillength) + "@" + mailDomain;
 
-    while (isEmailExists(logger, awsservice, email)) {
+    while (isEmailExists(awsservice, email)) {
       email = getSaltString(emaillength) + "@" + mailDomain;
     }
 
@@ -89,16 +88,14 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
       boolean write = authorization.getPermissions(siteId).contains(ApiPermission.WRITE);
       config.put("permission", write ? "READ_WRITE" : "READ_ONLY");
 
-      List<String> permissions = authorization.getPermissions(siteId).stream().map(p -> p.name())
-          .collect(Collectors.toList());
-      Collections.sort(permissions);
-
+      List<String> permissions =
+          authorization.getPermissions(siteId).stream().map(Enum::name).sorted().toList();
       config.put("permissions", permissions);
 
       return config;
     }).collect(Collectors.toList());
 
-    updateUploadEmail(logger, awsservice, authorization, sites);
+    updateUploadEmail(awsservice, authorization, sites);
 
     String userId = authorization.getUsername();
 
@@ -157,14 +154,12 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
 
   /**
    * Does Email address already exist.
-   * 
-   * @param logger {@link LambdaLogger}
+   *
    * @param awsservice {@link AwsServiceCache}
    * @param email {@link String}
    * @return boolean
    */
-  private boolean isEmailExists(final LambdaLogger logger, final AwsServiceCache awsservice,
-      final String email) {
+  private boolean isEmailExists(final AwsServiceCache awsservice, final String email) {
     String[] strs = email.split("@");
     String key = String.format("/formkiq/ses/%s/%s", strs[1], strs[0]);
     return getSsmService(awsservice).getParameterValue(key) != null;
@@ -172,13 +167,12 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
 
   /**
    * Update Upload Email.
-   * 
-   * @param logger {@link LambdaLogger}
+   *
    * @param awsservice {@link AwsServiceCache}
    * @param authorization {@link ApiAuthorization}
    * @param sites {@link List} {@link DynamicObject}
    */
-  private void updateUploadEmail(final LambdaLogger logger, final AwsServiceCache awsservice,
+  private void updateUploadEmail(final AwsServiceCache awsservice,
       final ApiAuthorization authorization, final List<DynamicObject> sites) {
 
     SsmService ssmService = getSsmService(awsservice);
@@ -187,8 +181,7 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
     if (mailDomain != null && ssmService != null) {
 
       List<String> writeSiteIds = authorization.getSiteIds().stream()
-          .filter(s -> authorization.getPermissions(s).contains(ApiPermission.WRITE))
-          .collect(Collectors.toList());
+          .filter(s -> authorization.getPermissions(s).contains(ApiPermission.WRITE)).toList();
 
       sites.forEach(site -> {
 
@@ -207,7 +200,7 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
 
         if (uploadEmail == null && writeSiteIds.contains(siteId)) {
 
-          String email = generateUploadEmail(logger, awsservice, mailDomain);
+          String email = generateUploadEmail(awsservice, mailDomain);
           site.put("uploadEmail", email);
 
           String key = String.format("/formkiq/%s/siteid/%s/email",
