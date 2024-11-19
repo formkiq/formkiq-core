@@ -50,12 +50,9 @@ import com.formkiq.client.api.DocumentAttributesApi;
 import com.formkiq.client.api.DocumentFoldersApi;
 import com.formkiq.client.api.DocumentSearchApi;
 import com.formkiq.client.api.DocumentTagsApi;
-import com.formkiq.client.api.DocumentWorkflowsApi;
 import com.formkiq.client.api.DocumentsApi;
-import com.formkiq.client.api.RulesetsApi;
 import com.formkiq.client.api.SchemasApi;
 import com.formkiq.client.api.SystemManagementApi;
-import com.formkiq.client.api.UserActivitiesApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.invoker.Configuration;
@@ -107,23 +104,17 @@ public abstract class AbstractApiClientRequestTest {
 
   /** {@link ApiClient}. */
   protected ApiClient client =
-      Configuration.getDefaultApiClient().setReadTimeout(0).setBasePath(server.getBasePath());
+      Configuration.getDefaultApiClient().setReadTimeout(TIMEOUT).setBasePath(server.getBasePath());
   /** {@link DocumentActionsApi}. */
   protected DocumentActionsApi documentActionsApi = new DocumentActionsApi(this.client);
   /** {@link DocumentsApi}. */
   protected DocumentsApi documentsApi = new DocumentsApi(this.client);
   /** {@link DocumentFoldersApi}. */
   protected DocumentFoldersApi foldersApi = new DocumentFoldersApi(this.client);
-  /** {@link RulesetsApi}. */
-  protected RulesetsApi rulesetApi = new RulesetsApi(this.client);
   /** {@link SystemManagementApi}. */
   protected SystemManagementApi systemApi = new SystemManagementApi(this.client);
   /** {@link DocumentTagsApi}. */
   protected DocumentTagsApi tagsApi = new DocumentTagsApi(this.client);
-  /** {@link UserActivitiesApi}. */
-  protected UserActivitiesApi userActivitiesApi = new UserActivitiesApi(this.client);
-  /** {@link DocumentWorkflowsApi}. */
-  protected DocumentWorkflowsApi workflowApi = new DocumentWorkflowsApi(this.client);
   /** {@link DocumentSearchApi}. */
   protected DocumentSearchApi searchApi = new DocumentSearchApi(this.client);
   /** {@link AttributesApi}. */
