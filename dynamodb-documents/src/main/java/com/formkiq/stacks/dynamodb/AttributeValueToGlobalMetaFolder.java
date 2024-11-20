@@ -31,6 +31,8 @@ import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
+import static com.formkiq.stacks.dynamodb.FolderIndexRecord.INDEX_FOLDER_SK;
+
 /**
  * Convert {@link Map} {@link AttributeValue} to {@link DocumentTag}.
  *
@@ -56,20 +58,24 @@ public class AttributeValueToGlobalMetaFolder
     Map<String, Object> result = new HashMap<>();
 
     String pk = getString(map.get(PK));
+    String sk = getString(map.get(SK));
 
     if (pk != null && pk.contains(GLOBAL_FOLDER_TAGS)) {
       result.put("value", map.get("tagKey").s());
     } else if (pk != null) {
 
-      String parent = pk.substring(pk.lastIndexOf(TAG_DELIMINATOR) + 1);
       String documentId = getString(map.get("documentId"));
       String path = getString(map.get("path"));
 
-      String key = parent + TAG_DELIMINATOR + path;
-
       result.put("path", path);
       result.put("documentId", documentId);
-      result.put("folder", Boolean.TRUE);
+
+      if (sk != null && sk.startsWith(INDEX_FOLDER_SK)) {
+        result.put("folder", Boolean.TRUE);
+      }
+
+      String parent = pk.substring(pk.lastIndexOf(TAG_DELIMINATOR) + 1);
+      String key = parent + TAG_DELIMINATOR + path;
       result.put("indexKey", key);
 
       Date insertedDate = this.toInsertedDateDate.apply(map);

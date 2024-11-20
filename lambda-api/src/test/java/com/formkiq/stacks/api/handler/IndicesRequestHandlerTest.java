@@ -29,6 +29,7 @@ import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
 import java.net.URISyntaxException;
 import java.util.Arrays;
@@ -178,7 +179,7 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
         fail();
       } catch (ApiException e) {
         // then
-        assertEquals("{\"message\":\"invalid indexKey\"}", e.getResponseBody());
+        assertEquals("{\"message\":\"invalid indexKey '12345'\"}", e.getResponseBody());
       }
     }
   }
@@ -239,7 +240,7 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
         fail();
       } catch (ApiException e) {
         // then
-        assertEquals("{\"message\":\"invalid 'indexType' parameter\"}", e.getResponseBody());
+        assertEquals("{\"message\":\"invalid indexKey '12345'\"}", e.getResponseBody());
       }
     }
   }
@@ -330,7 +331,6 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
       assertEquals(Boolean.TRUE, docs.get(0).getFolder());
       assertEquals("4000007025   text .pdf", docs.get(0).getPath());
       assertNotNull(docs.get(0).getIndexKey());
-      System.out.println("!! INDEX KEY: " + docs.get(0).getIndexKey());
 
       // when
       DeleteIndicesResponse response =
@@ -364,6 +364,60 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
         assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
         assertEquals("{\"message\":\"invalid indexKey '" + indexKey + "'\"}", e.getResponseBody());
       }
+    }
+  }
+
+  /**
+   * DELETE /indices/{type}/{key} with file.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleDelete09() throws Exception {
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+      String path = "test/4000007025   text .pdf";
+
+      AddDocumentRequest req = new AddDocumentRequest().content("test").path(path).content("data");
+
+      this.documentsApi.addDocument(req, siteId, null);
+
+      DocumentSearchMeta meta = new DocumentSearchMeta().folder("");
+      DocumentSearchRequest sreq =
+          new DocumentSearchRequest().query(new DocumentSearch().meta(meta));
+
+      // when
+      List<SearchResultDocument> docs =
+          notNull(this.searchApi.documentSearch(sreq, siteId, null, null, null).getDocuments());
+
+      // then
+      assertEquals(1, docs.size());
+      assertNotNull(docs.get(0).getIndexKey());
+      assertEquals("test", docs.get(0).getPath());
+      assertEquals(Boolean.TRUE, docs.get(0).getFolder());
+      assertNotNull(docs.get(0).getDocumentId());
+
+      // given
+      meta.folder("test");
+
+      // when
+      docs = notNull(this.searchApi.documentSearch(sreq, siteId, null, null, null).getDocuments());
+
+      // then
+      assertEquals(1, docs.size());
+      assertNull(docs.get(0).getFolder());
+      assertEquals(path, docs.get(0).getPath());
+      assertNull(docs.get(0).getIndexKey());
+
+      // when
+      DeleteIndicesResponse response = this.indexApi.deleteIndex(path, "folder", siteId);
+
+      // then
+      assertEquals("File deleted", response.getMessage());
+      docs = notNull(this.searchApi.documentSearch(sreq, siteId, null, null, null).getDocuments());
+      assertEquals(0, docs.size());
     }
   }
 }

@@ -4159,7 +4159,10 @@
           /indices/{indexType}/{indexKey}:
             delete:
               operationId: DeleteIndex
-              description: Perform a delete on the Folder Index
+              description: |-
+                Perform a delete on the Folder Index.
+
+                When deleting a file from the "folder" index, you can set the indexKey to a URLEncoded path variable.
               tags:
               - Custom Index
               parameters:

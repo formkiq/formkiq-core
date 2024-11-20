@@ -69,12 +69,11 @@ public class AttributeValueToGlobalMetaFolderTest {
     Map<String, Object> results = avg.apply(map);
 
     // then
-    final int expected = 7;
+    final int expected = 6;
     assertEquals(expected, results.size());
-    assertEquals("path,folder,insertedDate,lastModifiedDate,indexKey,documentId,userId",
+    assertEquals("path,insertedDate,lastModifiedDate,indexKey,documentId,userId",
         String.join(",", results.keySet().stream().toList()));
     assertNull(results.get("path"));
-    assertEquals(Boolean.TRUE, results.get("folder"));
     assertNull(results.get("insertedDate"));
     assertNull(results.get("lastModifiedDate"));
     assertEquals("alkdjsad#null", results.get("indexKey"));

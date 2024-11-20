@@ -23,13 +23,17 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
+import static com.formkiq.stacks.dynamodb.FolderIndexRecord.INDEX_FILE_SK;
+
 import java.io.IOException;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -40,6 +44,7 @@ import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.FolderIndexProcessor;
 import com.formkiq.stacks.dynamodb.GlobalIndexService;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /** {@link ApiGatewayRequestHandler} for "/indices/{type}/{key}". */
 public class IndicesRequestHandler
@@ -65,8 +70,13 @@ public class IndicesRequestHandler
     String siteId = authorization.getSiteId();
     String type = event.getPathParameters().get("indexType");
     String indexKey = event.getPathParameters().get("indexKey");
+    String message = "Folder deleted";
+
+    boolean deleted = false;
 
     if ("folder".equals(type)) {
+
+      FolderIndexProcessor ip = awsServices.getExtension(FolderIndexProcessor.class);
 
       int pos = indexKey.indexOf(TAG_DELIMINATOR);
       if (pos > -1) {
@@ -74,31 +84,43 @@ public class IndicesRequestHandler
         String parentId = indexKey.substring(0, pos);
         String path = indexKey.substring(pos + 1);
 
-        FolderIndexProcessor ip = awsServices.getExtension(FolderIndexProcessor.class);
-
         try {
-          if (!ip.deleteEmptyDirectory(siteId, parentId, path)) {
-            throw new NotFoundException("invalid indexKey '" + indexKey + "'");
-          }
+          deleted = ip.deleteEmptyDirectory(siteId, parentId, path);
         } catch (IOException e) {
           throw new BadException("Folder not empty");
         }
 
       } else {
-        throw new BadException("invalid indexKey");
+
+        try {
+          Map<String, String> index = ip.getIndex(siteId, indexKey);
+
+          String pk = index.get(PK);
+          String sk = index.get(SK);
+
+          if (!isEmpty(pk) && !isEmpty(sk) && sk.startsWith(INDEX_FILE_SK)) {
+            DynamoDbService db = awsServices.getExtension(DynamoDbService.class);
+            deleted = db.deleteItem(AttributeValue.fromS(pk), AttributeValue.fromS(sk));
+            message = "File deleted";
+          }
+        } catch (IOException e) {
+          // ignore
+        }
       }
 
     } else if ("tags".equals(type)) {
 
       initIndexService(awsServices);
       this.writer.deleteTagIndex(siteId, indexKey);
+      deleted = true;
+    }
 
-    } else {
-      throw new BadException("invalid 'indexType' parameter");
+    if (!deleted) {
+      throw new NotFoundException("invalid indexKey '" + indexKey + "'");
     }
 
     ApiMapResponse resp = new ApiMapResponse();
-    resp.setMap(Map.of("message", "Folder deleted"));
+    resp.setMap(Map.of("message", message));
     return new ApiRequestHandlerResponse(SC_OK, resp);
   }
 
