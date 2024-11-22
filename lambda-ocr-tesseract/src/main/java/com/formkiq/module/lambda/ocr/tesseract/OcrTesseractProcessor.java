@@ -24,6 +24,8 @@
 package com.formkiq.module.lambda.ocr.tesseract;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -31,6 +33,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +43,7 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.objects.MimeType;
+import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.aws.s3.S3PresignerServiceExtension;
@@ -240,10 +244,7 @@ public class OcrTesseractProcessor extends AbstractRestApiRequestHandler {
     String jobId = sqsMessage.jobId();
     String contentType = sqsMessage.contentType();
 
-    String s = String.format(
-        "{\"siteId\": \"%s\",\"documentId\": \"%s\",\"jobId\": \"%s\",\"contentType\":\"%s\"}",
-        siteId, documentId, jobId, contentType);
-    logger.log(s);
+    logProcessRecord(logger, sqsMessage, siteId, documentId, jobId, contentType);
 
     try {
 
@@ -286,19 +287,42 @@ public class OcrTesseractProcessor extends AbstractRestApiRequestHandler {
       }
 
     } catch (IOException | RuntimeException e) {
-      e.printStackTrace();
+
       ocrService.updateOcrScanStatus(siteId, documentId, OcrScanStatus.FAILED);
+
       logger.log(String.format("setting OCR Scan Status: %s", OcrScanStatus.FAILED));
+      logger.log(Strings.toString(e));
 
       ActionsService actionsService = serviceCache.getExtension(ActionsService.class);
       List<Action> actions = actionsService.getActions(siteId, documentId);
       Optional<Action> o = actions.stream().filter(new ActionStatusPredicate(ActionStatus.RUNNING))
           .filter(new ActionTypePredicate(ActionType.OCR)).findFirst();
 
-      if (o.isPresent()) {
-        o.get().status(ActionStatus.FAILED);
-        actionsService.updateActionStatus(siteId, documentId, o.get());
-      }
+      o.ifPresent(action -> {
+        action.status(ActionStatus.FAILED);
+        action.message(e.getMessage());
+        actionsService.updateActionStatus(siteId, documentId, action);
+      });
     }
+  }
+
+  private void logProcessRecord(final LambdaLogger logger, final OcrSqsMessage sqsMessage,
+      final String siteId, final String documentId, final String jobId, final String contentType) {
+
+    List<String> parseTypes = getParserTypes(sqsMessage);
+
+    String s = String.format(
+        "{\"siteId\": \"%s\",\"documentId\": \"%s\",\"jobId\": \"%s\",\"contentType\":\"%s\","
+            + "\"parseTypes\":\"%s\"}",
+        siteId, documentId, jobId, contentType, String.join(", ", parseTypes));
+    logger.log(s);
+  }
+
+  private List<String> getParserTypes(final OcrSqsMessage sqsMessage) {
+    List<String> parseTypes = Collections.emptyList();
+    if (sqsMessage.request() != null) {
+      parseTypes = notNull(sqsMessage.request().getParseTypes());
+    }
+    return parseTypes;
   }
 }

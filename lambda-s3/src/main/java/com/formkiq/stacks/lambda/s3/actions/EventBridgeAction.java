@@ -45,6 +45,8 @@ public class EventBridgeAction implements DocumentAction {
   private final String appEnvironment;
   /** {@link DocumentExternalSystemExport}. */
   private final DocumentExternalSystemExport systemExport;
+  /** Debug. */
+  private final boolean debug;
 
   /**
    * constructor.
@@ -55,6 +57,7 @@ public class EventBridgeAction implements DocumentAction {
     this.eventBridgeService = serviceCache.getExtension(EventBridgeService.class);
     this.appEnvironment = serviceCache.environment("APP_ENVIRONMENT");
     this.systemExport = new DocumentExternalSystemExport(serviceCache);
+    this.debug = serviceCache.debug();
   }
 
   @Override
@@ -71,6 +74,14 @@ public class EventBridgeAction implements DocumentAction {
     String source = "formkiq." + this.appEnvironment;
 
     String detail = this.systemExport.apply(siteId, documentId, actions);
+
+    if (this.debug) {
+      String s = String.format(
+          "{\"type\",\"%s\",\"eventBusName\":\"%s\","
+              + "\"detailType\":\"%s\",\"source\":\"%s\",\"detail\":\"%s\"}",
+          "eventBridge", eventBusName, detailType, source, detail);
+      logger.log(s);
+    }
 
     eventBridgeService.putEvents(eventBusName, detailType, detail, source);
   }

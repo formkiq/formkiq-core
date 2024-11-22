@@ -49,6 +49,8 @@ public class AddOcrAction implements DocumentAction {
   private final SendHttpRequest http;
   /** {@link Gson}. */
   private final Gson gson = new GsonBuilder().create();
+  /** Is Debug. */
+  private final boolean debug;
 
   /**
    * constructor.
@@ -57,14 +59,22 @@ public class AddOcrAction implements DocumentAction {
    */
   public AddOcrAction(final AwsServiceCache serviceCache) {
     this.http = new SendHttpRequest(serviceCache);
+    this.debug = serviceCache.debug();
   }
 
   @Override
   public void run(final LambdaLogger logger, final String siteId, final String documentId,
       final List<Action> actions, final Action action) throws IOException {
     Map<String, Object> payload = buildAddOcrPayload(action);
-    this.http.sendRequest(siteId, "post", "/documents/" + documentId + "/ocr",
-        this.gson.toJson(payload));
+    String json = this.gson.toJson(payload);
+
+    if (this.debug) {
+      String s = String.format("{\"type\",\"%s\",\"method\":\"%s\",\"url\":\"%s\",\"body\":\"%s\"}",
+          "ocr", "POST", "/documents/" + documentId + "/ocr", json);
+      logger.log(s);
+    }
+
+    this.http.sendRequest(siteId, "post", "/documents/" + documentId + "/ocr", json);
   }
 
   private Map<String, Object> buildAddOcrPayload(final Action action) {

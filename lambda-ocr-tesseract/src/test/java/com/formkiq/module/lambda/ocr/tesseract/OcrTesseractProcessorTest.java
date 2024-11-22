@@ -163,6 +163,7 @@ class OcrTesseractProcessorTest {
 
       actions = actionsService.getActions(siteId, documentId);
       assertEquals(ActionStatus.FAILED, actions.get(0).status());
+      assertEquals("unsupported Content-Type: MIME_JPEG", actions.get(0).message());
     }
   }
 
