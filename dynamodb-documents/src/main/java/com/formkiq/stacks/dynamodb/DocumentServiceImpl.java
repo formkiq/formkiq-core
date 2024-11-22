@@ -2027,8 +2027,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     }
 
     // when setting attributes remove existing attribute keys
-    if (AttributeValidationAccess.ADMIN_SET.equals(validationAccess)
-        || AttributeValidationAccess.SET.equals(validationAccess)) {
+    if (isSetAccess(validationAccess) || isSetItemAccess(validationAccess)) {
 
       Set<String> attributeKeys =
           attributes.stream().map(DocumentAttributeRecord::getKey).collect(Collectors.toSet());
@@ -2036,14 +2035,30 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
       // delete existing attribute keys, but if the key is exactly the same key/value as existing,
       // don't delete
-      attributesToBeDeleted =
-          previousAttributes.stream().filter(Predicate.not(PREDICIATE_COMPOSITE_KEY))
-              .filter(a -> !attributeKeys.contains(a.getKey())
-                  || isDocumentAttributeKeyMatchPredicate(a, attributeKeys, keys))
-              .toList();
+      if (isSetAccess(validationAccess)) {
+        attributesToBeDeleted =
+            previousAttributes.stream().filter(Predicate.not(PREDICIATE_COMPOSITE_KEY))
+                .filter(a -> !attributeKeys.contains(a.getKey())
+                    || isDocumentAttributeKeyMatchPredicate(a, attributeKeys, keys))
+                .toList();
+      } else {
+        attributesToBeDeleted =
+            previousAttributes.stream().filter(Predicate.not(PREDICIATE_COMPOSITE_KEY))
+                .filter(a -> attributeKeys.contains(a.getKey())).toList();
+      }
     }
 
     return attributesToBeDeleted;
+  }
+
+  private boolean isSetAccess(final AttributeValidationAccess validationAccess) {
+    return AttributeValidationAccess.ADMIN_SET.equals(validationAccess)
+        || AttributeValidationAccess.SET.equals(validationAccess);
+  }
+
+  private boolean isSetItemAccess(final AttributeValidationAccess validationAccess) {
+    return AttributeValidationAccess.ADMIN_SET_ITEM.equals(validationAccess)
+        || AttributeValidationAccess.SET_ITEM.equals(validationAccess);
   }
 
   private boolean isDocumentAttributeKeyMatchPredicate(final DocumentAttributeRecord a,

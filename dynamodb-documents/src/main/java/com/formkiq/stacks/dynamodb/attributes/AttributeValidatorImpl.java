@@ -317,7 +317,8 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
   private boolean isUpdateDeleteOrSet(final AttributeValidationAccess validationAccess) {
     return AttributeValidationAccess.DELETE.equals(validationAccess)
         || AttributeValidationAccess.UPDATE.equals(validationAccess)
-        || AttributeValidationAccess.SET.equals(validationAccess);
+        || AttributeValidationAccess.SET.equals(validationAccess)
+        || AttributeValidationAccess.SET_ITEM.equals(validationAccess);
   }
 
   @Override

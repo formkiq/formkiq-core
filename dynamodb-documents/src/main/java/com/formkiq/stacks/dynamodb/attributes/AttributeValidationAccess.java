@@ -45,5 +45,9 @@ public enum AttributeValidationAccess {
   /** Set Access. */
   SET,
   /** Update Access. */
-  UPDATE;
+  UPDATE,
+  /** Admin Set Item. */
+  ADMIN_SET_ITEM,
+  /** Set Item. */
+  SET_ITEM
 }

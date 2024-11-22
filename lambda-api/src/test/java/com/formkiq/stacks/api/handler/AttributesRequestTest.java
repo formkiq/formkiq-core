@@ -2089,6 +2089,56 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * PUT /documents/{documentId}/attributes/{attributeKey} check only replaces the attributeKey.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testPutDocumentAttribute04() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+
+      setBearerToken(siteId);
+      for (String a : Arrays.asList("c0", "c1")) {
+        addAttribute(siteId, a, null, null);
+      }
+
+      AddDocumentUploadRequest docReq = new AddDocumentUploadRequest();
+      AddDocumentAttribute attr0 =
+          new AddDocumentAttribute(new AddDocumentAttributeStandard().key("c0").stringValue("111"));
+      docReq.addAttributesItem(attr0);
+      AddDocumentAttribute attr1 =
+          new AddDocumentAttribute(new AddDocumentAttributeStandard().key("c1").stringValue("222"));
+      docReq.addAttributesItem(attr1);
+
+      String documentId =
+          this.documentsApi.addDocumentUpload(docReq, siteId, null, null, null).getDocumentId();
+
+      SetDocumentAttributeRequest req = new SetDocumentAttributeRequest()
+          .attribute(new AddDocumentAttributeValue().stringValue("123"));
+
+      // when
+      SetResponse response =
+          this.documentAttributesApi.setDocumentAttributeValue(documentId, "c0", req, siteId);
+
+      // then
+      assertEquals("Updated attribute 'c0' on document '" + documentId + "'",
+          response.getMessage());
+
+      DocumentAttribute c0 = getDocumentAttribute(siteId, documentId, "c0");
+      assertNotNull(c0);
+      assertEquals("c0", c0.getKey());
+      assertTrue(notNull(c0.getStringValues()).isEmpty());
+      assertEquals("123", c0.getStringValue());
+
+      DocumentAttribute c1 = getDocumentAttribute(siteId, documentId, "c1");
+      assertNotNull(c1);
+      assertEquals("c1", c1.getKey());
+      assertEquals("222", c1.getStringValue());
+    }
+  }
+
+  /**
    * PATCH /documents, POST /documents/{documentId}/attributes, PUT
    * /documents/{documentId}/attributes, existing attribute .
    *

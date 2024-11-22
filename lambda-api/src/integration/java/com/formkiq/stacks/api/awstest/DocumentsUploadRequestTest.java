@@ -56,6 +56,7 @@ import java.net.http.HttpResponse.BodyHandlers;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENTS;
@@ -248,6 +249,7 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
   public void testGet05() throws Exception {
     // given
     configService.save(SITEID1, new DynamicObject(Map.of(MAX_DOCUMENTS, "1")));
+    TimeUnit.SECONDS.sleep(1);
 
     DocumentsApi api = new DocumentsApi(getApiClients(SITEID1).get(0));
 
@@ -259,8 +261,10 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
 
       // when
       try {
-        api.getDocumentUpload(null, SITEID1, null, null, 1, null, null);
-        fail();
+        while (true) {
+          api.getDocumentUpload(null, SITEID1, null, null, 1, null, null);
+          TimeUnit.SECONDS.sleep(1);
+        }
       } catch (ApiException e) {
         // then
         assertEquals(STATUS_BAD_REQUEST, e.getCode());

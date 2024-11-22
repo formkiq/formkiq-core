@@ -119,7 +119,7 @@ public class DocumentAttributeRequestHandler
     Collection<ApiPermission> permissions = authorization.getPermissions(siteId);
     boolean isAdmin =
         permissions.contains(ApiPermission.ADMIN) || permissions.contains(ApiPermission.GOVERN);
-    return isAdmin ? AttributeValidationAccess.ADMIN_SET : AttributeValidationAccess.SET;
+    return isAdmin ? AttributeValidationAccess.ADMIN_SET_ITEM : AttributeValidationAccess.SET_ITEM;
   }
 
   private AttributeValidationAccess getAttributeValidationAccessDelete(
