@@ -35,6 +35,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.formkiq.aws.dynamodb.DbKeys;
@@ -214,10 +215,20 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
     }
   }
 
-  @NotNull
   private List<Document> getDocuments(final String siteId) throws ApiException {
     return notNull(this.documentsApi.getDocuments(siteId, null, null, null, null, null, null, null)
         .getDocuments());
+  }
+
+  private List<Document> getDocuments(final String siteId, final int expected)
+      throws ApiException, InterruptedException {
+    List<Document> documents = getDocuments(siteId);
+    while (documents.size() != expected) {
+      TimeUnit.SECONDS.sleep(1);
+      documents = getDocuments(siteId);
+    }
+
+    return documents;
   }
 
   private List<Document> getSoftDeletedDocuments(final String siteId) throws ApiException {
@@ -239,11 +250,13 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       // given
       setBearerToken(siteId);
 
-      AddDocumentUploadRequest req = new AddDocumentUploadRequest().path("test.txt");
+      String path = ID.uuid() + ".txt";
+      AddDocumentUploadRequest req = new AddDocumentUploadRequest().path(path);
       GetDocumentUrlResponse response =
           this.documentsApi.addDocumentUpload(req, siteId, null, null, null);
 
       String documentId = response.getDocumentId();
+      System.out.println("!! SITEID: " + siteId + " DOC: " + documentId);
 
       // when
       this.documentsApi.deleteDocument(documentId, siteId, Boolean.TRUE);
@@ -251,9 +264,9 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       // then
       List<Document> softDeletedDocuments = getSoftDeletedDocuments(siteId);
       assertEquals(1, softDeletedDocuments.size());
-      assertEquals("test.txt", softDeletedDocuments.get(0).getPath());
+      assertEquals(path, softDeletedDocuments.get(0).getPath());
 
-      List<Document> documents = getDocuments(siteId);
+      List<Document> documents = getDocuments(siteId, 0);
       assertEquals(0, documents.size());
 
       // when
@@ -263,9 +276,9 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       assertEquals("document restored", restore.getMessage());
       softDeletedDocuments = getSoftDeletedDocuments(siteId);
       assertEquals(0, softDeletedDocuments.size());
-      documents = getDocuments(siteId);
+      documents = getDocuments(siteId, 1);
       assertEquals(1, documents.size());
-      assertEquals("test.txt", documents.get(0).getPath());
+      assertEquals(path, documents.get(0).getPath());
       expectSoftDeleteSqsMessage(siteId, documentId);
     }
   }

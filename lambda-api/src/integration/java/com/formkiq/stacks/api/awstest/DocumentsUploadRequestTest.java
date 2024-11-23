@@ -248,21 +248,22 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
   @Timeout(value = TEST_TIMEOUT)
   public void testGet05() throws Exception {
     // given
-    configService.save(SITEID1, new DynamicObject(Map.of(MAX_DOCUMENTS, "1")));
+    String siteId = ID.uuid();
+    configService.save(siteId, new DynamicObject(Map.of(MAX_DOCUMENTS, "1")));
     TimeUnit.SECONDS.sleep(1);
 
-    DocumentsApi api = new DocumentsApi(getApiClients(SITEID1).get(0));
+    DocumentsApi api = new DocumentsApi(getApiClients(siteId).get(0));
 
-    api.getDocumentUpload(null, SITEID1, null, null, 1, null, null);
+    api.getDocumentUpload(null, siteId, null, null, 1, null, null);
 
-    for (ApiClient client : getApiClients(SITEID1)) {
+    for (ApiClient client : getApiClients(siteId)) {
 
       api = new DocumentsApi(client);
 
       // when
       try {
         while (true) {
-          api.getDocumentUpload(null, SITEID1, null, null, 1, null, null);
+          api.getDocumentUpload(null, siteId, null, null, 1, null, null);
           TimeUnit.SECONDS.sleep(1);
         }
       } catch (ApiException e) {

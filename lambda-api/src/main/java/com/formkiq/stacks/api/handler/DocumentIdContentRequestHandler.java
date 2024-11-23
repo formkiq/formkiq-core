@@ -72,11 +72,9 @@ public class DocumentIdContentRequestHandler
 
     Map<String, AttributeValue> versionAttributes =
         getVersionAttributes(awsservice, siteId, documentId, versionKey);
-    logger.log("versionKey: " + versionKey);
-    logger.log("versionAttributes: " + versionAttributes);
+
     DocumentItem item =
         getDocumentItem(awsservice, siteId, documentId, versionKey, versionAttributes);
-    logger.log("item: " + item.getContentType());
     String versionId = getVersionId(awsservice, versionAttributes, versionKey);
 
     ApiResponse response;
