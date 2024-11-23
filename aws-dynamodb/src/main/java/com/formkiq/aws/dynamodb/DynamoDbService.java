@@ -290,8 +290,17 @@ public interface DynamoDbService {
    * Put in transaction.
    * 
    * @param writeRequest {@link WriteRequestBuilder}
+   * @deprecated use oth putInTransactio method.
    */
+  @Deprecated
   void putInTransaction(WriteRequestBuilder writeRequest);
+
+  /**
+   * Put {@link Collection} {@link AttributeValue} in Transaction.
+   * 
+   * @param attributes {@link Collection}
+   */
+  void putInTransaction(Collection<Map<String, AttributeValue>> attributes);
 
   /**
    * Get Lock.

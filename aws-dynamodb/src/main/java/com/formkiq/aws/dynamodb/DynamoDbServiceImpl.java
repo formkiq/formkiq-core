@@ -515,6 +515,23 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
   }
 
   @Override
+  public void putInTransaction(final Collection<Map<String, AttributeValue>> attributes) {
+
+    TransactWriteItemsRequest.Builder transactionRequestBuilder =
+        TransactWriteItemsRequest.builder();
+
+    List<Put> puts =
+        attributes.stream().map(a -> Put.builder().tableName(tableName).item(a).build()).toList();
+
+    List<TransactWriteItem> writes =
+        puts.stream().map(p -> TransactWriteItem.builder().put(p).build()).toList();
+
+    TransactWriteItemsRequest transactionRequest =
+        transactionRequestBuilder.transactItems(writes).build();
+    this.dbClient.transactWriteItems(transactionRequest);
+  }
+
+  @Override
   public Map<String, AttributeValue> getAquiredLock(final AttributeValue pk,
       final AttributeValue sk) {
     return get(pk, getLock(sk));

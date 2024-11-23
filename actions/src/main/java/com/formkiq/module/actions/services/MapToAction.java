@@ -36,7 +36,7 @@ import java.util.function.Function;
 public class MapToAction implements Function<Map<String, Object>, Action> {
 
   @Override
-  public Action apply(Map<String, Object> map) {
+  public Action apply(final Map<String, Object> map) {
 
     String userId = ApiAuthorization.getAuthorization().getUsername();
 

@@ -1792,8 +1792,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     boolean documentExists = exists(siteId, document.getDocumentId());
 
     Map<String, AttributeValue> previous =
-        documentExists ? new HashMap<>(this.dbService.get(keys.get(PK), keys.get(SK)))
-            : Collections.emptyMap();
+        documentExists ? loadPreviousDocument(keys) : Collections.emptyMap();
 
     Map<String, AttributeValue> documentValues = new HashMap<>(previous);
     Map<String, AttributeValue> current =
@@ -1813,8 +1812,8 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     List<Map<String, AttributeValue>> tagValues =
         getSaveTagsAttributes(siteId, document.getDocumentId(), tags, options.timeToLive());
 
-    WriteRequestBuilder writeBuilder = new WriteRequestBuilder()
-        .append(this.documentTableName, documentValues).appends(this.documentTableName, tagValues);
+    WriteRequestBuilder writeBuilder =
+        new WriteRequestBuilder().appends(this.documentTableName, tagValues);
 
     if (folderIndexRecord != null) {
       writeBuilder.append(this.documentTableName, folderIndexRecord.getAttributes(siteId));
@@ -1823,10 +1822,21 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     DynamodbRecordTx tx = getSaveDocumentAttributesTx(siteId, document.getDocumentId(), attributes,
         AttributeValidation.FULL, options.getValidationAccess());
 
+    writeBuilder.appends(this.documentTableName,
+        tx.getSaves().stream().map(a -> a.getAttributes(siteId)).toList());
+
+    if (documentExists) {
+      writeBuilder.append(this.documentTableName, documentValues);
+    } else {
+      dbService.putInTransaction(List.of(documentValues));
+    }
+
     if (writeBuilder.batchWriteItem(this.dbClient)) {
 
       String documentId = document.getDocumentId();
-      saveDocumentAttributes(siteId, tx);
+
+      // delete old composite keys
+      deleteDocumentAttributes(siteId, (Collection<DocumentAttributeRecord>) tx.getDeletes());
 
       saveDocumentInterceptor(siteId, documentId, current, previous);
 
@@ -1918,7 +1928,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       final Collection<DocumentAttributeRecord> allAttributes, final AttributeValidation validation,
       final AttributeValidationAccess validationAccess) throws ValidationException {
 
-    DynamodbRecordTx tx = null;
+    DynamodbRecordTx tx;
 
     if (allAttributes != null) {
 
@@ -1960,6 +1970,8 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
       tx = new DynamodbRecordTx(toSave,
           Objects.concat(attributesToBeDeleted, compositeKeysToBeDeleted));
+    } else {
+      tx = new DynamodbRecordTx(Collections.emptyList(), Collections.emptyList());
     }
 
     return tx;
@@ -2449,5 +2461,9 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
         }
       });
     }
+  }
+
+  private Map<String, AttributeValue> loadPreviousDocument(final Map<String, AttributeValue> keys) {
+    return new HashMap<>(this.dbService.get(keys.get(PK), keys.get(SK)));
   }
 }

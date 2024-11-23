@@ -31,10 +31,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
 import com.formkiq.aws.dynamodb.objects.Objects;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 
 /**
@@ -43,6 +46,8 @@ import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
  */
 public class WriteRequestBuilder {
 
+  /** Max Retries. */
+  private static final int MAX_RETRIES = 5;
   /** Max Batch Size. */
   private static final int MAX_BATCH_SIZE = 25;
   /** {@link Map} of {@link WriteRequest}. */
@@ -160,16 +165,47 @@ public class WriteRequestBuilder {
       for (List<WriteRequest> writelist : parition) {
 
         if (!writelist.isEmpty()) {
-          BatchWriteItemRequest batch =
-              BatchWriteItemRequest.builder().requestItems(Map.of(e.getKey(), writelist)).build();
-          dbClient.batchWriteItem(batch);
 
+          batchWriteWithRetry(dbClient, Map.of(e.getKey(), writelist));
           write = true;
         }
       }
     }
 
     return write;
+  }
+
+  private void batchWriteWithRetry(final DynamoDbClient dbClient,
+      final Map<String, List<WriteRequest>> requestItems) {
+    int retries = 0;
+
+    Map<String, List<WriteRequest>> toBeProcessed = requestItems;
+
+    while (retries < MAX_RETRIES) {
+
+      BatchWriteItemRequest batchWriteRequest =
+          BatchWriteItemRequest.builder().requestItems(toBeProcessed).build();
+
+      BatchWriteItemResponse response = dbClient.batchWriteItem(batchWriteRequest);
+      Map<String, List<WriteRequest>> unprocessedItems = response.unprocessedItems();
+
+      if (unprocessedItems.isEmpty()) {
+        return;
+      }
+
+      toBeProcessed = unprocessedItems;
+
+      try {
+        TimeUnit.SECONDS.sleep((long) Math.pow(2, retries));
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new RuntimeException("Retry interrupted", e);
+      }
+
+      retries++;
+    }
+
+    throw new RuntimeException("Some items could not be saved after retries.");
   }
 
   /**
