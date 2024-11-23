@@ -55,7 +55,6 @@ import com.formkiq.client.model.SetSitesSchemaRequest;
 import com.formkiq.client.model.UpdateDocumentRequest;
 import com.formkiq.stacks.client.HttpService;
 import com.formkiq.stacks.client.HttpServiceJava;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -256,7 +255,6 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
           this.documentsApi.addDocumentUpload(req, siteId, null, null, null);
 
       String documentId = response.getDocumentId();
-      System.out.println("!! SITEID: " + siteId + " DOC: " + documentId);
 
       // when
       this.documentsApi.deleteDocument(documentId, siteId, Boolean.TRUE);
