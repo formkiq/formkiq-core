@@ -179,8 +179,7 @@ public class ActionsValidatorImpl implements ActionsValidator {
     }
   }
 
-  private void validateEventBridge(final String siteId, final Action action,
-      final Collection<ValidationError> errors) {
+  private void validateEventBridge(final Action action, final Collection<ValidationError> errors) {
 
     Map<String, String> parameters = getParameters(action);
 
@@ -242,7 +241,7 @@ public class ActionsValidatorImpl implements ActionsValidator {
     } else if (ActionType.IDP.equals(action.type())) {
       validateIdp(siteId, action, errors);
     } else if (ActionType.EVENTBRIDGE.equals(action.type())) {
-      validateEventBridge(siteId, action, errors);
+      validateEventBridge(action, errors);
     }
   }
 }

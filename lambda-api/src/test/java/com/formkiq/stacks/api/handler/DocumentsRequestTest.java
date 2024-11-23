@@ -35,6 +35,7 @@ import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.invoker.ApiResponse;
 import com.formkiq.client.model.AddAction;
+import com.formkiq.client.model.AddActionParameters;
 import com.formkiq.client.model.AddAttribute;
 import com.formkiq.client.model.AddAttributeRequest;
 import com.formkiq.client.model.AddChildDocument;
@@ -777,6 +778,60 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
             "{\"errors\":[{\"key\":\"path\","
                 + "\"error\":\"invalid Path contains multiple '//' characters\"}]}",
             e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * Save document with action error.
+   *
+   */
+  @Test
+  public void testPost20() {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      AddDocumentRequest req =
+          new AddDocumentRequest().content("test").actions(List.of(new AddAction()));
+
+      // when
+      try {
+        this.documentsApi.addDocument(req, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"errors\":[{\"key\":\"type\",\"error\":\"action 'type' is required\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * Save document with invalid OCR action error.
+   *
+   */
+  @Test
+  public void testPost21() {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      AddDocumentRequest req =
+              new AddDocumentRequest().content("test").actions(List.of(new AddAction().type(DocumentActionType.OCR).parameters(new AddActionParameters().ocrParseTypes("invalid"))));
+
+      // when
+      try {
+        this.documentsApi.addDocument(req, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"errors\":[{\"key\":\"type\",\"error\":\"action 'type' is required\"}]}",
+                e.getResponseBody());
       }
     }
   }

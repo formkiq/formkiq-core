@@ -26,14 +26,11 @@ package com.formkiq.stacks.api.handler;
 import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.formkiq.aws.dynamodb.DynamicObject;
-import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.PaginationToAttributeValue;
@@ -48,25 +45,20 @@ import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.dynamodb.cache.CacheService;
 import com.formkiq.module.actions.Action;
-import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsNotificationService;
 import com.formkiq.module.actions.services.ActionsService;
-import com.formkiq.module.actions.services.ActionsValidator;
-import com.formkiq.module.actions.services.ActionsValidatorImpl;
+import com.formkiq.module.actions.services.MapToAction;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.dynamodb.ConfigService;
+import com.formkiq.stacks.api.validators.ApiValidator;
 import com.formkiq.stacks.dynamodb.DocumentService;
-import com.formkiq.validation.ValidationError;
-import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/actions". */
 public class DocumentsActionsRequestHandler
-    implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
+    implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil, ApiValidator {
 
   /**
    * constructor.
-   *
    */
   public DocumentsActionsRequestHandler() {}
 
@@ -125,8 +117,7 @@ public class DocumentsActionsRequestHandler
   private DocumentItem getDocument(final AwsServiceCache awsservice, final String siteId,
       final String documentId) {
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
-    DocumentItem item = documentService.findDocument(siteId, documentId);
-    return item;
+    return documentService.findDocument(siteId, documentId);
   }
 
   @Override
@@ -134,8 +125,6 @@ public class DocumentsActionsRequestHandler
     return "/documents/{documentId}/actions";
   }
 
-
-  @SuppressWarnings("unchecked")
   @Override
   public ApiRequestHandlerResponse post(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
@@ -143,7 +132,6 @@ public class DocumentsActionsRequestHandler
 
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
-    String userId = authorization.getUsername();
 
     DocumentItem item = getDocument(awsservice, siteId, documentId);
     throwIfNull(item, new DocumentNotFoundException(documentId));
@@ -151,9 +139,8 @@ public class DocumentsActionsRequestHandler
     Map<String, Object> body = fromBodyToMap(event);
 
     List<Map<String, Object>> list = (List<Map<String, Object>>) body.get("actions");
-    List<Action> actions = toActions(list, userId);
-
-    validate(awsservice, siteId, actions);
+    List<Action> actions = list.stream().map(new MapToAction()).toList();
+    validateActions(awsservice, siteId, actions);
 
     ActionsService service = awsservice.getExtension(ActionsService.class);
     int idx = service.getActions(siteId, documentId).size();
@@ -170,49 +157,5 @@ public class DocumentsActionsRequestHandler
     ApiMapResponse resp = new ApiMapResponse();
     resp.setMap(Map.of("message", "Actions saved"));
     return new ApiRequestHandlerResponse(SC_OK, resp);
-  }
-
-  @SuppressWarnings("unchecked")
-  private List<Action> toActions(final List<Map<String, Object>> list, final String userId) {
-    List<Action> actions = new ArrayList<>(list.size());
-
-    list.forEach(a -> {
-
-      ActionType type = null;
-      Object stype = a.get("type");
-      String queueId = (String) a.get("queueId");
-
-      try {
-        type = stype != null ? ActionType.valueOf(stype.toString().toUpperCase()) : null;
-      } catch (IllegalArgumentException e) {
-        type = null;
-      }
-
-      Map<String, String> parameters = (Map<String, String>) a.get("parameters");
-      Action action =
-          new Action().queueId(queueId).type(type).parameters(parameters).userId(userId);
-
-      actions.add(action);
-    });
-
-    return actions;
-  }
-
-  private void validate(final AwsServiceCache awsservice, final String siteId,
-      final List<Action> actions) throws ValidationException {
-
-    DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
-    ActionsValidator validator = new ActionsValidatorImpl(db);
-
-    ConfigService configsService = awsservice.getExtension(ConfigService.class);
-    DynamicObject configs = configsService.get(siteId);
-    List<Collection<ValidationError>> errors = validator.validation(siteId, actions, configs);
-
-    Optional<Collection<ValidationError>> firstError =
-        errors.stream().filter(e -> !e.isEmpty()).findFirst();
-
-    if (!firstError.isEmpty()) {
-      throw new ValidationException(firstError.get());
-    }
   }
 }

@@ -81,6 +81,7 @@ public class DocumentEntityValidatorImpl implements DocumentEntityValidator {
     return tags;
   }
 
+  // TODO merge with ApiValidator validateActions
   private void validateActions(final AwsServiceCache awsservice, final String siteId,
       final AddDocumentRequest item, final ApiAuthorization authorization,
       final Collection<ValidationError> errors) {
