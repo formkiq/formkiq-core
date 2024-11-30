@@ -34,6 +34,13 @@ Resources:
       SubnetId:
         Fn::ImportValue:
           Fn::Sub: '${VpcStackName}-PublicSubnet1'
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 8
+            VolumeType: gp3
+            Encrypted: true
+            DeleteOnTermination: true
       UserData:
         Fn::Base64:
           Fn::Sub: |
