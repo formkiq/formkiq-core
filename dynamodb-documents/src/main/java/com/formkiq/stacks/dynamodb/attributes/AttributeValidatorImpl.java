@@ -361,14 +361,10 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
     validateRequired(documentAttributes, errors);
 
     if (errors.isEmpty()) {
-
       validateAttributeExistsAndDataType(siteId, attributesMap, documentAttributes, access, errors);
 
-      if (errors.isEmpty()) {
-
-        notNull(schemaAttributes).forEach(schemaAttribute -> validateSitesSchema(schemaAttribute,
-            siteId, attributesMap, documentAttributes, errors));
-      }
+      notNull(schemaAttributes).forEach(schemaAttribute -> validateSitesSchema(schemaAttribute,
+          siteId, attributesMap, documentAttributes, errors));
     }
 
     return errors;
@@ -411,11 +407,11 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
 
     if (errors.isEmpty()) {
       validateAttributeExistsAndDataType(siteId, attributesMap, documentAttributes, access, errors);
-    }
 
-    if (errors.isEmpty() && schemaAttributes != null) {
-      notNull(schemaAttributes).forEach(
-          schemaAttribute -> validateAllowedValues(schemaAttribute, documentAttributes, errors));
+      if (schemaAttributes != null) {
+        notNull(schemaAttributes).forEach(
+            schemaAttribute -> validateAllowedValues(schemaAttribute, documentAttributes, errors));
+      }
     }
 
     return errors;
@@ -493,13 +489,9 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
 
       validateRequiredAttributes(siteId, schemaAttributes, attributesMap, errors);
 
-      if (errors.isEmpty()) {
-        validateOptionalAttributes(schemaAttributes, documentAttributes, errors);
-      }
+      validateOptionalAttributes(schemaAttributes, documentAttributes, errors);
 
-      if (errors.isEmpty()) {
-        validateAllowedValues(schemaAttributes, documentAttributes, errors);
-      }
+      validateAllowedValues(schemaAttributes, documentAttributes, errors);
     }
   }
 }

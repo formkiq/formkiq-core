@@ -811,6 +811,58 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * PATCH /documents/{documentId}, with invalid allowed value.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddUploadDocumentWithSetSitesSchema09() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "req", null);
+      addAttribute(siteId, "strings", null);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SchemaAttributes().allowAdditionalAttributes(Boolean.TRUE)
+              .addRequiredItem(createRequired("req")).addOptionalItem(createOptional("strings")
+                  .addAllowedValuesItem("111").addAllowedValuesItem("222")));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      AddDocumentUploadRequest ureq0 =
+          new AddDocumentUploadRequest().addAttributesItem(createStringAttribute("req", "someval"))
+              .addAttributesItem(createStringAttribute("strings", "111"));
+
+      // when
+      GetDocumentUrlResponse response =
+          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null);
+
+      // then
+      String documentId = response.getDocumentId();
+      List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
+          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+      assertEquals(2, attributes.size());
+
+      // given
+      UpdateDocumentRequest updateReq =
+          new UpdateDocumentRequest().addAttributesItem(createStringAttribute("strings", "333"));
+
+      // when
+      try {
+        this.documentsApi.updateDocument(documentId, updateReq, siteId, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals("{\"errors\":[{\"key\":\"strings\","
+            + "\"error\":\"invalid attribute value 'strings', only allowed values are 111,222\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
    * DELETE /documents/{documentId}/attributes/{attributeKey}/{attributeValue}. schema required
    * attribute.
    *
