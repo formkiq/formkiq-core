@@ -19,38 +19,39 @@ Parameters:
     Default: prod
   
   EnablePublicUrls:
-    Description: Enables /public urls (unauthenticated urls)
+    Description: >
+      Whether to enable "/public" endpoints, defaults to false. Public endpoints allow external users to submit documents, such as through a web form. As with any publicly-available functionality, there is a risk of abuse if enabled.
     Default: "false"
     Type: String
     AllowedValues: ["true", "false"]
     
   PasswordMinimumLength:
     Type: Number
-    Description: The minimum password length for FormKiQ Cognito Users
+    Description: Set the Amazon Cognito password policies, minimum password length requirement for all users
     MinValue: "6"
     MaxValue: "99"
     Default: "8"
     
   PasswordRequireLowercase:
-    Description: Whether FormKiQ Cognito Users password requires at least one lowercase letter
+    Description: Set the Amazon Cognito password policies, to require one lowercase letter in all passwords.
     Default: "false"
     Type: String
     AllowedValues: ["true", "false"]
     
   PasswordRequireNumbers:
-    Description: Whether FormKiQ Cognito Users password requires at least one number
+    Description: Set the Amazon Cognito password policies, to require one number in all passwords.
     Default: "false"
     Type: String
     AllowedValues: ["true", "false"]
     
   PasswordRequireSymbols:
-    Description: Whether FormKiQ Cognito Users password requires at least one symbol
+    Description: Set the Amazon Cognito password policies, to require one symbol in all passwords.
     Default: "false"
     Type: String
     AllowedValues: ["true", "false"]
     
   PasswordRequireUppercase:
-    Description: Whether FormKiQ Cognito Users password requires at least one uppercase letter
+    Description: Set the Amazon Cognito password policies, to require one uppercase letter in all passwords.
     Default: "false"
     Type: String
     AllowedValues: ["true", "false"]
@@ -59,12 +60,13 @@ Parameters:
     Type: String
     Description: >
       The name of the CloudFormation VPC stack that can be created after the initial FormKiQ install, using the add-on CloudFormation template for VPC https://docs.formkiq.com/docs/getting-started/quick-start#create-vpc.
-      Some services such as Typesense, Tesseract, and OpenSearch require a VPC. Only required if you are using any of these services; otherwise, this can remain empty.
+      Some services such as Typesense, and OpenSearch require a VPC. Only required if you are using any of these services; otherwise, this can remain empty.
     Default: ""
 
   TypesenseApiKey:
     Type: String
-    Description: (optional) Random string of characters for https://typesense.org API access 
+    Description: >
+      Optional: API Key to access the [Typesense](https://typesense.org) server. Typesense is used to provide full text search support for document metadata. The API Key can be any random string of characters. To enable Typesense, the `VpcStackName` also needs to be set.
     Default: ""
 
   TypesenseMemory:
