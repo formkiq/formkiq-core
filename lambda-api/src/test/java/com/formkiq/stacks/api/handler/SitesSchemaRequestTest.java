@@ -2210,6 +2210,61 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
     }
   }
 
+  /**
+   * PUT /documents/{documentId}/attributes, with site schema optional / required.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testSetDocumentAttribute06() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      for (String attribute : List.of("code", "documentType", "official")) {
+        AttributeDataType dataType =
+            "official".equals(attribute) ? AttributeDataType.BOOLEAN : AttributeDataType.STRING;
+        addAttribute(siteId, attribute, dataType);
+      }
+
+      AttributeSchemaRequired r0 = createRequired("code");
+      AttributeSchemaOptional o0 = createOptional("documentType");
+      AttributeSchemaOptional o1 = createOptional("official");
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SchemaAttributes().addRequiredItem(r0).addOptionalItem(o0)
+              .addOptionalItem(o1).allowAdditionalAttributes(Boolean.TRUE));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      AddDocumentRequest areq = new AddDocumentRequest().content("adasd")
+          .addAttributesItem(createStringAttribute("code", "1"));
+      String documentId = this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
+
+      SetDocumentAttributesRequest setAttr =
+          new SetDocumentAttributesRequest().addAttributesItem(createStringAttribute("code", "1"))
+              .addAttributesItem(createStringAttribute("documentType", "2"))
+              .addAttributesItem(new AddDocumentAttribute(
+                  new AddDocumentAttributeStandard().key("official").booleanValue(Boolean.TRUE)));
+
+      // when
+      SetResponse setResponse =
+          this.documentAttributesApi.setDocumentAttributes(documentId, setAttr, siteId);
+
+      // then
+      assertEquals("set attributes on documentId '" + documentId + "'", setResponse.getMessage());
+      int i = 0;
+      final int expected = 3;
+      List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
+          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+      assertEquals(expected, attributes.size());
+      assertDocumentAttributeEquals(attributes.get(i++), "code", "1", null);
+      assertDocumentAttributeEquals(attributes.get(i++), "documentType", "2", null);
+      assertEquals("official", attributes.get(i).getKey());
+      assertEquals(Boolean.TRUE, attributes.get(i).getBooleanValue());
+    }
+  }
+
   private void assertDocumentAttributeEquals(final DocumentAttribute da, final String attributeKey,
       final String stringValue, final String stringValues) {
     assertEquals(attributeKey, da.getKey());

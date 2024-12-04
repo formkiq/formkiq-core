@@ -1940,8 +1940,8 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       List<DocumentAttributeRecord> previousAttributes =
           previousAllAttributes.stream().filter(Predicate.not(PREDICIATE_COMPOSITE_KEY)).toList();
 
-      Collection<DocumentAttributeRecord> newAttributes =
-          filterAttributesByPrevious(allAttributes, previousAttributes);
+      Collection<DocumentAttributeRecord> newAttributes = isSet(validationAccess) ? allAttributes
+          : filterAttributesByPrevious(allAttributes, previousAttributes);
 
       List<DocumentAttributeRecord> previousCompositeKeys =
           previousAllAttributes.stream().filter(PREDICIATE_COMPOSITE_KEY).toList();
@@ -1975,6 +1975,11 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     }
 
     return tx;
+  }
+
+  private boolean isSet(final AttributeValidationAccess validationAccess) {
+    return AttributeValidationAccess.SET.equals(validationAccess)
+        || AttributeValidationAccess.ADMIN_SET.equals(validationAccess);
   }
 
   /**
