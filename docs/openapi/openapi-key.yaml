@@ -32,7 +32,7 @@
               - OAuth(JWT)
               - AWS IAM
               - API Key
-          version: 1.16.0
+          version: 1.16.1
         tags:
         - name: documents
           description: API for the add, updating and fetching of documents
@@ -7978,6 +7978,11 @@
                 contentLength:
                   type: integer
                   description: Document size
+                checksum:
+                  type: string
+                  description: Document checksum, changes when document file changes
+                checksumType:
+                  $ref: '#/components/schemas/ChecksumType'
                 tags:
                   type: object
                   additionalProperties:

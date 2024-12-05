@@ -8028,6 +8028,11 @@ Resources:
                 contentLength:
                   type: "integer"
                   description: "Document size"
+                checksum:
+                  type: "string"
+                  description: "Document checksum, changes when document file changes"
+                checksumType:
+                  $ref: "#/components/schemas/ChecksumType"
                 tags:
                   type: "object"
                   additionalProperties:
