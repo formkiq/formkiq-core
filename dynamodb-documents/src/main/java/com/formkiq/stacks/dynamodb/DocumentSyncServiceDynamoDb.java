@@ -114,7 +114,8 @@ public final class DocumentSyncServiceDynamoDb implements DocumentSyncService {
 
     Map<String, AttributeValue> attrs = new HashMap<>();
     attrs.put(PK, AttributeValue.fromS(getPk(siteId, documentId)));
-    attrs.put(SK, AttributeValue.fromS(SK_SYNCS + DateUtil.getNowInIso8601Format() + TAG_DELIMINATOR + ID.uuid()));
+    attrs.put(SK, AttributeValue
+        .fromS(SK_SYNCS + DateUtil.getNowInIso8601Format() + TAG_DELIMINATOR + ID.uuid()));
 
     attrs.put("documentId", AttributeValue.fromS(documentId));
     attrs.put("service", AttributeValue.fromS(service.name()));
