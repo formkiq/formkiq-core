@@ -219,8 +219,7 @@ public class UserActivityRecord implements DynamodbRecord<UserActivityRecord> {
   }
 
   private String getFormattedDate() {
-    Instant nowUtc = Instant.now();
-    return DateTimeFormatter.ISO_INSTANT.format(nowUtc);
+    return DateUtil.getNowInIso8601Format();
   }
 
   @Override
