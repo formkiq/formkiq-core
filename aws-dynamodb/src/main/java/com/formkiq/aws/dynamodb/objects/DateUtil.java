@@ -25,6 +25,7 @@ package com.formkiq.aws.dynamodb.objects;
 
 import java.text.SimpleDateFormat;
 import java.time.DateTimeException;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -82,6 +83,15 @@ public final class DateUtil {
     TimeZone tz = TimeZone.getTimeZone("UTC");
     df.setTimeZone(tz);
     return df;
+  }
+
+  /**
+   * Returns Now in ISO 8601 format.
+   * @return String
+   */
+  public static String getNowInIso8601Format() {
+    Instant nowUtc = Instant.now();
+    return DateTimeFormatter.ISO_INSTANT.format(nowUtc);
   }
 
   /**
