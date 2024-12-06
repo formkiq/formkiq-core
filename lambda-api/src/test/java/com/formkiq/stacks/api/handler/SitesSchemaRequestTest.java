@@ -433,7 +433,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       this.schemasApi.setSitesSchema(siteId, req);
 
       AddDocumentUploadRequest ureq =
-          new AddDocumentUploadRequest().path("sample.txt").contentType("text/plain");
+          new AddDocumentUploadRequest().path("a/b/sample.txt").contentType("text/plain");
 
       // when
       try {
@@ -443,6 +443,10 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
         // then
         assertEquals("{\"errors\":[{\"key\":\"category\","
             + "\"error\":\"missing required attribute 'category'\"}]}", e.getResponseBody());
+
+        List<SearchResultDocument> docs = notNull(
+            foldersApi.getFolderDocuments(siteId, null, null, null, null, null).getDocuments());
+        assertEquals(0, docs.size());
       }
     }
   }
