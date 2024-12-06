@@ -1802,6 +1802,15 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
     removeNullMetadata(document, documentValues);
 
+    List<Map<String, AttributeValue>> tagValues =
+        getSaveTagsAttributes(siteId, document.getDocumentId(), tags, options.timeToLive());
+
+    WriteRequestBuilder writeBuilder =
+        new WriteRequestBuilder().appends(this.documentTableName, tagValues);
+
+    DynamodbRecordTx tx = getSaveDocumentAttributesTx(siteId, document.getDocumentId(), attributes,
+        AttributeValidation.FULL, options.getValidationAccess());
+
     boolean isPathChanged = isPathChanges(previous, document);
 
     FolderIndexRecord folderIndexRecord = createDocumentPath(siteId, document, isPathChanged);
@@ -1809,18 +1818,9 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       documentValues.put("path", AttributeValue.fromS(document.getPath()));
     }
 
-    List<Map<String, AttributeValue>> tagValues =
-        getSaveTagsAttributes(siteId, document.getDocumentId(), tags, options.timeToLive());
-
-    WriteRequestBuilder writeBuilder =
-        new WriteRequestBuilder().appends(this.documentTableName, tagValues);
-
     if (folderIndexRecord != null) {
       writeBuilder.append(this.documentTableName, folderIndexRecord.getAttributes(siteId));
     }
-
-    DynamodbRecordTx tx = getSaveDocumentAttributesTx(siteId, document.getDocumentId(), attributes,
-        AttributeValidation.FULL, options.getValidationAccess());
 
     writeBuilder.appends(this.documentTableName,
         tx.getSaves().stream().map(a -> a.getAttributes(siteId)).toList());
