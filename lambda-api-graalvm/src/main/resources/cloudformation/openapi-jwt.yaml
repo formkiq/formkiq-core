@@ -9706,6 +9706,11 @@ Resources:
                 deepLinkPath:
                   type: "string"
                   description: "Path or Name of deep link"
+                checksum:
+                  type: "string"
+                  description: "Document checksum, changes when document file changes"
+                checksumType:
+                  $ref: "#/components/schemas/ChecksumType"
                 tags:
                   type: "array"
                   description: "List of document tags"
@@ -9736,6 +9741,11 @@ Resources:
                 deepLinkPath:
                   type: "string"
                   description: "Path or Name of deep link"
+                checksum:
+                  type: "string"
+                  description: "Document checksum, changes when document file changes"
+                checksumType:
+                  $ref: "#/components/schemas/ChecksumType"
                 tags:
                   type: "array"
                   description: "List of document tags"
@@ -9766,6 +9776,11 @@ Resources:
                 deepLinkPath:
                   type: "string"
                   description: "Path or Name of deep link"
+                checksum:
+                  type: "string"
+                  description: "Document checksum, changes when document file changes"
+                checksumType:
+                  $ref: "#/components/schemas/ChecksumType"
                 tags:
                   type: "array"
                   description: "List of document tags"
