@@ -9612,6 +9612,10 @@
                   description: List of document Metadata
                   items:
                     $ref: '#/components/schemas/AddDocumentMetadata'
+                attributes:
+                  type: object
+                  additionalProperties:
+                    $ref: '#/components/schemas/FulltextAttribute'
             AddDocumentFulltextRequest:
               type: object
               properties:
@@ -9647,6 +9651,10 @@
                   description: List of document Metadata
                   items:
                     $ref: '#/components/schemas/AddDocumentMetadata'
+                attributes:
+                  type: object
+                  additionalProperties:
+                    $ref: '#/components/schemas/FulltextAttribute'
             UpdateDocumentFulltextRequest:
               type: object
               properties:
@@ -9682,6 +9690,10 @@
                   description: List of document Metadata
                   items:
                     $ref: '#/components/schemas/AddDocumentMetadata'
+                attributes:
+                  type: object
+                  additionalProperties:
+                    $ref: '#/components/schemas/FulltextAttribute'
             SetAntivirusRequest:
               type: object
             SetAntivirusResponse:
