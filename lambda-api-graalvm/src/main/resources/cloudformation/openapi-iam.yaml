@@ -7935,6 +7935,9 @@ Resources:
                 path:
                   type: "string"
                   description: "Path or Name of document"
+                contentType:
+                  type: "string"
+                  description: "Document Content-Type"
                 deepLinkPath:
                   type: "string"
                   description: "Path or Name of deep link"
