@@ -106,13 +106,16 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
     Map<String, String> jsonheaders = createJsonHeaders();
     response.put("statusCode", status.getStatusCode());
 
-    if (apiResponse instanceof ApiRedirectResponse) {
-      jsonheaders.put("Location", ((ApiRedirectResponse) apiResponse).getRedirectUri());
+    if (apiResponse instanceof ApiRedirectResponse a) {
+      jsonheaders.put("Location", a.getRedirectUri());
     } else if (status.getStatusCode() == SC_FOUND.getStatusCode()
-        && apiResponse instanceof ApiMessageResponse) {
-      jsonheaders.put("Location", ((ApiMessageResponse) apiResponse).getMessage());
-    } else if (apiResponse instanceof ApiMapResponse) {
-      response.put("body", this.gson.toJson(((ApiMapResponse) apiResponse).getMap()));
+        && apiResponse instanceof ApiMessageResponse a) {
+      jsonheaders.put("Location", a.getMessage());
+    } else if (apiResponse instanceof ApiMapResponse a) {
+      response.put("body", this.gson.toJson(a.getMap()));
+      jsonheaders.putAll(headers);
+    } else if (apiResponse instanceof ApiObjectResponse a) {
+      response.put("body", this.gson.toJson(a.getObject()));
       jsonheaders.putAll(headers);
     } else {
       response.put("body", this.gson.toJson(apiResponse));
