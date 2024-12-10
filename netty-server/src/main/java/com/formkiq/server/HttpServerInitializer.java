@@ -269,6 +269,10 @@ public final class HttpServerInitializer extends ChannelInitializer<SocketChanne
     env.put("TYPESENSE_HOST", commandLine.getOptionValue("typesense-host"));
     env.put("TYPESENSE_API_KEY", commandLine.getOptionValue("typesense-api-key"));
 
+    env.put("KEYCLOAK_TOKEN_ENDPOINT", commandLine.getOptionValue("keycloak-token-endpoint"));
+    env.put("KEYCLOAK_CLIENT_ID", commandLine.getOptionValue("keycloak-client-id"));
+    env.put("KEYCLOAK_CLIENT_SECRET", commandLine.getOptionValue("keycloak-client-secret"));
+
     String apiKey = commandLine.getOptionValue("api-key");
     if (Strings.isEmpty(apiKey)) {
       apiKey = ID.uuid();

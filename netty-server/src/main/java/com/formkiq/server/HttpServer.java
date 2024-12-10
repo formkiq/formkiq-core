@@ -98,6 +98,17 @@ public final class HttpServer {
     typesenseApiKey.setRequired(true);
     options.addOption(typesenseApiKey);
 
+    Option keycloakTokenEndpoint =
+        new Option(null, "keycloak-token-endpoint", true, "Keycloak Token Endpoint");
+    options.addOption(keycloakTokenEndpoint);
+
+    Option keycloakClientId = new Option(null, "keycloak-client-id", true, "Keycloak Client Id");
+    options.addOption(keycloakClientId);
+
+    Option keycloakClientSecret =
+        new Option(null, "keycloak-client-secret", true, "Keycloak Client Secret");
+    options.addOption(keycloakClientSecret);
+
     return options;
   }
 
