@@ -21,50 +21,54 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.dynamodb;
+package com.formkiq.stacks.dynamodb;
 
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
-import java.util.Collection;
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
- * Convert {@link Map} to {@link AttributeValue} {@link Map}.
+ * Pagination Results for a DynamoDB Query.
  *
+ * @param <T> Type of Results.
  */
-public class MapToAttributeValue
-    implements Function<Map<String, Object>, Map<String, AttributeValue>> {
+public class Pagination<T> {
+  /** {@link List}. */
+  private final List<T> results;
+  /** Next Token. */
+  private final String nextToken;
 
-  @Override
-  public Map<String, AttributeValue> apply(final Map<String, Object> map) {
+  /**
+   * constructor.
+   *
+   * @param list {@link List}
+   * @param lastEvaluatedKey {@link Map}
+   */
+  public Pagination(final List<T> list, final Map<String, AttributeValue> lastEvaluatedKey) {
+    this.results = list;
 
-    Map<String, AttributeValue> result = null;
-
-    if (map != null) {
-      result = new HashMap<>();
-      for (Map.Entry<String, Object> e : map.entrySet()) {
-        AttributeValue a = convert(e.getValue());
-        result.put(e.getKey(), a);
-      }
-    }
-
-    return result;
+    Map<String, String> map = lastEvaluatedKey.entrySet().stream()
+        .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().s()));
+    this.nextToken = new MapToBase64().apply(map);
   }
 
-  private AttributeValue convert(final Object obj) {
-    AttributeValue o = null;
-    if (obj instanceof Double d) {
-      o = AttributeValue.fromN(String.valueOf(d));
-    } else if (obj instanceof String s) {
-      o = AttributeValue.fromS(s);
-    } else if (obj instanceof Collection<?> c) {
-      o = AttributeValue.fromL(c.stream().map(this::convert).toList());
-    } else {
-      throw new IllegalArgumentException("Unsupported data type: " + obj.getClass().getName());
-    }
+  /**
+   * Get Results.
+   * 
+   * @return List
+   */
+  public List<T> getResults() {
+    return this.results;
+  }
 
-    return o;
+  /**
+   * Get Next Token.
+   * 
+   * @return String
+   */
+  public String getNextToken() {
+    return this.nextToken;
   }
 }

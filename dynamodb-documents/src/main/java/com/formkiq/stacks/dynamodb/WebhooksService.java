@@ -88,10 +88,12 @@ public interface WebhooksService {
    * Find Webhooks.
    *
    * @param siteId Optional Grouping siteId
+   * @param nextToken {@link String}
+   * @param limit {@link Integer}
    * 
    * @return {@link List} {@link DynamicObject}
    */
-  List<DynamicObject> findWebhooks(String siteId);
+  Pagination<DynamicObject> findWebhooks(String siteId, String nextToken, Integer limit);
 
   /**
    * Save Document and Tags.
