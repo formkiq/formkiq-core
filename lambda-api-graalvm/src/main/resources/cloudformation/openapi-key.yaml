@@ -7338,7 +7338,7 @@ Resources:
                   description: "Name of webhook"
                 ttl:
                   type: "string"
-                  description: "Webhook time to live (expiry)"
+                  description: "Webhook time to live (expiry in seconds)"
                 enabled:
                   type: "string"
                   description: "Is webhook enabled"
@@ -9508,6 +9508,9 @@ Resources:
                 enabled:
                   type: "string"
                   description: "Is webhook enabled"
+                ttl:
+                  type: "string"
+                  description: "Webhook time to live (expiry in seconds)"
             GetWebhookTagsResponse:
               type: "object"
               properties:
