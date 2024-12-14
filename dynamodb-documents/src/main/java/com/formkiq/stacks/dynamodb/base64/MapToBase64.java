@@ -21,37 +21,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb;
+package com.formkiq.stacks.dynamodb.base64;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
-
 /**
- * Convert Base 64 {@link String} to {@link java.util.Map}.
+ * Convert {@link Map} to Base64 {@link String}.
  */
-public class Base64ToMap implements Function<String, Map<String, Object>> {
+public class MapToBase64 implements Function<Map<String, String>, String> {
   @Override
-  public Map<String, Object> apply(final String base64) {
-    Map<String, Object> map = null;
-
-    if (!isEmpty(base64)) {
-      map = new HashMap<>();
-
-      String decodedString = new String(Base64.getDecoder().decode(base64), StandardCharsets.UTF_8);
-      String[] entries = decodedString.split("\n");
-      for (String entry : entries) {
-        if (!entry.isEmpty()) {
-          String[] keyValue = entry.split("=", 2);
-          map.put(keyValue[0], keyValue.length > 1 ? keyValue[1] : "");
-        }
-      }
-    }
-
-    return map;
+  public String apply(final Map<String, String> map) {
+    StringBuilder sb = new StringBuilder();
+    map.forEach((key, value) -> sb.append(key).append("=").append(value).append("\n"));
+    byte[] data = sb.toString().getBytes(StandardCharsets.UTF_8);
+    return Base64.getEncoder().encodeToString(data);
   }
 }

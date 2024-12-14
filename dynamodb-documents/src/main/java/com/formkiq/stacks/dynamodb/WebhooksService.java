@@ -30,6 +30,7 @@ import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
+import com.formkiq.stacks.dynamodb.base64.Pagination;
 
 /** Services for Querying, Updating Webhooks. */
 public interface WebhooksService {
