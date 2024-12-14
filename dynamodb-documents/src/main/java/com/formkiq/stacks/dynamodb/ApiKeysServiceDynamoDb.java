@@ -35,11 +35,10 @@ import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
-import com.formkiq.aws.dynamodb.PaginationMapToken;
-import com.formkiq.aws.dynamodb.PaginationResults;
-import com.formkiq.aws.dynamodb.PaginationToAttributeValue;
+import com.formkiq.aws.dynamodb.MapToAttributeValue;
 import com.formkiq.aws.dynamodb.QueryConfig;
-import com.formkiq.aws.dynamodb.QueryResponseToPagination;
+import com.formkiq.stacks.dynamodb.base64.Base64ToMap;
+import com.formkiq.stacks.dynamodb.base64.Pagination;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 
@@ -69,7 +68,7 @@ public final class ApiKeysServiceDynamoDb implements ApiKeysService, DbKeys {
   }
 
   /** {@link DynamoDbService}. */
-  private DynamoDbService db;
+  private final DynamoDbService db;
 
   /**
    * constructor.
@@ -141,8 +140,7 @@ public final class ApiKeysServiceDynamoDb implements ApiKeysService, DbKeys {
   }
 
   @Override
-  public PaginationResults<ApiKey> list(final String siteId, final PaginationMapToken token,
-      final int limit) {
+  public Pagination<ApiKey> list(final String siteId, final String nextToken, final int limit) {
 
     ApiKey apiKey = new ApiKey().siteId(siteId);
     QueryConfig config = new QueryConfig().indexName(GSI1).scanIndexForward(Boolean.TRUE);
@@ -150,7 +148,8 @@ public final class ApiKeysServiceDynamoDb implements ApiKeysService, DbKeys {
     AttributeValue pk = fromS(apiKey.pkGsi1(siteId));
     AttributeValue sk = fromS("apikey" + TAG_DELIMINATOR);
 
-    Map<String, AttributeValue> startKey = new PaginationToAttributeValue().apply(token);
+    Map<String, AttributeValue> startKey =
+        new MapToAttributeValue().apply(new Base64ToMap().apply(nextToken));
     QueryResponse response = this.db.queryBeginsWith(config, pk, sk, startKey, limit);
 
     List<Map<String, AttributeValue>> attrs = response.items().stream()
@@ -161,7 +160,7 @@ public final class ApiKeysServiceDynamoDb implements ApiKeysService, DbKeys {
         .map(a -> new ApiKey().getFromAttributes(siteId, a)).map(a -> a.apiKey(mask(a.apiKey())))
         .collect(Collectors.toList());
 
-    return new PaginationResults<ApiKey>(apiKeys, new QueryResponseToPagination().apply(response));
+    return new Pagination<>(apiKeys, response.lastEvaluatedKey());
   }
 
   @Override

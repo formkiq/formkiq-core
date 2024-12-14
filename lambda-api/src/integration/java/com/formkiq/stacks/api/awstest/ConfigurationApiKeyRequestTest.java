@@ -114,7 +114,7 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
         AddApiKeyResponse response = api.addApiKey(siteId, apiReq);
 
         // then
-        GetApiKeysResponse apiKeys = api.getApiKeys(siteId);
+        GetApiKeysResponse apiKeys = api.getApiKeys(siteId, null, null);
         assertFalse(notNull(apiKeys.getApiKeys()).isEmpty());
 
         api.deleteApiKey(siteId, response.getApiKey());
@@ -127,7 +127,7 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
 
     // when
     try {
-      api.getApiKeys(DEFAULT_SITE_ID);
+      api.getApiKeys(DEFAULT_SITE_ID, null, null);
       // then
       fail();
     } catch (ApiException e) {
@@ -153,7 +153,7 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
 
     // when
     try {
-      api.getApiKeys(DEFAULT_SITE_ID);
+      api.getApiKeys(DEFAULT_SITE_ID, null, null);
 
       // then
       fail();

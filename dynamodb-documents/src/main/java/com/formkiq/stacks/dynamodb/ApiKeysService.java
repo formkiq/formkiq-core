@@ -24,8 +24,9 @@
 package com.formkiq.stacks.dynamodb;
 
 import java.util.Collection;
-import com.formkiq.aws.dynamodb.PaginationMapToken;
+
 import com.formkiq.aws.dynamodb.PaginationResults;
+import com.formkiq.stacks.dynamodb.base64.Pagination;
 
 /**
  * 
@@ -66,13 +67,13 @@ public interface ApiKeysService {
 
   /**
    * Get List of API Keys.
-   * 
+   *
    * @param siteId {@link String}
-   * @param token {@link PaginationMapToken}
+   * @param nextToken {@link String}
    * @param limit int
    * @return {@link PaginationResults} {@link String}
    */
-  PaginationResults<ApiKey> list(String siteId, PaginationMapToken token, int limit);
+  Pagination<ApiKey> list(String siteId, String nextToken, int limit);
 
   /**
    * Mask Api Key.

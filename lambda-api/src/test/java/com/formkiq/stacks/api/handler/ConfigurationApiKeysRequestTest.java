@@ -24,28 +24,27 @@
 package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.model.AddApiKeyRequest;
 import com.formkiq.client.model.AddApiKeyResponse;
+import com.formkiq.client.model.ApiKey;
 import com.formkiq.client.model.DeleteApiKeyResponse;
 import com.formkiq.client.model.GetApiKeysResponse;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.client.invoker.ApiException;
-import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.LocalStackExtension;
 
 /** Unit Tests for request /sites/{siteId}/apiKeys. */
-@ExtendWith(DynamoDbExtension.class)
-@ExtendWith(LocalStackExtension.class)
 public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTest {
 
   /**
@@ -120,28 +119,29 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
       assertNotNull(response.getApiKey());
 
       // when
-      GetApiKeysResponse apiKeys = this.systemApi.getApiKeys(siteId);
+      GetApiKeysResponse apiKeysResponse = this.systemApi.getApiKeys(siteId, null, null);
 
       // then
-      assertEquals(1, apiKeys.getApiKeys().size());
-      assertTrue(apiKeys.getApiKeys().get(0).getApiKey().contains("**************"));
-      assertNotNull(apiKeys.getApiKeys().get(0).getInsertedDate());
-      assertEquals(apiKeyName, apiKeys.getApiKeys().get(0).getName());
-      assertEquals("DELETE,READ,WRITE", apiKeys.getApiKeys().get(0).getPermissions().stream()
+      List<ApiKey> apiKeys = notNull(apiKeysResponse.getApiKeys());
+      assertEquals(1, apiKeys.size());
+      assertTrue(Objects.requireNonNull(apiKeys.get(0).getApiKey()).contains("**************"));
+      assertNotNull(apiKeys.get(0).getInsertedDate());
+      assertEquals(apiKeyName, apiKeys.get(0).getName());
+      assertEquals("DELETE,READ,WRITE", notNull(apiKeys.get(0).getPermissions()).stream()
           .map(Enum::name).sorted().collect(Collectors.joining(",")));
-      assertEquals("joesmith", apiKeys.getApiKeys().get(0).getUserId());
-      assertEquals(siteId, apiKeys.getApiKeys().get(0).getSiteId());
+      assertEquals("joesmith", apiKeys.get(0).getUserId());
+      assertEquals(siteId, apiKeys.get(0).getSiteId());
 
       // given
-      String apiKey = apiKeys.getApiKeys().get(0).getApiKey();
+      String apiKey = apiKeys.get(0).getApiKey();
 
       // when
       DeleteApiKeyResponse delResponse = this.systemApi.deleteApiKey(siteId, apiKey);
 
       // then
       assertEquals("ApiKey deleted", delResponse.getMessage());
-      apiKeys = this.systemApi.getApiKeys(siteId);
-      assertEquals(0, apiKeys.getApiKeys().size());
+      apiKeysResponse = this.systemApi.getApiKeys(siteId, null, null);
+      assertEquals(0, notNull(apiKeysResponse.getApiKeys()).size());
     }
   }
 
@@ -152,14 +152,11 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
   @Test
   public void testHandleGetApiKeys02() {
     // given
-    String siteId = DEFAULT_SITE_ID;
-    String group = DEFAULT_SITE_ID;
+    setBearerToken(DEFAULT_SITE_ID);
 
     // when
-    setBearerToken(group);
-
     try {
-      this.systemApi.getApiKeys(siteId);
+      this.systemApi.getApiKeys(DEFAULT_SITE_ID, null, null);
       fail();
     } catch (ApiException e) {
       assertEquals("{\"message\":\"user is unauthorized\"}", e.getResponseBody());
@@ -174,16 +171,13 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
   @Test
   public void testHandleGetApiKeys03() throws Exception {
     // given
-    String siteId = DEFAULT_SITE_ID;
-    String group = DEFAULT_SITE_ID;
-
-    setBearerToken("Admins opa " + group);
+    setBearerToken("Admins opa " + DEFAULT_SITE_ID);
 
     // when
-    GetApiKeysResponse response = this.systemApi.getApiKeys(siteId);
+    GetApiKeysResponse response = this.systemApi.getApiKeys(DEFAULT_SITE_ID, null, null);
 
     // then
-    assertEquals(0, response.getApiKeys().size());
+    assertEquals(0, notNull(response.getApiKeys()).size());
   }
 
   /**
@@ -191,7 +185,6 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
    *
    * @throws Exception an error has occurred
    */
-  // @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetApiKeys04() throws Exception {
     // given
@@ -209,20 +202,54 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
       AddApiKeyResponse response = this.systemApi.addApiKey(siteId, req);
 
       // then
-      String apiKey = response.getApiKey();
       assertNotNull(response.getApiKey());
 
       // when
-      GetApiKeysResponse apiKeys = this.systemApi.getApiKeys(siteId);
+      GetApiKeysResponse getApiKeys = this.systemApi.getApiKeys(siteId, null, null);
 
       // then
-      assertEquals(1, apiKeys.getApiKeys().size());
-      assertTrue(apiKeys.getApiKeys().get(0).getApiKey().contains("**************"));
-      assertNotNull(apiKeys.getApiKeys().get(0).getInsertedDate());
-      assertEquals(apiKeyName, apiKeys.getApiKeys().get(0).getName());
-      assertEquals("GOVERN", apiKeys.getApiKeys().get(0).getPermissions().stream().map(Enum::name)
+      List<ApiKey> apiKeys = notNull(getApiKeys.getApiKeys());
+      assertEquals(1, apiKeys.size());
+      assertTrue(Objects.requireNonNull(apiKeys.get(0).getApiKey()).contains("**************"));
+      assertNotNull(apiKeys.get(0).getInsertedDate());
+      assertEquals(apiKeyName, apiKeys.get(0).getName());
+      assertEquals("GOVERN", notNull(apiKeys.get(0).getPermissions()).stream().map(Enum::name)
           .sorted().collect(Collectors.joining(",")));
-      assertEquals(siteId, apiKeys.getApiKeys().get(0).getSiteId());
+      assertEquals(siteId, apiKeys.get(0).getSiteId());
     }
+  }
+
+  /**
+   * Get ApiKeys with nextToken.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetApiKeys05() throws Exception {
+    // given
+    final int count = 5;
+    final String siteId = ID.uuid();
+
+    setBearerToken("Admins");
+
+    for (int i = 0; i < count; i++) {
+      this.systemApi.addApiKey(siteId, new AddApiKeyRequest().name("test_" + i));
+    }
+
+    // when
+    GetApiKeysResponse response = this.systemApi.getApiKeys(siteId, null, "2");
+
+    // then
+    assertNotNull(response.getNext());
+    List<ApiKey> apiKeys = notNull(response.getApiKeys());
+    assertEquals(2, apiKeys.size());
+    assertEquals("test_0", apiKeys.get(0).getName());
+    assertEquals("test_1", apiKeys.get(1).getName());
+
+    response = this.systemApi.getApiKeys(siteId, response.getNext(), "2");
+    apiKeys = notNull(response.getApiKeys());
+    assertEquals(2, apiKeys.size());
+    assertEquals("test_2", apiKeys.get(0).getName());
+    assertEquals("test_3", apiKeys.get(1).getName());
   }
 }
