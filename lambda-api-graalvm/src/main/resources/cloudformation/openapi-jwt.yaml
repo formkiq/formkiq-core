@@ -3888,6 +3888,8 @@ Resources:
               description: Return a list of webhooks; each webhook's id can be provided to an external service, allowing data to be sent, received, and processed via that webhook
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/nextParam'
+              - $ref: '#/components/parameters/limitParam'
               responses:
                 '200':
                   description: "200 OK"
@@ -9479,6 +9481,9 @@ Resources:
             GetWebhooksResponse:
               type: "object"
               properties:
+                next:
+                  type: "string"
+                  description: "Next page of results token"
                 webhooks:
                   type: "array"
                   description: "List of webhooks"
