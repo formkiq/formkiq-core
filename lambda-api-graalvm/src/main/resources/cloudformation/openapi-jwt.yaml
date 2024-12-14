@@ -3999,7 +3999,7 @@ Resources:
                       $ref: '#/components/schemas/AddWebhookRequest'
               responses:
                 '200':
-                  $ref: '#/components/responses/200Cors'
+                  $ref: '#/components/responses/200CorsUpdateResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -6188,6 +6188,19 @@ Resources:
                 application/json:
                   schema:
                     "$ref": "#/components/schemas/DeleteResponse"
+            200CorsUpdateResponse:
+              description: 200 OK
+              headers:
+                Access-Control-Allow-Origin:
+                  $ref: '#/components/headers/AccessControlAllowOrigin'
+                Access-Control-Allow-Methods:
+                  $ref: '#/components/headers/AccessControlAllowMethods'
+                Access-Control-Allow-Headers:
+                  $ref: '#/components/headers/AccessControlAllowHeaders'
+              content:
+                application/json:
+                  schema:
+                    "$ref": "#/components/schemas/UpdateResponse"
             200Cors:
               description: 200 OK
               headers:
