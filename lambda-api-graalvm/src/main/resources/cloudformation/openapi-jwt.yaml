@@ -3977,7 +3977,7 @@ Resources:
               - $ref: '#/components/parameters/siteIdParam'
               responses:
                 '200':
-                  $ref: '#/components/responses/200Cors'
+                  $ref: '#/components/responses/200CorsDeleteResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
