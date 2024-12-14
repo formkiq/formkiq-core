@@ -796,6 +796,8 @@ Resources:
                 - System Management
               parameters:
                 - $ref: '#/components/parameters/siteIdPathParam'
+                - $ref: '#/components/parameters/nextParam'
+                - $ref: '#/components/parameters/limitParam'
               responses:
                 '200':
                   description: "200 OK"
