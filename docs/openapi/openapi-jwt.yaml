@@ -10137,6 +10137,9 @@
             GetApiKeysResponse:
               type: object
               properties:
+                next:
+                  type: string
+                  description: Next page of results token
                 apiKeys:
                   type: array
                   description: List of ApiKeys
