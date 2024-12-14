@@ -33,7 +33,6 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -50,7 +49,9 @@ import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.TooManyRequestsException;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.stacks.api.transformers.DynamicObjectToMap;
 import com.formkiq.stacks.dynamodb.ConfigService;
+import com.formkiq.stacks.dynamodb.Pagination;
 import com.formkiq.stacks.dynamodb.WebhooksService;
 
 /** {@link ApiGatewayRequestHandler} for "/webhooks". */
@@ -63,6 +64,9 @@ public class WebhooksRequestHandler
       final AwsServiceCache awsServices) throws Exception {
 
     String siteId = authorization.getSiteId();
+    String nextToken = event.getQueryStringParameter("next");
+    int limit = getLimit(logger, event);
+
     SsmService ssmService = awsServices.getExtension(SsmService.class);
 
     String url = ssmService.getParameterValue(
@@ -70,31 +74,25 @@ public class WebhooksRequestHandler
 
     WebhooksService webhooksService = awsServices.getExtension(WebhooksService.class);
 
-    List<DynamicObject> list = webhooksService.findWebhooks(siteId);
+    Pagination<DynamicObject> list = webhooksService.findWebhooks(siteId, nextToken, limit);
 
-    List<Map<String, Object>> webhooks = list.stream().map(m -> {
+    List<Map<String, Object>> webhooks = list.getResults().stream().map(m -> {
+      String u = getUrl(m, url, siteId);
+      return new DynamicObjectToMap(siteId, u).apply(m);
+    }).toList();
 
-      String path = "private".equals(m.getString("enabled")) ? "/private" : "/public";
+    return new ApiRequestHandlerResponse(SC_OK,
+        new ApiMapResponse(Map.of("webhooks", webhooks), list.getNextToken()));
+  }
 
-      Map<String, Object> map = new HashMap<>();
-      String u = url + path + "/webhooks/" + m.getString("documentId");
-      if (siteId != null && !DEFAULT_SITE_ID.equals(siteId)) {
-        u += "?siteId=" + siteId;
-      }
+  private String getUrl(final DynamicObject m, final String url, final String siteId) {
+    String path = "private".equals(m.getString("enabled")) ? "/private" : "/public";
 
-      map.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
-      map.put("webhookId", m.getString("documentId"));
-      map.put("name", m.getString("path"));
-      map.put("url", u);
-      map.put("insertedDate", m.getString("inserteddate"));
-      map.put("userId", m.getString("userId"));
-      map.put("enabled", m.getString("enabled"));
-      map.put("ttl", m.getString("ttl"));
-
-      return map;
-    }).collect(Collectors.toList());
-
-    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(Map.of("webhooks", webhooks)));
+    String u = url + path + "/webhooks/" + m.getString("documentId");
+    if (siteId != null && !DEFAULT_SITE_ID.equals(siteId)) {
+      u += "?siteId=" + siteId;
+    }
+    return u;
   }
 
   @Override
@@ -132,25 +130,18 @@ public class WebhooksRequestHandler
 
     if (maxString != null) {
 
-      try {
+      int max = Integer.parseInt(maxString);
 
-        int max = Integer.parseInt(maxString);
+      WebhooksService webhooksService = awsservice.getExtension(WebhooksService.class);
+      int numberOfWebhooks = webhooksService.findWebhooks(siteId, null, null).getResults().size();
 
-        WebhooksService webhooksService = awsservice.getExtension(WebhooksService.class);
-        int numberOfWebhooks = webhooksService.findWebhooks(siteId).size();
+      if (awsservice.debug()) {
+        logger.log("found config for maximum webhooks " + maxString);
+        logger.log("found " + numberOfWebhooks + " webhooks");
+      }
 
-        if (awsservice.debug()) {
-          logger.log("found config for maximum webhooks " + maxString);
-          logger.log("found " + numberOfWebhooks + " webhooks");
-        }
-
-        if (numberOfWebhooks >= max) {
-          over = true;
-        }
-
-      } catch (NumberFormatException e) {
-        over = false;
-        e.printStackTrace();
+      if (numberOfWebhooks >= max) {
+        over = true;
       }
     }
 
@@ -167,16 +158,15 @@ public class WebhooksRequestHandler
 
     validatePost(logger, awsservice, siteId, o);
 
-    String id = saveWebhook(event, authorization, awsservice, siteId, o);
+    String id = saveWebhook(authorization, awsservice, siteId, o);
 
     ApiMapResponse resp = new ApiMapResponse(
         Map.of("webhookId", id, "siteId", isDefaultSiteId(siteId) ? DEFAULT_SITE_ID : siteId));
     return new ApiRequestHandlerResponse(SC_CREATED, resp);
   }
 
-  private String saveWebhook(final ApiGatewayRequestEvent event,
-      final ApiAuthorization authorization, final AwsServiceCache awsservice, final String siteId,
-      final DynamicObject o) {
+  private String saveWebhook(final ApiAuthorization authorization, final AwsServiceCache awsservice,
+      final String siteId, final DynamicObject o) {
 
     WebhooksService webhooksService = awsservice.getExtension(WebhooksService.class);
 

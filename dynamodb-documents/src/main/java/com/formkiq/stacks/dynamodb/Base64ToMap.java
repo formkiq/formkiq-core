@@ -21,50 +21,37 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.dynamodb;
+package com.formkiq.stacks.dynamodb;
 
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-
-import java.util.Collection;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
+
 /**
- * Convert {@link Map} to {@link AttributeValue} {@link Map}.
- *
+ * Convert Base 64 {@link String} to {@link java.util.Map}.
  */
-public class MapToAttributeValue
-    implements Function<Map<String, Object>, Map<String, AttributeValue>> {
-
+public class Base64ToMap implements Function<String, Map<String, Object>> {
   @Override
-  public Map<String, AttributeValue> apply(final Map<String, Object> map) {
+  public Map<String, Object> apply(final String base64) {
+    Map<String, Object> map = null;
 
-    Map<String, AttributeValue> result = null;
+    if (!isEmpty(base64)) {
+      map = new HashMap<>();
 
-    if (map != null) {
-      result = new HashMap<>();
-      for (Map.Entry<String, Object> e : map.entrySet()) {
-        AttributeValue a = convert(e.getValue());
-        result.put(e.getKey(), a);
+      String decodedString = new String(Base64.getDecoder().decode(base64), StandardCharsets.UTF_8);
+      String[] entries = decodedString.split("\n");
+      for (String entry : entries) {
+        if (!entry.isEmpty()) {
+          String[] keyValue = entry.split("=", 2);
+          map.put(keyValue[0], keyValue.length > 1 ? keyValue[1] : "");
+        }
       }
     }
 
-    return result;
-  }
-
-  private AttributeValue convert(final Object obj) {
-    AttributeValue o = null;
-    if (obj instanceof Double d) {
-      o = AttributeValue.fromN(String.valueOf(d));
-    } else if (obj instanceof String s) {
-      o = AttributeValue.fromS(s);
-    } else if (obj instanceof Collection<?> c) {
-      o = AttributeValue.fromL(c.stream().map(this::convert).toList());
-    } else {
-      throw new IllegalArgumentException("Unsupported data type: " + obj.getClass().getName());
-    }
-
-    return o;
+    return map;
   }
 }

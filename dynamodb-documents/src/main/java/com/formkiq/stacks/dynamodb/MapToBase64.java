@@ -21,50 +21,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.dynamodb;
+package com.formkiq.stacks.dynamodb;
 
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-
-import java.util.Collection;
-import java.util.HashMap;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Map;
 import java.util.function.Function;
 
 /**
- * Convert {@link Map} to {@link AttributeValue} {@link Map}.
- *
+ * Convert {@link Map} to Base64 {@link String}.
  */
-public class MapToAttributeValue
-    implements Function<Map<String, Object>, Map<String, AttributeValue>> {
-
+public class MapToBase64 implements Function<Map<String, String>, String> {
   @Override
-  public Map<String, AttributeValue> apply(final Map<String, Object> map) {
-
-    Map<String, AttributeValue> result = null;
-
-    if (map != null) {
-      result = new HashMap<>();
-      for (Map.Entry<String, Object> e : map.entrySet()) {
-        AttributeValue a = convert(e.getValue());
-        result.put(e.getKey(), a);
-      }
-    }
-
-    return result;
-  }
-
-  private AttributeValue convert(final Object obj) {
-    AttributeValue o = null;
-    if (obj instanceof Double d) {
-      o = AttributeValue.fromN(String.valueOf(d));
-    } else if (obj instanceof String s) {
-      o = AttributeValue.fromS(s);
-    } else if (obj instanceof Collection<?> c) {
-      o = AttributeValue.fromL(c.stream().map(this::convert).toList());
-    } else {
-      throw new IllegalArgumentException("Unsupported data type: " + obj.getClass().getName());
-    }
-
-    return o;
+  public String apply(final Map<String, String> map) {
+    StringBuilder sb = new StringBuilder();
+    map.forEach((key, value) -> sb.append(key).append("=").append(value).append("\n"));
+    return Base64.getEncoder().encodeToString(sb.toString().getBytes(StandardCharsets.UTF_8));
   }
 }
