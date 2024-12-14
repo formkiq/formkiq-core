@@ -21,54 +21,37 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb;
+package com.formkiq.stacks.dynamodb.base64;
 
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-
-import java.util.List;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.function.Function;
+
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 
 /**
- * Pagination Results for a DynamoDB Query.
- *
- * @param <T> Type of Results.
+ * Convert Base 64 {@link String} to {@link java.util.Map}.
  */
-public class Pagination<T> {
-  /** {@link List}. */
-  private final List<T> results;
-  /** Next Token. */
-  private final String nextToken;
+public class Base64ToMap implements Function<String, Map<String, Object>> {
+  @Override
+  public Map<String, Object> apply(final String base64) {
+    Map<String, Object> map = null;
 
-  /**
-   * constructor.
-   *
-   * @param list {@link List}
-   * @param lastEvaluatedKey {@link Map}
-   */
-  public Pagination(final List<T> list, final Map<String, AttributeValue> lastEvaluatedKey) {
-    this.results = list;
+    if (!isEmpty(base64)) {
+      map = new HashMap<>();
 
-    Map<String, String> map = lastEvaluatedKey.entrySet().stream()
-        .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().s()));
-    this.nextToken = new MapToBase64().apply(map);
-  }
+      String decodedString = new String(Base64.getDecoder().decode(base64), StandardCharsets.UTF_8);
+      String[] entries = decodedString.split("\n");
+      for (String entry : entries) {
+        if (!entry.isEmpty()) {
+          String[] keyValue = entry.split("=", 2);
+          map.put(keyValue[0], keyValue.length > 1 ? keyValue[1] : "");
+        }
+      }
+    }
 
-  /**
-   * Get Results.
-   * 
-   * @return List
-   */
-  public List<T> getResults() {
-    return this.results;
-  }
-
-  /**
-   * Get Next Token.
-   * 
-   * @return String
-   */
-  public String getNextToken() {
-    return this.nextToken;
+    return map;
   }
 }

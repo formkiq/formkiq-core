@@ -21,21 +21,54 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb;
+package com.formkiq.stacks.dynamodb.base64;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+
+import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
- * Convert {@link Map} to Base64 {@link String}.
+ * Pagination Results for a DynamoDB Query.
+ *
+ * @param <T> Type of Results.
  */
-public class MapToBase64 implements Function<Map<String, String>, String> {
-  @Override
-  public String apply(final Map<String, String> map) {
-    StringBuilder sb = new StringBuilder();
-    map.forEach((key, value) -> sb.append(key).append("=").append(value).append("\n"));
-    return Base64.getEncoder().encodeToString(sb.toString().getBytes(StandardCharsets.UTF_8));
+public class Pagination<T> {
+  /** {@link List}. */
+  private final List<T> results;
+  /** Next Token. */
+  private final String nextToken;
+
+  /**
+   * constructor.
+   *
+   * @param list {@link List}
+   * @param lastEvaluatedKey {@link Map}
+   */
+  public Pagination(final List<T> list, final Map<String, AttributeValue> lastEvaluatedKey) {
+    this.results = list;
+
+    Map<String, String> map = lastEvaluatedKey.entrySet().stream()
+        .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().s()));
+    this.nextToken = new MapToBase64().apply(map);
+  }
+
+  /**
+   * Get Results.
+   * 
+   * @return List
+   */
+  public List<T> getResults() {
+    return this.results;
+  }
+
+  /**
+   * Get Next Token.
+   * 
+   * @return String
+   */
+  public String getNextToken() {
+    return this.nextToken;
   }
 }
