@@ -174,7 +174,7 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
   public void testGetApiKey03() throws Exception {
     // given
     String siteId = ID.uuid();
-    int count = 5;
+    final int count = 5;
 
     ApiClient client = getApiClients(siteId).get(0);
     SystemManagementApi api = new SystemManagementApi(client);
