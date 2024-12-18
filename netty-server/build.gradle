@@ -1,6 +1,5 @@
 plugins {
-  id("com.palantir.docker") version "0.36.0"
-  id "com.palantir.docker-run" version "0.36.0"
+    id 'com.avast.gradle.docker-compose' version '0.17.12'
 }
 
 description = "Netty Server"
@@ -59,29 +58,18 @@ jar {
   }
 }
 
-task prepareDockerfileTemplate(type: Copy) {
-    from "src/main/resources/docker"
-    include "Dockerfile"
-    filter { it.replaceAll('<%=version%>', project.version) }
-    into "$buildDir/dockerfile/"
+jar.dependsOn(copyLibs)
+
+dockerCompose {
+    useComposeFiles = ["docker-compose.yml", "docker-compose-override.yml"] // Compose files
+    buildAdditionalArgs = ["--no-cache"] // Optional: additional build arguments
+    captureContainersOutput = true
 }
 
-dockerPrepare.dependsOn copyLibs,jar,prepareDockerfileTemplate
-dockerfileZip.dependsOn prepareDockerfileTemplate
-
-docker {
-	dependsOn prepareDockerfileTemplate
-    name "formkiq/api-server:${project.version}-SNAPSHOT"
-    files "$buildDir/libs/"
-    dockerfile file("$buildDir/dockerfile/Dockerfile")
+tasks.named('jar') {
+    archiveBaseName.set('netty-server') // Set the desired name
+    archiveVersion.set('')               // Remove the version number
 }
 
-dockerRun {
-    name "${project.name}"
-    image "formkiq/${project.name}:${project.version}"
-    ports '8080:8080'
-    clean true
-    daemonize false
-}
-
-check.dependsOn tasks.docker
+test.dependsOn(composeBuild)
+check.dependsOn(composeBuild)

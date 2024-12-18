@@ -32,6 +32,7 @@
 		<allow pkg="com.formkiq.stacks.dynamodb" />
 		<allow pkg="com.formkiq.module.lambda.typesense" />
 		<allow pkg="com.formkiq.stacks.lambda.s3" />
+		<allow pkg="com.formkiq.server.auth" />
 		
 		<allow pkg="org.apache.commons.cli" />
 		
