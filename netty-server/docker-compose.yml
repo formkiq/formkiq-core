@@ -1,9 +1,8 @@
-version: '3.8'
 services:
   console:
     image: formkiq/document-console:3.2.4-SNAPSHOT-20231107
     depends_on:
-      - formkiq
+      - api
     ports:
       - "80:80"
     environment:
@@ -11,19 +10,21 @@ services:
       COGNITO_API_URL: http://localhost:8080
   
   typesense:
-    image: typesense/typesense:0.25.1
+    image: typesense/typesense:27.1
     ports:
       - "8108:8108"
     volumes:
-      - ./typesense-data:/data
-    command: '--data-dir /data --api-key=xyz --enable-cors'
+      - typesense-data:/data
+    # command: '--data-dir /data --api-key=xyz --enable-cors'
+    command: ["--data-dir", "/data", "--api-key", "xyz", "--enable-cors"]
     
-  formkiq:
-    image: docker.io/formkiq/api-server:latest
+  api:
+    image: docker.io/formkiq/api-server:1.16.0-SNAPSHOT
     depends_on:
       - minio
       - dynamodb
       - keycloak
+      - typesense
     ports:
       - "8080:8080"
       # - "8100:8100" #uncomment this line and "ENV JAVA_TOOL_OPTIONS" in Dockerfile to enable debugging
@@ -45,7 +46,7 @@ services:
       KEYCLOAK_CLIENT_SECRET: dC0dK4DoQK1f8lrsoxDC3svoD3JuHa5x
 
   minio:
-    image: minio/minio:RELEASE.2023-08-23T10-07-06Z
+    image: minio/minio:RELEASE.2024-12-13T22-19-12Z
     ports:
       - "9000:9000"
       - "9090:9090"
@@ -53,6 +54,7 @@ services:
       MINIO_DOMAIN: minio
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_SERVER_URL: http://localhost:9000 
       MINIO_NOTIFY_WEBHOOK_ENABLE_DOCUMENTS: on
       MINIO_NOTIFY_WEBHOOK_ENDPOINT_DOCUMENTS: http://formkiq:8080/minio/s3/documents
       MINIO_NOTIFY_WEBHOOK_ENABLE_STAGINGDOCUMENTS: on
@@ -63,21 +65,21 @@ services:
           - documents.minio
           - stagingdocuments.minio
     volumes:
-      - ./formkiq/minio:/data
-    command: server /data --address :9000 --console-address :9090
+      - minio-data:/data
+    command: ["server", "/data", "--address", ":9000", "--console-address", ":9001"]
 
   dynamodb:
-    image: amazon/dynamodb-local:1.24.0
-    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath ./data"
+    image: amazon/dynamodb-local:2.5.3
+    command: ["-jar", "DynamoDBLocal.jar", "-sharedDb", "-dbPath", "/home/dynamodblocal/data"]
     ports:
       - "8000:8000"
     user: root
     volumes:
-      - ./formkiq/dynamodb:/home/dynamodblocal/data
+      - dynamodb-data:/home/dynamodblocal/data
     working_dir: /home/dynamodblocal
 
   keycloak:
-    image: quay.io/keycloak/keycloak:26.0.6
+    image: formkiq/keycloak:26.0.6
     command: start-dev --db=dev-file --http-port=8081 --import-realm #place formkiq-realm.json to /formkiq/keycloak/import/
     #command: export --dir /opt/keycloak/data/import/ --realm formkiq --users realm_file #To export data comment line above and uncomment this line
     environment:
@@ -87,4 +89,14 @@ services:
       - 8081:8081
     user: root
     volumes:
-      - ./formkiq/keycloak:/opt/keycloak/data
+      - keycloak-data:/opt/keycloak/data
+
+volumes:
+  minio-data:
+    driver: local  
+  dynamodb-data:
+    driver: local
+  keycloak-data:
+    driver: local
+  typesense-data:
+    driver: local

@@ -1,0 +1,10 @@
+services:
+  keycloak:
+    build:
+      context: keycloak
+      dockerfile: Dockerfile
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
