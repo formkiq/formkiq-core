@@ -1,6 +1,6 @@
 services:
   console:
-    image: formkiq/document-console:3.2.4-SNAPSHOT-20231107
+    image: formkiq/document-console:3.7.3
     depends_on:
       - api
     ports:
@@ -8,13 +8,15 @@ services:
     environment:
       HTTP_API_URL: http://localhost:8080
       COGNITO_API_URL: http://localhost:8080
+      COGNITO_USER_POOL_ID: abcd
+      COGNITO_CLIENT_ID: abcd
   
   typesense:
     image: typesense/typesense:27.1
     ports:
       - "8108:8108"
     volumes:
-      - typesense-data:/data
+      - ~/.formkiq/typesense-data:/data
     # command: '--data-dir /data --api-key=xyz --enable-cors'
     command: ["--data-dir", "/data", "--api-key", "xyz", "--enable-cors"]
     
@@ -65,7 +67,7 @@ services:
           - documents.minio
           - stagingdocuments.minio
     volumes:
-      - minio-data:/data
+      - ~/.formkiq/minio-data:/data
     command: ["server", "/data", "--address", ":9000", "--console-address", ":9001"]
 
   dynamodb:
@@ -74,7 +76,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - dynamodb-data:/home/dynamodblocal/data
+      - ~/.formkiq/dynamodb-data:/home/dynamodblocal/data
     working_dir: /home/dynamodblocal
 
   keycloak:
@@ -87,14 +89,4 @@ services:
     ports:
       - 8081:8081
     volumes:
-      - keycloak-data:/opt/keycloak/data
-
-volumes:
-  minio-data:
-    driver: local  
-  dynamodb-data:
-    driver: local
-  keycloak-data:
-    driver: local
-  typesense-data:
-    driver: local
+      - ~/.formkiq/keycloak-data:/opt/keycloak/data
