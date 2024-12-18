@@ -1,6 +1,7 @@
 services:
   console:
-    image: formkiq/document-console:3.7.3
+#    image: formkiq/document-console:3.7.3
+    image: formkiq/document-console:3.2.4-SNAPSHOT-20231107
     depends_on:
       - api
     ports:
@@ -8,7 +9,7 @@ services:
     environment:
       HTTP_API_URL: http://localhost:8080
       COGNITO_API_URL: http://localhost:8080
-      COGNITO_USER_POOL_ID: abcd
+      COGNITO_USER_POOL_ID: us-east-2_3123
       COGNITO_CLIENT_ID: abcd
   
   typesense:
