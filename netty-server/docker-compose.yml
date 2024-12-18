@@ -73,7 +73,6 @@ services:
     command: ["-jar", "DynamoDBLocal.jar", "-sharedDb", "-dbPath", "/home/dynamodblocal/data"]
     ports:
       - "8000:8000"
-    user: root
     volumes:
       - dynamodb-data:/home/dynamodblocal/data
     working_dir: /home/dynamodblocal
@@ -87,7 +86,6 @@ services:
        KC_BOOTSTRAP_ADMIN_PASSWORD: admin
     ports:
       - 8081:8081
-    user: root
     volumes:
       - keycloak-data:/opt/keycloak/data
 
