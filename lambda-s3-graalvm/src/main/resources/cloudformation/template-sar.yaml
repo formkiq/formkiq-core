@@ -260,8 +260,6 @@ Resources:
   DocumentActionsProcessorLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: 
-        Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/${DocumentActionsProcessor}"
       RetentionInDays:
         Ref: LogRetentionInDays
       
@@ -308,6 +306,9 @@ Resources:
         Fn::GetAtt:
         - S3LambdaRole
         - Arn
+      LoggingConfig:
+        LogGroup:
+          Ref: DocumentActionsProcessorLogGroup
       Tags:
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
@@ -328,8 +329,6 @@ Resources:
   StagingS3CreateLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: 
-        Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/${StagingS3Create}"
       RetentionInDays:
         Ref: LogRetentionInDays
       
@@ -375,6 +374,9 @@ Resources:
         Fn::GetAtt:
         - S3LambdaRole
         - Arn
+      LoggingConfig:
+        LogGroup:
+          Ref: StagingS3CreateLogGroup
       Tags:
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
@@ -412,8 +414,6 @@ Resources:
   DocumentsS3UpdateLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: 
-        Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/${DocumentsS3Update}"
       RetentionInDays:
         Ref: LogRetentionInDays
 
@@ -461,6 +461,9 @@ Resources:
         Fn::GetAtt:
         - S3LambdaRole
         - Arn
+      LoggingConfig:
+        LogGroup:
+          Ref: DocumentsS3UpdateLogGroup
       Tags:
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"

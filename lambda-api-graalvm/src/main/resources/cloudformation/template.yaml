@@ -232,6 +232,8 @@ Resources:
       Parameters:
         AppEnvironment: 
           Ref: AppEnvironment
+        LogRetentionInDays:
+          Ref: LogRetentionInDays
         Partition:
           Ref: Partition
         FormKiQType:

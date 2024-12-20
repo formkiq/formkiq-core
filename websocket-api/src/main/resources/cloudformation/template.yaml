@@ -1,3 +1,6 @@
+#@ load("@ytt:data", "data")
+#@ load("@ytt:assert", "assert")
+---
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: FormKiQ - Websocket API
@@ -211,8 +214,6 @@ Resources:
   ApiFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: 
-        Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/${ApiFunction}"
       RetentionInDays:
         Ref: LogRetentionInDays
       
@@ -227,7 +228,7 @@ Resources:
       MemorySize: 512
       Description: Lambda function that processes Web-socket requests
       CodeUri: ./websocket-api.zip
-      AutoPublishCodeSha256: FCB6D933C5B5FCD71A9EE4F9F9B9FB8AC1E719056BEAC9021B3C383FF2AFEE64
+      AutoPublishCodeSha256: #@ data.values.hash or assert.fail("missing version")
       Environment:
         Variables:
           API_URL: 
@@ -245,6 +246,9 @@ Resources:
         Fn::GetAtt: 
         - ApiFunctionRole
         - Arn
+      LoggingConfig:
+        LogGroup:
+          Ref: ApiFunctionLogGroup
       Tags:
         Application: 
           Fn::Sub: "FormKiQ ${FormKiQType}"
