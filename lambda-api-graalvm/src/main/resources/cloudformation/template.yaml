@@ -135,7 +135,7 @@ Resources:
       Parameters:
         AppEnvironment: 
           Ref: AppEnvironment
-        RetentionInDays:
+        LogRetentionInDays:
           Ref: LogRetentionInDays
         FormKiQType: 
           Ref: FormKiQType
