@@ -82,6 +82,21 @@ Parameters:
     Type: Number
     Description: The number of days to retain the log events
 
+  LogFormat:
+    Description: >
+      The format in which the application and system logs are stored.
+    Type: String
+
+  LogApplicationLevel:
+    Type: String
+    Description: >
+      The level of logging for the FormKiQ Application logs.
+
+  LogSystemLevel:
+    Type: String
+    Description: >
+      The level of logging for the AWS Platform System logs.
+
 Conditions:
         
   HasVpcStackName:
@@ -183,6 +198,12 @@ Resources:
       LoggingConfig:
         LogGroup:
           Ref: DocumentsApiRequestsLogGroup
+        LogFormat:
+          Ref: LogFormat
+        LogApplicationLevel:
+          Ref: LogApplicationLevel
+        LogSystemLevel:
+          Ref: LogSystemLevel
       Tags:
         Application: 
           Fn::Sub: "FormKiQ ${FormKiQType}"
