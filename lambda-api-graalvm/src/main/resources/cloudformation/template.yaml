@@ -114,6 +114,10 @@ Parameters:
     Description: The partition in which the resource is located. A partition is a group of AWS Regions
     Type: String
 
+  LogRetentionInDays:
+    Type: Number
+    Description: The number of days to retain the log events
+
 Conditions:
 
   HasCertificateStackName:
@@ -261,21 +265,24 @@ Resources:
   DocumentsStageAccessLogs:
     Type: AWS::Logs::LogGroup
     Properties:
-      RetentionInDays: 90
+      RetentionInDays:
+        Ref: LogRetentionInDays
       LogGroupName: 
         Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/APIDocumentsHttpAccessLogs"
       
   IamDocumentsStageAccessLogs:
     Type: AWS::Logs::LogGroup
     Properties:
-      RetentionInDays: 90
+      RetentionInDays:
+        Ref: LogRetentionInDays
       LogGroupName: 
         Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/APIDocumentsIamAccessLogs"
 
   KeyDocumentsStageAccessLogs:
     Type: AWS::Logs::LogGroup
     Properties:
-      RetentionInDays: 90
+      RetentionInDays:
+        Ref: LogRetentionInDays
       LogGroupName: 
         Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/APIDocumentsKeyAccessLogs"
       
@@ -705,6 +712,8 @@ Resources:
       Parameters:
         AppEnvironment: 
           Ref: AppEnvironment
+        LogRetentionInDays:
+          LogRetentionInDays
         Partition:
           Ref: Partition
         OcrQueueArn:

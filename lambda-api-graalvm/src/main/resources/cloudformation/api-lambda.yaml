@@ -78,6 +78,10 @@ Parameters:
     Description: Whether to enable public urls
     Type: String
 
+  LogRetentionInDays:
+    Type: Number
+    Description: The number of days to retain the log events
+
 Conditions:
         
   HasVpcStackName:
@@ -104,7 +108,8 @@ Resources:
     Properties:
       LogGroupName: 
         Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/${DocumentsApiRequests}"
-      RetentionInDays: 90
+      RetentionInDays:
+        Ref: LogRetentionInDays
       Tags:
         - Key: "Application"
           Value: 
