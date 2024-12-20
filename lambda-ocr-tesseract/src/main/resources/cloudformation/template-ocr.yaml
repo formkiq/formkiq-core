@@ -38,6 +38,10 @@ Parameters:
     Description: The partition in which the resource is located. A partition is a group of AWS Regions
     Type: String
 
+  LogRetentionInDays:
+    Type: Number
+    Description: The number of days to retain the log events
+
 Resources:
 
   OcrProcessorLogGroup:
@@ -45,7 +49,8 @@ Resources:
     Properties:
       LogGroupName: 
         Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/${OcrProcessor}"
-      RetentionInDays: 90
+      RetentionInDays:
+        Ref: LogRetentionInDays
 
   TesseractLayer:
     Type: AWS::Serverless::LayerVersion

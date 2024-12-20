@@ -41,7 +41,11 @@ Parameters:
   TypesenseApiKey:
     Type: String
     Description: TypeSense API Key
-    
+
+  LogRetentionInDays:
+    Type: Number
+    Description: The number of days to retain the log events
+
 Conditions:
         
   HasVpcStackName:
@@ -258,7 +262,8 @@ Resources:
     Properties:
       LogGroupName: 
         Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/${DocumentActionsProcessor}"
-      RetentionInDays: 90
+      RetentionInDays:
+        Ref: LogRetentionInDays
       
   DocumentActionsProcessor:
     Type: AWS::Serverless::Function
@@ -325,7 +330,8 @@ Resources:
     Properties:
       LogGroupName: 
         Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/${StagingS3Create}"
-      RetentionInDays: 90
+      RetentionInDays:
+        Ref: LogRetentionInDays
       
   StagingS3Create:
     Type: AWS::Serverless::Function
@@ -408,7 +414,8 @@ Resources:
     Properties:
       LogGroupName: 
         Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/${DocumentsS3Update}"
-      RetentionInDays: 90
+      RetentionInDays:
+        Ref: LogRetentionInDays
 
   DocumentsS3Update:
     Type: AWS::Serverless::Function
