@@ -5,7 +5,7 @@ ENV KC_BOOTSTRAP_ADMIN_USERNAME=admin
 ENV KC_BOOTSTRAP_ADMIN_PASSWORD=admin
 
 # Copy the config.json file into the image
-COPY formkiq-realm.json /opt/keycloak/data/import/formkiq-realm.json
+COPY formkiq-realm.json /tmp/formkiq-realm.json
 
 # Expose necessary ports
 EXPOSE 8081
