@@ -106,8 +106,6 @@ Resources:
   DocumentsApiRequestsLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: 
-        Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/${DocumentsApiRequests}"
       RetentionInDays:
         Ref: LogRetentionInDays
       Tags:
@@ -182,6 +180,9 @@ Resources:
         Fn::GetAtt:
         - DocumentsApiRequestsRole
         - Arn
+      LoggingConfig:
+        LogGroup:
+          Ref: DocumentsApiRequestsLogGroup
       Tags:
         Application: 
           Fn::Sub: "FormKiQ ${FormKiQType}"

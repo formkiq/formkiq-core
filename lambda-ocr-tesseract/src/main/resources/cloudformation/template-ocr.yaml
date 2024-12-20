@@ -47,8 +47,6 @@ Resources:
   OcrProcessorLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: 
-        Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/${OcrProcessor}"
       RetentionInDays:
         Ref: LogRetentionInDays
 
@@ -107,6 +105,9 @@ Resources:
         Fn::GetAtt:
         - OcrLambdaRole
         - Arn
+      LoggingConfig:
+        LogGroup:
+          Ref: OcrProcessorLogGroup
       Tags:
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
