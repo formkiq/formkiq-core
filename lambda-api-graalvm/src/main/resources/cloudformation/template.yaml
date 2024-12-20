@@ -715,7 +715,7 @@ Resources:
         AppEnvironment: 
           Ref: AppEnvironment
         LogRetentionInDays:
-          LogRetentionInDays
+          Ref: LogRetentionInDays
         Partition:
           Ref: Partition
         OcrQueueArn:
