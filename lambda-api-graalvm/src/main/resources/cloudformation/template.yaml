@@ -118,6 +118,21 @@ Parameters:
     Type: Number
     Description: The number of days to retain the log events
 
+  LogFormat:
+    Description: >
+      The format in which the application and system logs are stored.
+    Type: String
+
+  LogApplicationLevel:
+    Type: String
+    Description: >
+      The level of logging for the FormKiQ Application logs.
+
+  LogSystemLevel:
+    Type: String
+    Description: >
+      The level of logging for the AWS Platform System logs.
+
 Conditions:
 
   HasCertificateStackName:
@@ -137,6 +152,12 @@ Resources:
           Ref: AppEnvironment
         LogRetentionInDays:
           Ref: LogRetentionInDays
+        LogFormat:
+          Ref: LogFormat
+        LogApplicationLevel:
+          Ref: LogApplicationLevel
+        LogSystemLevel:
+          Ref: LogSystemLevel
         FormKiQType: 
           Ref: FormKiQType
         CognitoUserPool:
@@ -234,6 +255,12 @@ Resources:
           Ref: AppEnvironment
         LogRetentionInDays:
           Ref: LogRetentionInDays
+        LogFormat:
+          Ref: LogFormat
+        LogApplicationLevel:
+          Ref: LogApplicationLevel
+        LogSystemLevel:
+          Ref: LogSystemLevel
         Partition:
           Ref: Partition
         FormKiQType:
@@ -718,6 +745,12 @@ Resources:
           Ref: AppEnvironment
         LogRetentionInDays:
           Ref: LogRetentionInDays
+        LogFormat:
+          Ref: LogFormat
+        LogApplicationLevel:
+          Ref: LogApplicationLevel
+        LogSystemLevel:
+          Ref: LogSystemLevel
         Partition:
           Ref: Partition
         OcrQueueArn:
