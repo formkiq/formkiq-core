@@ -125,7 +125,6 @@ Resources:
     Type: AWS::ApiGatewayV2::Deployment
     DependsOn:
     - ConnectRoute
-    #- MessageRoute
     - DisconnectRoute
     Properties:
       ApiId: 
