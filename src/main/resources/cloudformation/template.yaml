@@ -416,11 +416,14 @@ Resources:
           Fn::Sub: "${PasswordRequireUppercase}"
         Domain: 
           Fn::Sub: "${AppEnvironment}${AWS::AccountId}"
-        AwsArnPartition:
-          Fn::FindInMap:
-          - RegionMap
-          - Ref: "AWS::Region"
-          - PARTITION
+        LogRetentionInDays:
+          Ref: LogRetentionInDays
+        LogFormat:
+          Ref: LogFormat
+        LogLevelApplication:
+          Ref: LogLevelApplication
+        LogLevelSystem:
+          Ref: LogLevelSystem
         RedirectUrl:
           Fn::GetAtt:
           - CoreConsole
