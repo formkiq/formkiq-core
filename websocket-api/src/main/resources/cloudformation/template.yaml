@@ -262,7 +262,8 @@ Resources:
             Ref: CognitoUserPoolClientId
           WEB_CONNECTIONS_TABLE: 
             Ref: WebConnections
-          DEBUG: false
+          LOG_LEVEL:
+            Ref: LogLevelApplication
       Role: 
         Fn::GetAtt: 
         - ApiFunctionRole

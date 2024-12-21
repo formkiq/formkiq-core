@@ -35,14 +35,14 @@ import software.amazon.awssdk.regions.Region;
  */
 public class AwsServiceCache {
 
-  /** Is Debug Mode. */
-  private boolean debug;
+  /** {@link AwsServiceExtension}. */
+  private final Map<Class<?>, List<AwsServiceExtension<?>>> extensions = new HashMap<>();
+  /** Log Level. */
+  private String logLevel;
   /** Enable X Ray. */
   private boolean enableXray;
   /** Environment {@link Map}. */
   private Map<String, String> environment;
-  /** {@link AwsServiceExtension}. */
-  private final Map<Class<?>, List<AwsServiceExtension<?>>> extensions = new HashMap<>();
   /** FormKiQ Type. */
   private String formKiQType;
   /** {@link Region}. */
@@ -70,17 +70,26 @@ public class AwsServiceCache {
    * @return boolean
    */
   public boolean debug() {
-    return this.debug;
+    return "debug".equalsIgnoreCase(this.logLevel);
   }
 
   /**
-   * Set Debug Mode.
+   * Get Log Level.
    * 
-   * @param isDebug boolean
-   * @return {@link AwsServiceCache}s
+   * @return String
    */
-  public AwsServiceCache debug(final boolean isDebug) {
-    this.debug = isDebug;
+  public String getLogLevel() {
+    return this.logLevel;
+  }
+
+  /**
+   * Set Log Level.
+   * 
+   * @param level {@link String}
+   * @return AwsServiceCache
+   */
+  public AwsServiceCache setLogLevel(final String level) {
+    this.logLevel = level;
     return this;
   }
 
