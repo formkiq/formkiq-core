@@ -245,7 +245,7 @@ public abstract class AbstractRequestHandler {
     this.map.put("OCR_S3_BUCKET", OCR_BUCKET_NAME);
     this.map.put("SNS_DOCUMENT_EVENT", snsDocumentEvent);
     this.map.put("AWS_REGION", AWS_REGION.toString());
-    this.map.put("DEBUG", "true");
+    this.map.put("LOG_LEVEL", "debug");
     this.map.put("SQS_DOCUMENT_FORMATS",
         TestServices.getSqsDocumentFormatsQueueUrl(TestServices.getSqsConnection(null)));
     this.map.put("DISTRIBUTION_BUCKET", "formkiq-distribution-us-east-pro");

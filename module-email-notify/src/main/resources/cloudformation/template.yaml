@@ -124,7 +124,8 @@ Resources:
       AutoPublishCodeSha256: #@ data.values.hash or assert.fail("missing version")
       Environment:
         Variables:
-          DEBUG: false
+          LOG_LEVEL:
+            Ref: LogLevelApplication
           EMAIL_TOPIC_ARN: 
             Ref: DocumentsEmailNotification
           CONSOLE_URL: 

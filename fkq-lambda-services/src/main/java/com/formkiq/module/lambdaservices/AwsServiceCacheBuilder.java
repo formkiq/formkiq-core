@@ -36,11 +36,11 @@ import software.amazon.awssdk.regions.Region;
 public class AwsServiceCacheBuilder {
 
   /** {@link AwsServiceCache}. */
-  private AwsServiceCache serviceCache;
+  private final AwsServiceCache serviceCache;
   /** {@link Map}. */
-  private Map<String, URI> serviceEndpoints;
+  private final Map<String, URI> serviceEndpoints;
   /** {@link AwsCredentialsProvider}. */
-  private AwsCredentialsProvider credentialsProvider;
+  private final AwsCredentialsProvider credentialsProvider;
 
   /**
    * constructor.
@@ -57,7 +57,7 @@ public class AwsServiceCacheBuilder {
     this.credentialsProvider = awsCredentialsProvider;
 
     this.serviceCache =
-        new AwsServiceCache().environment(enviroment).debug("true".equals(enviroment.get("DEBUG")))
+        new AwsServiceCache().environment(enviroment).setLogLevel(enviroment.get("LOG_LEVEL"))
             .enableXray("true".equals(enviroment.get("ENABLE_AWS_X_RAY")))
             .region(Region.of(enviroment.get("AWS_REGION")));
 
@@ -78,8 +78,8 @@ public class AwsServiceCacheBuilder {
    * @return {@link AwsServiceCacheBuilder}
    */
   public AwsServiceCacheBuilder addService(final AwsServiceRegistry... services) {
-    for (int i = 0; i < services.length; i++) {
-      services[i].initService(this.serviceCache, this.serviceEndpoints, this.credentialsProvider);
+    for (AwsServiceRegistry service : services) {
+      service.initService(this.serviceCache, this.serviceEndpoints, this.credentialsProvider);
     }
     return this;
   }

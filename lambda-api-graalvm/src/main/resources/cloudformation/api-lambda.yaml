@@ -155,7 +155,8 @@ Resources:
         Variables:
           APP_ENVIRONMENT: 
             Fn::Sub: "${AppEnvironment}"
-          DEBUG: false
+          LOG_LEVEL:
+            Ref: LogLevelApplication
           ENABLE_AWS_X_RAY: true
           COGNITO_USER_POOL_CLIENT_ID:
             Ref: CognitoUserPoolClient
