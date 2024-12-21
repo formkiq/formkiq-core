@@ -109,9 +109,8 @@ public class DocumentIdRequestHandler
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
 
-    if (awsservice.debug()) {
-      logger.log("deleting object " + documentId + " from bucket '" + documentBucket + "'");
-    }
+    awsservice.getLogger()
+        .debug("deleting object " + documentId + " from bucket '" + documentBucket + "'");
 
     boolean softDelete = "true".equals(event.getQueryStringParameter("softDelete"));
 
@@ -165,7 +164,7 @@ public class DocumentIdRequestHandler
       final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorization.getSiteId();
-    int limit = getLimit(logger, event);
+    int limit = getLimit(awsservice.getLogger(), event);
 
     CacheService cacheService = awsservice.getExtension(CacheService.class);
     DocumentService documentService = awsservice.getExtension(DocumentService.class);

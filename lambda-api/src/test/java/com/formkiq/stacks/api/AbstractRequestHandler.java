@@ -34,6 +34,7 @@ import static com.formkiq.testutils.aws.TestServices.OCR_BUCKET_NAME;
 import static com.formkiq.testutils.aws.TestServices.STAGE_BUCKET_NAME;
 import static com.formkiq.testutils.aws.TypesenseExtension.API_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -49,12 +50,13 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import com.formkiq.module.lambdaservices.logger.Logger;
+import com.formkiq.module.lambdaservices.logger.LoggerRecorder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockserver.integration.ClientAndServer;
 import com.amazonaws.services.lambda.runtime.Context;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestContext;
@@ -71,7 +73,6 @@ import com.formkiq.stacks.api.handler.TestCoreRequestHandler;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
 import com.formkiq.testutils.aws.LambdaContextRecorder;
-import com.formkiq.testutils.aws.LambdaLoggerRecorder;
 import com.formkiq.testutils.aws.TestServices;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
@@ -126,8 +127,6 @@ public abstract class AbstractRequestHandler {
   /** {@link Context}. */
   private final Context context = new LambdaContextRecorder();
 
-  /** {@link LambdaLogger}. */
-  private final LambdaLoggerRecorder logger = (LambdaLoggerRecorder) this.context.getLogger();
   /** System Environment Map. */
   private final Map<String, String> map = new HashMap<>();
   /** {@link ClientAndServer}. */
@@ -336,12 +335,12 @@ public abstract class AbstractRequestHandler {
   }
 
   /**
-   * Get {@link LambdaLoggerRecorder}.
+   * Get {@link Logger}.
    *
-   * @return {@link LambdaLoggerRecorder}
+   * @return {@link LoggerRecorder}
    */
-  public LambdaLoggerRecorder getLogger() {
-    return this.logger;
+  public LoggerRecorder getLogger() {
+    return (LoggerRecorder) this.awsServices.getLogger();
   }
 
   /**
@@ -437,7 +436,7 @@ public abstract class AbstractRequestHandler {
 
     handler.handleRequest(is, outstream, getMockContext());
 
-    return new String(outstream.toByteArray(), StandardCharsets.UTF_8);
+    return outstream.toString(StandardCharsets.UTF_8);
   }
 
   /**
@@ -465,7 +464,6 @@ public abstract class AbstractRequestHandler {
    * @return {@link String}
    * @throws IOException IOException
    */
-  @SuppressWarnings("unchecked")
   protected DynamicObject handleRequestDynamic(final ApiGatewayRequestEvent event)
       throws IOException {
 
@@ -621,6 +619,7 @@ public abstract class AbstractRequestHandler {
    */
   public ApiGatewayRequestEvent toRequestEvent(final String filename) throws IOException {
     try (InputStream in = this.context.getClass().getResourceAsStream(filename)) {
+      assertNotNull(in);
       return GsonUtil.getInstance().fromJson(new InputStreamReader(in, StandardCharsets.UTF_8),
           ApiGatewayRequestEvent.class);
     }
@@ -650,6 +649,7 @@ public abstract class AbstractRequestHandler {
       throws IOException {
 
     InputStream in = this.context.getClass().getResourceAsStream(filename);
+    assertNotNull(in);
     String input = IoUtils.toUtf8String(in);
 
     if (regex != null && replacement != null) {

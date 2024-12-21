@@ -23,11 +23,11 @@
  */
 package com.formkiq.stacks.lambda.s3.actions;
 
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.MappingRecord;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
@@ -71,8 +71,6 @@ public class IdpAction implements DocumentAction {
   private final MappingService mappingService;
   /** {@link DocumentContentFunction}. */
   private final DocumentContentFunction documentContentFunc;
-  /** Debug. */
-  private final boolean debug;
   /** {@link DocumentService}. */
   private final DocumentService documentService;
   /** {@link AttributeService}. */
@@ -90,12 +88,11 @@ public class IdpAction implements DocumentAction {
     this.attributeService = serviceCache.getExtension(AttributeService.class);
     this.documentService = serviceCache.getExtension(DocumentService.class);
     this.documentContentFunc = new DocumentContentFunction(serviceCache);
-    this.debug = serviceCache.debug();
   }
 
 
   @Override
-  public void run(final LambdaLogger logger, final String siteId, final String documentId,
+  public void run(final Logger logger, final String siteId, final String documentId,
       final List<Action> actions, final Action action) throws IOException, ValidationException {
 
     String mappingId = action.parameters().get("mappingId");
@@ -121,7 +118,7 @@ public class IdpAction implements DocumentAction {
         DocumentItem item = this.documentService.findDocument(siteId, documentId);
 
         List<Map<String, Object>> contentKeyValues =
-            this.documentContentFunc.findContentKeyValues(this.debug ? logger : null, siteId, item);
+            this.documentContentFunc.findContentKeyValues(logger, siteId, item);
 
         List<String> labelTexts = mappingAttribute.getLabelTexts();
         TextMatch match =
@@ -251,13 +248,12 @@ public class IdpAction implements DocumentAction {
     return textMatchAlgorithm;
   }
 
-  private String getDocumentContent(final LambdaLogger logger, final String siteId,
+  private String getDocumentContent(final Logger logger, final String siteId,
       final String documentId) throws IOException {
 
     DocumentItem item = this.documentService.findDocument(siteId, documentId);
 
-    List<String> contentUrls =
-        this.documentContentFunc.getContentUrls(this.debug ? logger : null, siteId, item);
+    List<String> contentUrls = this.documentContentFunc.getContentUrls(logger, siteId, item);
     StringBuilder sb = this.documentContentFunc.getContentUrls(contentUrls);
     return sb.toString();
   }

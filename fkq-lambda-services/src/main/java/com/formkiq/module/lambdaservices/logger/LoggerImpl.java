@@ -21,33 +21,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.lambda.s3;
-
-import java.io.IOException;
-import java.util.List;
-
-import com.formkiq.module.actions.Action;
-import com.formkiq.module.lambdaservices.logger.Logger;
-import com.formkiq.validation.ValidationException;
+package com.formkiq.module.lambdaservices.logger;
 
 /**
- * 
- * Document Action interface.
- *
+ * Default {@link Logger} implementation.
  */
-public interface DocumentAction {
+public class LoggerImpl implements Logger {
+
+  /** Current Log Level. */
+  private final LogLevel currentLogLevel;
 
   /**
-   * Run Action.
-   * 
-   * @param logger {@link Logger}
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param actions {@link List} {@link Action}
-   * @param action {@link Action}
-   * @throws IOException IOException
-   * @throws ValidationException ValidationException
+   * constructor.
+   *
+   * @param logLevel {@link LogLevel}
    */
-  void run(Logger logger, String siteId, String documentId, List<Action> actions, Action action)
-      throws IOException, ValidationException;
+  public LoggerImpl(final LogLevel logLevel) {
+    this.currentLogLevel = logLevel;
+  }
+
+  public void log(final LogLevel level, final String message) {
+    if (isLogged(level)) {
+      System.out.print(message);
+    }
+  }
+
+  @Override
+  public LogLevel getCurrentLogLevel() {
+    return this.currentLogLevel;
+  }
 }

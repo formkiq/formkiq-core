@@ -87,7 +87,7 @@ public class ConfigurationApiKeysRequestHandler
 
     ApiKeysService apiKeysService = awsservice.getExtension(ApiKeysService.class);
 
-    int limit = getLimit(logger, event);
+    int limit = getLimit(awsservice.getLogger(), event);
     String nextToken = event.getQueryStringParameter("next");
 
     String siteId = event.getPathParameters().get("siteId");

@@ -49,6 +49,8 @@ import com.formkiq.module.actions.services.ActionTypePredicate;
 import com.formkiq.module.actions.services.ActionsNotificationService;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.logger.LogLevel;
+import com.formkiq.module.lambdaservices.logger.Logger;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -115,12 +117,14 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
 
     String contentType = getS3FileContentType(this.documentsBucket, s3key);
 
+    Logger log = awsservice.getLogger();
+
     if (MimeType.isPlainText(contentType)) {
 
-      if (awsservice.debug()) {
+      if (log.isLogged(LogLevel.TRACE)) {
         String msg = String.format("saving text document %s in bucket %s by user %s", s3key,
             this.documentsBucket, userId);
-        logger.log(msg);
+        log.trace(msg);
       }
 
       updatePlainText(awsservice, siteId, documentId, userId, s3key, contentType);
@@ -129,10 +133,10 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
 
       String documentS3toConvert = null;
 
-      if (awsservice.debug()) {
+      if (log.isLogged(LogLevel.TRACE)) {
         String msg = String.format("converting document %s in bucket %s by user %s", s3key,
             this.documentsBucket, userId);
-        logger.log(msg);
+        log.trace(msg);
       }
 
       String jobId = convertDocument(awsservice, request, siteId, documentId, s3key,

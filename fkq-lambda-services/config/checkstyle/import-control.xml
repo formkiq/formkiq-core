@@ -13,6 +13,8 @@
 		<allow pkg="software.amazon.awssdk.core.exception" />
 		<allow pkg="software.amazon.awssdk.regions" />
 
+		<allow pkg="com.formkiq.module.lambdaservices.logger" />
+
 	</subpackage>
 	
 </import-control>

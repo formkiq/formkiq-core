@@ -49,6 +49,8 @@ import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.TooManyRequestsException;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.logger.LogLevel;
+import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.stacks.api.transformers.DynamicObjectToMap;
 import com.formkiq.stacks.dynamodb.ConfigService;
 import com.formkiq.stacks.dynamodb.base64.Pagination;
@@ -65,7 +67,7 @@ public class WebhooksRequestHandler
 
     String siteId = authorization.getSiteId();
     String nextToken = event.getQueryStringParameter("next");
-    int limit = getLimit(logger, event);
+    int limit = getLimit(awsServices.getLogger(), event);
 
     SsmService ssmService = awsServices.getExtension(SsmService.class);
 
@@ -119,8 +121,7 @@ public class WebhooksRequestHandler
     return ttlDate;
   }
 
-  private boolean isOverMaxWebhooks(final LambdaLogger logger, final AwsServiceCache awsservice,
-      final String siteId) {
+  private boolean isOverMaxWebhooks(final AwsServiceCache awsservice, final String siteId) {
 
     boolean over = false;
     ConfigService configService = awsservice.getExtension(ConfigService.class);
@@ -135,9 +136,10 @@ public class WebhooksRequestHandler
       WebhooksService webhooksService = awsservice.getExtension(WebhooksService.class);
       int numberOfWebhooks = webhooksService.findWebhooks(siteId, null, null).getResults().size();
 
-      if (awsservice.debug()) {
-        logger.log("found config for maximum webhooks " + maxString);
-        logger.log("found " + numberOfWebhooks + " webhooks");
+      Logger logger = awsservice.getLogger();
+      if (logger.isLogged(LogLevel.TRACE)) {
+        logger.trace("found config for maximum webhooks " + maxString);
+        logger.trace("found " + numberOfWebhooks + " webhooks");
       }
 
       if (numberOfWebhooks >= max) {
@@ -156,7 +158,7 @@ public class WebhooksRequestHandler
     String siteId = authorization.getSiteId();
     DynamicObject o = fromBodyToDynamicObject(event);
 
-    validatePost(logger, awsservice, siteId, o);
+    validatePost(awsservice, siteId, o);
 
     String id = saveWebhook(authorization, awsservice, siteId, o);
 
@@ -190,14 +192,14 @@ public class WebhooksRequestHandler
     return id;
   }
 
-  private void validatePost(final LambdaLogger logger, final AwsServiceCache awsservice,
-      final String siteId, final DynamicObject o) throws BadException, TooManyRequestsException {
+  private void validatePost(final AwsServiceCache awsservice, final String siteId,
+      final DynamicObject o) throws BadException, TooManyRequestsException {
 
     if (o == null || o.get("name") == null) {
       throw new BadException("Invalid JSON body.");
     }
 
-    if (isOverMaxWebhooks(logger, awsservice, siteId)) {
+    if (isOverMaxWebhooks(awsservice, siteId)) {
       throw new TooManyRequestsException("Reached max number of webhooks");
     }
   }

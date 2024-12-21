@@ -33,11 +33,12 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
+
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.cache.CacheService;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
+import com.formkiq.module.lambdaservices.logger.Logger;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import software.amazon.awssdk.utils.StringUtils;
@@ -202,11 +203,11 @@ public interface ApiGatewayRequestEventUtil {
   /**
    * Get Limit Parameter.
    *
-   * @param logger {@link LambdaLogger}
+   * @param logger {@link Logger}
    * @param event {@link ApiGatewayRequestEvent}
    * @return int
    */
-  default int getLimit(final LambdaLogger logger, final ApiGatewayRequestEvent event) {
+  default int getLimit(final Logger logger, final ApiGatewayRequestEvent event) {
 
     int limit = MAX_RESULTS;
 
@@ -216,7 +217,7 @@ public interface ApiGatewayRequestEventUtil {
       try {
         limit = Integer.parseInt(q.get("limit"));
       } catch (NumberFormatException e) {
-        logger.log(e.getMessage());
+        logger.error(e.getMessage());
       }
     }
 

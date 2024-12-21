@@ -121,7 +121,7 @@ Parameters:
     Description: >
       The level of logging for the FormKiQ Application logs. Only used when LogFormat is JSON
     Default: "INFO"
-    AllowedValues: ["DEBUG", "INFO", "ERROR"]
+    AllowedValues: ["TRACE", "DEBUG", "INFO", "ERROR"]
 
   LogLevelSystem:
     Type: String
