@@ -42,6 +42,12 @@ Parameters:
     Description: >
       The level of logging for the AWS Platform System logs.
 
+Conditions:
+  IsLogFormatJSON: 
+    Fn::Equals:
+      - Ref: LogFormat
+      - JSON
+      
 Resources:
             
   DocumentsEmailNotification:
@@ -138,9 +144,16 @@ Resources:
         LogFormat:
           Ref: LogFormat
         ApplicationLogLevel:
+          Fn::If:
+          - IsLogFormatJSON
+          - Ref: LogLevelApplication
+          - Ref: AWS::NoValue
           Ref: LogLevelApplication
         SystemLogLevel:
-          Ref: LogLevelSystem
+          Fn::If:
+          - IsLogFormatJSON
+          - Ref: LogLevelSystem
+          - Ref: AWS::NoValue
       Events:
         CreateSQSEvent:
           Type: SQS

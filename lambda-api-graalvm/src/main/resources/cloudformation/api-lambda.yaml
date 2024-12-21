@@ -115,7 +115,12 @@ Conditions:
     Fn::And:
       - Condition: HasVpcStackName
       - Condition: HasTypesenseApiKey
-      
+
+  IsLogFormatJSON: 
+    Fn::Equals:
+      - Ref: LogFormat
+      - JSON
+
 Resources:        
 
   DocumentsApiRequestsLogGroup:
@@ -201,9 +206,16 @@ Resources:
         LogFormat:
           Ref: LogFormat
         ApplicationLogLevel:
+          Fn::If:
+          - IsLogFormatJSON
+          - Ref: LogLevelApplication
+          - Ref: AWS::NoValue
           Ref: LogLevelApplication
         SystemLogLevel:
-          Ref: LogLevelSystem
+          Fn::If:
+          - IsLogFormatJSON
+          - Ref: LogLevelSystem
+          - Ref: AWS::NoValue
       Tags:
         Application: 
           Fn::Sub: "FormKiQ ${FormKiQType}"
