@@ -47,12 +47,12 @@ Parameters:
       The format in which the application and system logs are stored.
     Type: String
 
-  LogApplicationLevel:
+  LogLevelApplication:
     Type: String
     Description: >
       The level of logging for the FormKiQ Application logs.
 
-  LogSystemLevel:
+  LogLevelSystem:
     Type: String
     Description: >
       The level of logging for the AWS Platform System logs.
@@ -125,10 +125,10 @@ Resources:
           Ref: OcrProcessorLogGroup
         LogFormat:
           Ref: LogFormat
-        LogApplicationLevel:
-          Ref: LogApplicationLevel
-        LogSystemLevel:
-          Ref: LogSystemLevel
+        ApplicationLogLevel:
+          Ref: LogLevelApplication
+        SystemLogLevel:
+          Ref: LogLevelSystem
       Tags:
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
