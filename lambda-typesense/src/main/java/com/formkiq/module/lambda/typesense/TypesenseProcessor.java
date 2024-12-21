@@ -37,16 +37,18 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.Context;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.model.DocumentMapToDocument;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
 import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
 import com.formkiq.aws.dynamodb.model.DocumentSyncType;
+import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
+import com.formkiq.module.lambdaservices.logger.LogLevel;
+import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.module.typesense.TypeSenseService;
 import com.formkiq.module.typesense.TypeSenseServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentSyncService;
@@ -87,7 +89,7 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
   }
 
   /** {@link Gson}. */
-  private Gson gson = new GsonBuilder().create();
+  private final Gson gson = new GsonBuilder().create();
 
   /**
    * constructor.
@@ -175,7 +177,6 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
    * @param fieldName {@link String}
    * @return {@link String}
    */
-  @SuppressWarnings("unchecked")
   private String getField(final Map<String, Object> newImage, final Map<String, Object> oldImage,
       final String fieldName) {
 
@@ -204,15 +205,13 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
     return userId;
   }
 
-  @SuppressWarnings("unchecked")
   @Override
   public Void handleRequest(final Map<String, Object> map, final Context context) {
 
-    LambdaLogger logger = context.getLogger();
-
-    if (serviceCache.debug()) {
+    Logger logger = serviceCache.getLogger();
+    if (logger.isLogged(LogLevel.DEBUG)) {
       String json = this.gson.toJson(map);
-      logger.log(json);
+      logger.debug(json);
     }
 
     List<Map<String, Object>> records = (List<Map<String, Object>>) map.get("Records");
@@ -221,7 +220,6 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
     return null;
   }
 
-  @SuppressWarnings("unchecked")
   private boolean isDocumentSk(final Map<String, Object> data) {
     Map<String, String> map = (Map<String, String>) data.get(SK);
     String sk = getAttributeStringValue(map);
@@ -247,11 +245,11 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
   /**
    * Process Record.
    * 
-   * @param logger {@link LambdaLogger}
+   * @param logger {@link Logger}
    * 
    * @param record {@link Map}
    */
-  private void processRecord(final LambdaLogger logger, final Map<String, Object> record) {
+  private void processRecord(final Logger logger, final Map<String, Object> record) {
 
     String eventName = record.get("eventName").toString();
     Map<String, Object> dynamodb = toMap(record.get("dynamodb"));
@@ -273,38 +271,39 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
 
         if ("INSERT".equalsIgnoreCase(eventName) || "MODIFY".equalsIgnoreCase(eventName)) {
 
-          logger
-              .log("processing event " + eventName + " for document " + siteId + " " + documentId);
+          logger.debug(
+              "processing event " + eventName + " for document " + siteId + " " + documentId);
 
           boolean s3VersionChanged = isS3VersionChanged(eventName, oldImage, newImage);
 
           String userId = getUserId(newImage, oldImage);
-          writeToIndex(logger, siteId, documentId, newImage, userId, s3VersionChanged);
+          writeToIndex(siteId, documentId, newImage, userId, s3VersionChanged);
 
         } else if ("REMOVE".equalsIgnoreCase(eventName)) {
 
           removeDocument(siteId, documentId, oldImage);
 
         } else {
-          logger.log("skipping event " + eventName + " for document " + siteId + " " + documentId);
+          logger
+              .debug("skipping event " + eventName + " for document " + siteId + " " + documentId);
         }
 
       } catch (IOException e) {
-        e.printStackTrace();
+        logger.error(Strings.toString(e));
       }
 
     } else {
-      logger.log("skipping event " + eventName);
+      logger.trace("skipping event " + eventName);
     }
   }
 
   /**
    * Process Records.
    * 
-   * @param logger {@link LambdaLogger}
+   * @param logger {@link Logger}
    * @param records {@link List} {@link Map}
    */
-  private void processRecords(final LambdaLogger logger, final List<Map<String, Object>> records) {
+  private void processRecords(final Logger logger, final List<Map<String, Object>> records) {
     for (Map<String, Object> record : records) {
 
       if (record.containsKey("eventName")) {
@@ -345,16 +344,13 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
     map.remove(GSI2_SK);
   }
 
-  @SuppressWarnings("unchecked")
   private Map<String, Object> toMap(final Object object) {
     return (Map<String, Object>) object;
   }
 
   /**
    * Write Data to Typesense Index.
-   * 
-   * @param logger {@link LambdaLogger}
-   * 
+   *
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param data {@link Map}
@@ -362,7 +358,7 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
    * @param s3VersionChanged boolean
    * @throws IOException IOException
    */
-  private void writeToIndex(final LambdaLogger logger, final String siteId, final String documentId,
+  private void writeToIndex(final String siteId, final String documentId,
       final Map<String, Object> data, final String userId, final boolean s3VersionChanged)
       throws IOException {
 
@@ -370,16 +366,16 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
 
     removeDynamodbKeys(data);
 
+    Logger logger = serviceCache.getLogger();
+
     if (isDocument) {
 
-      if (serviceCache.debug()) {
-        logger.log("writing to index: " + data);
-      }
+      logger.trace("writing to index: " + data);
 
       Map<String, Object> document = new DocumentMapToDocument().apply(data);
       addOrUpdate(siteId, documentId, document, userId, s3VersionChanged);
-    } else if (serviceCache.debug()) {
-      logger.log("skipping dynamodb record");
+    } else {
+      logger.trace("skipping dynamodb record");
     }
   }
 }

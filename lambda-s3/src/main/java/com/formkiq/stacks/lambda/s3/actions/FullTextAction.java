@@ -23,7 +23,6 @@
  */
 package com.formkiq.stacks.lambda.s3.actions;
 
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentMapToDocument;
 import com.formkiq.module.actions.Action;
@@ -32,6 +31,8 @@ import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsNotificationService;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.logger.LogLevel;
+import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.module.typesense.TypeSenseService;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.lambda.s3.DocumentAction;
@@ -72,8 +73,6 @@ public class FullTextAction implements DocumentAction {
   boolean moduleFulltext;
   /** Has Module Typesense. */
   boolean moduleTypesense;
-  /** Is Debug. */
-  private final boolean debug;
   /** {@link Gson}. */
   private final Gson gson = new GsonBuilder().create();
 
@@ -90,20 +89,18 @@ public class FullTextAction implements DocumentAction {
     this.typesense = serviceCache.getExtensionOrNull(TypeSenseService.class);
     this.moduleFulltext = serviceCache.hasModule("opensearch");
     this.moduleTypesense = serviceCache.hasModule("typesense");
-    this.debug = serviceCache.debug();
     this.http = new SendHttpRequest(serviceCache);
   }
 
   @Override
-  public void run(final LambdaLogger logger, final String siteId, final String documentId,
+  public void run(final Logger logger, final String siteId, final String documentId,
       final List<Action> actions, final Action action) throws IOException {
 
     ActionStatus status = ActionStatus.PENDING;
     DocumentItem item = this.documentService.findDocument(siteId, documentId);
     debug(logger, siteId, item);
 
-    List<String> contentUrls =
-        this.documentContentFunc.getContentUrls(this.debug ? logger : null, siteId, item);
+    List<String> contentUrls = this.documentContentFunc.getContentUrls(logger, siteId, item);
 
     if (!contentUrls.isEmpty()) {
 
@@ -143,15 +140,15 @@ public class FullTextAction implements DocumentAction {
     this.actionsService.updateActionStatus(siteId, documentId, action);
   }
 
-  private void debug(final LambdaLogger logger, final String siteId, final DocumentItem item) {
-    if (this.debug) {
+  private void debug(final Logger logger, final String siteId, final DocumentItem item) {
+    if (logger.isLogged(LogLevel.DEBUG)) {
       String s = String.format(
           "{\"siteId\": \"%s\",\"documentId\": \"%s\",\"path\": \"%s\",\"userId\": \"%s\","
               + "\"s3Version\": \"%s\",\"contentType\": \"%s\"}",
           siteId, item.getDocumentId(), item.getPath(), item.getUserId(), item.getS3version(),
           item.getContentType());
 
-      logger.log(s);
+      logger.debug(s);
     }
   }
 

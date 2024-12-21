@@ -37,7 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
+
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.objects.MimeType;
@@ -45,6 +45,7 @@ import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.module.http.HttpService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.logger.Logger;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -81,15 +82,14 @@ public class DocumentContentFunction {
   /**
    * Find Content Ocr Key Value.
    *
-   * @param logger {@link LambdaLogger}
+   * @param logger {@link Logger}
    * @param siteId {@link String}
    * @param item {@link DocumentItem}
    * @return {@link List} {@link String}
    * @throws IOException IOException
    */
-  @SuppressWarnings("unchecked")
-  public List<Map<String, Object>> findContentKeyValues(final LambdaLogger logger,
-      final String siteId, final DocumentItem item) throws IOException {
+  public List<Map<String, Object>> findContentKeyValues(final Logger logger, final String siteId,
+      final DocumentItem item) throws IOException {
     Map<String, Object> map = findDocumentOcr(logger, siteId, item.getDocumentId(), true);
     return (List<Map<String, Object>>) map.getOrDefault("keyValues", Collections.emptyList());
   }
@@ -97,23 +97,20 @@ public class DocumentContentFunction {
   /**
    * Find Content Url.
    * 
-   * @param logger {@link LambdaLogger}
+   * @param logger {@link Logger}
    * @param siteId {@link String}
    * @param item {@link DocumentItem}
    * @return {@link List} {@link String}
    * @throws IOException IOException
    */
-  @SuppressWarnings("unchecked")
-  private List<String> findContentUrls(final LambdaLogger logger, final String siteId,
+  private List<String> findContentUrls(final Logger logger, final String siteId,
       final DocumentItem item) throws IOException {
 
     List<String> urls = Collections.emptyList();
     String documentId = item.getDocumentId();
     String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
 
-    if (logger != null) {
-      logger.log("content type: " + item.getContentType());
-    }
+    logger.trace("content type: " + item.getContentType());
 
     if (MimeType.isPlainText(item.getContentType())) {
 
@@ -136,7 +133,7 @@ public class DocumentContentFunction {
     return urls;
   }
 
-  private Map<String, Object> findDocumentOcr(final LambdaLogger logger, final String siteId,
+  private Map<String, Object> findDocumentOcr(final Logger logger, final String siteId,
       final String documentId, final boolean contentKeyValues) throws IOException {
     Map<String, String> parameters = new HashMap<>();
 
@@ -154,10 +151,7 @@ public class DocumentContentFunction {
     String url = this.documentsIamUrl + "/documents/" + documentId + "/ocr";
 
     HttpResponse<String> response = this.http.get(url, Optional.empty(), Optional.of(parameters));
-
-    if (logger != null) {
-      logger.log("GET /documents/{documentId}/ocr response: " + response.body());
-    }
+    logger.debug("GET /documents/{documentId}/ocr response: " + response.body());
 
     return this.gson.fromJson(response.body(), Map.class);
   }
@@ -191,19 +185,18 @@ public class DocumentContentFunction {
   /**
    * Convert {@link DocumentItem} to list of Document Content Urls.
    * 
-   * @param logger {@link LambdaLogger}
+   * @param logger {@link Logger}
    * @param siteId {@link String}
    * @param item {@link DocumentItem}
    * @return {@link List} {@link String}
    * @throws IOException IOException
    */
-  public List<String> getContentUrls(final LambdaLogger logger, final String siteId,
+  public List<String> getContentUrls(final Logger logger, final String siteId,
       final DocumentItem item) throws IOException {
-    List<String> contentUrls = findContentUrls(logger, siteId, item);
 
-    if (logger != null) {
-      logger.log("FOUND: " + contentUrls.size() + " content urls");
-    }
+    List<String> contentUrls = findContentUrls(logger, siteId, item);
+    logger.trace("FOUND: " + contentUrls.size() + " content urls");
+
     return contentUrls;
   }
 

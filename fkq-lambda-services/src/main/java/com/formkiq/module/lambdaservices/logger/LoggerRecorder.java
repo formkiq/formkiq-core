@@ -21,33 +21,52 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.lambda.s3;
+package com.formkiq.module.lambdaservices.logger;
 
-import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
-import com.formkiq.module.actions.Action;
-import com.formkiq.module.lambdaservices.logger.Logger;
-import com.formkiq.validation.ValidationException;
-
 /**
- * 
- * Document Action interface.
- *
+ * Default {@link Logger} recorder.
  */
-public interface DocumentAction {
+public class LoggerRecorder implements Logger {
+
+  /** {@link String} messages. */
+  private List<String> messages = new ArrayList<>();
 
   /**
-   * Run Action.
-   * 
-   * @param logger {@link Logger}
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param actions {@link List} {@link Action}
-   * @param action {@link Action}
-   * @throws IOException IOException
-   * @throws ValidationException ValidationException
+   * constructor.
    */
-  void run(Logger logger, String siteId, String documentId, List<Action> actions, Action action)
-      throws IOException, ValidationException;
+  public LoggerRecorder() {}
+
+  public void log(final LogLevel level, final String message) {
+    if (isLogged(level)) {
+      messages.add(message);
+      System.out.print(message);
+    }
+  }
+
+  /**
+   * Get Messages.
+   * 
+   * @return {@link List} {@link String}
+   */
+  public List<String> getMessages() {
+    return this.messages;
+  }
+
+  @Override
+  public LogLevel getCurrentLogLevel() {
+    return LogLevel.TRACE;
+  }
+
+  /**
+   * Contains {@link String}.
+   * 
+   * @param s {@link String}
+   * @return boolean
+   */
+  public boolean containsString(final String s) {
+    return this.messages.stream().anyMatch(m -> m.contains(s));
+  }
 }

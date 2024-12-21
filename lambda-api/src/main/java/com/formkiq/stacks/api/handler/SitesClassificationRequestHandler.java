@@ -66,7 +66,7 @@ public class SitesClassificationRequestHandler
     PaginationMapToken token = pagination != null ? pagination.getStartkey() : null;
     Map<String, AttributeValue> startkey = new PaginationToAttributeValue().apply(token);
 
-    int limit = getLimit(logger, event);
+    int limit = getLimit(awsServices.getLogger(), event);
     String siteId = authorization.getSiteId();
 
     SchemaService service = awsServices.getExtension(SchemaService.class);

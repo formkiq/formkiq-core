@@ -23,12 +23,12 @@
  */
 package com.formkiq.stacks.lambda.s3.actions;
 
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.stacks.dynamodb.ConfigService;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.lambda.s3.DocumentAction;
@@ -66,7 +66,7 @@ public class PdfExportAction implements DocumentAction {
   }
 
   @Override
-  public void run(final LambdaLogger logger, final String siteId, final String documentId,
+  public void run(final Logger logger, final String siteId, final String documentId,
       final List<Action> actions, final Action action) throws IOException, ValidationException {
 
     DocumentItem item = this.documentService.findDocument(siteId, documentId);

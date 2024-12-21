@@ -21,33 +21,37 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.lambda.s3;
-
-import java.io.IOException;
-import java.util.List;
-
-import com.formkiq.module.actions.Action;
-import com.formkiq.module.lambdaservices.logger.Logger;
-import com.formkiq.validation.ValidationException;
+package com.formkiq.module.lambdaservices.logger;
 
 /**
- * 
- * Document Action interface.
- *
+ * Log Level.
  */
-public interface DocumentAction {
+public enum LogLevel {
+  /** Trace. */
+  TRACE,
+  /** Debug. */
+  DEBUG,
+  /** Info. */
+  INFO,
+  /** Error. */
+  ERROR;
 
   /**
-   * Run Action.
-   * 
-   * @param logger {@link Logger}
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param actions {@link List} {@link Action}
-   * @param action {@link Action}
-   * @throws IOException IOException
-   * @throws ValidationException ValidationException
+   * constructor.
    */
-  void run(Logger logger, String siteId, String documentId, List<Action> actions, Action action)
-      throws IOException, ValidationException;
+  LogLevel() {}
+
+  /**
+   * Convert {@link String} to {@link LogLevel}.
+   * 
+   * @param logLevel {@link String}
+   * @return {@link LogLevel}
+   */
+  public static LogLevel fromString(final String logLevel) {
+    try {
+      return valueOf(logLevel.toUpperCase());
+    } catch (Exception e) {
+      return LogLevel.INFO;
+    }
+  }
 }

@@ -58,7 +58,8 @@ public class AttributesRequestHandler
 
     CacheService cacheService = awsServices.getExtension(CacheService.class);
     ApiPagination pagination = getPagination(cacheService, event);
-    int limit = pagination != null ? pagination.getLimit() : getLimit(logger, event);
+    int limit =
+        pagination != null ? pagination.getLimit() : getLimit(awsServices.getLogger(), event);
     PaginationMapToken token = pagination != null ? pagination.getStartkey() : null;
 
     String siteId = authorization.getSiteId();

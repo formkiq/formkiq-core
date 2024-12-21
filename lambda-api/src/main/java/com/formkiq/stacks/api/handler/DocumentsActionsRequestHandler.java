@@ -77,7 +77,8 @@ public class DocumentsActionsRequestHandler
 
     ApiPagination pagination = getPagination(cacheService, event);
 
-    int limit = pagination != null ? pagination.getLimit() : getLimit(logger, event);
+    int limit =
+        pagination != null ? pagination.getLimit() : getLimit(awsservice.getLogger(), event);
     PaginationMapToken ptoken = pagination != null ? pagination.getStartkey() : null;
 
     PaginationToAttributeValue pav = new PaginationToAttributeValue();

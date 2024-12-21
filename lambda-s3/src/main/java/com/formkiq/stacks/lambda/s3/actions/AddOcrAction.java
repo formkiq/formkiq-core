@@ -23,9 +23,10 @@
  */
 package com.formkiq.stacks.lambda.s3.actions;
 
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.logger.LogLevel;
+import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.stacks.lambda.s3.DocumentAction;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -49,8 +50,6 @@ public class AddOcrAction implements DocumentAction {
   private final SendHttpRequest http;
   /** {@link Gson}. */
   private final Gson gson = new GsonBuilder().create();
-  /** Is Debug. */
-  private final boolean debug;
 
   /**
    * constructor.
@@ -59,19 +58,18 @@ public class AddOcrAction implements DocumentAction {
    */
   public AddOcrAction(final AwsServiceCache serviceCache) {
     this.http = new SendHttpRequest(serviceCache);
-    this.debug = serviceCache.debug();
   }
 
   @Override
-  public void run(final LambdaLogger logger, final String siteId, final String documentId,
+  public void run(final Logger logger, final String siteId, final String documentId,
       final List<Action> actions, final Action action) throws IOException {
     Map<String, Object> payload = buildAddOcrPayload(action);
     String json = this.gson.toJson(payload);
 
-    if (this.debug) {
+    if (logger.isLogged(LogLevel.DEBUG)) {
       String s = String.format("{\"type\",\"%s\",\"method\":\"%s\",\"url\":\"%s\",\"body\":\"%s\"}",
           "ocr", "POST", "/documents/" + documentId + "/ocr", json);
-      logger.log(s);
+      logger.debug(s);
     }
 
     this.http.sendRequest(siteId, "post", "/documents/" + documentId + "/ocr", json);

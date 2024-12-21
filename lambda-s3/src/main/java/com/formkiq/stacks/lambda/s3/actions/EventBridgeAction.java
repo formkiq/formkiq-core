@@ -23,11 +23,12 @@
  */
 package com.formkiq.stacks.lambda.s3.actions;
 
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.eventbridge.EventBridgeService;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.logger.LogLevel;
+import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.stacks.lambda.s3.DocumentAction;
 import com.formkiq.validation.ValidationException;
 
@@ -45,8 +46,6 @@ public class EventBridgeAction implements DocumentAction {
   private final String appEnvironment;
   /** {@link DocumentExternalSystemExport}. */
   private final DocumentExternalSystemExport systemExport;
-  /** Debug. */
-  private final boolean debug;
 
   /**
    * constructor.
@@ -57,11 +56,10 @@ public class EventBridgeAction implements DocumentAction {
     this.eventBridgeService = serviceCache.getExtension(EventBridgeService.class);
     this.appEnvironment = serviceCache.environment("APP_ENVIRONMENT");
     this.systemExport = new DocumentExternalSystemExport(serviceCache);
-    this.debug = serviceCache.debug();
   }
 
   @Override
-  public void run(final LambdaLogger logger, final String siteId, final String documentId,
+  public void run(final Logger logger, final String siteId, final String documentId,
       final List<Action> actions, final Action action) throws IOException, ValidationException {
 
     String eventBusName = action.parameters().get("eventBusName");
@@ -75,12 +73,12 @@ public class EventBridgeAction implements DocumentAction {
 
     String detail = this.systemExport.apply(siteId, documentId, actions);
 
-    if (this.debug) {
+    if (logger.isLogged(LogLevel.DEBUG)) {
       String s = String.format(
           "{\"type\",\"%s\",\"eventBusName\":\"%s\","
               + "\"detailType\":\"%s\",\"source\":\"%s\",\"detail\":\"%s\"}",
           "eventBridge", eventBusName, detailType, source, detail);
-      logger.log(s);
+      logger.debug(s);
     }
 
     eventBridgeService.putEvents(eventBusName, detailType, detail, source);
