@@ -210,7 +210,6 @@ Resources:
           - IsLogFormatJSON
           - Ref: LogLevelApplication
           - Ref: AWS::NoValue
-          Ref: LogLevelApplication
         SystemLogLevel:
           Fn::If:
           - IsLogFormatJSON
