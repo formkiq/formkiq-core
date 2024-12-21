@@ -116,17 +116,17 @@ Parameters:
     AllowedValues: ["Text", "JSON"]
     Default: "Text"
 
-  LogApplicationLevel:
+  LogLevelApplication:
     Type: String
     Description: >
-      The level of logging for the FormKiQ Application logs.
+      The level of logging for the FormKiQ Application logs. Only used when LogFormat is JSON
     Default: "INFO"
     AllowedValues: ["DEBUG", "INFO", "ERROR"]
 
-  LogSystemLevel:
+  LogLevelSystem:
     Type: String
     Description: >
-      The level of logging for the AWS Platform System logs.
+      The level of logging for the AWS Platform System logs. Only used when LogFormat is JSON
     Default: "INFO"
     AllowedValues: ["DEBUG", "INFO", "WARN"]
 
@@ -271,10 +271,10 @@ Resources:
           Ref: LogRetentionInDays
         LogFormat:
           Ref: LogFormat
-        LogApplicationLevel:
-          Ref: LogApplicationLevel
-        LogSystemLevel:
-          Ref: LogSystemLevel
+        LogLevelApplication:
+          Ref: LogLevelApplication
+        LogLevelSystem:
+          Ref: LogLevelSystem
         VpcStackName:
           Ref: VpcStackName
         AppEnvironment: 
@@ -476,10 +476,10 @@ Resources:
           Ref: LogRetentionInDays
         LogFormat:
           Ref: LogFormat
-        LogApplicationLevel:
-          Ref: LogApplicationLevel
-        LogSystemLevel:
-          Ref: LogSystemLevel
+        LogLevelApplication:
+          Ref: LogLevelApplication
+        LogLevelSystem:
+          Ref: LogLevelSystem
         EnablePublicUrls: 
           Ref: EnablePublicUrls
         PasswordMinimumLength: 
@@ -579,10 +579,10 @@ Resources:
           Ref: LogRetentionInDays
         LogFormat:
           Ref: LogFormat
-        LogApplicationLevel:
-          Ref: LogApplicationLevel
-        LogSystemLevel:
-          Ref: LogSystemLevel
+        LogLevelApplication:
+          Ref: LogLevelApplication
+        LogLevelSystem:
+          Ref: LogLevelSystem
         Partition:
           Fn::FindInMap:
           - RegionMap
@@ -646,10 +646,10 @@ Resources:
           Ref: LogRetentionInDays
         LogFormat:
           Ref: LogFormat
-        LogApplicationLevel:
-          Ref: LogApplicationLevel
-        LogSystemLevel:
-          Ref: LogSystemLevel
+        LogLevelApplication:
+          Ref: LogLevelApplication
+        LogLevelSystem:
+          Ref: LogLevelSystem
       Tags:
         Application: "FormKiQ Core"
         AppEnvironment: 
