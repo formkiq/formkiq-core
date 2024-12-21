@@ -74,6 +74,15 @@ public class AwsServiceCache {
   }
 
   /**
+   * Is Error.
+   *
+   * @return boolean
+   */
+  public boolean isError() {
+    return "error".equalsIgnoreCase(this.logLevel);
+  }
+
+  /**
    * Get Log Level.
    * 
    * @return String

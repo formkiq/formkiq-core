@@ -51,6 +51,7 @@ import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
+import com.amazonaws.services.lambda.runtime.logging.LogLevel;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
@@ -485,9 +486,12 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
           authorization.getUsername(),
           "{" + toStringFromMap(event.getQueryStringParameters()) + "}");
 
-      logger.log(s);
+      if (!getAwsServices().isError()) {
+        logger.log(s, LogLevel.INFO);
+      }
+      
     } else {
-      logger.log("{\"requestId\": \"invalid\"");
+      logger.log("{\"requestId\": \"invalid\"", LogLevel.ERROR);
     }
   }
 
