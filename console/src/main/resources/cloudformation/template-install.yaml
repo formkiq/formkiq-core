@@ -230,14 +230,17 @@ Resources:
           COGNITO_USER_POOL_ID:
             Ref: CognitoUserPoolId
       LoggingConfig:
-        LogGroup:
-          Ref: TypesenseProcessorLogGroup
         LogFormat:
           Ref: LogFormat
         ApplicationLogLevel:
           Fn::If:
             - IsLogFormatJSON
             - Ref: LogLevelApplication
+            - Ref: AWS::NoValue
+        SystemLogLevel:
+          Fn::If:
+            - IsLogFormatJSON
+            - Ref: LogLevelSystem
             - Ref: AWS::NoValue
 
   ConsoleInstallRole:
