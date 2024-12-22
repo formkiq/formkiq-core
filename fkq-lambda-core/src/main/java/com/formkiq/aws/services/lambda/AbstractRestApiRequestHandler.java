@@ -61,6 +61,7 @@ import com.formkiq.aws.services.lambda.exceptions.TooManyRequestsException;
 import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.logger.LogLevel;
 import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.validation.ValidationException;
 import com.google.gson.Gson;
@@ -668,7 +669,11 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
     String json = this.gson.toJson(response);
 
-    awsservices.getLogger().debug("response: " + json);
+    Logger logger = awsservices.getLogger();
+
+    if (logger.isLogged(LogLevel.DEBUG)) {
+      logger.debug(this.gson.toJson(Map.of("response", response)));
+    }
 
     OutputStreamWriter writer = new OutputStreamWriter(output, StandardCharsets.UTF_8);
     writer.write(json);
