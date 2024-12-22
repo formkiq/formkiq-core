@@ -44,5 +44,6 @@ public class LoggerTest {
     assertFalse(new LoggerImpl(LogLevel.INFO).isLogged(LogLevel.TRACE));
     assertTrue(new LoggerImpl(LogLevel.INFO).isLogged(LogLevel.INFO));
     assertTrue(new LoggerImpl(LogLevel.INFO).isLogged(LogLevel.ERROR));
+    assertTrue(new LoggerImpl(LogLevel.DEBUG).isLogged(LogLevel.INFO));
   }
 }

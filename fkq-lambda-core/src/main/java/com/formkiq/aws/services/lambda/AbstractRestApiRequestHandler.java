@@ -61,6 +61,7 @@ import com.formkiq.aws.services.lambda.exceptions.TooManyRequestsException;
 import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.validation.ValidationException;
 import com.google.gson.Gson;
 import software.amazon.awssdk.utils.IoUtils;
@@ -445,6 +446,8 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
   private void log(final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
 
+    Logger logger = getAwsServices().getLogger();
+
     if (event != null) {
       ApiGatewayRequestContext requestContext =
           event.getRequestContext() != null ? event.getRequestContext()
@@ -463,10 +466,10 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
           authorization.getUsername(),
           "{" + toStringFromMap(event.getQueryStringParameters()) + "}");
 
-      getAwsServices().getLogger().info(s);
+      logger.info(s);
 
     } else {
-      getAwsServices().getLogger().error("{\"requestId\": \"invalid\"}");
+      logger.error("{\"requestId\": \"invalid\"}");
     }
   }
 

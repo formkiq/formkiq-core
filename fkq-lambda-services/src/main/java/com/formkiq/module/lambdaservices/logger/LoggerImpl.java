@@ -43,6 +43,7 @@ public class LoggerImpl implements Logger {
   public void log(final LogLevel level, final String message) {
     if (isLogged(level)) {
       System.out.print(message);
+      System.out.flush();
     }
   }
 
