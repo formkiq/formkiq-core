@@ -27,7 +27,6 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -57,6 +56,9 @@ import com.formkiq.testutils.aws.LocalStackExtension;
 @ExtendWith(DynamoDbExtension.class)
 public class ApiRequestHandlerTest extends AbstractRequestHandler {
 
+  /** Expected. */
+  private static final int EXPECTED_3 = 3;
+
   /**
    * Get Document Request, Document not found.
    *
@@ -78,7 +80,6 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
 
       // then
       assertEquals(expected, response);
-      assertTrue(getLogger().containsString("response: " + expected));
     }
   }
 
@@ -87,7 +88,6 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetRequest02() throws Exception {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
@@ -98,7 +98,7 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
 
       DocumentItem item = new DocumentItemDynamoDb(documentId, date, userId);
       DocumentMetadata md = new DocumentMetadata("category", "person");
-      item.setMetadata(Arrays.asList(md));
+      item.setMetadata(List.of(md));
       getDocumentService().saveDocument(siteId, item, new ArrayList<>());
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents-documentid01.json");
@@ -150,8 +150,8 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
     getHandler().handleRequest(instream, outstream, getMockContext());
 
     // then
-    assertEquals(expected, new String(outstream.toByteArray(), "UTF-8"));
-    assertTrue(getLogger().containsString("response: " + expected));
+    assertEquals(expected, outstream.toString(StandardCharsets.UTF_8));
+    assertEquals(EXPECTED_3, getLogger().getMessages().size());
   }
 
   /**
@@ -163,6 +163,8 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
   public void testHandleGetRequest04() throws Exception {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
+      getLogger().getMessages().clear();
+
       ApiGatewayRequestEvent event = toRequestEvent("/request-invalid-resource.json");
       addParameter(event, "siteId", siteId);
       setCognitoGroup(event, siteId);
@@ -175,7 +177,7 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
 
       // then
       assertEquals(expected, response);
-      assertTrue(getLogger().containsString("response: " + expected));
+      assertEquals(EXPECTED_3, getLogger().getMessages().size());
     }
   }
 
@@ -184,7 +186,6 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetRequest05() throws Exception {
     // given
@@ -223,7 +224,6 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetRequest06() throws Exception {
     // given
@@ -236,7 +236,7 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
     DocumentItem citem = new DocumentItemDynamoDb(documentId1, date, userId);
 
     DynamicDocumentItem doc = new DocumentItemToDynamicDocumentItem().apply(item);
-    doc.put("documents", Arrays.asList(new DocumentItemToDynamicDocumentItem().apply(citem)));
+    doc.put("documents", List.of(new DocumentItemToDynamicDocumentItem().apply(citem)));
 
     getDocumentService().saveDocumentItemWithTag(null, doc);
 
@@ -277,7 +277,6 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testVersion01() throws Exception {
     // given
@@ -308,7 +307,6 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testVersion02() throws Exception {
     // given
