@@ -28,18 +28,25 @@ package com.formkiq.module.lambdaservices.logger;
  */
 public enum LogLevel {
   /** Trace. */
-  TRACE,
+  TRACE(1),
   /** Debug. */
-  DEBUG,
+  DEBUG(3),
   /** Info. */
-  INFO,
+  INFO(5),
   /** Error. */
-  ERROR;
+  ERROR(8);
+
+  /** Log Level. */
+  private final int level;
 
   /**
    * constructor.
+   * 
+   * @param logLevel int
    */
-  LogLevel() {}
+  LogLevel(final int logLevel) {
+    this.level = logLevel;
+  }
 
   /**
    * Convert {@link String} to {@link LogLevel}.
@@ -53,5 +60,14 @@ public enum LogLevel {
     } catch (Exception e) {
       return LogLevel.INFO;
     }
+  }
+
+  /**
+   * Get Level.
+   * 
+   * @return int
+   */
+  public int getLevel() {
+    return this.level;
   }
 }

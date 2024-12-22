@@ -23,69 +23,26 @@
  */
 package com.formkiq.module.lambdaservices.logger;
 
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
- * Logger interface.
+ * Unit Test for {@link Logger}.
  */
-public interface Logger {
+public class LoggerTest {
 
   /**
-   * Trace Log.
-   * 
-   * @param message {@link String}
+   * Is Logged test.
    */
-  default void trace(final String message) {
-    log(LogLevel.TRACE, message);
+  @Test
+  void testIsLogged() {
+    assertTrue(new LoggerImpl(LogLevel.ERROR).isLogged(LogLevel.ERROR));
+    assertFalse(new LoggerImpl(LogLevel.ERROR).isLogged(LogLevel.INFO));
+    assertFalse(new LoggerImpl(LogLevel.DEBUG).isLogged(LogLevel.TRACE));
+    assertFalse(new LoggerImpl(LogLevel.INFO).isLogged(LogLevel.TRACE));
+    assertTrue(new LoggerImpl(LogLevel.INFO).isLogged(LogLevel.INFO));
+    assertTrue(new LoggerImpl(LogLevel.INFO).isLogged(LogLevel.ERROR));
   }
-
-  /**
-   * Debug Log.
-   * 
-   * @param message {@link String}
-   */
-  default void debug(final String message) {
-    log(LogLevel.DEBUG, message);
-  }
-
-  /**
-   * Info Log.
-   * 
-   * @param message {@link String}
-   */
-  default void info(final String message) {
-    log(LogLevel.INFO, message);
-  }
-
-  /**
-   * Error Log.
-   * 
-   * @param message {@link String}
-   */
-  default void error(final String message) {
-    log(LogLevel.ERROR, message);
-  }
-
-  /**
-   * Log.
-   * 
-   * @param level {@link LogLevel}
-   * @param message {@link String}
-   */
-  void log(LogLevel level, String message);
-
-  /**
-   * Is Current {@link LogLevel} going to be logged.
-   * 
-   * @param level {@link LogLevel}
-   * @return boolean
-   */
-  default boolean isLogged(final LogLevel level) {
-    return level.getLevel() >= getCurrentLogLevel().getLevel();
-  }
-
-  /**
-   * Get Current {@link LogLevel}.
-   * 
-   * @return {@link LogLevel}
-   */
-  LogLevel getCurrentLogLevel();
 }
