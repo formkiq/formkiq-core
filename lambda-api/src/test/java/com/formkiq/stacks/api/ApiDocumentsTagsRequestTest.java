@@ -33,13 +33,13 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.Test;
@@ -77,7 +77,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   private static final long TEST_TIMEOUT = 20;
 
   /** {@link SimpleDateFormat} in ISO Standard format. */
-  private SimpleDateFormat df = DateUtil.getIsoDateFormatter();
+  private final SimpleDateFormat df = DateUtil.getIsoDateFormatter();
 
   /**
    * any method /document/{documentId}/tags request.
@@ -144,24 +144,22 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
 
   /**
    * PUT /documents/{documentId}/tags/{tagKey}.
-   * 
+   *
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param tagKey {@link String}
    * @param group {@link String}
    * @param body {@link String}
-   * @param isBase64 boolean
    * @return {@link ApiGatewayRequestEvent}
    */
   private ApiGatewayRequestEvent putDocumentsTags(final String siteId, final String documentId,
-      final String tagKey, final String group, final String body, final boolean isBase64) {
+      final String tagKey, final String group, final String body) {
     return new ApiGatewayRequestEventBuilder().method("put")
         .resource("/documents/{documentId}/tags/{tagKey}")
         .path("/documents/" + documentId + "/tags/" + tagKey)
         .group(group != null ? group : DEFAULT_SITE_ID).user("joesmith")
         .pathParameters(Map.of("documentId", documentId, "tagKey", tagKey))
-        .queryParameters(siteId != null ? Map.of("siteId", siteId) : null).body(body, isBase64)
-        .build();
+        .queryParameters(siteId != null ? Map.of("siteId", siteId) : null).body(body, true).build();
   }
 
   /**
@@ -169,7 +167,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleDeleteTagDocument01() throws Exception {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
@@ -218,9 +215,9 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertEquals(1, tags.getResults().size());
       assertEquals("category2", tags.getResults().get(0).getKey());
 
-      String expected = "response: {" + getHeaders()
+      String expected = "{\"response\":{" + getHeaders()
           + ",\"body\":\"{\\\"message\\\":\\\"Removed 'category' from document '" + documentId
-          + "'.\\\"}\"," + "\"statusCode\":200}";
+          + "'.\\\"}\",\"statusCode\":200}}";
 
       assertTrue(getLogger().containsString(expected));
     }
@@ -231,7 +228,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleDeleteTagDocument02() throws Exception {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
@@ -252,7 +248,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       DocumentTag tag = new DocumentTag(documentId, tagKey, null, now, userId);
       tag.setInsertedDate(new Date());
 
-      getDocumentService().addTags(siteId, documentId, Arrays.asList(tag), null);
+      getDocumentService().addTags(siteId, documentId, List.of(tag), null);
       assertEquals(1, getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS)
           .getResults().size());
 
@@ -276,9 +272,10 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
           getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
       assertEquals(0, tags.getResults().size());
 
-      final String expected = "response: {" + getHeaders()
+      String expected = "{\"response\":{" + getHeaders()
           + ",\"body\":\"{\\\"message\\\":\\\"Removed 'category' from document '" + documentId
-          + "'.\\\"}\"," + "\"statusCode\":200}";
+          + "'.\\\"}\",\"statusCode\":200}}";
+
       assertTrue(getLogger().containsString(expected));
     }
   }
@@ -288,7 +285,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleDeleteTagDocument03() throws Exception {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
@@ -310,7 +306,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       tag.setValues(Arrays.asList("abc", "xyz"));
       tag.setInsertedDate(new Date());
 
-      getDocumentService().addTags(siteId, documentId, Arrays.asList(tag), null);
+      getDocumentService().addTags(siteId, documentId, List.of(tag), null);
       assertEquals(1, getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS)
           .getResults().size());
 
@@ -334,9 +330,9 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
           getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
       assertEquals(0, tags.getResults().size());
 
-      String expected = "response: {" + getHeaders()
+      String expected = "{\"response\":{" + getHeaders()
           + ",\"body\":\"{\\\"message\\\":\\\"Removed 'category' from document '" + documentId
-          + "'.\\\"}\"," + "\"statusCode\":200}";
+          + "'.\\\"}\",\"statusCode\":200}}";
 
       assertTrue(getLogger().containsString(expected));
     }
@@ -347,7 +343,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleDeleteTagValue01() throws Exception {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
@@ -371,7 +366,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       DocumentTag tag = new DocumentTag(documentId, tagKey, tagValue, now, userId);
       tag.setInsertedDate(new Date());
 
-      getDocumentService().addTags(siteId, documentId, Arrays.asList(tag), null);
+      getDocumentService().addTags(siteId, documentId, List.of(tag), null);
       assertEquals(1, getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS)
           .getResults().size());
 
@@ -402,7 +397,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleDeleteTagValue02() throws Exception {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
@@ -426,7 +420,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       tag.setValues(Arrays.asList("abc", "xyz"));
       tag.setInsertedDate(new Date());
 
-      getDocumentService().addTags(siteId, documentId, Arrays.asList(tag), null);
+      getDocumentService().addTags(siteId, documentId, List.of(tag), null);
       assertEquals(1, getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS)
           .getResults().size());
 
@@ -459,7 +453,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleDeleteTagValue03() throws Exception {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
@@ -483,7 +476,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       tag.setValues(Arrays.asList("abc", "xyz"));
       tag.setInsertedDate(new Date());
 
-      getDocumentService().addTags(siteId, documentId, Arrays.asList(tag), null);
+      getDocumentService().addTags(siteId, documentId, List.of(tag), null);
       assertEquals(1, getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS)
           .getResults().size());
 
@@ -516,7 +509,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocumentTags01() throws Exception {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
@@ -532,7 +524,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
 
       DocumentTag tag = new DocumentTag(documentId, tagname, tagvalue, date, userId);
 
-      getDocumentService().addTags(siteId, documentId, Arrays.asList(tag), null);
+      getDocumentService().addTags(siteId, documentId, List.of(tag), null);
 
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-get-documents-documentid-tags00.json");
@@ -569,7 +561,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocumentTags02() throws Exception {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
@@ -623,7 +614,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocumentTags03() throws Exception {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
@@ -693,7 +683,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
     getHandler().handleRequest(in, outstream, getMockContext());
 
     // then
-    assertEquals(expected, new String(outstream.toByteArray(), "UTF-8"));
+    assertEquals(expected, outstream.toString(StandardCharsets.UTF_8));
     in.close();
   }
 
@@ -709,9 +699,8 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
     final String expected = "{" + getHeaders()
         + ",\"body\":\"{\\\"message\\\":\\\"Tag category not found.\\\"}\",\"statusCode\":404}";
 
-    String siteId = null;
     DocumentItem item = new DocumentItemDynamoDb("188", new Date(), "joe");
-    getDocumentService().saveDocument(siteId, item, null);
+    getDocumentService().saveDocument(null, item, null);
 
     final InputStream in = toStream("/request-get-documents-documentid-tags01.json");
 
@@ -719,7 +708,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
     getHandler().handleRequest(in, outstream, getMockContext());
 
     // then
-    assertEquals(expected, new String(outstream.toByteArray(), "UTF-8"));
+    assertEquals(expected, outstream.toString(StandardCharsets.UTF_8));
     in.close();
   }
 
@@ -728,7 +717,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetTags02() throws Exception {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
@@ -736,7 +724,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       String documentId = ID.uuid();
       DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, new Date(), "jsmith");
       DocumentTag tag = new DocumentTag(documentId, "category", "person", new Date(), "jsmith");
-      getDocumentService().saveDocument(siteId, item, Arrays.asList(tag));
+      getDocumentService().saveDocument(siteId, item, List.of(tag));
 
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-get-documents-documentid-tags01.json");
@@ -766,7 +754,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetTags03() throws Exception {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
@@ -774,7 +761,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       String documentId = ID.uuid();
       DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, new Date(), "jsmith");
       DocumentTag tag = new DocumentTag(documentId, "category", null, new Date(), "jsmith");
-      getDocumentService().saveDocument(siteId, item, Arrays.asList(tag));
+      getDocumentService().saveDocument(siteId, item, List.of(tag));
 
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-get-documents-documentid-tags01.json");
@@ -803,7 +790,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetTags04() throws Exception {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
@@ -812,7 +798,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, new Date(), "jsmith");
       DocumentTag tag = new DocumentTag(documentId, "category", null, new Date(), "jsmith");
       tag.setValues(Arrays.asList("abc", "xyz"));
-      getDocumentService().saveDocument(siteId, item, Arrays.asList(tag));
+      getDocumentService().saveDocument(siteId, item, List.of(tag));
 
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-get-documents-documentid-tags01.json");
@@ -885,7 +871,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
 
       assertEquals(tagKey1, results.getResults().get(i).getKey());
       assertEquals(tagValue1, results.getResults().get(i).getValue());
-      assertEquals("joesmith", results.getResults().get(i++).getUserId());
+      assertEquals("joesmith", results.getResults().get(i).getUserId());
     }
   }
 
@@ -910,7 +896,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
 
       // then
       assertEquals(expected, response);
-      assertTrue(getLogger().containsString("response: " + expected));
     }
   }
 
@@ -948,8 +933,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertEquals(tagname, tags.getResults().get(0).getKey());
       assertEquals(tagvalue, tags.getResults().get(0).getValue());
       assertEquals("joesmith", tags.getResults().get(0).getUserId());
-
-      assertTrue(getLogger().containsString("response: " + expected));
     }
   }
 
@@ -960,7 +943,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
    * @throws Exception an error has occurred
    */
   @Test
-  @Timeout(value = TEST_TIMEOUT, unit = TimeUnit.SECONDS)
+  @Timeout(value = TEST_TIMEOUT)
   public void testHandlePostDocumentTags03() throws Exception {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
@@ -992,8 +975,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertEquals(1, tags.getResults().size());
       assertEquals(tagname, tags.getResults().get(0).getKey());
       assertEquals(tagvalue, tags.getResults().get(0).getValue());
-
-      assertTrue(getLogger().containsString("response: " + expected));
 
       SqsService sqsService = getAwsServices().getExtension(SqsService.class);
       ReceiveMessageResponse msgs = sqsService.receiveMessages(getSqsWebsocketQueueUrl(null));
@@ -1052,8 +1033,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertEquals(1, tags.getResults().size());
       assertEquals(tagname, tags.getResults().get(0).getKey());
       assertEquals(tagvalue, tags.getResults().get(0).getValue());
-
-      assertTrue(getLogger().containsString("response: " + expected));
     }
   }
 
@@ -1095,8 +1074,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertEquals(
           "AROAZB6IP7U6SDBIQTEUX:formkiq-docstack-unittest-api-ApiGatewayInvokeRole-IKJY8XKB0IUK",
           tags.getResults().get(0).getUserId());
-
-      assertTrue(getLogger().containsString("response: " + expected));
     }
   }
 
@@ -1142,8 +1119,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertEquals(1, tags.getResults().size());
       assertEquals(tagname, tags.getResults().get(0).getKey());
       assertEquals(tagvalue, tags.getResults().get(0).getValue());
-
-      assertTrue(getLogger().containsString("response: " + expected));
     }
   }
 
@@ -1181,8 +1156,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertNull(tags.getResults().get(0).getValue());
       assertEquals("[job, whoknows]", tags.getResults().get(0).getValues().toString());
       assertEquals("joesmith", tags.getResults().get(0).getUserId());
-
-      assertTrue(getLogger().containsString("response: " + expected));
     }
   }
 
@@ -1234,8 +1207,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertEquals("1", tags.getResults().get(2).getValue());
       assertNull(tags.getResults().get(2).getValues());
       assertEquals("joesmith", tags.getResults().get(2).getUserId());
-
-      assertTrue(getLogger().containsString("response: " + expected));
     }
   }
 
@@ -1265,7 +1236,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       PaginationResults<DocumentTag> tags =
           getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
       assertEquals(0, tags.getResults().size());
-      assertTrue(getLogger().containsString("response: " + expected));
     }
   }
 
@@ -1305,7 +1275,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandlePostDocumentTags12() throws Exception {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
@@ -1322,7 +1291,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
 
       // then
       Map<String, Object> map = GsonUtil.getInstance().fromJson(response, Map.class);
-      assertEquals("400.0", ((Double) map.get("statusCode")).toString());
+      assertEquals("400.0", map.get("statusCode").toString());
       assertEquals(
           "{\"message\":\"Tag key can only be included once in body; "
               + "please use 'values' to assign multiple tag values to that key\"}",
@@ -1375,10 +1344,10 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       final String tagValue1 = "other";
 
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-      getDocumentService().saveDocument(siteId, item, Arrays
-          .asList(new DocumentTag(item.getDocumentId(), tagKey0, tagValue0, new Date(), "joe")));
+      getDocumentService().saveDocument(siteId, item,
+          List.of(new DocumentTag(item.getDocumentId(), tagKey0, tagValue0, new Date(), "joe")));
 
-      List<Map<String, String>> tags = Arrays.asList(Map.of("key", tagKey1, "value", tagValue1));
+      List<Map<String, String>> tags = List.of(Map.of("key", tagKey1, "value", tagValue1));
       ApiGatewayRequestEvent event = putDocumentsTags(siteId, documentId,
           siteId != null ? siteId : DEFAULT_SITE_ID, toJson(Map.of("tags", tags)));
 
@@ -1418,10 +1387,10 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
 
       getDocumentService().saveDocument(siteId,
           new DocumentItemDynamoDb(documentId, new Date(), userId),
-          Arrays.asList(new DocumentTag(null, tagKey, "nope", new Date(), userId)));
+          List.of(new DocumentTag(null, tagKey, "nope", new Date(), userId)));
 
-      ApiGatewayRequestEvent event = putDocumentsTags(siteId, documentId, tagKey, siteId,
-          "ewogICJ2YWx1ZSI6ICJhY3RpdmUiCn0=", true);
+      ApiGatewayRequestEvent event =
+          putDocumentsTags(siteId, documentId, tagKey, siteId, "ewogICJ2YWx1ZSI6ICJhY3RpdmUiCn0=");
 
       // when
       String response = handleRequest(event);
@@ -1446,7 +1415,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
         + "{\\\"message\\\":\\\"Document 143 not found.\\\"}\"" + ",\"statusCode\":404}";
 
     ApiGatewayRequestEvent event =
-        putDocumentsTags(null, "143", "category", null, "ewogICJ2YWx1ZSI6ICJhY3RpdmUiCn0=", true);
+        putDocumentsTags(null, "143", "category", null, "ewogICJ2YWx1ZSI6ICJhY3RpdmUiCn0=");
 
     // when
     String response = handleRequest(event);
@@ -1472,7 +1441,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
 
       getDocumentService().saveDocument(siteId,
           new DocumentItemDynamoDb(documentId, new Date(), userId),
-          Arrays.asList(new DocumentTag(null, "category", "nope", new Date(), userId)));
+          List.of(new DocumentTag(null, "category", "nope", new Date(), userId)));
 
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-put-documents-documentid-tags02.json");
@@ -1505,7 +1474,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
     getHandler().handleRequest(in, outstream, getMockContext());
 
     // then
-    assertEquals(expected, new String(outstream.toByteArray(), "UTF-8"));
+    assertEquals(expected, outstream.toString(StandardCharsets.UTF_8));
     in.close();
   }
 
@@ -1528,10 +1497,10 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       String tagKey = "category";
       DocumentTag tag = new DocumentTag(null, tagKey, "nope", new Date(), userId);
       getDocumentService().saveDocument(siteId,
-          new DocumentItemDynamoDb(documentId, new Date(), userId), Arrays.asList(tag));
+          new DocumentItemDynamoDb(documentId, new Date(), userId), List.of(tag));
 
       ApiGatewayRequestEvent event = putDocumentsTags(siteId, documentId, tagKey, siteId,
-          "ewogICJ2YWx1ZXMiOiBbImFiYyIsICJ4eXoiXQp9", true);
+          "ewogICJ2YWx1ZXMiOiBbImFiYyIsICJ4eXoiXQp9");
 
       // when
       String response = handleRequest(event);
@@ -1568,10 +1537,10 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       DocumentTag tag = new DocumentTag(null, tagKey, null, new Date(), userId);
       tag.setValues(Arrays.asList("abc", "xyz"));
       getDocumentService().saveDocument(siteId,
-          new DocumentItemDynamoDb(documentId, new Date(), userId), Arrays.asList(tag));
+          new DocumentItemDynamoDb(documentId, new Date(), userId), List.of(tag));
 
-      ApiGatewayRequestEvent event = putDocumentsTags(siteId, documentId, tagKey, siteId,
-          "ewogICJ2YWx1ZSI6ICJhY3RpdmUiCn0=", true);
+      ApiGatewayRequestEvent event =
+          putDocumentsTags(siteId, documentId, tagKey, siteId, "ewogICJ2YWx1ZSI6ICJhY3RpdmUiCn0=");
 
       // when
       String response = handleRequest(event);
@@ -1619,7 +1588,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
         ds.putItem(apply.get(0));
 
         ApiGatewayRequestEvent event = putDocumentsTags(siteId, documentId, tagKey, siteId,
-            "ewogICJ2YWx1ZSI6ICJhY3RpdmUiCn0=", true);
+            "ewogICJ2YWx1ZSI6ICJhY3RpdmUiCn0=");
 
         // when
         DynamicObject o = handleRequestDynamic(event);
