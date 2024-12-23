@@ -338,6 +338,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       assertNotNull(map.get("path"));
     }
 
+    assertTrue(map.get("url").contains("example-bucket"));
     assertNull(map.get("content"));
 
     if (!"delete".equals(eventType)) {

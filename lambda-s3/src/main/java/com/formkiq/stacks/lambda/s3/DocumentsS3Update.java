@@ -33,7 +33,9 @@ import static com.formkiq.stacks.dynamodb.DocumentService.SYSTEM_DEFINED_TAGS;
 import static com.formkiq.stacks.dynamodb.DocumentVersionService.S3VERSION_ATTRIBUTE;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.URL;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -55,8 +57,11 @@ import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.aws.dynamodb.objects.Strings;
+import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.s3.S3ObjectMetadata;
+import com.formkiq.aws.s3.S3PresignerService;
+import com.formkiq.aws.s3.S3PresignerServiceExtension;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.s3.S3ServiceExtension;
 import com.formkiq.aws.s3.S3ServiceInterceptor;
@@ -123,6 +128,8 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
   private static S3ServiceInterceptor s3ServiceInterceptor;
   /** {@link CacheService}. */
   private static CacheService cacheService;
+  /** {@link S3PresignerService}. */
+  private static S3PresignerService s3PresignedService;
 
   static {
 
@@ -191,12 +198,14 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     awsServiceCache.register(ActionsNotificationService.class,
         new ActionsNotificationServiceExtension());
     awsServiceCache.register(S3ServiceInterceptor.class, new S3ServiceInterceptorExtension());
+    awsServiceCache.register(S3PresignerService.class, new S3PresignerServiceExtension());
     awsServiceCache.register(CacheService.class, new CacheServiceExtension());
 
     AwsCredentials awsCredentials = awsServiceCache.getExtension(AwsCredentials.class);
     awsServiceCache.register(HttpService.class, new ClassServiceExtension<>(
         new HttpServiceSigv4(awsServiceCache.region(), awsCredentials)));
 
+    s3PresignedService = awsServiceCache.getExtension(S3PresignerService.class);
     service = awsServiceCache.getExtension(DocumentService.class);
     snsDocumentEvent = awsServiceCache.environment("SNS_DOCUMENT_EVENT");
     actionsService = awsServiceCache.getExtension(ActionsService.class);
@@ -290,7 +299,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     String content = null;
 
     if (MimeType.isPlainText(contentType) && resp.getContentLength() != null
-        && resp.getContentLength() < EventServiceSns.MAX_SNS_MESSAGE_SIZE) {
+        && resp.getContentLength() < EventServiceSns.MAX_SNS_CONTENT_SIZE) {
       content = s3service.getContentAsString(s3bucket, key, null);
     }
 
@@ -647,6 +656,10 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
       String content = getContent(s3bucket, key, resp, contentType);
       event.content(content);
     }
+
+    PresignGetUrlConfig config = new PresignGetUrlConfig().contentType(contentType);
+    URL url = s3PresignedService.presignGetUrl(s3bucket, key, Duration.ofDays(1), null, config);
+    event.url(url.toString());
 
     String eventJson = documentEventService.publish(event);
 

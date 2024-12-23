@@ -42,13 +42,13 @@ import software.amazon.awssdk.services.sns.model.PublishResponse;
 public final class EventServiceSns implements EventService {
 
   /** Max Sns Message Size. */
-  public static final int MAX_SNS_MESSAGE_SIZE = 256000;
+  public static final int MAX_SNS_CONTENT_SIZE = 1000;
   /** {@link Gson}. */
-  private Gson gson = new GsonBuilder().create();
+  private final Gson gson = new GsonBuilder().create();
   /** {@link SnsService}. */
-  private SnsService snsService;
+  private final SnsService snsService;
   /** SNS Topic Arn. */
-  private String topicArn;
+  private final String topicArn;
 
   /**
    * constructor.
@@ -75,7 +75,7 @@ public final class EventServiceSns implements EventService {
   public String publish(final DocumentEvent event) {
 
     String eventJson = this.gson.toJson(event);
-    if (eventJson.length() > MAX_SNS_MESSAGE_SIZE) {
+    if (eventJson.length() > MAX_SNS_CONTENT_SIZE) {
       event.content(null);
       eventJson = this.gson.toJson(event);
     }
@@ -93,7 +93,7 @@ public final class EventServiceSns implements EventService {
       tags = Map.of("type", typeAttr, "siteId", siteIdAttr, "userId", userIdAttr);
     }
 
-    if (this.topicArn.length() > 0) {
+    if (!this.topicArn.isEmpty()) {
       PublishResponse response = this.snsService.publish(this.topicArn, eventJson, tags);
       LambdaRuntime.getLogger().log("publishing to: " + this.topicArn + " messageId: "
           + response.messageId() + " body: " + eventJson);
