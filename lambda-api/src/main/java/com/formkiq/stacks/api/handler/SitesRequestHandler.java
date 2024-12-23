@@ -23,7 +23,6 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -76,9 +75,8 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
   }
 
   @Override
-  public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     List<DynamicObject> sites = authorization.getSiteIds().stream().map(siteId -> {
 

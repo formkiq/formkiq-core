@@ -29,7 +29,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
+
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -64,8 +64,7 @@ public class IndicesFolderMoveRequestHandler
 
   /**
    * Run Move Folder Index.
-   * 
-   * @param logger {@link LambdaLogger}
+   *
    * @param event {@link ApiGatewayRequestEvent}
    * @param awsServices {@link AwsServiceCache}
    * @param siteId {@link String}
@@ -75,9 +74,9 @@ public class IndicesFolderMoveRequestHandler
    * @throws ValidationException ValidationException
    * @throws IOException IOException
    */
-  private ApiRequestHandlerResponse moveFolderIndex(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final AwsServiceCache awsServices, final String siteId,
-      final String userId) throws BadException, ValidationException, IOException {
+  private ApiRequestHandlerResponse moveFolderIndex(final ApiGatewayRequestEvent event,
+      final AwsServiceCache awsServices, final String siteId, final String userId)
+      throws BadException, ValidationException, IOException {
 
     Map<String, Object> body = fromBodyToMap(event);
 
@@ -101,16 +100,15 @@ public class IndicesFolderMoveRequestHandler
   }
 
   @Override
-  public ApiRequestHandlerResponse post(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsServices) throws Exception {
+  public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
 
     String siteId = authorization.getSiteId();
     String userId = authorization.getUsername();
     String type = event.getPathParameters().get("indexType");
 
     if ("folder".equals(type)) {
-      return moveFolderIndex(logger, event, awsServices, siteId, userId);
+      return moveFolderIndex(event, awsServices, siteId, userId);
     }
 
     throw new BadException("invalid 'indexType' parameter");

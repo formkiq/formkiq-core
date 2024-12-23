@@ -41,7 +41,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
@@ -87,8 +86,8 @@ public class ConfigurationRequestHandler
   public ConfigurationRequestHandler() {}
 
   @Override
-  public void beforePatch(final LambdaLogger logger, final ApiGatewayRequestEvent event,
-      final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
+  public void beforePatch(final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
+      final AwsServiceCache awsServices) throws Exception {
     checkPermissions(event, authorization);
   }
 
@@ -98,9 +97,8 @@ public class ConfigurationRequestHandler
   }
 
   @Override
-  public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = event.getPathParameters().get("siteId");
     ConfigService configService = awsservice.getExtension(ConfigService.class);
@@ -180,9 +178,8 @@ public class ConfigurationRequestHandler
   }
 
   @Override
-  public ApiRequestHandlerResponse patch(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse patch(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = event.getPathParameter("siteId");
     Map<String, Object> body = fromBodyToObject(event, Map.class);

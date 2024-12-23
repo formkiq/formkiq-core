@@ -23,7 +23,6 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
@@ -92,9 +91,8 @@ public class DocumentsUploadRequestHandler
   public DocumentsUploadRequestHandler() {}
 
   @Override
-  public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     AddDocumentRequest item = new AddDocumentRequest();
     item.setDocumentId(ID.uuid());
@@ -133,9 +131,8 @@ public class DocumentsUploadRequestHandler
   }
 
   @Override
-  public ApiRequestHandlerResponse post(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
     AddDocumentRequest request = fromBodyToObject(event, AddDocumentRequest.class);
     return post(event, authorization, awsservice, request);
   }

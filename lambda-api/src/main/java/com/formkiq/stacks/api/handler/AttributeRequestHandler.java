@@ -26,7 +26,7 @@ package com.formkiq.stacks.api.handler;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.util.Collection;
 import java.util.Map;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
+
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -46,9 +46,8 @@ public class AttributeRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
   @Override
-  public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsServices) throws Exception {
+  public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
 
     String siteId = authorization.getSiteId();
     String key = event.getPathParameters().get("key");
@@ -68,9 +67,8 @@ public class AttributeRequestHandler
   }
 
   @Override
-  public ApiRequestHandlerResponse delete(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorizer,
-      final AwsServiceCache awsServices) throws Exception {
+  public ApiRequestHandlerResponse delete(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorizer, final AwsServiceCache awsServices) throws Exception {
 
     AttributeService service = awsServices.getExtension(AttributeService.class);
 

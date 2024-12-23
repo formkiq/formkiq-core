@@ -30,7 +30,7 @@ import java.time.ZonedDateTime;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
+
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -50,9 +50,8 @@ public class WebhooksIdRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
   @Override
-  public ApiRequestHandlerResponse delete(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsServices) throws Exception {
+  public ApiRequestHandlerResponse delete(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
 
     String siteId = authorization.getSiteId();
     String id = getPathParameter(event, "webhookId");
@@ -69,9 +68,8 @@ public class WebhooksIdRequestHandler
   }
 
   @Override
-  public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsServices) throws Exception {
+  public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
 
     String siteId = authorization.getSiteId();
     String id = getPathParameter(event, "webhookId");
@@ -111,9 +109,8 @@ public class WebhooksIdRequestHandler
   }
 
   @Override
-  public ApiRequestHandlerResponse patch(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsServices) throws Exception {
+  public ApiRequestHandlerResponse patch(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
 
     String siteId = authorization.getSiteId();
     String id = getPathParameter(event, "webhookId");

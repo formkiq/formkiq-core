@@ -30,7 +30,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
+
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
@@ -71,14 +71,12 @@ public class IndicesSearchRequestHandler
   public Optional<Boolean> isAuthorized(final AwsServiceCache awsservice, final String method,
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
     boolean access = authorization.getPermissions().contains(ApiPermission.READ);
-    return Optional.of(Boolean.valueOf(access));
+    return Optional.of(access);
   }
 
-  @SuppressWarnings("unchecked")
   @Override
-  public ApiRequestHandlerResponse post(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     CacheService cacheService = awsservice.getExtension(CacheService.class);
     ApiPagination pagination = getPagination(cacheService, event);
@@ -111,9 +109,7 @@ public class IndicesSearchRequestHandler
     map.put("next", current.hasNext() ? current.getNext() : null);
 
     ApiMapResponse resp = new ApiMapResponse(map);
-    ApiRequestHandlerResponse response = new ApiRequestHandlerResponse(SC_OK, resp);
-
-    return response;
+    return new ApiRequestHandlerResponse(SC_OK, resp);
   }
 
   private void validatePost(final Map<String, Object> q) throws ValidationException {

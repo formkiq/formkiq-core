@@ -36,7 +36,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
+
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
@@ -61,9 +61,8 @@ public class WebhooksRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
   @Override
-  public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsServices) throws Exception {
+  public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
 
     String siteId = authorization.getSiteId();
     String nextToken = event.getQueryStringParameter("next");
@@ -151,9 +150,8 @@ public class WebhooksRequestHandler
   }
 
   @Override
-  public ApiRequestHandlerResponse post(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorization.getSiteId();
     DynamicObject o = fromBodyToDynamicObject(event);

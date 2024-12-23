@@ -127,8 +127,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
   /**
    * Call Handler Rest Method.
-   * 
-   * @param logger {@link LambdaLogger}
+   *
    * @param method {@link String}
    * @param event {@link ApiGatewayRequestEvent}
    * @param authorization ApiAuthorization
@@ -136,8 +135,8 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
    * @return {@link ApiRequestHandlerResponse}
    * @throws Exception Exception
    */
-  private ApiRequestHandlerResponse callHandlerMethod(final LambdaLogger logger,
-      final String method, final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
+  private ApiRequestHandlerResponse callHandlerMethod(final String method,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final ApiGatewayRequestHandler handler) throws Exception {
 
     ApiRequestHandlerResponse response = null;
@@ -145,37 +144,37 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
     switch (method) {
       case "get":
-        handler.beforeGet(logger, event, authorization, awsServices);
-        response = handler.get(logger, event, authorization, awsServices);
+        handler.beforeGet(event, authorization, awsServices);
+        response = handler.get(event, authorization, awsServices);
         break;
 
       case "delete":
-        handler.beforeDelete(logger, event, authorization, awsServices);
-        response = handler.delete(logger, event, authorization, awsServices);
+        handler.beforeDelete(event, authorization, awsServices);
+        response = handler.delete(event, authorization, awsServices);
         break;
 
       case "head":
-        handler.beforeHead(logger, event, authorization, awsServices);
-        response = handler.head(logger, event, authorization, awsServices);
+        handler.beforeHead(event, authorization, awsServices);
+        response = handler.head(event, authorization, awsServices);
         break;
 
       case "options":
-        response = handler.options(logger, event, authorization, awsServices);
+        response = handler.options(event, authorization, awsServices);
         break;
 
       case "patch":
-        handler.beforePatch(logger, event, authorization, awsServices);
-        response = handler.patch(logger, event, authorization, awsServices);
+        handler.beforePatch(event, authorization, awsServices);
+        response = handler.patch(event, authorization, awsServices);
         break;
 
       case "post":
-        handler.beforePost(logger, event, authorization, awsServices);
-        response = handler.post(logger, event, authorization, awsServices);
+        handler.beforePost(event, authorization, awsServices);
+        response = handler.post(event, authorization, awsServices);
         break;
 
       case "put":
-        handler.beforePut(logger, event, authorization, awsServices);
-        response = handler.put(logger, event, authorization, awsServices);
+        handler.beforePut(event, authorization, awsServices);
+        response = handler.put(event, authorization, awsServices);
         break;
       default:
         break;
@@ -512,7 +511,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
       executeRequestInterceptors(requestInterceptors, event, authorization);
 
-      ApiRequestHandlerResponse object = processRequest(logger, getUrlMap(), event, authorization);
+      ApiRequestHandlerResponse object = processRequest(getUrlMap(), event, authorization);
 
       executeResponseInterceptors(requestInterceptors, event, authorization, object);
 
@@ -572,7 +571,6 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
   /**
    * Process {@link ApiGatewayRequestEvent}.
    *
-   * @param logger {@link LambdaLogger}
    * @param urlMap {@link Map}
    * @param event {@link ApiGatewayRequestEvent}
    * @param authorization {@link ApiAuthorization}
@@ -580,7 +578,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
    * @return {@link ApiRequestHandlerResponse}
    * @throws Exception Exception
    */
-  private ApiRequestHandlerResponse processRequest(final LambdaLogger logger,
+  private ApiRequestHandlerResponse processRequest(
       final Map<String, ApiGatewayRequestHandler> urlMap, final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization) throws Exception {
 
@@ -597,7 +595,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
       throw new ForbiddenException(s);
     }
 
-    return callHandlerMethod(logger, method, event, authorization, handler);
+    return callHandlerMethod(method, event, authorization, handler);
   }
 
   /**

@@ -23,7 +23,6 @@
  */
 package com.formkiq.module.ocr;
 
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
@@ -92,9 +91,8 @@ public class DocumentsOcrRequestHandler
   }
 
   @Override
-  public ApiRequestHandlerResponse delete(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse delete(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     ApiMapResponse resp = new ApiMapResponse();
     String siteId = authorization.getSiteId();
@@ -109,9 +107,8 @@ public class DocumentsOcrRequestHandler
   }
 
   @Override
-  public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     ApiResponseStatus status = SC_OK;
     String siteId = authorization.getSiteId();
@@ -237,14 +234,14 @@ public class DocumentsOcrRequestHandler
     List<String> contents =
         s3Keys.stream().map(s3Key -> s3.getContentAsString(ocrBucket, s3Key, null)).toList();
 
-    Object result = null;
+    Object result;
 
     if (textOnly) {
       result = ocrService.toText(contents);
     } else if (keyValue) {
       result = ocrService.toKeyValue(contents);
     } else {
-      result = contents.stream().collect(Collectors.joining());
+      result = String.join("", contents);
     }
 
     return result;
@@ -286,9 +283,8 @@ public class DocumentsOcrRequestHandler
   }
 
   @Override
-  public ApiRequestHandlerResponse post(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
@@ -299,16 +295,15 @@ public class DocumentsOcrRequestHandler
     String userId = authorization.getUsername();
 
     DocumentOcrService ocrService = awsservice.getExtension(DocumentOcrService.class);
-    ocrService.convert(logger, awsservice, request, siteId, documentId, userId);
+    ocrService.convert(awsservice, request, siteId, documentId, userId);
 
     ApiMapResponse resp = new ApiMapResponse(Map.of("message", "OCR request submitted"));
     return new ApiRequestHandlerResponse(SC_OK, resp);
   }
 
   @Override
-  public ApiRequestHandlerResponse put(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse put(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameters().get("documentId");

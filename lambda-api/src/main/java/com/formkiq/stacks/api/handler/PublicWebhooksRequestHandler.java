@@ -37,7 +37,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
@@ -68,7 +67,7 @@ public class PublicWebhooksRequestHandler
   private static final long TO_MILLIS = 1000L;
 
   private static boolean isContentTypeJson(final String contentType) {
-    return contentType != null && "application/json".equals(contentType);
+    return "application/json".equals(contentType);
   }
 
   private static boolean isJsonValid(final String json) {
@@ -272,9 +271,8 @@ public class PublicWebhooksRequestHandler
   }
 
   @Override
-  public ApiRequestHandlerResponse post(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = getParameter(event, "siteId");
     String webhookId = getPathParameter(event, "webhooks");
@@ -295,7 +293,7 @@ public class PublicWebhooksRequestHandler
     DynamicObject item = buildDynamicObject(awsservice, siteId, webhookId, hook, body, contentType);
 
     if (!isIdempotencyCached(awsservice, event, siteId, item)) {
-      putObjectToStaging(logger, awsservice, item, siteId);
+      putObjectToStaging(awsservice, item, siteId);
     }
 
     return buildResponse(event, item);
@@ -303,21 +301,20 @@ public class PublicWebhooksRequestHandler
 
   /**
    * Put Object to Staging Bucket.
-   * 
-   * @param logger {@link LambdaLogger}
+   *
    * @param awsservice {@link AwsServiceCache}
    * @param item {@link DynamicObject}
    * @param siteId {@link String}
    */
-  private void putObjectToStaging(final LambdaLogger logger, final AwsServiceCache awsservice,
-      final DynamicObject item, final String siteId) {
+  private void putObjectToStaging(final AwsServiceCache awsservice, final DynamicObject item,
+      final String siteId) {
 
     String s = GSON.toJson(item);
     byte[] bytes = s.getBytes(StandardCharsets.UTF_8);
 
     String stages3bucket = awsservice.environment("STAGE_DOCUMENTS_S3_BUCKET");
     String key = createDatabaseKey(siteId, item.getString("documentId") + FORMKIQ_DOC_EXT);
-    logger.log("s3 putObject " + key + " into bucket " + stages3bucket);
+    awsservice.getLogger().trace("s3 putObject " + key + " into bucket " + stages3bucket);
 
     S3Service s3 = awsservice.getExtension(S3Service.class);
     s3.putObject(stages3bucket, key, bytes, "application/json");

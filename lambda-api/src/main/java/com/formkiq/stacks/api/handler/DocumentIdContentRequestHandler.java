@@ -29,7 +29,7 @@ import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.net.URL;
 import java.time.Duration;
 import java.util.Map;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
+
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
@@ -62,9 +62,8 @@ public class DocumentIdContentRequestHandler
   public DocumentIdContentRequestHandler() {}
 
   @Override
-  public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameter("documentId");

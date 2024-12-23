@@ -30,7 +30,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
+
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
@@ -61,14 +61,14 @@ public class ConfigurationApiKeysRequestHandler
   public ConfigurationApiKeysRequestHandler() {}
 
   @Override
-  public void beforeGet(final LambdaLogger logger, final ApiGatewayRequestEvent event,
-      final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
+  public void beforeGet(final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
+      final AwsServiceCache awsServices) throws Exception {
     checkPermissions(event, authorization);
   }
 
   @Override
-  public void beforePost(final LambdaLogger logger, final ApiGatewayRequestEvent event,
-      final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
+  public void beforePost(final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
+      final AwsServiceCache awsServices) throws Exception {
     checkPermissions(event, authorization);
   }
 
@@ -81,9 +81,8 @@ public class ConfigurationApiKeysRequestHandler
   }
 
   @Override
-  public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     ApiKeysService apiKeysService = awsservice.getExtension(ApiKeysService.class);
 
@@ -103,9 +102,8 @@ public class ConfigurationApiKeysRequestHandler
   }
 
   @Override
-  public ApiRequestHandlerResponse post(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = event.getPathParameters().get("siteId");
 

@@ -27,7 +27,7 @@ import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
+
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
@@ -52,9 +52,8 @@ public class AttributesRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
   @Override
-  public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsServices) throws Exception {
+  public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
 
     CacheService cacheService = awsServices.getExtension(CacheService.class);
     ApiPagination pagination = getPagination(cacheService, event);
@@ -86,9 +85,8 @@ public class AttributesRequestHandler
   }
 
   @Override
-  public ApiRequestHandlerResponse post(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorizer,
-      final AwsServiceCache awsServices) throws Exception {
+  public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorizer, final AwsServiceCache awsServices) throws Exception {
 
     AttributeService service = awsServices.getExtension(AttributeService.class);
 

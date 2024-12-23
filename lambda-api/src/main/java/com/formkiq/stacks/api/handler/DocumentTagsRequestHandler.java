@@ -23,7 +23,6 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
@@ -71,9 +70,8 @@ public class DocumentTagsRequestHandler
   public DocumentTagsRequestHandler() {}
 
   @Override
-  public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
     CacheService cacheService = awsservice.getExtension(CacheService.class);
@@ -131,7 +129,7 @@ public class DocumentTagsRequestHandler
    * @return boolean
    */
   private boolean isValid(final DocumentTag tag) {
-    return tag.getKey() != null && tag.getKey().length() > 0;
+    return tag.getKey() != null && !tag.getKey().isEmpty();
   }
 
   /**
@@ -150,9 +148,8 @@ public class DocumentTagsRequestHandler
   }
 
   @Override
-  public ApiRequestHandlerResponse patch(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse patch(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     final String siteId = authorization.getSiteId();
     final String documentId = event.getPathParameters().get("documentId");
@@ -173,9 +170,8 @@ public class DocumentTagsRequestHandler
   }
 
   @Override
-  public ApiRequestHandlerResponse post(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     final String siteId = authorization.getSiteId();
     final String documentId = event.getPathParameters().get("documentId");
@@ -220,9 +216,8 @@ public class DocumentTagsRequestHandler
   }
 
   @Override
-  public ApiRequestHandlerResponse put(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse put(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     final String siteId = authorization.getSiteId();
     final String documentId = event.getPathParameters().get("documentId");

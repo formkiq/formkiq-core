@@ -26,7 +26,7 @@ package com.formkiq.stacks.api.handler;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.util.Collection;
 import java.util.Map;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
+
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -51,9 +51,8 @@ public class SitesSchemaRequestHandler
   private final Gson gson = GsonUtil.getInstance();
 
   @Override
-  public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsServices) throws Exception {
+  public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
 
     String siteId = authorization.getSiteId();
     SchemaService service = awsServices.getExtension(SchemaService.class);
@@ -76,24 +75,9 @@ public class SitesSchemaRequestHandler
     return "/sites/{siteId}/schema/document";
   }
 
-  private Integer getVersion(final ApiGatewayRequestEvent event) {
-    String version = event.getQueryStringParameter("version");
-
-    Integer result;
-
-    try {
-      result = Integer.parseInt(version);
-    } catch (NumberFormatException e) {
-      result = null;
-    }
-
-    return result;
-  }
-
   @Override
-  public ApiRequestHandlerResponse put(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorizer,
-      final AwsServiceCache awsServices) throws Exception {
+  public ApiRequestHandlerResponse put(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorizer, final AwsServiceCache awsServices) throws Exception {
 
     SchemaService service = awsServices.getExtension(SchemaService.class);
 

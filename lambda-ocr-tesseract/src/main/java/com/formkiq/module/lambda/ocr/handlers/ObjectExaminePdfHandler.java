@@ -23,7 +23,6 @@
  */
 package com.formkiq.module.lambda.ocr.handlers;
 
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
@@ -51,9 +50,8 @@ public class ObjectExaminePdfHandler
   public static final String URL = "/objects/examine/pdf";
 
   @Override
-  public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     S3PresignerService service = awsservice.getExtension(S3PresignerService.class);
 

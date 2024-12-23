@@ -23,7 +23,6 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.cognito.CognitoIdentityProviderService;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -56,9 +55,8 @@ public class UsersRequestHandler implements ApiGatewayRequestHandler, ApiGateway
   public static final String URL = "/users";
 
   @Override
-  public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String token = event.getQueryStringParameter("next");
     String limitS = event.getQueryStringParameter("limit");
@@ -81,9 +79,8 @@ public class UsersRequestHandler implements ApiGatewayRequestHandler, ApiGateway
   }
 
   @Override
-  public ApiRequestHandlerResponse post(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     CognitoIdentityProviderService service =
         awsservice.getExtension(CognitoIdentityProviderService.class);

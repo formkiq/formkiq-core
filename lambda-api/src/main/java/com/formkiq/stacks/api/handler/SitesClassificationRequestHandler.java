@@ -23,7 +23,6 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.PaginationToAttributeValue;
@@ -35,12 +34,10 @@ import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.dynamodb.cache.CacheService;
-import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.schemas.ClassificationRecord;
 import com.formkiq.stacks.dynamodb.schemas.Schema;
 import com.formkiq.stacks.dynamodb.schemas.SchemaService;
-import com.google.gson.Gson;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.HashMap;
@@ -53,13 +50,9 @@ import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 public class SitesClassificationRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
-  /** {@link Gson}. */
-  private final Gson gson = GsonUtil.getInstance();
-
   @Override
-  public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsServices) throws Exception {
+  public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
 
     CacheService cacheService = awsServices.getExtension(CacheService.class);
     ApiPagination pagination = getPagination(cacheService, event);
@@ -98,9 +91,8 @@ public class SitesClassificationRequestHandler
   }
 
   @Override
-  public ApiRequestHandlerResponse post(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorizer,
-      final AwsServiceCache awsServices) throws Exception {
+  public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorizer, final AwsServiceCache awsServices) throws Exception {
 
     SchemaService service = awsServices.getExtension(SchemaService.class);
 

@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
+
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
@@ -110,8 +110,8 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
   }
 
   @Override
-  public void convert(final LambdaLogger logger, final AwsServiceCache awsservice,
-      final OcrRequest request, final String siteId, final String documentId, final String userId) {
+  public void convert(final AwsServiceCache awsservice, final OcrRequest request,
+      final String siteId, final String documentId, final String userId) {
 
     String s3key = createS3Key(siteId, documentId);
 
@@ -157,9 +157,7 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
     String prefix = getS3Key(siteId, documentId, null);
 
     ListObjectsResponse response = this.s3.listObjects(this.ocrBucket, prefix);
-    response.contents().forEach(resp -> {
-      this.s3.deleteObject(this.ocrBucket, resp.key(), null);
-    });
+    response.contents().forEach(resp -> this.s3.deleteObject(this.ocrBucket, resp.key(), null));
 
     Map<String, AttributeValue> map = keysDocumentOcr(siteId, documentId);
     this.db.deleteItem(map.get(PK), map.get(SK));
@@ -191,11 +189,9 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
 
     ListObjectsResponse list = this.s3.listObjects(this.ocrBucket, prefix);
 
-    List<String> s3Keys =
-        list.contents().stream().filter(f -> !f.key().contains(".s3_access_check"))
-            .map(S3Object::key).sorted(new S3KeysNaturalComparator()).collect(Collectors.toList());
-
-    return s3Keys;
+    return list.contents().stream().map(S3Object::key)
+        .filter(key -> !key.contains(".s3_access_check")).sorted(new S3KeysNaturalComparator())
+        .collect(Collectors.toList());
   }
 
   @Override
@@ -231,7 +227,7 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
   @Override
   public String toText(final List<String> contents) {
     StringBuilder sb = new StringBuilder();
-    contents.forEach(c -> sb.append(c));
+    contents.forEach(sb::append);
     return sb.toString();
   }
 

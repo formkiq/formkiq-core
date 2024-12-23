@@ -25,7 +25,7 @@ package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.util.Map;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
+
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -53,9 +53,8 @@ public class DocumentIdRestoreRequestHandler
   }
 
   @Override
-  public ApiRequestHandlerResponse put(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse put(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameters().get("documentId");

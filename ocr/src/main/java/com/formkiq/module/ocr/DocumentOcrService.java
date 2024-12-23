@@ -23,7 +23,6 @@
  */
 package com.formkiq.module.ocr;
 
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 
 import java.util.List;
@@ -41,16 +40,15 @@ public interface DocumentOcrService {
 
   /**
    * Optical character recognition of Document.
-   * 
-   * @param logger {@link LambdaLogger}
+   *
    * @param awsservice {@link AwsServiceCache}
    * @param request {@link OcrRequest}
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param userId {@link String}
    */
-  void convert(LambdaLogger logger, AwsServiceCache awsservice, OcrRequest request, String siteId,
-      String documentId, String userId);
+  void convert(AwsServiceCache awsservice, OcrRequest request, String siteId, String documentId,
+      String userId);
 
   /**
    * Delete Document OCR.

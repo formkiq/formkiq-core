@@ -23,7 +23,6 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -45,9 +44,8 @@ public class MappingsIdRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
   @Override
-  public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsServices) throws Exception {
+  public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
 
     String siteId = authorization.getSiteId();
     String mappingId = event.getPathParameters().get("mappingId");
@@ -69,9 +67,8 @@ public class MappingsIdRequestHandler
   }
 
   @Override
-  public ApiRequestHandlerResponse delete(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorizer,
-      final AwsServiceCache awsServices) throws Exception {
+  public ApiRequestHandlerResponse delete(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorizer, final AwsServiceCache awsServices) throws Exception {
 
     MappingService service = awsServices.getExtension(MappingService.class);
 
@@ -87,9 +84,8 @@ public class MappingsIdRequestHandler
   }
 
   @Override
-  public ApiRequestHandlerResponse put(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorizer,
-      final AwsServiceCache awsServices) throws Exception {
+  public ApiRequestHandlerResponse put(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorizer, final AwsServiceCache awsServices) throws Exception {
 
     MappingService service = awsServices.getExtension(MappingService.class);
 
