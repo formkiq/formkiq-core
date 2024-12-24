@@ -189,13 +189,6 @@ Resources:
           Ref: Partition
         EnablePublicUrls:
           Ref: EnablePublicUrls
-      Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
-        AppEnvironment: 
-          Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
 
   HttpApi:
     Type: AWS::Serverless::Application
@@ -218,13 +211,6 @@ Resources:
           Fn::GetAtt: 
           - ApiLambda
           - Outputs.DocumentsApiRequestsArn
-      Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
-        AppEnvironment: 
-          Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
           
   IamApi:
     Type: AWS::Serverless::Application
@@ -243,13 +229,6 @@ Resources:
           Fn::GetAtt: 
           - Ocr
           - Outputs.OcrProcessorArn
-      Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
-        AppEnvironment: 
-          Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
           
   KeyApi:
     Type: AWS::Serverless::Application
@@ -278,13 +257,6 @@ Resources:
           Fn::GetAtt: 
           - Ocr
           - Outputs.OcrProcessorArn
-      Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
-        AppEnvironment: 
-          Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
           
   DocumentsApiInvokePermission:
     Type: "AWS::Lambda::Permission"

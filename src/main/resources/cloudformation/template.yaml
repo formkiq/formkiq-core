@@ -284,12 +284,6 @@ Resources:
           - RegionMap
           - Ref: "AWS::Region"
           - PARTITION
-      Tags:
-        Application: "FormKiQ Core"
-        AppEnvironment: 
-          Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
 
   CoreConsole:
     Type: AWS::Serverless::Application
@@ -305,12 +299,6 @@ Resources:
           - IsGovCloud
           - "true"
           - "false"
-      Tags:
-        Application: "FormKiQ Core"
-        AppEnvironment: 
-          Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
 
   CoreConsoleInstall:
     Type: AWS::Serverless::Application
@@ -386,13 +374,7 @@ Resources:
         CloudFrontDistributionDomainName: 
           Fn::GetAtt:
           - CoreConsole
-          - Outputs.CloudFrontDistributionDomainName                       
-      Tags:
-        Application: "FormKiQ Core"
-        AppEnvironment: 
-          Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
+          - Outputs.CloudFrontDistributionDomainName
 
   Cognito:
     Type: AWS::Serverless::Application
@@ -428,12 +410,6 @@ Resources:
           Fn::GetAtt:
           - CoreConsole
           - Outputs.ConsoleUrl
-      Tags:
-        Application: "FormKiQ Core"
-        AppEnvironment: 
-          Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
         
   SsmProperties:
     Type: AWS::Serverless::Application
@@ -521,12 +497,6 @@ Resources:
           - Outputs.TypesenseApiEndpoint
         VpcStackName:
           Ref: VpcStackName
-      Tags:
-        Application: "FormKiQ Core"
-        AppEnvironment: 
-          Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
 
   CoreConsoleUsers:
     Type: AWS::Serverless::Application
@@ -567,12 +537,6 @@ Resources:
           Fn::GetAtt: 
           - Cognito
           - Outputs.CognitoUserPoolClientId
-      Tags:
-        Application: "FormKiQ Core"
-        AppEnvironment: 
-          Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
           
   WebsocketApi:
     Type: AWS::Serverless::Application
@@ -605,12 +569,6 @@ Resources:
           Fn::GetAtt: 
           - Cognito
           - Outputs.CognitoUserPoolClientId
-      Tags:
-        Application: "FormKiQ Core"
-        AppEnvironment: 
-          Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
 
   EcsCluster:
     Type: AWS::Serverless::Application
@@ -659,12 +617,6 @@ Resources:
           Ref: LogLevelApplication
         LogLevelSystem:
           Ref: LogLevelSystem
-      Tags:
-        Application: "FormKiQ Core"
-        AppEnvironment: 
-          Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
 
   TypesenseApiKeyParameter:
     Type: AWS::SSM::Parameter
