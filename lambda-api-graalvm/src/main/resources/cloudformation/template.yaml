@@ -141,6 +141,11 @@ Conditions:
         - Ref: CertificateStackName
         - ''
 
+  IsLogFormatJSON:
+    Fn::Equals:
+      - Ref: LogFormat
+      - JSON
+
 Resources:        
 
   ApiLambda:
