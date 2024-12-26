@@ -90,7 +90,6 @@ import com.formkiq.stacks.dynamodb.mappings.MappingService;
 import com.formkiq.stacks.dynamodb.mappings.MappingServiceDynamodb;
 import com.formkiq.stacks.lambda.s3.actions.AddOcrAction;
 import com.formkiq.stacks.lambda.s3.util.FileUtils;
-import com.formkiq.stacks.lambda.s3.util.LambdaContextRecorder;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.formkiq.testutils.aws.LocalStackExtension;
@@ -217,8 +216,6 @@ public class DocumentActionsProcessorTest implements DbKeys {
   private static String sqsQueueArn;
   /** SQS Queue Url. */
   private static String sqsDocumentQueueUrl;
-  /** {@link LambdaContextRecorder}. */
-  private LambdaContextRecorder context;
 
   /**
    * After Class.
@@ -392,7 +389,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
    */
   @BeforeEach
   public void beforeEach() {
-    this.context = new LambdaContextRecorder();
+    // null = new LambdaContextRecorder();
     CALLBACK.reset();
 
     initProcessor("opensearch", "chatgpt1");
@@ -418,7 +415,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       List<Action> list = actionsService.getActions(siteId, documentId);
@@ -464,7 +461,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       final int expectedSize = 6;
@@ -517,7 +514,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       List<Action> list = actionsService.getActions(siteId, documentId);
@@ -565,7 +562,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       final int expectedSize = 7;
@@ -639,7 +636,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       final int expectedSize = 6;
@@ -711,7 +708,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       final int expectedSize = 5;
@@ -779,7 +776,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       final int expectedSize = 7;
@@ -853,7 +850,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       final int expectedSize = 5;
@@ -922,7 +919,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       HttpRequest lastRequest = CALLBACK.getLastRequest();
@@ -966,7 +963,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       HttpRequest lastRequest = CALLBACK.getLastRequest();
@@ -1009,7 +1006,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       HttpRequest lastRequest = CALLBACK.getLastRequest();
@@ -1044,7 +1041,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       actions = actionsService.getActions(siteId, documentId);
@@ -1084,7 +1081,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       actions = actionsService.getActions(siteId, documentId);
@@ -1146,7 +1143,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       actions = actionsService.getActions(siteId, documentId);
@@ -1208,7 +1205,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       HttpRequest lastRequest = CALLBACK.getLastRequest();
@@ -1254,7 +1251,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       actions = actionsService.getActions(siteId, documentId);
@@ -1295,7 +1292,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       actions = actionsService.getActions(siteId, documentId);
@@ -1342,7 +1339,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       List<Action> list = actionsService.getActions(siteId, documentId);
@@ -1381,7 +1378,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       List<Action> list = actionsService.getActions(siteId, documentId);
@@ -1422,7 +1419,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       HttpRequest lastRequest = CALLBACK.getLastRequest();
@@ -1448,7 +1445,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     Map<String, Object> map = new HashMap<>();
 
     // when
-    processor.handleRequest(map, this.context);
+    processor.handleRequest(map, null);
 
     // then
   }
@@ -1474,7 +1471,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       assertEquals(ActionStatus.IN_QUEUE,
@@ -2033,7 +2030,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
             documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
     // when
-    processor.handleRequest(map, this.context);
+    processor.handleRequest(map, null);
   }
 
   private Mapping createMapping(final String attributeKey, final String labelText,
@@ -2078,7 +2075,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       Action action = actionsService.getActions(siteId, documentId).get(0);
@@ -2128,7 +2125,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       Action action = actionsService.getActions(siteId, documentId).get(0);
@@ -2164,7 +2161,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       Action action = actionsService.getActions(siteId, documentId).get(0);
@@ -2201,7 +2198,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       Action action = actionsService.getActions(siteId, documentId).get(0);
@@ -2259,7 +2256,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       Action action = actionsService.getActions(siteId, documentId).get(0);

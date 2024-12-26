@@ -44,7 +44,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.Context;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
@@ -84,6 +83,8 @@ import com.formkiq.module.httpsigv4.HttpServiceSigv4;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.module.lambdaservices.ClassServiceExtension;
+import com.formkiq.module.lambdaservices.logger.LogLevel;
+import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
@@ -130,6 +131,8 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
   private static CacheService cacheService;
   /** {@link S3PresignerService}. */
   private static S3PresignerService s3PresignedService;
+  /** {@link Logger}. */
+  private static Logger logger;
 
   static {
 
@@ -224,6 +227,8 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
           ssm.getParameterValue("/formkiq/" + appEnvironment + "/api/DocumentsIamUrl");
       awsServiceCache.environment().put("DOCUMENTS_IAM_URL", documentsIamUrl);
     }
+
+    logger = awsServiceCache.getLogger();
   }
 
   /**
@@ -331,16 +336,14 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
   @Override
   public Void handleRequest(final Map<String, Object> map, final Context context) {
 
-    LambdaLogger logger = context.getLogger();
     ApiAuthorization.logout();
 
-    boolean debug = "true".equals(System.getenv("DEBUG"));
-    if (debug) {
+    if (logger.isLogged(LogLevel.DEBUG)) {
       String json = this.gson.toJson(map);
-      logger.log(json);
+      logger.debug(json);
     }
 
-    List<Map<String, Object>> list = processRecords(logger, map);
+    List<Map<String, Object>> list = processRecords(map);
 
     for (Map<String, Object> e : list) {
 
@@ -353,7 +356,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
       String s = String.format("{\"eventName\": \"%s\",\"bucket\": \"%s\",\"key\": \"%s\"}",
           eventName, bucket, key);
-      logger.log(s);
+      logger.info(s);
 
       if (bucket != null && key != null) {
 
@@ -361,19 +364,17 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
         boolean remove = eventName != null && eventName.toLowerCase().contains("objectremove");
 
-        if (debug) {
-          logger.log(String.format("processing event %s for file %s in bucket %s", eventName,
-              bucket, key));
-        }
+        logger.trace(
+            String.format("processing event %s for file %s in bucket %s", eventName, bucket, key));
 
         try {
 
           if (remove) {
 
-            processS3Delete(logger, bucket, key);
+            processS3Delete(bucket, key);
 
           } else {
-            processS3File(logger, create, bucket, key, s3VersionId, debug);
+            processS3File(create, bucket, key, s3VersionId);
           }
 
         } catch (IOException | InterruptedException ex) {
@@ -424,13 +425,11 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
   /**
    * Process Event Records.
-   * 
-   * @param logger {@link LambdaLogger}
+   *
    * @param records {@link List} {@link Map}
    * @return {@link Map}
    */
-  private List<Map<String, Object>> processRecords(final LambdaLogger logger,
-      final List<Map<String, Object>> records) {
+  private List<Map<String, Object>> processRecords(final List<Map<String, Object>> records) {
 
     List<Map<String, Object>> list = new ArrayList<>();
 
@@ -441,12 +440,12 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
         String body = event.get("body").toString();
 
         Map<String, Object> map = this.gson.fromJson(body, Map.class);
-        list.addAll(processRecords(logger, map));
+        list.addAll(processRecords(map));
 
       } else if (event.containsKey("eventName")) {
         list.add(processEvent(event));
       } else {
-        list.addAll(processRecords(logger, event));
+        list.addAll(processRecords(event));
       }
     }
 
@@ -455,26 +454,24 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
   /**
    * Process Event Records.
-   * 
-   * @param logger {@link LambdaLogger}
+   *
    * @param map {@link Map}
    * @return {@link List} {@link Map}
    */
-  private List<Map<String, Object>> processRecords(final LambdaLogger logger,
-      final Map<String, Object> map) {
+  private List<Map<String, Object>> processRecords(final Map<String, Object> map) {
 
     List<Map<String, Object>> list = new ArrayList<>();
 
     if (map.containsKey("Records")) {
       List<Map<String, Object>> records = (List<Map<String, Object>>) map.get("Records");
-      list.addAll(processRecords(logger, records));
+      list.addAll(processRecords(records));
     } else if (map.containsKey("Message")) {
       String body = map.get("Message").toString();
       Map<String, Object> messageMap = this.gson.fromJson(body, Map.class);
-      list.addAll(processRecords(logger, messageMap));
+      list.addAll(processRecords(messageMap));
     } else if (map.containsKey("Sns")) {
       Map<String, Object> messageMap = (Map<String, Object>) map.get("Sns");
-      list.addAll(processRecords(logger, messageMap));
+      list.addAll(processRecords(messageMap));
     } else if (map.containsKey("s3key")) {
       list.add(map);
     }
@@ -484,14 +481,13 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
   /**
    * Process S3 Delete Request.
-   * 
-   * @param logger {@link LambdaLogger}
+   *
    * @param bucket {@link String}
    * @param key {@link String}
    * @throws InterruptedException InterruptedException
    * @throws IOException IOException
    */
-  private void processS3Delete(final LambdaLogger logger, final String bucket, final String key)
+  private void processS3Delete(final String bucket, final String key)
       throws IOException, InterruptedException {
 
     if (!s3service.getObjectMetadata(bucket, key, null).isObjectExists()) {
@@ -500,7 +496,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
       String documentId = resetDatabaseKey(siteId, key);
 
       String msg = String.format("Removing %s from bucket %s.", key, bucket);
-      logger.log(msg);
+      logger.trace(msg);
 
       boolean moduleOcr = serviceCache.hasModule("ocr");
       boolean moduleFulltext = serviceCache.hasModule("opensearch");
@@ -538,24 +534,21 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
       DocumentEvent event =
           buildDocumentEvent(DELETE, siteId, doc, bucket, key, doc.getContentType());
 
-      sendSnsMessage(logger, event, doc.getContentType(), bucket, key, null);
+      sendSnsMessage(event, doc.getContentType(), bucket, key, null);
     }
   }
 
   /**
    * Process S3 File.
-   * 
-   * @param logger {@link LambdaLogger}
+   *
    * @param create boolean
    * @param s3bucket {@link String}
    * @param s3key {@link String}
    * @param s3VersionId {@link String}
-   * @param debug boolean
    * @throws FileNotFoundException FileNotFoundException
    */
-  private void processS3File(final LambdaLogger logger, final boolean create, final String s3bucket,
-      final String s3key, final String s3VersionId, final boolean debug)
-      throws FileNotFoundException {
+  private void processS3File(final boolean create, final String s3bucket, final String s3key,
+      final String s3VersionId) throws FileNotFoundException {
 
     String key = urlDecode(s3key);
 
@@ -575,13 +568,13 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
     if (item != null) {
 
-      if (debug) {
-        logger.log("metadata: " + resp.getMetadata());
-        logger.log("item checksum: " + resp.getChecksum());
-        logger.log("item content-type: " + resp.getContentType());
-        logger.log("content-type: " + contentType);
-        logger.log("s3 version id: " + s3VersionId);
-        logger.log("s3 file version id: " + resp.getVersionId());
+      if (logger.isLogged(LogLevel.TRACE)) {
+        logger.trace("metadata: " + resp.getMetadata());
+        logger.trace("item checksum: " + resp.getChecksum());
+        logger.trace("item content-type: " + resp.getContentType());
+        logger.trace("content-type: " + contentType);
+        logger.trace("s3 version id: " + s3VersionId);
+        logger.trace("s3 file version id: " + resp.getVersionId());
       }
 
       Map<String, AttributeValue> attributes = buildAttributes(resp, contentType, contentLength);
@@ -599,10 +592,10 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
       DocumentEvent event =
           buildDocumentEvent(create ? CREATE : UPDATE, siteId, item, s3bucket, key, contentType);
-      sendSnsMessage(logger, event, contentType, s3bucket, key, resp);
+      sendSnsMessage(event, contentType, s3bucket, key, resp);
 
     } else {
-      logger.log("Cannot find document " + documentId + " in site " + siteId);
+      logger.error("Cannot find document " + documentId + " in site " + siteId);
     }
   }
 
@@ -637,17 +630,15 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
   /**
    * Either sends the Create Message to SNS.
-   * 
-   * @param logger {@link LambdaLogger}
+   *
    * @param event {@link DocumentEvent}
    * @param contentType {@link String}
    * @param s3bucket {@link String}
    * @param key {@link String}
    * @param resp {@link S3ObjectMetadata}
    */
-  private void sendSnsMessage(final LambdaLogger logger, final DocumentEvent event,
-      final String contentType, final String s3bucket, final String key,
-      final S3ObjectMetadata resp) {
+  private void sendSnsMessage(final DocumentEvent event, final String contentType,
+      final String s3bucket, final String key, final S3ObjectMetadata resp) {
 
     String siteId = event.siteId();
     String documentId = event.documentId();
@@ -662,14 +653,10 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     event.url(url.toString());
 
     String eventJson = documentEventService.publish(event);
-
-    boolean debug = "true".equals(System.getenv("DEBUG"));
-    if (debug) {
-      logger.log("event: " + eventJson);
-    }
+    logger.trace(eventJson);
 
     String eventType = event.type();
-    logger.log("publishing " + event.type() + " document message to " + snsDocumentEvent);
+    logger.trace("publishing " + event.type() + " document message to " + snsDocumentEvent);
 
     if (CREATE.equals(eventType)) {
       List<Action> actions = actionsService.getActions(siteId, documentId);
