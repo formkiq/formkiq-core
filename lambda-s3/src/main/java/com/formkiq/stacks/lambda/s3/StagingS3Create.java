@@ -566,14 +566,14 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
    */
   private void processEvent(final Date date, final Map<String, Object> event) throws Exception {
 
-    String eventName = event.get("eventName").toString();
-    boolean objectCreated = eventName.contains("ObjectCreated");
-
     String bucket = getBucketName(event);
 
     String key = getObjectKey(event);
     String s3Key = urlDecode(key);
     String siteId = getSiteId(s3Key);
+
+    String eventName = event.get("eventName").toString();
+    boolean objectCreated = eventName.contains("ObjectCreated") && !s3Key.endsWith("/");
 
     String s = String.format("{\"eventName\": \"%s\",\"bucket\": \"%s\",\"key\": \"%s\"}",
         eventName, bucket, key);
@@ -581,11 +581,13 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
     final String tempFolder = "tempfiles/";
     if (objectCreated && key.startsWith(tempFolder)) {
+
       if (Strings.getExtension(key).equals("json")) {
         this.handleCompressionRequest(bucket, key);
       } else {
         logger.trace(String.format("skipping event for key %s", key));
       }
+
     } else if (objectCreated) {
       if (s3Key.contains("patch_documents_tags_") && s3Key.endsWith(FORMKIQ_B64_EXT)) {
         processPatchDocumentsTags(siteId, bucket, s3Key, date);

@@ -141,6 +141,7 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
+import software.amazon.awssdk.services.s3.model.S3Object;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 
@@ -271,6 +272,20 @@ public class StagingS3CreateTest implements DbKeys {
   }
 
   private static void createAwService() {
+    Map<String, String> env = getEnvironment();
+
+    AwsCredentials creds = AwsBasicCredentials.create("aaa", "bbb");
+    StaticCredentialsProvider credentialsProvider = StaticCredentialsProvider.create(creds);
+
+    awsServices = new AwsServiceCacheBuilder(Collections.unmodifiableMap(env),
+        TestServices.getEndpointMap(), credentialsProvider)
+        .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
+            new SnsAwsServiceRegistry(), new SqsAwsServiceRegistry(), new SsmAwsServiceRegistry())
+        .build().setLogger(new LoggerRecorder());
+    logger = (LoggerRecorder) awsServices.getLogger();
+  }
+
+  private static Map<String, String> getEnvironment() {
     Map<String, String> env = new HashMap<>();
     env.put("AWS_REGION", Region.US_EAST_1.id());
     env.put("DOCUMENTS_S3_BUCKET", DOCUMENTS_BUCKET);
@@ -283,16 +298,7 @@ public class StagingS3CreateTest implements DbKeys {
     env.put("APP_ENVIRONMENT", APP_ENVIRONMENT);
     env.put("SNS_DOCUMENT_EVENT", snsDocumentEvent);
     env.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
-
-    AwsCredentials creds = AwsBasicCredentials.create("aaa", "bbb");
-    StaticCredentialsProvider credentialsProvider = StaticCredentialsProvider.create(creds);
-
-    awsServices = new AwsServiceCacheBuilder(Collections.unmodifiableMap(env),
-        TestServices.getEndpointMap(), credentialsProvider)
-        .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
-            new SnsAwsServiceRegistry(), new SqsAwsServiceRegistry(), new SsmAwsServiceRegistry())
-        .build().setLogger(new LoggerRecorder());
-    logger = (LoggerRecorder) awsServices.getLogger();
+    return env;
   }
 
   /**
@@ -506,8 +512,8 @@ public class StagingS3CreateTest implements DbKeys {
    * @param key {@link String}
    * @return {@link DocumentTag}
    */
-  private DocumentTag findTag(final List<DocumentTag> tags, final String key) {
-    return tags.stream().filter(s -> s.getKey().equals(key)).findFirst().get();
+  private Optional<DocumentTag> findTag(final List<DocumentTag> tags, final String key) {
+    return tags.stream().filter(s -> s.getKey().equals(key)).findFirst();
   }
 
   /**
@@ -597,8 +603,9 @@ public class StagingS3CreateTest implements DbKeys {
       if (hasTags) {
 
         for (DynamicObject tag : docitem.getList("tags")) {
-          DocumentTag dtag = findTag(tags, tag.getString("key"));
-          assertEquals(tag.getString("value"), dtag.getValue());
+          Optional<DocumentTag> dtag = findTag(tags, tag.getString("key"));
+          assertTrue(dtag.isPresent());
+          assertEquals(tag.getString("value"), dtag.get().getValue());
         }
       }
     }
@@ -703,6 +710,34 @@ public class StagingS3CreateTest implements DbKeys {
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
       testCopyFile(siteId, documentId, "something/where/test.pdf");
     }
+  }
+
+  /**
+   * Create folder.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  void testCreateFolder01() throws Exception {
+    // given
+    String key = "testsite/";
+    Map<String, Object> map = loadFileAsMap(this, "/sqs-event-create01.json");
+
+    s3.putObject(STAGING_BUCKET, key, "".getBytes(UTF_8), null, Map.of());
+
+    // when
+    handleRequest(map);
+
+    // then
+    List<S3Object> staging = s3.listObjects(STAGING_BUCKET, null).contents();
+    assertEquals(1, staging.size());
+    assertEquals(key, staging.get(0).key());
+
+    List<S3Object> docs = s3.listObjects(DOCUMENTS_BUCKET, null).contents();
+    assertEquals(0, docs.size());
+
+    assertEquals(0, dbHelper.getDocumentItemCount(DOCUMENTS_TABLE));
   }
 
   /**
