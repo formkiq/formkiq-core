@@ -47,8 +47,8 @@ jobs:
         env:
           formKiQVersion: ${{ github.event.inputs.version }}
         with:
-          platforms: linux/amd64, linux/arm64
-          context: ./netty-server/build/libs/
-          file: ./netty-server/build/dockerfile/Dockerfile
+          platforms: linux/amd64
+          context: ./netty-server/
+          file: ./netty-server/Dockerfile
           push: true
           tags: "formkiq/api-server:${{ env.formKiQVersion }}"
