@@ -40,11 +40,9 @@ jobs:
     
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
-        env:
-          formKiQVersion: ${{ github.event.inputs.version }}
         with:
           platforms: linux/amd64, linux/arm64
-          context: ./netty-server/
-          file: ./netty-server/Dockerfile
+          context: ./netty-server/keycloak/
+          file: ./netty-server/keycloak/Dockerfile
           push: true
           tags: "formkiq/keycloak:26.0.6"
