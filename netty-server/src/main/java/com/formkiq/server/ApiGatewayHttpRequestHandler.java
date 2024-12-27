@@ -40,6 +40,7 @@ import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestContext;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.lambda.runtime.graalvm.LambdaContext;
+import com.formkiq.server.auth.IAuthCredentials;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.netty.buffer.Unpooled;
@@ -58,8 +59,8 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
  */
 public class ApiGatewayHttpRequestHandler implements HttpRequestHandler {
 
-  /** API Key. */
-  private String apiKey = null;
+  /** Auth Credentials. */
+  private final IAuthCredentials authCredentials;
   /** {@link Gson}. */
   private Gson gson = new GsonBuilder().create();
   /** {@link NettyRequestHandler}. */
@@ -71,13 +72,13 @@ public class ApiGatewayHttpRequestHandler implements HttpRequestHandler {
    * constructor.
    * 
    * @param reqestHandler {@link NettyRequestHandler}
-   * @param requestApiKey {@link String}
+   * @param authCreds {@link IAuthCredentials}
    * @param handlerUrls {@link Collection} {@link String}
    * 
    */
   public ApiGatewayHttpRequestHandler(final NettyRequestHandler reqestHandler,
-      final String requestApiKey, final Collection<String> handlerUrls) {
-    this.apiKey = requestApiKey;
+      final IAuthCredentials authCreds, final Collection<String> handlerUrls) {
+    this.authCredentials = authCreds;
     this.handler = reqestHandler;
     this.urls = handlerUrls;
   }
@@ -151,8 +152,7 @@ public class ApiGatewayHttpRequestHandler implements HttpRequestHandler {
   @Override
   public void handle(final ChannelHandlerContext ctx, final FullHttpRequest request)
       throws IOException {
-
-    if (validateAuthorization(ctx, request)) {
+    if (isAuthorized(ctx, request)) {
       handleApiGatewayRequest(ctx, request);
     }
   }
@@ -197,7 +197,7 @@ public class ApiGatewayHttpRequestHandler implements HttpRequestHandler {
 
   @Override
   public boolean isSupported(final FullHttpRequest request) {
-    return this.apiKey.equals(request.headers().get("Authorization"));
+    return request.headers().get("Authorization") != null;
   }
 
   /**
@@ -207,17 +207,16 @@ public class ApiGatewayHttpRequestHandler implements HttpRequestHandler {
    * @param req {@link FullHttpRequest}
    * @return boolean
    */
-  private boolean validateAuthorization(final ChannelHandlerContext ctx,
-      final FullHttpRequest req) {
+  private boolean isAuthorized(final ChannelHandlerContext ctx, final FullHttpRequest req) {
+    String authorization = req.headers().get("Authorization");
 
-    boolean proceed = false;
-    if (!this.apiKey.equals(req.headers().get("Authorization"))) {
+    if (!authCredentials.isApiKeyValid(authorization)) {
       sendResponse(ctx, HttpResponseStatus.FORBIDDEN,
-          "{\"message\":\"access denied, invalid API_KEY\"}");
-    } else {
-      proceed = true;
+          "{\"message\":\"access denied, invalid Authorization\"}");
+
+      return false;
     }
 
-    return proceed;
+    return true;
   }
 }

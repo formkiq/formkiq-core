@@ -24,8 +24,10 @@
 package com.formkiq.server;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
+
+import com.formkiq.server.auth.IAuthCredentials;
+import com.formkiq.server.auth.Tokens;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.netty.channel.ChannelHandlerContext;
@@ -44,21 +46,16 @@ public class AuthenticationLoginHttpRequestHandler implements HttpRequestHandler
   /** {@link Gson}. */
   private Gson gson = new GsonBuilder().create();
 
-  /** Login User Map. */
-  private Map<String, String> loginMap = new HashMap<>();
+  /** Auth credentials data. */
+  private final IAuthCredentials authCredentials;
 
   /**
    * constructor.
    * 
-   * @param adminUser {@link String}
-   * @param adminPassword {@link String}
-   * @param apiKey {@link String}
+   * @param authenticationCredentials {@link IAuthCredentials}
    */
-  public AuthenticationLoginHttpRequestHandler(final String adminUser, final String adminPassword,
-      final String apiKey) {
-    if (adminUser != null && adminPassword != null) {
-      this.loginMap.put(adminUser + "#" + adminPassword, apiKey);
-    }
+  public AuthenticationLoginHttpRequestHandler(final IAuthCredentials authenticationCredentials) {
+    this.authCredentials = authenticationCredentials;
   }
 
   @SuppressWarnings("unchecked")
@@ -80,10 +77,11 @@ public class AuthenticationLoginHttpRequestHandler implements HttpRequestHandler
         + "\"message\":\"Incorrect username or password.\"}";
     HttpResponseStatus status = HttpResponseStatus.BAD_REQUEST;
 
-    if (this.loginMap.containsKey(username + "#" + password)) {
-      String apiKey = this.loginMap.get(username + "#" + password);
-      Map<String, Object> results = Map.of("AuthenticationResult",
-          Map.of("AccessToken", apiKey, "IdToken", apiKey, "RefreshToken", ""));
+    Tokens tokens = this.authCredentials.getTokens(username, password);
+    if (tokens != null) {
+      Map<String, Object> results =
+          Map.of("AuthenticationResult", Map.of("AccessToken", tokens.accessToken(), "IdToken",
+              tokens.idToken(), "RefreshToken", tokens.refreshToken()));
 
       status = HttpResponseStatus.OK;
       responseBody = this.gson.toJson(results);

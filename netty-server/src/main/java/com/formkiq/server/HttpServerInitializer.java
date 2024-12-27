@@ -252,7 +252,7 @@ public final class HttpServerInitializer extends ChannelInitializer<SocketChanne
     Map<String, String> env = new HashMap<>();
     env.put("USER_AUTHENTICATION", "cognito");
     env.put("APP_ENVIRONMENT", "dev");
-    env.put("VERSION", "1.13");
+    env.put("VERSION", "1.16.0");
     env.put("FORMKIQ_TYPE", "core");
     env.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
     env.put("CACHE_TABLE", CACHE_TABLE);
@@ -268,6 +268,10 @@ public final class HttpServerInitializer extends ChannelInitializer<SocketChanne
     env.put("MODULE_typesense", "true");
     env.put("TYPESENSE_HOST", commandLine.getOptionValue("typesense-host"));
     env.put("TYPESENSE_API_KEY", commandLine.getOptionValue("typesense-api-key"));
+
+    env.put("KEYCLOAK_TOKEN_ENDPOINT", commandLine.getOptionValue("keycloak-token-endpoint"));
+    env.put("KEYCLOAK_CLIENT_ID", commandLine.getOptionValue("keycloak-client-id"));
+    env.put("KEYCLOAK_CLIENT_SECRET", commandLine.getOptionValue("keycloak-client-secret"));
 
     String apiKey = commandLine.getOptionValue("api-key");
     if (Strings.isEmpty(apiKey)) {

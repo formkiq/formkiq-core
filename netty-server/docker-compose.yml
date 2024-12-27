@@ -1,30 +1,36 @@
-version: '3.8'
 services:
-
   console:
-    image: formkiq/document-console:3.2.4-SNAPSHOT-20231107
+    image: formkiq/document-console:3.7.3
+    depends_on:
+      - api
     ports:
       - "80:80"
     environment:
       HTTP_API_URL: http://localhost:8080
       COGNITO_API_URL: http://localhost:8080
-      COGNITO_ENDPOINT_OVERRIDE: http://localhost:8080
+      COGNITO_USER_POOL_ID: us-east-2_3123
+      COGNITO_CLIENT_ID: abcd
+      USE_AUTH_API_FOR_SIGNIN: true
+      CONSOLE_VERSION: 3.7.3
   
   typesense:
-    image: typesense/typesense:0.25.1
+    image: typesense/typesense:27.1
     ports:
       - "8108:8108"
     volumes:
-      - ./typesense-data:/data
-    command: '--data-dir /data --api-key=xyz --enable-cors'
+      - ~/.formkiq/typesense-data:/data
+    command: ["--data-dir", "/data", "--api-key", "xyz", "--enable-cors"]
     
-  formkiq:
-    image: formkiq/api-server:1.13.0-SNAPSHOT-20231125
+  api:
+    image: docker.io/formkiq/api-server:1.16.0
     depends_on:
       - minio
       - dynamodb
+      - keycloak
+      - typesense
     ports:
       - "8080:8080"
+      # - "8100:8100" #uncomment this line and "ENV JAVA_TOOL_OPTIONS" in Dockerfile to enable debugging
     environment:
       PORT: 8080
       DYNAMODB_URL: http://dynamodb:8000
@@ -32,14 +38,18 @@ services:
       S3_PRESIGNER_URL: http://localhost:9000
       MINIO_ACCESS_KEY: minioadmin
       MINIO_SECRET_KEY: minioadmin
-      ADMIN_USERNAME: admin@me.com
+      ADMIN_USERNAME: admin@me1.com
       ADMIN_PASSWORD: password
       API_KEY: changeme
       TYPESENSE_HOST: http://typesense:8108
       TYPESENSE_API_KEY: xyz
+      # comment line below to disable keycloak and use API_KEY for authentication
+      KEYCLOAK_TOKEN_ENDPOINT: http://keycloak:8081/realms/formkiq/protocol/openid-connect/token
+      KEYCLOAK_CLIENT_ID: formkiq-jwt
+      KEYCLOAK_CLIENT_SECRET: dC0dK4DoQK1f8lrsoxDC3svoD3JuHa5x
 
   minio:
-    image: minio/minio:RELEASE.2023-08-23T10-07-06Z
+    image: minio/minio:RELEASE.2024-12-13T22-19-12Z
     ports:
       - "9000:9000"
       - "9090:9090"
@@ -47,6 +57,7 @@ services:
       MINIO_DOMAIN: minio
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_SERVER_URL: http://localhost:9000 
       MINIO_NOTIFY_WEBHOOK_ENABLE_DOCUMENTS: on
       MINIO_NOTIFY_WEBHOOK_ENDPOINT_DOCUMENTS: http://formkiq:8080/minio/s3/documents
       MINIO_NOTIFY_WEBHOOK_ENABLE_STAGINGDOCUMENTS: on
@@ -57,13 +68,33 @@ services:
           - documents.minio
           - stagingdocuments.minio
     volumes:
-      - ./formkiq/minio:/data
-    command: server /data --address :9000 --console-address :9090
+      - ~/.formkiq/minio-data:/data
+    command: ["server", "/data", "--address", ":9000", "--console-address", ":9001"]
 
   dynamodb:
-    image: amazon/dynamodb-local:1.24.0
-    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath /data"
+    image: amazon/dynamodb-local:2.5.3
+    command: ["-jar", "DynamoDBLocal.jar", "-sharedDb", "-dbPath", "/home/dynamodblocal/data"]
     ports:
       - "8000:8000"
     volumes:
-      - ./formkiq/dynamodb:/data
+      - ~/.formkiq/dynamodb-data:/home/dynamodblocal/data
+    working_dir: /home/dynamodblocal
+
+  keycloak:
+    image: formkiq/keycloak:26.0.6
+    command: "start-dev --db=dev-file --http-port=8081"
+    #command: export --dir /opt/keycloak/data/import/ --realm formkiq --users realm_file #To export data comment line above and uncomment this line
+    environment:
+       KC_BOOTSTRAP_ADMIN_USERNAME: admin
+       KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+       JAVA_OPTS_APPEND: >
+         -Dkeycloak.migration.action=import
+         -Dkeycloak.migration.provider=singleFile
+         -Dkeycloak.migration.file=/tmp/formkiq-realm.json
+         -Dkeycloak.migration.strategy=IGNORE_EXISTING
+         -Dkeycloak.migration.replace-placeholders=true
+         -Dkeycloak.profile.feature.upload_scripts=enabled
+    ports:
+      - 8081:8081
+    volumes:
+      - ~/.formkiq/keycloak-data:/opt/keycloak/data

@@ -29,6 +29,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.server.auth.IAuthCredentials;
+import com.formkiq.server.auth.KeycloakAuthCredentials;
+import com.formkiq.server.auth.SimpleAuthCredentials;
 import com.formkiq.stacks.lambda.s3.DocumentsS3Update;
 import com.formkiq.stacks.lambda.s3.StagingS3Create;
 import io.netty.channel.ChannelHandlerContext;
@@ -59,13 +62,21 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpReque
     String apiKey = awsServices.environment("API_KEY");
     String adminUser = awsServices.environment("ADMIN_USERNAME");
     String adminPassword = awsServices.environment("ADMIN_PASSWORD");
+    String keycloakTokenEndpoint = awsServices.environment("KEYCLOAK_TOKEN_ENDPOINT");
+    String keycloakClientId = awsServices.environment("KEYCLOAK_CLIENT_ID");
+    String keycloakClientSecret = awsServices.environment("KEYCLOAK_CLIENT_SECRET");
 
     Collection<String> urls = requestHandler.getUrlMap().keySet();
 
+    IAuthCredentials authCredentials = (keycloakTokenEndpoint == null)
+        ? new SimpleAuthCredentials(adminUser, adminPassword, apiKey)
+        : new KeycloakAuthCredentials(keycloakTokenEndpoint, keycloakClientId,
+            keycloakClientSecret);
+
     this.handlers = Arrays.asList(new OptionsHttpRequestHandler(),
         new MinioS3HttpRequestHandler(stagingS3Create, documentS3Update),
-        new ApiGatewayHttpRequestHandler(requestHandler, apiKey, urls),
-        new AuthenticationLoginHttpRequestHandler(adminUser, adminPassword, apiKey));
+        new AuthenticationLoginHttpRequestHandler(authCredentials),
+        new ApiGatewayHttpRequestHandler(requestHandler, authCredentials, urls));
   }
 
   @Override
