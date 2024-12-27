@@ -71,5 +71,6 @@ tasks.named('jar') {
     archiveVersion.set('')               // Remove the version number
 }
 
+composeBuild.dependsOn(jar)
 test.dependsOn(composeBuild)
 check.dependsOn(composeBuild)
