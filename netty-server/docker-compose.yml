@@ -1,6 +1,6 @@
 services:
   console:
-    image: formkiq/document-console:3.7.3
+    image: formkiq/document-console:3.7.2
     depends_on:
       - api
     ports:
