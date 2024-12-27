@@ -81,7 +81,7 @@ services:
     working_dir: /home/dynamodblocal
 
   keycloak:
-    image: formkiq/keycloak:26.0.6
+    image: docker.io/formkiq/keycloak:26.0.6
     command: "start-dev --db=dev-file --http-port=8081"
     #command: export --dir /opt/keycloak/data/import/ --realm formkiq --users realm_file #To export data comment line above and uncomment this line
     environment:
