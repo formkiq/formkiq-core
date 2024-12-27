@@ -22,7 +22,7 @@ services:
     command: ["--data-dir", "/data", "--api-key", "xyz", "--enable-cors"]
     
   api:
-    image: docker.io/formkiq/api-server:1.16.0-SNAPSHOT
+    image: docker.io/formkiq/api-server:1.16.0
     depends_on:
       - minio
       - dynamodb

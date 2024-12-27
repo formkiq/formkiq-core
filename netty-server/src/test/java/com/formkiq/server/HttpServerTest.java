@@ -280,7 +280,7 @@ public class HttpServerTest {
     assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
     assertCorsHeaders(response);
     Map<String, Object> results = this.gson.fromJson(response.body(), Map.class);
-    assertEquals("1.13", results.get("version"));
+    assertEquals("1.16.0", results.get("version"));
     assertEquals("core", results.get("type"));
     assertEquals("typesense",
         ((List<String>) results.get("modules")).stream().sorted().collect(Collectors.joining(",")));

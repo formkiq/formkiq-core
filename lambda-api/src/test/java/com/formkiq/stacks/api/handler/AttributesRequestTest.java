@@ -155,8 +155,13 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
     AddDocumentRequest docReq = new AddDocumentRequest().content("test");
 
-    AddDocumentAttributeStandard o = new AddDocumentAttributeStandard().key(key)
-        .stringValue(stringValue).booleanValue(null).numberValue(numberValue);
+    AddDocumentAttributeStandard o = new AddDocumentAttributeStandard().stringValue(stringValue)
+        .booleanValue(null).numberValue(numberValue);
+
+    if (key != null) {
+      o.key(key);
+    }
+
     docReq.addAttributesItem(new AddDocumentAttribute(o));
 
     return this.documentsApi.addDocument(docReq, siteId, null).getDocumentId();
