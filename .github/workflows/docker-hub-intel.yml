@@ -38,12 +38,12 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Setup Gradle
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@v3
       - name: Execute Gradle build
         run: ./gradlew netty-server:build --info
     
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5.0.0
+        uses: docker/build-push-action@v6
         env:
           formKiQVersion: ${{ github.event.inputs.version }}
         with:
