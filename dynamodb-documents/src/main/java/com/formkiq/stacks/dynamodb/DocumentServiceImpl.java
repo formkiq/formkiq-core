@@ -144,8 +144,6 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   private final FolderIndexProcessor folderIndexProcessor;
   /** {@link GlobalIndexService}. */
   private final GlobalIndexService indexWriter;
-  /** Last Short Date. */
-  private String lastShortDate = null;
   /** {@link SchemaService}. */
   private final SchemaService schemaService;
   /** {@link DocumentVersionService}. */
@@ -156,6 +154,8 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   private final DateTimeFormatter yyyymmddFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
   /** {@link DocumentServiceInterceptor}. */
   private final DocumentServiceInterceptor interceptor;
+  /** Last Short Date. */
+  private String lastShortDate = null;
 
   /**
    * constructor.
@@ -1462,6 +1462,23 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     return !path1.equals(path0);
   }
 
+  private boolean isPathChanged(final String siteId, final DocumentItem document,
+      final Map<String, AttributeValue> previous, final Map<String, AttributeValue> documentValues,
+      final WriteRequestBuilder writeBuilder) {
+    boolean isPathChanged = isPathChanges(previous, document);
+
+    FolderIndexRecord folderIndexRecord = createDocumentPath(siteId, document, isPathChanged);
+    if (!isEmpty(document.getPath())) {
+      documentValues.put("path", AttributeValue.fromS(document.getPath()));
+      isPathChanged = isPathChanges(previous, document);
+    }
+
+    if (folderIndexRecord != null) {
+      writeBuilder.append(this.documentTableName, folderIndexRecord.getAttributes(siteId));
+    }
+    return isPathChanged;
+  }
+
   @Override
   public void publishDocument(final String siteId, final String documentId, final String s3version,
       final String path, final String contentType, final String userId) {
@@ -1811,17 +1828,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     DynamodbRecordTx tx = getSaveDocumentAttributesTx(siteId, document.getDocumentId(), attributes,
         AttributeValidation.FULL, options.getValidationAccess());
 
-    boolean isPathChanged = isPathChanges(previous, document);
-
-    FolderIndexRecord folderIndexRecord = createDocumentPath(siteId, document, isPathChanged);
-    if (!isEmpty(document.getPath())) {
-      documentValues.put("path", AttributeValue.fromS(document.getPath()));
-      isPathChanged = isPathChanges(previous, document);
-    }
-
-    if (folderIndexRecord != null) {
-      writeBuilder.append(this.documentTableName, folderIndexRecord.getAttributes(siteId));
-    }
+    boolean isPathChanged = isPathChanged(siteId, document, previous, documentValues, writeBuilder);
 
     writeBuilder.appends(this.documentTableName,
         tx.getSaves().stream().map(a -> a.getAttributes(siteId)).toList());
