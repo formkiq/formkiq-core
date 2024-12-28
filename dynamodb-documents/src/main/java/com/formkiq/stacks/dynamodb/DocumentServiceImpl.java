@@ -1816,6 +1816,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     FolderIndexRecord folderIndexRecord = createDocumentPath(siteId, document, isPathChanged);
     if (!isEmpty(document.getPath())) {
       documentValues.put("path", AttributeValue.fromS(document.getPath()));
+      isPathChanged = isPathChanges(previous, document);
     }
 
     if (folderIndexRecord != null) {
