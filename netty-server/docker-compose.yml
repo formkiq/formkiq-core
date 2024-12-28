@@ -59,9 +59,9 @@ services:
       MINIO_ROOT_PASSWORD: minioadmin
       MINIO_SERVER_URL: http://localhost:9000 
       MINIO_NOTIFY_WEBHOOK_ENABLE_DOCUMENTS: on
-      MINIO_NOTIFY_WEBHOOK_ENDPOINT_DOCUMENTS: http://formkiq:8080/minio/s3/documents
+      MINIO_NOTIFY_WEBHOOK_ENDPOINT_DOCUMENTS: http://api:8080/minio/s3/documents
       MINIO_NOTIFY_WEBHOOK_ENABLE_STAGINGDOCUMENTS: on
-      MINIO_NOTIFY_WEBHOOK_ENDPOINT_STAGINGDOCUMENTS: http://formkiq:8080/minio/s3/stagingdocuments
+      MINIO_NOTIFY_WEBHOOK_ENDPOINT_STAGINGDOCUMENTS: http://api:8080/minio/s3/stagingdocuments
     networks:
       default:
         aliases:
