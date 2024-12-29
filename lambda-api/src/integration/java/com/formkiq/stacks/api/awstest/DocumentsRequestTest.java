@@ -40,15 +40,12 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
-import java.net.http.HttpHeaders;
 import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
-import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -70,6 +67,9 @@ import com.formkiq.client.model.ChecksumType;
 import com.formkiq.client.model.DocumentActionType;
 import com.formkiq.client.model.DocumentAttribute;
 import com.formkiq.client.model.GetAttributeResponse;
+import com.formkiq.module.http.HttpHeaders;
+import com.formkiq.module.http.HttpService;
+import com.formkiq.module.http.HttpServiceJdk11;
 import com.formkiq.stacks.dynamodb.attributes.AttributeKeyReserved;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.jupiter.api.AfterAll;
@@ -100,13 +100,9 @@ import com.formkiq.client.model.GetDocumentResponse;
 import com.formkiq.client.model.GetDocumentTagsResponse;
 import com.formkiq.client.model.GetDocumentsResponse;
 import com.formkiq.client.model.UpdateDocumentRequest;
-import com.formkiq.stacks.client.HttpService;
-import com.formkiq.stacks.client.HttpServiceJava;
-import com.formkiq.stacks.client.models.AddDocument;
 import com.formkiq.stacks.dynamodb.ConfigService;
 import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
 import com.google.gson.Gson;
-import software.amazon.awssdk.core.sync.RequestBody;
 
 /**
  * GET, OPTIONS, POST /documents. Tests.
@@ -626,10 +622,6 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
     ApiClient fclient = getApiClientForUser(FINANCE_EMAIL, USER_PASSWORD);
     DocumentsApi fapi = new DocumentsApi(fclient);
 
-    AddDocument post = new AddDocument();
-    post.content("dummy data", StandardCharsets.UTF_8);
-    post.contentType("application/pdf");
-
     AddDocumentRequest req =
         new AddDocumentRequest().content("dummy data").contentType("application/pdf");
 
@@ -654,10 +646,6 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
   public void testPost06() throws Exception {
     // given
     configService.save(SITEID1, new DynamicObject(Map.of(MAX_DOCUMENTS, "1")));
-
-    AddDocument post = new AddDocument();
-    post.content("dummy data", StandardCharsets.UTF_8);
-    post.contentType("application/pdf");
 
     ApiClient c = getApiClients(SITEID1).get(0);
     DocumentsApi api = new DocumentsApi(c);
@@ -784,17 +772,16 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
     ApiClient client = getApiClients(null).get(0);
     String url = client.getBasePath() + "/documents";
 
-    Map<String, List<String>> headers =
-        Map.of("Authorization", Collections.singletonList(getAdminToken().idToken()));
-    Optional<HttpHeaders> o = Optional.of(HttpHeaders.of(headers, (t, u) -> true));
+    Optional<HttpHeaders> o =
+        Optional.of(new HttpHeaders().add("Authorization", getAdminToken().idToken()));
 
     String content = "{\"path\": \"test.txt\",\"contentType\":\"text/plain\","
         + "\"content\":\"dGhpcyBpcyBhIHRlc3Q=\","
         + "\"tags\":[{\"key\":\"author\",\"value\":\"Pierre Loti\"}]}";
 
     // when
-    HttpService hs = new HttpServiceJava();
-    HttpResponse<String> response = hs.post(url, o, RequestBody.fromString(content));
+    HttpService hs = new HttpServiceJdk11();
+    HttpResponse<String> response = hs.post(url, o, Optional.empty(), content);
 
     // then
     assertEquals(STATUS_CREATED, response.statusCode());

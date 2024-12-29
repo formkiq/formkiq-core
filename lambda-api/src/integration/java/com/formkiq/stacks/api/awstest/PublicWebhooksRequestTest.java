@@ -29,12 +29,14 @@ import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocument;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import java.net.http.HttpHeaders;
 import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import com.formkiq.module.http.HttpHeaders;
+import com.formkiq.module.http.HttpService;
+import com.formkiq.module.http.HttpServiceJdk11;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import com.formkiq.aws.services.lambda.GsonUtil;
@@ -46,10 +48,7 @@ import com.formkiq.client.model.AddWebhookResponse;
 import com.formkiq.client.model.GetDocumentResponse;
 import com.formkiq.client.model.GetWebhookResponse;
 import com.formkiq.client.model.GetWebhooksResponse;
-import com.formkiq.stacks.client.HttpService;
-import com.formkiq.stacks.client.HttpServiceJava;
 import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
-import software.amazon.awssdk.core.sync.RequestBody;
 
 /**
  * Process Urls.
@@ -84,17 +83,14 @@ public class PublicWebhooksRequestTest extends AbstractAwsIntegrationTest {
       WebhooksApi api = new WebhooksApi(client);
       AddWebhookResponse addWebhook = api.addWebhook(new AddWebhookRequest().name("paypal"), null);
       String id = addWebhook.getWebhookId();
-      // String id = client.addWebhook(new AddWebhookRequest().name("paypal")).id();
       String urlpath = getRootHttpUrl() + "/public/webhooks/" + id;
 
-      Map<String, List<String>> headers = Map.of("Content-Type", List.of("text/plain"));
-      Optional<HttpHeaders> o = Optional.of(HttpHeaders.of(headers, (t, u) -> true));
-
+      Optional<HttpHeaders> o = Optional.of(new HttpHeaders().add("Content-Type", "text/plain"));
       String content = "{\"name\":\"John Smith\"}";
 
       // when
-      HttpService hs = new HttpServiceJava();
-      HttpResponse<String> response = hs.post(urlpath, o, RequestBody.fromString(content));
+      HttpService hs = new HttpServiceJdk11();
+      HttpResponse<String> response = hs.post(urlpath, o, Optional.empty(), content);
 
       // then
       assertEquals(STATUS_OK, response.statusCode());
@@ -135,14 +131,13 @@ public class PublicWebhooksRequestTest extends AbstractAwsIntegrationTest {
     // given
     String urlpath = getRootHttpUrl() + "/public/webhooks";
 
-    Map<String, List<String>> headers = Map.of("Content-Type", List.of("text/plain"));
-    Optional<HttpHeaders> o = Optional.of(HttpHeaders.of(headers, (t, u) -> true));
+    Optional<HttpHeaders> o = Optional.of(new HttpHeaders().add("Content-Type", "text/plain"));
 
     String content = "{\"name\":\"John Smith\"}";
 
     // when
-    HttpService hs = new HttpServiceJava();
-    HttpResponse<String> response = hs.post(urlpath, o, RequestBody.fromString(content));
+    HttpService hs = new HttpServiceJdk11();
+    HttpResponse<String> response = hs.post(urlpath, o, Optional.empty(), content);
 
     // then
     assertEquals(STATUS_NOT_FOUND, response.statusCode());
@@ -160,14 +155,13 @@ public class PublicWebhooksRequestTest extends AbstractAwsIntegrationTest {
     // given
     String urlpath = getRootHttpUrl() + "/public/webhooks/asdffgdfg";
 
-    Map<String, List<String>> headers = Map.of("Content-Type", List.of("text/plain"));
-    Optional<HttpHeaders> o = Optional.of(HttpHeaders.of(headers, (t, u) -> true));
+    Optional<HttpHeaders> o = Optional.of(new HttpHeaders().add("Content-Type", "text/plain"));
 
     String content = "{\"name\":\"John Smith\"}";
 
     // when
-    HttpService hs = new HttpServiceJava();
-    HttpResponse<String> response = hs.post(urlpath, o, RequestBody.fromString(content));
+    HttpService hs = new HttpServiceJdk11();
+    HttpResponse<String> response = hs.post(urlpath, o, Optional.empty(), content);
 
     // then
     assertEquals(STATUS_BAD, response.statusCode());
@@ -190,14 +184,13 @@ public class PublicWebhooksRequestTest extends AbstractAwsIntegrationTest {
       String id = addWebhook.getWebhookId();
       String urlpath = getRootHttpUrl() + "/public/webhooks/" + id;
 
-      Map<String, List<String>> headers = Map.of("Content-Type", List.of("text/plain"));
-      Optional<HttpHeaders> o = Optional.of(HttpHeaders.of(headers, (t, u) -> true));
+      Optional<HttpHeaders> o = Optional.of(new HttpHeaders().add("Content-Type", "text/plain"));
 
       String content = "{\"name\":\"John Smith\"}";
 
       // when
-      HttpService hs = new HttpServiceJava();
-      HttpResponse<String> response = hs.post(urlpath, o, RequestBody.fromString(content));
+      HttpService hs = new HttpServiceJdk11();
+      HttpResponse<String> response = hs.post(urlpath, o, Optional.empty(), content);
 
       // then
       assertEquals(STATUS_UNAUTHORIZED, response.statusCode());

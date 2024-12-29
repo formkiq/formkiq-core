@@ -98,7 +98,6 @@ import com.formkiq.testutils.aws.TypesenseExtension;
 import com.formkiq.validation.ValidationException;
 import com.google.gson.Gson;
 import joptsimple.internal.Strings;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -368,7 +367,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     eventBridgeService = serviceCache.getExtension(EventBridgeService.class);
   }
 
-  private static @NotNull Map<String, String> buildEnvironment(final String module,
+  private static Map<String, String> buildEnvironment(final String module,
       final String chatgptUrl) {
     Map<String, String> env = new HashMap<>();
     env.put("AWS_REGION", AWS_REGION.toString());
