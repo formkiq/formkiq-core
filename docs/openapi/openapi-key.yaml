@@ -9892,6 +9892,8 @@
                 notificationEmail:
                   type: string
                   description: Email address to use for notifications
+                ocr:
+                  $ref: '#/components/schemas/OcrConfig'
                 google:
                   $ref: '#/components/schemas/GoogleConfig'
                 docusign:
@@ -10189,10 +10191,35 @@
                 notificationEmail:
                   type: string
                   description: Email address to use for notifications (Must be verified identity created in AWS SES)
+                ocr:
+                  $ref: '#/components/schemas/OcrConfig'
                 google:
                   $ref: '#/components/schemas/GoogleConfig'
                 docusign:
                   $ref: '#/components/schemas/DocusignConfig'
+            SiteConfig:
+              type: object
+              properties:
+                maxContentLengthBytes:
+                  type: string
+                  description: Set Maximum Document Content Length in Bytes
+                maxDocuments:
+                  type: string
+                  description: Set Maximum number of Documents allowed
+                maxWebhooks:
+                  type: string
+                  description: Set Maximum number of Webhooks allowed
+                ocr:
+                  $ref: '#/components/schemas/OcrConfig'
+            OcrConfig:
+              type: object
+              properties:
+                maxPagesPerTransaction:
+                  type: number
+                  description: Max number of OCR pages (-1 for unlimited)
+                maxTransactions:
+                  type: number
+                  description: Max number of OCR actions that can be created (-1 for unlimited)
             GoogleConfig:
               type: object
               properties:
@@ -10501,6 +10528,8 @@
                 uploadEmail:
                   type: string
                   description: SiteId document upload email address
+                config:
+                  $ref: '#/components/schemas/SiteConfig'
             AddClassificationResponse:
               type: object
               properties:
