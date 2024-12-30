@@ -62,6 +62,9 @@ import static org.junit.jupiter.api.Assertions.fail;
 /** Unit Tests for request /documents/upload, /documents/{documentId}/upload . */
 public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
 
+  /** Ten. */
+  private static final int TEN = 10;
+
   /**
    * Get Request Upload Document Url, MAX DocumentGreater than allowed.
    * 
@@ -719,7 +722,7 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentsApi.addDocumentUpload(req, siteId, 10, null, null);
+        this.documentsApi.addDocumentUpload(req, siteId, TEN, null, null);
         fail();
       } catch (ApiException e) {
         // then
@@ -752,13 +755,13 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentsApi.addDocumentUpload(req, siteId, 10, null, null);
+        this.documentsApi.addDocumentUpload(req, siteId, TEN, null, null);
         fail();
       } catch (ApiException e) {
         // then
         assertEquals(SC_BAD_REQUEST.getStatusCode(), e.getCode());
-        assertEquals("{\"message\":\"'contentLength' is required when MaxContentLengthBytes is configured\"}",
-            e.getResponseBody());
+        assertEquals("{\"message\":\"'contentLength' is required when "
+            + "MaxContentLengthBytes is configured\"}", e.getResponseBody());
       }
     }
   }
