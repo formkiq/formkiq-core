@@ -25,10 +25,9 @@ package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.isDefaultSiteId;
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_CREATED;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-import static com.formkiq.stacks.dynamodb.config.ConfigService.MAX_WEBHOOKS;
-import static com.formkiq.stacks.dynamodb.config.ConfigService.WEBHOOK_TIME_TO_LIVE;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Collection;
@@ -55,6 +54,7 @@ import com.formkiq.stacks.api.transformers.DynamicObjectToMap;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.base64.Pagination;
 import com.formkiq.stacks.dynamodb.WebhooksService;
+import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 
 /** {@link ApiGatewayRequestHandler} for "/webhooks". */
 public class WebhooksRequestHandler
@@ -101,18 +101,15 @@ public class WebhooksRequestHandler
     return "/webhooks";
   }
 
-  private Date getTtlDate(final AwsServiceCache awsservice, final String siteId,
-      final DynamicObject o) {
+  private Date getTtlDate(final SiteConfiguration config, final DynamicObject o) {
     Date ttlDate = null;
     String ttl = o.getString("ttl");
 
     if (ttl == null) {
-      ConfigService configService = awsservice.getExtension(ConfigService.class);
-      Map<String, Object> config = configService.get(siteId);
-      ttl = (String) config.get(WEBHOOK_TIME_TO_LIVE);
+      ttl = config.getWebhookTimeToLive();
     }
 
-    if (ttl != null) {
+    if (!isEmpty(ttl)) {
       ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC).plusSeconds(Long.parseLong(ttl));
       ttlDate = Date.from(now.toInstant());
     }
@@ -120,15 +117,14 @@ public class WebhooksRequestHandler
     return ttlDate;
   }
 
-  private boolean isOverMaxWebhooks(final AwsServiceCache awsservice, final String siteId) {
+  private boolean isOverMaxWebhooks(final AwsServiceCache awsservice,
+      final SiteConfiguration config, final String siteId) {
 
     boolean over = false;
-    ConfigService configService = awsservice.getExtension(ConfigService.class);
-    Map<String, Object> config = configService.get(siteId);
 
-    String maxString = (String) config.get(MAX_WEBHOOKS);
+    String maxString = config.getMaxWebhooks();
 
-    if (maxString != null) {
+    if (!isEmpty(maxString)) {
 
       int max = Integer.parseInt(maxString);
 
@@ -156,9 +152,10 @@ public class WebhooksRequestHandler
     String siteId = authorization.getSiteId();
     DynamicObject o = fromBodyToDynamicObject(event);
 
-    validatePost(awsservice, siteId, o);
+    SiteConfiguration config = awsservice.getExtension(ConfigService.class).get(siteId);
+    validatePost(awsservice, config, siteId, o);
 
-    String id = saveWebhook(authorization, awsservice, siteId, o);
+    String id = saveWebhook(authorization, awsservice, config, siteId, o);
 
     ApiMapResponse resp = new ApiMapResponse(
         Map.of("webhookId", id, "siteId", isDefaultSiteId(siteId) ? DEFAULT_SITE_ID : siteId));
@@ -166,11 +163,11 @@ public class WebhooksRequestHandler
   }
 
   private String saveWebhook(final ApiAuthorization authorization, final AwsServiceCache awsservice,
-      final String siteId, final DynamicObject o) {
+      final SiteConfiguration config, final String siteId, final DynamicObject o) {
 
     WebhooksService webhooksService = awsservice.getExtension(WebhooksService.class);
 
-    Date ttlDate = getTtlDate(awsservice, siteId, o);
+    Date ttlDate = getTtlDate(config, o);
 
     String name = o.getString("name");
     String userId = authorization.getUsername();
@@ -190,14 +187,14 @@ public class WebhooksRequestHandler
     return id;
   }
 
-  private void validatePost(final AwsServiceCache awsservice, final String siteId,
-      final DynamicObject o) throws BadException, TooManyRequestsException {
+  private void validatePost(final AwsServiceCache awsservice, final SiteConfiguration config,
+      final String siteId, final DynamicObject o) throws BadException, TooManyRequestsException {
 
     if (o == null || o.get("name") == null) {
       throw new BadException("Invalid JSON body.");
     }
 
-    if (isOverMaxWebhooks(awsservice, siteId)) {
+    if (isOverMaxWebhooks(awsservice, config, siteId)) {
       throw new TooManyRequestsException("Reached max number of webhooks");
     }
   }

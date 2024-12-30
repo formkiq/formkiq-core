@@ -50,6 +50,8 @@ import com.formkiq.module.actions.services.MapToAction;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.validators.ApiValidator;
 import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.stacks.dynamodb.config.ConfigService;
+import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/actions". */
@@ -138,7 +140,9 @@ public class DocumentsActionsRequestHandler
 
     List<Map<String, Object>> list = (List<Map<String, Object>>) body.get("actions");
     List<Action> actions = list.stream().map(new MapToAction()).toList();
-    validateActions(awsservice, siteId, actions);
+
+    SiteConfiguration config = awsservice.getExtension(ConfigService.class).get(siteId);
+    validateActions(awsservice, config, siteId, actions);
 
     ActionsService service = awsservice.getExtension(ActionsService.class);
     int idx = service.getActions(siteId, documentId).size();

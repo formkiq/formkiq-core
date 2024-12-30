@@ -110,21 +110,6 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
   }
 
   /**
-   * POST /documents/upload request.
-   * 
-   * @param siteId {@link String}
-   * @param group {@link String}
-   * @param body {@link String}
-   * @return {@link ApiGatewayRequestEvent}
-   */
-  private ApiGatewayRequestEvent postDocumentsUploadRequest(final String siteId, final String group,
-      final String body) {
-    return new ApiGatewayRequestEventBuilder().method("post").resource("/documents/upload")
-        .path("/documents/upload").group(group).user("joesmith")
-        .queryParameters(siteId != null ? Map.of("siteId", siteId) : null).body(body).build();
-  }
-
-  /**
    * Valid POST generate upload document signed url.
    *
    * @throws Exception an error has occurred
@@ -347,116 +332,11 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
       final int mapsize = 3;
       assertEquals(mapsize, m.size());
       assertEquals("400.0", String.valueOf(m.get("statusCode")));
-      assertEquals("{\"message\":\"'contentLength' is required\"}", m.get("body"));
+      assertEquals(
+          "{\"message\":\"'contentLength' is required when MaxContentLengthBytes is configured\"}",
+          m.get("body"));
     }
   }
-
-  // /**
-  // * Valid POST generate upload document signed url.
-  // *
-  // * @throws Exception an error has occurred
-  // */
-  // @Test
-  // public void testHandlePostDocumentsUpload01() throws Exception {
-  // // given
-  // for (String siteId : Arrays.asList(null, ID.uuid())) {
-  // String path = "/bleh/test.txt";
-  //
-  //// com.formkiq.stacks.client.models.DocumentTag tag0 =
-  //// new com.formkiq.stacks.client.models.DocumentTag().key("test").value("this");
-  //// com.formkiq.stacks.client.models.AddDocumentAction action0 =
-  //// new com.formkiq.stacks.client.models.AddDocumentAction().type(DocumentActionType.OCR);
-  //// AddLargeDocument document = new AddLargeDocument().path(path)
-  //// .tags(Collections.singletonList(tag0)).actions(Collections.singletonList(action0));
-  ////
-  //// ApiGatewayRequestEvent event = postDocumentsUploadRequest(siteId,
-  //// siteId != null ? siteId : DEFAULT_SITE_ID, GsonUtil.getInstance().toJson(document));
-  //
-  // // when
-  //// String response = handleRequest(event);
-  //
-  // // then
-  //// Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
-  //// assertEquals("200.0", String.valueOf(m.get("statusCode")));
-  //// ApiUrlResponse resp = expectResponse(response);
-  //// assertFalse(resp.getUrl().contains("content-length"));
-  ////
-  //// if (siteId != null) {
-  //// assertTrue(resp.getUrl().contains("/testbucket/" + siteId));
-  //// } else {
-  //// assertFalse(resp.getUrl().contains("/testbucket/default"));
-  //// }
-  //
-  //// String documentId = resp.getDocumentId();
-  //// assertNotNull(document);
-  //
-  //// ActionsService actionsService = getAwsServices().getExtension(ActionsService.class);
-  //// List<Action> actions = actionsService.getActions(siteId, documentId);
-  //// assertEquals(1, actions.size());
-  //// assertEquals(ActionType.OCR, actions.get(0).type());
-  //// assertEquals(ActionStatus.PENDING, actions.get(0).status());
-  //
-  // int i = 0;
-  // final int expectedCount = 1;
-  // List<DocumentTag> tags =
-  // getDocumentService().findDocumentTags(siteId, documentId, null, LIMIT).getResults();
-  // assertEquals(expectedCount, tags.size());
-  // assertEquals("test", tags.get(i).getKey());
-  // assertEquals("this", tags.get(i).getValue());
-  //
-  // assertNotNull(getDocumentService().findMostDocumentDate());
-  // }
-  // }
-
-  // /**
-  // * Valid POST generate upload document signed url.
-  // *
-  // * @throws Exception an error has occurred
-  // */
-  // @Test
-  // public void testHandlePostDocumentsUpload03() throws Exception {
-  // // given
-  // for (String siteId : Arrays.asList(null, ID.uuid())) {
-  // String tagSchemaId = ID.uuid();
-  // ApiGatewayRequestEvent event =
-  // toRequestEvent("/request-get-documents-upload-documentid.json");
-  // event.setHttpMethod("POST");
-  // addParameter(event, "siteId", siteId);
-  // com.formkiq.stacks.client.models.DocumentTag tag0 =
-  // new com.formkiq.stacks.client.models.DocumentTag().key("test").value("this");
-  // AddLargeDocument document =
-  // new AddLargeDocument().tagSchemaId(tagSchemaId).tags(Collections.singletonList(tag0));
-  // event.setBody(GsonUtil.getInstance().toJson(document));
-  // event.setIsBase64Encoded(Boolean.FALSE);
-  //
-  // // when
-  // String response = handleRequest(event);
-  //
-  // // then
-  // Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
-  // assertEquals("200.0", String.valueOf(m.get("statusCode")));
-  // ApiUrlResponse resp = expectResponse(response);
-  //
-  // if (siteId != null) {
-  // assertTrue(resp.getUrl().contains("/testbucket/" + siteId));
-  // } else {
-  // assertFalse(resp.getUrl().contains("/testbucket/default"));
-  // }
-  //
-  // String documentId = resp.getDocumentId();
-  // assertNotNull(document);
-  //
-  // int i = 0;
-  // final int expectedCount = 1;
-  // List<DocumentTag> tags =
-  // getDocumentService().findDocumentTags(siteId, documentId, null, LIMIT).getResults();
-  // assertEquals(expectedCount, tags.size());
-  // assertEquals("test", tags.get(i).getKey());
-  // assertEquals("this", tags.get(i).getValue());
-  //
-  // assertNotNull(getDocumentService().findMostDocumentDate());
-  // }
-  // }
 
   /**
    * Valid readonly user generate upload document signed url.
@@ -484,34 +364,4 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
       }
     }
   }
-
-  // /**
-  // * Valid POST /documents/upload, invalid tag.
-  // *
-  // * @throws Exception an error has occurred
-  // */
-  // @Test
-  // public void testHandlePostDocumentsUpload05() throws Exception {
-  // // given
-  // for (String siteId : Arrays.asList(null, ID.uuid())) {
-  //
-  // com.formkiq.stacks.client.models.DocumentTag tag0 =
-  // new com.formkiq.stacks.client.models.DocumentTag().key("CLAMAV_SCAN_TIMESTAMP")
-  // .value("this");
-  // AddLargeDocument document = new AddLargeDocument().tags(Collections.singletonList(tag0));
-  //
-  // ApiGatewayRequestEvent event = postDocumentsUploadRequest(siteId,
-  // siteId != null ? siteId : DEFAULT_SITE_ID, GsonUtil.getInstance().toJson(document));
-  //
-  // // when
-  // String response = handleRequest(event);
-  //
-  // // then
-  // Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
-  // assertEquals("400.0", String.valueOf(m.get("statusCode")));
-  // assertEquals(
-  // "{\"errors\":[{\"key\":\"CLAMAV_SCAN_TIMESTAMP\",\"error\":\"unallowed tag key\"}]}",
-  // String.valueOf(m.get("body")));
-  // }
-  // }
 }

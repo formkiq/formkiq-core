@@ -25,19 +25,9 @@ package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-import static com.formkiq.stacks.dynamodb.config.ConfigService.CHATGPT_API_KEY;
-import static com.formkiq.stacks.dynamodb.config.ConfigService.KEY_DOCUSIGN_HMAC_SIGNATURE;
-import static com.formkiq.stacks.dynamodb.config.ConfigService.KEY_DOCUSIGN_INTEGRATION_KEY;
-import static com.formkiq.stacks.dynamodb.config.ConfigService.KEY_DOCUSIGN_RSA_PRIVATE_KEY;
-import static com.formkiq.stacks.dynamodb.config.ConfigService.KEY_DOCUSIGN_USER_ID;
-import static com.formkiq.stacks.dynamodb.config.ConfigService.MAX_DOCUMENTS;
-import static com.formkiq.stacks.dynamodb.config.ConfigService.MAX_DOCUMENT_SIZE_BYTES;
-import static com.formkiq.stacks.dynamodb.config.ConfigService.MAX_WEBHOOKS;
-import static com.formkiq.stacks.dynamodb.config.ConfigService.NOTIFICATION_EMAIL;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -48,6 +38,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.dynamodb.ApiPermission;
+import com.formkiq.aws.services.lambda.ApiObjectResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
@@ -105,57 +96,20 @@ public class ConfigurationRequestHandler
     String siteId = event.getPathParameters().get("siteId");
     ConfigService configService = awsservice.getExtension(ConfigService.class);
 
-    Map<String, Object> obj = configService.get(siteId);
+    SiteConfiguration obj = configService.get(siteId);
+    obj.setChatGptApiKey(mask(obj.getChatGptApiKey(), CHAT_GPT_MASK));
 
-    Map<String, Object> map = new HashMap<>();
-    map.put("chatGptApiKey", mask(obj.getOrDefault(CHATGPT_API_KEY, "").toString(), CHAT_GPT_MASK));
-    map.put("maxContentLengthBytes", obj.getOrDefault(MAX_DOCUMENT_SIZE_BYTES, ""));
-    map.put("maxDocuments", obj.getOrDefault(MAX_DOCUMENTS, ""));
-    map.put("maxWebhooks", obj.getOrDefault(MAX_WEBHOOKS, ""));
-    map.put("notificationEmail", obj.getOrDefault(NOTIFICATION_EMAIL, ""));
+    // hide from API
+    obj.setDocumentTimeToLive(null);
+    obj.setWebhookTimeToLive(null);
 
-    setupGoogle(obj, map);
-    setupDocusign(obj, map);
-    setupOcr(obj, map);
-
-    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
-  }
-
-  private void setupOcr(final Map<String, Object> obj, final Map<String, Object> map) {
-
-    Double maxTransactions = (Double) obj.getOrDefault("maxTransactions", (double) -1);
-    Double maxPagesPerTransaction =
-        (Double) obj.getOrDefault("maxPagesPerTransaction", (double) -1);
-
-    map.put("ocr", Map.of("maxPagesPerTransaction", maxPagesPerTransaction, "maxTransactions",
-        maxTransactions));
-  }
-
-  private void setupGoogle(final Map<String, Object> obj, final Map<String, Object> map) {
-    String workloadIdentityAudience =
-        (String) obj.getOrDefault("googleWorkloadIdentityAudience", "");
-    String workloadIdentityServiceAccount =
-        (String) obj.getOrDefault("googleWorkloadIdentityServiceAccount", "");
-
-    if (!isEmpty(workloadIdentityAudience) && !isEmpty(workloadIdentityServiceAccount)) {
-      map.put("google", Map.of("workloadIdentityAudience", workloadIdentityAudience,
-          "workloadIdentityServiceAccount", workloadIdentityServiceAccount));
+    SiteConfigurationDocusign docusign = obj.getDocusign();
+    if (docusign != null) {
+      docusign.setHmacSignature(mask(docusign.getHmacSignature(), HMAC_SIG_KEY_MASK));
+      docusign.setRsaPrivateKey(mask(docusign.getRsaPrivateKey(), RSA_PRIVATE_KEY_MASK));
     }
-  }
 
-  private void setupDocusign(final Map<String, Object> obj, final Map<String, Object> map) {
-    String docusignUserId = (String) obj.getOrDefault(KEY_DOCUSIGN_USER_ID, "");
-    String docusignIntegrationKey = (String) obj.getOrDefault(KEY_DOCUSIGN_INTEGRATION_KEY, "");
-    String docusignRsaPrivateKey = (String) obj.getOrDefault(KEY_DOCUSIGN_RSA_PRIVATE_KEY, "");
-    String docusignHmacSignature = (String) obj.getOrDefault(KEY_DOCUSIGN_HMAC_SIGNATURE, "");
-
-    if (!isEmpty(docusignUserId) && !isEmpty(docusignIntegrationKey)
-        && !isEmpty(docusignRsaPrivateKey)) {
-      map.put("docusign",
-          Map.of("userId", docusignUserId, "integrationKey", docusignIntegrationKey,
-              "rsaPrivateKey", mask(docusignRsaPrivateKey, RSA_PRIVATE_KEY_MASK), "hmacSignature",
-              mask(docusignHmacSignature, HMAC_SIG_KEY_MASK)));
-    }
+    return new ApiRequestHandlerResponse(SC_OK, new ApiObjectResponse(obj, null, null));
   }
 
   @Override
@@ -186,7 +140,7 @@ public class ConfigurationRequestHandler
    */
   private String mask(final String s, final int mask) {
     final int smallDiv = 3;
-    int m = mask > s.length() ? s.length() / smallDiv : mask;
+    int m = s != null && mask > s.length() ? s.length() / smallDiv : mask;
     return !isEmpty(s) ? s.subSequence(0, m) + "*******" + s.substring(s.length() - m) : s;
   }
 

@@ -69,17 +69,68 @@ public final class ConfigServiceDynamoDb implements ConfigService, DbKeys {
   }
 
   @Override
-  public Map<String, Object> get(final String siteId) {
+  public SiteConfiguration get(final String siteId) {
 
     List<Map<String, AttributeValue>> keys = new ArrayList<>();
 
     String site = !isDefaultSiteId(siteId) ? siteId : DEFAULT_SITE_ID;
     keys.add(keysGeneric(null, PREFIX_CONFIG, site));
 
-    BatchGetConfig config = new BatchGetConfig();
-    List<Map<String, AttributeValue>> list = this.db.getBatch(config, keys);
+    BatchGetConfig batchConfig = new BatchGetConfig();
+    List<Map<String, AttributeValue>> list = this.db.getBatch(batchConfig, keys);
 
-    return !list.isEmpty() ? new AttributeValueToMap().apply(list.get(0)) : Map.of();
+    Map<String, Object> map =
+        !list.isEmpty() ? new AttributeValueToMap().apply(list.get(0)) : Map.of();
+    return transform(map);
+  }
+
+  private SiteConfiguration transform(final Map<String, Object> map) {
+
+    SiteConfiguration config = new SiteConfiguration();
+    config.setChatGptApiKey(getString(map.get(CHATGPT_API_KEY)));
+    config.setGoogle(transformGoogle(map));
+    config.setMaxWebhooks(getString(map.get(MAX_WEBHOOKS)));
+    config.setMaxDocuments(getString(map.get(MAX_DOCUMENTS)));
+    config.setDocumentTimeToLive(getString(map.get(DOCUMENT_TIME_TO_LIVE)));
+    config.setDocusign(transformDocusign(map));
+    config.setMaxContentLengthBytes(getString(map.get(MAX_DOCUMENT_SIZE_BYTES)));
+    config.setNotificationEmail(getString(map.get(NOTIFICATION_EMAIL)));
+    config.setOcr(transformOcr(map));
+    config.setWebhookTimeToLive(getString(map.get(WEBHOOK_TIME_TO_LIVE)));
+    return config;
+  }
+
+  private SiteConfigurationOcr transformOcr(final Map<String, Object> map) {
+    SiteConfigurationOcr ocr = new SiteConfigurationOcr();
+    ocr.setMaxTransactions(
+        map.containsKey("maxTransactions") ? ((Double) map.get("maxTransactions")).longValue()
+            : -1);
+    ocr.setMaxPagesPerTransaction(map.containsKey("maxPagesPerTransaction")
+        ? ((Double) map.get("maxPagesPerTransaction")).longValue()
+        : -1);
+    return ocr;
+  }
+
+  private SiteConfigurationDocusign transformDocusign(final Map<String, Object> map) {
+    SiteConfigurationDocusign docusign = new SiteConfigurationDocusign();
+    docusign.setUserId(getString(map.get(KEY_DOCUSIGN_USER_ID)));
+    docusign.setRsaPrivateKey(getString(map.get(KEY_DOCUSIGN_RSA_PRIVATE_KEY)));
+    docusign.setHmacSignature(getString(map.get(KEY_DOCUSIGN_HMAC_SIGNATURE)));
+    docusign.setIntegrationKey(getString(map.get(KEY_DOCUSIGN_INTEGRATION_KEY)));
+
+    return docusign;
+  }
+
+  private SiteConfigurationGoogle transformGoogle(final Map<String, Object> map) {
+    SiteConfigurationGoogle google = new SiteConfigurationGoogle();
+    google.setWorkloadIdentityAudience(getString(map.get("googleWorkloadIdentityAudience")));
+    google.setWorkloadIdentityServiceAccount(
+        getString(map.get("googleWorkloadIdentityServiceAccount")));
+    return google;
+  }
+
+  private String getString(final Object o) {
+    return o != null ? o.toString() : "";
   }
 
   @Override

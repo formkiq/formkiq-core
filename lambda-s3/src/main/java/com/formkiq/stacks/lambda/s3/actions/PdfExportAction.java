@@ -30,12 +30,13 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
+import com.formkiq.stacks.dynamodb.config.SiteConfigurationGoogle;
 import com.formkiq.stacks.lambda.s3.DocumentAction;
 import com.formkiq.validation.ValidationException;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 
@@ -84,10 +85,16 @@ public class PdfExportAction implements DocumentAction {
   private boolean isValid(final String siteId, final String deepLink) {
     boolean valid = !Strings.isEmpty(deepLink) && deepLink.startsWith(GOOGLE_DOCS_PREFIX);
 
-    Map<String, Object> obj = configService.get(siteId);
-    String googleWorkloadIdentityAudience = (String) obj.get("googleWorkloadIdentityAudience");
-    String googleWorkloadIdentityServiceAccount =
-        (String) obj.get("googleWorkloadIdentityServiceAccount");
+    SiteConfiguration obj = configService.get(siteId);
+    SiteConfigurationGoogle google = obj.getGoogle();
+
+    String googleWorkloadIdentityAudience = null;
+    String googleWorkloadIdentityServiceAccount = null;
+
+    if (google != null) {
+      googleWorkloadIdentityAudience = google.getWorkloadIdentityAudience();
+      googleWorkloadIdentityServiceAccount = google.getWorkloadIdentityServiceAccount();
+    }
 
     if (isEmpty(googleWorkloadIdentityAudience) || isEmpty(googleWorkloadIdentityServiceAccount)) {
       throw new IllegalArgumentException("Google Workload Identity is not configured");

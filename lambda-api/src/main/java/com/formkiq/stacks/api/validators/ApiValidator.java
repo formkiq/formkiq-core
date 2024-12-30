@@ -28,13 +28,12 @@ import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.services.ActionsValidator;
 import com.formkiq.module.actions.services.ActionsValidatorImpl;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.dynamodb.config.ConfigService;
+import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -42,15 +41,14 @@ import java.util.Optional;
  */
 public interface ApiValidator {
 
-  default void validateActions(AwsServiceCache awsservice, final String siteId,
-      List<Action> actions) throws ValidationException {
+  default void validateActions(AwsServiceCache awsservice, SiteConfiguration config,
+      final String siteId, List<Action> actions) throws ValidationException {
 
     DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
     ActionsValidator validator = new ActionsValidatorImpl(db);
 
-    ConfigService configsService = awsservice.getExtension(ConfigService.class);
-    Map<String, Object> configs = configsService.get(siteId);
-    List<Collection<ValidationError>> errors = validator.validation(siteId, actions, configs);
+    List<Collection<ValidationError>> errors = validator.validation(siteId, actions,
+        config.getChatGptApiKey(), config.getNotificationEmail());
 
     Optional<Collection<ValidationError>> firstError =
         errors.stream().filter(e -> !e.isEmpty()).findFirst();

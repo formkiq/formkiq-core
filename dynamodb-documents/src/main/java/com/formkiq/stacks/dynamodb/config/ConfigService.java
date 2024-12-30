@@ -23,10 +23,6 @@
  */
 package com.formkiq.stacks.dynamodb.config;
 
-import com.formkiq.aws.dynamodb.DynamicObject;
-
-import java.util.Map;
-
 /** Config Service. */
 public interface ConfigService {
 
@@ -65,9 +61,9 @@ public interface ConfigService {
    * Get Config.
    *
    * @param siteId Optional Grouping siteId
-   * @return {@link DynamicObject}
+   * @return {@link SiteConfiguration}
    */
-  Map<String, Object> get(String siteId);
+  SiteConfiguration get(String siteId);
 
   /**
    * Save Config.

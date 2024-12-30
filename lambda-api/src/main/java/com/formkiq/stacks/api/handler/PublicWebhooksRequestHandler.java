@@ -26,7 +26,6 @@ package com.formkiq.stacks.api.handler;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.MOVED_PERMANENTLY;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-import static com.formkiq.stacks.dynamodb.config.ConfigService.DOCUMENT_TIME_TO_LIVE;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -101,7 +100,7 @@ public class PublicWebhooksRequestHandler
       item.put("TimeToLive", hook.get("TimeToLive"));
     } else {
       ConfigService configService = awsservice.getExtension(ConfigService.class);
-      String ttl = (String) configService.get(siteId).get(DOCUMENT_TIME_TO_LIVE);
+      String ttl = configService.get(siteId).getDocumentTimeToLive();
       if (ttl != null) {
         item.put("TimeToLive", ttl);
       }
@@ -126,8 +125,8 @@ public class PublicWebhooksRequestHandler
       String[] fields = responseFields.split(",");
       for (int i = 0; i < fields.length; i++) {
         String value = queryMap.get(fields[i]);
-        sb.append(i == 0 && redirectUri.indexOf("?") == -1 ? "?" : "&");
-        sb.append(fields[i] + "=" + value);
+        sb.append(i == 0 && !redirectUri.contains("?") ? "?" : "&");
+        sb.append(fields[i]).append("=").append(value);
       }
     }
 
@@ -211,14 +210,7 @@ public class PublicWebhooksRequestHandler
    * @return boolean
    */
   private boolean isEnabled(final DynamicObject obj, final String val) {
-
-    boolean enabled = false;
-
-    if (obj.containsKey("enabled") && obj.getString("enabled").equals(val)) {
-      enabled = true;
-    }
-
-    return enabled;
+    return obj.containsKey("enabled") && obj.getString("enabled").equals(val);
   }
 
   /**

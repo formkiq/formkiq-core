@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.lambda.s3.actions;
 
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static com.formkiq.aws.dynamodb.objects.Strings.removeEndingPunctuation;
 import static com.formkiq.aws.dynamodb.objects.Strings.removeQuotes;
 import static com.formkiq.module.http.HttpResponseStatus.is2XX;
@@ -44,7 +45,6 @@ import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
-import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.http.HttpHeaders;
@@ -54,6 +54,7 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import com.formkiq.stacks.lambda.s3.DocumentAction;
 import com.formkiq.stacks.lambda.s3.DocumentContentFunction;
 import com.formkiq.stacks.lambda.s3.openai.OpenAiChatCompletionsChoice;
@@ -139,7 +140,7 @@ public class DocumentTaggingAction implements DocumentAction {
 
   private String getTags(final Action action) throws IOException {
     String tags = action.parameters().get("tags");
-    if (Strings.isEmpty(tags)) {
+    if (isEmpty(tags)) {
       throw new IOException("missing 'tags' parameter");
     }
     return tags;
@@ -259,10 +260,10 @@ public class DocumentTaggingAction implements DocumentAction {
   private void runChatGpt(final Logger logger, final String siteId, final String documentId,
       final Action action) throws IOException {
 
-    Map<String, Object> configs = this.configsService.get(siteId);
-    String chatGptApiKey = (String) configs.get(CHATGPT_API_KEY);
+    SiteConfiguration configs = this.configsService.get(siteId);
+    String chatGptApiKey = configs.getChatGptApiKey();
 
-    if (chatGptApiKey == null) {
+    if (isEmpty(chatGptApiKey)) {
       throw new IOException(String.format("missing config '%s'", CHATGPT_API_KEY));
     }
 

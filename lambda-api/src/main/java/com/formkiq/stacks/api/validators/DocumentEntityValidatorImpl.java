@@ -34,16 +34,15 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.handler.AddDocumentRequest;
 import com.formkiq.stacks.api.handler.AddDocumentTag;
 import com.formkiq.stacks.api.transformers.AddDocumentTagToDocumentTag;
-import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.DocumentTagValidator;
 import com.formkiq.stacks.dynamodb.DocumentTagValidatorImpl;
+import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
@@ -65,14 +64,15 @@ public class DocumentEntityValidatorImpl implements DocumentEntityValidator {
 
   @Override
   public List<DocumentTag> validate(final ApiAuthorization authorization,
-      final AwsServiceCache awsservice, final String siteId, final AddDocumentRequest item,
-      final boolean isUpdate) throws ValidationException, BadException {
+      final AwsServiceCache awsservice, final SiteConfiguration config, final String siteId,
+      final AddDocumentRequest item, final boolean isUpdate)
+      throws ValidationException, BadException {
 
     String userId = authorization.getUsername();
     Collection<ValidationError> errors = new ArrayList<>();
     List<DocumentTag> tags = validateTagSchema(item, userId);
     validateTags(tags, errors);
-    validateActions(awsservice, siteId, item, authorization, errors);
+    validateActions(awsservice, config, siteId, item, authorization, errors);
 
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
@@ -82,8 +82,8 @@ public class DocumentEntityValidatorImpl implements DocumentEntityValidator {
   }
 
   // TODO merge with ApiValidator validateActions
-  private void validateActions(final AwsServiceCache awsservice, final String siteId,
-      final AddDocumentRequest item, final ApiAuthorization authorization,
+  private void validateActions(final AwsServiceCache awsservice, final SiteConfiguration config,
+      final String siteId, final AddDocumentRequest item, final ApiAuthorization authorization,
       final Collection<ValidationError> errors) {
 
     initActionsValidator(awsservice);
@@ -94,11 +94,9 @@ public class DocumentEntityValidatorImpl implements DocumentEntityValidator {
 
       actions.forEach(a -> a.userId(authorization.getUsername()));
 
-      ConfigService configsService = awsservice.getExtension(ConfigService.class);
-      Map<String, Object> configs = configsService.get(siteId);
-
       for (Action action : actions) {
-        errors.addAll(this.actionsValidator.validation(siteId, action, configs));
+        errors.addAll(this.actionsValidator.validation(siteId, action, config.getChatGptApiKey(),
+            config.getNotificationEmail()));
       }
     }
   }

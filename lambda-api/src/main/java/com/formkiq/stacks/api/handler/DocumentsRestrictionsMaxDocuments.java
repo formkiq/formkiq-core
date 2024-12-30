@@ -23,9 +23,11 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.DocumentCountService;
+import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 
 /**
  * {@link DocumentsRestrictions} for Max Number of Documents.
@@ -40,26 +42,20 @@ public class DocumentsRestrictionsMaxDocuments implements DocumentsRestrictions 
   public DocumentsRestrictionsMaxDocuments() {}
 
   @Override
-  public boolean enforced(final AwsServiceCache awsservice, final String siteId, final String value,
-      final Object... objs) {
-    boolean enforced = false;
+  public boolean isViolated(final AwsServiceCache awsservice, final SiteConfiguration config,
+      final String siteId, final DocumentItem item) {
 
-    if (value != null) {
-      try {
+    boolean isViolated = false;
+    String maxDocuments = config.getMaxDocuments();
 
-        long max = Long.parseLong(value);
-        DocumentCountService countService = awsservice.getExtension(DocumentCountService.class);
-        long doccount = countService.getDocumentCount(siteId);
-        enforced = (doccount + 1) > max;
-      } catch (NumberFormatException e) {
-        enforced = false;
-      }
+    if (!Strings.isEmpty(maxDocuments)) {
+
+      long max = Long.parseLong(maxDocuments);
+      DocumentCountService countService = awsservice.getExtension(DocumentCountService.class);
+      long doccount = countService.getDocumentCount(siteId);
+      isViolated = (doccount + 1) > max;
     }
-    return enforced;
-  }
 
-  @Override
-  public String getValue(final AwsServiceCache awsservice, final String siteId) {
-    return getValue(awsservice, siteId, ConfigService.MAX_DOCUMENTS);
+    return isViolated;
   }
 }

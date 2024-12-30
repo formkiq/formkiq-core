@@ -24,15 +24,8 @@
 package com.formkiq.stacks.dynamodb;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
-import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.isDefaultSiteId;
-import static com.formkiq.stacks.dynamodb.config.ConfigService.DOCUMENT_TIME_TO_LIVE;
-import static com.formkiq.stacks.dynamodb.config.ConfigService.MAX_DOCUMENTS;
-import static com.formkiq.stacks.dynamodb.config.ConfigService.MAX_WEBHOOKS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import java.util.Arrays;
-import java.util.Map;
-import java.util.Objects;
 
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
@@ -80,18 +73,12 @@ public class ConfigServiceDynamoDbTest {
       this.service.save(siteId, siteConfig);
 
       // when
-      Map<String, Object> config = this.service.get(siteId);
+      SiteConfiguration config = this.service.get(siteId);
 
       // then
-      final int count = 5;
-      assertEquals(count, config.keySet().size());
-
-      assertEquals("configs#", config.get("PK"));
-      assertEquals(Objects.requireNonNullElse(siteId, DEFAULT_SITE_ID), config.get("SK"));
-
-      assertEquals(siteConfig.getDocumentTimeToLive(), config.get(DOCUMENT_TIME_TO_LIVE));
-      assertEquals(siteConfig.getMaxWebhooks(), config.get(MAX_WEBHOOKS));
-      assertEquals(siteConfig.getMaxDocuments(), config.get(MAX_DOCUMENTS));
+      assertEquals(siteConfig.getDocumentTimeToLive(), config.getDocumentTimeToLive());
+      assertEquals(siteConfig.getMaxWebhooks(), config.getMaxWebhooks());
+      assertEquals(siteConfig.getMaxDocuments(), config.getMaxDocuments());
     }
   }
 
@@ -105,10 +92,12 @@ public class ConfigServiceDynamoDbTest {
     for (String siteId : Arrays.asList(null, ID.uuid(), DEFAULT_SITE_ID)) {
 
       // when
-      Map<String, Object> config = this.service.get(siteId);
+      SiteConfiguration config = this.service.get(siteId);
 
       // then
-      assertEquals(0, config.size());
+      assertEquals("", config.getDocumentTimeToLive());
+      assertEquals("", config.getMaxWebhooks());
+      assertEquals("", config.getMaxDocuments());
     }
   }
 
@@ -124,15 +113,12 @@ public class ConfigServiceDynamoDbTest {
       this.service.save(siteId, new SiteConfiguration());
 
       // when
-      Map<String, Object> config = this.service.get(siteId);
+      SiteConfiguration config = this.service.get(siteId);
 
       // then
-      final int count = 0;
-      assertEquals(count, config.keySet().size());
-
-      assertNull(config.get(DOCUMENT_TIME_TO_LIVE));
-      assertNull(config.get(MAX_WEBHOOKS));
-      assertNull(config.get(MAX_DOCUMENTS));
+      assertEquals("", config.getDocumentTimeToLive());
+      assertEquals("", config.getMaxWebhooks());
+      assertEquals("", config.getMaxDocuments());
     }
   }
 
@@ -154,21 +140,15 @@ public class ConfigServiceDynamoDbTest {
     for (String siteId : Arrays.asList(null, DEFAULT_SITE_ID)) {
 
       // when
-      Map<String, Object> config = this.service.get(siteId);
+      SiteConfiguration config = this.service.get(siteId);
 
       // then
-      final int count = 5;
-      assertEquals(count, config.keySet().size());
-
-      assertEquals("configs#", config.get("PK"));
-      assertEquals(DEFAULT_SITE_ID, config.get("SK"));
-
-      assertEquals(siteConfig.getDocumentTimeToLive(), config.get(DOCUMENT_TIME_TO_LIVE));
-      assertEquals(siteConfig.getMaxWebhooks(), config.get(MAX_WEBHOOKS));
-      assertEquals(siteConfig.getMaxDocuments(), config.get(MAX_DOCUMENTS));
+      assertEquals(siteConfig.getDocumentTimeToLive(), config.getDocumentTimeToLive());
+      assertEquals(siteConfig.getMaxWebhooks(), config.getMaxWebhooks());
+      assertEquals(siteConfig.getMaxDocuments(), config.getMaxDocuments());
     }
 
-    assertEquals(0, this.service.get(ID.uuid()).size());
+    assertEquals("", this.service.get(ID.uuid()).getMaxWebhooks());
   }
 
   /**
@@ -188,26 +168,16 @@ public class ConfigServiceDynamoDbTest {
       this.service.save(siteId, siteConfig);
 
       // when
-      Map<String, Object> config = this.service.get(siteId);
+      SiteConfiguration config = this.service.get(siteId);
 
       // then
-      final int count = 5;
-      assertEquals(count, config.keySet().size());
-
-      assertEquals("configs#", config.get("PK"));
-
-      if (isDefaultSiteId(siteId)) {
-        assertEquals(DEFAULT_SITE_ID, config.get("SK"));
-      } else {
-        assertEquals(siteId, config.get("SK"));
-      }
-
-      assertEquals(siteConfig.getDocumentTimeToLive(), config.get(DOCUMENT_TIME_TO_LIVE));
-      assertEquals(siteConfig.getMaxWebhooks(), config.get(MAX_WEBHOOKS));
-      assertEquals(siteConfig.getMaxDocuments(), config.get(MAX_DOCUMENTS));
+      assertEquals(siteConfig.getDocumentTimeToLive(), config.getDocumentTimeToLive());
+      assertEquals(siteConfig.getMaxWebhooks(), config.getMaxWebhooks());
+      assertEquals(siteConfig.getMaxDocuments(), config.getMaxDocuments());
 
       this.service.delete(siteId);
-      assertEquals(0, this.service.get(siteId).size());
+      assertEquals("", this.service.get(siteId).getMaxDocuments());
+      assertEquals("", this.service.get(siteId).getMaxWebhooks());
     }
   }
 

@@ -78,6 +78,8 @@ import com.formkiq.stacks.dynamodb.DocumentValidatorImpl;
 import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
+import com.formkiq.stacks.dynamodb.config.ConfigService;
+import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
@@ -217,8 +219,9 @@ public class DocumentIdRequestHandler
     awsservice.getLogger()
         .trace("setting userId: " + item.getUserId() + " contentType: " + item.getContentType());
 
-    List<DocumentTag> tags =
-        this.documentEntityValidator.validate(authorization, awsservice, siteId, request, true);
+    SiteConfiguration config = awsservice.getExtension(ConfigService.class).get(siteId);
+    List<DocumentTag> tags = this.documentEntityValidator.validate(authorization, awsservice,
+        config, siteId, request, true);
 
     DocumentService service = awsservice.getExtension(DocumentService.class);
 

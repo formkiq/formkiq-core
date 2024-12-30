@@ -36,7 +36,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import com.formkiq.aws.dynamodb.DynamicObject;
+
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.model.MappingRecord;
 import com.formkiq.aws.dynamodb.objects.Strings;
@@ -53,10 +53,6 @@ import com.formkiq.validation.ValidationErrorImpl;
  */
 public class ActionsValidatorImpl implements ActionsValidator {
 
-  /** ChatGpt Api Key. */
-  private static final String CHATGPT_API_KEY = "ChatGptApiKey";
-  /** Notification Email. */
-  private static final String NOTIFICATION_EMAIL = "NotificationEmail";
   /** {@link DynamoDbService}. */
   private final DynamoDbService db;
 
@@ -81,14 +77,13 @@ public class ActionsValidatorImpl implements ActionsValidator {
   /**
    * Validate Document Tagging.
    * 
-   * @param configs {@link DynamicObject}
+   * @param chatGptApiKey {@link String}
    * @param parameters {@link Map}
    * @param errors {@link Collections} {@link ValidationError}
    */
-  private void validateDocumentTagging(final Map<String, Object> configs,
+  private void validateDocumentTagging(final String chatGptApiKey,
       final Map<String, String> parameters, final Collection<ValidationError> errors) {
 
-    String chatGptApiKey = (String) configs.get(CHATGPT_API_KEY);
     if (!parameters.containsKey("tags")) {
       errors.add(new ValidationErrorImpl().key("parameters.tags")
           .error("action 'tags' parameter is required"));
@@ -108,14 +103,12 @@ public class ActionsValidatorImpl implements ActionsValidator {
   /**
    * Validate Notification Email.
    * 
-   * @param configs {@link Map}
+   * @param notificationEmail {@link String}
    * @param action {@link Action}
    * @param errors {@link Collection} {@link ValidationError}
    */
-  private void validateNotificationEmail(final Map<String, Object> configs, final Action action,
+  private void validateNotificationEmail(final String notificationEmail, final Action action,
       final Collection<ValidationError> errors) {
-
-    String notificationEmail = (String) configs.get(NOTIFICATION_EMAIL);
 
     if (isEmpty(notificationEmail)) {
       errors.add(new ValidationErrorImpl().key("parameters.notificationEmail")
@@ -191,7 +184,7 @@ public class ActionsValidatorImpl implements ActionsValidator {
 
   @Override
   public Collection<ValidationError> validation(final String siteId, final Action action,
-      final Map<String, Object> configs) {
+      final String chatGptApiKey, final String notificationsEmail) {
     Collection<ValidationError> errors = new ArrayList<>();
 
     if (action == null) {
@@ -210,7 +203,7 @@ public class ActionsValidatorImpl implements ActionsValidator {
 
       } else {
 
-        validateActionParameters(siteId, action, configs, errors);
+        validateActionParameters(siteId, action, chatGptApiKey, notificationsEmail, errors);
       }
     }
 
@@ -219,23 +212,25 @@ public class ActionsValidatorImpl implements ActionsValidator {
 
   @Override
   public List<Collection<ValidationError>> validation(final String siteId,
-      final List<Action> actions, final Map<String, Object> configs) {
+      final List<Action> actions, final String chatGptApiKey, final String notificationsEmail) {
+
     List<Collection<ValidationError>> errors = new ArrayList<>();
-    actions.forEach(a -> errors.add(validation(siteId, a, configs)));
+    actions.forEach(a -> errors.add(validation(siteId, a, chatGptApiKey, notificationsEmail)));
     return errors;
   }
 
   private void validateActionParameters(final String siteId, final Action action,
-      final Map<String, Object> configs, final Collection<ValidationError> errors) {
+      final String chatGptApiKey, final String notificationsEmail,
+      final Collection<ValidationError> errors) {
 
     Map<String, String> parameters = getParameters(action);
     if (ActionType.WEBHOOK.equals(action.type()) && !parameters.containsKey("url")) {
       errors.add(new ValidationErrorImpl().key("parameters.url")
           .error("action 'url' parameter is required"));
     } else if (ActionType.DOCUMENTTAGGING.equals(action.type())) {
-      validateDocumentTagging(configs, parameters, errors);
+      validateDocumentTagging(chatGptApiKey, parameters, errors);
     } else if (ActionType.NOTIFICATION.equals(action.type())) {
-      validateNotificationEmail(configs, action, errors);
+      validateNotificationEmail(notificationsEmail, action, errors);
     } else if (ActionType.QUEUE.equals(action.type())) {
       validateQueue(siteId, action, errors);
     } else if (ActionType.IDP.equals(action.type())) {

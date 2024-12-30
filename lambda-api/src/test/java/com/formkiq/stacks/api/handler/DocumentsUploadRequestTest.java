@@ -697,6 +697,72 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
     }
   }
 
+  /**
+   * POST Request Content Length greater than allowed.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  public void testPost11() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken("Admins");
+
+      UpdateConfigurationRequest config =
+          new UpdateConfigurationRequest().maxContentLengthBytes("2");
+      this.systemApi.updateConfiguration(siteId, config);
+
+      setBearerToken(siteId);
+      AddDocumentUploadRequest req = new AddDocumentUploadRequest();
+      this.documentsApi.addDocumentUpload(req, siteId, 1, null, null);
+
+      // when
+      try {
+        this.documentsApi.addDocumentUpload(req, siteId, 10, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"message\":\"'contentLength' cannot exceed 2 bytes\"}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * POST Request Content Length not set.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  public void testPost12() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken("Admins");
+
+      UpdateConfigurationRequest config =
+          new UpdateConfigurationRequest().maxContentLengthBytes("2");
+      this.systemApi.updateConfiguration(siteId, config);
+
+      setBearerToken(siteId);
+      AddDocumentUploadRequest req = new AddDocumentUploadRequest();
+      this.documentsApi.addDocumentUpload(req, siteId, null, null, null);
+
+      // when
+      try {
+        this.documentsApi.addDocumentUpload(req, siteId, 10, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"message\":\"'contentLength' is required when MaxContentLengthBytes is configured\"}",
+            e.getResponseBody());
+      }
+    }
+  }
+
   private HttpResponse<String> putS3Request(final GetDocumentUrlResponse response,
       final String content) throws IOException {
     HttpService http = new HttpServiceJdk11();

@@ -23,8 +23,9 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.dynamodb.config.ConfigService;
+import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 
 /**
  * Interface for providing restrictions around Document.
@@ -36,32 +37,34 @@ public interface DocumentsRestrictions {
    * Whether Restriction is being enforced.
    * 
    * @param awsservice {@link AwsServiceCache}
+   * @param config {@link SiteConfiguration}
    * @param siteId {@link String}
-   * @param value {@link String}
-   * @param objs {@link Object}
+   * @param item {@link DocumentItem}
    * @return boolean
    */
-  boolean enforced(AwsServiceCache awsservice, String siteId, String value, Object... objs);
+  boolean isViolated(AwsServiceCache awsservice, SiteConfiguration config, String siteId,
+      DocumentItem item);
 
-  /**
-   * Get Value.
-   * 
-   * @param awsservice {@link AwsServiceCache}
-   * @param siteId {@link String}
-   * @param key {@link String}
-   * @return {@link String}
-   */
-  default String getValue(final AwsServiceCache awsservice, final String siteId, final String key) {
-    ConfigService configService = awsservice.getExtension(ConfigService.class);
-    return (String) configService.get(siteId).get(key);
-  }
-
-  /**
-   * Get Value.
-   * 
-   * @param awsservice {@link AwsServiceCache}
-   * @param siteId {@link String}
-   * @return {@link String}
-   */
-  String getValue(AwsServiceCache awsservice, String siteId);
+  // /**
+  // * Get Value.
+  // *
+  // * @param awsservice {@link AwsServiceCache}
+  // * @param siteId {@link String}
+  // * @param key {@link String}
+  // * @return {@link String}
+  // */
+  // default String getValue(final AwsServiceCache awsservice, final String siteId, final String
+  // key) {
+  // ConfigService configService = awsservice.getExtension(ConfigService.class);
+  // return (String) configService.get(siteId).get(key);
+  // }
+  //
+  // /**
+  // * Get Value.
+  // *
+  // * @param awsservice {@link AwsServiceCache}
+  // * @param siteId {@link String}
+  // * @return {@link String}
+  // */
+  // String getValue(AwsServiceCache awsservice, String siteId);
 }
