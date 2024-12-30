@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api.handler;
+package com.formkiq.stacks.dynamodb.config;
 
 import com.formkiq.graalvm.annotations.Reflectable;
 
@@ -46,6 +46,10 @@ public class SiteConfiguration {
   private SiteConfigurationGoogle google;
   /** Docusign Configuration. */
   private SiteConfigurationDocusign docusign;
+  /** Document Time to Live. */
+  private String documentTimeToLive;
+  /** Webhook Time to Live. */
+  private String webhookTimeToLive;
 
   /**
    * constructor.
@@ -54,67 +58,93 @@ public class SiteConfiguration {
 
   }
 
+  public String getWebhookTimeToLive() {
+    return this.webhookTimeToLive;
+  }
+
+  public SiteConfiguration setWebhookTimeToLive(final String ttl) {
+    this.webhookTimeToLive = ttl;
+    return this;
+  }
+
+  public String getDocumentTimeToLive() {
+    return this.documentTimeToLive;
+  }
+
+  public SiteConfiguration setDocumentTimeToLive(final String ttl) {
+    this.documentTimeToLive = ttl;
+    return this;
+  }
+
   public SiteConfigurationDocusign getDocusign() {
     return this.docusign;
   }
 
-  public void setDocusign(final SiteConfigurationDocusign docusignConfig) {
+  public SiteConfiguration setDocusign(final SiteConfigurationDocusign docusignConfig) {
     this.docusign = docusignConfig;
+    return this;
   }
 
   public SiteConfigurationGoogle getGoogle() {
     return this.google;
   }
 
-  public void setGoogle(final SiteConfigurationGoogle googleConfig) {
+  public SiteConfiguration setGoogle(final SiteConfigurationGoogle googleConfig) {
     this.google = googleConfig;
+    return this;
   }
 
   public SiteConfigurationOcr getOcr() {
     return ocr;
   }
 
-  public void setOcr(final SiteConfigurationOcr ocrConfig) {
+  public SiteConfiguration setOcr(final SiteConfigurationOcr ocrConfig) {
     this.ocr = ocrConfig;
+    return this;
   }
 
   public String getNotificationEmail() {
     return notificationEmail;
   }
 
-  public void setNotificationEmail(final String email) {
+  public SiteConfiguration setNotificationEmail(final String email) {
     this.notificationEmail = email;
+    return this;
   }
 
   public String getMaxWebhooks() {
     return maxWebhooks;
   }
 
-  public void setMaxWebhooks(final String max) {
+  public SiteConfiguration setMaxWebhooks(final String max) {
     this.maxWebhooks = max;
+    return this;
   }
 
   public String getMaxDocuments() {
     return maxDocuments;
   }
 
-  public void setMaxDocuments(final String max) {
+  public SiteConfiguration setMaxDocuments(final String max) {
     this.maxDocuments = max;
+    return this;
   }
 
   public String getMaxContentLengthBytes() {
     return maxContentLengthBytes;
   }
 
-  public void setMaxContentLengthBytes(final String max) {
+  public SiteConfiguration setMaxContentLengthBytes(final String max) {
     this.maxContentLengthBytes = max;
+    return this;
   }
 
   public String getChatGptApiKey() {
     return chatGptApiKey;
   }
 
-  public void setChatGptApiKey(final String apiKey) {
+  public SiteConfiguration setChatGptApiKey(final String apiKey) {
     this.chatGptApiKey = apiKey;
+    return this;
   }
 }

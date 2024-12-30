@@ -27,10 +27,10 @@ import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -99,9 +99,10 @@ public class DocumentsRestrictionsMaxContentLengthTest {
     ConfigService configService = awsservice.getExtension(ConfigService.class);
     String siteId = ID.uuid();
 
-    Map<String, Object> ob = new HashMap<>(configService.get(siteId));
-    ob.put(ConfigService.MAX_DOCUMENT_SIZE_BYTES, "10");
-    configService.save(siteId, ob);
+    // Map<String, Object> ob = new HashMap<>(configService.get(siteId));
+    // ob.put(ConfigService.MAX_DOCUMENT_SIZE_BYTES, "10");
+    SiteConfiguration config = new SiteConfiguration().setMaxContentLengthBytes("10");
+    configService.save(siteId, config);
 
     // when
     String value = SERVICE.getValue(awsservice, siteId);
@@ -121,9 +122,9 @@ public class DocumentsRestrictionsMaxContentLengthTest {
     Long contentLength = Long.valueOf("10");
     String siteId = ID.uuid();
 
-    Map<String, Object> ob = new HashMap<>(configService.get(siteId));
-    ob.put(ConfigService.MAX_DOCUMENT_SIZE_BYTES, "10");
-    configService.save(siteId, ob);
+    // Map<String, Object> ob = new HashMap<>(configService.get(siteId));
+    // ob.put(ConfigService.MAX_DOCUMENT_SIZE_BYTES, "10");
+    configService.save(siteId, new SiteConfiguration().setMaxContentLengthBytes("10"));
 
     // when
     String value = SERVICE.getValue(awsservice, siteId);
@@ -143,9 +144,9 @@ public class DocumentsRestrictionsMaxContentLengthTest {
     Long contentLength = Long.valueOf("15");
     String siteId = ID.uuid();
 
-    Map<String, Object> ob = new HashMap<>(configService.get(siteId));
-    ob.put(ConfigService.MAX_DOCUMENT_SIZE_BYTES, "10");
-    configService.save(siteId, ob);
+    // Map<String, Object> ob = new HashMap<>(configService.get(siteId));
+    // ob.put(ConfigService.MAX_DOCUMENT_SIZE_BYTES, "10");
+    configService.save(siteId, new SiteConfiguration().setMaxContentLengthBytes("10"));
 
     // when
     String value = SERVICE.getValue(awsservice, siteId);
@@ -165,9 +166,9 @@ public class DocumentsRestrictionsMaxContentLengthTest {
     String siteId = ID.uuid();
     ConfigService configService = awsservice.getExtension(ConfigService.class);
 
-    Map<String, Object> ob = new HashMap<>(configService.get(siteId));
-    ob.put(ConfigService.MAX_DOCUMENT_SIZE_BYTES, "10");
-    configService.save(siteId, ob);
+    // Map<String, Object> ob = new HashMap<>(configService.get(siteId));
+    // ob.put(ConfigService.MAX_DOCUMENT_SIZE_BYTES, "10");
+    configService.save(siteId, new SiteConfiguration().setMaxContentLengthBytes("10"));
 
     // when
     String value = SERVICE.getValue(awsservice, siteId);

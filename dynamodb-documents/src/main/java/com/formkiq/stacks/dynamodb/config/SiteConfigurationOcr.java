@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api.handler;
+package com.formkiq.stacks.dynamodb.config;
 
 import com.formkiq.graalvm.annotations.Reflectable;
 
@@ -51,11 +51,13 @@ public class SiteConfigurationOcr {
 
   /**
    * Set Max Pages Per Transaction.
-   * 
+   *
    * @param maxPages long
+   * @return SiteConfigurationOcr
    */
-  public void setMaxPagesPerTransaction(final long maxPages) {
+  public SiteConfigurationOcr setMaxPagesPerTransaction(final long maxPages) {
     this.maxPagesPerTransaction = maxPages;
+    return this;
   }
 
   /**
@@ -69,10 +71,12 @@ public class SiteConfigurationOcr {
 
   /**
    * Set Max Transactions.
-   * 
+   *
    * @param maxTx long
+   * @return SiteConfigurationOcr
    */
-  public void setMaxTransactions(final long maxTx) {
+  public SiteConfigurationOcr setMaxTransactions(final long maxTx) {
     this.maxTransactions = maxTx;
+    return this;
   }
 }

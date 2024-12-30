@@ -26,7 +26,6 @@ package com.formkiq.stacks.api.awstest;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_UNAUTHORIZED;
-import static com.formkiq.stacks.dynamodb.config.ConfigService.MAX_DOCUMENTS;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForActionsComplete;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContent;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentTag;
@@ -48,7 +47,6 @@ import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -71,6 +69,7 @@ import com.formkiq.module.http.HttpHeaders;
 import com.formkiq.module.http.HttpService;
 import com.formkiq.module.http.HttpServiceJdk11;
 import com.formkiq.stacks.dynamodb.attributes.AttributeKeyReserved;
+import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -78,7 +77,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
-import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.aws.services.lambda.GsonUtil;
 import com.formkiq.client.api.DocumentSearchApi;
@@ -645,7 +643,8 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
   @Timeout(value = TEST_TIMEOUT)
   public void testPost06() throws Exception {
     // given
-    configService.save(SITEID1, new DynamicObject(Map.of(MAX_DOCUMENTS, "1")));
+    SiteConfiguration config = new SiteConfiguration().setMaxDocuments("1");
+    configService.save(SITEID1, config);
 
     ApiClient c = getApiClients(SITEID1).get(0);
     DocumentsApi api = new DocumentsApi(c);

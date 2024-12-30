@@ -41,7 +41,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -58,6 +57,9 @@ import com.formkiq.aws.ses.SesService;
 import com.formkiq.aws.ses.SesServiceExtension;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
+import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
+import com.formkiq.stacks.dynamodb.config.SiteConfigurationDocusign;
+import com.formkiq.stacks.dynamodb.config.SiteConfigurationGoogle;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
@@ -195,24 +197,10 @@ public class ConfigurationRequestHandler
     String siteId = event.getPathParameter("siteId");
     SiteConfiguration config = fromBodyToObject(event, SiteConfiguration.class);
 
-    Map<String, Object> map = new HashMap<>();
-    put(map, CHATGPT_API_KEY, config.getChatGptApiKey());
-    put(map, MAX_DOCUMENT_SIZE_BYTES, config.getMaxContentLengthBytes());
-    put(map, MAX_DOCUMENTS, config.getMaxDocuments());
-    put(map, MAX_WEBHOOKS, config.getMaxWebhooks());
-    put(map, NOTIFICATION_EMAIL, config.getNotificationEmail());
+    validate(awsservice, config);
 
-    updateGoogle(config, map);
-
-    updateOcr(config, map);
-
-    updateDocusign(config, map);
-
-    validate(awsservice, map);
-
-    if (!map.isEmpty()) {
-      ConfigService configService = awsservice.getExtension(ConfigService.class);
-      configService.save(siteId, new DynamicObject(map));
+    ConfigService configService = awsservice.getExtension(ConfigService.class);
+    if (configService.save(siteId, config)) {
 
       return new ApiRequestHandlerResponse(SC_OK,
           new ApiMapResponse(Map.of("message", "Config saved")));
@@ -221,73 +209,12 @@ public class ConfigurationRequestHandler
     throw new BadException("missing required body parameters");
   }
 
-  private void updateDocusign(final SiteConfiguration config, final Map<String, Object> map) {
-
-    SiteConfigurationDocusign docusign = config.getDocusign();
-    if (docusign != null) {
-
-      String docusignUserId = docusign.getUserId();
-      if (!Strings.isEmpty(docusignUserId)) {
-        map.put(KEY_DOCUSIGN_USER_ID, docusignUserId.trim());
-      }
-
-      String docusignIntegrationKey = docusign.getIntegrationKey();
-      if (!Strings.isEmpty(docusignIntegrationKey)) {
-        map.put(KEY_DOCUSIGN_INTEGRATION_KEY, docusignIntegrationKey.trim());
-      }
-
-      String docusignRsaPrivateKey = docusign.getRsaPrivateKey();
-      if (!Strings.isEmpty(docusignRsaPrivateKey)) {
-        map.put(KEY_DOCUSIGN_RSA_PRIVATE_KEY, docusignRsaPrivateKey.trim());
-      }
-
-      String docusignHmacSignature = docusign.getHmacSignature();
-      if (!Strings.isEmpty(docusignHmacSignature)) {
-        map.put(KEY_DOCUSIGN_HMAC_SIGNATURE, docusignHmacSignature.trim());
-      }
-    }
-  }
-
-  private void updateOcr(final SiteConfiguration config, final Map<String, Object> map) {
-    SiteConfigurationOcr ocr = config.getOcr();
-
-    if (ocr != null) {
-      long maxTransactions = ocr.getMaxTransactions();
-      long maxPagesPerTransaction = ocr.getMaxPagesPerTransaction();
-      map.put("maxTransactions", maxTransactions != 0 ? maxTransactions : -1);
-      map.put("maxPagesPerTransaction", maxPagesPerTransaction != 0 ? maxPagesPerTransaction : -1);
-    }
-  }
-
-  private void updateGoogle(final SiteConfiguration config, final Map<String, Object> map) {
-    SiteConfigurationGoogle google = config.getGoogle();
-    if (google != null) {
-
-      String workloadIdentityAudience = google.getWorkloadIdentityAudience();
-      String workloadIdentityServiceAccount = google.getWorkloadIdentityServiceAccount();
-
-      if (!Strings.isEmpty(workloadIdentityAudience)) {
-        map.put("googleWorkloadIdentityAudience", workloadIdentityAudience);
-      }
-
-      if (!Strings.isEmpty(workloadIdentityServiceAccount)) {
-        map.put("googleWorkloadIdentityServiceAccount", workloadIdentityServiceAccount);
-      }
-    }
-  }
-
-  private void put(final Map<String, Object> map, final String mapKey, final String value) {
-    if (value != null) {
-      map.put(mapKey, value);
-    }
-  }
-
-  private void validate(final AwsServiceCache awsservice, final Map<String, Object> map)
+  private void validate(final AwsServiceCache awsservice, final SiteConfiguration config)
       throws ValidationException {
 
     Collection<ValidationError> errors = new ArrayList<>();
 
-    Object notificationEmail = map.getOrDefault(NOTIFICATION_EMAIL, null);
+    String notificationEmail = config.getNotificationEmail();
     if (notificationEmail != null) {
 
       initSes(awsservice);
@@ -302,44 +229,51 @@ public class ConfigurationRequestHandler
       }
     }
 
-    validateGoogle(map, errors);
-    validateDocusign(map, errors);
+    validateGoogle(config, errors);
+    validateDocusign(config, errors);
 
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }
   }
 
-  private void validateGoogle(final Map<String, Object> map,
+  private void validateGoogle(final SiteConfiguration config,
       final Collection<ValidationError> errors) {
-    String googleWorkloadIdentityAudience =
-        (String) map.getOrDefault("googleWorkloadIdentityAudience", null);
-    String googleWorkloadIdentityServiceAccount =
-        (String) map.getOrDefault("googleWorkloadIdentityServiceAccount", null);
 
-    if (!Strings.isEmptyOrHasValues(googleWorkloadIdentityAudience,
-        googleWorkloadIdentityServiceAccount)) {
-      errors.add(new ValidationErrorImpl().key("google")
-          .error("all 'googleWorkloadIdentityAudience', 'googleWorkloadIdentityServiceAccount' "
-              + "are required for google setup"));
+    SiteConfigurationGoogle google = config.getGoogle();
+
+    if (google != null) {
+      String googleWorkloadIdentityAudience = google.getWorkloadIdentityAudience();
+      String googleWorkloadIdentityServiceAccount = google.getWorkloadIdentityServiceAccount();
+
+      if (!Strings.isEmptyOrHasValues(googleWorkloadIdentityAudience,
+          googleWorkloadIdentityServiceAccount)) {
+        errors.add(new ValidationErrorImpl().key("google")
+            .error("all 'googleWorkloadIdentityAudience', 'googleWorkloadIdentityServiceAccount' "
+                + "are required for google setup"));
+      }
     }
   }
 
-  private void validateDocusign(final Map<String, Object> map,
+  private void validateDocusign(final SiteConfiguration config,
       final Collection<ValidationError> errors) {
 
-    String docusignUserId = (String) map.getOrDefault(KEY_DOCUSIGN_USER_ID, null);
-    String docusignIntegrationKey = (String) map.getOrDefault(KEY_DOCUSIGN_INTEGRATION_KEY, null);
-    String docusignRsaPrivateKey = (String) map.getOrDefault(KEY_DOCUSIGN_RSA_PRIVATE_KEY, null);
+    SiteConfigurationDocusign docusign = config.getDocusign();
 
-    if (!Strings.isEmptyOrHasValues(docusignUserId, docusignIntegrationKey,
-        docusignRsaPrivateKey)) {
-      errors.add(new ValidationErrorImpl().key("docusign")
-          .error("all 'docusignUserId', 'docusignIntegrationKey', 'docusignRsaPrivateKey' "
-              + "are required for docusign setup"));
-    } else if (docusignRsaPrivateKey != null && !isValidRsaPrivateKey(docusignRsaPrivateKey)) {
-      errors.add(
-          new ValidationErrorImpl().key("docusignRsaPrivateKey").error("invalid RSA Private Key"));
+    if (docusign != null) {
+      String docusignUserId = docusign.getUserId();
+      String docusignIntegrationKey = docusign.getIntegrationKey();
+      String docusignRsaPrivateKey = docusign.getRsaPrivateKey();
+
+      if (!Strings.isEmptyOrHasValues(docusignUserId, docusignIntegrationKey,
+          docusignRsaPrivateKey)) {
+        errors.add(new ValidationErrorImpl().key("docusign")
+            .error("all 'docusignUserId', 'docusignIntegrationKey', 'docusignRsaPrivateKey' "
+                + "are required for docusign setup"));
+      } else if (docusignRsaPrivateKey != null && !isValidRsaPrivateKey(docusignRsaPrivateKey)) {
+        errors.add(new ValidationErrorImpl().key("docusignRsaPrivateKey")
+            .error("invalid RSA Private Key"));
+      }
     }
   }
 

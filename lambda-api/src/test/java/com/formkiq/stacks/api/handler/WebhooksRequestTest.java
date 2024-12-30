@@ -25,8 +25,6 @@ package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
-import static com.formkiq.stacks.dynamodb.config.ConfigService.MAX_WEBHOOKS;
-import static com.formkiq.stacks.dynamodb.config.ConfigService.WEBHOOK_TIME_TO_LIVE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -40,7 +38,6 @@ import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -55,6 +52,7 @@ import com.formkiq.client.model.AddWebhookResponse;
 import com.formkiq.client.model.GetWebhookResponse;
 import com.formkiq.client.model.GetWebhooksResponse;
 import com.formkiq.client.model.UpdateResponse;
+import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import org.junit.jupiter.api.Test;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.PaginationResults;
@@ -355,15 +353,16 @@ public class WebhooksRequestTest extends AbstractApiClientRequestTest {
       for (String siteId : Arrays.asList(null, ID.uuid())) {
 
         setBearerToken(siteId);
+        SiteConfiguration config = new SiteConfiguration().setMaxWebhooks(maxWebHooks);
 
         if (!"0".equals(maxWebHooks)) {
-          configService.save(siteId, new DynamicObject(Map.of(MAX_WEBHOOKS, maxWebHooks)));
+          configService.save(siteId, config);
 
           this.webhooksApi.addWebhook(new AddWebhookRequest().name("john smith"), siteId);
           this.webhooksApi.addWebhook(new AddWebhookRequest().name("john smith"), siteId);
 
         } else {
-          configService.save(siteId, new DynamicObject(Map.of(MAX_WEBHOOKS, maxWebHooks)));
+          configService.save(siteId, config);
         }
 
         try {
@@ -392,7 +391,8 @@ public class WebhooksRequestTest extends AbstractApiClientRequestTest {
     String ttl = "87400";
 
     ConfigService configService = getAwsServices().getExtension(ConfigService.class);
-    configService.save(null, new DynamicObject(Map.of(WEBHOOK_TIME_TO_LIVE, ttl)));
+    SiteConfiguration config = new SiteConfiguration().setWebhookTimeToLive(ttl);
+    configService.save(null, config);
 
     // when
     AddWebhookResponse result =
@@ -418,7 +418,8 @@ public class WebhooksRequestTest extends AbstractApiClientRequestTest {
 
     // given
     ttl = "-87400";
-    configService.save(null, new DynamicObject(Map.of(WEBHOOK_TIME_TO_LIVE, ttl)));
+    config.setDocumentTimeToLive(ttl);
+    configService.save(null, config);
 
     // when
     this.webhooksApi.addWebhook(new AddWebhookRequest().name("john smith"), null);

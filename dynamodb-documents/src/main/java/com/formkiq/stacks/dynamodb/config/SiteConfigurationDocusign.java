@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api.handler;
+package com.formkiq.stacks.dynamodb.config;
 
 import com.formkiq.graalvm.annotations.Reflectable;
 
@@ -57,11 +57,13 @@ public class SiteConfigurationDocusign {
 
   /**
    * Set User Id.
-   * 
+   *
    * @param user {@link String}
+   * @return SiteConfigurationDocusign
    */
-  public void setUserId(final String user) {
+  public SiteConfigurationDocusign setUserId(final String user) {
     this.userId = user;
+    return this;
   }
 
   /**
@@ -75,11 +77,13 @@ public class SiteConfigurationDocusign {
 
   /**
    * Set Integration Key.
-   * 
+   *
    * @param key {@link String}
+   * @return SiteConfigurationDocusign
    */
-  public void setIntegrationKey(final String key) {
+  public SiteConfigurationDocusign setIntegrationKey(final String key) {
     this.integrationKey = key;
+    return this;
   }
 
   /**

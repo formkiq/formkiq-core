@@ -23,7 +23,6 @@
  */
 package com.formkiq.stacks.api;
 
-import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -31,6 +30,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEventBuilder;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
+import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 import org.junit.jupiter.api.BeforeEach;
@@ -284,14 +284,15 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
   public void testHandleGetDocumentsUpload06() throws Exception {
 
     String maxContentLengthBytes = "2783034";
-    this.configService.save(null,
-        new DynamicObject(Map.of(ConfigService.MAX_DOCUMENT_SIZE_BYTES, maxContentLengthBytes)));
+    SiteConfiguration config =
+        new SiteConfiguration().setMaxContentLengthBytes(maxContentLengthBytes);
+    this.configService.save(null, config);
+    // new DynamicObject(Map.of(ConfigService.MAX_DOCUMENT_SIZE_BYTES, maxContentLengthBytes)));
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       if (siteId != null) {
-        this.configService.save(siteId, new DynamicObject(
-            Map.of(ConfigService.MAX_DOCUMENT_SIZE_BYTES, maxContentLengthBytes)));
+        this.configService.save(siteId, config);
       }
 
       // given
@@ -322,14 +323,14 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
   public void testHandleGetDocumentsUpload07() throws Exception {
 
     String maxContentLengthBytes = "2783034";
-    this.configService.save(null,
-        new DynamicObject(Map.of(ConfigService.MAX_DOCUMENT_SIZE_BYTES, maxContentLengthBytes)));
+    SiteConfiguration config =
+        new SiteConfiguration().setMaxContentLengthBytes(maxContentLengthBytes);
+    this.configService.save(null, config);
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       if (siteId != null) {
-        this.configService.save(siteId, new DynamicObject(
-            Map.of(ConfigService.MAX_DOCUMENT_SIZE_BYTES, maxContentLengthBytes)));
+        this.configService.save(siteId, config);
       }
 
       // given

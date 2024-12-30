@@ -24,13 +24,11 @@
 package com.formkiq.stacks.api;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
-import static com.formkiq.stacks.dynamodb.config.ConfigService.DOCUMENT_TIME_TO_LIVE;
 import static com.formkiq.testutils.aws.TestServices.STAGE_BUCKET_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
@@ -39,6 +37,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamicObject;
@@ -60,7 +59,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   /** Extension for FormKiQ config file. */
   private static final String FORMKIQ_DOC_EXT = ".fkb64";
 
-  private void enablePublicEnpoint() throws URISyntaxException {
+  private void enablePublicEnpoint() {
     Map<String, String> map = new HashMap<>(getMap());
     map.put("ENABLE_PUBLIC_URLS", "true");
     createApiRequestHandler(map);
@@ -75,7 +74,6 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testPostWebhooks01() throws Exception {
     // given
@@ -107,7 +105,6 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testPostWebhooks02() throws Exception {
     // given
@@ -140,7 +137,6 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testPostWebhooks03() throws Exception {
     // givens
@@ -162,7 +158,6 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testPostWebhooks04() throws Exception {
     enablePublicEnpoint();
@@ -191,7 +186,6 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testPostWebhooks05() throws Exception {
     // given
@@ -228,7 +222,6 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testPostWebhooks06() throws Exception {
     enablePublicEnpoint();
@@ -260,7 +253,6 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testPostWebhooks07() throws Exception {
     enablePublicEnpoint();
@@ -295,7 +287,6 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testPostWebhooks08() throws Exception {
     enablePublicEnpoint();
@@ -331,7 +322,6 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testPostWebhooks09() throws Exception {
     enablePublicEnpoint();
@@ -371,7 +361,6 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testPostWebhooks10() throws Exception {
     enablePublicEnpoint();
@@ -399,7 +388,6 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testPostWebhooks11() throws Exception {
     enablePublicEnpoint();
@@ -431,7 +419,6 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testPostWebhooks12() throws Exception {
     enablePublicEnpoint();
@@ -441,7 +428,8 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
       String name = ID.uuid();
 
       ConfigService configService = getAwsServices().getExtension(ConfigService.class);
-      configService.save(siteId, new DynamicObject(Map.of(DOCUMENT_TIME_TO_LIVE, "1000")));
+      SiteConfiguration siteConfig = new SiteConfiguration().setDocumentTimeToLive("1000");
+      configService.save(siteId, siteConfig);
 
       String id = getWebhooksService().saveWebhook(siteId, name, "joe", null, "true");
 
@@ -476,7 +464,6 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testPostWebhooks13() throws Exception {
     enablePublicEnpoint();
@@ -528,7 +515,6 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testPostWebhooks14() throws Exception {
     enablePublicEnpoint();
@@ -570,7 +556,6 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
     return event;
   }
 
-  @SuppressWarnings("unchecked")
   private String verifyDocumentId(final Map<String, String> m) {
     Map<String, Object> body = fromJson(m.get("body"), Map.class);
     String documentId = body.get("documentId").toString();
@@ -585,9 +570,8 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
     assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(map.get("headers")));
   }
 
-  @SuppressWarnings("unchecked")
   private void verifyS3File(final String webhookId, final String siteId, final String documentId,
-      final String name, final String contentType, final boolean hasTimeToLive) throws Exception {
+      final String name, final String contentType, final boolean hasTimeToLive) {
 
     // verify s3 file
     String key = createDatabaseKey(siteId, documentId + FORMKIQ_DOC_EXT);

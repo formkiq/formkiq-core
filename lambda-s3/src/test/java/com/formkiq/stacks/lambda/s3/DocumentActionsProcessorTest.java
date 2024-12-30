@@ -25,7 +25,6 @@ package com.formkiq.stacks.lambda.s3;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.DbKeys;
-import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
@@ -80,6 +79,8 @@ import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeServiceDynamodb;
 import com.formkiq.stacks.dynamodb.attributes.AttributeType;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
+import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
+import com.formkiq.stacks.dynamodb.config.SiteConfigurationGoogle;
 import com.formkiq.stacks.dynamodb.documents.DocumentPublicationRecord;
 import com.formkiq.stacks.dynamodb.mappings.Mapping;
 import com.formkiq.stacks.dynamodb.mappings.MappingAttribute;
@@ -133,7 +134,6 @@ import java.util.concurrent.TimeUnit;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
-import static com.formkiq.stacks.dynamodb.config.ConfigService.CHATGPT_API_KEY;
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
 import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFileAsMap;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
@@ -434,7 +434,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      configService.save(siteId, new DynamicObject(Map.of(CHATGPT_API_KEY, "asd")));
+      SiteConfiguration siteConfig = new SiteConfiguration();
+      siteConfig.setChatGptApiKey("asd");
+      configService.save(siteId, siteConfig);
 
       String documentId = ID.uuid();
 
@@ -535,7 +537,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      configService.save(siteId, new DynamicObject(Map.of(CHATGPT_API_KEY, "asd")));
+      SiteConfiguration siteConfig = new SiteConfiguration();
+      siteConfig.setChatGptApiKey("asd");
+      configService.save(siteId, siteConfig);
 
       String documentId = ID.uuid();
 
@@ -609,7 +613,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      configService.save(siteId, new DynamicObject(Map.of(CHATGPT_API_KEY, "asd")));
+      SiteConfiguration siteConfig = new SiteConfiguration();
+      siteConfig.setChatGptApiKey("asd");
+      configService.save(siteId, siteConfig);
 
       String documentId = ID.uuid();
 
@@ -681,7 +687,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      configService.save(siteId, new DynamicObject(Map.of(CHATGPT_API_KEY, "asd")));
+      SiteConfiguration siteConfig = new SiteConfiguration();
+      siteConfig.setChatGptApiKey("asd");
+      configService.save(siteId, siteConfig);
 
       String documentId = ID.uuid();
 
@@ -749,7 +757,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      configService.save(siteId, new DynamicObject(Map.of(CHATGPT_API_KEY, "asd")));
+      SiteConfiguration siteConfig = new SiteConfiguration();
+      siteConfig.setChatGptApiKey("asd");
+      configService.save(siteId, siteConfig);
 
       String documentId = ID.uuid();
 
@@ -823,7 +833,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      configService.save(siteId, new DynamicObject(Map.of(CHATGPT_API_KEY, "asd")));
+      SiteConfiguration siteConfig = new SiteConfiguration();
+      siteConfig.setChatGptApiKey("asd");
+      configService.save(siteId, siteConfig);
 
       String documentId = ID.uuid();
 
@@ -2143,8 +2155,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
   public void testPdfExportAction02() throws Exception {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      configService.save(siteId, new DynamicObject(Map.of("googleWorkloadIdentityAudience", "abc",
-          "googleWorkloadIdentityServiceAccount", "123")));
+      SiteConfiguration siteConfig = new SiteConfiguration();
+      siteConfig.setGoogle(new SiteConfigurationGoogle().setWorkloadIdentityAudience("abc")
+          .setWorkloadIdentityServiceAccount("123"));
+      configService.save(siteId, siteConfig);
 
       String documentId = ID.uuid();
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
@@ -2179,8 +2193,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
   public void testPdfExportAction03() throws Exception {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      configService.save(siteId, new DynamicObject(Map.of("googleWorkloadIdentityAudience", "abc",
-          "googleWorkloadIdentityServiceAccount", "123")));
+      SiteConfiguration siteConfig = new SiteConfiguration();
+      siteConfig.setGoogle(new SiteConfigurationGoogle().setWorkloadIdentityAudience("abc")
+          .setWorkloadIdentityServiceAccount("123"));
+      configService.save(siteId, siteConfig);
 
       String documentId = ID.uuid();
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");

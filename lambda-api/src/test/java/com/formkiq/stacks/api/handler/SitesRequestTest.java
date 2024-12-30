@@ -25,8 +25,6 @@ package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
-import static com.formkiq.stacks.dynamodb.config.ConfigService.MAX_DOCUMENTS;
-import static com.formkiq.stacks.dynamodb.config.ConfigService.MAX_WEBHOOKS;
 import static com.formkiq.testutils.aws.TestServices.FORMKIQ_APP_ENVIRONMENT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -35,14 +33,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.List;
-import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
+import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceExtension;
 import com.formkiq.client.invoker.ApiException;
@@ -86,7 +83,8 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
   public void testHandleGetSites01() throws Exception {
     // given
     setBearerToken(new String[] {DEFAULT_SITE_ID, "Admins", "finance"});
-    config.save(null, new DynamicObject(Map.of("chatGptApiKey", "somevalue")));
+    SiteConfiguration siteConfig = new SiteConfiguration().setChatGptApiKey("somevalue");
+    config.save(null, siteConfig);
 
     ssm.putParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/maildomain", "tryformkiq.com");
 
@@ -94,13 +92,13 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     GetSitesResponse response = this.systemApi.getSites(null);
 
     // then
-    List<Site> sites = response.getSites();
+    List<Site> sites = notNull(response.getSites());
     assertEquals(2, sites.size());
 
     assertEquals(DEFAULT_SITE_ID, sites.get(0).getSiteId());
     assertEquals("READ_WRITE", sites.get(0).getPermission().toString());
-    assertEquals("ADMIN,DELETE,READ,WRITE",
-        sites.get(0).getPermissions().stream().map(Enum::name).collect(Collectors.joining(",")));
+    assertEquals("ADMIN,DELETE,READ,WRITE", notNull(sites.get(0).getPermissions()).stream()
+        .map(Enum::name).collect(Collectors.joining(",")));
     assertNotNull(sites.get(0).getUploadEmail());
 
     String uploadEmail = sites.get(0).getUploadEmail();
@@ -206,7 +204,9 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     String siteId = "finance";
     setBearerToken(siteId);
 
-    config.save(siteId, new DynamicObject(Map.of(MAX_DOCUMENTS, "5", MAX_WEBHOOKS, "10")));
+    SiteConfiguration siteConfig =
+        new SiteConfiguration().setMaxDocuments("5").setMaxWebhooks("10");
+    config.save(siteId, siteConfig);
 
     // when
     GetSitesResponse response = this.systemApi.getSites(null);

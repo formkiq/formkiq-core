@@ -23,7 +23,6 @@
  */
 package com.formkiq.stacks.api.awstest;
 
-import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.client.api.DocumentTagsApi;
@@ -36,6 +35,7 @@ import com.formkiq.client.model.ChecksumType;
 import com.formkiq.client.model.DocumentTag;
 import com.formkiq.client.model.GetDocumentUrlResponse;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
+import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -59,8 +59,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
-import static com.formkiq.stacks.dynamodb.config.ConfigService.MAX_DOCUMENTS;
-import static com.formkiq.stacks.dynamodb.config.ConfigService.MAX_DOCUMENT_SIZE_BYTES;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContent;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContentType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -169,7 +167,8 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
   @Timeout(value = TEST_TIMEOUT)
   public void testGet02() throws Exception {
     // given
-    configService.save(SITEID0, new DynamicObject(Map.of(MAX_DOCUMENT_SIZE_BYTES, "5")));
+    SiteConfiguration config = new SiteConfiguration().setMaxContentLengthBytes("5");
+    configService.save(SITEID0, config);
 
     for (ApiClient client : getApiClients(SITEID0)) {
 
@@ -196,7 +195,8 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
   public void testGet03() throws Exception {
     // given
     final int contentLength = 100;
-    configService.save(SITEID0, new DynamicObject(Map.of(MAX_DOCUMENT_SIZE_BYTES, "5")));
+    SiteConfiguration config = new SiteConfiguration().setMaxContentLengthBytes("5");
+    configService.save(SITEID0, config);
 
     for (ApiClient client : getApiClients(SITEID0)) {
 
@@ -223,8 +223,8 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
   public void testGet04() throws Exception {
     // given
     final int contentLength = 5;
-    configService.save(SITEID0,
-        new DynamicObject(Map.of(MAX_DOCUMENT_SIZE_BYTES, "" + contentLength)));
+    SiteConfiguration config = new SiteConfiguration().setMaxContentLengthBytes("" + contentLength);
+    configService.save(SITEID0, config);
 
     for (ApiClient client : getApiClients(SITEID0)) {
 
@@ -249,7 +249,8 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
   public void testGet05() throws Exception {
     // given
     String siteId = ID.uuid();
-    configService.save(siteId, new DynamicObject(Map.of(MAX_DOCUMENTS, "1")));
+    SiteConfiguration config = new SiteConfiguration().setMaxDocuments("1");
+    configService.save(siteId, config);
     TimeUnit.SECONDS.sleep(1);
 
     DocumentsApi api = new DocumentsApi(getApiClients(siteId).get(0));

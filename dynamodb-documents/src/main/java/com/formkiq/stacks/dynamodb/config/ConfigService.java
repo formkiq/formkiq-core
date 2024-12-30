@@ -73,9 +73,10 @@ public interface ConfigService {
    * Save Config.
    * 
    * @param siteId Optional Grouping siteId
-   * @param obj {@link Map}
+   * @param config {@link SiteConfiguration}
+   * @return boolean
    */
-  void save(String siteId, Map<String, Object> obj);
+  boolean save(String siteId, SiteConfiguration config);
 
   /**
    * Increment Key for SiteId.

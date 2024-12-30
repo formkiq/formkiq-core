@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api.handler;
+package com.formkiq.stacks.dynamodb.config;
 
 import com.formkiq.graalvm.annotations.Reflectable;
 
@@ -51,11 +51,13 @@ public class SiteConfigurationGoogle {
 
   /**
    * Set WorkloadIdentityAudience.
-   * 
+   *
    * @param identityAudience {@link String}
+   * @return SiteConfigurationGoogle
    */
-  public void setWorkloadIdentityAudience(final String identityAudience) {
+  public SiteConfigurationGoogle setWorkloadIdentityAudience(final String identityAudience) {
     this.workloadIdentityAudience = identityAudience;
+    return this;
   }
 
   /**
@@ -69,10 +71,12 @@ public class SiteConfigurationGoogle {
 
   /**
    * Set WorkloadIdentityServiceAccount.
-   * 
+   *
    * @param serviceAccount {@link String}
+   * @return SiteConfigurationGoogle
    */
-  public void setWorkloadIdentityServiceAccount(final String serviceAccount) {
+  public SiteConfigurationGoogle setWorkloadIdentityServiceAccount(final String serviceAccount) {
     this.workloadIdentityServiceAccount = serviceAccount;
+    return this;
   }
 }
