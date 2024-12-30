@@ -23,7 +23,6 @@
  */
 package com.formkiq.stacks.api.validators;
 
-import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
@@ -35,7 +34,7 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.handler.AddDocumentRequest;
 import com.formkiq.stacks.api.handler.AddDocumentTag;
 import com.formkiq.stacks.api.transformers.AddDocumentTagToDocumentTag;
-import com.formkiq.stacks.dynamodb.ConfigService;
+import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.DocumentTagValidator;
 import com.formkiq.stacks.dynamodb.DocumentTagValidatorImpl;
 import com.formkiq.validation.ValidationError;
@@ -44,6 +43,7 @@ import com.formkiq.validation.ValidationException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
@@ -70,7 +70,7 @@ public class DocumentEntityValidatorImpl implements DocumentEntityValidator {
 
     String userId = authorization.getUsername();
     Collection<ValidationError> errors = new ArrayList<>();
-    List<DocumentTag> tags = validateTagSchema(awsservice, siteId, item, userId, isUpdate, errors);
+    List<DocumentTag> tags = validateTagSchema(item, userId);
     validateTags(tags, errors);
     validateActions(awsservice, siteId, item, authorization, errors);
 
@@ -95,7 +95,7 @@ public class DocumentEntityValidatorImpl implements DocumentEntityValidator {
       actions.forEach(a -> a.userId(authorization.getUsername()));
 
       ConfigService configsService = awsservice.getExtension(ConfigService.class);
-      DynamicObject configs = configsService.get(siteId);
+      Map<String, Object> configs = configsService.get(siteId);
 
       for (Action action : actions) {
         errors.addAll(this.actionsValidator.validation(siteId, action, configs));
@@ -108,13 +108,11 @@ public class DocumentEntityValidatorImpl implements DocumentEntityValidator {
    * 
    * @param tags {@link List} {@link DocumentTag}
    * @param errors {@link Collection} {@link ValidationError}
-   * @throws ValidationException ValidationException
    */
-  private void validateTags(final List<DocumentTag> tags, final Collection<ValidationError> errors)
-      throws ValidationException {
+  private void validateTags(final List<DocumentTag> tags,
+      final Collection<ValidationError> errors) {
 
-    // List<DynamicObject> tags = item.getList("tags");
-    List<String> tagKeys = tags.stream().map(t -> t.getKey()).collect(Collectors.toList());
+    List<String> tagKeys = tags.stream().map(DocumentTag::getKey).collect(Collectors.toList());
 
     DocumentTagValidator validator = new DocumentTagValidatorImpl();
     errors.addAll(validator.validateKeys(tagKeys));
@@ -124,29 +122,16 @@ public class DocumentEntityValidatorImpl implements DocumentEntityValidator {
   /**
    * Validate {@link AddDocumentRequest} against a TagSchema.
    * 
-   * @param cacheService {@link AwsServiceCache}
-   * @param siteId {@link String}
    * @param item {@link AddDocumentRequest}
    * @param userId {@link String}
-   * @param isUpdate boolean
-   * @param errors {@link Collection} {@link ValidationError}
    * @return {@link List} {@link DocumentTag}
-   * @throws ValidationException ValidationException
-   * @throws BadException BadException
    */
-  private List<DocumentTag> validateTagSchema(final AwsServiceCache cacheService,
-      final String siteId, final AddDocumentRequest item, final String userId,
-      final boolean isUpdate, final Collection<ValidationError> errors)
-      throws ValidationException, BadException {
+  private List<DocumentTag> validateTagSchema(final AddDocumentRequest item, final String userId) {
 
     List<AddDocumentTag> doctags = notNull(item.getTags());
     AddDocumentTagToDocumentTag transform =
         new AddDocumentTagToDocumentTag(item.getDocumentId(), userId);
 
-    List<DocumentTag> tags = doctags.stream().map(t -> {
-      return transform.apply(t);
-    }).collect(Collectors.toList());
-
-    return tags;
+    return doctags.stream().map(transform).collect(Collectors.toList());
   }
 }

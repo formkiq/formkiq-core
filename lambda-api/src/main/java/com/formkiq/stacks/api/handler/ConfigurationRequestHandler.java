@@ -25,15 +25,15 @@ package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-import static com.formkiq.stacks.dynamodb.ConfigService.CHATGPT_API_KEY;
-import static com.formkiq.stacks.dynamodb.ConfigService.KEY_DOCUSIGN_HMAC_SIGNATURE;
-import static com.formkiq.stacks.dynamodb.ConfigService.KEY_DOCUSIGN_INTEGRATION_KEY;
-import static com.formkiq.stacks.dynamodb.ConfigService.KEY_DOCUSIGN_RSA_PRIVATE_KEY;
-import static com.formkiq.stacks.dynamodb.ConfigService.KEY_DOCUSIGN_USER_ID;
-import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENTS;
-import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENT_SIZE_BYTES;
-import static com.formkiq.stacks.dynamodb.ConfigService.MAX_WEBHOOKS;
-import static com.formkiq.stacks.dynamodb.ConfigService.NOTIFICATION_EMAIL;
+import static com.formkiq.stacks.dynamodb.config.ConfigService.CHATGPT_API_KEY;
+import static com.formkiq.stacks.dynamodb.config.ConfigService.KEY_DOCUSIGN_HMAC_SIGNATURE;
+import static com.formkiq.stacks.dynamodb.config.ConfigService.KEY_DOCUSIGN_INTEGRATION_KEY;
+import static com.formkiq.stacks.dynamodb.config.ConfigService.KEY_DOCUSIGN_RSA_PRIVATE_KEY;
+import static com.formkiq.stacks.dynamodb.config.ConfigService.KEY_DOCUSIGN_USER_ID;
+import static com.formkiq.stacks.dynamodb.config.ConfigService.MAX_DOCUMENTS;
+import static com.formkiq.stacks.dynamodb.config.ConfigService.MAX_DOCUMENT_SIZE_BYTES;
+import static com.formkiq.stacks.dynamodb.config.ConfigService.MAX_WEBHOOKS;
+import static com.formkiq.stacks.dynamodb.config.ConfigService.NOTIFICATION_EMAIL;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -57,7 +57,7 @@ import com.formkiq.aws.ses.SesConnectionBuilder;
 import com.formkiq.aws.ses.SesService;
 import com.formkiq.aws.ses.SesServiceExtension;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.dynamodb.ConfigService;
+import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
@@ -103,7 +103,7 @@ public class ConfigurationRequestHandler
     String siteId = event.getPathParameters().get("siteId");
     ConfigService configService = awsservice.getExtension(ConfigService.class);
 
-    DynamicObject obj = configService.get(siteId);
+    Map<String, Object> obj = configService.get(siteId);
 
     Map<String, Object> map = new HashMap<>();
     map.put("chatGptApiKey", mask(obj.getOrDefault(CHATGPT_API_KEY, "").toString(), CHAT_GPT_MASK));
@@ -114,11 +114,22 @@ public class ConfigurationRequestHandler
 
     setupGoogle(obj, map);
     setupDocusign(obj, map);
+    setupOcr(obj, map);
 
     return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
   }
 
-  private void setupGoogle(final DynamicObject obj, final Map<String, Object> map) {
+  private void setupOcr(final Map<String, Object> obj, final Map<String, Object> map) {
+
+    Double maxTransactions = (Double) obj.getOrDefault("maxTransactions", (double) -1);
+    Double maxPagesPerTransaction =
+        (Double) obj.getOrDefault("maxPagesPerTransaction", (double) -1);
+
+    map.put("ocr", Map.of("maxPagesPerTransaction", maxPagesPerTransaction, "maxTransactions",
+        maxTransactions));
+  }
+
+  private void setupGoogle(final Map<String, Object> obj, final Map<String, Object> map) {
     String workloadIdentityAudience =
         (String) obj.getOrDefault("googleWorkloadIdentityAudience", "");
     String workloadIdentityServiceAccount =
@@ -130,7 +141,7 @@ public class ConfigurationRequestHandler
     }
   }
 
-  private void setupDocusign(final DynamicObject obj, final Map<String, Object> map) {
+  private void setupDocusign(final Map<String, Object> obj, final Map<String, Object> map) {
     String docusignUserId = (String) obj.getOrDefault(KEY_DOCUSIGN_USER_ID, "");
     String docusignIntegrationKey = (String) obj.getOrDefault(KEY_DOCUSIGN_INTEGRATION_KEY, "");
     String docusignRsaPrivateKey = (String) obj.getOrDefault(KEY_DOCUSIGN_RSA_PRIVATE_KEY, "");
@@ -182,39 +193,20 @@ public class ConfigurationRequestHandler
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = event.getPathParameter("siteId");
-    Map<String, Object> body = fromBodyToObject(event, Map.class);
+    SiteConfiguration config = fromBodyToObject(event, SiteConfiguration.class);
 
     Map<String, Object> map = new HashMap<>();
-    put(map, body, CHATGPT_API_KEY, "chatGptApiKey");
-    put(map, body, MAX_DOCUMENT_SIZE_BYTES, "maxContentLengthBytes");
-    put(map, body, MAX_DOCUMENTS, "maxDocuments");
-    put(map, body, MAX_WEBHOOKS, "maxWebhooks");
-    put(map, body, NOTIFICATION_EMAIL, "notificationEmail");
+    put(map, CHATGPT_API_KEY, config.getChatGptApiKey());
+    put(map, MAX_DOCUMENT_SIZE_BYTES, config.getMaxContentLengthBytes());
+    put(map, MAX_DOCUMENTS, config.getMaxDocuments());
+    put(map, MAX_WEBHOOKS, config.getMaxWebhooks());
+    put(map, NOTIFICATION_EMAIL, config.getNotificationEmail());
 
-    if (body.containsKey("google")) {
+    updateGoogle(config, map);
 
-      Map<String, String> google = (Map<String, String>) body.get("google");
-      String workloadIdentityAudience = google.getOrDefault("workloadIdentityAudience", "");
-      String workloadIdentityServiceAccount =
-          google.getOrDefault("workloadIdentityServiceAccount", "");
+    updateOcr(config, map);
 
-      map.put("googleWorkloadIdentityAudience", workloadIdentityAudience);
-      map.put("googleWorkloadIdentityServiceAccount", workloadIdentityServiceAccount);
-    }
-
-    if (body.containsKey("docusign")) {
-
-      Map<String, String> google = (Map<String, String>) body.get("docusign");
-      String docusignUserId = google.getOrDefault("userId", "").trim();
-      String docusignIntegrationKey = google.getOrDefault("integrationKey", "").trim();
-      String docusignRsaPrivateKey = google.getOrDefault("rsaPrivateKey", "").trim();
-      String docusignHmacSignature = google.getOrDefault("hmacSignature", "").trim();
-
-      map.put(KEY_DOCUSIGN_USER_ID, docusignUserId);
-      map.put(KEY_DOCUSIGN_INTEGRATION_KEY, docusignIntegrationKey);
-      map.put(KEY_DOCUSIGN_RSA_PRIVATE_KEY, docusignRsaPrivateKey);
-      map.put(KEY_DOCUSIGN_HMAC_SIGNATURE, docusignHmacSignature);
-    }
+    updateDocusign(config, map);
 
     validate(awsservice, map);
 
@@ -229,10 +221,64 @@ public class ConfigurationRequestHandler
     throw new BadException("missing required body parameters");
   }
 
-  private void put(final Map<String, Object> map, final Map<String, Object> body,
-      final String mapKey, final String bodyKey) {
-    if (body.containsKey(bodyKey)) {
-      map.put(mapKey, body.get(bodyKey));
+  private void updateDocusign(final SiteConfiguration config, final Map<String, Object> map) {
+
+    SiteConfigurationDocusign docusign = config.getDocusign();
+    if (docusign != null) {
+
+      String docusignUserId = docusign.getUserId();
+      if (!Strings.isEmpty(docusignUserId)) {
+        map.put(KEY_DOCUSIGN_USER_ID, docusignUserId.trim());
+      }
+
+      String docusignIntegrationKey = docusign.getIntegrationKey();
+      if (!Strings.isEmpty(docusignIntegrationKey)) {
+        map.put(KEY_DOCUSIGN_INTEGRATION_KEY, docusignIntegrationKey.trim());
+      }
+
+      String docusignRsaPrivateKey = docusign.getRsaPrivateKey();
+      if (!Strings.isEmpty(docusignRsaPrivateKey)) {
+        map.put(KEY_DOCUSIGN_RSA_PRIVATE_KEY, docusignRsaPrivateKey.trim());
+      }
+
+      String docusignHmacSignature = docusign.getHmacSignature();
+      if (!Strings.isEmpty(docusignHmacSignature)) {
+        map.put(KEY_DOCUSIGN_HMAC_SIGNATURE, docusignHmacSignature.trim());
+      }
+    }
+  }
+
+  private void updateOcr(final SiteConfiguration config, final Map<String, Object> map) {
+    SiteConfigurationOcr ocr = config.getOcr();
+
+    if (ocr != null) {
+      long maxTransactions = ocr.getMaxTransactions();
+      long maxPagesPerTransaction = ocr.getMaxPagesPerTransaction();
+      map.put("maxTransactions", maxTransactions != 0 ? maxTransactions : -1);
+      map.put("maxPagesPerTransaction", maxPagesPerTransaction != 0 ? maxPagesPerTransaction : -1);
+    }
+  }
+
+  private void updateGoogle(final SiteConfiguration config, final Map<String, Object> map) {
+    SiteConfigurationGoogle google = config.getGoogle();
+    if (google != null) {
+
+      String workloadIdentityAudience = google.getWorkloadIdentityAudience();
+      String workloadIdentityServiceAccount = google.getWorkloadIdentityServiceAccount();
+
+      if (!Strings.isEmpty(workloadIdentityAudience)) {
+        map.put("googleWorkloadIdentityAudience", workloadIdentityAudience);
+      }
+
+      if (!Strings.isEmpty(workloadIdentityServiceAccount)) {
+        map.put("googleWorkloadIdentityServiceAccount", workloadIdentityServiceAccount);
+      }
+    }
+  }
+
+  private void put(final Map<String, Object> map, final String mapKey, final String value) {
+    if (value != null) {
+      map.put(mapKey, value);
     }
   }
 

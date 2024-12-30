@@ -21,23 +21,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb;
+package com.formkiq.stacks.dynamodb.config;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.isDefaultSiteId;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Optional;
-import com.formkiq.aws.dynamodb.AttributeValueToDynamicObject;
+
+import com.formkiq.aws.dynamodb.AttributeValueToMap;
 import com.formkiq.aws.dynamodb.BatchGetConfig;
 import com.formkiq.aws.dynamodb.DbKeys;
-import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
+import com.formkiq.aws.dynamodb.MapToAttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /** Implementation of the {@link ConfigService}. */
@@ -69,47 +67,29 @@ public final class ConfigServiceDynamoDb implements ConfigService, DbKeys {
   }
 
   @Override
-  public DynamicObject get(final String siteId) {
+  public Map<String, Object> get(final String siteId) {
 
     List<Map<String, AttributeValue>> keys = new ArrayList<>();
 
-    if (isDefaultSiteId(siteId)) {
-      keys.add(keysGeneric(null, PREFIX_CONFIG, DEFAULT_SITE_ID));
-    } else {
-      keys.add(keysGeneric(null, PREFIX_CONFIG, siteId));
-      keys.add(keysGeneric(null, PREFIX_CONFIG, DEFAULT_SITE_ID));
-    }
+    String site = !isDefaultSiteId(siteId) ? siteId : DEFAULT_SITE_ID;
+    keys.add(keysGeneric(null, PREFIX_CONFIG, site));
 
     BatchGetConfig config = new BatchGetConfig();
     List<Map<String, AttributeValue>> list = this.db.getBatch(config, keys);
 
-    Optional<Map<String, AttributeValue>> map = Optional.empty();
-    if (!list.isEmpty()) {
-      map = list.stream().filter(s -> s.get(SK).s().equals(siteId)).findFirst();
-      if (map.isEmpty()) {
-        map = list.stream().filter(s -> s.get(SK).s().equals(DEFAULT_SITE_ID)).findFirst();
-      }
-    }
-
-    AttributeValueToDynamicObject transform = new AttributeValueToDynamicObject();
-    return !map.isEmpty() ? transform.apply(map.get()) : new DynamicObject(Map.of());
+    return !list.isEmpty() ? new AttributeValueToMap().apply(list.get(0)) : Map.of();
   }
 
   @Override
-  public void save(final String siteId, final DynamicObject obj) {
+  public void save(final String siteId, final Map<String, Object> map) {
     Map<String, AttributeValue> item =
         keysGeneric(null, PREFIX_CONFIG, siteId != null ? siteId : DEFAULT_SITE_ID);
 
-    for (Entry<String, Object> e : obj.entrySet()) {
-      item.put(e.getKey(), AttributeValue.builder().s(e.getValue().toString()).build());
-    }
+    Map<String, AttributeValue> values = new MapToAttributeValue().apply(map);
+    item.putAll(values);
 
     if (this.db.exists(item.get(PK), item.get(SK))) {
-      HashMap<String, AttributeValue> fields = new HashMap<>(item);
-      fields.remove(PK);
-      fields.remove(SK);
-
-      this.db.updateValues(item.get(PK), item.get(SK), fields);
+      this.db.updateValues(item.get(PK), item.get(SK), values);
     } else {
       this.db.putItem(item);
     }

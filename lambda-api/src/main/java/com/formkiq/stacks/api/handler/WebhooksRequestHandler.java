@@ -27,8 +27,8 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.isDefaultSiteId;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_CREATED;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-import static com.formkiq.stacks.dynamodb.ConfigService.MAX_WEBHOOKS;
-import static com.formkiq.stacks.dynamodb.ConfigService.WEBHOOK_TIME_TO_LIVE;
+import static com.formkiq.stacks.dynamodb.config.ConfigService.MAX_WEBHOOKS;
+import static com.formkiq.stacks.dynamodb.config.ConfigService.WEBHOOK_TIME_TO_LIVE;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Collection;
@@ -52,7 +52,7 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.logger.LogLevel;
 import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.stacks.api.transformers.DynamicObjectToMap;
-import com.formkiq.stacks.dynamodb.ConfigService;
+import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.base64.Pagination;
 import com.formkiq.stacks.dynamodb.WebhooksService;
 
@@ -108,8 +108,8 @@ public class WebhooksRequestHandler
 
     if (ttl == null) {
       ConfigService configService = awsservice.getExtension(ConfigService.class);
-      DynamicObject config = configService.get(siteId);
-      ttl = config.getString(WEBHOOK_TIME_TO_LIVE);
+      Map<String, Object> config = configService.get(siteId);
+      ttl = (String) config.get(WEBHOOK_TIME_TO_LIVE);
     }
 
     if (ttl != null) {
@@ -124,9 +124,9 @@ public class WebhooksRequestHandler
 
     boolean over = false;
     ConfigService configService = awsservice.getExtension(ConfigService.class);
-    DynamicObject config = configService.get(siteId);
+    Map<String, Object> config = configService.get(siteId);
 
-    String maxString = config.getString(MAX_WEBHOOKS);
+    String maxString = (String) config.get(MAX_WEBHOOKS);
 
     if (maxString != null) {
 

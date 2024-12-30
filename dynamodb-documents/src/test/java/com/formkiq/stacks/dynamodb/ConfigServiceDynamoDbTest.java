@@ -25,16 +25,19 @@ package com.formkiq.stacks.dynamodb;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.isDefaultSiteId;
-import static com.formkiq.stacks.dynamodb.ConfigService.DOCUMENT_TIME_TO_LIVE;
-import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENTS;
-import static com.formkiq.stacks.dynamodb.ConfigService.MAX_WEBHOOKS;
+import static com.formkiq.stacks.dynamodb.config.ConfigService.DOCUMENT_TIME_TO_LIVE;
+import static com.formkiq.stacks.dynamodb.config.ConfigService.MAX_DOCUMENTS;
+import static com.formkiq.stacks.dynamodb.config.ConfigService.MAX_WEBHOOKS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.stacks.dynamodb.config.ConfigService;
+import com.formkiq.stacks.dynamodb.config.ConfigServiceDynamoDb;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -64,54 +67,48 @@ public class ConfigServiceDynamoDbTest {
 
   /**
    * Test Finding Config.
-   * 
-   * @throws Exception Exception
+   *
    */
   @Test
-  public void testConfig01() throws Exception {
+  public void testConfig01() {
     // given
     for (String siteId : Arrays.asList(null, ID.uuid(), DEFAULT_SITE_ID)) {
 
       Map<String, Object> map = new HashMap<>();
-      map.put(DOCUMENT_TIME_TO_LIVE, "" + ID.uuid());
-      map.put(MAX_WEBHOOKS, "" + ID.uuid());
-      map.put(MAX_DOCUMENTS, "" + ID.uuid());
+      map.put(DOCUMENT_TIME_TO_LIVE, ID.uuid());
+      map.put(MAX_WEBHOOKS, ID.uuid());
+      map.put(MAX_DOCUMENTS, ID.uuid());
 
       DynamicObject obj = new DynamicObject(map);
       this.service.save(siteId, obj);
 
       // when
-      DynamicObject config = this.service.get(siteId);
+      Map<String, Object> config = this.service.get(siteId);
 
       // then
       final int count = 5;
       assertEquals(count, config.keySet().size());
 
-      assertEquals("configs#", config.getString("PK"));
-      if (siteId != null) {
-        assertEquals(siteId, config.getString("SK"));
-      } else {
-        assertEquals(DEFAULT_SITE_ID, config.getString("SK"));
-      }
+      assertEquals("configs#", config.get("PK"));
+      assertEquals(Objects.requireNonNullElse(siteId, DEFAULT_SITE_ID), config.get("SK"));
 
-      assertEquals(map.get(DOCUMENT_TIME_TO_LIVE), config.getString(DOCUMENT_TIME_TO_LIVE));
-      assertEquals(map.get(MAX_WEBHOOKS), config.getString(MAX_WEBHOOKS));
-      assertEquals(map.get(MAX_DOCUMENTS), config.getString(MAX_DOCUMENTS));
+      assertEquals(map.get(DOCUMENT_TIME_TO_LIVE), config.get(DOCUMENT_TIME_TO_LIVE));
+      assertEquals(map.get(MAX_WEBHOOKS), config.get(MAX_WEBHOOKS));
+      assertEquals(map.get(MAX_DOCUMENTS), config.get(MAX_DOCUMENTS));
     }
   }
 
   /**
    * Test Finding missing Config.
-   * 
-   * @throws Exception Exception
+   *
    */
   @Test
-  public void testConfig02() throws Exception {
+  public void testConfig02() {
     // given
     for (String siteId : Arrays.asList(null, ID.uuid(), DEFAULT_SITE_ID)) {
 
       // when
-      DynamicObject config = this.service.get(siteId);
+      Map<String, Object> config = this.service.get(siteId);
 
       // then
       assertEquals(0, config.size());
@@ -120,11 +117,10 @@ public class ConfigServiceDynamoDbTest {
 
   /**
    * Test Finding Config.
-   * 
-   * @throws Exception Exception
+   *
    */
   @Test
-  public void testConfig03() throws Exception {
+  public void testConfig03() {
     // given
     for (String siteId : Arrays.asList(null, ID.uuid(), DEFAULT_SITE_ID)) {
 
@@ -132,95 +128,91 @@ public class ConfigServiceDynamoDbTest {
       this.service.save(siteId, obj);
 
       // when
-      DynamicObject config = this.service.get(siteId);
+      Map<String, Object> config = this.service.get(siteId);
 
       // then
       final int count = 2;
       assertEquals(count, config.keySet().size());
 
-      assertEquals("configs#", config.getString("PK"));
-      if (siteId != null) {
-        assertEquals(siteId, config.getString("SK"));
-      } else {
-        assertEquals(DEFAULT_SITE_ID, config.getString("SK"));
-      }
+      assertEquals("configs#", config.get("PK"));
+      assertEquals(Objects.requireNonNullElse(siteId, DEFAULT_SITE_ID), config.get("SK"));
 
-      assertNull(config.getString(DOCUMENT_TIME_TO_LIVE));
-      assertNull(config.getString(MAX_WEBHOOKS));
-      assertNull(config.getString(MAX_DOCUMENTS));
+      assertNull(config.get(DOCUMENT_TIME_TO_LIVE));
+      assertNull(config.get(MAX_WEBHOOKS));
+      assertNull(config.get(MAX_DOCUMENTS));
     }
   }
 
   /**
    * Test Finding Default Config.
-   * 
-   * @throws Exception Exception
+   *
    */
   @Test
-  public void testConfig04() throws Exception {
+  public void testConfig04() {
     // given
     Map<String, Object> map = new HashMap<>();
-    map.put(DOCUMENT_TIME_TO_LIVE, "" + ID.uuid());
-    map.put(MAX_WEBHOOKS, "" + ID.uuid());
-    map.put(MAX_DOCUMENTS, "" + ID.uuid());
+    map.put(DOCUMENT_TIME_TO_LIVE, ID.uuid());
+    map.put(MAX_WEBHOOKS, ID.uuid());
+    map.put(MAX_DOCUMENTS, ID.uuid());
 
     DynamicObject obj = new DynamicObject(map);
     this.service.save(null, obj);
 
-    for (String siteId : Arrays.asList(null, ID.uuid(), DEFAULT_SITE_ID)) {
+    for (String siteId : Arrays.asList(null, DEFAULT_SITE_ID)) {
 
       // when
-      DynamicObject config = this.service.get(siteId);
+      Map<String, Object> config = this.service.get(siteId);
 
       // then
       final int count = 5;
       assertEquals(count, config.keySet().size());
 
-      assertEquals("configs#", config.getString("PK"));
-      assertEquals(DEFAULT_SITE_ID, config.getString("SK"));
+      assertEquals("configs#", config.get("PK"));
+      assertEquals(DEFAULT_SITE_ID, config.get("SK"));
 
-      assertEquals(map.get(DOCUMENT_TIME_TO_LIVE), config.getString(DOCUMENT_TIME_TO_LIVE));
-      assertEquals(map.get(MAX_WEBHOOKS), config.getString(MAX_WEBHOOKS));
-      assertEquals(map.get(MAX_DOCUMENTS), config.getString(MAX_DOCUMENTS));
+      assertEquals(map.get(DOCUMENT_TIME_TO_LIVE), config.get(DOCUMENT_TIME_TO_LIVE));
+      assertEquals(map.get(MAX_WEBHOOKS), config.get(MAX_WEBHOOKS));
+      assertEquals(map.get(MAX_DOCUMENTS), config.get(MAX_DOCUMENTS));
     }
+
+    assertEquals(0, this.service.get(ID.uuid()).size());
   }
 
   /**
    * Test Delete Config.
-   * 
-   * @throws Exception Exception
+   *
    */
   @Test
-  public void testDelete01() throws Exception {
+  public void testDelete01() {
     // given
     for (String siteId : Arrays.asList(null, ID.uuid(), DEFAULT_SITE_ID)) {
 
       Map<String, Object> map = new HashMap<>();
-      map.put(DOCUMENT_TIME_TO_LIVE, "" + ID.uuid());
-      map.put(MAX_WEBHOOKS, "" + ID.uuid());
-      map.put(MAX_DOCUMENTS, "" + ID.uuid());
+      map.put(DOCUMENT_TIME_TO_LIVE, ID.uuid());
+      map.put(MAX_WEBHOOKS, ID.uuid());
+      map.put(MAX_DOCUMENTS, ID.uuid());
 
       DynamicObject obj = new DynamicObject(map);
       this.service.save(siteId, obj);
 
       // when
-      DynamicObject config = this.service.get(siteId);
+      Map<String, Object> config = this.service.get(siteId);
 
       // then
       final int count = 5;
       assertEquals(count, config.keySet().size());
 
-      assertEquals("configs#", config.getString("PK"));
+      assertEquals("configs#", config.get("PK"));
 
       if (isDefaultSiteId(siteId)) {
-        assertEquals(DEFAULT_SITE_ID, config.getString("SK"));
+        assertEquals(DEFAULT_SITE_ID, config.get("SK"));
       } else {
-        assertEquals(siteId, config.getString("SK"));
+        assertEquals(siteId, config.get("SK"));
       }
 
-      assertEquals(map.get(DOCUMENT_TIME_TO_LIVE), config.getString(DOCUMENT_TIME_TO_LIVE));
-      assertEquals(map.get(MAX_WEBHOOKS), config.getString(MAX_WEBHOOKS));
-      assertEquals(map.get(MAX_DOCUMENTS), config.getString(MAX_DOCUMENTS));
+      assertEquals(map.get(DOCUMENT_TIME_TO_LIVE), config.get(DOCUMENT_TIME_TO_LIVE));
+      assertEquals(map.get(MAX_WEBHOOKS), config.get(MAX_WEBHOOKS));
+      assertEquals(map.get(MAX_DOCUMENTS), config.get(MAX_DOCUMENTS));
 
       this.service.delete(siteId);
       assertEquals(0, this.service.get(siteId).size());

@@ -24,7 +24,7 @@
 package com.formkiq.stacks.api.handler;
 
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.dynamodb.ConfigService;
+import com.formkiq.stacks.dynamodb.config.ConfigService;
 
 /**
  * Interface for providing restrictions around Document.
@@ -53,7 +53,7 @@ public interface DocumentsRestrictions {
    */
   default String getValue(final AwsServiceCache awsservice, final String siteId, final String key) {
     ConfigService configService = awsservice.getExtension(ConfigService.class);
-    return configService.get(siteId).getString(key);
+    return (String) configService.get(siteId).get(key);
   }
 
   /**

@@ -23,58 +23,56 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.dynamodb.config.ConfigService;
+import com.formkiq.graalvm.annotations.Reflectable;
 
 /**
- * {@link DocumentsRestrictions} for Max Number of Documents.
- *
+ * Site Configuration Google.
  */
-public class DocumentsRestrictionsMaxContentLength implements DocumentsRestrictions {
+@Reflectable
+public class SiteConfigurationGoogle {
+  /** workloadIdentityAudience. */
+  private String workloadIdentityAudience;
+  /** workloadIdentityServiceAccount. */
+  private String workloadIdentityServiceAccount;
 
   /**
    * constructor.
-   * 
    */
-  public DocumentsRestrictionsMaxContentLength() {}
+  public SiteConfigurationGoogle() {}
 
-  @Override
-  public boolean enforced(final AwsServiceCache awsservice, final String siteId, final String value,
-      final Object... objs) {
-
-    boolean enforced = false;
-    Long contentLength = (Long) objs[0];
-    Long maxContentLength = getMaxContentLength(value);
-
-    if (maxContentLength != null) {
-      enforced = (contentLength == null || contentLength == 0)
-          || (contentLength > maxContentLength);
-    }
-
-    return enforced;
+  /**
+   * Get WorkloadIdentityAudience.
+   * 
+   * @return String
+   */
+  public String getWorkloadIdentityAudience() {
+    return this.workloadIdentityAudience;
   }
 
   /**
-   * Get the Max Content Length from SSM.
+   * Set WorkloadIdentityAudience.
    * 
-   * @param value {@link String}
-   * @return {@link Long}
+   * @param identityAudience {@link String}
    */
-  private Long getMaxContentLength(final String value) {
-
-    Long ret;
-
-    try {
-      ret = Long.valueOf(value);
-    } catch (NumberFormatException e) {
-      ret = null;
-    }
-
-    return ret;
+  public void setWorkloadIdentityAudience(final String identityAudience) {
+    this.workloadIdentityAudience = identityAudience;
   }
 
-  @Override
-  public String getValue(final AwsServiceCache awsservice, final String siteId) {
-    return getValue(awsservice, siteId, ConfigService.MAX_DOCUMENT_SIZE_BYTES);
+  /**
+   * Get WorkloadIdentityServiceAccount.
+   * 
+   * @return String
+   */
+  public String getWorkloadIdentityServiceAccount() {
+    return this.workloadIdentityServiceAccount;
+  }
+
+  /**
+   * Set WorkloadIdentityServiceAccount.
+   * 
+   * @param serviceAccount {@link String}
+   */
+  public void setWorkloadIdentityServiceAccount(final String serviceAccount) {
+    this.workloadIdentityServiceAccount = serviceAccount;
   }
 }

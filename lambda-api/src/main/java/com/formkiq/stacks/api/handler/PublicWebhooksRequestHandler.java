@@ -26,7 +26,7 @@ package com.formkiq.stacks.api.handler;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.MOVED_PERMANENTLY;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-import static com.formkiq.stacks.dynamodb.ConfigService.DOCUMENT_TIME_TO_LIVE;
+import static com.formkiq.stacks.dynamodb.config.ConfigService.DOCUMENT_TIME_TO_LIVE;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -53,7 +53,7 @@ import com.formkiq.aws.services.lambda.exceptions.TooManyRequestsException;
 import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
 import com.formkiq.aws.dynamodb.cache.CacheService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.dynamodb.ConfigService;
+import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.WebhooksService;
 import software.amazon.awssdk.utils.StringUtils;
 
@@ -101,7 +101,7 @@ public class PublicWebhooksRequestHandler
       item.put("TimeToLive", hook.get("TimeToLive"));
     } else {
       ConfigService configService = awsservice.getExtension(ConfigService.class);
-      String ttl = configService.get(siteId).getString(DOCUMENT_TIME_TO_LIVE);
+      String ttl = (String) configService.get(siteId).get(DOCUMENT_TIME_TO_LIVE);
       if (ttl != null) {
         item.put("TimeToLive", ttl);
       }

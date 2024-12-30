@@ -26,7 +26,7 @@ package com.formkiq.stacks.lambda.s3.actions;
 import static com.formkiq.aws.dynamodb.objects.Strings.removeEndingPunctuation;
 import static com.formkiq.aws.dynamodb.objects.Strings.removeQuotes;
 import static com.formkiq.module.http.HttpResponseStatus.is2XX;
-import static com.formkiq.stacks.dynamodb.ConfigService.CHATGPT_API_KEY;
+import static com.formkiq.stacks.dynamodb.config.ConfigService.CHATGPT_API_KEY;
 import java.io.IOException;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
@@ -41,7 +41,6 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
@@ -53,7 +52,7 @@ import com.formkiq.module.http.HttpService;
 import com.formkiq.module.http.HttpServiceJdk11;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.logger.Logger;
-import com.formkiq.stacks.dynamodb.ConfigService;
+import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.lambda.s3.DocumentAction;
 import com.formkiq.stacks.lambda.s3.DocumentContentFunction;
@@ -260,8 +259,8 @@ public class DocumentTaggingAction implements DocumentAction {
   private void runChatGpt(final Logger logger, final String siteId, final String documentId,
       final Action action) throws IOException {
 
-    DynamicObject configs = this.configsService.get(siteId);
-    String chatGptApiKey = configs.getString(CHATGPT_API_KEY);
+    Map<String, Object> configs = this.configsService.get(siteId);
+    String chatGptApiKey = (String) configs.get(CHATGPT_API_KEY);
 
     if (chatGptApiKey == null) {
       throw new IOException(String.format("missing config '%s'", CHATGPT_API_KEY));

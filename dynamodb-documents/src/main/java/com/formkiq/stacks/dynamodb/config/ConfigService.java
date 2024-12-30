@@ -21,9 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb;
+package com.formkiq.stacks.dynamodb.config;
 
 import com.formkiq.aws.dynamodb.DynamicObject;
+
+import java.util.Map;
 
 /** Config Service. */
 public interface ConfigService {
@@ -61,17 +63,17 @@ public interface ConfigService {
 
   /**
    * Get Config.
-   * 
+   *
    * @param siteId Optional Grouping siteId
    * @return {@link DynamicObject}
    */
-  DynamicObject get(String siteId);
+  Map<String, Object> get(String siteId);
 
   /**
    * Save Config.
    * 
    * @param siteId Optional Grouping siteId
-   * @param obj {@link DynamicObject}
+   * @param obj {@link Map}
    */
-  void save(String siteId, DynamicObject obj);
+  void save(String siteId, Map<String, Object> obj);
 }

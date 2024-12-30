@@ -60,8 +60,8 @@ public class AttributeValueToMap
 
     switch (val.type()) {
       case S -> obj = val.s();
-      case N -> obj = val.n();
-      case BOOL -> obj = val.b();
+      case N -> obj = Double.valueOf(val.n());
+      case BOOL -> obj = val.bool();
       case L -> obj = val.l().stream().map(this::convert).toList();
       default -> throw new IllegalArgumentException(
           "Unsupported attribute value map conversion " + val.type());

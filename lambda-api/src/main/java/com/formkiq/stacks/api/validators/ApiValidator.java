@@ -23,18 +23,18 @@
  */
 package com.formkiq.stacks.api.validators;
 
-import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.services.ActionsValidator;
 import com.formkiq.module.actions.services.ActionsValidatorImpl;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.dynamodb.ConfigService;
+import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -49,7 +49,7 @@ public interface ApiValidator {
     ActionsValidator validator = new ActionsValidatorImpl(db);
 
     ConfigService configsService = awsservice.getExtension(ConfigService.class);
-    DynamicObject configs = configsService.get(siteId);
+    Map<String, Object> configs = configsService.get(siteId);
     List<Collection<ValidationError>> errors = validator.validation(siteId, actions, configs);
 
     Optional<Collection<ValidationError>> firstError =

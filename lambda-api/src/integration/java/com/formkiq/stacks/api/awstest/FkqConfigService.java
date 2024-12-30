@@ -23,13 +23,14 @@
  */
 package com.formkiq.stacks.api.awstest;
 
-import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
-import com.formkiq.stacks.dynamodb.ConfigService;
-import com.formkiq.stacks.dynamodb.ConfigServiceDynamoDb;
+import com.formkiq.stacks.dynamodb.config.ConfigService;
+import com.formkiq.stacks.dynamodb.config.ConfigServiceDynamoDb;
 import com.formkiq.testutils.aws.FkqSsmService;
 import software.amazon.awssdk.regions.Region;
+
+import java.util.Map;
 
 /**
  * 
@@ -66,12 +67,12 @@ public class FkqConfigService implements ConfigService {
   }
 
   @Override
-  public DynamicObject get(final String siteId) {
+  public Map<String, Object> get(final String siteId) {
     return this.service.get(siteId);
   }
 
   @Override
-  public void save(final String siteId, final DynamicObject obj) {
+  public void save(final String siteId, final Map<String, Object> obj) {
     this.service.save(siteId, obj);
   }
 }

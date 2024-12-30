@@ -21,36 +21,58 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb;
+package com.formkiq.stacks.api.handler;
 
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
-import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.module.lambdaservices.AwsServiceExtension;
+import com.formkiq.graalvm.annotations.Reflectable;
 
 /**
- * 
- * {@link AwsServiceExtension} for {@link ConfigService}.
- *
+ * Site Configuration Ocr.
  */
-public class ConfigServiceExtension implements AwsServiceExtension<ConfigService> {
-
-  /** {@link ConfigService}. */
-  private ConfigService service;
+@Reflectable
+public class SiteConfigurationOcr {
+  /** Max Pages per transaction. */
+  private long maxPagesPerTransaction;
+  /** Max Ocr transactions. */
+  private long maxTransactions;
 
   /**
    * constructor.
    */
-  public ConfigServiceExtension() {}
+  public SiteConfigurationOcr() {}
 
-  @Override
-  public ConfigService loadService(final AwsServiceCache awsServiceCache) {
-    if (this.service == null) {
-      DynamoDbConnectionBuilder connection =
-          awsServiceCache.getExtension(DynamoDbConnectionBuilder.class);
-      this.service =
-          new ConfigServiceDynamoDb(connection, awsServiceCache.environment("DOCUMENTS_TABLE"));
-    }
+  /**
+   * Get Max Pages Per Transaction.
+   * 
+   * @return long
+   */
+  public long getMaxPagesPerTransaction() {
+    return this.maxPagesPerTransaction;
+  }
 
-    return this.service;
+  /**
+   * Set Max Pages Per Transaction.
+   * 
+   * @param maxPages long
+   */
+  public void setMaxPagesPerTransaction(final long maxPages) {
+    this.maxPagesPerTransaction = maxPages;
+  }
+
+  /**
+   * Get Max Transactions.
+   * 
+   * @return long
+   */
+  public long getMaxTransactions() {
+    return this.maxTransactions;
+  }
+
+  /**
+   * Set Max Transactions.
+   * 
+   * @param maxTx long
+   */
+  public void setMaxTransactions(final long maxTx) {
+    this.maxTransactions = maxTx;
   }
 }

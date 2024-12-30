@@ -57,6 +57,8 @@ public class MapToAttributeValue
     AttributeValue o = null;
     if (obj instanceof Double d) {
       o = AttributeValue.fromN(String.valueOf(d));
+    } else if (obj instanceof Long l) {
+      o = AttributeValue.fromN(String.valueOf(l));
     } else if (obj instanceof String s) {
       o = AttributeValue.fromS(s);
     } else if (obj instanceof Collection<?> c) {

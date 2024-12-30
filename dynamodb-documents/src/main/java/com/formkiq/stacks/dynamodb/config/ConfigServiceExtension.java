@@ -21,40 +21,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.module.actions.services;
+package com.formkiq.stacks.dynamodb.config;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-
-import com.formkiq.module.actions.Action;
-import com.formkiq.validation.ValidationError;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.AwsServiceExtension;
 
 /**
  * 
- * {@link Action} Validator.
+ * {@link AwsServiceExtension} for {@link ConfigService}.
  *
  */
-public interface ActionsValidator {
+public class ConfigServiceExtension implements AwsServiceExtension<ConfigService> {
+
+  /** {@link ConfigService}. */
+  private ConfigService service;
 
   /**
-   * Validates {@link Action}.
-   * 
-   * @param siteId {@link String}
-   * @param action {@link Action}
-   * @param configs {@link Map}
-   * @return {@link Collection} {@link ValidationError}
+   * constructor.
    */
-  Collection<ValidationError> validation(String siteId, Action action, Map<String, Object> configs);
+  public ConfigServiceExtension() {}
 
-  /**
-   * Validates {@link List} {@link Action}.
-   * 
-   * @param siteId {@link String}
-   * @param action {@link Action}
-   * @param configs {@link Map}
-   * @return {@link List} {@link Collection} {@link ValidationError}
-   */
-  List<Collection<ValidationError>> validation(String siteId, List<Action> action,
-      Map<String, Object> configs);
+  @Override
+  public ConfigService loadService(final AwsServiceCache awsServiceCache) {
+    if (this.service == null) {
+      DynamoDbConnectionBuilder connection =
+          awsServiceCache.getExtension(DynamoDbConnectionBuilder.class);
+      this.service =
+          new ConfigServiceDynamoDb(connection, awsServiceCache.environment("DOCUMENTS_TABLE"));
+    }
+
+    return this.service;
+  }
 }

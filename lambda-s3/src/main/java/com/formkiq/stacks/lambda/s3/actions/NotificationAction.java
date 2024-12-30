@@ -29,17 +29,17 @@ import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION
 import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION_TEXT;
 import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION_TO_BCC;
 import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION_TO_CC;
-import static com.formkiq.stacks.dynamodb.ConfigService.NOTIFICATION_EMAIL;
+import static com.formkiq.stacks.dynamodb.config.ConfigService.NOTIFICATION_EMAIL;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
-import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.ses.SesService;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.logger.Logger;
-import com.formkiq.stacks.dynamodb.ConfigService;
+import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.lambda.s3.DocumentAction;
 import software.amazon.awssdk.services.ses.model.Body;
 import software.amazon.awssdk.services.ses.model.Content;
@@ -66,8 +66,8 @@ public class NotificationAction implements DocumentAction {
     this.ses = serviceCache.getExtension(SesService.class);
 
     ConfigService configService = serviceCache.getExtension(ConfigService.class);
-    DynamicObject config = configService.get(siteId);
-    this.source = config.getString(NOTIFICATION_EMAIL);
+    Map<String, Object> config = configService.get(siteId);
+    this.source = (String) config.get(NOTIFICATION_EMAIL);
   }
 
   @Override

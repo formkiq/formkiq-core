@@ -85,10 +85,10 @@ public class ActionsValidatorImpl implements ActionsValidator {
    * @param parameters {@link Map}
    * @param errors {@link Collections} {@link ValidationError}
    */
-  private void validateDocumentTagging(final DynamicObject configs,
+  private void validateDocumentTagging(final Map<String, Object> configs,
       final Map<String, String> parameters, final Collection<ValidationError> errors) {
 
-    String chatGptApiKey = configs.getString(CHATGPT_API_KEY);
+    String chatGptApiKey = (String) configs.get(CHATGPT_API_KEY);
     if (!parameters.containsKey("tags")) {
       errors.add(new ValidationErrorImpl().key("parameters.tags")
           .error("action 'tags' parameter is required"));
@@ -108,14 +108,14 @@ public class ActionsValidatorImpl implements ActionsValidator {
   /**
    * Validate Notification Email.
    * 
-   * @param configs {@link DynamicObject}
+   * @param configs {@link Map}
    * @param action {@link Action}
    * @param errors {@link Collection} {@link ValidationError}
    */
-  private void validateNotificationEmail(final DynamicObject configs, final Action action,
+  private void validateNotificationEmail(final Map<String, Object> configs, final Action action,
       final Collection<ValidationError> errors) {
 
-    String notificationEmail = configs.getString(NOTIFICATION_EMAIL);
+    String notificationEmail = (String) configs.get(NOTIFICATION_EMAIL);
 
     if (isEmpty(notificationEmail)) {
       errors.add(new ValidationErrorImpl().key("parameters.notificationEmail")
@@ -191,7 +191,7 @@ public class ActionsValidatorImpl implements ActionsValidator {
 
   @Override
   public Collection<ValidationError> validation(final String siteId, final Action action,
-      final DynamicObject configs) {
+      final Map<String, Object> configs) {
     Collection<ValidationError> errors = new ArrayList<>();
 
     if (action == null) {
@@ -219,14 +219,14 @@ public class ActionsValidatorImpl implements ActionsValidator {
 
   @Override
   public List<Collection<ValidationError>> validation(final String siteId,
-      final List<Action> actions, final DynamicObject configs) {
+      final List<Action> actions, final Map<String, Object> configs) {
     List<Collection<ValidationError>> errors = new ArrayList<>();
     actions.forEach(a -> errors.add(validation(siteId, a, configs)));
     return errors;
   }
 
   private void validateActionParameters(final String siteId, final Action action,
-      final DynamicObject configs, final Collection<ValidationError> errors) {
+      final Map<String, Object> configs, final Collection<ValidationError> errors) {
 
     Map<String, String> parameters = getParameters(action);
     if (ActionType.WEBHOOK.equals(action.type()) && !parameters.containsKey("url")) {
