@@ -220,7 +220,7 @@ public class ConfigServiceDynamoDbTest {
   }
 
   @Test
-  void IncrementKey01() {
+  void incrementKey01() {
     // given
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
