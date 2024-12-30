@@ -47,8 +47,8 @@ public class DocumentsRestrictionsMaxContentLength implements DocumentsRestricti
     Long maxContentLength = getMaxContentLength(value);
 
     if (maxContentLength != null) {
-      enforced = (contentLength == null || contentLength == 0)
-          || (contentLength > maxContentLength);
+      enforced =
+          (contentLength == null || contentLength == 0) || (contentLength > maxContentLength);
     }
 
     return enforced;

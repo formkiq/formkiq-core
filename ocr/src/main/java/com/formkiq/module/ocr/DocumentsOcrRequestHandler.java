@@ -128,7 +128,7 @@ public class DocumentsOcrRequestHandler
 
     if (map.containsKey("ocrStatus")) {
 
-      if (OcrScanStatus.SUCCESSFUL.name().equalsIgnoreCase(map.get("ocrStatus").toString())) {
+      if (isOcrStatus(map, OcrScanStatus.SUCCESSFUL) || isOcrStatus(map, OcrScanStatus.SKIPPED)) {
 
         S3Service s3 = awsservice.getExtension(S3Service.class);
 
@@ -162,6 +162,10 @@ public class DocumentsOcrRequestHandler
 
     ApiMapResponse resp = new ApiMapResponse(map);
     return new ApiRequestHandlerResponse(status, resp);
+  }
+
+  private boolean isOcrStatus(final Map<String, Object> map, final OcrScanStatus status) {
+    return status.name().equalsIgnoreCase(map.get("ocrStatus").toString());
   }
 
   /**
@@ -323,7 +327,8 @@ public class DocumentsOcrRequestHandler
     DocumentOcrService ocrService = awsservice.getExtension(DocumentOcrService.class);
     ocrService.set(awsservice, siteId, documentId, userId, content, contentType);
 
-    ApiMapResponse resp = new ApiMapResponse();
+    ApiMapResponse resp =
+        new ApiMapResponse(Map.of("message", "Set OCR for documentId '" + documentId + "'"));
     return new ApiRequestHandlerResponse(SC_OK, resp);
   }
 
