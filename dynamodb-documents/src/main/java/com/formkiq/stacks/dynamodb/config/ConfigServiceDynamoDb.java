@@ -94,4 +94,23 @@ public final class ConfigServiceDynamoDb implements ConfigService, DbKeys {
       this.db.putItem(item);
     }
   }
+
+  @Override
+  public long increment(final String siteId, final String key) {
+    Map<String, AttributeValue> keys = getIncrementKey(siteId, key);
+    return this.db.getNextNumber(keys);
+  }
+
+  private Map<String, AttributeValue> getIncrementKey(final String siteId, final String key) {
+    String pk = "configvalues";
+    String sk = "key#" + key;
+    return keysGeneric(siteId, PK, pk, SK, sk);
+  }
+
+  @Override
+  public long getIncrement(final String siteId, final String key) {
+    Map<String, AttributeValue> keys = getIncrementKey(siteId, key);
+    Map<String, AttributeValue> values = this.db.get(keys.get(PK), keys.get(SK));
+    return !values.isEmpty() ? Long.parseLong(values.get("Number").n()) : -1;
+  }
 }

@@ -76,4 +76,22 @@ public interface ConfigService {
    * @param obj {@link Map}
    */
   void save(String siteId, Map<String, Object> obj);
+
+  /**
+   * Increment Key for SiteId.
+   *
+   * @param siteId {@link String}
+   * @param key {@link String}
+   * @return long
+   */
+  long increment(String siteId, String key);
+
+  /**
+   * Get Increment Value.
+   * 
+   * @param siteId {@link String}
+   * @param key {@link String}
+   * @return long
+   */
+  long getIncrement(String siteId, String key);
 }

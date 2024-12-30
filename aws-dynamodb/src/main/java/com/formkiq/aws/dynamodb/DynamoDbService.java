@@ -136,12 +136,11 @@ public interface DynamoDbService {
 
   /**
    * Get Next Number.
-   * 
+   *
    * @param keys {@link Map}
-   * 
    * @return {@link String}
    */
-  String getNextNumber(Map<String, AttributeValue> keys);
+  Long getNextNumber(Map<String, AttributeValue> keys);
 
   /**
    * Get Table Name.

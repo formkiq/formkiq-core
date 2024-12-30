@@ -218,4 +218,25 @@ public class ConfigServiceDynamoDbTest {
       assertEquals(0, this.service.get(siteId).size());
     }
   }
+
+  @Test
+  void IncrementKey01() {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      assertEquals(-1, this.service.getIncrement(siteId, "maxdocs"));
+
+      // when
+      assertEquals(1, this.service.increment(siteId, "maxdocs"));
+
+      // then
+      assertEquals(1, this.service.getIncrement(siteId, "maxdocs"));
+
+      // when
+      assertEquals(2, this.service.increment(siteId, "maxdocs"));
+
+      // then
+      assertEquals(2, this.service.getIncrement(siteId, "maxdocs"));
+    }
+  }
 }
