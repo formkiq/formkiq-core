@@ -9635,6 +9635,31 @@ Resources:
                   description: Action metadata
                   additionalProperties:
                     type: string
+            OcrTables:
+              type: object
+              properties:
+                headers:
+                  type: "array"
+                  items:
+                    type: "string"
+                values:
+                  $ref: "#/components/schemas/OcrTableValues"
+            OcrTableValues:
+              type: object
+              properties:
+                data:
+                  type: "array"
+                  items:
+                    $ref: "#/components/schemas/OcrTableValueData"
+            OcrTableValueData:
+              type: object
+              properties:
+                key:
+                  type: string
+                  description: Table Key Value
+                value:
+                  type: string
+                  description: Table Value
             OcrKeyValues:
               type: object
               properties:
@@ -9658,6 +9683,8 @@ Resources:
                   description: "List of ocr key / values"
                   items:
                     $ref: "#/components/schemas/OcrKeyValues"
+                tables:
+                  $ref: "#/components/schemas/OcrTables"
                 data:
                   type: string
                   description: OCR text result
