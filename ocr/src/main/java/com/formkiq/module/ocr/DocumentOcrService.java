@@ -146,4 +146,12 @@ public interface DocumentOcrService {
    * @return {@link List}
    */
   List<Map<String, Object>> toKeyValue(List<String> contents);
+
+  /**
+   * To Tables.
+   * 
+   * @param contents {@link List} {@link String}
+   * @return Object
+   */
+  Object toTables(List<String> contents);
 }

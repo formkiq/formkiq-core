@@ -319,6 +319,11 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
     return Collections.emptyList();
   }
 
+  @Override
+  public Object toTables(final List<String> contents) {
+    return null;
+  }
+
   /**
    * OCR Convert Document.
    *

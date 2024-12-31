@@ -119,6 +119,7 @@ public class DocumentsOcrRequestHandler
     final boolean contentUrl = isContentUrl(event);
     final boolean textOnly = isTextOnly(event);
     final boolean keyValue = !textOnly && isKeyValue(event);
+    final boolean tables = isTables(event);
 
     DocumentOcrService ocrService = awsservice.getExtension(DocumentOcrService.class);
 
@@ -146,13 +147,9 @@ public class DocumentsOcrRequestHandler
 
         } else {
 
-          Object data = getS3Content(awsservice, ocrService, s3, s3Keys, textOnly, keyValue);
-
-          if (keyValue) {
-            map.put("keyValues", data);
-          } else {
-            map.put("data", data);
-          }
+          List<String> contents =
+              getS3Content(awsservice, ocrService, s3, s3Keys, textOnly, keyValue);
+          updateObject(ocrService, map, contents, textOnly, keyValue, tables);
         }
       }
 
@@ -230,25 +227,29 @@ public class DocumentsOcrRequestHandler
    * @param keyValue boolean
    * @return {@link String}
    */
-  private Object getS3Content(final AwsServiceCache awsservice, final DocumentOcrService ocrService,
-      final S3Service s3, final List<String> s3Keys, final boolean textOnly,
-      final boolean keyValue) {
+  private List<String> getS3Content(final AwsServiceCache awsservice,
+      final DocumentOcrService ocrService, final S3Service s3, final List<String> s3Keys,
+      final boolean textOnly, final boolean keyValue) {
 
     String ocrBucket = awsservice.environment("OCR_S3_BUCKET");
-    List<String> contents =
-        s3Keys.stream().map(s3Key -> s3.getContentAsString(ocrBucket, s3Key, null)).toList();
+    return s3Keys.stream().map(s3Key -> s3.getContentAsString(ocrBucket, s3Key, null)).toList();
+  }
 
-    Object result;
+  private void updateObject(final DocumentOcrService ocrService, final Map<String, Object> map,
+      final List<String> contents, final boolean textOnly, final boolean keyValue,
+      final boolean tables) {
 
     if (textOnly) {
-      result = ocrService.toText(contents);
+      map.put("data", ocrService.toText(contents));
     } else if (keyValue) {
-      result = ocrService.toKeyValue(contents);
+      map.put("keyValues", ocrService.toKeyValue(contents));
     } else {
-      result = String.join("", contents);
+      map.put("data", String.join("", contents));
     }
 
-    return result;
+    if (tables) {
+      map.put("tables", ocrService.toTables(contents));
+    }
   }
 
   private boolean isContentUrl(final ApiGatewayRequestEvent event) {
@@ -272,6 +273,17 @@ public class DocumentsOcrRequestHandler
     }
 
     return keyOnly;
+  }
+
+  private boolean isTables(final ApiGatewayRequestEvent event) {
+    boolean tables = false;
+
+    String outputType = getOutputType(event);
+    if ("TABLES".equalsIgnoreCase(outputType)) {
+      tables = true;
+    }
+
+    return tables;
   }
 
   private boolean isTextOnly(final ApiGatewayRequestEvent event) {
