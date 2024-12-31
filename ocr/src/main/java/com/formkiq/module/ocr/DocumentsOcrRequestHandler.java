@@ -147,8 +147,7 @@ public class DocumentsOcrRequestHandler
 
         } else {
 
-          List<String> contents =
-              getS3Content(awsservice, ocrService, s3, s3Keys, textOnly, keyValue);
+          List<String> contents = getS3Content(awsservice, s3, s3Keys);
           updateObject(ocrService, map, contents, textOnly, keyValue, tables);
         }
       }
@@ -220,16 +219,12 @@ public class DocumentsOcrRequestHandler
    * Get S3 Content.
    *
    * @param awsservice {@link AwsServiceCache}
-   * @param ocrService {@link DocumentOcrService}
    * @param s3 {@link S3Service}
    * @param s3Keys {@link List} {@link String}
-   * @param textOnly boolean
-   * @param keyValue boolean
    * @return {@link String}
    */
-  private List<String> getS3Content(final AwsServiceCache awsservice,
-      final DocumentOcrService ocrService, final S3Service s3, final List<String> s3Keys,
-      final boolean textOnly, final boolean keyValue) {
+  private List<String> getS3Content(final AwsServiceCache awsservice, final S3Service s3,
+      final List<String> s3Keys) {
 
     String ocrBucket = awsservice.environment("OCR_S3_BUCKET");
     return s3Keys.stream().map(s3Key -> s3.getContentAsString(ocrBucket, s3Key, null)).toList();
