@@ -6348,6 +6348,7 @@
                 - TEXT
                 - KEY_VALUE
                 - CONTENT_URL
+                - TABLES
             limitParam:
               name: limit
               in: query
