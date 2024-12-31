@@ -751,11 +751,10 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
 
       setBearerToken(siteId);
       AddDocumentUploadRequest req = new AddDocumentUploadRequest();
-      this.documentsApi.addDocumentUpload(req, siteId, null, null, null);
 
       // when
       try {
-        this.documentsApi.addDocumentUpload(req, siteId, TEN, null, null);
+        this.documentsApi.addDocumentUpload(req, siteId, null, null, null);
         fail();
       } catch (ApiException e) {
         // then
