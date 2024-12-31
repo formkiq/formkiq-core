@@ -9635,7 +9635,7 @@ Resources:
                   description: Action metadata
                   additionalProperties:
                     type: string
-            OcrTables:
+            OcrTable:
               type: object
               properties:
                 headers:
@@ -9684,7 +9684,9 @@ Resources:
                   items:
                     $ref: "#/components/schemas/OcrKeyValues"
                 tables:
-                  $ref: "#/components/schemas/OcrTables"
+                  type: "array"
+                  items:
+                    $ref: "#/components/schemas/OcrTable"
                 data:
                   type: string
                   description: OCR text result
