@@ -51,6 +51,9 @@ import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.logger.LogLevel;
 import com.formkiq.module.lambdaservices.logger.Logger;
+import com.formkiq.stacks.dynamodb.config.ConfigService;
+import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
+import com.formkiq.stacks.dynamodb.config.SiteConfigurationOcr;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -110,44 +113,88 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
   }
 
   @Override
-  public void convert(final AwsServiceCache awsservice, final OcrRequest request,
+  public boolean convert(final AwsServiceCache awsservice, final OcrRequest request,
       final String siteId, final String documentId, final String userId) {
 
-    String s3key = createS3Key(siteId, documentId);
+    boolean valid =
+        isValidOcrConfiguration(awsservice.getExtension(ConfigService.class), siteId, request);
 
-    String contentType = getS3FileContentType(this.documentsBucket, s3key);
+    if (valid) {
 
-    Logger log = awsservice.getLogger();
+      String s3key = createS3Key(siteId, documentId);
 
-    if (MimeType.isPlainText(contentType)) {
+      String contentType = getS3FileContentType(this.documentsBucket, s3key);
 
-      if (log.isLogged(LogLevel.TRACE)) {
-        String msg = String.format("saving text document %s in bucket %s by user %s", s3key,
-            this.documentsBucket, userId);
-        log.trace(msg);
+      Logger log = awsservice.getLogger();
+
+      if (MimeType.isPlainText(contentType)) {
+
+        if (log.isLogged(LogLevel.TRACE)) {
+          String msg = String.format("saving text document %s in bucket %s by user %s", s3key,
+              this.documentsBucket, userId);
+          log.trace(msg);
+        }
+
+        updatePlainText(awsservice, siteId, documentId, userId, s3key, contentType);
+
+      } else {
+
+        String documentS3toConvert = null;
+
+        if (log.isLogged(LogLevel.TRACE)) {
+          String msg = String.format("converting document %s in bucket %s by user %s", s3key,
+              this.documentsBucket, userId);
+          log.trace(msg);
+        }
+
+        String jobId = convertDocument(awsservice, request, siteId, documentId, s3key,
+            documentS3toConvert, contentType);
+
+        Ocr ocr = new Ocr().documentId(documentId).jobId(jobId).engine(getOcrEngine(request))
+            .status(OcrScanStatus.REQUESTED).contentType(APPLICATION_JSON).userId(userId)
+            .addPdfDetectedCharactersAsText(request.isAddPdfDetectedCharactersAsText())
+            .ocrOutputType(request.getOcrOutputType());
+
+        save(siteId, ocr);
+      }
+    }
+
+    return valid;
+  }
+
+  private boolean isValidOcrConfiguration(final ConfigService configService, final String siteId,
+      final OcrRequest request) {
+    boolean invalid = false;
+
+    SiteConfiguration config = configService.get(siteId);
+    SiteConfigurationOcr ocr = config.getOcr();
+
+    if (ocr != null) {
+
+      if (ocr.getMaxTransactions() > 0) {
+
+        long count = configService.getIncrement(siteId, CONFIG_OCR_COUNT);
+        if (count >= ocr.getMaxTransactions()) {
+          invalid = true;
+        } else {
+          configService.increment(siteId, CONFIG_OCR_COUNT);
+        }
       }
 
-      updatePlainText(awsservice, siteId, documentId, userId, s3key, contentType);
-
-    } else {
-
-      String documentS3toConvert = null;
-
-      if (log.isLogged(LogLevel.TRACE)) {
-        String msg = String.format("converting document %s in bucket %s by user %s", s3key,
-            this.documentsBucket, userId);
-        log.trace(msg);
+      if (ocr.getMaxPagesPerTransaction() > 0
+          && (getOcrNumberOfPages(request) > ocr.getMaxPagesPerTransaction())) {
+        request.setOcrNumberOfPages("" + ocr.getMaxPagesPerTransaction());
       }
+    }
 
-      String jobId = convertDocument(awsservice, request, siteId, documentId, s3key,
-          documentS3toConvert, contentType);
+    return !invalid;
+  }
 
-      Ocr ocr = new Ocr().documentId(documentId).jobId(jobId).engine(getOcrEngine(request))
-          .status(OcrScanStatus.REQUESTED).contentType(APPLICATION_JSON).userId(userId)
-          .addPdfDetectedCharactersAsText(request.isAddPdfDetectedCharactersAsText())
-          .ocrOutputType(request.getOcrOutputType());
-
-      save(siteId, ocr);
+  private long getOcrNumberOfPages(final OcrRequest request) {
+    try {
+      return Long.parseLong(request.getOcrNumberOfPages());
+    } catch (NumberFormatException e) {
+      return Long.MAX_VALUE;
     }
   }
 

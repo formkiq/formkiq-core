@@ -35,6 +35,8 @@ import java.util.Map;
  */
 public interface DocumentOcrService {
 
+  /** Config OCR Count. */
+  String CONFIG_OCR_COUNT = "OcrTxCount";
   /** Prefix Temp File. */
   String PREFIX_TEMP_FILES = "tempfiles/";
 
@@ -46,8 +48,9 @@ public interface DocumentOcrService {
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param userId {@link String}
+   * @return boolean
    */
-  void convert(AwsServiceCache awsservice, OcrRequest request, String siteId, String documentId,
+  boolean convert(AwsServiceCache awsservice, OcrRequest request, String siteId, String documentId,
       String userId);
 
   /**

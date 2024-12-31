@@ -61,7 +61,7 @@ public class TesseractFormatConverter implements FormatConverter {
       MIME_TIF, MIME_TIFF, MIME_GIF, MIME_WEBP, MIME_BMP, MIME_PDF);
 
   /** {@link TesseractWrapper}. */
-  private TesseractWrapper tesseract;
+  private final TesseractWrapper tesseract;
 
   /**
    * constructor.

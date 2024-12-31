@@ -299,7 +299,9 @@ public class DocumentsOcrRequestHandler
     String userId = authorization.getUsername();
 
     DocumentOcrService ocrService = awsservice.getExtension(DocumentOcrService.class);
-    ocrService.convert(awsservice, request, siteId, documentId, userId);
+    if (!ocrService.convert(awsservice, request, siteId, documentId, userId)) {
+      throw new BadException("Maximum number of OCRs reached");
+    }
 
     ApiMapResponse resp = new ApiMapResponse(Map.of("message", "OCR request submitted"));
     return new ApiRequestHandlerResponse(SC_OK, resp);
