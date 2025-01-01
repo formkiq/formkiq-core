@@ -9642,21 +9642,13 @@ Resources:
                   type: "array"
                   items:
                     type: "string"
-                values:
-                  $ref: "#/components/schemas/OcrTableValues"
-            OcrTableValues:
-              type: object
-              properties:
                 data:
                   type: "array"
                   items:
-                    $ref: "#/components/schemas/OcrTableValueData"
-            OcrTableValueData:
+                    $ref: "#/components/schemas/OcrTableData"
+            OcrTableData:
               type: object
               properties:
-                key:
-                  type: string
-                  description: Table Key Value
                 value:
                   type: string
                   description: Table Value
