@@ -9643,9 +9643,11 @@ Resources:
                   items:
                     type: "string"
                 data:
-                  type: "array"
+                  type: array
                   items:
-                    $ref: "#/components/schemas/OcrTableData"
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/OcrTableData"
             OcrTableData:
               type: object
               properties:

@@ -9536,7 +9536,9 @@
                 data:
                   type: array
                   items:
-                    $ref: '#/components/schemas/OcrTableData'
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/OcrTableData'
             OcrTableData:
               type: object
               properties:
