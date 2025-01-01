@@ -243,6 +243,7 @@ public class DocumentsOcrRequestHandler
     }
 
     if (tables) {
+      map.remove("data");
       map.put("tables", ocrService.toTables(contents));
     }
   }
