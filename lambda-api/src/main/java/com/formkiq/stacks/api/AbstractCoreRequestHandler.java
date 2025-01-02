@@ -119,8 +119,6 @@ import com.formkiq.stacks.dynamodb.ApiKeysService;
 import com.formkiq.stacks.dynamodb.ApiKeysServiceExtension;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.config.ConfigServiceExtension;
-import com.formkiq.stacks.dynamodb.DocumentCountService;
-import com.formkiq.stacks.dynamodb.DocumentCountServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
 import com.formkiq.stacks.dynamodb.DocumentSearchServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentService;
@@ -196,7 +194,6 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     serviceCache.register(CacheService.class, new CacheServiceExtension());
     serviceCache.register(DocumentService.class, new DocumentServiceExtension());
     serviceCache.register(DocumentSearchService.class, new DocumentSearchServiceExtension());
-    serviceCache.register(DocumentCountService.class, new DocumentCountServiceExtension());
     serviceCache.register(FolderIndexProcessor.class, new FolderIndexProcessorExtension());
     serviceCache.register(ConfigService.class, new ConfigServiceExtension());
     serviceCache.register(ApiKeysService.class, new ApiKeysServiceExtension());

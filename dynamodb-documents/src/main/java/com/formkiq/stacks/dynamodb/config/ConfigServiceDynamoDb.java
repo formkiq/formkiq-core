@@ -37,8 +37,10 @@ import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.MapToAttributeValue;
+import com.formkiq.aws.dynamodb.QueryConfig;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 
 /** Implementation of the {@link ConfigService}. */
 public final class ConfigServiceDynamoDb implements ConfigService, DbKeys {
@@ -185,6 +187,24 @@ public final class ConfigServiceDynamoDb implements ConfigService, DbKeys {
     Map<String, AttributeValue> keys = getIncrementKey(siteId, key);
     Map<String, AttributeValue> values = this.db.get(keys.get(PK), keys.get(SK));
     return !values.isEmpty() ? Long.parseLong(values.get("Number").n()) : -1;
+  }
+
+  @Override
+  public Map<String, Long> getIncrements(final String siteId) {
+    final int limit = 100;
+    Map<String, AttributeValue> keys = getIncrementKey(siteId, "");
+    QueryConfig config = new QueryConfig();
+    QueryResponse response = this.db.queryBeginsWith(config, keys.get(PK), null, null, limit);
+
+    Map<String, Long> map = new HashMap<>();
+    response.items().forEach(i -> {
+      String key = i.get(SK).s();
+      key = key.substring(key.indexOf("#") + 1);
+      long number = Long.parseLong(i.get("Number").n());
+      map.put(key, number);
+    });
+
+    return map;
   }
 
   private void updateDocusign(final SiteConfiguration config, final Map<String, Object> map) {

@@ -26,7 +26,7 @@ package com.formkiq.stacks.api.handler;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.dynamodb.DocumentCountService;
+import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 
 /**
@@ -51,9 +51,9 @@ public class DocumentsRestrictionsMaxDocuments implements DocumentsRestrictions 
     if (!Strings.isEmpty(maxDocuments)) {
 
       long max = Long.parseLong(maxDocuments);
-      DocumentCountService countService = awsservice.getExtension(DocumentCountService.class);
-      long doccount = countService.getDocumentCount(siteId);
-      isViolated = (doccount + 1) > max;
+      ConfigService configService = awsservice.getExtension(ConfigService.class);
+      long documentCount = configService.getIncrement(siteId, ConfigService.DOCUMENT_COUNT);
+      isViolated = (documentCount + 1) > max;
     }
 
     return isViolated;

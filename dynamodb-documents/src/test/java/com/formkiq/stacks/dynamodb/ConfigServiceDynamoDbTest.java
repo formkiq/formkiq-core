@@ -26,6 +26,7 @@ package com.formkiq.stacks.dynamodb;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.Arrays;
+import java.util.Map;
 
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
@@ -199,6 +200,28 @@ public class ConfigServiceDynamoDbTest {
 
       // then
       assertEquals(2, this.service.getIncrement(siteId, "maxdocs"));
+    }
+  }
+
+  @Test
+  void incrementsKey01() {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      assertEquals(0, this.service.getIncrements(siteId).size());
+
+      this.service.increment(siteId, ConfigService.DOCUMENT_COUNT);
+      this.service.increment(siteId, "OcrCount");
+      this.service.increment(siteId, "OcrCount");
+
+      // when
+      Map<String, Long> increments = this.service.getIncrements(siteId);
+
+      // then
+      assertEquals(2, increments.size());
+
+      assertEquals(1, increments.get(ConfigService.DOCUMENT_COUNT));
+      assertEquals(2, increments.get("OcrCount"));
     }
   }
 }

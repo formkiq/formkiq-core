@@ -45,7 +45,6 @@ import com.formkiq.stacks.api.transformers.AddDocumentRequestToPresignedUrls;
 import com.formkiq.stacks.api.transformers.DocumentAttributeToDocumentAttributeRecord;
 import com.formkiq.stacks.api.validators.DocumentEntityValidator;
 import com.formkiq.stacks.api.validators.DocumentEntityValidatorImpl;
-import com.formkiq.stacks.dynamodb.DocumentCountService;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentValidator;
@@ -107,7 +106,8 @@ public class DocumentsUploadRequestHandler
 
     validate(awsservice, siteId, item);
 
-    SiteConfiguration config = awsservice.getExtension(ConfigService.class).get(siteId);
+    ConfigService configService = awsservice.getExtension(ConfigService.class);
+    SiteConfiguration config = configService.get(siteId);
 
     validateMaxDocuments(awsservice, config, siteId);
 
@@ -115,8 +115,7 @@ public class DocumentsUploadRequestHandler
         siteId, item, new ArrayList<>(), null);
 
     if (!Strings.isEmpty(config.getMaxDocuments())) {
-      DocumentCountService countService = awsservice.getExtension(DocumentCountService.class);
-      countService.incrementDocumentCount(siteId);
+      configService.increment(siteId, ConfigService.DOCUMENT_COUNT);
     }
 
     return response;
@@ -178,7 +177,8 @@ public class DocumentsUploadRequestHandler
     List<DocumentAttributeRecord> documentAttributes =
         attributes.stream().flatMap(a -> tr.apply(a).stream()).toList();
 
-    SiteConfiguration config = awsservice.getExtension(ConfigService.class).get(siteId);
+    ConfigService configService = awsservice.getExtension(ConfigService.class);
+    SiteConfiguration config = configService.get(siteId);
 
     List<DocumentTag> tags = this.documentEntityValidator.validate(authorization, awsservice,
         config, siteId, request, false);
@@ -189,8 +189,7 @@ public class DocumentsUploadRequestHandler
         siteId, request, tags, documentAttributes);
 
     if (!isEmpty(config.getMaxDocuments())) {
-      DocumentCountService countService = awsservice.getExtension(DocumentCountService.class);
-      countService.incrementDocumentCount(siteId);
+      configService.increment(siteId, ConfigService.DOCUMENT_COUNT);
     }
 
     return response;

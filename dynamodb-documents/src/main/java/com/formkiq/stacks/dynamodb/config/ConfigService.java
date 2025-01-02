@@ -23,9 +23,13 @@
  */
 package com.formkiq.stacks.dynamodb.config;
 
+import java.util.Map;
+
 /** Config Service. */
 public interface ConfigService {
 
+  /** Document Count. */
+  String DOCUMENT_COUNT = "DocumentCount";
   /** ChatGpt Api Key. */
   String CHATGPT_API_KEY = "ChatGptApiKey";
   /** Document Time To Live Key. */
@@ -40,7 +44,6 @@ public interface ConfigService {
   String WEBHOOK_TIME_TO_LIVE = "WebhookTimeToLive";
   /** Notification Email. */
   String NOTIFICATION_EMAIL = "NotificationEmail";
-
   /** Docusign User Id. */
   String KEY_DOCUSIGN_USER_ID = "docusignUserId";
   /** Docusign Integration Key / Client Id. */
@@ -91,4 +94,12 @@ public interface ConfigService {
    * @return long
    */
   long getIncrement(String siteId, String key);
+
+  /**
+   * Get Increment Values.
+   *
+   * @param siteId {@link String}
+   * @return Map
+   */
+  Map<String, Long> getIncrements(String siteId);
 }

@@ -10235,6 +10235,15 @@
                   description: Set Maximum number of Webhooks allowed
                 ocr:
                   $ref: '#/components/schemas/OcrConfig'
+            SiteUsage:
+              type: object
+              properties:
+                documentCount:
+                  type: number
+                  description: The number of documents in the site (only tracked when using MaxDocuments)
+                ocrTransactionCount:
+                  type: number
+                  description: The number of ocr tx requests in the site (only tracked when using OCR MaxTransactions)
             OcrConfig:
               type: object
               properties:
@@ -10554,6 +10563,8 @@
                   description: SiteId document upload email address
                 config:
                   $ref: '#/components/schemas/SiteConfig'
+                usage:
+                  $ref: '#/components/schemas/SiteUsage'
             AddClassificationResponse:
               type: object
               properties:
