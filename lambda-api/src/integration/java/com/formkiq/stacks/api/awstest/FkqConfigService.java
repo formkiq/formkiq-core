@@ -31,6 +31,8 @@ import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import com.formkiq.testutils.aws.FkqSsmService;
 import software.amazon.awssdk.regions.Region;
 
+import java.util.Map;
+
 /**
  * 
  * {@link ConfigService} configured specifically for FormKiQ.
@@ -77,11 +79,16 @@ public class FkqConfigService implements ConfigService {
 
   @Override
   public long increment(final String siteId, final String key) {
-    return 0;
+    return this.service.increment(siteId, key);
   }
 
   @Override
   public long getIncrement(final String siteId, final String key) {
-    return 0;
+    return this.service.getIncrement(siteId, key);
+  }
+
+  @Override
+  public Map<String, Long> getIncrements(String siteId) {
+    return this.service.getIncrements(siteId);
   }
 }
