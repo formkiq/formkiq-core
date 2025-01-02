@@ -88,7 +88,7 @@ public class FkqConfigService implements ConfigService {
   }
 
   @Override
-  public Map<String, Long> getIncrements(String siteId) {
+  public Map<String, Long> getIncrements(final String siteId) {
     return this.service.getIncrements(siteId);
   }
 }
