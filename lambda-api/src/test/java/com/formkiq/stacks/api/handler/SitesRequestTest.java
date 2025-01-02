@@ -33,11 +33,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
+import com.formkiq.client.model.SiteConfig;
+import com.formkiq.client.model.SiteUsage;
+import com.formkiq.module.ocr.DocumentOcrService;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
+import com.formkiq.stacks.dynamodb.config.SiteConfigurationOcr;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import com.formkiq.aws.ssm.SsmService;
@@ -54,7 +59,7 @@ import com.formkiq.stacks.dynamodb.config.ConfigServiceExtension;
 public class SitesRequestTest extends AbstractApiClientRequestTest {
 
   /** {@link ConfigService}. */
-  private static ConfigService config;
+  private static ConfigService configService;
   /** Email Pattern. */
   private static final String EMAIL = "[abcdefghijklmnopqrstuvwxyz0123456789]{8}";
   /** {@link SsmService}. */
@@ -70,7 +75,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     awsServices.register(ConfigService.class, new ConfigServiceExtension());
     awsServices.register(SsmService.class, new SsmServiceExtension());
 
-    config = awsServices.getExtension(ConfigService.class);
+    configService = awsServices.getExtension(ConfigService.class);
     ssm = awsServices.getExtension(SsmService.class);
   }
 
@@ -84,7 +89,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     // given
     setBearerToken(new String[] {DEFAULT_SITE_ID, "Admins", "finance"});
     SiteConfiguration siteConfig = new SiteConfiguration().setChatGptApiKey("somevalue");
-    config.save(null, siteConfig);
+    configService.save(null, siteConfig);
 
     ssm.putParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/maildomain", "tryformkiq.com");
 
@@ -207,9 +212,13 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     String siteId = "finance";
     setBearerToken(siteId);
 
-    SiteConfiguration siteConfig =
-        new SiteConfiguration().setMaxDocuments("5").setMaxWebhooks("10");
-    config.save(siteId, siteConfig);
+    SiteConfiguration siteConfig = new SiteConfiguration().setMaxDocuments("5").setMaxWebhooks("10")
+        .setOcr(new SiteConfigurationOcr().setMaxTransactions(2));
+    configService.save(siteId, siteConfig);
+
+    configService.increment(siteId, ConfigService.DOCUMENT_COUNT);
+    configService.increment(siteId, ConfigService.DOCUMENT_COUNT);
+    configService.increment(siteId, DocumentOcrService.CONFIG_OCR_COUNT);
 
     // when
     GetSitesResponse response = this.systemApi.getSites(null);
@@ -218,8 +227,22 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     List<Site> sites = notNull(response.getSites());
 
     assertEquals(1, sites.size());
-    assertEquals(siteId, sites.get(0).getSiteId());
-    assertEquals(Site.PermissionEnum.WRITE, sites.get(0).getPermission());
+    Site site = sites.get(0);
+    assertEquals(siteId, site.getSiteId());
+    assertEquals(Site.PermissionEnum.WRITE, site.getPermission());
+
+    SiteConfig config = site.getConfig();
+    assertNotNull(config);
+    assertEquals("5", config.getMaxDocuments());
+    assertEquals("10", config.getMaxWebhooks());
+
+    assertNotNull(config.getOcr());
+    assertEquals("2", Objects.requireNonNull(config.getOcr().getMaxTransactions()).toString());
+
+    SiteUsage usage = site.getUsage();
+    assertNotNull(usage);
+    assertEquals(2, Objects.requireNonNull(usage.getDocumentCount()).longValue());
+    assertEquals(1, Objects.requireNonNull(usage.getOcrTransactionCount()).longValue());
   }
 
   /**

@@ -33,6 +33,10 @@ import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.ocr.DocumentOcrService;
+import com.formkiq.stacks.dynamodb.config.ConfigService;
+import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
+import com.formkiq.stacks.dynamodb.config.SiteConfigurationOcr;
 
 import java.util.HashMap;
 import java.util.List;
@@ -80,17 +84,19 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
 
     List<DynamicObject> sites = authorization.getSiteIds().stream().map(siteId -> {
 
-      DynamicObject config = new DynamicObject(new HashMap<>());
-      config.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
+      DynamicObject obj = new DynamicObject(new HashMap<>());
+      addConfig(awsservice, siteId, obj);
+
+      obj.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
 
       boolean write = authorization.getPermissions(siteId).contains(ApiPermission.WRITE);
-      config.put("permission", write ? "READ_WRITE" : "READ_ONLY");
+      obj.put("permission", write ? "READ_WRITE" : "READ_ONLY");
 
       List<String> permissions =
           authorization.getPermissions(siteId).stream().map(Enum::name).sorted().toList();
-      config.put("permissions", permissions);
+      obj.put("permissions", permissions);
 
-      return config;
+      return obj;
     }).collect(Collectors.toList());
 
     updateUploadEmail(awsservice, authorization, sites);
@@ -99,6 +105,41 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
 
     return new ApiRequestHandlerResponse(SC_OK,
         new ApiMapResponse(Map.of("username", userId, "sites", sites)));
+  }
+
+  private void addConfig(final AwsServiceCache awsservice, final String siteId,
+      final DynamicObject obj) {
+
+    ConfigService configService = awsservice.getExtension(ConfigService.class);
+
+    SiteConfiguration siteConfig = configService.get(siteId);
+
+    if (siteConfig != null) {
+
+      Map<String, Object> config = new HashMap<>();
+      obj.put("config", config);
+
+      config.put("maxContentLengthBytes", siteConfig.getMaxContentLengthBytes());
+      config.put("maxDocuments", siteConfig.getMaxDocuments());
+      config.put("maxWebhooks", siteConfig.getMaxWebhooks());
+
+      SiteConfigurationOcr ocr = siteConfig.getOcr();
+      if (ocr != null) {
+        Map<String, Object> o = new HashMap<>();
+        o.put("maxTransactions", ocr.getMaxTransactions());
+        o.put("maxPagesPerTransaction", ocr.getMaxPagesPerTransaction());
+        config.put("ocr", o);
+      }
+
+      Map<String, Long> increments = configService.getIncrements(siteId);
+      if (increments != null) {
+        Map<String, Object> usage = new HashMap<>();
+        obj.put("usage", usage);
+
+        usage.put("documentCount", increments.get(ConfigService.DOCUMENT_COUNT));
+        usage.put("ocrTransactionCount", increments.get(DocumentOcrService.CONFIG_OCR_COUNT));
+      }
+    }
   }
 
   /**
