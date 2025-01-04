@@ -9037,6 +9037,7 @@
               - CONTENT_TYPE
               - BARCODE
               - FIELD
+              - ATTRIBUTE
             RuleConditionOperation:
               type: string
               description: Rule condition attribute
