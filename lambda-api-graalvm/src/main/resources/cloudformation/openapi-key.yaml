@@ -9101,6 +9101,7 @@ Resources:
                 - CONTENT_TYPE
                 - BARCODE
                 - FIELD
+                - ATTRIBUTE
 
             RuleConditionAttribute:
               type: string

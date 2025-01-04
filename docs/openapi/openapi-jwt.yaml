@@ -9028,6 +9028,7 @@
               - CONTENT_TYPE
               - BARCODE
               - FIELD
+              - ATTRIBUTE
             RuleConditionAttribute:
               type: string
               description: Rule condition attribute (deprecated, use Criterion)
