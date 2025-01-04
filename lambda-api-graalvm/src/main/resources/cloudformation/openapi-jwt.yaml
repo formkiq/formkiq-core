@@ -9127,6 +9127,9 @@ Resources:
                   $ref: "#/components/schemas/RuleConditionAttribute"
                 criterion:
                   $ref: "#/components/schemas/RuleConditionCriterion"
+                attributeName:
+                  type: "string"
+                  description: "Rule attribute name (only required for ATTRIBUTE criterion)"
                 fieldName:
                   type: "string"
                   description: "Rule field name (only required for FIELD criterion)"
