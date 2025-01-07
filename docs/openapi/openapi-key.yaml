@@ -9287,6 +9287,7 @@
               - CONTENT
               - CONTENT_KEY_VALUE
               - METADATA
+              - MANUAL
             GetAttributeAllowedValuesResponse:
               type: object
               properties:
