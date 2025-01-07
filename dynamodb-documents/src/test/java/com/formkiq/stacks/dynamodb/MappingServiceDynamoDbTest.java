@@ -298,4 +298,58 @@ class MappingServiceDynamoDbTest implements DbKeys {
       }
     }
   }
+
+  /**
+   * Saving mapping with sourceType MANUAL with errors.
+   */
+  @Test
+  void testSave06() {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      Mapping mapping = new Mapping().setName("test").setAttributes(
+          List.of(new MappingAttribute().setSourceType(MappingAttributeSourceType.MANUAL)));
+
+      // when
+      try {
+        service.saveMapping(siteId, null, mapping);
+        fail();
+      } catch (ValidationException e) {
+        // then
+        final int expected = 2;
+        assertEquals(expected, e.errors().size());
+        Iterator<ValidationError> itr = e.errors().iterator();
+
+        ValidationError error = itr.next();
+        assertEquals("attribute[0].attributeKey", error.key());
+        assertEquals("'attributeKey' is required", error.error());
+
+        error = itr.next();
+        assertEquals("attribute[0].defaultValue", error.key());
+        assertEquals("'defaultValue' or 'defaultValues' is required", error.error());
+      }
+    }
+  }
+
+  /**
+   * Saving mapping with sourceType MANUAL.
+   */
+  @Test
+  void testSave07() throws ValidationException {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      attributeService.addAttribute(siteId, "invoice", null, null);
+
+      Mapping mapping = new Mapping().setName("test").setAttributes(
+          List.of(new MappingAttribute().setSourceType(MappingAttributeSourceType.MANUAL)
+              .setAttributeKey("invoice").setDefaultValue("123")));
+
+      // when
+      MappingRecord mappingRecord = service.saveMapping(siteId, null, mapping);
+
+      // then
+      assertNotNull(mappingRecord);
+    }
+  }
 }
