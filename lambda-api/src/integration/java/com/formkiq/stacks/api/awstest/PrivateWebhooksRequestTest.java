@@ -73,16 +73,18 @@ public class PrivateWebhooksRequestTest extends AbstractAwsIntegrationTest {
    */
   @Test
   @Timeout(value = TEST_TIMEOUT)
-  public void testPublicWebhooks01() throws Exception {
+  public void testPrivateWebhooks01() throws Exception {
     // given
     for (ApiClient client : getApiClients(null)) {
+
       WebhooksApi api = new WebhooksApi(client);
       AddWebhookResponse addWebhook =
           api.addWebhook(new AddWebhookRequest().name("paypal").enabled("private"), null);
       String id = addWebhook.getWebhookId();
       String urlpath = getRootHttpUrl() + "/private/webhooks/" + id;
 
-      Optional<HttpHeaders> o = Optional.of(new HttpHeaders().add("Content-Type", "text/plain"));
+      Optional<HttpHeaders> o = Optional.of(new HttpHeaders()
+          .add("Authorization", getAdminToken().idToken()).add("Content-Type", "text/plain"));
 
       String content = "{\"name\":\"John Smith\"}";
 

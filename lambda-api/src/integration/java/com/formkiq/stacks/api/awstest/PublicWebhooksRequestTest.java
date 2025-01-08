@@ -80,6 +80,7 @@ public class PublicWebhooksRequestTest extends AbstractAwsIntegrationTest {
   public void testPublicWebhooks01() throws Exception {
     // given
     for (ApiClient client : getApiClients(null)) {
+
       WebhooksApi api = new WebhooksApi(client);
       AddWebhookResponse addWebhook = api.addWebhook(new AddWebhookRequest().name("paypal"), null);
       String id = addWebhook.getWebhookId();
@@ -110,7 +111,7 @@ public class PublicWebhooksRequestTest extends AbstractAwsIntegrationTest {
       assertNotNull(list.get(0).getUrl());
       assertNotNull(list.get(0).getInsertedDate());
       assertNotNull(list.get(0).getWebhookId());
-      assertEquals("testadminuser@formkiq.com", list.get(0).getUserId());
+      assertEquals("111b0510-40b1-7019-bd35-f71cbe5a7319", list.get(0).getUserId());
 
       api.deleteWebhook(id, null);
     }
