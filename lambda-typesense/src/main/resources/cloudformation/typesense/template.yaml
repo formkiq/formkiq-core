@@ -566,15 +566,19 @@ Resources:
       PayloadFormatVersion: "1.0"
 
   StageAccessLogs:
+    Condition: CreateResources
     Type: AWS::Logs::LogGroup
     Properties:
       RetentionInDays:
         Ref: LogRetentionInDays
+      LogGroupName:
+        Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/TypesenseAccessLogs"
         
   Stage:
     Type: AWS::ApiGatewayV2::Stage
     DependsOn:
       - ApiGateway
+      - StageAccessLogs
     Condition: CreateResources
     Properties:
       ApiId: 
