@@ -54,6 +54,7 @@ import com.formkiq.stacks.lambda.s3.text.TokenGeneratorKeyValue;
 import com.formkiq.validation.ValidationException;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -104,48 +105,71 @@ public class IdpAction implements DocumentAction {
     for (MappingAttribute mappingAttribute : mappingAttributes) {
 
       TextMatchAlgorithm alg = getTextMatchAlgorithm(mappingAttribute);
+      MappingAttributeSourceType sourceType = mappingAttribute.getSourceType();
 
-      if (MappingAttributeSourceType.CONTENT.equals(mappingAttribute.getSourceType())) {
-
-        String text = getDocumentContent(logger, siteId, documentId);
-
-        List<String> matchValues = findMappingAttributeValue(mappingAttribute, alg, text);
-        createDocumentAttribute(siteId, documentId, mappingAttribute, matchValues);
-
-      } else if (MappingAttributeSourceType.CONTENT_KEY_VALUE
-          .equals(mappingAttribute.getSourceType())) {
-
-        DocumentItem item = this.documentService.findDocument(siteId, documentId);
-
-        List<Map<String, Object>> contentKeyValues =
-            this.documentContentFunc.findContentKeyValues(logger, siteId, item);
-
-        List<String> labelTexts = mappingAttribute.getLabelTexts();
-        TextMatch match =
-            matcher.findMatch(null, labelTexts, new TokenGeneratorKeyValue(contentKeyValues), alg);
-
-        if (match != null) {
-          Optional<List<String>> o = contentKeyValues.stream()
-              .filter(m -> m.get("key").toString().contains(match.getToken().getOriginal()))
-              .map(v -> (List<String>) v.get("values")).findFirst();
-
-          if (o.isPresent()) {
-            createDocumentAttribute(siteId, documentId, mappingAttribute, o.get());
-          }
-        }
-
-      } else if (MappingAttributeSourceType.METADATA.equals(mappingAttribute.getSourceType())) {
-
-        String text = getMetadataText(mappingAttribute, siteId, documentId);
-
-        List<String> matchValues = findMappingAttributeValue(mappingAttribute, alg, text);
-        createDocumentAttribute(siteId, documentId, mappingAttribute, matchValues);
-
-      } else {
-        throw new IllegalArgumentException(
-            "Unsupported source type: " + mappingAttribute.getSourceType());
+      switch (sourceType) {
+        case CONTENT -> processContent(logger, siteId, documentId, mappingAttribute, alg);
+        case CONTENT_KEY_VALUE ->
+          processContentKeyValue(logger, siteId, documentId, mappingAttribute, alg);
+        case METADATA -> processMetaData(siteId, documentId, mappingAttribute, alg);
+        case MANUAL -> createDocumentAttribute(siteId, documentId, mappingAttribute,
+            createValues(mappingAttribute));
+        default -> throw new IllegalArgumentException("Unsupported source type: " + sourceType);
       }
     }
+  }
+
+  private List<String> createValues(final MappingAttribute mappingAttribute) {
+    List<String> values = new ArrayList<>();
+
+    if (!isEmpty(mappingAttribute.getDefaultValue())) {
+      values.add(mappingAttribute.getDefaultValue());
+    }
+
+    values.addAll(notNull(mappingAttribute.getDefaultValues()));
+
+    return values;
+  }
+
+  private void processMetaData(final String siteId, final String documentId,
+      final MappingAttribute mappingAttribute, final TextMatchAlgorithm alg)
+      throws ValidationException {
+    String text = getMetadataText(mappingAttribute, siteId, documentId);
+
+    List<String> matchValues = findMappingAttributeValue(mappingAttribute, alg, text);
+    createDocumentAttribute(siteId, documentId, mappingAttribute, matchValues);
+  }
+
+  private void processContentKeyValue(final Logger logger, final String siteId,
+      final String documentId, final MappingAttribute mappingAttribute,
+      final TextMatchAlgorithm alg) throws IOException, ValidationException {
+    DocumentItem item = this.documentService.findDocument(siteId, documentId);
+
+    List<Map<String, Object>> contentKeyValues =
+        this.documentContentFunc.findContentKeyValues(logger, siteId, item);
+
+    List<String> labelTexts = mappingAttribute.getLabelTexts();
+    TextMatch match =
+        matcher.findMatch(null, labelTexts, new TokenGeneratorKeyValue(contentKeyValues), alg);
+
+    if (match != null) {
+      Optional<List<String>> o = contentKeyValues.stream()
+          .filter(m -> m.get("key").toString().contains(match.getToken().getOriginal()))
+          .map(v -> (List<String>) v.get("values")).findFirst();
+
+      if (o.isPresent()) {
+        createDocumentAttribute(siteId, documentId, mappingAttribute, o.get());
+      }
+    }
+  }
+
+  private void processContent(final Logger logger, final String siteId, final String documentId,
+      final MappingAttribute mappingAttribute, final TextMatchAlgorithm alg)
+      throws IOException, ValidationException {
+    String text = getDocumentContent(logger, siteId, documentId);
+
+    List<String> matchValues = findMappingAttributeValue(mappingAttribute, alg, text);
+    createDocumentAttribute(siteId, documentId, mappingAttribute, matchValues);
   }
 
   private String getMetadataText(final MappingAttribute mappingAttribute, final String siteId,

@@ -2025,6 +2025,58 @@ public class DocumentActionsProcessorTest implements DbKeys {
     }
   }
 
+  /**
+   * Handle Idp with Mapping Action application/pdf and SourceType MANUAL.
+   *
+   * @throws IOException IOException
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testIdp13() throws IOException, ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      String documentId = addPdfToBucket(siteId);
+
+      attributeService.addAttribute(siteId, "certificate_number", null, null);
+
+      Mapping mapping =
+          createMapping("certificate_number", null, MappingAttributeLabelMatchingType.EXACT,
+              MappingAttributeSourceType.MANUAL, "123", List.of("111", "222"), null);
+
+      MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
+
+      processIdpRequest(siteId, documentId, "application/pdf", mappingRecord);
+
+      // then
+      Action action = actionsService.getActions(siteId, documentId).get(0);
+      assertNull(action.message());
+      assertEquals(ActionStatus.COMPLETE, action.status());
+      assertEquals(ActionType.IDP, action.type());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertNotNull(action.completedDate());
+
+      List<DocumentAttributeRecord> results =
+          documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
+
+      final int expected = 3;
+      assertEquals(expected, results.size());
+
+      int i = 0;
+      DocumentAttributeRecord record = results.get(i++);
+      assertEquals("certificate_number", record.getKey());
+      assertEquals("111", record.getStringValue());
+
+      record = results.get(i++);
+      assertEquals("certificate_number", record.getKey());
+      assertEquals("123", record.getStringValue());
+
+      record = results.get(i);
+      assertEquals("certificate_number", record.getKey());
+      assertEquals("222", record.getStringValue());
+    }
+  }
+
   private void processIdpRequest(final String siteId, final String documentId,
       final String contentType, final MappingRecord mappingRecord)
       throws ValidationException, IOException {
