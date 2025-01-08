@@ -378,6 +378,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
           }
 
         } catch (IOException | InterruptedException ex) {
+          logger.error(Strings.toString(ex));
           throw new RuntimeException(ex);
 
         } finally {

@@ -1,0 +1,21 @@
+{
+  "Records": [
+    {
+      "messageId": "b2296d6e-954d-4881-902c-0b1e810b97e1",
+      "receiptHandle": "AQEBZOnapojzg5te8MdXcAHOD7yqqqyZtH+PFwNzwwXbli03gQXXzmxQnCmUIJqq+gmL5A/RgtM6J5Pje9kvXI6NH+TqVNhqg28gfYIUdj8SX8Lj2cnC6UhwCGoR9IhV/JF3PTnXALbJCcL5u0sv9bhz8i+UpYMMrGg+C3zIeNbNCyHVg9Uck3sqpJLiUk5V676cHSBkR79aiXOyjf4iAm6k5hWyXDn3Rn/65a2H0RZNLBNkBVOyO7UZVLO5oSmEIvCEwQq2jnsIyD63kIs+IykXntwi6muMpL5CvmI4MYKTcb3/pNlwDo/EfXMv4qozk05Eggkd27J6EYAM/6Tjz4FjYUWPoF2NTkvf42M8IYQWNom7vWg0yM/OfrgjvlK7x78ooNFlAIMfZCtV9QyFJQDBFB0d05FMEkh+Nt9gYyxhPfMG250jX8uZdsivzUYMgbtsyJmN8Ely1LZMA5/ye7t1AyzIK7FX+vzTj11N+LF5ipc=",
+      "body": "{\"Records\":[{\"eventVersion\":\"2.1\",\"eventSource\":\"aws:s3\",\"awsRegion\":\"us-east-2\",\"eventTime\":\"2025-01-08T20:23:49.763Z\",\"eventName\":\"ObjectCreated:Put\",\"userIdentity\":{\"principalId\":\"AWS:AROAZB6IP7U63FGUZO5TL:formkiq-core-dev-CoreApi-1J-DocumentsApiRequests-V4q0aZCTHRdI\"},\"requestParameters\":{\"sourceIPAddress\":\"3.145.215.237\"},\"responseElements\":{\"x-amz-request-id\":\"4NBKG8K58WYN6F3N\",\"x-amz-id-2\":\"EmZWodxRP+i/tztE91GbepWqlQDpOibJyCjZaDBqJjCrUs1GBH0fNlFb6EynQ5A9UukvKaOctRdPplN4Ci5tXT6kaGuWogpbaf/fR3wBLGo=\"},\"s3\":{\"s3SchemaVersion\":\"1.0\",\"configurationId\":\"NzI4YTIwNTEtNmY2ZC00YWQwLWFlZDgtYzdiODhlY2JkZmMy\",\"bucket\":{\"name\":\"example-bucket\",\"ownerIdentity\":{\"principalId\":\"A7X4DSYK97C32\"},\"arn\":\"arn:aws:s3:::example-bucket\"},\"object\":{\"key\":\"92779fb5-ee0e-4c72-85e9-84ad11a8b73c.fkb64\",\"size\":215,\"eTag\":\"34d6ac2bc1548c48369f20f01aad33c3\",\"sequencer\":\"00677EDED5B7CBF8BF\"}}}]}",
+      "attributes": {
+        "ApproximateReceiveCount": "1",
+        "AWSTraceHeader": "Root=1-677eded5-3f48155855448d011fc5e135;Parent=5cd34593cbb33eaf;Sampled=1;Lineage=1:0679d8b8:0",
+        "SentTimestamp": "1736367830506",
+        "SenderId": "AROASH5U5TZXDEGJDLSUI:S3-PROD-END",
+        "ApproximateFirstReceiveTimestamp": "1736367830512"
+      },
+      "messageAttributes": {},
+      "md5OfBody": "ac697fd7c4d27fa8da976bfec7d9cfb8",
+      "eventSource": "aws:sqs",
+      "eventSourceARN": "arn:aws:sqs:us-east-2:111111111111111:formkiq-core-dev-CoreStorage-M954JW8MUPV0-DocumentsStagingQueue-RVtO2YkWeuAY",
+      "awsRegion": "us-east-2"
+    }
+  ]
+}

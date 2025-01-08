@@ -423,8 +423,13 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
       logger.debug(json);
     }
 
-    List<Map<String, Object>> records = (List<Map<String, Object>>) map.get("Records");
-    processRecords(date, records);
+    try {
+      List<Map<String, Object>> records = (List<Map<String, Object>>) map.get("Records");
+      processRecords(date, records);
+    } catch (RuntimeException e) {
+      logger.error(Strings.toString(e));
+      throw e;
+    }
 
     return null;
   }

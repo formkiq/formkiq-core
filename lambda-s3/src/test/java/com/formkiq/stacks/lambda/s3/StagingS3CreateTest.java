@@ -741,6 +741,43 @@ public class StagingS3CreateTest implements DbKeys {
   }
 
   /**
+   * Add Webhook.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  void testAddWebhook01() throws Exception {
+    // given
+    Map<String, Object> map = loadFileAsMap(this, "/objectcreate-event5.json");
+
+    String key = "92779fb5-ee0e-4c72-85e9-84ad11a8b73c.fkb64";
+    String content = """
+        {
+            "path": "webhooks/20292ffc-9d4f-46e8-b65d-aaf32501e384",
+            "TimeToLive": "",
+            "documentId": "92779fb5-ee0e-4c72-85e9-84ad11a8b73c",
+            "contentType": "text/plain",
+            "userId": "webhook/paypal",
+            "content": "{\\"name\\":\\"John Smith\\"}"
+        }""";
+
+    s3.putObject(STAGING_BUCKET, key, content.getBytes(UTF_8), null, Map.of());
+
+    // when
+    handleRequest(map);
+
+    // then
+    List<S3Object> staging = s3.listObjects(STAGING_BUCKET, null).contents();
+    assertEquals(0, staging.size());
+
+    List<S3Object> docs = s3.listObjects(DOCUMENTS_BUCKET, null).contents();
+    assertEquals(1, docs.size());
+
+    assertNotNull(service.findDocument(null, "92779fb5-ee0e-4c72-85e9-84ad11a8b73c"));
+  }
+
+  /**
    * Tests document compression event.
    *
    * @throws Exception Exception
