@@ -2039,9 +2039,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
       attributeService.addAttribute(siteId, "certificate_number", null, null);
 
-      Mapping mapping =
-          createMapping("certificate_number", null, MappingAttributeLabelMatchingType.EXACT,
-              MappingAttributeSourceType.MANUAL, "123", List.of("111", "222"), null);
+      Mapping mapping = createMapping("certificate_number", null, null,
+          MappingAttributeSourceType.MANUAL, "123", List.of("111", "222"), null);
 
       MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
