@@ -28,8 +28,6 @@ import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentConten
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import java.util.concurrent.TimeUnit;
-
 import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -39,6 +37,8 @@ import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AddDocumentResponse;
 import com.formkiq.client.model.GetDocumentResponse;
+
+import java.util.Objects;
 
 @ExtendWith(DockerComposeExtension.class)
 class IntegrationTest {
@@ -50,9 +50,9 @@ class IntegrationTest {
   /** Test Timeout. */
   private static final int TEST_TIMEOUT = 30;
   /** {@link ApiClient}. */
-  private ApiClient apiClient = new ApiClient().setReadTimeout(0).setBasePath(BASE_URL);
+  private final ApiClient apiClient = new ApiClient().setReadTimeout(0).setBasePath(BASE_URL);
   /** {@link DocumentsApi}. */
-  private DocumentsApi documentsApi = new DocumentsApi(this.apiClient);
+  private final DocumentsApi documentsApi = new DocumentsApi(this.apiClient);
 
   /**
    * Set BearerToken.
@@ -69,28 +69,27 @@ class IntegrationTest {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  @Timeout(value = TEST_TIMEOUT)
   void testAddDocument01() throws Exception {
     // given
-    String siteId = null;
     String content = ID.uuid();
     AddDocumentRequest req = new AddDocumentRequest().content(content).contentType("text/plain");
 
     setBearerToken("changeme");
 
     // when
-    AddDocumentResponse addDocument = this.documentsApi.addDocument(req, siteId, null);
+    AddDocumentResponse addDocument = this.documentsApi.addDocument(req, null, null);
 
     // then
     String documentId = addDocument.getDocumentId();
     assertNotNull(documentId);
-    waitForDocumentContent(this.apiClient, siteId, documentId);
+    waitForDocumentContent(this.apiClient, null, documentId);
 
     assertEquals(content,
-        this.documentsApi.getDocumentContent(documentId, null, siteId, null).getContent());
+        this.documentsApi.getDocumentContent(documentId, null, null, null).getContent());
 
-    GetDocumentResponse response = waitForDocumentContentLength(this.apiClient, siteId, documentId);
-    assertEquals(content.length(), response.getContentLength().intValue());
+    GetDocumentResponse response = waitForDocumentContentLength(this.apiClient, null, documentId);
+    assertEquals(content.length(), Objects.requireNonNull(response.getContentLength()).intValue());
   }
 
 }

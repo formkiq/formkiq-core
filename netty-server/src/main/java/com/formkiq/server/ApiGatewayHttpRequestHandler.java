@@ -62,11 +62,11 @@ public class ApiGatewayHttpRequestHandler implements HttpRequestHandler {
   /** Auth Credentials. */
   private final IAuthCredentials authCredentials;
   /** {@link Gson}. */
-  private Gson gson = new GsonBuilder().create();
+  private final Gson gson = new GsonBuilder().create();
   /** {@link NettyRequestHandler}. */
-  private NettyRequestHandler handler;
+  private final NettyRequestHandler handler;
   /** {@link NettyRequestHandler} Urls. */
-  private Collection<String> urls;
+  private final Collection<String> urls;
 
   /**
    * constructor.
@@ -172,10 +172,9 @@ public class ApiGatewayHttpRequestHandler implements HttpRequestHandler {
     apiEvent.setPathParameters(pathParams);
     apiEvent.setQueryStringParameters(queryParameters);
 
-    String group = DEFAULT_SITE_ID;
     ApiGatewayRequestContext requestContext = new ApiGatewayRequestContext();
-    requestContext.setAuthorizer(
-        Map.of("claims", Map.of("cognito:username", "admin", "cognito:groups", "[" + group + "]")));
+    requestContext.setAuthorizer(Map.of("claims",
+        Map.of("cognito:username", "admin", "cognito:groups", "[" + DEFAULT_SITE_ID + "]")));
     apiEvent.setRequestContext(requestContext);
 
     String body = getBody(request.content());

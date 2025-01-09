@@ -1,0 +1,28 @@
+services:
+  typesense:
+    volumes:
+      - typesense-data:/data
+
+  api:
+    environment:
+      S3_PRESIGNER_URL: http://minio:9000
+      KEYCLOAK_TOKEN_ENDPOINT: null
+
+  minio:
+    volumes:
+      - minio-data:/data
+
+  dynamodb:
+    command: ["-jar", "DynamoDBLocal.jar", "-sharedDb", "-dbPath", "/tmp"]
+    volumes:
+      - dynamodb-data:/home/dynamodblocal/data
+
+  keycloak:
+    volumes:
+      - keycloak-data:/opt/keycloak/data
+
+volumes:
+  typesense-data:
+  minio-data:
+  dynamodb-data:
+  keycloak-data:

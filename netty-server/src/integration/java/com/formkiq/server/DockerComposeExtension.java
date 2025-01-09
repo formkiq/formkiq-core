@@ -46,7 +46,7 @@ public class DockerComposeExtension implements BeforeAllCallback, AfterAllCallba
   private static ComposeContainer environment;
 
   @Override
-  public void afterAll(final ExtensionContext context) throws IOException {
+  public void afterAll(final ExtensionContext context) {
     environment.stop();
   }
 
@@ -54,21 +54,22 @@ public class DockerComposeExtension implements BeforeAllCallback, AfterAllCallba
   public void beforeAll(final ExtensionContext context) throws Exception {
 
     environment = new ComposeContainer(new File("docker-compose.yml"),
-        new File("docker-compose-override.yml"));
+        new File("docker-compose-integration-override.yml"));
     environment.start();
 
     final int timeoutInSeconds = 10;
-    waitForPortInUse(BASE_HTTP_SERVER_PORT, timeoutInSeconds);
+    waitForPortInUse(timeoutInSeconds);
   }
 
-  private void waitForPortInUse(final int port, final int timeoutInSeconds)
-      throws InterruptedException {
+  private void waitForPortInUse(final int timeoutInSeconds) throws InterruptedException {
     long startTime = System.currentTimeMillis();
-    long endTime = startTime + timeoutInSeconds * MILLISECOND_FACTOR;
+    long endTime = startTime + (long) timeoutInSeconds * MILLISECOND_FACTOR;
 
     while (System.currentTimeMillis() < endTime) {
       try (Socket socket = new Socket()) {
-        socket.connect(new InetSocketAddress("localhost", port), MILLISECOND_FACTOR);
+        socket.connect(
+            new InetSocketAddress("localhost", DockerComposeExtension.BASE_HTTP_SERVER_PORT),
+            MILLISECOND_FACTOR);
       } catch (IOException e) {
         // Port is not available yet, wait and retry
         return;
