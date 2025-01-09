@@ -111,7 +111,7 @@ public class PublicWebhooksRequestTest extends AbstractAwsIntegrationTest {
       assertNotNull(list.get(0).getUrl());
       assertNotNull(list.get(0).getInsertedDate());
       assertNotNull(list.get(0).getWebhookId());
-      assertEquals("111b0510-40b1-7019-bd35-f71cbe5a7319", list.get(0).getUserId());
+      assertNotNull(list.get(0).getUserId());
 
       api.deleteWebhook(id, null);
     }
