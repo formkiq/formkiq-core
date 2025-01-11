@@ -48,7 +48,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.Context;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.ApiPermission;
@@ -325,13 +324,12 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
   public void handleRequest(final InputStream input, final OutputStream output,
       final Context context) throws IOException {
 
-    LambdaLogger logger = context.getLogger();
-
     AwsServiceCache awsServices = getAwsServices();
 
     String str = IoUtils.toUtf8String(input);
 
     ApiGatewayRequestEvent event = getApiGatewayEvent(str, awsServices);
+    Logger logger = awsServices.getLogger();
 
     if (!isEmpty(event)) {
 
@@ -357,12 +355,12 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
   /**
    * Handler for Sqs Requests.
    * 
-   * @param logger {@link LambdaLogger}
+   * @param logger {@link Logger}
    * @param awsServices {@link AwsServiceCache}
    * @param record {@link LambdaInputRecord}
    * @throws IOException IOException
    */
-  public abstract void handleSqsRequest(LambdaLogger logger, AwsServiceCache awsServices,
+  public abstract void handleSqsRequest(Logger logger, AwsServiceCache awsServices,
       LambdaInputRecord record) throws IOException;
 
   /**
@@ -476,28 +474,27 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
   /**
    * Log Exception.
    * 
-   * @param logger {@link LambdaLogger}
+   * @param logger {@link Logger}
    * @param e {@link Exception}
    */
-  private void logError(final LambdaLogger logger, final Exception e) {
+  private void logError(final Logger logger, final Exception e) {
     StringWriter sw = new StringWriter();
     PrintWriter pw = new PrintWriter(sw);
     e.printStackTrace(pw);
-    logger.log(sw.toString());
+    logger.error(sw.toString());
   }
 
   /**
    * Processes API Gateway Requests.
    * 
-   * @param logger {@link LambdaLogger}
+   * @param logger {@link Logger}
    * @param event {@link ApiGatewayRequestEvent}
    * @param awsServices {@link AwsServiceCache}
    * @param output {@link OutputStream}
    * @throws IOException IOException
    */
-  private void processApiGatewayRequest(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final AwsServiceCache awsServices,
-      final OutputStream output) throws IOException {
+  private void processApiGatewayRequest(final Logger logger, final ApiGatewayRequestEvent event,
+      final AwsServiceCache awsServices, final OutputStream output) throws IOException {
 
     try {
 

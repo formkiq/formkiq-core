@@ -25,7 +25,7 @@ package com.formkiq.stacks.api;
 
 import java.util.HashMap;
 import java.util.Map;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
+
 import com.formkiq.aws.cognito.CognitoIdentityProviderService;
 import com.formkiq.aws.cognito.CognitoIdentityProviderServiceExtension;
 import com.formkiq.aws.dynamodb.DynamoDbService;
@@ -51,6 +51,7 @@ import com.formkiq.module.actions.services.ActionsServiceExtension;
 import com.formkiq.module.events.EventService;
 import com.formkiq.module.events.EventServiceSnsExtension;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.module.ocr.DocumentOcrService;
 import com.formkiq.module.ocr.DocumentOcrServiceExtension;
 import com.formkiq.module.ocr.DocumentsOcrRequestHandler;
@@ -354,7 +355,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
   }
 
   @Override
-  public void handleSqsRequest(final LambdaLogger logger, final AwsServiceCache services,
+  public void handleSqsRequest(final Logger logger, final AwsServiceCache services,
       final LambdaInputRecord record) {
     // empty
   }
