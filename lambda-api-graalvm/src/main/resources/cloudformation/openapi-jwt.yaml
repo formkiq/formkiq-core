@@ -9178,6 +9178,11 @@ Resources:
               properties:
                 locale:
                   $ref: "#/components/schemas/Locale"
+                insertDocuments:
+                  type: "array"
+                  description: "List of documents to insert"
+                  items:
+                    $ref: "#/components/schemas/DocumentGenerateInsertDocument"
                 datasources:
                   type: "array"
                   description: "List of data sources"
@@ -9191,6 +9196,24 @@ Resources:
                 path:
                   type: "string"
                   description: "The path of the generated document"
+
+            DocumentGenerateInsertDocumentPosition:
+              type: string
+              description: Position of document
+              enum:
+                - APPEND
+
+            DocumentGenerateInsertDocument:
+              type: "object"
+              required:
+                - documentId
+                - position
+              properties:
+                position:
+                  $ref: "#/components/schemas/DocumentGenerateInsertDocumentPosition"
+                documentId:
+                  type: "string"
+                  description: "Document Identifier of the data source document"
 
             DocumentGenerateDataSource:
               type: "object"
