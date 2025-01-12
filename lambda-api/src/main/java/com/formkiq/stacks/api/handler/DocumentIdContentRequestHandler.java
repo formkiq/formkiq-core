@@ -26,6 +26,8 @@ package com.formkiq.stacks.api.handler;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
+
+import java.io.IOException;
 import java.net.URL;
 import java.time.Duration;
 import java.util.Map;
@@ -82,10 +84,13 @@ public class DocumentIdContentRequestHandler
 
     if (MimeType.isPlainText(item.getContentType())) {
 
-      response = getPlainTextResponse(awsservice, s3key, versionId, item, documentId);
+      try {
+        response = getPlainTextResponse(awsservice, s3key, versionId, item, documentId);
+      } catch (RuntimeException e) {
+        response = getApiResponse(awsservice, item, s3key, versionId);
+      }
 
     } else {
-
       response = getApiResponse(awsservice, item, s3key, versionId);
     }
 
@@ -116,7 +121,7 @@ public class DocumentIdContentRequestHandler
 
   private static ApiResponse getPlainTextResponse(final AwsServiceCache awsservice,
       final String s3key, final String versionId, final DocumentItem item, final String documentId)
-      throws DocumentNotFoundException {
+      throws DocumentNotFoundException, IOException {
 
     S3Service s3Service = awsservice.getExtension(S3Service.class);
 

@@ -31,6 +31,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import com.formkiq.aws.s3.S3Service;
+import com.formkiq.aws.s3.S3ServiceExtension;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceExtension;
 import com.formkiq.client.api.CustomIndexApi;
@@ -286,6 +288,7 @@ public abstract class AbstractApiClientRequestTest {
         .addService(new DynamoDbAwsServiceRegistry()).addService(new S3AwsServiceRegistry())
         .addService(new SsmAwsServiceRegistry()).addService(new SqsAwsServiceRegistry()).build();
 
+    services.register(S3Service.class, new S3ServiceExtension());
     services.register(SsmService.class, new SsmServiceExtension());
     services.register(WebhooksService.class, new WebhooksServiceExtension());
     services.register(ConfigService.class, new ConfigServiceExtension());
