@@ -23,27 +23,26 @@
  */
 package com.formkiq.module.lambdaservices.logger;
 
-import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
- * Unit Test for {@link Logger}.
+ * Log Type.
  */
-public class LoggerTest {
+public enum LogType {
+  /** Text. */
+  TEXT,
+  /** JSON. */
+  JSON;
 
   /**
-   * Is Logged test.
+   * Convert {@link String} to {@link LogType}.
+   *
+   * @param logType {@link String}
+   * @return {@link LogType}
    */
-  @Test
-  void testIsLogged() {
-    assertTrue(new LoggerImpl(LogLevel.ERROR, LogType.JSON).isLogged(LogLevel.ERROR));
-    assertFalse(new LoggerImpl(LogLevel.ERROR, LogType.JSON).isLogged(LogLevel.INFO));
-    assertFalse(new LoggerImpl(LogLevel.DEBUG, LogType.JSON).isLogged(LogLevel.TRACE));
-    assertFalse(new LoggerImpl(LogLevel.INFO, LogType.JSON).isLogged(LogLevel.TRACE));
-    assertTrue(new LoggerImpl(LogLevel.INFO, LogType.JSON).isLogged(LogLevel.INFO));
-    assertTrue(new LoggerImpl(LogLevel.INFO, LogType.JSON).isLogged(LogLevel.ERROR));
-    assertTrue(new LoggerImpl(LogLevel.DEBUG, LogType.JSON).isLogged(LogLevel.INFO));
+  public static LogType fromString(final String logType) {
+    try {
+      return valueOf(logType.toUpperCase());
+    } catch (Exception e) {
+      return LogType.TEXT;
+    }
   }
 }

@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.formkiq.module.lambdaservices.logger.LogLevel;
+import com.formkiq.module.lambdaservices.logger.LogType;
 import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.module.lambdaservices.logger.LoggerImpl;
 import software.amazon.awssdk.regions.Region;
@@ -80,11 +81,12 @@ public class AwsServiceCache {
   /**
    * Set Log Level.
    * 
-   * @param level {@link String}
+   * @param logLevel {@link String}
+   * @param logType {@link String}
    * @return AwsServiceCache
    */
-  public AwsServiceCache setLogLevel(final String level) {
-    return setLogger(new LoggerImpl(LogLevel.fromString(level)));
+  public AwsServiceCache setLogger(final String logLevel, final String logType) {
+    return setLogger(new LoggerImpl(LogLevel.fromString(logLevel), LogType.fromString(logType)));
   }
 
   /**

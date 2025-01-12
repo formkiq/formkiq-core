@@ -30,19 +30,29 @@ public class LoggerImpl implements Logger {
 
   /** Current Log Level. */
   private final LogLevel currentLogLevel;
+  /** {@link LogType}. */
+  private final LogType currentLogType;
 
   /**
    * constructor.
    *
    * @param logLevel {@link LogLevel}
+   * @param logType {@link LogType}
    */
-  public LoggerImpl(final LogLevel logLevel) {
+  public LoggerImpl(final LogLevel logLevel, final LogType logType) {
     this.currentLogLevel = logLevel;
+    this.currentLogType = logType;
   }
 
   public void log(final LogLevel level, final String message) {
     if (isLogged(level)) {
-      System.out.printf("%s%n", message);
+
+      if (LogType.JSON.equals(this.currentLogType)) {
+        System.out.printf("%s%n",
+            "{\"level\":\"" + level.name() + "\",\"message\":\"" + message + "\"}");
+      } else {
+        System.out.printf("%s%n", message);
+      }
     }
   }
 

@@ -56,10 +56,10 @@ public class AwsServiceCacheBuilder {
     this.serviceEndpoints = awsServiceEndpoints;
     this.credentialsProvider = awsCredentialsProvider;
 
-    this.serviceCache =
-        new AwsServiceCache().environment(enviroment).setLogLevel(enviroment.get("LOG_LEVEL"))
-            .enableXray("true".equals(enviroment.get("ENABLE_AWS_X_RAY")))
-            .region(Region.of(enviroment.get("AWS_REGION")));
+    this.serviceCache = new AwsServiceCache().environment(enviroment)
+        .setLogger(enviroment.get("LOG_LEVEL"), enviroment.get("AWS_LAMBDA_LOG_FORMAT"))
+        .enableXray("true".equals(enviroment.get("ENABLE_AWS_X_RAY")))
+        .region(Region.of(enviroment.get("AWS_REGION")));
 
     if (awsCredentialsProvider != null) {
       try {
