@@ -332,6 +332,7 @@ Resources:
               Action:
               - sqs:SendMessage
               Resource:
+              - Fn::Sub: "arn:${Partition}:sqs:${AWS::Region}:${AWS::AccountId}:formkiq*"
               - Fn::Sub: "${OcrQueueArn}"
               - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/sqs/WebsocketArn}}"
             - Effect: Allow
