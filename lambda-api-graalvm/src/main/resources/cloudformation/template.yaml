@@ -186,7 +186,7 @@ Resources:
         OcrQueueArn:
           Fn::GetAtt:
             - OcrQueue
-            - QueueArn
+            - Arn
         VpcStackName:
           Ref: VpcStackName
         Partition:
