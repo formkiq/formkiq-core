@@ -36,8 +36,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.time.DateTimeException;
 import java.util.Collection;
@@ -472,19 +470,6 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
   }
 
   /**
-   * Log Exception.
-   * 
-   * @param logger {@link Logger}
-   * @param e {@link Exception}
-   */
-  private void logError(final Logger logger, final Exception e) {
-    StringWriter sw = new StringWriter();
-    PrintWriter pw = new PrintWriter(sw);
-    e.printStackTrace(pw);
-    logger.error(sw.toString());
-  }
-
-  /**
    * Processes API Gateway Requests.
    * 
    * @param logger {@link Logger}
@@ -541,7 +526,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
       buildResponse(awsServices, output, SC_BAD_REQUEST, Collections.emptyMap(),
           new ApiResponseError(e.errors()));
     } catch (Exception e) {
-      logError(logger, e);
+      logger.error(e);
 
       buildResponse(awsServices, output, SC_ERROR, Collections.emptyMap(),
           new ApiResponseError("Internal Server Error"));

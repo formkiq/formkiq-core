@@ -6,7 +6,8 @@
 <import-control pkg="com.formkiq.module">
 	
 	<subpackage name="lambdaservices">
-		
+
+		<allow pkg="java.io" />
 		<allow pkg="java.net" />
 		<allow pkg="java.util" />
 		<allow pkg="software.amazon.awssdk.auth.credentials" />

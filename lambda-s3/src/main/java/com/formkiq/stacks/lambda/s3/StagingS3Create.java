@@ -427,7 +427,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
       List<Map<String, Object>> records = (List<Map<String, Object>>) map.get("Records");
       processRecords(date, records);
     } catch (RuntimeException e) {
-      logger.error(Strings.toString(e));
+      logger.error(e);
       throw e;
     }
 
@@ -661,7 +661,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
         try {
           processEvent(date, event);
         } catch (Exception e) {
-          logger.error(Strings.toString(e));
+          logger.error(e);
         }
       }
     }

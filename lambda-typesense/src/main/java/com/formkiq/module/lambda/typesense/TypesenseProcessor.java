@@ -43,7 +43,6 @@ import com.formkiq.aws.dynamodb.model.DocumentMapToDocument;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
 import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
 import com.formkiq.aws.dynamodb.model.DocumentSyncType;
-import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
@@ -289,7 +288,7 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
         }
 
       } catch (IOException e) {
-        logger.error(Strings.toString(e));
+        logger.error(e);
       }
 
     } else {

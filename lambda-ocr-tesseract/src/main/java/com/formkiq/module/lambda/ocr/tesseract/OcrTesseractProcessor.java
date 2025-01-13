@@ -43,7 +43,6 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.objects.MimeType;
-import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.aws.s3.S3PresignerServiceExtension;
@@ -292,7 +291,7 @@ public class OcrTesseractProcessor extends AbstractRestApiRequestHandler {
       ocrService.updateOcrScanStatus(siteId, documentId, OcrScanStatus.FAILED);
 
       logger.error(String.format("setting OCR Scan Status: %s", OcrScanStatus.FAILED));
-      logger.error(Strings.toString(e));
+      logger.error(e);
 
       ActionsService actionsService = serviceCache.getExtension(ActionsService.class);
       List<Action> actions = actionsService.getActions(siteId, documentId);

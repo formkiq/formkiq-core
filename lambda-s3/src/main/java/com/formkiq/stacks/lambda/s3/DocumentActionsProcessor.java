@@ -220,7 +220,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     try {
       processRecords(logger, records);
     } catch (IOException | InterruptedException e) {
-      logger.error(Strings.toString(e));
+      logger.error(e);
       throw new RuntimeException(e);
     }
 
@@ -375,7 +375,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
         } catch (Exception e) {
 
           String stacktrace = Strings.toString(e);
-          logger.error(stacktrace);
+          logger.error(e);
 
           action.status(ActionStatus.FAILED);
 

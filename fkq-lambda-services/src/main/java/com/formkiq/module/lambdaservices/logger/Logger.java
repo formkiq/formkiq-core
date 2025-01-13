@@ -65,12 +65,29 @@ public interface Logger {
   }
 
   /**
-   * Log.
+   * Error Log.
+   *
+   * @param ex {@link Exception}
+   */
+  default void error(final Exception ex) {
+    log(LogLevel.ERROR, ex);
+  }
+
+  /**
+   * Log Message.
    * 
    * @param level {@link LogLevel}
    * @param message {@link String}
    */
   void log(LogLevel level, String message);
+
+  /**
+   * Log Exception.
+   *
+   * @param level {@link LogLevel}
+   * @param ex {@link Exception}
+   */
+  void log(LogLevel level, Exception ex);
 
   /**
    * Is Current {@link LogLevel} going to be logged.

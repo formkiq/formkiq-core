@@ -23,6 +23,9 @@
  */
 package com.formkiq.module.lambdaservices.logger;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+
 /**
  * Default {@link Logger} implementation.
  */
@@ -44,16 +47,76 @@ public class LoggerImpl implements Logger {
     this.currentLogType = logType;
   }
 
+  public void log(final LogLevel level, final Exception e) {
+    if (isLogged(level)) {
+      if (LogType.JSON.equals(this.currentLogType)) {
+        System.out.printf("%s%n", exceptionToJson(level, e));
+      } else {
+        System.out.printf("%s%n", exceptionToString(e));
+      }
+    }
+  }
+
   public void log(final LogLevel level, final String message) {
     if (isLogged(level)) {
-
       if (LogType.JSON.equals(this.currentLogType)) {
-        System.out.printf("%s%n",
-            "{\"level\":\"" + level.name() + "\",\"message\":\"" + message + "\"}");
+        System.out.printf("%s%n", "{\"level\":\"" + level.name() + "\",\"message\":\""
+            + escapeDoubleQuotes(message) + "\"}");
       } else {
         System.out.printf("%s%n", message);
       }
     }
+  }
+
+  /**
+   * Convert {@link Exception} to {@link String}.
+   *
+   * @param e {@link Exception}
+   * @return {@link String}
+   */
+  private String exceptionToString(final Exception e) {
+    StringWriter sw = new StringWriter();
+    PrintWriter pw = new PrintWriter(sw);
+    e.printStackTrace(pw);
+    return sw.toString();
+  }
+
+  /**
+   * Converts an exception into a JSON string representation.
+   *
+   * @param logLevel {@link LogLevel}
+   * @param e The exception to convert.
+   * @return A JSON string representing the exception.
+   */
+  private String exceptionToJson(final LogLevel logLevel, final Exception e) {
+    StringBuilder json = new StringBuilder();
+    json.append("{");
+    json.append("\"level\":\"").append(logLevel.name()).append("\",");
+    json.append("\"type\":\"").append(e.getClass().getName()).append("\",");
+    json.append("\"message\":\"").append(e.getMessage()).append("\",");
+
+    // Add stack trace
+    json.append("\"stackTrace\":[");
+    StackTraceElement[] stackTrace = e.getStackTrace();
+    for (int i = 0; i < stackTrace.length; i++) {
+      json.append("\"").append(stackTrace[i].toString().replace("\"", "\\\"")).append("\"");
+      if (i < stackTrace.length - 1) {
+        json.append(",");
+      }
+    }
+    json.append("]");
+    json.append("}");
+    return json.toString();
+  }
+
+  /**
+   * Escapes all double-quote characters in the input string.
+   *
+   * @param input The string to escape.
+   * @return The string with double-quote characters escaped
+   */
+  private String escapeDoubleQuotes(final String input) {
+    return input.replace("\"", "\\\"");
   }
 
   @Override
