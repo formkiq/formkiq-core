@@ -66,6 +66,10 @@ Parameters:
     Type: String
     Description: Name of OCR Queue Url
 
+  OcrQueueArn:
+    Type: String
+    Description: Name of OCR Queue Arn
+
   VpcStackName:
     Type: String
     Description: FormKiQ VPC Stack Name 
@@ -328,7 +332,7 @@ Resources:
               Action:
               - sqs:SendMessage
               Resource:
-              - Fn::Sub: "arn:${Partition}:sqs:${AWS::Region}:${AWS::AccountId}:formkiq*"
+              - Fn::Sub: "${OcrQueueArn}"
               - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/sqs/WebsocketArn}}"
             - Effect: Allow
               Action:
