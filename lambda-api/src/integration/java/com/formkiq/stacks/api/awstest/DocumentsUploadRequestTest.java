@@ -56,6 +56,7 @@ import java.net.http.HttpResponse.BodyHandlers;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
@@ -167,20 +168,22 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
   @Timeout(value = TEST_TIMEOUT)
   public void testGet02() throws Exception {
     // given
+    String siteId = UUID.randomUUID().toString();
     SiteConfiguration config = new SiteConfiguration().setMaxContentLengthBytes("5");
-    configService.save(SITEID0, config);
+    configService.save(siteId, config);
 
-    for (ApiClient client : getApiClients(SITEID0)) {
+    for (ApiClient client : getApiClients(siteId)) {
 
       DocumentsApi api = new DocumentsApi(client);
 
       // when
       try {
-        api.getDocumentUpload(null, SITEID0, null, null, null, null, null);
+        api.getDocumentUpload(null, siteId, null, null, null, null, null);
         fail();
       } catch (ApiException e) {
         assertEquals(STATUS_BAD_REQUEST, e.getCode());
-        assertEquals("{\"message\":\"'contentLength' is required\"}", e.getResponseBody());
+        assertEquals("{\"message\":\"'contentLength' is required when "
+            + "MaxContentLengthBytes is configured\"}", e.getResponseBody());
       }
     }
   }
