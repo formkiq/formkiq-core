@@ -31,6 +31,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import com.formkiq.aws.s3.S3Service;
+import com.formkiq.aws.s3.S3ServiceExtension;
 import com.formkiq.client.api.CustomIndexApi;
 import com.formkiq.client.api.MappingsApi;
 import com.formkiq.client.api.ReindexApi;
@@ -275,6 +277,7 @@ public abstract class AbstractApiClientRequestTest {
     return new AwsServiceCacheBuilder(server.getEnvironmentMap(), TestServices.getEndpointMap(),
         credentialsProvider).addService(new DynamoDbAwsServiceRegistry())
         .addService(new S3AwsServiceRegistry()).addService(new SsmAwsServiceRegistry())
-        .addService(new SqsAwsServiceRegistry()).build();
+        .addService(new SqsAwsServiceRegistry()).build()
+        .register(S3Service.class, new S3ServiceExtension());
   }
 }

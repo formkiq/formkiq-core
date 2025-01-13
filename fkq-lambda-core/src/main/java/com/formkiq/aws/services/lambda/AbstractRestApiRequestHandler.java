@@ -40,7 +40,6 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.time.DateTimeException;
-import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -65,7 +64,6 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.validation.ValidationException;
 import com.google.gson.Gson;
 import software.amazon.awssdk.utils.IoUtils;
-import software.amazon.awssdk.utils.StringUtils;
 
 /**
  * 
@@ -73,6 +71,9 @@ import software.amazon.awssdk.utils.StringUtils;
  *
  */
 public abstract class AbstractRestApiRequestHandler implements RequestStreamHandler {
+
+  /** Define the size limit in bytes (6 MB = 6 * 1024 * 1024 bytes). */
+  private static final long MAX_PAYLOAD_SIZE_MB = 6L * 1024 * 1024;
 
   /** {@link Gson}. */
   protected Gson gson = GsonUtil.getInstance();
@@ -304,21 +305,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
    * @throws BadException BadException
    */
   private String getBodyAsString(final ApiGatewayRequestEvent event) throws BadException {
-    String body = event.getBody();
-    if (body == null) {
-      throw new BadException("request body is required");
-    }
-
-    if (Boolean.TRUE.equals(event.getIsBase64Encoded())) {
-      byte[] bytes = Base64.getDecoder().decode(body);
-      body = new String(bytes, StandardCharsets.UTF_8);
-    }
-
-    if (StringUtils.isEmpty(body)) {
-      throw new BadException("request body is required");
-    }
-
-    return body;
+    return ApiGatewayRequestEventUtil.getBodyAsString(event);
   }
 
   /**
@@ -444,7 +431,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
     if (authorizationHandler != null) {
       Optional<Boolean> ah =
           authorizationHandler.isAuthorized(getAwsServices(), event, authorization);
-      if (!ah.isEmpty()) {
+      if (ah.isPresent()) {
         isAuthorized = ah;
       }
     }
@@ -677,11 +664,11 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
    * @param logger {@link LambdaLogger}
    * @param awsservices {@link AwsServiceCache}
    * @param output {@link OutputStream}
-   * @param response {@link Object}
+   * @param response {@link Map}
    * @throws IOException IOException
    */
   protected void writeJson(final LambdaLogger logger, final AwsServiceCache awsservices,
-      final OutputStream output, final Object response) throws IOException {
+      final OutputStream output, final Map<String, Object> response) throws IOException {
 
     String json = this.gson.toJson(response);
 
@@ -690,7 +677,27 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
     }
 
     OutputStreamWriter writer = new OutputStreamWriter(output, StandardCharsets.UTF_8);
+
+    if (isResponseTooLarge(json)) {
+
+      response.put("body", this.gson.toJson(Map.of("message", "Response exceeds allowed size")));
+      response.put("statusCode", SC_BAD_REQUEST.getStatusCode());
+      json = this.gson.toJson(response);
+    }
+
     writer.write(json);
+
     writer.close();
+  }
+
+  /**
+   * Determines if the size of the given string exceeds 6 MB.
+   *
+   * @param input The string to check.
+   * @return true if the string size is greater than 6 MB, false otherwise.
+   */
+  private boolean isResponseTooLarge(final String input) {
+    long sizeInBytes = input.getBytes(StandardCharsets.UTF_8).length;
+    return sizeInBytes > MAX_PAYLOAD_SIZE_MB;
   }
 }
