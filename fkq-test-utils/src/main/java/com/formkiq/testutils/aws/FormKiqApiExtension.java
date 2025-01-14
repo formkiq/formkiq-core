@@ -38,6 +38,8 @@ import static org.mockserver.model.HttpRequest.request;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+
+import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.mockserver.integration.ClientAndServer;
@@ -48,7 +50,7 @@ import org.mockserver.integration.ClientAndServer;
  *
  */
 public class FormKiqApiExtension
-    implements BeforeAllCallback, ExtensionContext.Store.CloseableResource {
+    implements BeforeAllCallback, AfterAllCallback, ExtensionContext.Store.CloseableResource {
 
   /** {@link Random}. */
   private static final Random NUM_RAND = new Random();
@@ -119,7 +121,10 @@ public class FormKiqApiExtension
 
   @Override
   public void close() throws Throwable {
+    closeServer();
+  }
 
+  private void closeServer() {
     if (this.formkiqServer != null) {
       this.formkiqServer.stop();
     }
@@ -181,5 +186,10 @@ public class FormKiqApiExtension
    */
   public Map<String, String> getEnvironmentMap() {
     return this.environmentMap;
+  }
+
+  @Override
+  public void afterAll(final ExtensionContext context) {
+    closeServer();
   }
 }
