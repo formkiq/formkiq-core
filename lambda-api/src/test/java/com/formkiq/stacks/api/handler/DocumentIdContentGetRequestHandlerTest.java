@@ -40,7 +40,6 @@ import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.GetDocumentContentResponse;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.localstack.LocalStackContainer.Service;
 import com.formkiq.testutils.aws.TestServices;
@@ -180,7 +179,6 @@ public class DocumentIdContentGetRequestHandlerTest extends AbstractApiClientReq
    * @throws Exception an error has occurred
    */
   @Test
-  @Disabled
   public void testHandleGetDocumentContent07() throws Exception {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
