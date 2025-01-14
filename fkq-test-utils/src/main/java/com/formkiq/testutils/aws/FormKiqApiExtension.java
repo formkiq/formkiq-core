@@ -108,6 +108,7 @@ public class FormKiqApiExtension
 
     if (!this.running) {
 
+      System.setProperty("mockserver.logLevel", "WARN");
       this.environmentMap = generateMap();
 
       this.callback.setEnvironmentMap(this.environmentMap);
