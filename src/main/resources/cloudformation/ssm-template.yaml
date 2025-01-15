@@ -56,8 +56,6 @@ Resources:
           Fn::Sub: "FormKiQ ${FormKiQType}"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
         
   CognitoUserPoolArnParameter:
     Type: AWS::SSM::Parameter
@@ -73,8 +71,6 @@ Resources:
           Fn::Sub: "FormKiQ ${FormKiQType}"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
 
   CognitoUserPoolClientIdParameter:
     Type: AWS::SSM::Parameter
@@ -90,8 +86,6 @@ Resources:
           Fn::Sub: "FormKiQ ${FormKiQType}"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
 
   CognitoIdentityPoolIdParameter:
     Type: AWS::SSM::Parameter
@@ -107,8 +101,6 @@ Resources:
           Fn::Sub: "FormKiQ ${FormKiQType}"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
 
   CustomMessageAdminCreateUserSubjectParameter:
     Type: AWS::SSM::Parameter
@@ -123,8 +115,6 @@ Resources:
           Fn::Sub: "FormKiQ ${FormKiQType}"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
           
   CustomMessageSignUpUserSubjectParameter:
     Type: AWS::SSM::Parameter
@@ -139,8 +129,6 @@ Resources:
           Fn::Sub: "FormKiQ ${FormKiQType}"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
           
   CustomMessageSignUpUserSubjectParameter:
     Type: AWS::SSM::Parameter
@@ -155,8 +143,6 @@ Resources:
           Fn::Sub: "FormKiQ ${FormKiQType}"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
 
   CustomMessageForgotPasswordUserSubjectParameter:
     Type: AWS::SSM::Parameter
@@ -171,6 +157,4 @@ Resources:
           Fn::Sub: "FormKiQ ${FormKiQType}"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
           

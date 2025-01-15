@@ -107,8 +107,6 @@ Resources:
           Fn::Sub: "${AppEnvironment}"
         Application: 
           Fn::Sub: "FormKiQ ${FormKiQType}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
       Events:
         OcrSQSEvent:
           Type: SQS
@@ -131,8 +129,6 @@ Resources:
           Fn::Sub: "FormKiQ ${FormKiQType}"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
           
   OcrLambdaRolePolicy: 
     Type: "AWS::IAM::Policy"
@@ -222,9 +218,6 @@ Resources:
         - Key: "AppEnvironment"
           Value: 
             Fn::Sub: "${AppEnvironment}"
-        - Key: "StackName"
-          Value: 
-            Fn::Sub: "${AWS::StackName}"
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:

@@ -182,8 +182,6 @@ Resources:
           Fn::Sub: "FormKiQ ${FormKiQType}"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
           
   DocumentsApiRequestsRole:
     Type: AWS::IAM::Role

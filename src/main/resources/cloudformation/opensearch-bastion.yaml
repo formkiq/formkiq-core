@@ -50,9 +50,6 @@ Resources:
         - Key: Name
           Value: 
             Fn::Sub: "Bastion Host"
-        - Key: StackName
-          Value: 
-            Fn::Sub: "${AWS::StackName}"
 
   BastionSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -72,10 +69,6 @@ Resources:
           ToPort: '8157'
           CidrIp: 50.71.0.58/32
           Description: OpenSearch Tunnel Port
-      Tags:
-        - Key: StackName
-          Value: 
-            Fn::Sub: "${AWS::StackName}"
 
   BastionHostInstanceProfile:
     Type: AWS::IAM::InstanceProfile
@@ -98,10 +91,6 @@ Resources:
       ManagedPolicyArns:
         - 'arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore'
         - 'arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy'
-      Tags:
-        - Key: StackName
-          Value: 
-            Fn::Sub: "${AWS::StackName}"
 
 Outputs:
   BastionHostId:

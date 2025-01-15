@@ -153,8 +153,6 @@ Resources:
           Fn::Sub: "FormKiQ ${FormKiQType}"
         AppEnvironment:
           Fn::Sub: "${AppEnvironment}"
-        StackName:
-          Fn::Sub: "${AWS::StackName}"
 
   ConsoleInstaller:
     Type: AWS::Serverless::Function
@@ -175,8 +173,6 @@ Resources:
           Fn::Sub: "FormKiQ ${FormKiQType}"
         AppEnvironment:
           Fn::Sub: "${AppEnvironment}"
-        StackName:
-          Fn::Sub: "${AWS::StackName}"
       Environment:
         Variables:
           CONSOLE_VERSION:

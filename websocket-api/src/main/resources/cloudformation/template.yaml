@@ -50,8 +50,6 @@ Resources:
           Fn::Sub: "FormKiQ ${FormKiQType}"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"      
 
   ConnectRoute:
     Type: AWS::ApiGatewayV2::Route
@@ -120,8 +118,6 @@ Resources:
           Fn::Sub: "FormKiQ ${FormKiQType}"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}" 
         
   OnConnectPermission:
     Type: AWS::Lambda::Permission
@@ -147,9 +143,6 @@ Resources:
         - Key: "AppEnvironment"
           Value: 
             Fn::Sub: "${AppEnvironment}"
-        - Key: StackName
-          Value: 
-            Fn::Sub: "${AWS::StackName}"
 
   SqsQueueUrlParameter:
     Type: AWS::SSM::Parameter
@@ -165,8 +158,6 @@ Resources:
           Fn::Sub: "FormKiQ ${FormKiQType}"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
 
   SqsQueueArnParameter:
     Type: AWS::SSM::Parameter
@@ -184,8 +175,6 @@ Resources:
           Fn::Sub: "FormKiQ ${FormKiQType}"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
                 
   WebsocketApiUrlParameter:
     Type: AWS::SSM::Parameter
@@ -201,8 +190,6 @@ Resources:
           Fn::Sub: "FormKiQ ${FormKiQType}"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
 
   ApiFunctionLogGroup:
     Type: AWS::Logs::LogGroup
@@ -265,9 +252,6 @@ Resources:
         - Key: "AppEnvironment"
           Value: 
             Fn::Sub: "${AppEnvironment}"
-        - Key: StackName
-          Value: 
-            Fn::Sub: "${AWS::StackName}"
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -331,8 +315,6 @@ Resources:
           Fn::Sub: "FormKiQ ${FormKiQType}"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
 
   WebConnections:
     Type: AWS::DynamoDB::Table

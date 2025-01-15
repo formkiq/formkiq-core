@@ -82,8 +82,6 @@ Resources:
           Fn::Sub: "FormKiQ ${FormKiQType}"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
 
   #@overlay/match missing_ok=True
   ApiKeyAuthorizerInvokePermission:

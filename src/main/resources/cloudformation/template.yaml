@@ -175,8 +175,6 @@ Resources:
         Application: "FormKiQ Core"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
           
   VersionParameter:
     Type: AWS::SSM::Parameter
@@ -190,8 +188,6 @@ Resources:
         Application: "FormKiQ Core"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
       
   RegionParameter:
     Type: AWS::SSM::Parameter
@@ -206,8 +202,6 @@ Resources:
         Application: "FormKiQ Core"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
 
   EventMessages:
     Type: AWS::Serverless::Application
@@ -243,8 +237,6 @@ Resources:
         Application: "FormKiQ Core"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
 
   CoreConsole:
     Type: AWS::Serverless::Application
@@ -264,8 +256,6 @@ Resources:
         Application: "FormKiQ Core"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
 
   CoreConsoleInstall:
     Type: AWS::Serverless::Application
@@ -340,8 +330,6 @@ Resources:
         Application: "FormKiQ Core"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
 
   Cognito:
     Type: AWS::Serverless::Application
@@ -378,8 +366,6 @@ Resources:
         Application: "FormKiQ Core"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
         
   SsmProperties:
     Type: AWS::Serverless::Application
@@ -463,8 +449,6 @@ Resources:
         Application: "FormKiQ Core"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
 
   CoreConsoleUsers:
     Type: AWS::Serverless::Application
@@ -509,8 +493,6 @@ Resources:
         Application: "FormKiQ Core"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
           
   WebsocketApi:
     Type: AWS::Serverless::Application
@@ -539,8 +521,6 @@ Resources:
         Application: "FormKiQ Core"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
 
   EcsCluster:
     Type: AWS::Serverless::Application
@@ -585,8 +565,6 @@ Resources:
         Application: "FormKiQ Core"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
 
   TypesenseApiKeyParameter:
     Type: AWS::SSM::Parameter
@@ -603,8 +581,6 @@ Resources:
           Fn::Sub: "FormKiQ Core"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
           
   CognitoApiIdParameter:
     Type: AWS::SSM::Parameter
@@ -620,8 +596,6 @@ Resources:
       Tags:
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
           
   Monitoring:
     Type: AWS::Serverless::Application

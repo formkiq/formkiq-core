@@ -129,9 +129,6 @@ Resources:
             Ref: VpcLabel
         - Key: Application
           Value: FormKiQ
-        - Key: StackName
-          Value: 
-            Fn::Sub: "${AWS::StackName}"
 
   PublicSubnet1:
     Type: AWS::EC2::Subnet
@@ -152,9 +149,6 @@ Resources:
             Fn::Sub: "FormKiQ PublicSubnet1 (${PublicSubnet1Cidr})"
         - Key: Application
           Value: FormKiQ
-        - Key: StackName
-          Value: 
-            Fn::Sub: "${AWS::StackName}"      
  
   PublicSubnet2:
     Type: AWS::EC2::Subnet
@@ -175,9 +169,6 @@ Resources:
             Fn::Sub: "FormKiQ PublicSubnet2 (${PublicSubnet2Cidr})"
         - Key: Application
           Value: FormKiQ
-        - Key: StackName
-          Value: 
-            Fn::Sub: "${AWS::StackName}"      
 
   PublicSubnet3:
     Condition: UseThreeSubnets
@@ -199,9 +190,6 @@ Resources:
             Fn::Sub: "FormKiQ PublicSubnet3 (${PublicSubnet3Cidr})"
         - Key: Application
           Value: FormKiQ
-        - Key: StackName
-          Value: 
-            Fn::Sub: "${AWS::StackName}"
             
   PrivateSubnet1:
     Type: AWS::EC2::Subnet
@@ -221,9 +209,6 @@ Resources:
             Fn::Sub: "FormKiQ PrivateSubnet1 (${PrivateSubnet1Cidr})"
         - Key: Application
           Value: FormKiQ
-        - Key: StackName
-          Value: 
-            Fn::Sub: "${AWS::StackName}"
             
   PrivateSubnet2:
     Type: AWS::EC2::Subnet
@@ -243,9 +228,6 @@ Resources:
             Fn::Sub: "FormKiQ PrivateSubnet2 (${PrivateSubnet2Cidr})"
         - Key: Application
           Value: FormKiQ
-        - Key: StackName
-          Value: 
-            Fn::Sub: "${AWS::StackName}"
             
   PrivateSubnet3:
     Type: AWS::EC2::Subnet
@@ -266,9 +248,6 @@ Resources:
             Fn::Sub: "FormKiQ PrivateSubnet3 (${PrivateSubnet3Cidr})"
         - Key: Application
           Value: FormKiQ
-        - Key: StackName
-          Value: 
-            Fn::Sub: "${AWS::StackName}"
 
   PublicRoute:
     Type: AWS::EC2::Route
@@ -313,9 +292,6 @@ Resources:
       Tags:
         - Key: Application
           Value: FormKiQ
-        - Key: StackName
-          Value: 
-            Fn::Sub: "${AWS::StackName}"
             
   PrivateRouteTable:
     Type: AWS::EC2::RouteTable
@@ -325,9 +301,6 @@ Resources:
       Tags:
         - Key: Application
           Value: FormKiQ
-        - Key: StackName
-          Value: 
-            Fn::Sub: "${AWS::StackName}"
             
   PrivateSubnet1RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
@@ -373,9 +346,6 @@ Resources:
       Tags:
         - Key: Application
           Value: FormKiQ
-        - Key: StackName
-          Value: 
-            Fn::Sub: "${AWS::StackName}"
         
   NfsSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -391,9 +361,6 @@ Resources:
       Tags:
         - Key: Application
           Value: FormKiQ
-        - Key: StackName
-          Value: 
-            Fn::Sub: "${AWS::StackName}"
 
   S3GatewayEndpoint:
     Type: 'AWS::EC2::VPCEndpoint'
