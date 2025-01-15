@@ -56,15 +56,14 @@ dependencies {
 	testImplementation project(':fkq-test-utils')
 	testImplementation project(':lambda-typesense')
 	
-	testImplementation group: 'software.amazon.awssdk', name: 'apigateway', version: '2.27.18'
-	testImplementation group: 'software.amazon.awssdk', name: 'sts', version: '2.27.18'
+	testImplementation group: 'software.amazon.awssdk', name: 'apigateway', version: '2.29.51'
+	testImplementation group: 'software.amazon.awssdk', name: 'sts', version: '2.29.51'
 
-	testImplementation group: 'commons-codec', name: 'commons-codec', version: '1.17.1'
-    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.11.0'
-    testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.20.1'
-	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.20.1'
-	testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.20.1'
-	testImplementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.12.770'
+	testImplementation group: 'commons-codec', name: 'commons-codec', version: '1.17.2'
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.11.4'
+    testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.20.4'
+	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.20.4'
+	testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.20.4'
 	testImplementation group: 'org.mock-server', name: 'mockserver-netty', version: '5.15.0'
 	
 	// TODO remove

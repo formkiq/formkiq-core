@@ -2,7 +2,7 @@
 description = "FormKiQ Lambda Services"
 
 dependencies {
-	implementation group: 'software.amazon.awssdk', name: 'auth', version: '2.27.18'
+	implementation group: 'software.amazon.awssdk', name: 'auth', version: '2.29.51'
 }
 
 test {
