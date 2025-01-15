@@ -520,7 +520,7 @@ public class FkqDocumentService {
   }
 
   /**
-   * Wait for Document Content and Type
+   * Wait for Document Content and Type.
    * 
    * @param client {@link ApiClient}
    * @param siteId {@link String}
