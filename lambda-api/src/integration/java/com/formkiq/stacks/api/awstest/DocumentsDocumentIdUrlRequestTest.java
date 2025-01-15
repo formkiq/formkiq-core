@@ -24,10 +24,17 @@
 package com.formkiq.stacks.api.awstest;
 
 import static com.formkiq.testutils.aws.FkqDocumentService.addDocument;
+import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContentByContentType;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContentType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.nio.charset.StandardCharsets;
 
+import com.formkiq.aws.services.lambda.ApiResponseStatus;
+import com.formkiq.client.api.DocumentsApi;
+import com.formkiq.client.invoker.ApiException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import com.formkiq.client.invoker.ApiClient;
@@ -41,7 +48,7 @@ import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
 public class DocumentsDocumentIdUrlRequestTest extends AbstractAwsIntegrationTest {
 
   /** JUnit Test Timeout. */
-  private static final int TEST_TIMEOUT = 30;
+  private static final int TEST_TIMEOUT = 60;
 
   /**
    * Get Request Upload Document Url.
@@ -58,13 +65,69 @@ public class DocumentsDocumentIdUrlRequestTest extends AbstractAwsIntegrationTes
 
       // when
       String documentId = addDocument(client, null, null, content, "text/plain", null);
-
       // then
+
       GetDocumentContentResponse response =
-          waitForDocumentContentType(client, null, documentId, "text/plain");
+          waitForDocumentContentByContentType(client, null, documentId, "text/plain");
 
       assertEquals("text/plain", response.getContentType());
       assertEquals(text, response.getContent());
     }
+  }
+
+  /**
+   * /documents/{documentId}/content TOO large content.
+   *
+   * Tests S3 URL is returned.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  public void testHandleGetDocumentContent01() throws Exception {
+    // given
+    ApiClient client = getApiClients(null).get(0);
+    DocumentsApi api = new DocumentsApi(client);
+
+    final int sixMb = 6 * 1024 * 1024; // 6 MB in bytes
+    byte[] content = "a".repeat(sixMb).getBytes(StandardCharsets.UTF_8);
+    String documentId = addDocument(client, null, null, content, "text/plain", null);
+    waitForDocumentContentType(client, null, documentId, "text/plain");
+
+    // when
+    try {
+      api.getDocumentContent(documentId, null, null, null);
+      fail();
+    } catch (ApiException e) {
+      // then
+      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+      assertEquals("{\"message\":\"Response exceeds allowed size\"}", e.getResponseBody());
+    }
+  }
+
+  /**
+   * /documents/{documentId}/content the largest content.
+   *
+   * Tests S3 URL is returned.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  public void testHandleGetDocumentContent02() throws Exception {
+    // given
+    ApiClient client = getApiClients(null).get(0);
+    DocumentsApi api = new DocumentsApi(client);
+
+    final int fivehalf = (int) (5.5 * 1024 * 1024); // 6 MB in bytes
+    byte[] content = "a".repeat(fivehalf).getBytes(StandardCharsets.UTF_8);
+    String documentId = addDocument(client, null, null, content, "text/plain", null);
+    waitForDocumentContentType(client, null, documentId, "text/plain");
+
+    // when
+    GetDocumentContentResponse response = api.getDocumentContent(documentId, null, null, null);
+
+    // then
+    assertNotNull(response.getContent());
   }
 }
