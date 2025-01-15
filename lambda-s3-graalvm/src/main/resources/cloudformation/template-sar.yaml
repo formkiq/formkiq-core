@@ -173,13 +173,15 @@ Resources:
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
-        - Effect: Allow
+        - Sid: AllowLambdaPublish
+          Effect: Allow
           Principal:
             Service: lambda.amazonaws.com
           Action: sns:Publish
           Resource: 
             Ref: SnsDocumentEvent
-        - Effect: Allow
+        - Sid: AllowEventsPublish
+          Effect: Allow
           Principal:
             Service: events.amazonaws.com
           Action: sns:Publish
