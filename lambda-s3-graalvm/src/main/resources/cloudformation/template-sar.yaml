@@ -26,9 +26,7 @@ Parameters:
 
   FormKiQType:
     Description: The type of FormKiQ installation
-    Default: "core"
     Type: String
-    AllowedValues: ["core", "enterprise"]
 
   Partition:
     Description: The partition in which the resource is located. A partition is a group of AWS Regions
@@ -77,8 +75,7 @@ Resources:
       Value: 
         Ref: SnsDocumentEvent
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
 
@@ -92,8 +89,7 @@ Resources:
       Value:   
         Ref: DocumentsS3Buckets
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
 
@@ -107,9 +103,8 @@ Resources:
       Value: 
         Ref: DocumentsStageS3Bucket
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
-        AppEnvironment: 
+        Application: "FormKiQ"
+        AppEnvironment:
           Fn::Sub: "${AppEnvironment}"
                       
   DocumentsStageS3Bucket:
@@ -148,8 +143,7 @@ Resources:
             ExpirationInDays: 1
       Tags:
         - Key: "Application"
-          Value: 
-            Fn::Sub: "FormKiQ ${FormKiQType}"
+          Value: "FormKiQ"
         - Key: "AppEnvironment"
           Value: 
             Fn::Sub: "${AppEnvironment}"
@@ -159,8 +153,7 @@ Resources:
     Properties:
       Tags:
           - Key: "Application"
-            Value: 
-              Fn::Sub: "FormKiQ ${FormKiQType}"      
+            Value: "FormKiQ"
           - Key: "AppEnvironment"
             Value: 
               Fn::Sub: "${AppEnvironment}"
@@ -243,8 +236,7 @@ Resources:
             - Arn
       Tags:
         - Key: "Application"
-          Value: 
-            Fn::Sub: "FormKiQ ${FormKiQType}"
+          Value: "FormKiQ"
         - Key: "AppEnvironment"
           Value: 
             Fn::Sub: "${AppEnvironment}"
@@ -259,8 +251,7 @@ Resources:
       Value: 
         Ref: DocumentActionsProcessor
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
           
@@ -317,8 +308,7 @@ Resources:
       Tags:
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
       Events:
         ActionsEvent:
           Type: SQS
@@ -381,8 +371,7 @@ Resources:
       Tags:
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
       Events:
         CreateSQSEvent:
           Type: SQS
@@ -403,8 +392,7 @@ Resources:
       Value: 
         Ref: StagingS3Create
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
 
@@ -462,8 +450,7 @@ Resources:
       Tags:
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
       Events:
         CreateSQSEvent:
           Type: SQS
@@ -487,8 +474,7 @@ Resources:
             - Arn
       Tags:
           - Key: "Application"
-            Value: 
-              Fn::Sub: "FormKiQ ${FormKiQType}"      
+            Value: "FormKiQ"
           - Key: "AppEnvironment"
             Value: 
               Fn::Sub: "${AppEnvironment}"
@@ -506,8 +492,7 @@ Resources:
             - Arn
       Tags:
           - Key: "Application"
-            Value: 
-              Fn::Sub: "FormKiQ ${FormKiQType}"      
+            Value: "FormKiQ"
           - Key: "AppEnvironment"
             Value: 
               Fn::Sub: "${AppEnvironment}"
@@ -519,8 +504,7 @@ Resources:
       ReceiveMessageWaitTimeSeconds: 20
       Tags:
           - Key: "Application"
-            Value: 
-              Fn::Sub: "FormKiQ ${FormKiQType}"      
+            Value: "FormKiQ"
           - Key: "AppEnvironment"
             Value: 
               Fn::Sub: "${AppEnvironment}"
@@ -537,8 +521,7 @@ Resources:
           - DocumentsDeadLetterQueue
           - Arn
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
           
@@ -554,8 +537,7 @@ Resources:
           - DocumentsDeadLetterQueue
           - QueueName
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
 
@@ -572,8 +554,7 @@ Resources:
             - Arn
       Tags:
           - Key: "Application"
-            Value: 
-              Fn::Sub: "FormKiQ ${FormKiQType}"      
+            Value: "FormKiQ"
           - Key: "AppEnvironment"
             Value: 
               Fn::Sub: "${AppEnvironment}"
@@ -588,8 +569,7 @@ Resources:
       Value: 
         Ref: DocumentsS3Update
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
 
@@ -692,8 +672,7 @@ Resources:
       Value: 
         Ref: DocumentsUpdateQueue
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
         
@@ -709,8 +688,7 @@ Resources:
         - DocumentsUpdateQueue
         - Arn
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
         
@@ -738,8 +716,7 @@ Resources:
     Properties:
       Tags:
         - Key: "Application"
-          Value: 
-            Fn::Sub: "FormKiQ ${FormKiQType}"        
+          Value: "FormKiQ"
         - Key: "AppEnvironment"
           Value: 
             Fn::Sub: "${AppEnvironment}"
@@ -878,8 +855,7 @@ Resources:
       Value: 
         Ref: Documents
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
 
@@ -895,8 +871,7 @@ Resources:
         - Documents
         - StreamArn
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
           
@@ -915,8 +890,7 @@ Resources:
         PointInTimeRecoveryEnabled: true
       Tags:
         - Key: "Application"
-          Value: 
-            Fn::Sub: "FormKiQ ${FormKiQType}"
+          Value: "FormKiQ"
         - Key: "AppEnvironment"
           Value: 
             Fn::Sub: "${AppEnvironment}"
@@ -990,8 +964,7 @@ Resources:
       Value: 
         Ref: Cache
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
       
@@ -1006,8 +979,7 @@ Resources:
         Enabled: TRUE
       Tags:
         - Key: "Application"
-          Value: 
-            Fn::Sub: "FormKiQ ${FormKiQType}"
+          Value: "FormKiQ"
         - Key: "AppEnvironment"
           Value: 
             Fn::Sub: "${AppEnvironment}"
@@ -1039,8 +1011,7 @@ Resources:
         PointInTimeRecoveryEnabled: true
       Tags:
         - Key: "Application"
-          Value: 
-            Fn::Sub: "FormKiQ ${FormKiQType}"
+          Value: "FormKiQ"
         - Key: "AppEnvironment"
           Value: 
             Fn::Sub: "${AppEnvironment}"
@@ -1069,8 +1040,7 @@ Resources:
       Value: 
         Ref: DocumentSyncs
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
           

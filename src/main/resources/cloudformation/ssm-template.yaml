@@ -29,12 +29,6 @@ Parameters:
     Description: The Cognito Identity Pool Id
     AllowedPattern: ".+"
 
-  FormKiQType:
-    Description: The type of FormKiQ installation
-    Default: "core"
-    Type: String
-    AllowedValues: ["core", "enterprise"]
-  
   Domain:
     Description: Amazon Cognito domain to use (include full domain if CertificateArn used)
     AllowedPattern: ".+"
@@ -52,8 +46,7 @@ Resources:
       Value: 
         Ref: CognitoUserPool
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
         
@@ -67,8 +60,7 @@ Resources:
       Value: 
         Ref: CognitoUserPoolArn
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
 
@@ -82,8 +74,7 @@ Resources:
       Value: 
         Ref: CognitoUserPoolClient
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
 
@@ -97,8 +88,7 @@ Resources:
       Value: 
         Ref: CognitoIdentityPool
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
 
@@ -111,8 +101,7 @@ Resources:
       Type: String
       Value: "Welcome to FormKiQ"
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
           
@@ -125,8 +114,7 @@ Resources:
       Type: String
       Value: "Welcome to FormKiQ"
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
           
@@ -139,8 +127,7 @@ Resources:
       Type: String
       Value: "Welcome to FormKiQ"
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
 
@@ -153,8 +140,7 @@ Resources:
       Type: String
       Value: "FormKiQ Password Reset"
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
           

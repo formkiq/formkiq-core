@@ -224,6 +224,7 @@ Resources:
           Ref: VpcStackName
         AppEnvironment: 
           Ref: AppEnvironment
+        FormKiQType: "core"
         EventBusName:
           Fn::GetAtt:
             - EventMessages
@@ -245,6 +246,7 @@ Resources:
       Parameters:
         AppEnvironment: 
           Ref: AppEnvironment
+        FormKiQType: "core"
         AdminEmail: 
           Ref: AdminEmail
         IsGovCloud:
@@ -445,6 +447,7 @@ Resources:
           - Outputs.TypesenseApiEndpoint
         VpcStackName:
           Ref: VpcStackName
+        FormKiQType: "core"
       Tags:
         Application: "FormKiQ"
         AppEnvironment: 
@@ -504,6 +507,7 @@ Resources:
       Parameters:
         AppEnvironment: 
           Ref: AppEnvironment
+        FormKiQType: "core"
         Partition:
           Fn::FindInMap:
           - RegionMap
@@ -546,6 +550,7 @@ Resources:
       Parameters:
         AppEnvironment: 
           Ref: AppEnvironment
+        FormKiQType: "core"
         Partition:
           Fn::FindInMap:
           - RegionMap

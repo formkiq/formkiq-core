@@ -21,9 +21,7 @@ Parameters:
 
   FormKiQType:
     Description: The type of FormKiQ installation
-    Default: "core"
     Type: String
-    AllowedValues: ["core", "enterprise"]
 
   CertificateStackName:
     Type: String
@@ -82,8 +80,7 @@ Resources:
       Value:
         Ref: ConsoleVersion
       Tags:
-        Application:
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment:
           Fn::Sub: "${AppEnvironment}"
 
@@ -97,8 +94,7 @@ Resources:
       Value:
         Ref: Console
       Tags:
-        Application:
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment:
           Fn::Sub: "${AppEnvironment}"
 
@@ -114,8 +110,7 @@ Resources:
         - Console
         - Arn
       Tags:
-        Application:
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment:
           Fn::Sub: "${AppEnvironment}"
 
@@ -133,8 +128,7 @@ Resources:
         - Console
         - DomainName
       Tags:
-        Application:
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment:
           Fn::Sub: "${AppEnvironment}"
 
@@ -150,8 +144,7 @@ Resources:
         - Console
         - RegionalDomainName
       Tags:
-        Application:
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment:
           Fn::Sub: "${AppEnvironment}"
 
@@ -219,8 +212,7 @@ Resources:
           ResponseCode: '200'
       Tags:
         - Key: Application
-          Value:
-            Fn::Sub: "FormKiQ ${FormKiQType}"
+          Value: "FormKiQ"
         - Key: AppEnvironment
           Value:
             Fn::Sub: "${AppEnvironment}"
@@ -250,8 +242,7 @@ Resources:
                 - CloudFrontDistribution
                 - DomainName
       Tags:
-        Application:
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment:
           Fn::Sub: "${AppEnvironment}"
 

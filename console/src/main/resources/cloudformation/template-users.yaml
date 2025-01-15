@@ -14,12 +14,6 @@ Parameters:
     Description: The Document Stack Environment
     AllowedPattern: ".+"
 
-  FormKiQType:
-    Description: The type of FormKiQ installation
-    Default: "core"
-    Type: String
-    AllowedValues: ["core", "enterprise"]
-
   CognitoUserPool:
     Type: String
     Description: The Cognito User Pool Id
@@ -111,8 +105,7 @@ Resources:
       Value:
         Ref: AdminEmail
       Tags:
-        Application:
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment:
           Fn::Sub: "${AppEnvironment}"
 
@@ -148,8 +141,7 @@ Resources:
       Value:
         Ref: AdminGroup
       Tags:
-        Application:
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment:
           Fn::Sub: "${AppEnvironment}"
 
@@ -163,8 +155,7 @@ Resources:
       Value:
         Ref: AdminGroupRole
       Tags:
-        Application:
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment:
           Fn::Sub: "${AppEnvironment}"
 
@@ -180,8 +171,7 @@ Resources:
         - AdminGroupRole
         - Arn
       Tags:
-        Application:
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment:
           Fn::Sub: "${AppEnvironment}"
 
@@ -190,8 +180,7 @@ Resources:
     Properties:
       Tags:
         - Key: "Application"
-          Value:
-            Fn::Sub: "FormKiQ ${FormKiQType}"
+          Value: "FormKiQ"
         - Key: "AppEnvironment"
           Value:
             Fn::Sub: "${AppEnvironment}"
@@ -279,8 +268,7 @@ Resources:
     Properties:
       Tags:
         - Key: "Application"
-          Value:
-            Fn::Sub: "FormKiQ ${FormKiQType}"
+          Value: "FormKiQ"
         - Key: "AppEnvironment"
           Value:
             Fn::Sub: "${AppEnvironment}"

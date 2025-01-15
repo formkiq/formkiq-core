@@ -54,12 +54,6 @@ Parameters:
     Description: FormKiQ Distribution BucketName
     Default: "formkiq-distribution-console"
 
-  FormKiQType:
-    Description: The type of FormKiQ installation
-    Default: "core"
-    Type: String
-    AllowedValues: ["core", "enterprise"]
-
   AllowAdminCreateUserOnly:
     Description: When true only Cognito Admin can create users, false users can register themselves
     AllowedPattern: ".+"
@@ -149,8 +143,7 @@ Resources:
       Value:
         Ref: ConsoleInstaller
       Tags:
-        Application:
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment:
           Fn::Sub: "${AppEnvironment}"
 
@@ -169,8 +162,7 @@ Resources:
         - Arn
       CodeUri: ./console-installer.zip
       Tags:
-        Application:
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment:
           Fn::Sub: "${AppEnvironment}"
       Environment:
@@ -212,8 +204,7 @@ Resources:
     Properties:
       Tags:
         - Key: "Application"
-          Value:
-            Fn::Sub: "FormKiQ ${FormKiQType}"
+          Value: "FormKiQ"
         - Key: "AppEnvironment"
           Value:
             Fn::Sub: "${AppEnvironment}"

@@ -26,9 +26,7 @@ Parameters:
 
   FormKiQType:
     Description: The type of FormKiQ installation
-    Default: "core"
     Type: String
-    AllowedValues: ["core", "enterprise"]
 
   Partition:
     Description: The partition in which the resource is located. A partition is a group of AWS Regions
@@ -46,8 +44,7 @@ Resources:
       ProtocolType: WEBSOCKET
       RouteSelectionExpression: "$request.body.action"
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
 
@@ -114,8 +111,7 @@ Resources:
       ApiId: 
         Ref: WebSocketApi
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
         
@@ -138,8 +134,7 @@ Resources:
           Fn::Sub: '{{resolve:ssm:/formkiq/${AppEnvironment}/sqs/DocumentsDeadLetterQueueArn}}'
       Tags:
         - Key: "Application"
-          Value: 
-            Fn::Sub: "FormKiQ ${FormKiQType}"
+          Value: "FormKiQ"
         - Key: "AppEnvironment"
           Value: 
             Fn::Sub: "${AppEnvironment}"
@@ -154,8 +149,7 @@ Resources:
       Value: 
         Ref: SqsQueue
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
 
@@ -171,8 +165,7 @@ Resources:
         - SqsQueue
         - Arn
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
                 
@@ -186,8 +179,7 @@ Resources:
       Value: 
         Fn::Sub: "wss://${WebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}"
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
 
@@ -228,8 +220,7 @@ Resources:
         - ApiFunctionRole
         - Arn
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
       Events:
@@ -247,8 +238,7 @@ Resources:
     Properties:
       Tags:
         - Key: "Application"
-          Value: 
-            Fn::Sub: "FormKiQ ${FormKiQType}"
+          Value: "FormKiQ"
         - Key: "AppEnvironment"
           Value: 
             Fn::Sub: "${AppEnvironment}"
@@ -311,8 +301,7 @@ Resources:
       Value: 
         Ref: WebConnections
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
 
@@ -329,8 +318,7 @@ Resources:
         StreamViewType: NEW_IMAGE
       Tags:
         - Key: "Application"
-          Value: 
-            Fn::Sub: "FormKiQ ${FormKiQType}"
+          Value: "FormKiQ"
         - Key: "AppEnvironment"
           Value: 
             Fn::Sub: "${AppEnvironment}"

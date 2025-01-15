@@ -14,10 +14,9 @@ Parameters:
 
   FormKiQType:
     Description: The type of FormKiQ installation
-    Default: "core"
+    AllowedPattern: ".+"
     Type: String
-    AllowedValues: ["core", "enterprise"]
-    
+
   LambdaMemory:
     Type: Number
     Description: The amount of memory used by lambda function (MB)
@@ -158,8 +157,7 @@ Resources:
         EnablePublicUrls:
           Ref: EnablePublicUrls
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
 
@@ -185,8 +183,7 @@ Resources:
           - ApiLambda
           - Outputs.DocumentsApiRequestsArn
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
           
@@ -208,8 +205,7 @@ Resources:
           - Ocr
           - Outputs.OcrProcessorArn
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
           
@@ -233,8 +229,7 @@ Resources:
           - Ocr
           - Outputs.OcrProcessorArn
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
           
@@ -385,8 +380,7 @@ Resources:
           - HttpApi
           - Outputs.DocumentsHttpApi
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
           
@@ -409,8 +403,7 @@ Resources:
             - HttpApi
             - Outputs.DocumentsHttpApiUrl
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
 
@@ -433,8 +426,7 @@ Resources:
             - HttpApi
             - Outputs.DocumentsHttpApiUrl
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
 
@@ -457,8 +449,7 @@ Resources:
             - IamApi
             - Outputs.DocumentsIamApiUrl
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
           
@@ -474,8 +465,7 @@ Resources:
           - IamApi
           - Outputs.DocumentsIamApi
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
           
@@ -498,8 +488,7 @@ Resources:
             - KeyApi
             - Outputs.DocumentsKeyApiUrl
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
           
@@ -515,8 +504,7 @@ Resources:
           - KeyApi
           - Outputs.DocumentsKeyApi
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
         
@@ -532,8 +520,7 @@ Resources:
         - ApiLambda
         - Outputs.DocumentsApiRequests
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
 
@@ -542,8 +529,7 @@ Resources:
     Properties:
       Tags:
         - Key: "Application"
-          Value: 
-            Fn::Sub: "FormKiQ ${FormKiQType}"        
+          Value: "FormKiQ"
         - Key: "AppEnvironment"
           Value: 
             Fn::Sub: "${AppEnvironment}"
@@ -572,8 +558,7 @@ Resources:
     Properties:
       Tags:
         - Key: "Application"
-          Value: 
-            Fn::Sub: "FormKiQ ${FormKiQType}"        
+          Value: "FormKiQ"
         - Key: "AppEnvironment"
           Value: 
             Fn::Sub: "${AppEnvironment}"
@@ -606,8 +591,7 @@ Resources:
       Value: 
         Ref: ApiGatewayInvokeGroup
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
 
@@ -623,8 +607,7 @@ Resources:
         - ApiGatewayInvokeGroup
         - Arn
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
     
@@ -638,8 +621,7 @@ Resources:
       Value: 
         Ref: ApiGatewayInvokeRole
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
 
@@ -655,8 +637,7 @@ Resources:
         - ApiGatewayInvokeRole
         - Arn
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
 
@@ -670,6 +651,8 @@ Resources:
       Parameters:
         AppEnvironment: 
           Ref: AppEnvironment
+        FormKiQType:
+          Ref: FormKiQType
         Partition:
           Ref: Partition
         OcrQueueArn:
