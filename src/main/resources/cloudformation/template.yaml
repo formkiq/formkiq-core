@@ -172,7 +172,7 @@ Resources:
       Type: String
       Value: "core"
       Tags:
-        Application: "FormKiQ Core"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
           
@@ -185,7 +185,7 @@ Resources:
       Type: String
       Value: #@ data.values.version or assert.fail("missing version")
       Tags:
-        Application: "FormKiQ Core"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
       
@@ -199,7 +199,7 @@ Resources:
       Value: 
         Ref: "AWS::Region"
       Tags:
-        Application: "FormKiQ Core"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
 
@@ -234,7 +234,7 @@ Resources:
           - Ref: "AWS::Region"
           - PARTITION
       Tags:
-        Application: "FormKiQ Core"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
 
@@ -253,7 +253,7 @@ Resources:
           - "true"
           - "false"
       Tags:
-        Application: "FormKiQ Core"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
 
@@ -327,7 +327,7 @@ Resources:
           - CoreConsole
           - Outputs.CloudFrontDistributionDomainName                       
       Tags:
-        Application: "FormKiQ Core"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
 
@@ -363,7 +363,7 @@ Resources:
           - CoreConsole
           - Outputs.ConsoleUrl
       Tags:
-        Application: "FormKiQ Core"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
         
@@ -446,7 +446,7 @@ Resources:
         VpcStackName:
           Ref: VpcStackName
       Tags:
-        Application: "FormKiQ Core"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
 
@@ -490,7 +490,7 @@ Resources:
           - Cognito
           - Outputs.CognitoUserPoolClientId
       Tags:
-        Application: "FormKiQ Core"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
           
@@ -518,7 +518,7 @@ Resources:
           - Cognito
           - Outputs.CognitoUserPoolClientId
       Tags:
-        Application: "FormKiQ Core"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
 
@@ -562,7 +562,7 @@ Resources:
         TypesenseMemory:
           Ref: TypesenseMemory
       Tags:
-        Application: "FormKiQ Core"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
 
@@ -578,7 +578,7 @@ Resources:
         Ref: TypesenseApiKey
       Tags:
         Application: 
-          Fn::Sub: "FormKiQ Core"
+          Fn::Sub: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
           
