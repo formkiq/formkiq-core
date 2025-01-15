@@ -209,8 +209,18 @@ Resources:
         StackName: 
           Fn::Sub: "${AWS::StackName}"
 
+  EventMessages:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: event-message.yaml
+      Parameters:
+        AppEnvironment:
+          Ref: AppEnvironment
+
   CoreStorage:
     Type: AWS::Serverless::Application
+    DependsOn:
+      - EventMessages
     Properties:
       Location: storage/template.yaml
       Parameters:
@@ -220,6 +230,10 @@ Resources:
           Ref: VpcStackName
         AppEnvironment: 
           Ref: AppEnvironment
+        EventBusName:
+          Fn::GetAtt:
+            - EventMessages
+            - Outputs.EventBusName
         Partition:
           Fn::FindInMap:
           - RegionMap

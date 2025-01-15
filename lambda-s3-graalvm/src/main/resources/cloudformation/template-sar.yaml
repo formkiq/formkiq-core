@@ -41,7 +41,11 @@ Parameters:
   TypesenseApiKey:
     Type: String
     Description: TypeSense API Key
-    
+
+  EventBusName:
+    Type: String
+    Description: Name EventBridge Event Bus
+
 Conditions:
         
   HasVpcStackName:
@@ -187,9 +191,31 @@ Resources:
           Action: sns:Publish
           Resource: 
             Ref: SnsDocumentEvent
+        - Effect: Allow
+          Principal:
+            Service: events.amazonaws.com
+          Action: sns:Publish
+          Resource:
+            Ref: SnsDocumentEvent
       Topics:
       - Ref: SnsDocumentEvent
-      
+
+  EventDocumentEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: EventToSnsRule
+      EventBusName:
+        Ref: EventBusName
+      EventPattern:
+        source:
+          - Fn::Sub: "formkiq.${AppEnvironment}"
+        detail-type:
+          - "Document Action Event"
+      Targets:
+        - Id: SnsTarget
+          Arn:
+            Ref: SnsDocumentEvent
+
   DocumentsS3Buckets:
     Type: AWS::S3::Bucket
     DependsOn:
