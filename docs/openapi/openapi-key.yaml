@@ -11113,7 +11113,7 @@
               x-amazon-apigateway-authorizer:
                 identitySource: $request.header.Authorization
                 authorizerUri:
-                  Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ApiKeyAuthorizer.Arn}/invocations
+                  Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ApiKeyAuthorizer.Arn}/invocations
                 authorizerResultTtlInSeconds: 300
                 authorizerPayloadFormatVersion: "2.0"
                 enableSimpleResponses: true
@@ -11121,7 +11121,7 @@
           x-amazon-apigateway-integrations:
             lambdaApi200:
               uri:
-                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
+                Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
               responses:
                 default:
                   statusCode: "200"
@@ -11135,7 +11135,7 @@
               payloadFormatVersion: "1.0"
             ocrLambdaApi200:
               uri:
-                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
+                Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
               responses:
                 default:
                   statusCode: "200"
@@ -11149,7 +11149,7 @@
               payloadFormatVersion: "1.0"
             antivirusLambdaApi200:
               uri:
-                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
+                Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
               responses:
                 default:
                   statusCode: "200"
@@ -11163,7 +11163,7 @@
               payloadFormatVersion: "1.0"
             searchLambdaApi200:
               uri:
-                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
+                Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
               responses:
                 default:
                   statusCode: "200"
@@ -11177,7 +11177,7 @@
               payloadFormatVersion: "1.0"
             fulltextLambdaApi200:
               uri:
-                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
+                Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
               responses:
                 default:
                   statusCode: "200"
@@ -11191,7 +11191,7 @@
               payloadFormatVersion: "1.0"
             ocrObjectsLambdaApi200:
               uri:
-                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${OcrApiRequestsArn}/invocations
+                Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${OcrApiRequestsArn}/invocations
               responses:
                 default:
                   statusCode: "200"
@@ -11205,7 +11205,7 @@
               payloadFormatVersion: "1.0"
             onlyOfficeLambdaApi200:
               uri:
-                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
+                Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
               responses:
                 default:
                   statusCode: "200"
@@ -11219,7 +11219,7 @@
               payloadFormatVersion: "1.0"
             esignatureLambdaApi200:
               uri:
-                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
+                Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
               responses:
                 default:
                   statusCode: "200"
@@ -11233,7 +11233,7 @@
               payloadFormatVersion: "1.0"
             caseManagementLambdaApi200:
               uri:
-                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
+                Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
               responses:
                 default:
                   statusCode: "200"
@@ -11247,7 +11247,7 @@
               payloadFormatVersion: "1.0"
             googleLambdaApi201:
               uri:
-                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
+                Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
               responses:
                 default:
                   statusCode: "201"
@@ -11261,7 +11261,7 @@
               payloadFormatVersion: "1.0"
             documentGenerationLambdaApi201:
               uri:
-                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
+                Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
               responses:
                 default:
                   statusCode: "201"
@@ -11275,7 +11275,7 @@
               payloadFormatVersion: "1.0"
             lambdaApi201:
               uri:
-                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
+                Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
               responses:
                 default:
                   statusCode: "201"

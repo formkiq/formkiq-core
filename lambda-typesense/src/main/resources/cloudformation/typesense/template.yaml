@@ -227,9 +227,9 @@ Resources:
           - sts:AssumeRole
       Path: /
       ManagedPolicyArns:
-      - Fn::Sub: "arn:${Partition}:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
-      - Fn::Sub: "arn:${Partition}:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess"
-      - Fn::Sub: "arn:${Partition}:iam::aws:policy/AWSXRayDaemonWriteAccess"
+      - Fn::Sub: "arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+      - Fn::Sub: "arn:${AWS::Partition}:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess"
+      - Fn::Sub: "arn:${AWS::Partition}:iam::aws:policy/AWSXRayDaemonWriteAccess"
       
   TypesenseLambdaRolePolicy: 
     Type: "AWS::IAM::Policy"
@@ -255,14 +255,14 @@ Resources:
             - dynamodb:GetShardIterator
             - dynamodb:ListStreams
             Resource: 
-            - Fn::Sub: "arn:${Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}/stream/*"
+            - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}/stream/*"
           - Effect: Allow
             Action:
             - dynamodb:PutItem
             - dynamodb:Query
             - dynamodb:DeleteItem
             Resource:
-            - Fn::Sub: "arn:${Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentSyncsTableName}}" 
+            - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentSyncsTableName}}" 
             
   TypesenseTableStream:
     Type: AWS::Lambda::EventSourceMapping
@@ -417,7 +417,7 @@ Resources:
             Principal:
               Service: [ecs-tasks.amazonaws.com]
       ManagedPolicyArns:
-        - Fn::Sub: "arn:${Partition}:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+        - Fn::Sub: "arn:${AWS::Partition}:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
       Policies:
         -
           PolicyName: 

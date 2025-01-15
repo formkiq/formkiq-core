@@ -201,10 +201,10 @@ Resources:
           - sts:AssumeRole
       Path: /
       ManagedPolicyArns:
-      - Fn::Sub: "arn:${Partition}:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess"
-      - Fn::Sub: "arn:${Partition}:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
-      - Fn::Sub: "arn:${Partition}:iam::aws:policy/AmazonElasticFileSystemClientReadWriteAccess"
-      - Fn::Sub: "arn:${Partition}:iam::aws:policy/AWSXRayDaemonWriteAccess"
+      - Fn::Sub: "arn:${AWS::Partition}:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess"
+      - Fn::Sub: "arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+      - Fn::Sub: "arn:${AWS::Partition}:iam::aws:policy/AmazonElasticFileSystemClientReadWriteAccess"
+      - Fn::Sub: "arn:${AWS::Partition}:iam::aws:policy/AWSXRayDaemonWriteAccess"
       Policies:
         -
           PolicyName: apigatewaylambdarole
@@ -234,20 +234,20 @@ Resources:
               Resource:
               - Fn::Join:
                 - ''
-                - - Fn::Sub: "arn:${Partition}:s3:::"
+                - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
                   - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket}}"
               - Fn::Join:
                 - ''
-                - - Fn::Sub: "arn:${Partition}:s3:::"
+                - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
                   - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket}}"
                   - '/*'
               - Fn::Join:
                 - ''
-                - - Fn::Sub: "arn:${Partition}:s3:::"
+                - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
                   - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsStageS3Bucket}}"
               - Fn::Join:
                 - ''
-                - - Fn::Sub: "arn:${Partition}:s3:::"
+                - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
                   - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsStageS3Bucket}}"
                   - '/*'
             - Effect: Allow
@@ -261,30 +261,30 @@ Resources:
               - dynamodb:DeleteItem
               - dynamodb:UpdateItem
               Resource: 
-              - Fn::Sub: "arn:${Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"
+              - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"
             - Effect: Allow
               Action:
               - dynamodb:Query
               - dynamodb:Scan
               Resource:
-              - Fn::Sub: "arn:${Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}/index/*"
+              - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}/index/*"
             - Effect: Allow
               Action:
               - dynamodb:Get*
               - dynamodb:Put*
               Resource: 
-              - Fn::Sub: "arn:${Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/CacheTableName}}"
+              - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/CacheTableName}}"
             - Effect: Allow
               Action:
               - ssm:GetParameter
               - ssm:PutParameter
               Resource: 
-              - Fn::Sub: "arn:${Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/formkiq/*"
+              - Fn::Sub: "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/formkiq/*"
             - Effect: Allow
               Action:
               - sqs:SendMessage
               Resource:
-              - Fn::Sub: "arn:${Partition}:sqs:${AWS::Region}:${AWS::AccountId}:formkiq*"
+              - Fn::Sub: "arn:${AWS::Partition}:sqs:${AWS::Region}:${AWS::AccountId}:formkiq*"
               - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/sqs/WebsocketArn}}"
             - Effect: Allow
               Action:
@@ -292,7 +292,7 @@ Resources:
               - dynamodb:Get*
               - dynamodb:Query
               Resource:
-              - Fn::Sub: "arn:${Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentSyncsTableName}}"
+              - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentSyncsTableName}}"
             - Effect: Allow
               Action:
               - sns:Publish
@@ -316,7 +316,7 @@ Resources:
               - cognito-idp:AdminGetUser
               - cognito-idp:AdminListGroupsForUser
               Resource:
-              - Fn::Sub: "arn:${Partition}:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${CognitoUserPool}"
+              - Fn::Sub: "arn:${AWS::Partition}:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${CognitoUserPool}"
             - Effect: Allow
               Action:
               - s3:GetObject
@@ -326,7 +326,7 @@ Resources:
               Resource:
                 Fn::Join:
                 - ''
-                - - Fn::Sub: "arn:${Partition}:s3:::"
+                - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
                   - Ref: OcrBucket
                   - "/*"
             - Effect: Allow
@@ -335,7 +335,7 @@ Resources:
               Resource:
                 Fn::Join:
                 - ''
-                - - Fn::Sub: "arn:${Partition}:s3:::"
+                - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
                   - Ref: OcrBucket
 Outputs:
   DocumentsApiRequests:

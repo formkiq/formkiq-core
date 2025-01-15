@@ -708,7 +708,7 @@ Resources:
       SourceArn:
         Fn::Join:
         - ''
-        - - Fn::Sub: "arn:${Partition}:s3:::"
+        - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
           - Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-documents-${AWS::AccountId}"
 
   S3LambdaRole:
@@ -731,7 +731,7 @@ Resources:
           - sts:AssumeRole
       Path: /
       ManagedPolicyArns:
-      - Fn::Sub: "arn:${Partition}:iam::aws:policy/AWSXRayDaemonWriteAccess"
+      - Fn::Sub: "arn:${AWS::Partition}:iam::aws:policy/AWSXRayDaemonWriteAccess"
   S3LambdaRolePolicy: 
     Type: "AWS::IAM::Policy"
     Properties: 
@@ -763,11 +763,11 @@ Resources:
             Resource:
             - Fn::Join:
               - ''
-              - - Fn::Sub: "arn:${Partition}:s3:::"
+              - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
                 - Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-documents-${AWS::AccountId}"
             - Fn::Join:
               - ''
-              - - Fn::Sub: "arn:${Partition}:s3:::"
+              - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
                 - Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-staging-${AWS::AccountId}"
           - Effect: Allow
             Action:
@@ -777,19 +777,19 @@ Resources:
             Resource:
             - Fn::Join:
               - ''
-              - - Fn::Sub: "arn:${Partition}:s3:::"
+              - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
                 - Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-documents-${AWS::AccountId}"
                 - '/*'
             - Fn::Join:
               - ''
-              - - Fn::Sub: "arn:${Partition}:s3:::"
+              - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
                 - Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-staging-${AWS::AccountId}"
                 - '/*'
           - Effect: Allow
             Action:
               - dynamodb:GetItem
             Resource:
-              - Fn::Sub: "arn:${Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Cache}"
+              - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Cache}"
           - Effect: Allow
             Action:
             - dynamodb:BatchGetItem
@@ -801,18 +801,18 @@ Resources:
             - dynamodb:UpdateItem
             - dynamodb:DeleteItem
             Resource: 
-            - Fn::Sub: "arn:${Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Documents}"
+            - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Documents}"
           - Effect: Allow
             Action:
             - dynamodb:Query
             - dynamodb:Scan
             Resource:
-            - Fn::Sub: "arn:${Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Documents}/index/*"
+            - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Documents}/index/*"
           - Effect: Allow
             Action:
             - dynamodb:PutItem
             Resource:
-            - Fn::Sub: "arn:${Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DocumentSyncs}"
+            - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DocumentSyncs}"
           - Effect: Allow
             Action:
             - sqs:ReceiveMessage
@@ -837,13 +837,13 @@ Resources:
             Action:
             - ssm:GetParameter
             Resource: 
-            - Fn::Sub: "arn:${Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/formkiq/*"
+            - Fn::Sub: "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/formkiq/*"
           - Effect: Allow
             Action:
             - execute-api:Invoke
             - execute-api:ManageConnections
             Resource: 
-            - Fn::Sub: "arn:${Partition}:execute-api:*:*:*"            
+            - Fn::Sub: "arn:${AWS::Partition}:execute-api:*:*:*"            
 
   DocumentsParameter:
     Type: AWS::SSM::Parameter

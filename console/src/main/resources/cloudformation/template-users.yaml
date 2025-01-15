@@ -210,7 +210,7 @@ Resources:
               - "sts:AssumeRole"
       Path: "/"
       ManagedPolicyArns:
-      - Fn::Sub: "arn:${Partition}:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+      - Fn::Sub: "arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
       Policies:
         -
           PolicyName:

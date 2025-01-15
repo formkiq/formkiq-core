@@ -149,7 +149,7 @@ Resources:
             Resource:
               Fn::Join:
               - ''
-              - - Fn::Sub: "arn:${Partition}:s3:::"
+              - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
                 - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket}}"
                 - "/*"
           - Effect: Allow
@@ -159,7 +159,7 @@ Resources:
             Resource:
               Fn::Join:
               - ''
-              - - Fn::Sub: "arn:${Partition}:s3:::"
+              - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
                 - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsStageS3Bucket}}"
                 - "/*"
           - Effect: Allow
@@ -168,7 +168,7 @@ Resources:
             Resource:
               Fn::Join:
               - ''
-              - - Fn::Sub: "arn:${Partition}:s3:::"
+              - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
                 - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/OcrBucket}}"
           - Effect: Allow
             Action:
@@ -177,7 +177,7 @@ Resources:
             Resource:
               Fn::Join:
               - ''
-              - - Fn::Sub: "arn:${Partition}:s3:::"
+              - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
                 - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/OcrBucket}}"
                 - "/*"
           - Effect: Allow
@@ -196,7 +196,7 @@ Resources:
             - dynamodb:BatchGetItem
             - dynamodb:BatchWriteItem
             Resource:
-            - Fn::Sub: "arn:${Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"
+            - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"
           - Effect: Allow
             Action:
             - sns:Publish
@@ -224,7 +224,7 @@ Resources:
           - sts:AssumeRole
       Path: /
       ManagedPolicyArns:
-      - Fn::Sub: "arn:${Partition}:iam::aws:policy/AWSXRayDaemonWriteAccess"
+      - Fn::Sub: "arn:${AWS::Partition}:iam::aws:policy/AWSXRayDaemonWriteAccess"
 
 Outputs:
   OcrProcessor:

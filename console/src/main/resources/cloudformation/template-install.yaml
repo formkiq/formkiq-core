@@ -235,7 +235,7 @@ Resources:
               Action:
               - ssm:GetParameter
               Resource:
-              - Fn::Sub: "arn:${Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/formkiq/*"
+              - Fn::Sub: "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/formkiq/*"
             - Effect: Allow
               Action:
               - s3:GetObject
@@ -245,11 +245,11 @@ Resources:
               Resource:
               - Fn::Join:
                 - ''
-                - - Fn::Sub: "arn:${Partition}:s3:::"
+                - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
                   - Ref: ConsoleBucket
               - Fn::Join:
                 - ''
-                - - Fn::Sub: "arn:${Partition}:s3:::"
+                - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
                   - Ref: ConsoleBucket
                   - '/*'
             - Effect: Allow
@@ -260,11 +260,11 @@ Resources:
               Resource:
               - Fn::Join:
                 - ''
-                - - Fn::Sub: "arn:${Partition}:s3:::"
+                - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
                   - Ref: CognitoConfigBucket
               - Fn::Join:
                 - ''
-                - - Fn::Sub: "arn:${Partition}:s3:::"
+                - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
                   - Ref: CognitoConfigBucket
                   - '/*'
             - Effect: Allow
@@ -273,7 +273,7 @@ Resources:
               Resource:
               - Fn::Join:
                 - ''
-                - - Fn::Sub: "arn:${Partition}:s3:::"
+                - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
                   - Ref: DistributionBucket
                   - '/*'
             - Effect: Allow
