@@ -34,6 +34,7 @@ import static com.formkiq.testutils.aws.TestServices.OCR_BUCKET_NAME;
 import static com.formkiq.testutils.aws.TestServices.STAGE_BUCKET_NAME;
 import static com.formkiq.testutils.aws.TypesenseExtension.API_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -250,6 +251,7 @@ public abstract class AbstractRequestHandler {
         TestServices.getSqsDocumentFormatsQueueUrl(TestServices.getSqsConnection(null)));
     this.map.put("DISTRIBUTION_BUCKET", "formkiq-distribution-us-east-pro");
     this.map.put("FORMKIQ_TYPE", "core");
+    this.map.put("FORMKIQ_VERSION", "1.1");
     this.map.put("USER_AUTHENTICATION", userAuthentication);
     this.map.put("WEBSOCKET_SQS_URL",
         TestServices.getSqsWebsocketQueueUrl(TestServices.getSqsConnection(null)));
@@ -437,7 +439,7 @@ public abstract class AbstractRequestHandler {
 
     handler.handleRequest(is, outstream, getMockContext());
 
-    return new String(outstream.toByteArray(), StandardCharsets.UTF_8);
+    return outstream.toString(StandardCharsets.UTF_8);
   }
 
   /**
@@ -465,7 +467,6 @@ public abstract class AbstractRequestHandler {
    * @return {@link String}
    * @throws IOException IOException
    */
-  @SuppressWarnings("unchecked")
   protected DynamicObject handleRequestDynamic(final ApiGatewayRequestEvent event)
       throws IOException {
 
@@ -621,6 +622,7 @@ public abstract class AbstractRequestHandler {
    */
   public ApiGatewayRequestEvent toRequestEvent(final String filename) throws IOException {
     try (InputStream in = this.context.getClass().getResourceAsStream(filename)) {
+      assertNotNull(in);
       return GsonUtil.getInstance().fromJson(new InputStreamReader(in, StandardCharsets.UTF_8),
           ApiGatewayRequestEvent.class);
     }
@@ -650,6 +652,7 @@ public abstract class AbstractRequestHandler {
       throws IOException {
 
     InputStream in = this.context.getClass().getResourceAsStream(filename);
+    assertNotNull(in);
     String input = IoUtils.toUtf8String(in);
 
     if (regex != null && replacement != null) {

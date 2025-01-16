@@ -158,6 +158,7 @@ public class FormKiqApiExtension
     map.put("DEBUG", "false");
     map.put("DISTRIBUTION_BUCKET", "formkiq-distribution-us-east-pro");
     map.put("FORMKIQ_TYPE", "core");
+    map.put("FORMKIQ_VERSION", "1.1");
     map.put("USER_AUTHENTICATION", "cognito");
     map.put("MODULE_site_permissions", "automatic");
 

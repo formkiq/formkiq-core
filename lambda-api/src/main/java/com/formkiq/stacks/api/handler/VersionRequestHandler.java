@@ -34,7 +34,6 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
-import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 
 /** {@link ApiGatewayRequestHandler} for "/version". */
@@ -50,7 +49,6 @@ public class VersionRequestHandler implements ApiGatewayRequestHandler, ApiGatew
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    String version = getVersion(awsservice);
     List<String> modules = awsservice.environment().entrySet().stream()
         .filter(e -> e.getKey().startsWith("MODULE_") && !"false".equalsIgnoreCase(e.getValue()))
         .map(e -> {
@@ -59,25 +57,13 @@ public class VersionRequestHandler implements ApiGatewayRequestHandler, ApiGatew
         }).collect(Collectors.toList());
 
     return new ApiRequestHandlerResponse(SC_OK,
-        new ApiMapResponse(
-            Map.of("version", version, "type", awsservice.environment("FORMKIQ_TYPE"),
-                "appEnvironment", awsservice.environment("APP_ENVIRONMENT"), "modules", modules)));
+        new ApiMapResponse(Map.of("version", awsservice.environment("FORMKIQ_VERSION"), "type",
+            awsservice.environment("FORMKIQ_TYPE"), "appEnvironment",
+            awsservice.environment("APP_ENVIRONMENT"), "modules", modules)));
   }
 
   @Override
   public String getRequestUrl() {
     return "/version";
-  }
-
-  private String getVersion(final AwsServiceCache awsservice) {
-    SsmService ssmService = awsservice.getExtension(SsmService.class);
-    String key = "/formkiq/" + awsservice.environment("APP_ENVIRONMENT") + "/version";
-
-    String version = awsservice.environment("VERSION");
-    if (version == null) {
-      version = ssmService.getParameterValue(key);
-    }
-
-    return version;
   }
 }

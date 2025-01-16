@@ -58,7 +58,6 @@ import com.formkiq.stacks.client.HttpServiceJava;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAction;
 import com.formkiq.client.model.AddDocumentRequest;
@@ -69,13 +68,9 @@ import com.formkiq.client.model.DocumentActionType;
 import com.formkiq.client.model.GetDocumentResponse;
 import com.formkiq.client.model.GetDocumentUrlResponse;
 import com.formkiq.client.model.SetDocumentRestoreResponse;
-import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.LocalStackExtension;
 import software.amazon.awssdk.core.sync.RequestBody;
 
 /** Unit Tests for request /documents/{documentId}. */
-@ExtendWith(DynamoDbExtension.class)
-@ExtendWith(LocalStackExtension.class)
 public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
   /** Test Timeout. */

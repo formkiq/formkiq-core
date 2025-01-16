@@ -87,7 +87,6 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetRequest02() throws Exception {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
@@ -98,7 +97,7 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
 
       DocumentItem item = new DocumentItemDynamoDb(documentId, date, userId);
       DocumentMetadata md = new DocumentMetadata("category", "person");
-      item.setMetadata(Arrays.asList(md));
+      item.setMetadata(List.of(md));
       getDocumentService().saveDocument(siteId, item, new ArrayList<>());
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents-documentid01.json");
@@ -150,7 +149,7 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
     getHandler().handleRequest(instream, outstream, getMockContext());
 
     // then
-    assertEquals(expected, new String(outstream.toByteArray(), "UTF-8"));
+    assertEquals(expected, outstream.toString(StandardCharsets.UTF_8));
     assertTrue(getLogger().containsString("response: " + expected));
   }
 
@@ -184,7 +183,6 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetRequest05() throws Exception {
     // given
@@ -223,7 +221,6 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetRequest06() throws Exception {
     // given
@@ -236,7 +233,7 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
     DocumentItem citem = new DocumentItemDynamoDb(documentId1, date, userId);
 
     DynamicDocumentItem doc = new DocumentItemToDynamicDocumentItem().apply(item);
-    doc.put("documents", Arrays.asList(new DocumentItemToDynamicDocumentItem().apply(citem)));
+    doc.put("documents", List.of(new DocumentItemToDynamicDocumentItem().apply(citem)));
 
     getDocumentService().saveDocumentItemWithTag(null, doc);
 
@@ -277,7 +274,6 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testVersion01() throws Exception {
     // given
@@ -308,7 +304,6 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testVersion02() throws Exception {
     // given
