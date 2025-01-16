@@ -17,6 +17,11 @@ Parameters:
     AllowedPattern: ".+"
     Type: String
 
+  FormKiQVersion:
+    Type: String
+    Description: The formkiq version
+    AllowedPattern: ".+"
+
   LambdaMemory:
     Type: Number
     Description: The amount of memory used by lambda function (MB)
@@ -109,10 +114,6 @@ Parameters:
     Description: The name of the FormKiQ Certificate Stack Name
     Default: ""
 
-  Partition:
-    Description: The partition in which the resource is located. A partition is a group of AWS Regions
-    Type: String
-
 Conditions:
 
   HasCertificateStackName:
@@ -132,6 +133,8 @@ Resources:
           Ref: AppEnvironment
         FormKiQType: 
           Ref: FormKiQType
+        FormKiQVersion:
+          Ref: FormKiQVersion
         CognitoUserPool:
           Ref: CognitoUserPool
         CognitoUserPoolClient:
@@ -152,8 +155,6 @@ Resources:
             - QueueUrl
         VpcStackName:
           Ref: VpcStackName
-        Partition:
-          Ref: Partition
         EnablePublicUrls:
           Ref: EnablePublicUrls
       Tags:
@@ -168,8 +169,6 @@ Resources:
       Parameters:
         AppEnvironment: 
           Ref: AppEnvironment
-        Partition:
-          Ref: Partition
         CognitoUserPool:
           Ref: CognitoUserPool
         CognitoUserPoolClient:
@@ -194,8 +193,6 @@ Resources:
       Parameters:
         AppEnvironment: 
           Ref: AppEnvironment
-        Partition:
-          Ref: Partition
         DocumentsApiRequestsArn:
           Fn::GetAtt: 
           - ApiLambda
@@ -216,8 +213,6 @@ Resources:
       Parameters:
         AppEnvironment: 
           Ref: AppEnvironment
-        Partition:
-          Ref: Partition
         FormKiQType:
           Ref: FormKiQType
         DocumentsApiRequestsArn:
@@ -653,8 +648,6 @@ Resources:
           Ref: AppEnvironment
         FormKiQType:
           Ref: FormKiQType
-        Partition:
-          Ref: Partition
         OcrQueueArn:
           Fn::GetAtt:
             - OcrQueue

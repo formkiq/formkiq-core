@@ -17,6 +17,11 @@ Parameters:
     Description: The type of FormKiQ installation
     AllowedPattern: ".+"
 
+  FormKiQVersion:
+    Type: String
+    Description: The formkiq version
+    AllowedPattern: ".+"
+
   LambdaMemory:
     Type: Number
     Description: The amount of memory used by lambda function (MB)
@@ -70,10 +75,6 @@ Parameters:
     Type: String
     Description: FormKiQ VPC Stack Name 
 
-  Partition:
-    Description: The partition in which the resource is located. A partition is a group of AWS Regions
-    Type: String
-    
   EnablePublicUrls:
     Description: Whether to enable public urls
     Type: String
@@ -151,6 +152,8 @@ Resources:
             Ref: EnablePublicUrls
           FORMKIQ_TYPE: 
             Ref: FormKiQType
+          FORMKIQ_VERSION:
+            Ref: FormKiQVersion
           WEBSOCKET_SQS_URL: 
             Ref: WebsocketSqsQueueUrl
           USER_AUTHENTICATION:

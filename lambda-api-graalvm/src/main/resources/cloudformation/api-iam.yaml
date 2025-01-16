@@ -11,11 +11,7 @@ Parameters:
     Type: String
     AllowedPattern: ".+"
     Description: The FormKiQ Environment
-    
-  Partition:
-    Description: The partition in which the resource is located. A partition is a group of AWS Regions
-    Type: String
-    
+
   DocumentsApiRequestsArn:
     Description: Lambda to invoke
     Type: String

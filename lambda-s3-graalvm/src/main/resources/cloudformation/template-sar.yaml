@@ -28,10 +28,6 @@ Parameters:
     Description: The type of FormKiQ installation
     Type: String
 
-  Partition:
-    Description: The partition in which the resource is located. A partition is a group of AWS Regions
-    Type: String
-
   VpcStackName:
     Type: String
     Description: FormKiQ VPC Stack Name 
@@ -40,7 +36,7 @@ Parameters:
     Type: String
     Description: TypeSense API Key
 
-  EventBusName:
+  DocumentEventsBus:
     Type: String
     Description: Name EventBridge Event Bus
 
@@ -188,7 +184,7 @@ Resources:
     Properties:
       Name: EventToSnsRule
       EventBusName:
-        Ref: EventBusName
+        Ref: DocumentEventsBus
       EventPattern:
         source:
           - Fn::Sub: "formkiq.${AppEnvironment}"

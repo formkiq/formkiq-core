@@ -34,10 +34,6 @@ Parameters:
     Description: Cognito User Pool Client
     AllowedPattern: ".+"
 
-  Partition:
-    Description: The partition in which the resource is located. A partition is a group of AWS Regions
-    Type: String
-
   IsGovCloud:
     Description: Is Installation AWS Region gov cloud
     Type: String

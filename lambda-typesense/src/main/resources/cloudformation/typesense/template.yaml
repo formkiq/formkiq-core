@@ -51,10 +51,6 @@ Parameters:
     Type: String
     Description: Reference to the ECSCluster
 
-  Partition:
-    Description: The partition in which the resource is located. A partition is a group of AWS Regions
-    Type: String
-
 Mappings: 
   TypesenseMap: 
     "1024": 

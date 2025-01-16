@@ -11,15 +11,26 @@ Parameters:
 
 Resources:
 
-  EventBus:
+  DocumentEventsBus:
     Type: AWS::Events::EventBus
     Properties:
       Name:
-        Fn::Sub: "formkiq-${AppEnvironment}"
+        Fn::Sub: "FormKiQ-DocumentEvents-${AppEnvironment}"
+
+  EventInternalBus:
+    Type: AWS::Events::EventBus
+    Properties:
+      Name:
+        Fn::Sub: "FormKiQ-InternalEvents-${AppEnvironment}"
 
 Outputs:
 
-  EventBusName:
+  DocumentEventsBus:
     Description: Name EventBridge Event Bus
     Value:
-      Ref: EventBus
+      Ref: DocumentEventsBus
+      
+  EventInternalBus:
+    Description: Name EventBridge Event Bus
+    Value:
+      Ref: EventInternalBus

@@ -28,10 +28,6 @@ Parameters:
     Description: The type of FormKiQ installation
     Type: String
 
-  Partition:
-    Description: The partition in which the resource is located. A partition is a group of AWS Regions
-    Type: String
-
 Resources:
 
   WebSocketApi:

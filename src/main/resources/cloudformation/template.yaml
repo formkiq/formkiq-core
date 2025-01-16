@@ -78,71 +78,6 @@ Parameters:
     Default: "FARGATE_SPOT"
     Type: String
     AllowedValues: ["FARGATE_SPOT", "FARGATE"]
-
-Mappings: 
-  RegionMap: 
-    us-east-2:
-      PARTITION: "aws"
-    us-east-1:
-      PARTITION: "aws"
-    us-west-1:
-      PARTITION: "aws"
-    us-west-2:
-      PARTITION: "aws"
-    af-south-1:
-      PARTITION: "aws"
-    ap-east-1:
-      PARTITION: "aws"
-    ap-south-2:
-      PARTITION: "aws"
-    ap-southeast-3:
-      PARTITION: "aws"
-    ap-southeast-4:
-      PARTITION: "aws"
-    ap-south-1:
-      PARTITION: "aws"
-    ap-northeast-3:
-      PARTITION: "aws"
-    ap-northeast-2:
-      PARTITION: "aws"
-    ap-southeast-1:
-      PARTITION: "aws"
-    ap-southeast-2:
-      PARTITION: "aws"
-    ap-northeast-1:
-      PARTITION: "aws"
-    ca-central-1:
-      PARTITION: "aws"
-    ca-west-1:
-      PARTITION: "aws"
-    eu-central-1:
-      PARTITION: "aws"
-    eu-west-1:
-      PARTITION: "aws"
-    eu-west-2:
-      PARTITION: "aws"
-    eu-south-1:
-      PARTITION: "aws"
-    eu-west-3:
-      PARTITION: "aws"
-    eu-south-2:
-      PARTITION: "aws"
-    eu-north-1:
-      PARTITION: "aws"
-    eu-central-2:
-      PARTITION: "aws"
-    il-central-1:
-      PARTITION: "aws"
-    me-south-1:
-      PARTITION: "aws"
-    me-central-1:
-      PARTITION: "aws"
-    sa-east-1:
-      PARTITION: "aws"
-    us-gov-east-1:
-      PARTITION: "aws-us-gov"
-    us-gov-west-1:
-      PARTITION: "aws-us-gov"
       
 Conditions:
 
@@ -163,45 +98,13 @@ Conditions:
 
 Resources:
 
-  EditionParameter:
-    Type: AWS::SSM::Parameter
+  Config:
+    Type: AWS::Serverless::Application
     Properties:
-      Description: "FormKiQ Edition"
-      Name: 
-        Fn::Sub: "/formkiq/${AppEnvironment}/edition"
-      Type: String
-      Value: "core"
-      Tags:
-        Application: "FormKiQ"
-        AppEnvironment: 
-          Fn::Sub: "${AppEnvironment}"
-          
-  VersionParameter:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Description: "FormKiQ Version"
-      Name: 
-        Fn::Sub: "/formkiq/${AppEnvironment}/version"
-      Type: String
-      Value: #@ data.values.version or assert.fail("missing version")
-      Tags:
-        Application: "FormKiQ"
-        AppEnvironment: 
-          Fn::Sub: "${AppEnvironment}"
-      
-  RegionParameter:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Description: "Installation Region"
-      Name: 
-        Fn::Sub: "/formkiq/${AppEnvironment}/region"
-      Type: String
-      Value: 
-        Ref: "AWS::Region"
-      Tags:
-        Application: "FormKiQ"
-        AppEnvironment: 
-          Fn::Sub: "${AppEnvironment}"
+      Location: config.yaml
+      Parameters:
+        FormKiQType: "core"
+        FormKiQVersion: #@ data.values.version or assert.fail("missing version")
 
   EventMessages:
     Type: AWS::Serverless::Application
@@ -224,16 +127,14 @@ Resources:
           Ref: VpcStackName
         AppEnvironment: 
           Ref: AppEnvironment
-        FormKiQType: "core"
-        EventBusName:
+        FormKiQType:
+          Fn::GetAtt:
+            - Config
+            - Outputs.FormKiQType
+        DocumentEventsBus:
           Fn::GetAtt:
             - EventMessages
-            - Outputs.EventBusName
-        Partition:
-          Fn::FindInMap:
-          - RegionMap
-          - Ref: "AWS::Region"
-          - PARTITION
+            - Outputs.DocumentEventsBus
       Tags:
         Application: "FormKiQ"
         AppEnvironment: 
@@ -246,7 +147,10 @@ Resources:
       Parameters:
         AppEnvironment: 
           Ref: AppEnvironment
-        FormKiQType: "core"
+        FormKiQType:
+          Fn::GetAtt:
+            - Config
+            - Outputs.FormKiQType
         AdminEmail: 
           Ref: AdminEmail
         IsGovCloud:
@@ -267,11 +171,6 @@ Resources:
     Properties:
       Location: console/template-install.yaml
       Parameters:
-        Partition:
-          Fn::FindInMap:
-          - RegionMap
-          - Ref: "AWS::Region"
-          - PARTITION
         IsGovCloud:
           Fn::If:
           - IsGovCloud
@@ -355,11 +254,6 @@ Resources:
           Fn::Sub: "${PasswordRequireUppercase}"
         Domain: 
           Fn::Sub: "${AppEnvironment}${AWS::AccountId}"
-        AwsArnPartition:
-          Fn::FindInMap:
-          - RegionMap
-          - Ref: "AWS::Region"
-          - PARTITION
         RedirectUrl:
           Fn::GetAtt:
           - CoreConsole
@@ -408,12 +302,7 @@ Resources:
     Properties:
       Location: api/template.yaml
       Parameters:
-        Partition:
-          Fn::FindInMap:
-          - RegionMap
-          - Ref: "AWS::Region"
-          - PARTITION
-        AppEnvironment: 
+        AppEnvironment:
           Ref: AppEnvironment
         EnablePublicUrls: 
           Ref: EnablePublicUrls
@@ -447,7 +336,14 @@ Resources:
           - Outputs.TypesenseApiEndpoint
         VpcStackName:
           Ref: VpcStackName
-        FormKiQType: "core"
+        FormKiQType:
+          Fn::GetAtt:
+            - Config
+            - Outputs.FormKiQType
+        FormKiQVersion:
+          Fn::GetAtt:
+            - Config
+            - Outputs.FormKiQVersion
       Tags:
         Application: "FormKiQ"
         AppEnvironment: 
@@ -467,12 +363,7 @@ Resources:
           - IsGovCloud
           - "true"
           - "false"
-        Partition:
-          Fn::FindInMap:
-          - RegionMap
-          - Ref: "AWS::Region"
-          - PARTITION
-        AppEnvironment: 
+        AppEnvironment:
           Ref: AppEnvironment
         AdminEmail: 
           Ref: AdminEmail
@@ -507,13 +398,11 @@ Resources:
       Parameters:
         AppEnvironment: 
           Ref: AppEnvironment
-        FormKiQType: "core"
-        Partition:
-          Fn::FindInMap:
-          - RegionMap
-          - Ref: "AWS::Region"
-          - PARTITION
-        CognitoUserPoolId: 
+        FormKiQType:
+          Fn::GetAtt:
+            - Config
+            - Outputs.FormKiQType
+        CognitoUserPoolId:
           Fn::GetAtt: 
           - Cognito
           - Outputs.CognitoUserPoolId
@@ -550,12 +439,10 @@ Resources:
       Parameters:
         AppEnvironment: 
           Ref: AppEnvironment
-        FormKiQType: "core"
-        Partition:
-          Fn::FindInMap:
-          - RegionMap
-          - Ref: "AWS::Region"
-          - PARTITION
+        FormKiQType:
+          Fn::GetAtt:
+            - Config
+            - Outputs.FormKiQType
         TypesenseApiKey:
           Ref: TypesenseApiKey
         VpcStackName:
