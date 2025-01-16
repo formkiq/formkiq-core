@@ -26,28 +26,25 @@ package com.formkiq.stacks.dynamodb;
 import static com.formkiq.aws.dynamodb.DbKeys.PK;
 import static com.formkiq.aws.dynamodb.DbKeys.PREFIX_DOCS;
 import static com.formkiq.aws.dynamodb.DbKeys.SK;
-import static com.formkiq.aws.dynamodb.DbKeys.TAG_DELIMINATOR;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
-import java.text.SimpleDateFormat;
+
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
-import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.PaginationToAttributeValue;
 import com.formkiq.aws.dynamodb.QueryConfig;
 import com.formkiq.aws.dynamodb.QueryResponseToPagination;
 import com.formkiq.aws.dynamodb.model.DocumentSync;
+import com.formkiq.aws.dynamodb.model.DocumentSyncRecord;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
 import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
 import com.formkiq.aws.dynamodb.model.DocumentSyncType;
-import com.formkiq.aws.dynamodb.objects.DateUtil;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 
@@ -62,10 +59,7 @@ public final class DocumentSyncServiceDynamoDb implements DocumentSyncService {
   private static final String SK_SYNCS = "syncs#";
 
   /** {@link DynamoDbService}. */
-  private DynamoDbService db;
-
-  /** {@link SimpleDateFormat} in ISO Standard format. */
-  private SimpleDateFormat df = DateUtil.getIsoDateFormatter();
+  private final DynamoDbService db;
 
   /**
    * constructor.
@@ -110,21 +104,10 @@ public final class DocumentSyncServiceDynamoDb implements DocumentSyncService {
       final DocumentSyncServiceType service, final DocumentSyncStatus status,
       final DocumentSyncType type, final String userId, final String message) {
 
-    String fullInsertedDate = this.df.format(new Date());
-
-    Map<String, AttributeValue> attrs = new HashMap<>();
-    attrs.put(PK, AttributeValue.fromS(getPk(siteId, documentId)));
-    attrs.put(SK, AttributeValue.fromS(SK_SYNCS + fullInsertedDate + TAG_DELIMINATOR + ID.uuid()));
-
-    attrs.put("documentId", AttributeValue.fromS(documentId));
-    attrs.put("service", AttributeValue.fromS(service.name()));
-    attrs.put("syncDate", AttributeValue.fromS(fullInsertedDate));
-    attrs.put("userId", AttributeValue.fromS(userId));
-    attrs.put("status", AttributeValue.fromS(status.name()));
-    attrs.put("type", AttributeValue.fromS(type.name()));
-    attrs.put("message", AttributeValue.fromS(message));
-
-    this.db.putItem(attrs);
+    DocumentSyncRecord r =
+        new DocumentSyncRecord().setDocumentId(documentId).setService(service).setStatus(status)
+            .setType(type).setUserId(userId).setMessage(message).setSyncDate(new Date());
+    this.db.putItem(r.getAttributes(siteId));
   }
 
   @Override

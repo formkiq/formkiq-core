@@ -18,21 +18,9 @@ Resources:
         Fn::Sub: "FormKiQ-DocumentEvents-${AppEnvironment}"
       Description: "The EventBridge bus used to publish FormKiQ Document Events"
 
-  EventInternalBus:
-    Type: AWS::Events::EventBus
-    Properties:
-      Description: "EventBridge used for FormKiQ internal communications"
-      Name:
-        Fn::Sub: "FormKiQ-InternalEvents-${AppEnvironment}"
-
 Outputs:
 
   DocumentEventsBus:
     Description: Name EventBridge Event Bus
     Value:
       Ref: DocumentEventsBus
-      
-  EventInternalBus:
-    Description: Name EventBridge Event Bus
-    Value:
-      Ref: EventInternalBus

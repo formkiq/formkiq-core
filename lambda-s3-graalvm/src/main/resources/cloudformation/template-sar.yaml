@@ -283,7 +283,9 @@ Resources:
           APP_ENVIRONMENT: 
             Fn::Sub: "${AppEnvironment}"
           DEBUG: false
-          ENABLE_AWS_X_RAY: true  
+          ENABLE_AWS_X_RAY: true
+          DOCUMENT_EVENTS_BUS:
+            Ref: DocumentEventsBus
           FormKiQType:
             Ref: FormKiQType
           SNS_DOCUMENT_EVENT: 
@@ -474,6 +476,70 @@ Resources:
           - Key: "AppEnvironment"
             Value: 
               Fn::Sub: "${AppEnvironment}"
+
+  DocumentsToActionsProcessorRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service: "pipes.amazonaws.com"
+            Action: "sts:AssumeRole"
+      Policies:
+        - PolicyName: "EventPipePolicy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "dynamodb:DescribeStream"
+                  - "dynamodb:GetRecords"
+                  - "dynamodb:GetShardIterator"
+                  - "dynamodb:ListStreams"
+                Resource:
+                  - Fn::GetAtt:
+                      - Documents
+                      - StreamArn
+              - Effect: "Allow"
+                Action:
+                  - "sqs:SendMessage"
+                Resource:
+                  - Fn::GetAtt:
+                      - DocumentActionsQueue
+                      - Arn
+                  - Fn::GetAtt:
+                      - DocumentsDeadLetterQueue
+                      - Arn
+
+  DocumentsToActionsProcessorPipe:
+    Type: "AWS::Pipes::Pipe"
+    Properties:
+      RoleArn:
+        Fn::GetAtt:
+          - DocumentsToActionsProcessorRole
+          - Arn
+      Source:
+        Fn::GetAtt:
+          - Documents
+          - StreamArn
+      SourceParameters:
+        FilterCriteria:
+          Filters:
+            - Pattern: '{"dynamodb": {"NewImage": {"type": { "S": ["EVENTBRIDGE"] }}}}'
+        DynamoDBStreamParameters:
+          StartingPosition: LATEST
+          BatchSize: 1
+          DeadLetterConfig:
+            Arn:
+              Fn::GetAtt:
+                - DocumentsDeadLetterQueue
+                - Arn
+      Target:
+        Fn::GetAtt:
+          - DocumentActionsQueue
+          - Arn
 
   DocumentsStagingQueue:
     Type: "AWS::SQS::Queue"

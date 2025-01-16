@@ -42,7 +42,7 @@ public class AttributeValueToDocumentSync
     implements Function<Map<String, AttributeValue>, DocumentSync> {
 
   /** {@link AttributeValueToDate}. */
-  private AttributeValueToDate toDate = new AttributeValueToDate("syncDate");
+  private final AttributeValueToDate toDate = new AttributeValueToDate("syncDate");
 
   @Override
   public DocumentSync apply(final Map<String, AttributeValue> map) {
@@ -54,7 +54,11 @@ public class AttributeValueToDocumentSync
     sync.setService(DocumentSyncServiceType.valueOf(map.get("service").s().toUpperCase()));
     sync.setStatus(DocumentSyncStatus.valueOf(map.get("status").s().toUpperCase()));
     sync.setType(DocumentSyncType.valueOf(map.get("type").s().toUpperCase()));
-    sync.setMessage(map.get("message").s());
+
+    if (map.containsKey("message")) {
+      sync.setMessage(map.get("message").s());
+    }
+
     sync.setSyncDate(this.toDate.apply(map));
 
     return sync;
