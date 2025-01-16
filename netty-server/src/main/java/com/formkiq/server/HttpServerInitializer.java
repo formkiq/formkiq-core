@@ -252,7 +252,7 @@ public final class HttpServerInitializer extends ChannelInitializer<SocketChanne
     Map<String, String> env = new HashMap<>();
     env.put("USER_AUTHENTICATION", "cognito");
     env.put("APP_ENVIRONMENT", "dev");
-    env.put("VERSION", "1.17.0");
+    env.put("FORMKIQ_ VERSION", "1.17.0");
     env.put("FORMKIQ_TYPE", "core");
     env.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
     env.put("CACHE_TABLE", CACHE_TABLE);
