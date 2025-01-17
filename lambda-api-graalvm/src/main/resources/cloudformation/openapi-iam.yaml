@@ -8050,7 +8050,7 @@ Resources:
                   type: "array"
                   description: "List of document syncs"
                   items:
-                    $ref: "#/components/schemas/GetDocumentSync"
+                    $ref: "#/components/schemas/DocumentSync"
             DocumentSyncService:
               type: string
               description: Service of Document Sync
@@ -8064,6 +8064,7 @@ Resources:
               enum:
                 - COMPLETE
                 - FAILED
+                - PENDING
             DocumentSyncType:
               type: string
               description: Type of Document Sync
@@ -8071,7 +8072,7 @@ Resources:
                 - METADATA
                 - TAG
                 - CONTENT
-            GetDocumentSync:
+            DocumentSync:
               type: "object"
               properties:
                 service:
@@ -8080,6 +8081,9 @@ Resources:
                   $ref: "#/components/schemas/DocumentSyncStatus"
                 type:
                   $ref: "#/components/schemas/DocumentSyncType"
+                insertedDate:
+                  type: "string"
+                  description: "Inserted Timestamp"
                 syncDate:
                   type: "string"
                   description: "Timestamp of synchronization"
