@@ -8007,6 +8007,7 @@
               enum:
               - TYPESENSE
               - OPENSEARCH
+              - EVENTBRIDGE
             DocumentSyncStatus:
               type: string
               description: Status of Document Sync
