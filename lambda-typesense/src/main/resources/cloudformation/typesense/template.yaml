@@ -51,6 +51,29 @@ Parameters:
     Type: String
     Description: Reference to the ECSCluster
 
+  Partition:
+    Description: The partition in which the resource is located. A partition is a group of AWS Regions
+    Type: String
+
+  LogRetentionInDays:
+    Type: Number
+    Description: The number of days to retain the log events
+
+  LogFormat:
+    Description: >
+      The format in which the application and system logs are stored.
+    Type: String
+
+  LogLevelApplication:
+    Type: String
+    Description: >
+      The level of logging for the FormKiQ Application logs.
+
+  LogLevelSystem:
+    Type: String
+    Description: >
+      The level of logging for the AWS Platform System logs.
+
 Mappings: 
   TypesenseMap: 
     "1024": 
@@ -96,15 +119,19 @@ Conditions:
     Fn::Not:
       - Condition: CreateResources
 
+  IsLogFormatJSON: 
+    Fn::Equals:
+      - Ref: LogFormat
+      - JSON
+
 Resources:
 
   TypesenseProcessorLogGroup:
     Type: AWS::Logs::LogGroup
     Condition: CreateResources
     Properties:
-      LogGroupName: 
-        Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/${TypesenseProcessor}"
-      RetentionInDays: 90
+      RetentionInDays:
+        Ref: LogRetentionInDays
       
   TypesenseProcessor:
     Type: AWS::Serverless::Function
@@ -126,7 +153,8 @@ Resources:
         Variables:
           APP_ENVIRONMENT: 
             Fn::Sub: "${AppEnvironment}"
-          DEBUG: false
+          LOG_LEVEL:
+            Ref: LogLevelApplication
           ENABLE_AWS_X_RAY: true
           FormKiQType:
             Ref: FormKiQType
@@ -145,6 +173,21 @@ Resources:
         Fn::GetAtt:
         - TypesenseLambdaRole
         - Arn
+      LoggingConfig:
+        LogGroup:
+          Ref: TypesenseProcessorLogGroup
+        LogFormat:
+          Ref: LogFormat
+        ApplicationLogLevel:
+          Fn::If:
+          - IsLogFormatJSON
+          - Ref: LogLevelApplication
+          - Ref: AWS::NoValue
+        SystemLogLevel:
+          Fn::If:
+          - IsLogFormatJSON
+          - Ref: LogLevelSystem
+          - Ref: AWS::NoValue
       Tags:
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
@@ -505,16 +548,19 @@ Resources:
       PayloadFormatVersion: "1.0"
 
   StageAccessLogs:
+    Condition: CreateResources
     Type: AWS::Logs::LogGroup
     Properties:
-      RetentionInDays: 90
-      LogGroupName: 
-        Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/APITypeSenseAccessLogs"
+      RetentionInDays:
+        Ref: LogRetentionInDays
+      LogGroupName:
+        Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/TypesenseAccessLogs"
         
   Stage:
     Type: AWS::ApiGatewayV2::Stage
     DependsOn:
       - ApiGateway
+      - StageAccessLogs
     Condition: CreateResources
     Properties:
       ApiId: 

@@ -30,7 +30,7 @@ import java.time.ZonedDateTime;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
+
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -42,6 +42,7 @@ import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.stacks.api.transformers.DynamicObjectToMap;
 import com.formkiq.stacks.dynamodb.WebhooksService;
 
 /** {@link ApiGatewayRequestHandler} for "/webhooks/{webhookId}". */
@@ -49,9 +50,8 @@ public class WebhooksIdRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
   @Override
-  public ApiRequestHandlerResponse delete(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsServices) throws Exception {
+  public ApiRequestHandlerResponse delete(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
 
     String siteId = authorization.getSiteId();
     String id = getPathParameter(event, "webhookId");
@@ -68,9 +68,8 @@ public class WebhooksIdRequestHandler
   }
 
   @Override
-  public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsServices) throws Exception {
+  public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
 
     String siteId = authorization.getSiteId();
     String id = getPathParameter(event, "webhookId");
@@ -82,6 +81,14 @@ public class WebhooksIdRequestHandler
       throw new NotFoundException("Webhook 'id' not found");
     }
 
+    String url = getUrl(awsServices, siteId, m);
+    Map<String, Object> map = new DynamicObjectToMap(siteId, url).apply(m);
+
+    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
+  }
+
+  private String getUrl(final AwsServiceCache awsServices, final String siteId,
+      final DynamicObject m) {
     SsmService ssmService = awsServices.getExtension(SsmService.class);
 
     String url = ssmService.getParameterValue(
@@ -93,18 +100,7 @@ public class WebhooksIdRequestHandler
     if (siteId != null && !DEFAULT_SITE_ID.equals(siteId)) {
       u += "?siteId=" + siteId;
     }
-
-    Map<String, Object> map = new HashMap<>();
-    map.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
-    map.put("id", m.getString("documentId"));
-    map.put("name", m.getString("path"));
-    map.put("url", u);
-    map.put("insertedDate", m.getString("inserteddate"));
-    map.put("userId", m.getString("userId"));
-    map.put("enabled", m.getString("enabled"));
-    map.put("ttl", m.getString("ttl"));
-
-    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
+    return u;
   }
 
   @Override
@@ -113,9 +109,8 @@ public class WebhooksIdRequestHandler
   }
 
   @Override
-  public ApiRequestHandlerResponse patch(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsServices) throws Exception {
+  public ApiRequestHandlerResponse patch(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
 
     String siteId = authorization.getSiteId();
     String id = getPathParameter(event, "webhookId");

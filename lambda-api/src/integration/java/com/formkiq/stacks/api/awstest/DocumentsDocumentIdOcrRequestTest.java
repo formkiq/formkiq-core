@@ -23,17 +23,22 @@
  */
 package com.formkiq.stacks.api.awstest;
 
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.testutils.aws.FkqDocumentService.addDocument;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForActions;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContent;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
-import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+
+import com.formkiq.client.model.DocumentAction;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.parallel.Execution;
@@ -50,10 +55,8 @@ import com.formkiq.client.model.AddDocumentOcrRequest;
 import com.formkiq.client.model.AddDocumentOcrResponse;
 import com.formkiq.client.model.DocumentActionStatus;
 import com.formkiq.client.model.DocumentActionType;
-import com.formkiq.client.model.GetDocumentActionsResponse;
 import com.formkiq.client.model.GetDocumentOcrResponse;
 import com.formkiq.client.model.OcrEngine;
-import com.formkiq.stacks.client.models.DocumentOcr;
 import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
 import software.amazon.awssdk.utils.IoUtils;
 
@@ -73,11 +76,10 @@ public class DocumentsDocumentIdOcrRequestTest extends AbstractAwsIntegrationTes
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  @Timeout(value = TEST_TIMEOUT)
   public void testAddOcr01a() throws Exception {
-    String siteId = null;
-    ApiClient client = getApiClients(siteId).get(0);
-    addOcr01(client, siteId);
+    ApiClient client = getApiClients(null).get(0);
+    addOcr01(client, null);
   }
 
   /**
@@ -86,7 +88,7 @@ public class DocumentsDocumentIdOcrRequestTest extends AbstractAwsIntegrationTes
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  @Timeout(value = TEST_TIMEOUT)
   public void testAddOcr01b() throws Exception {
     String siteId = SITE_ID;
     ApiClient client = getApiClients(siteId).get(0);
@@ -109,6 +111,7 @@ public class DocumentsDocumentIdOcrRequestTest extends AbstractAwsIntegrationTes
     assertEquals("OCR request submitted", response.getMessage());
 
     GetDocumentOcrResponse documentOcr = getDocumentOcr(api, siteId, documentId);
+    assertNotNull(documentOcr.getData());
     assertTrue(documentOcr.getData().contains("East Repair"));
   }
 
@@ -118,12 +121,10 @@ public class DocumentsDocumentIdOcrRequestTest extends AbstractAwsIntegrationTes
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  @Timeout(value = TEST_TIMEOUT)
   public void testAddOcr02a() throws Exception {
-
-    String siteId = null;
-    ApiClient client = getApiClients(siteId).get(0);
-    addOcr02(client, siteId);
+    ApiClient client = getApiClients(null).get(0);
+    addOcr02(client, null);
   }
 
   /**
@@ -132,7 +133,7 @@ public class DocumentsDocumentIdOcrRequestTest extends AbstractAwsIntegrationTes
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  @Timeout(value = TEST_TIMEOUT)
   public void testAddOcr02b() throws Exception {
 
     String siteId = SITE_ID;
@@ -148,39 +149,39 @@ public class DocumentsDocumentIdOcrRequestTest extends AbstractAwsIntegrationTes
 
     DocumentActionsApi actionsApi = new DocumentActionsApi(client);
     AddDocumentActionsRequest req = new AddDocumentActionsRequest()
-        .actions(Arrays.asList(new AddAction().type(DocumentActionType.OCR)));
+        .actions(List.of(new AddAction().type(DocumentActionType.OCR)));
 
     // when
     AddDocumentActionsResponse response = actionsApi.addDocumentActions(documentId, siteId, req);
 
     // then
     assertEquals("Actions saved", response.getMessage());
-    waitForActions(client, siteId, documentId, Arrays.asList(DocumentActionStatus.COMPLETE));
+    waitForActions(client, siteId, documentId, List.of(DocumentActionStatus.COMPLETE));
 
     DocumentOcrApi api = new DocumentOcrApi(client);
     GetDocumentOcrResponse documentOcr =
         api.getDocumentOcr(documentId, siteId, null, null, null, null);
+    assertNotNull(documentOcr.getData());
     assertTrue(documentOcr.getData().contains("East Repair"));
 
-    GetDocumentActionsResponse actions =
-        actionsApi.getDocumentActions(documentId, siteId, null, null, null);
-    assertEquals(1, actions.getActions().size());
-    assertEquals("COMPLETE", actions.getActions().get(0).getStatus().name());
+    List<DocumentAction> actions =
+        notNull(actionsApi.getDocumentActions(documentId, siteId, null, null, null).getActions());
+    assertEquals(1, actions.size());
+    assertEquals(DocumentActionStatus.COMPLETE, Objects.requireNonNull(actions.get(0).getStatus()));
   }
 
   /**
-   * Wait for {@link DocumentOcr} to have data.
+   * Wait for {@link DocumentOcrApi} to have data.
    *
    * @param api {@link DocumentOcrApi}
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @return {@link GetDocumentOcrResponse}
-   * @throws IOException IOException
    * @throws InterruptedException InterruptedException
    * @throws ApiException ApiException
    */
   private GetDocumentOcrResponse getDocumentOcr(final DocumentOcrApi api, final String siteId,
-      final String documentId) throws IOException, InterruptedException, ApiException {
+      final String documentId) throws InterruptedException, ApiException {
 
     GetDocumentOcrResponse documentOcr =
         api.getDocumentOcr(documentId, siteId, null, null, null, null);
@@ -199,6 +200,7 @@ public class DocumentsDocumentIdOcrRequestTest extends AbstractAwsIntegrationTes
 
   private byte[] toBytes(final String name) throws IOException {
     try (InputStream is = getClass().getResourceAsStream(name)) {
+      assertNotNull(is);
       return IoUtils.toByteArray(is);
     }
   }
@@ -209,41 +211,41 @@ public class DocumentsDocumentIdOcrRequestTest extends AbstractAwsIntegrationTes
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  @Timeout(value = TEST_TIMEOUT)
   public void testAddOcr03() throws Exception {
-    String siteId = null;
-    ApiClient client = getApiClients(siteId).get(0);
+    ApiClient client = getApiClients(null).get(0);
 
     byte[] content = toBytes("/multipage_example.pdf");
     String documentId =
-        addDocument(client, siteId, "multipage_example.pdf", content, "application/pdf", null);
-    waitForDocumentContent(client, siteId, documentId);
+        addDocument(client, null, "multipage_example.pdf", content, "application/pdf", null);
+    waitForDocumentContent(client, null, documentId);
 
     DocumentActionsApi actionsApi = new DocumentActionsApi(client);
     AddDocumentActionsRequest req = new AddDocumentActionsRequest()
-        .actions(Arrays.asList(new AddAction().type(DocumentActionType.OCR).parameters(
+        .actions(List.of(new AddAction().type(DocumentActionType.OCR).parameters(
             new AddActionParameters().ocrEngine(OcrEngine.TESSERACT).ocrNumberOfPages("2"))));
 
     // when
-    AddDocumentActionsResponse response = actionsApi.addDocumentActions(documentId, siteId, req);
+    AddDocumentActionsResponse response = actionsApi.addDocumentActions(documentId, null, req);
 
     // then
     assertEquals("Actions saved", response.getMessage());
-    waitForActions(client, siteId, documentId, Arrays.asList(DocumentActionStatus.COMPLETE));
+    waitForActions(client, null, documentId, List.of(DocumentActionStatus.COMPLETE));
 
     DocumentOcrApi api = new DocumentOcrApi(client);
     GetDocumentOcrResponse documentOcr =
-        api.getDocumentOcr(documentId, siteId, null, null, null, null);
+        api.getDocumentOcr(documentId, null, null, null, null, null);
 
     String text = documentOcr.getData();
+    assertNotNull(text);
     assertTrue(text.contains("Your Company"));
     assertTrue(text.contains("2/9"));
     assertFalse(text.contains("3/9"));
     assertFalse(text.contains("Current process"));
 
-    GetDocumentActionsResponse actions =
-        actionsApi.getDocumentActions(documentId, siteId, null, null, null);
-    assertEquals(1, actions.getActions().size());
-    assertEquals("COMPLETE", actions.getActions().get(0).getStatus().name());
+    List<DocumentAction> actions =
+        notNull(actionsApi.getDocumentActions(documentId, null, null, null, null).getActions());
+    assertEquals(1, actions.size());
+    assertEquals(DocumentActionStatus.COMPLETE, actions.get(0).getStatus());
   }
 }

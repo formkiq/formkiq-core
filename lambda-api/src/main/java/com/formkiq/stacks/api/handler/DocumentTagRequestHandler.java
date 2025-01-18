@@ -23,7 +23,6 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
@@ -45,7 +44,6 @@ import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -65,9 +63,8 @@ public class DocumentTagRequestHandler
   public DocumentTagRequestHandler() {}
 
   @Override
-  public ApiRequestHandlerResponse delete(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse delete(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorization.getSiteId();
     Map<String, String> map = event.getPathParameters();
@@ -84,7 +81,7 @@ public class DocumentTagRequestHandler
     DocumentItem document = documentService.findDocument(siteId, documentId);
     throwIfNull(document, new DocumentNotFoundException(documentId));
 
-    List<String> tags = Arrays.asList(tagKey);
+    List<String> tags = List.of(tagKey);
 
     documentService.removeTags(siteId, documentId, tags);
 
@@ -95,9 +92,8 @@ public class DocumentTagRequestHandler
   }
 
   @Override
-  public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String documentId = event.getPathParameters().get("documentId");
     String tagKey = event.getPathParameters().get("tagKey");
@@ -148,11 +144,9 @@ public class DocumentTagRequestHandler
     return (tag.getValue() != null && values != null) || (tag.getValues() != null && value != null);
   }
 
-  @SuppressWarnings("unchecked")
   @Override
-  public ApiRequestHandlerResponse put(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse put(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     Map<String, String> map = event.getPathParameters();
     final String documentId = map.get("documentId");
@@ -178,7 +172,7 @@ public class DocumentTagRequestHandler
 
     // if trying to change from tag VALUE to VALUES or VALUES to VALUE
     if (isTagValueTypeChanged(tag, value, values)) {
-      documentService.removeTags(siteId, documentId, Arrays.asList(tagKey));
+      documentService.removeTags(siteId, documentId, List.of(tagKey));
     }
 
     Date now = new Date();
@@ -190,7 +184,7 @@ public class DocumentTagRequestHandler
       tag.setValues(values);
     }
 
-    List<DocumentTag> tags = new ArrayList<>(Arrays.asList(tag));
+    List<DocumentTag> tags = new ArrayList<>(List.of(tag));
 
     validateTags(tags);
 

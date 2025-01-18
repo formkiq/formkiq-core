@@ -36,13 +36,49 @@ Parameters:
     Description: The maximum amount of seconds lambda function will run for (seconds)
     Default: 60
 
+  LogRetentionInDays:
+    Type: Number
+    Description: The number of days to retain the log events
+
+  LogFormat:
+    Description: >
+      The format in which the application and system logs are stored.
+    Type: String
+
+  LogLevelApplication:
+    Type: String
+    Description: >
+      The level of logging for the FormKiQ Application logs.
+
+  LogLevelSystem:
+    Type: String
+    Description: >
+      The level of logging for the AWS Platform System logs.
+
+Conditions:
+  IsLogFormatJSON: 
+    Fn::Equals:
+      - Ref: LogFormat
+      - JSON
+
 Resources:
 
   DocumentsKeyApi:
     Type: AWS::ApiGatewayV2::Api
     Properties:
       FailOnWarnings: "true"
-          
+
+  #@overlay/match missing_ok=True
+  ApiKeyAuthorizerLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays:
+        Ref: LogRetentionInDays
+      Tags:
+      - Key: AppEnvironment
+        Value:
+          Fn::Sub: ${AppEnvironment}
+
   #@overlay/match missing_ok=True
   ApiKeyAuthorizer:
     Type: AWS::Serverless::Function
@@ -63,12 +99,28 @@ Resources:
         Variables:
           APP_ENVIRONMENT: 
             Fn::Sub: "${AppEnvironment}"
-          DEBUG: false
+          LOG_LEVEL:
+            Ref: LogLevelApplication
           ENABLE_AWS_X_RAY: true
           DOCUMENTS_TABLE: 
             Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"
           FORMKIQ_TYPE: 
             Ref: FormKiQType
+      LoggingConfig:
+        LogGroup:
+          Ref: ApiKeyAuthorizerLogGroup
+        LogFormat:
+          Ref: LogFormat
+        ApplicationLogLevel:
+          Fn::If:
+          - IsLogFormatJSON
+          - Ref: LogLevelApplication
+          - Ref: AWS::NoValue
+        SystemLogLevel:
+          Fn::If:
+          - IsLogFormatJSON
+          - Ref: LogLevelSystem
+          - Ref: AWS::NoValue
       Role: 
         Fn::GetAtt:
         - ApiKeyAuthorizerRole

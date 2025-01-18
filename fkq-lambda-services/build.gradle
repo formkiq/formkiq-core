@@ -3,6 +3,7 @@ description = "FormKiQ Lambda Services"
 
 dependencies {
 	implementation group: 'software.amazon.awssdk', name: 'auth', version: '2.29.51'
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.11.4'
 }
 
 test {

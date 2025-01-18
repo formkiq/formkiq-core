@@ -26,14 +26,13 @@ package com.formkiq.module.actions.services;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import java.util.Arrays;
+
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
+
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
@@ -46,8 +45,6 @@ import com.formkiq.validation.ValidationError;
 @ExtendWith(DynamoDbExtension.class)
 class ActionsValidatorTest {
 
-  /** {@link DynamoDbService}. */
-  private static DynamoDbService db;
   /** {@link ActionsValidator}. */
   private static ActionsValidator validator;
 
@@ -59,19 +56,16 @@ class ActionsValidatorTest {
   @BeforeAll
   public static void beforeAll() throws Exception {
     DynamoDbConnectionBuilder dynamoDbConnection = DynamoDbTestServices.getDynamoDbConnection();
-    db = new DynamoDbServiceImpl(dynamoDbConnection, DOCUMENTS_TABLE);
+    DynamoDbService db = new DynamoDbServiceImpl(dynamoDbConnection, DOCUMENTS_TABLE);
     validator = new ActionsValidatorImpl(db);
   }
 
   @Test
   void testValidation01() {
     // given
-    String siteId = null;
-    Action action = null;
-    DynamicObject obj = new DynamicObject(Map.of());
 
     // when
-    Collection<ValidationError> errors = validator.validation(siteId, action, obj);
+    Collection<ValidationError> errors = validator.validation(null, (Action) null, null, null);
 
     // then
     assertEquals(1, errors.size());
@@ -83,12 +77,10 @@ class ActionsValidatorTest {
   @Test
   void testValidation02() {
     // given
-    String siteId = null;
     Action action = new Action();
-    DynamicObject obj = new DynamicObject(Map.of());
 
     // when
-    Collection<ValidationError> errors = validator.validation(siteId, action, obj);
+    Collection<ValidationError> errors = validator.validation(null, action, null, null);
 
     // then
     assertEquals(1, errors.size());
@@ -100,12 +92,10 @@ class ActionsValidatorTest {
   @Test
   void testValidation03() {
     // given
-    String siteId = null;
     Action action = new Action().type(ActionType.WEBHOOK).userId("joe");
-    DynamicObject obj = new DynamicObject(Map.of());
 
     // when
-    Collection<ValidationError> errors = validator.validation(siteId, action, obj);
+    Collection<ValidationError> errors = validator.validation(null, action, null, null);
 
     // then
     assertEquals(1, errors.size());
@@ -117,13 +107,11 @@ class ActionsValidatorTest {
   @Test
   void testValidation04() {
     // given
-    String siteId = null;
     Action action = new Action();
-    DynamicObject obj = new DynamicObject(Map.of());
-    List<Action> actions = Arrays.asList(action);
+    List<Action> actions = List.of(action);
 
     // when
-    List<Collection<ValidationError>> errorList = validator.validation(siteId, actions, obj);
+    List<Collection<ValidationError>> errorList = validator.validation(null, actions, null, null);
 
     // then
     assertEquals(1, errorList.size());
@@ -137,12 +125,10 @@ class ActionsValidatorTest {
   @Test
   void testValidation05() {
     // given
-    String siteId = null;
     Action action = new Action().type(ActionType.OCR).userId("joe");
-    DynamicObject obj = new DynamicObject(Map.of());
 
     // when
-    Collection<ValidationError> errorList = validator.validation(siteId, action, obj);
+    Collection<ValidationError> errorList = validator.validation(null, action, null, null);
 
     // then
     assertEquals(0, errorList.size());
@@ -151,12 +137,10 @@ class ActionsValidatorTest {
   @Test
   void testValidation06() {
     // given
-    String siteId = null;
     Action action = new Action().type(ActionType.QUEUE).userId("joe");
-    DynamicObject obj = new DynamicObject(Map.of());
 
     // when
-    Collection<ValidationError> errors = validator.validation(siteId, action, obj);
+    Collection<ValidationError> errors = validator.validation(null, action, null, null);
 
     // then
     assertEquals(1, errors.size());
@@ -169,12 +153,10 @@ class ActionsValidatorTest {
   @Test
   void testValidation07() {
     // given
-    String siteId = null;
     Action action = new Action().type(ActionType.QUEUE).queueId("Testqueue").userId("joe");
-    DynamicObject obj = new DynamicObject(Map.of());
 
     // when
-    Collection<ValidationError> errors = validator.validation(siteId, action, obj);
+    Collection<ValidationError> errors = validator.validation(null, action, null, null);
 
     // then
     assertEquals(1, errors.size());
@@ -190,12 +172,10 @@ class ActionsValidatorTest {
   @Test
   void testValidation08() {
     // given
-    String siteId = null;
     Action action = new Action().type(ActionType.EVENTBRIDGE).userId("joe");
-    DynamicObject obj = new DynamicObject(Map.of());
 
     // when
-    Collection<ValidationError> errors = validator.validation(siteId, action, obj);
+    Collection<ValidationError> errors = validator.validation(null, action, null, null);
 
     // then
     assertEquals(1, errors.size());

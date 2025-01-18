@@ -23,7 +23,6 @@
  */
 package com.formkiq.stacks.api.awstest;
 
-import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.client.api.DocumentTagsApi;
@@ -35,7 +34,8 @@ import com.formkiq.client.model.AddDocumentUploadRequest;
 import com.formkiq.client.model.ChecksumType;
 import com.formkiq.client.model.DocumentTag;
 import com.formkiq.client.model.GetDocumentUrlResponse;
-import com.formkiq.stacks.dynamodb.ConfigService;
+import com.formkiq.stacks.dynamodb.config.ConfigService;
+import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -56,11 +56,10 @@ import java.net.http.HttpResponse.BodyHandlers;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
-import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENTS;
-import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENT_SIZE_BYTES;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContent;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContentType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -169,19 +168,22 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
   @Timeout(value = TEST_TIMEOUT)
   public void testGet02() throws Exception {
     // given
-    configService.save(SITEID0, new DynamicObject(Map.of(MAX_DOCUMENT_SIZE_BYTES, "5")));
+    String siteId = UUID.randomUUID().toString();
+    SiteConfiguration config = new SiteConfiguration().setMaxContentLengthBytes("5");
+    configService.save(siteId, config);
 
-    for (ApiClient client : getApiClients(SITEID0)) {
+    for (ApiClient client : getApiClients(siteId)) {
 
       DocumentsApi api = new DocumentsApi(client);
 
       // when
       try {
-        api.getDocumentUpload(null, SITEID0, null, null, null, null, null);
+        api.getDocumentUpload(null, siteId, null, null, null, null, null);
         fail();
       } catch (ApiException e) {
         assertEquals(STATUS_BAD_REQUEST, e.getCode());
-        assertEquals("{\"message\":\"'contentLength' is required\"}", e.getResponseBody());
+        assertEquals("{\"message\":\"'contentLength' is required when "
+            + "MaxContentLengthBytes is configured\"}", e.getResponseBody());
       }
     }
   }
@@ -196,7 +198,8 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
   public void testGet03() throws Exception {
     // given
     final int contentLength = 100;
-    configService.save(SITEID0, new DynamicObject(Map.of(MAX_DOCUMENT_SIZE_BYTES, "5")));
+    SiteConfiguration config = new SiteConfiguration().setMaxContentLengthBytes("5");
+    configService.save(SITEID0, config);
 
     for (ApiClient client : getApiClients(SITEID0)) {
 
@@ -223,8 +226,8 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
   public void testGet04() throws Exception {
     // given
     final int contentLength = 5;
-    configService.save(SITEID0,
-        new DynamicObject(Map.of(MAX_DOCUMENT_SIZE_BYTES, "" + contentLength)));
+    SiteConfiguration config = new SiteConfiguration().setMaxContentLengthBytes("" + contentLength);
+    configService.save(SITEID0, config);
 
     for (ApiClient client : getApiClients(SITEID0)) {
 
@@ -249,7 +252,8 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
   public void testGet05() throws Exception {
     // given
     String siteId = ID.uuid();
-    configService.save(siteId, new DynamicObject(Map.of(MAX_DOCUMENTS, "1")));
+    SiteConfiguration config = new SiteConfiguration().setMaxDocuments("1");
+    configService.save(siteId, config);
     TimeUnit.SECONDS.sleep(1);
 
     DocumentsApi api = new DocumentsApi(getApiClients(siteId).get(0));

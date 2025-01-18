@@ -38,12 +38,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
+
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.objects.MimeType;
-import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.aws.s3.S3PresignerServiceExtension;
@@ -71,6 +70,7 @@ import com.formkiq.module.lambda.ocr.handlers.ObjectExaminePdfIdHandler;
 import com.formkiq.module.lambda.ocr.pdf.PdfFormatConverter;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
+import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.module.ocr.DocumentOcrService;
 import com.formkiq.module.ocr.DocumentOcrServiceExtension;
 import com.formkiq.module.ocr.FormatConverter;
@@ -202,7 +202,7 @@ public class OcrTesseractProcessor extends AbstractRestApiRequestHandler {
   }
 
   @Override
-  public void handleSqsRequest(final LambdaLogger logger, final AwsServiceCache awsServices,
+  public void handleSqsRequest(final Logger logger, final AwsServiceCache awsServices,
       final LambdaInputRecord record) throws IOException {
 
     DocumentOcrService ocrService = serviceCache.getExtension(DocumentOcrService.class);
@@ -236,7 +236,7 @@ public class OcrTesseractProcessor extends AbstractRestApiRequestHandler {
     return file;
   }
 
-  private void processRecord(final LambdaLogger logger, final AwsServiceCache awsServices,
+  private void processRecord(final Logger logger, final AwsServiceCache awsServices,
       final DocumentOcrService ocrService, final OcrSqsMessage sqsMessage) {
 
     String siteId = sqsMessage.siteId();
@@ -290,8 +290,8 @@ public class OcrTesseractProcessor extends AbstractRestApiRequestHandler {
 
       ocrService.updateOcrScanStatus(siteId, documentId, OcrScanStatus.FAILED);
 
-      logger.log(String.format("setting OCR Scan Status: %s", OcrScanStatus.FAILED));
-      logger.log(Strings.toString(e));
+      logger.error(String.format("setting OCR Scan Status: %s", OcrScanStatus.FAILED));
+      logger.error(e);
 
       ActionsService actionsService = serviceCache.getExtension(ActionsService.class);
       List<Action> actions = actionsService.getActions(siteId, documentId);
@@ -306,7 +306,7 @@ public class OcrTesseractProcessor extends AbstractRestApiRequestHandler {
     }
   }
 
-  private void logProcessRecord(final LambdaLogger logger, final OcrSqsMessage sqsMessage,
+  private void logProcessRecord(final Logger logger, final OcrSqsMessage sqsMessage,
       final String siteId, final String documentId, final String jobId, final String contentType) {
 
     List<String> parseTypes = getParserTypes(sqsMessage);
@@ -315,7 +315,7 @@ public class OcrTesseractProcessor extends AbstractRestApiRequestHandler {
         "{\"siteId\": \"%s\",\"documentId\": \"%s\",\"jobId\": \"%s\",\"contentType\":\"%s\","
             + "\"parseTypes\":\"%s\"}",
         siteId, documentId, jobId, contentType, String.join(", ", parseTypes));
-    logger.log(s);
+    logger.info(s);
   }
 
   private List<String> getParserTypes(final OcrSqsMessage sqsMessage) {

@@ -30,7 +30,7 @@ import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
+
 import com.formkiq.aws.dynamodb.model.DocumentMapToDocument;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -57,7 +57,6 @@ public class DocumentsFulltextRequestHandler
    * @return {@link Map}
    * @throws BadException BadException
    */
-  @SuppressWarnings("unchecked")
   private Map<String, Object> buildDocumentFromRequestBody(final Map<String, Object> body)
       throws BadException {
 
@@ -91,9 +90,8 @@ public class DocumentsFulltextRequestHandler
   }
 
   @Override
-  public ApiRequestHandlerResponse delete(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse delete(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     TypeSenseService typeSenseService = checkTypesenseInstalled(awsservice);
 
@@ -106,11 +104,9 @@ public class DocumentsFulltextRequestHandler
     return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
   }
 
-  @SuppressWarnings("unchecked")
   @Override
-  public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
@@ -157,9 +153,8 @@ public class DocumentsFulltextRequestHandler
   }
 
   @Override
-  public ApiRequestHandlerResponse patch(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse patch(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     TypeSenseService typeSenseService = checkTypesenseInstalled(awsservice);
 
@@ -181,9 +176,8 @@ public class DocumentsFulltextRequestHandler
   }
 
   @Override
-  public ApiRequestHandlerResponse put(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse put(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     TypeSenseService typeSenseService = checkTypesenseInstalled(awsservice);
 

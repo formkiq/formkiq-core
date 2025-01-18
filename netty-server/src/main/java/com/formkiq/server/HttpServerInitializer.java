@@ -261,7 +261,7 @@ public final class HttpServerInitializer extends ChannelInitializer<SocketChanne
     env.put("AWS_REGION", AWS_REGION.id());
     env.put("DOCUMENT_SYNC_TABLE", DOCUMENT_SYNCS_TABLE);
     env.put("SNS_DOCUMENT_EVENT", "");
-    env.put("DEBUG", "false");
+    env.put("LOG_LEVEL", "trace");
     env.put("DOCUMENTS_IAM_URL", "http://localhost:8080");
     env.put("PATH_STYLE_ACCESS_ENABLED", "true");
 

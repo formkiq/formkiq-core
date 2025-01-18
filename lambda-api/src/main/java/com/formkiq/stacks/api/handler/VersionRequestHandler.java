@@ -27,7 +27,7 @@ import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
+
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -45,9 +45,8 @@ public class VersionRequestHandler implements ApiGatewayRequestHandler, ApiGatew
   public VersionRequestHandler() {}
 
   @Override
-  public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     List<String> modules = awsservice.environment().entrySet().stream()
         .filter(e -> e.getKey().startsWith("MODULE_") && !"false".equalsIgnoreCase(e.getValue()))

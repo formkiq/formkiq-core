@@ -21,33 +21,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb;
+package com.formkiq.stacks.dynamodb.config;
+
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.AwsServiceExtension;
 
 /**
- * Service for keeping track of number of documents.
+ * 
+ * {@link AwsServiceExtension} for {@link ConfigService}.
  *
  */
-public interface DocumentCountService {
+public class ConfigServiceExtension implements AwsServiceExtension<ConfigService> {
+
+  /** {@link ConfigService}. */
+  private ConfigService service;
 
   /**
-   * Get Document Count.
-   * 
-   * @param siteId {@link String}
-   * @return long
+   * constructor.
    */
-  long getDocumentCount(String siteId);
+  public ConfigServiceExtension() {}
 
-  /**
-   * Increment Document Count.
-   * 
-   * @param siteId {@link String}
-   */
-  void incrementDocumentCount(String siteId);
+  @Override
+  public ConfigService loadService(final AwsServiceCache awsServiceCache) {
+    if (this.service == null) {
+      DynamoDbConnectionBuilder connection =
+          awsServiceCache.getExtension(DynamoDbConnectionBuilder.class);
+      this.service =
+          new ConfigServiceDynamoDb(connection, awsServiceCache.environment("DOCUMENTS_TABLE"));
+    }
 
-  /**
-   * Remove Document Count for SiteId.
-   * 
-   * @param siteId {@link String}
-   */
-  void removeDocumentCount(String siteId);
+    return this.service;
+  }
 }

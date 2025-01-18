@@ -114,6 +114,29 @@ Parameters:
     Description: The name of the FormKiQ Certificate Stack Name
     Default: ""
 
+  Partition:
+    Description: The partition in which the resource is located. A partition is a group of AWS Regions
+    Type: String
+
+  LogRetentionInDays:
+    Type: Number
+    Description: The number of days to retain the log events
+
+  LogFormat:
+    Description: >
+      The format in which the application and system logs are stored.
+    Type: String
+
+  LogLevelApplication:
+    Type: String
+    Description: >
+      The level of logging for the FormKiQ Application logs.
+
+  LogLevelSystem:
+    Type: String
+    Description: >
+      The level of logging for the AWS Platform System logs.
+
 Conditions:
 
   HasCertificateStackName:
@@ -121,6 +144,11 @@ Conditions:
       - Fn::Equals: 
         - Ref: CertificateStackName
         - ''
+
+  IsLogFormatJSON:
+    Fn::Equals:
+      - Ref: LogFormat
+      - JSON
 
 Resources:        
 
@@ -131,6 +159,14 @@ Resources:
       Parameters:
         AppEnvironment: 
           Ref: AppEnvironment
+        LogRetentionInDays:
+          Ref: LogRetentionInDays
+        LogFormat:
+          Ref: LogFormat
+        LogLevelApplication:
+          Ref: LogLevelApplication
+        LogLevelSystem:
+          Ref: LogLevelSystem
         FormKiQType: 
           Ref: FormKiQType
         FormKiQVersion:
@@ -153,14 +189,14 @@ Resources:
           Fn::GetAtt: 
             - OcrQueue
             - QueueUrl
+        OcrQueueArn:
+          Fn::GetAtt:
+            - OcrQueue
+            - Arn
         VpcStackName:
           Ref: VpcStackName
         EnablePublicUrls:
           Ref: EnablePublicUrls
-      Tags:
-        Application: "FormKiQ"
-        AppEnvironment: 
-          Fn::Sub: "${AppEnvironment}"
 
   HttpApi:
     Type: AWS::Serverless::Application
@@ -181,10 +217,6 @@ Resources:
           Fn::GetAtt: 
           - ApiLambda
           - Outputs.DocumentsApiRequestsArn
-      Tags:
-        Application: "FormKiQ"
-        AppEnvironment: 
-          Fn::Sub: "${AppEnvironment}"
           
   IamApi:
     Type: AWS::Serverless::Application
@@ -201,10 +233,6 @@ Resources:
           Fn::GetAtt: 
           - Ocr
           - Outputs.OcrProcessorArn
-      Tags:
-        Application: "FormKiQ"
-        AppEnvironment: 
-          Fn::Sub: "${AppEnvironment}"
           
   KeyApi:
     Type: AWS::Serverless::Application
@@ -213,6 +241,16 @@ Resources:
       Parameters:
         AppEnvironment: 
           Ref: AppEnvironment
+        LogRetentionInDays:
+          Ref: LogRetentionInDays
+        LogFormat:
+          Ref: LogFormat
+        LogLevelApplication:
+          Ref: LogLevelApplication
+        LogLevelSystem:
+          Ref: LogLevelSystem
+        Partition:
+          Ref: Partition
         FormKiQType:
           Ref: FormKiQType
         DocumentsApiRequestsArn:
@@ -223,10 +261,6 @@ Resources:
           Fn::GetAtt: 
           - Ocr
           - Outputs.OcrProcessorArn
-      Tags:
-        Application: "FormKiQ"
-        AppEnvironment: 
-          Fn::Sub: "${AppEnvironment}"
           
   DocumentsApiInvokePermission:
     Type: "AWS::Lambda::Permission"
@@ -243,21 +277,24 @@ Resources:
   DocumentsStageAccessLogs:
     Type: AWS::Logs::LogGroup
     Properties:
-      RetentionInDays: 90
+      RetentionInDays:
+        Ref: LogRetentionInDays
       LogGroupName: 
         Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/APIDocumentsHttpAccessLogs"
       
   IamDocumentsStageAccessLogs:
     Type: AWS::Logs::LogGroup
     Properties:
-      RetentionInDays: 90
+      RetentionInDays:
+        Ref: LogRetentionInDays
       LogGroupName: 
         Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/APIDocumentsIamAccessLogs"
 
   KeyDocumentsStageAccessLogs:
     Type: AWS::Logs::LogGroup
     Properties:
-      RetentionInDays: 90
+      RetentionInDays:
+        Ref: LogRetentionInDays
       LogGroupName: 
         Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/APIDocumentsKeyAccessLogs"
       
@@ -646,8 +683,16 @@ Resources:
       Parameters:
         AppEnvironment: 
           Ref: AppEnvironment
-        FormKiQType:
-          Ref: FormKiQType
+        LogRetentionInDays:
+          Ref: LogRetentionInDays
+        LogFormat:
+          Ref: LogFormat
+        LogLevelApplication:
+          Ref: LogLevelApplication
+        LogLevelSystem:
+          Ref: LogLevelSystem
+        Partition:
+          Ref: Partition
         OcrQueueArn:
           Fn::GetAtt:
             - OcrQueue

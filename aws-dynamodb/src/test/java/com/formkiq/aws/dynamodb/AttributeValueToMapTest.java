@@ -23,6 +23,7 @@
  */
 package com.formkiq.aws.dynamodb;
 
+import com.formkiq.aws.dynamodb.objects.Objects;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
@@ -53,7 +54,7 @@ public class AttributeValueToMapTest {
     final int expected = 3;
     assertEquals(expected, result.size());
     assertEquals("text/plain", result.get("contentType"));
-    assertEquals("38", result.get("contentLength").toString());
+    assertEquals("38", Objects.formatDouble((Double) result.get("contentLength")));
     assertEquals("[123, 444]", result.get("ids").toString());
   }
 }

@@ -38,7 +38,6 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.aws.dynamodb.objects.Strings;
@@ -70,9 +69,8 @@ public class DocumentIdUrlRequestHandler
   public DocumentIdUrlRequestHandler() {}
 
   @Override
-  public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String documentId = event.getPathParameters().get("documentId");
     String siteId = authorization.getSiteId();
@@ -85,7 +83,7 @@ public class DocumentIdUrlRequestHandler
     String versionId = getVersionId(awsservice, versionAttributes, versionKey);
 
     boolean inline = "true".equals(getParameter(event, "inline"));
-    URL url = getS3Url(logger, authorization, awsservice, event, item, versionId, inline);
+    URL url = getS3Url(authorization, awsservice, event, item, versionId, inline);
 
     if (url != null) {
       if (awsservice.containsExtension(UserActivityPlugin.class)) {
@@ -135,8 +133,7 @@ public class DocumentIdUrlRequestHandler
 
   /**
    * Get S3 URL.
-   * 
-   * @param logger {@link LambdaLogger}
+   *
    * @param authorization {@link ApiAuthorization}
    * @param awsservice {@link AwsServiceCache}
    * @param event {@link ApiGatewayRequestEvent}
@@ -147,19 +144,16 @@ public class DocumentIdUrlRequestHandler
    * @throws URISyntaxException URISyntaxException
    * @throws MalformedURLException MalformedURLException
    */
-  private URL getS3Url(final LambdaLogger logger, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice, final ApiGatewayRequestEvent event, final DocumentItem item,
-      final String versionId, final boolean inline)
-      throws URISyntaxException, MalformedURLException {
+  private URL getS3Url(final ApiAuthorization authorization, final AwsServiceCache awsservice,
+      final ApiGatewayRequestEvent event, final DocumentItem item, final String versionId,
+      final boolean inline) throws URISyntaxException, MalformedURLException {
 
     final String documentId = item.getDocumentId();
 
     String siteId = authorization.getSiteId();
 
-    if (awsservice.debug()) {
-      logger.log("Finding S3 Url for document '" + item.getDocumentId() + "' version = '"
-          + versionId + "'");
-    }
+    awsservice.getLogger().debug(
+        "Finding S3 Url for document '" + item.getDocumentId() + "' version = '" + versionId + "'");
 
     String s3Bucket = awsservice.environment("DOCUMENTS_S3_BUCKET");
     String filename = getFilename(item);

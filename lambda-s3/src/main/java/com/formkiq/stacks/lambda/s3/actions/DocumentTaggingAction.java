@@ -23,10 +23,11 @@
  */
 package com.formkiq.stacks.lambda.s3.actions;
 
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static com.formkiq.aws.dynamodb.objects.Strings.removeEndingPunctuation;
 import static com.formkiq.aws.dynamodb.objects.Strings.removeQuotes;
 import static com.formkiq.module.http.HttpResponseStatus.is2XX;
-import static com.formkiq.stacks.dynamodb.ConfigService.CHATGPT_API_KEY;
+import static com.formkiq.stacks.dynamodb.config.ConfigService.CHATGPT_API_KEY;
 import java.io.IOException;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
@@ -40,20 +41,20 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.formkiq.aws.dynamodb.DynamicObject;
+
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
-import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.http.HttpHeaders;
 import com.formkiq.module.http.HttpService;
 import com.formkiq.module.http.HttpServiceJdk11;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.dynamodb.ConfigService;
+import com.formkiq.module.lambdaservices.logger.Logger;
+import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import com.formkiq.stacks.lambda.s3.DocumentAction;
 import com.formkiq.stacks.lambda.s3.DocumentContentFunction;
 import com.formkiq.stacks.lambda.s3.openai.OpenAiChatCompletionsChoice;
@@ -73,17 +74,17 @@ public class DocumentTaggingAction implements DocumentAction {
   /** Maximum document size to send to ChatGpt. */
   private static final int CHAT_GPT_MAX_LENGTH = 2000;
   /** Chat Gpt Temperature. */
-  private static final Double CHAT_GPT_TEMPERATURE = Double.valueOf(0.5);
+  private static final Double CHAT_GPT_TEMPERATURE = 0.5;
   /** {@link ConfigService}. */
-  private ConfigService configsService;
+  private final ConfigService configsService;
   /** {@link DocumentService}. */
-  private DocumentService documentService;
+  private final DocumentService documentService;
   /** {@link Gson}. */
-  private Gson gson = new GsonBuilder().create();
+  private final Gson gson = new GsonBuilder().create();
   /** {@link HttpService}. */
-  private HttpService http = new HttpServiceJdk11();
+  private final HttpService http = new HttpServiceJdk11();
   /** {@link AwsServiceCache}. */
-  private AwsServiceCache serviceCache;
+  private final AwsServiceCache serviceCache;
 
   /**
    * constructor.
@@ -96,14 +97,13 @@ public class DocumentTaggingAction implements DocumentAction {
     this.documentService = services.getExtension(DocumentService.class);
   }
 
-  private String createChatGptPrompt(final LambdaLogger logger, final String siteId,
-      final String documentId, final Action action) throws IOException {
+  private String createChatGptPrompt(final Logger logger, final String siteId,
+      final String documentId) throws IOException {
 
     DocumentItem item = this.documentService.findDocument(siteId, documentId);
 
     DocumentContentFunction docContentFucn = new DocumentContentFunction(this.serviceCache);
-    List<String> contentUrls =
-        docContentFucn.getContentUrls(this.serviceCache.debug() ? logger : null, siteId, item);
+    List<String> contentUrls = docContentFucn.getContentUrls(logger, siteId, item);
 
     if (contentUrls.isEmpty()) {
       throw new IOException("'contentUrls' is empty");
@@ -140,7 +140,7 @@ public class DocumentTaggingAction implements DocumentAction {
 
   private String getTags(final Action action) throws IOException {
     String tags = action.parameters().get("tags");
-    if (Strings.isEmpty(tags)) {
+    if (isEmpty(tags)) {
       throw new IOException("missing 'tags' parameter");
     }
     return tags;
@@ -150,7 +150,6 @@ public class DocumentTaggingAction implements DocumentAction {
     return Arrays.asList(getTags(action).split(","));
   }
 
-  @SuppressWarnings("unchecked")
   private void parseChatGptResponse(final String siteId, final String documentId,
       final Action action, final HttpResponse<String> httpResponse) throws IOException {
 
@@ -180,7 +179,7 @@ public class DocumentTaggingAction implements DocumentAction {
           if (obj instanceof Collection) {
             list = (List<Object>) obj;
           } else {
-            list = Arrays.asList(obj.toString());
+            list = List.of(obj.toString());
           }
         }
 
@@ -191,7 +190,7 @@ public class DocumentTaggingAction implements DocumentAction {
 
           if (list.size() > 1) {
             tag.setValue(null);
-            tag.setValues(list.stream().map(i -> i.toString()).collect(Collectors.toList()));
+            tag.setValues(list.stream().map(Object::toString).collect(Collectors.toList()));
           }
 
           tags.add(tag);
@@ -204,7 +203,6 @@ public class DocumentTaggingAction implements DocumentAction {
     }
   }
 
-  @SuppressWarnings("unchecked")
   private Map<String, Object> parseGptText(final List<String> tags, final String text) {
 
     Map<String, String> tagMap =
@@ -219,7 +217,6 @@ public class DocumentTaggingAction implements DocumentAction {
     return data;
   }
 
-  @SuppressWarnings("unchecked")
   private Object removeQuotesFromObject(final Object o) {
     Object oo = o;
     if (oo instanceof String) {
@@ -240,11 +237,11 @@ public class DocumentTaggingAction implements DocumentAction {
   }
 
   @Override
-  public void run(final LambdaLogger logger, final String siteId, final String documentId,
+  public void run(final Logger logger, final String siteId, final String documentId,
       final List<Action> actions, final Action action) throws IOException {
 
     String engine = action.parameters().get("engine");
-    if (engine != null && "chatgpt".equals(engine.toLowerCase())) {
+    if ("chatgpt".equalsIgnoreCase(engine)) {
       runChatGpt(logger, siteId, documentId, action);
     } else {
       throw new IOException("Unknown engine: " + engine);
@@ -254,31 +251,31 @@ public class DocumentTaggingAction implements DocumentAction {
   /**
    * Run ChatGpt Document Tagging.
    * 
-   * @param logger {@link LambdaLogger}
+   * @param logger {@link Logger}
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param action {@link Action}
    * @throws IOException IOException
    */
-  private void runChatGpt(final LambdaLogger logger, final String siteId, final String documentId,
+  private void runChatGpt(final Logger logger, final String siteId, final String documentId,
       final Action action) throws IOException {
 
-    DynamicObject configs = this.configsService.get(siteId);
-    String chatGptApiKey = configs.getString(CHATGPT_API_KEY);
+    SiteConfiguration configs = this.configsService.get(siteId);
+    String chatGptApiKey = configs.getChatGptApiKey();
 
-    if (chatGptApiKey == null) {
+    if (isEmpty(chatGptApiKey)) {
       throw new IOException(String.format("missing config '%s'", CHATGPT_API_KEY));
     }
 
     Map<String, Object> payload = new HashMap<>();
 
-    String prompt = createChatGptPrompt(logger, siteId, documentId, action);
+    String prompt = createChatGptPrompt(logger, siteId, documentId);
 
     Map<String, Object> schema = generateOpenApiSchema(action);
 
     payload.put("model", "gpt-3.5-turbo");
-    payload.put("messages", Arrays.asList(Map.of("role", "user", "content", prompt)));
-    payload.put("functions", Arrays.asList(Map.of("name", "get_text_data", "parameters", schema)));
+    payload.put("messages", List.of(Map.of("role", "user", "content", prompt)));
+    payload.put("functions", List.of(Map.of("name", "get_text_data", "parameters", schema)));
     payload.put("function_call", Map.of("name", "get_text_data"));
     payload.put("temperature", CHAT_GPT_TEMPERATURE);
 
@@ -288,16 +285,12 @@ public class DocumentTaggingAction implements DocumentAction {
         .add("Content-Type", "application/json").add("Authorization", "Bearer " + chatGptApiKey));
 
     String body = this.gson.toJson(payload);
-    if (this.serviceCache.debug()) {
-      logger.log("sending POST request to " + url + " body: " + body);
-    }
+    logger.debug("sending POST request to " + url + " body: " + body);
 
     HttpResponse<String> response = this.http.post(url, headers, Optional.empty(), body);
 
-    if (this.serviceCache.debug()) {
-      logger.log(String.format("{\"engine\":\"%s\",\"statusCode\":\"%s\",\"body\":\"%s\"}",
-          "chatgpt", String.valueOf(response.statusCode()), response.body()));
-    }
+    logger.debug(String.format("{\"engine\":\"%s\",\"statusCode\":\"%s\",\"body\":\"%s\"}",
+        "chatgpt", response.statusCode(), response.body()));
 
     if (is2XX(response)) {
       parseChatGptResponse(siteId, documentId, action, response);

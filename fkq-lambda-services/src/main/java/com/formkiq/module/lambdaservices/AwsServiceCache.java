@@ -27,6 +27,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import com.formkiq.module.lambdaservices.logger.LogLevel;
+import com.formkiq.module.lambdaservices.logger.LogType;
+import com.formkiq.module.lambdaservices.logger.Logger;
+import com.formkiq.module.lambdaservices.logger.LoggerImpl;
 import software.amazon.awssdk.regions.Region;
 
 /**
@@ -35,14 +40,14 @@ import software.amazon.awssdk.regions.Region;
  */
 public class AwsServiceCache {
 
-  /** Is Debug Mode. */
-  private boolean debug;
+  /** {@link AwsServiceExtension}. */
+  private final Map<Class<?>, List<AwsServiceExtension<?>>> extensions = new HashMap<>();
+  /** {@link Logger}. */
+  private Logger logger;
   /** Enable X Ray. */
   private boolean enableXray;
   /** Environment {@link Map}. */
   private Map<String, String> environment;
-  /** {@link AwsServiceExtension}. */
-  private final Map<Class<?>, List<AwsServiceExtension<?>>> extensions = new HashMap<>();
   /** FormKiQ Type. */
   private String formKiQType;
   /** {@link Region}. */
@@ -65,22 +70,33 @@ public class AwsServiceCache {
   }
 
   /**
-   * Is Debug.
+   * Get {@link Logger}.
    * 
-   * @return boolean
+   * @return Logger
    */
-  public boolean debug() {
-    return this.debug;
+  public Logger getLogger() {
+    return this.logger;
   }
 
   /**
-   * Set Debug Mode.
+   * Set Log Level.
    * 
-   * @param isDebug boolean
-   * @return {@link AwsServiceCache}s
+   * @param logLevel {@link String}
+   * @param logType {@link String}
+   * @return AwsServiceCache
    */
-  public AwsServiceCache debug(final boolean isDebug) {
-    this.debug = isDebug;
+  public AwsServiceCache setLogger(final String logLevel, final String logType) {
+    return setLogger(new LoggerImpl(LogLevel.fromString(logLevel), LogType.fromString(logType)));
+  }
+
+  /**
+   * Set Log Level.
+   *
+   * @param log {@link Logger}
+   * @return AwsServiceCache
+   */
+  public AwsServiceCache setLogger(final Logger log) {
+    this.logger = log;
     return this;
   }
 
@@ -131,7 +147,7 @@ public class AwsServiceCache {
    */
   public AwsServiceCache environment(final Map<String, String> map) {
     this.environment = new HashMap<>(map);
-    this.formKiQType = map.containsKey("FormKiQType") ? map.get("FormKiQType") : "core";
+    this.formKiQType = map.getOrDefault("FormKiQType", "core");
     return this;
   }
 
@@ -178,7 +194,6 @@ public class AwsServiceCache {
    * @param clazz {@link Class}
    * @return Class instance
    */
-  @SuppressWarnings("unchecked")
   public <T> T getExtensionOrNull(final Class<T> clazz) {
 
     T result = null;
@@ -202,7 +217,6 @@ public class AwsServiceCache {
    * @param clazz {@link Class}
    * @return Class instance
    */
-  @SuppressWarnings("unchecked")
   public <T> List<T> getExtensions(final Class<T> clazz) {
 
     List<T> results = new ArrayList<>();
@@ -284,7 +298,7 @@ public class AwsServiceCache {
   private <T> void register(final Class<T> clazz, final AwsServiceExtension<T> extension,
       final boolean overwrite) {
 
-    List<AwsServiceExtension<?>> list = null;
+    List<AwsServiceExtension<?>> list;
     if (this.extensions.containsKey(clazz) && !overwrite) {
       list = this.extensions.get(clazz);
     } else {

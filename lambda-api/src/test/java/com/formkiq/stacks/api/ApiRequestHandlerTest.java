@@ -27,7 +27,6 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -57,6 +56,9 @@ import com.formkiq.testutils.aws.LocalStackExtension;
 @ExtendWith(DynamoDbExtension.class)
 public class ApiRequestHandlerTest extends AbstractRequestHandler {
 
+  /** Expected. */
+  private static final int EXPECTED_3 = 3;
+
   /**
    * Get Document Request, Document not found.
    *
@@ -78,7 +80,6 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
 
       // then
       assertEquals(expected, response);
-      assertTrue(getLogger().containsString("response: " + expected));
     }
   }
 
@@ -150,7 +151,7 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
 
     // then
     assertEquals(expected, outstream.toString(StandardCharsets.UTF_8));
-    assertTrue(getLogger().containsString("response: " + expected));
+    assertEquals(EXPECTED_3, getLogger().getMessages().size());
   }
 
   /**
@@ -162,6 +163,8 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
   public void testHandleGetRequest04() throws Exception {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
+      getLogger().getMessages().clear();
+
       ApiGatewayRequestEvent event = toRequestEvent("/request-invalid-resource.json");
       addParameter(event, "siteId", siteId);
       setCognitoGroup(event, siteId);
@@ -174,7 +177,7 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
 
       // then
       assertEquals(expected, response);
-      assertTrue(getLogger().containsString("response: " + expected));
+      assertEquals(EXPECTED_3, getLogger().getMessages().size());
     }
   }
 

@@ -21,13 +21,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb;
+package com.formkiq.stacks.dynamodb.config;
 
-import com.formkiq.aws.dynamodb.DynamicObject;
+import java.util.Map;
 
 /** Config Service. */
 public interface ConfigService {
 
+  /** Document Count. */
+  String DOCUMENT_COUNT = "DocumentCount";
   /** ChatGpt Api Key. */
   String CHATGPT_API_KEY = "ChatGptApiKey";
   /** Document Time To Live Key. */
@@ -42,7 +44,6 @@ public interface ConfigService {
   String WEBHOOK_TIME_TO_LIVE = "WebhookTimeToLive";
   /** Notification Email. */
   String NOTIFICATION_EMAIL = "NotificationEmail";
-
   /** Docusign User Id. */
   String KEY_DOCUSIGN_USER_ID = "docusignUserId";
   /** Docusign Integration Key / Client Id. */
@@ -61,17 +62,44 @@ public interface ConfigService {
 
   /**
    * Get Config.
-   * 
+   *
    * @param siteId Optional Grouping siteId
-   * @return {@link DynamicObject}
+   * @return {@link SiteConfiguration}
    */
-  DynamicObject get(String siteId);
+  SiteConfiguration get(String siteId);
 
   /**
    * Save Config.
    * 
    * @param siteId Optional Grouping siteId
-   * @param obj {@link DynamicObject}
+   * @param config {@link SiteConfiguration}
+   * @return boolean
    */
-  void save(String siteId, DynamicObject obj);
+  boolean save(String siteId, SiteConfiguration config);
+
+  /**
+   * Increment Key for SiteId.
+   *
+   * @param siteId {@link String}
+   * @param key {@link String}
+   * @return long
+   */
+  long increment(String siteId, String key);
+
+  /**
+   * Get Increment Value.
+   * 
+   * @param siteId {@link String}
+   * @param key {@link String}
+   * @return long
+   */
+  long getIncrement(String siteId, String key);
+
+  /**
+   * Get Increment Values.
+   *
+   * @param siteId {@link String}
+   * @return Map
+   */
+  Map<String, Long> getIncrements(String siteId);
 }

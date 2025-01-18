@@ -41,7 +41,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
+
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.PaginationToAttributeValue;
@@ -62,6 +62,7 @@ import com.formkiq.aws.dynamodb.cache.CacheService;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.stacks.api.transformers.PresignedUrlsToS3Bucket;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentService;
@@ -82,9 +83,8 @@ public class DocumentsRequestHandler
   public DocumentsRequestHandler() {}
 
   @Override
-  public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     ActionStatus actionStatus = getActionStatus(event);
 
@@ -95,15 +95,15 @@ public class DocumentsRequestHandler
 
     if (isSoftDelete(event)) {
 
-      current = getSoftDeletedDocument(logger, event, awsservice, siteId, map);
+      current = getSoftDeletedDocument(event, awsservice, siteId, map);
 
     } else if (actionStatus != null) {
 
-      current = getActionStatus(logger, event, awsservice, siteId, actionStatus, map);
+      current = getActionStatus(event, awsservice, siteId, actionStatus, map);
 
     } else {
 
-      current = getDocuments(logger, event, awsservice, siteId, map);
+      current = getDocuments(event, awsservice, siteId, map);
     }
 
     map.put("next", current.hasNext() ? current.getNext() : null);
@@ -130,10 +130,11 @@ public class DocumentsRequestHandler
     return status;
   }
 
-  private ApiPagination getActionStatus(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final AwsServiceCache awsservice, final String siteId,
-      final ActionStatus actionStatus, final Map<String, Object> map) {
+  private ApiPagination getActionStatus(final ApiGatewayRequestEvent event,
+      final AwsServiceCache awsservice, final String siteId, final ActionStatus actionStatus,
+      final Map<String, Object> map) {
 
+    Logger logger = awsservice.getLogger();
     CacheService cacheService = awsservice.getExtension(CacheService.class);
 
     ApiPagination pagination = getPagination(cacheService, event);
@@ -159,10 +160,11 @@ public class DocumentsRequestHandler
     return current;
   }
 
-  private ApiPagination getDocuments(final LambdaLogger logger, final ApiGatewayRequestEvent event,
+  private ApiPagination getDocuments(final ApiGatewayRequestEvent event,
       final AwsServiceCache awsservice, final String siteId, final Map<String, Object> map)
       throws BadException {
 
+    Logger logger = awsservice.getLogger();
     CacheService cacheService = awsservice.getExtension(CacheService.class);
 
     ApiPagination pagination = getPagination(cacheService, event);
@@ -174,11 +176,9 @@ public class DocumentsRequestHandler
     String dateString = getParameter(event, "date");
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
-    ZonedDateTime date = transformToDate(logger, awsservice, documentService, dateString, tz);
 
-    if (awsservice.debug()) {
-      logger.log("search for document using date: " + date);
-    }
+    ZonedDateTime date = transformToDate(awsservice, documentService, dateString, tz);
+    logger.trace("search for document using date: " + date);
 
     final PaginationResults<DocumentItem> results =
         documentService.findDocumentsByDate(siteId, date, ptoken, limit);
@@ -202,10 +202,10 @@ public class DocumentsRequestHandler
     return "/documents";
   }
 
-  private ApiPagination getSoftDeletedDocument(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final AwsServiceCache awsservice, final String siteId,
-      final Map<String, Object> map) {
+  private ApiPagination getSoftDeletedDocument(final ApiGatewayRequestEvent event,
+      final AwsServiceCache awsservice, final String siteId, final Map<String, Object> map) {
 
+    Logger logger = awsservice.getLogger();
     CacheService cacheService = awsservice.getExtension(CacheService.class);
 
     ApiPagination pagination = getPagination(cacheService, event);
@@ -236,9 +236,8 @@ public class DocumentsRequestHandler
   }
 
   @Override
-  public ApiRequestHandlerResponse post(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     ApiMapResponse apiMapResponse;
     DocumentsUploadRequestHandler handler = new DocumentsUploadRequestHandler();
@@ -304,7 +303,6 @@ public class DocumentsRequestHandler
   /**
    * Transform {@link String} to {@link ZonedDateTime}.
    *
-   * @param logger {@link LambdaLogger}
    * @param awsservice {@link AwsServiceCache}
    * @param documentService {@link DocumentService}
    * @param dateString {@link String}
@@ -312,19 +310,18 @@ public class DocumentsRequestHandler
    * @return {@link Date}
    * @throws BadException BadException
    */
-  private ZonedDateTime transformToDate(final LambdaLogger logger, final AwsServiceCache awsservice,
+  private ZonedDateTime transformToDate(final AwsServiceCache awsservice,
       final DocumentService documentService, final String dateString, final String tz)
       throws BadException {
 
     ZonedDateTime date;
+    Logger logger = awsservice.getLogger();
 
     if (dateString != null) {
       try {
-        date = DateUtil.toDateTimeFromString(dateString, tz);
 
-        if (awsservice.debug()) {
-          logger.log("searching using date parameter: " + dateString + " and tz " + tz);
-        }
+        date = DateUtil.toDateTimeFromString(dateString, tz);
+        logger.trace("searching using date parameter: " + dateString + " and tz " + tz);
 
       } catch (ZoneRulesException e) {
         throw new BadException("Invalid date string: " + dateString);
@@ -335,15 +332,10 @@ public class DocumentsRequestHandler
 
       if (date == null) {
         date = ZonedDateTime.now();
-
-        if (awsservice.debug()) {
-          logger.log("searching using default date: " + date);
-        }
+        logger.trace("searching using default date: " + date);
 
       } else {
-        if (awsservice.debug()) {
-          logger.log("searching using Most Recent Document Date: " + date);
-        }
+        logger.trace("searching using Most Recent Document Date: " + date);
       }
     }
 

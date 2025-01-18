@@ -19,38 +19,39 @@ Parameters:
     Default: prod
   
   EnablePublicUrls:
-    Description: Enables /public urls (unauthenticated urls)
+    Description: >
+      Whether to enable "/public" endpoints, defaults to false. Public endpoints allow external users to submit documents, such as through a web form. As with any publicly-available functionality, there is a risk of abuse if enabled.
     Default: "false"
     Type: String
     AllowedValues: ["true", "false"]
     
   PasswordMinimumLength:
     Type: Number
-    Description: The minimum password length for FormKiQ Cognito Users
+    Description: Set the Amazon Cognito password policies, minimum password length requirement for all users
     MinValue: "6"
     MaxValue: "99"
     Default: "8"
     
   PasswordRequireLowercase:
-    Description: Whether FormKiQ Cognito Users password requires at least one lowercase letter
+    Description: Set the Amazon Cognito password policies, to require one lowercase letter in all passwords.
     Default: "false"
     Type: String
     AllowedValues: ["true", "false"]
     
   PasswordRequireNumbers:
-    Description: Whether FormKiQ Cognito Users password requires at least one number
+    Description: Set the Amazon Cognito password policies, to require one number in all passwords.
     Default: "false"
     Type: String
     AllowedValues: ["true", "false"]
     
   PasswordRequireSymbols:
-    Description: Whether FormKiQ Cognito Users password requires at least one symbol
+    Description: Set the Amazon Cognito password policies, to require one symbol in all passwords.
     Default: "false"
     Type: String
     AllowedValues: ["true", "false"]
     
   PasswordRequireUppercase:
-    Description: Whether FormKiQ Cognito Users password requires at least one uppercase letter
+    Description: Set the Amazon Cognito password policies, to require one uppercase letter in all passwords.
     Default: "false"
     Type: String
     AllowedValues: ["true", "false"]
@@ -59,12 +60,13 @@ Parameters:
     Type: String
     Description: >
       The name of the CloudFormation VPC stack that can be created after the initial FormKiQ install, using the add-on CloudFormation template for VPC https://docs.formkiq.com/docs/getting-started/quick-start#create-vpc.
-      Some services such as Typesense, Tesseract, and OpenSearch require a VPC. Only required if you are using any of these services; otherwise, this can remain empty.
+      Some services such as Typesense, and OpenSearch require a VPC. Only required if you are using any of these services; otherwise, this can remain empty.
     Default: ""
 
   TypesenseApiKey:
     Type: String
-    Description: (optional) Random string of characters for https://typesense.org API access 
+    Description: >
+      Optional: API Key to access the [Typesense](https://typesense.org) server. Typesense is used to provide full text search support for document metadata. The API Key can be any random string of characters. To enable Typesense, the `VpcStackName` also needs to be set.
     Default: ""
 
   TypesenseMemory:
@@ -78,6 +80,120 @@ Parameters:
     Default: "FARGATE_SPOT"
     Type: String
     AllowedValues: ["FARGATE_SPOT", "FARGATE"]
+
+  LogRetentionInDays:
+    Type: Number
+    Description: The number of days to retain the log events 
+    Default: 90
+    AllowedValues:
+      - 1
+      - 3
+      - 5
+      - 7
+      - 14
+      - 30
+      - 60
+      - 90
+      - 120
+      - 150
+      - 180
+      - 365
+      - 400
+      - 545
+      - 731
+      - 1096
+      - 1827
+      - 2192
+      - 2557
+      - 2922
+      - 3288
+      - 3653
+
+  LogFormat:
+    Description: >
+      The format in which the application and system logs are stored.
+    Type: String
+    AllowedValues: ["Text", "JSON"]
+    Default: "Text"
+
+  LogLevelApplication:
+    Type: String
+    Description: >
+      The level of logging for the FormKiQ Application logs. Only used when LogFormat is JSON
+    Default: "INFO"
+    AllowedValues: ["TRACE", "DEBUG", "INFO", "ERROR"]
+
+  LogLevelSystem:
+    Type: String
+    Description: >
+      The level of logging for the AWS Platform System logs. Only used when LogFormat is JSON
+    Default: "INFO"
+    AllowedValues: ["DEBUG", "INFO", "WARN"]
+
+Mappings: 
+  RegionMap: 
+    us-east-2:
+      PARTITION: "aws"
+    us-east-1:
+      PARTITION: "aws"
+    us-west-1:
+      PARTITION: "aws"
+    us-west-2:
+      PARTITION: "aws"
+    af-south-1:
+      PARTITION: "aws"
+    ap-east-1:
+      PARTITION: "aws"
+    ap-south-2:
+      PARTITION: "aws"
+    ap-southeast-3:
+      PARTITION: "aws"
+    ap-southeast-4:
+      PARTITION: "aws"
+    ap-south-1:
+      PARTITION: "aws"
+    ap-northeast-3:
+      PARTITION: "aws"
+    ap-northeast-2:
+      PARTITION: "aws"
+    ap-southeast-1:
+      PARTITION: "aws"
+    ap-southeast-2:
+      PARTITION: "aws"
+    ap-northeast-1:
+      PARTITION: "aws"
+    ca-central-1:
+      PARTITION: "aws"
+    ca-west-1:
+      PARTITION: "aws"
+    eu-central-1:
+      PARTITION: "aws"
+    eu-west-1:
+      PARTITION: "aws"
+    eu-west-2:
+      PARTITION: "aws"
+    eu-south-1:
+      PARTITION: "aws"
+    eu-west-3:
+      PARTITION: "aws"
+    eu-south-2:
+      PARTITION: "aws"
+    eu-north-1:
+      PARTITION: "aws"
+    eu-central-2:
+      PARTITION: "aws"
+    il-central-1:
+      PARTITION: "aws"
+    me-south-1:
+      PARTITION: "aws"
+    me-central-1:
+      PARTITION: "aws"
+    sa-east-1:
+      PARTITION: "aws"
+    us-gov-east-1:
+      PARTITION: "aws-us-gov"
+    us-gov-west-1:
+      PARTITION: "aws-us-gov"
       
 Conditions:
 
@@ -123,6 +239,14 @@ Resources:
       Parameters:
         TypesenseApiKey:
           Ref: TypesenseApiKey
+        LogRetentionInDays:
+          Ref: LogRetentionInDays
+        LogFormat:
+          Ref: LogFormat
+        LogLevelApplication:
+          Ref: LogLevelApplication
+        LogLevelSystem:
+          Ref: LogLevelSystem
         VpcStackName:
           Ref: VpcStackName
         AppEnvironment: 
@@ -158,10 +282,6 @@ Resources:
           - IsGovCloud
           - "true"
           - "false"
-      Tags:
-        Application: "FormKiQ"
-        AppEnvironment: 
-          Fn::Sub: "${AppEnvironment}"
 
   CoreConsoleInstall:
     Type: AWS::Serverless::Application
@@ -171,6 +291,17 @@ Resources:
     Properties:
       Location: console/template-install.yaml
       Parameters:
+        Partition:
+          Fn::FindInMap:
+          - RegionMap
+          - Ref: "AWS::Region"
+          - PARTITION
+        LogFormat:
+          Ref: LogFormat
+        LogLevelApplication:
+          Ref: LogLevelApplication
+        LogLevelSystem:
+          Ref: LogLevelSystem
         IsGovCloud:
           Fn::If:
           - IsGovCloud
@@ -226,11 +357,7 @@ Resources:
         CloudFrontDistributionDomainName: 
           Fn::GetAtt:
           - CoreConsole
-          - Outputs.CloudFrontDistributionDomainName                       
-      Tags:
-        Application: "FormKiQ"
-        AppEnvironment: 
-          Fn::Sub: "${AppEnvironment}"
+          - Outputs.CloudFrontDistributionDomainName
 
   Cognito:
     Type: AWS::Serverless::Application
@@ -254,14 +381,18 @@ Resources:
           Fn::Sub: "${PasswordRequireUppercase}"
         Domain: 
           Fn::Sub: "${AppEnvironment}${AWS::AccountId}"
+        LogRetentionInDays:
+          Ref: LogRetentionInDays
+        LogFormat:
+          Ref: LogFormat
+        LogLevelApplication:
+          Ref: LogLevelApplication
+        LogLevelSystem:
+          Ref: LogLevelSystem
         RedirectUrl:
           Fn::GetAtt:
           - CoreConsole
           - Outputs.ConsoleUrl
-      Tags:
-        Application: "FormKiQ"
-        AppEnvironment: 
-          Fn::Sub: "${AppEnvironment}"
         
   SsmProperties:
     Type: AWS::Serverless::Application
@@ -304,6 +435,14 @@ Resources:
       Parameters:
         AppEnvironment:
           Ref: AppEnvironment
+        LogRetentionInDays:
+          Ref: LogRetentionInDays
+        LogFormat:
+          Ref: LogFormat
+        LogLevelApplication:
+          Ref: LogLevelApplication
+        LogLevelSystem:
+          Ref: LogLevelSystem
         EnablePublicUrls: 
           Ref: EnablePublicUrls
         PasswordMinimumLength: 
@@ -383,10 +522,6 @@ Resources:
           Fn::GetAtt: 
           - Cognito
           - Outputs.CognitoUserPoolClientId
-      Tags:
-        Application: "FormKiQ"
-        AppEnvironment: 
-          Fn::Sub: "${AppEnvironment}"
           
   WebsocketApi:
     Type: AWS::Serverless::Application
@@ -398,11 +533,20 @@ Resources:
       Parameters:
         AppEnvironment: 
           Ref: AppEnvironment
-        FormKiQType:
-          Fn::GetAtt:
-            - Config
-            - Outputs.FormKiQType
-        CognitoUserPoolId:
+        LogRetentionInDays:
+          Ref: LogRetentionInDays
+        LogFormat:
+          Ref: LogFormat
+        LogLevelApplication:
+          Ref: LogLevelApplication
+        LogLevelSystem:
+          Ref: LogLevelSystem
+        Partition:
+          Fn::FindInMap:
+          - RegionMap
+          - Ref: "AWS::Region"
+          - PARTITION
+        CognitoUserPoolId: 
           Fn::GetAtt: 
           - Cognito
           - Outputs.CognitoUserPoolId
@@ -410,10 +554,6 @@ Resources:
           Fn::GetAtt: 
           - Cognito
           - Outputs.CognitoUserPoolClientId
-      Tags:
-        Application: "FormKiQ"
-        AppEnvironment: 
-          Fn::Sub: "${AppEnvironment}"
 
   EcsCluster:
     Type: AWS::Serverless::Application
@@ -453,10 +593,14 @@ Resources:
           - Outputs.ECSCluster
         TypesenseMemory:
           Ref: TypesenseMemory
-      Tags:
-        Application: "FormKiQ"
-        AppEnvironment: 
-          Fn::Sub: "${AppEnvironment}"
+        LogRetentionInDays:
+          Ref: LogRetentionInDays
+        LogFormat:
+          Ref: LogFormat
+        LogLevelApplication:
+          Ref: LogLevelApplication
+        LogLevelSystem:
+          Ref: LogLevelSystem
 
   TypesenseApiKeyParameter:
     Type: AWS::SSM::Parameter

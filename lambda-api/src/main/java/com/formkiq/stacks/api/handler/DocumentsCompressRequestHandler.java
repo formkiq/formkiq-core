@@ -36,7 +36,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
@@ -105,13 +104,12 @@ public class DocumentsCompressRequestHandler
   public Optional<Boolean> isAuthorized(final AwsServiceCache awsservice, final String method,
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
     boolean access = authorization.getPermissions().contains(ApiPermission.READ);
-    return Optional.of(Boolean.valueOf(access));
+    return Optional.of(access);
   }
 
   @Override
-  public ApiRequestHandlerResponse post(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsServices) throws Exception {
+  public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
 
     String siteId = authorization.getSiteId();
     String documentId = ID.uuid();

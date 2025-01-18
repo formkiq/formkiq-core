@@ -30,7 +30,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.PaginationToAttributeValue;
@@ -51,6 +50,8 @@ import com.formkiq.module.actions.services.MapToAction;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.validators.ApiValidator;
 import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.stacks.dynamodb.config.ConfigService;
+import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/actions". */
@@ -63,9 +64,8 @@ public class DocumentsActionsRequestHandler
   public DocumentsActionsRequestHandler() {}
 
   @Override
-  public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
@@ -77,7 +77,8 @@ public class DocumentsActionsRequestHandler
 
     ApiPagination pagination = getPagination(cacheService, event);
 
-    int limit = pagination != null ? pagination.getLimit() : getLimit(logger, event);
+    int limit =
+        pagination != null ? pagination.getLimit() : getLimit(awsservice.getLogger(), event);
     PaginationMapToken ptoken = pagination != null ? pagination.getStartkey() : null;
 
     PaginationToAttributeValue pav = new PaginationToAttributeValue();
@@ -126,9 +127,8 @@ public class DocumentsActionsRequestHandler
   }
 
   @Override
-  public ApiRequestHandlerResponse post(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
@@ -140,7 +140,9 @@ public class DocumentsActionsRequestHandler
 
     List<Map<String, Object>> list = (List<Map<String, Object>>) body.get("actions");
     List<Action> actions = list.stream().map(new MapToAction()).toList();
-    validateActions(awsservice, siteId, actions);
+
+    SiteConfiguration config = awsservice.getExtension(ConfigService.class).get(siteId);
+    validateActions(awsservice, config, siteId, actions);
 
     ActionsService service = awsservice.getExtension(ActionsService.class);
     int idx = service.getActions(siteId, documentId).size();

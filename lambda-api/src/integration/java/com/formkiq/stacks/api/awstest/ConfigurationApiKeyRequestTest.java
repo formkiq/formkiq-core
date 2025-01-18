@@ -37,6 +37,7 @@ import com.formkiq.client.model.AddApiKeyRequest;
 import com.formkiq.client.model.AddApiKeyResponse;
 import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AddDocumentResponse;
+import com.formkiq.client.model.ApiKey;
 import com.formkiq.client.model.GetApiKeysResponse;
 import com.formkiq.client.model.Site;
 import org.junit.jupiter.api.BeforeEach;
@@ -95,7 +96,7 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
    */
   @Test
   @Timeout(value = TEST_TIMEOUT)
-  public void testApiKey01() throws Exception {
+  public void testGetApiKey01() throws Exception {
     // given
     String name = "My API";
     final int expected = 3;
@@ -114,7 +115,7 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
         AddApiKeyResponse response = api.addApiKey(siteId, apiReq);
 
         // then
-        GetApiKeysResponse apiKeys = api.getApiKeys(siteId);
+        GetApiKeysResponse apiKeys = api.getApiKeys(siteId, null, null);
         assertFalse(notNull(apiKeys.getApiKeys()).isEmpty());
 
         api.deleteApiKey(siteId, response.getApiKey());
@@ -127,7 +128,7 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
 
     // when
     try {
-      api.getApiKeys(DEFAULT_SITE_ID);
+      api.getApiKeys(DEFAULT_SITE_ID, null, null);
       // then
       fail();
     } catch (ApiException e) {
@@ -142,7 +143,7 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
    */
   @Test
   @Timeout(value = TEST_TIMEOUT)
-  public void testApiKey02() {
+  public void testGetApiKey02() {
     // given
     addAndLoginCognito(FINANCE_EMAIL, List.of("finance"));
 
@@ -153,7 +154,7 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
 
     // when
     try {
-      api.getApiKeys(DEFAULT_SITE_ID);
+      api.getApiKeys(DEFAULT_SITE_ID, null, null);
 
       // then
       fail();
@@ -161,6 +162,44 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
       assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
       assertEquals("{\"message\":\"fkq access denied to siteId (default)\"}", e.getResponseBody());
     }
+  }
+
+  /**
+   * Test GET /configuration/apiKeys with next token.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  public void testGetApiKey03() throws Exception {
+    // given
+    String siteId = ID.uuid();
+    final int count = 5;
+
+    ApiClient client = getApiClients(siteId).get(0);
+    SystemManagementApi api = new SystemManagementApi(client);
+
+    for (int i = 0; i < count; i++) {
+      AddApiKeyRequest apiReq = new AddApiKeyRequest().name("test_" + i);
+      api.addApiKey(siteId, apiReq);
+    }
+
+    // when
+    GetApiKeysResponse response = api.getApiKeys(siteId, null, "2");
+
+    // then
+    assertNotNull(response.getNext());
+
+    List<ApiKey> apiKeys = notNull(response.getApiKeys());
+    assertEquals(2, apiKeys.size());
+    assertEquals("My Api Key", apiKeys.get(0).getName());
+    assertEquals("test_0", apiKeys.get(1).getName());
+
+    response = api.getApiKeys(siteId, response.getNext(), "2");
+    apiKeys = notNull(response.getApiKeys());
+    assertEquals(2, apiKeys.size());
+    assertEquals("test_1", apiKeys.get(0).getName());
+    assertEquals("test_2", apiKeys.get(1).getName());
   }
 
   /**
@@ -236,8 +275,8 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
       List<Site> sites = notNull(api.getSites(null).getSites());
       assertEquals(1, sites.size());
       assertEquals(siteId, sites.get(0).getSiteId());
-      assertEquals("GOVERN",
-          String.join(",", sites.get(0).getPermissions().stream().map(Enum::name).toList()));
+      assertEquals("GOVERN", String.join(",",
+          notNull(sites.get(0).getPermissions()).stream().map(Enum::name).toList()));
     }
   }
 }

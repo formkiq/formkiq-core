@@ -31,8 +31,6 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.Instant;
-import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -219,8 +217,7 @@ public class UserActivityRecord implements DynamodbRecord<UserActivityRecord> {
   }
 
   private String getFormattedDate() {
-    Instant nowUtc = Instant.now();
-    return DateTimeFormatter.ISO_INSTANT.format(nowUtc);
+    return DateUtil.getNowInIso8601Format();
   }
 
   @Override

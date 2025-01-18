@@ -71,6 +71,10 @@ Parameters:
     Type: String
     Description: Name of OCR Queue Url
 
+  OcrQueueArn:
+    Type: String
+    Description: Name of OCR Queue Arn
+
   VpcStackName:
     Type: String
     Description: FormKiQ VPC Stack Name 
@@ -78,6 +82,25 @@ Parameters:
   EnablePublicUrls:
     Description: Whether to enable public urls
     Type: String
+
+  LogRetentionInDays:
+    Type: Number
+    Description: The number of days to retain the log events
+
+  LogFormat:
+    Description: >
+      The format in which the application and system logs are stored.
+    Type: String
+
+  LogLevelApplication:
+    Type: String
+    Description: >
+      The level of logging for the FormKiQ Application logs.
+
+  LogLevelSystem:
+    Type: String
+    Description: >
+      The level of logging for the AWS Platform System logs.
 
 Conditions:
         
@@ -97,15 +120,19 @@ Conditions:
     Fn::And:
       - Condition: HasVpcStackName
       - Condition: HasTypesenseApiKey
-      
+
+  IsLogFormatJSON: 
+    Fn::Equals:
+      - Ref: LogFormat
+      - JSON
+
 Resources:        
 
   DocumentsApiRequestsLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: 
-        Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/${DocumentsApiRequests}"
-      RetentionInDays: 90
+      RetentionInDays:
+        Ref: LogRetentionInDays
       Tags:
         - Key: "Application"
           Value: "FormKiQ"
@@ -132,7 +159,8 @@ Resources:
         Variables:
           APP_ENVIRONMENT: 
             Fn::Sub: "${AppEnvironment}"
-          DEBUG: false
+          LOG_LEVEL:
+            Ref: LogLevelApplication
           ENABLE_AWS_X_RAY: true
           COGNITO_USER_POOL_CLIENT_ID:
             Ref: CognitoUserPoolClient
@@ -179,6 +207,21 @@ Resources:
         Fn::GetAtt:
         - DocumentsApiRequestsRole
         - Arn
+      LoggingConfig:
+        LogGroup:
+          Ref: DocumentsApiRequestsLogGroup
+        LogFormat:
+          Ref: LogFormat
+        ApplicationLogLevel:
+          Fn::If:
+          - IsLogFormatJSON
+          - Ref: LogLevelApplication
+          - Ref: AWS::NoValue
+        SystemLogLevel:
+          Fn::If:
+          - IsLogFormatJSON
+          - Ref: LogLevelSystem
+          - Ref: AWS::NoValue
       Tags:
         Application: "FormKiQ"
         AppEnvironment: 
@@ -287,7 +330,8 @@ Resources:
               Action:
               - sqs:SendMessage
               Resource:
-              - Fn::Sub: "arn:${AWS::Partition}:sqs:${AWS::Region}:${AWS::AccountId}:formkiq*"
+              - Fn::Sub: "arn:${Partition}:sqs:${AWS::Region}:${AWS::AccountId}:formkiq*"
+              - Fn::Sub: "${OcrQueueArn}"
               - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/sqs/WebsocketArn}}"
             - Effect: Allow
               Action:

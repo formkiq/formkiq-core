@@ -29,7 +29,7 @@ import static com.formkiq.stacks.dynamodb.FolderIndexRecord.INDEX_FILE_SK;
 
 import java.io.IOException;
 import java.util.Map;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
+
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
@@ -63,9 +63,8 @@ public class IndicesRequestHandler
   public IndicesRequestHandler() {}
 
   @Override
-  public ApiRequestHandlerResponse delete(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsServices) throws Exception {
+  public ApiRequestHandlerResponse delete(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
 
     String siteId = authorization.getSiteId();
     String type = event.getPathParameters().get("indexType");

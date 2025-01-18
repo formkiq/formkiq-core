@@ -23,8 +23,10 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.dynamodb.ConfigService;
+import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 
 /**
  * {@link DocumentsRestrictions} for Max Number of Documents.
@@ -39,42 +41,20 @@ public class DocumentsRestrictionsMaxContentLength implements DocumentsRestricti
   public DocumentsRestrictionsMaxContentLength() {}
 
   @Override
-  public boolean enforced(final AwsServiceCache awsservice, final String siteId, final String value,
-      final Object... objs) {
+  public boolean isViolated(final AwsServiceCache awsservice, final SiteConfiguration config,
+      final String siteId, final DocumentItem item) {
 
-    boolean enforced = false;
-    Long contentLength = (Long) objs[0];
-    Long maxContentLength = getMaxContentLength(value);
+    boolean violated = false;
 
-    if (maxContentLength != null) {
-      enforced = (contentLength == null || contentLength.longValue() == 0)
-          || (contentLength.longValue() > maxContentLength.longValue());
+    if (!Strings.isEmpty(config.getMaxContentLengthBytes())) {
+
+      long maxContentLength = Long.parseLong(config.getMaxContentLengthBytes());
+      if (item.getContentLength() == null || item.getContentLength() == 0
+          || item.getContentLength() > maxContentLength) {
+        violated = true;
+      }
     }
 
-    return enforced;
-  }
-
-  /**
-   * Get the Max Content Length from SSM.
-   * 
-   * @param value {@link String}
-   * @return {@link Long}
-   */
-  private Long getMaxContentLength(final String value) {
-
-    Long ret = null;
-
-    try {
-      ret = Long.valueOf(value);
-    } catch (NumberFormatException e) {
-      ret = null;
-    }
-
-    return ret;
-  }
-
-  @Override
-  public String getValue(final AwsServiceCache awsservice, final String siteId) {
-    return getValue(awsservice, siteId, ConfigService.MAX_DOCUMENT_SIZE_BYTES);
+    return violated;
   }
 }

@@ -25,7 +25,7 @@ package com.formkiq.stacks.api;
 
 import java.util.HashMap;
 import java.util.Map;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
+
 import com.formkiq.aws.cognito.CognitoIdentityProviderService;
 import com.formkiq.aws.cognito.CognitoIdentityProviderServiceExtension;
 import com.formkiq.aws.dynamodb.DynamoDbService;
@@ -51,6 +51,7 @@ import com.formkiq.module.actions.services.ActionsServiceExtension;
 import com.formkiq.module.events.EventService;
 import com.formkiq.module.events.EventServiceSnsExtension;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.module.ocr.DocumentOcrService;
 import com.formkiq.module.ocr.DocumentOcrServiceExtension;
 import com.formkiq.module.ocr.DocumentsOcrRequestHandler;
@@ -117,10 +118,8 @@ import com.formkiq.stacks.api.handler.WebhooksRequestHandler;
 import com.formkiq.stacks.api.handler.WebhooksTagsRequestHandler;
 import com.formkiq.stacks.dynamodb.ApiKeysService;
 import com.formkiq.stacks.dynamodb.ApiKeysServiceExtension;
-import com.formkiq.stacks.dynamodb.ConfigService;
-import com.formkiq.stacks.dynamodb.ConfigServiceExtension;
-import com.formkiq.stacks.dynamodb.DocumentCountService;
-import com.formkiq.stacks.dynamodb.DocumentCountServiceExtension;
+import com.formkiq.stacks.dynamodb.config.ConfigService;
+import com.formkiq.stacks.dynamodb.config.ConfigServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
 import com.formkiq.stacks.dynamodb.DocumentSearchServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentService;
@@ -196,7 +195,6 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     serviceCache.register(CacheService.class, new CacheServiceExtension());
     serviceCache.register(DocumentService.class, new DocumentServiceExtension());
     serviceCache.register(DocumentSearchService.class, new DocumentSearchServiceExtension());
-    serviceCache.register(DocumentCountService.class, new DocumentCountServiceExtension());
     serviceCache.register(FolderIndexProcessor.class, new FolderIndexProcessorExtension());
     serviceCache.register(ConfigService.class, new ConfigServiceExtension());
     serviceCache.register(ApiKeysService.class, new ApiKeysServiceExtension());
@@ -357,7 +355,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
   }
 
   @Override
-  public void handleSqsRequest(final LambdaLogger logger, final AwsServiceCache services,
+  public void handleSqsRequest(final Logger logger, final AwsServiceCache services,
       final LambdaInputRecord record) {
     // empty
   }

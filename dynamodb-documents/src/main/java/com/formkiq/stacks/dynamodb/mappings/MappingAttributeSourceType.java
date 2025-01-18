@@ -35,5 +35,7 @@ public enum MappingAttributeSourceType {
   /** Source Type Content Key value. */
   CONTENT_KEY_VALUE,
   /** Source Type Metadata. */
-  METADATA
+  METADATA,
+  /** Manual. */
+  MANUAL
 }

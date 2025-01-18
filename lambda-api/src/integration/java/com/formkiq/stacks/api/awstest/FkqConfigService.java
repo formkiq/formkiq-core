@@ -23,13 +23,15 @@
  */
 package com.formkiq.stacks.api.awstest;
 
-import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
-import com.formkiq.stacks.dynamodb.ConfigService;
-import com.formkiq.stacks.dynamodb.ConfigServiceDynamoDb;
+import com.formkiq.stacks.dynamodb.config.ConfigService;
+import com.formkiq.stacks.dynamodb.config.ConfigServiceDynamoDb;
+import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import com.formkiq.testutils.aws.FkqSsmService;
 import software.amazon.awssdk.regions.Region;
+
+import java.util.Map;
 
 /**
  * 
@@ -39,7 +41,7 @@ import software.amazon.awssdk.regions.Region;
 public class FkqConfigService implements ConfigService {
 
   /** {@link ConfigService}. */
-  private ConfigService service = null;
+  private final ConfigService service;
 
   /**
    * constructor.
@@ -66,12 +68,27 @@ public class FkqConfigService implements ConfigService {
   }
 
   @Override
-  public DynamicObject get(final String siteId) {
+  public SiteConfiguration get(final String siteId) {
     return this.service.get(siteId);
   }
 
   @Override
-  public void save(final String siteId, final DynamicObject obj) {
-    this.service.save(siteId, obj);
+  public boolean save(final String siteId, final SiteConfiguration obj) {
+    return this.service.save(siteId, obj);
+  }
+
+  @Override
+  public long increment(final String siteId, final String key) {
+    return this.service.increment(siteId, key);
+  }
+
+  @Override
+  public long getIncrement(final String siteId, final String key) {
+    return this.service.getIncrement(siteId, key);
+  }
+
+  @Override
+  public Map<String, Long> getIncrements(final String siteId) {
+    return this.service.getIncrements(siteId);
   }
 }

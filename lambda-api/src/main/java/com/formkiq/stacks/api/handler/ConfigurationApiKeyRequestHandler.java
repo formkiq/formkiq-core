@@ -25,7 +25,7 @@ package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.util.Map;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
+
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -49,8 +49,8 @@ public class ConfigurationApiKeyRequestHandler
   public ConfigurationApiKeyRequestHandler() {}
 
   @Override
-  public void beforeDelete(final LambdaLogger logger, final ApiGatewayRequestEvent event,
-      final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
+  public void beforeDelete(final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
+      final AwsServiceCache awsServices) throws Exception {
     checkPermissions(event, authorization);
   }
 
@@ -63,9 +63,8 @@ public class ConfigurationApiKeyRequestHandler
   }
 
   @Override
-  public ApiRequestHandlerResponse delete(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse delete(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = event.getPathParameters().get("siteId");
     String apiKey = event.getPathParameters().get("apiKey");

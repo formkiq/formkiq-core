@@ -24,7 +24,6 @@
 package com.formkiq.stacks.lambda.s3;
 
 import com.amazonaws.services.lambda.runtime.Context;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
@@ -64,10 +63,12 @@ import com.formkiq.module.httpsigv4.HttpServiceSigv4;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.module.lambdaservices.ClassServiceExtension;
+import com.formkiq.module.lambdaservices.logger.LogLevel;
+import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.module.typesense.TypeSenseService;
 import com.formkiq.module.typesense.TypeSenseServiceExtension;
-import com.formkiq.stacks.dynamodb.ConfigService;
-import com.formkiq.stacks.dynamodb.ConfigServiceExtension;
+import com.formkiq.stacks.dynamodb.config.ConfigService;
+import com.formkiq.stacks.dynamodb.config.ConfigServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
@@ -92,8 +93,6 @@ import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
@@ -207,62 +206,54 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     return serviceCache.getExtension(ActionsNotificationService.class);
   }
 
-  @SuppressWarnings("unchecked")
   @Override
   public Void handleRequest(final Map<String, Object> map, final Context context) {
 
-    LambdaLogger logger = context.getLogger();
+    Logger logger = serviceCache.getLogger();
 
-    if (isDebug()) {
+    if (logger.isLogged(LogLevel.DEBUG)) {
       String json = this.gson.toJson(map);
-      logger.log(json);
+      logger.debug(json);
     }
 
     List<Map<String, Object>> records = (List<Map<String, Object>>) map.get("Records");
     try {
       processRecords(logger, records);
     } catch (IOException | InterruptedException e) {
-      StringWriter sw = new StringWriter();
-      PrintWriter pw = new PrintWriter(sw);
-      e.printStackTrace(pw);
-      logger.log(Strings.toString(e));
+      logger.error(e);
       throw new RuntimeException(e);
     }
 
     return null;
   }
 
-  private boolean isDebug() {
-    return serviceCache.debug();
-  }
-
   /**
    * Log Start of {@link Action}.
    * 
-   * @param logger {@link LambdaLogger}
+   * @param logger {@link Logger}
    * @param type {@link String}
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param action {@link Action}
    */
-  private void logAction(final LambdaLogger logger, final String type, final String siteId,
+  private void logAction(final Logger logger, final String type, final String siteId,
       final String documentId, final Action action) {
 
-    if (isDebug()) {
+    if (logger.isLogged(LogLevel.DEBUG)) {
       String s = String.format(
           "{\"type\",\"%s\",\"siteId\":\"%s\",\"documentId\":\"%s\",\"actionType\":\"%s\","
               + "\"actionStatus\":\"%s\",\"userId\":\"%s\",\"parameters\": \"%s\"}",
           type, siteId, documentId, action.type(), action.status(), action.userId(),
           action.parameters());
 
-      logger.log(s);
+      logger.debug(s);
     }
   }
 
   /**
    * Process Action.
    * 
-   * @param logger {@link LambdaLogger}
+   * @param logger {@link Logger}
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param actions {@link List} {@link Action}
@@ -270,8 +261,8 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
    * @throws IOException IOException
    * @throws InterruptedException InterruptedException
    */
-  private void processAction(final LambdaLogger logger, final String siteId,
-      final String documentId, final List<Action> actions, final Action action)
+  private void processAction(final Logger logger, final String siteId, final String documentId,
+      final List<Action> actions, final Action action)
       throws IOException, InterruptedException, ValidationException {
 
     ActionStatus completeStatus = ActionStatus.COMPLETE;
@@ -346,10 +337,10 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   /**
    * Process {@link DocumentEvent}.
    * 
-   * @param logger {@link LambdaLogger}
+   * @param logger {@link Logger}
    * @param event {@link DocumentEvent}
    */
-  public void processEvent(final LambdaLogger logger, final DocumentEvent event) {
+  public void processEvent(final Logger logger, final DocumentEvent event) {
 
     ActionsService actionsService = getActionsService();
 
@@ -367,7 +358,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
       if (running.isPresent()) {
 
-        logger.log(
+        logger.debug(
             String.format("ACTIONS already RUNNING for SiteId %s Document %s", siteId, documentId));
 
       } else if (o.isPresent()) {
@@ -383,9 +374,8 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
         } catch (Exception e) {
 
-          e.printStackTrace();
           String stacktrace = Strings.toString(e);
-          logger.log(stacktrace);
+          logger.error(e);
 
           action.status(ActionStatus.FAILED);
 
@@ -397,30 +387,29 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
           updateDocumentWorkflow(siteId, documentId, action);
 
-          logger.log(String.format("Updating Action Status to %s", action.status()));
+          logger.debug(String.format("Updating Action Status to %s", action.status()));
 
           actionsService.updateActionStatus(siteId, documentId, action);
         }
 
       } else {
-        logger
-            .log(String.format("NO ACTIONS found for  SiteId %s Document %s", siteId, documentId));
+        logger.trace(
+            String.format("NO ACTIONS found for  SiteId %s Document %s", siteId, documentId));
       }
     } else {
-      logger.log(String.format("Skipping event %s", event.type()));
+      logger.trace(String.format("Skipping event %s", event.type()));
     }
   }
 
   /**
    * Process Event Records.
    * 
-   * @param logger {@link LambdaLogger}
+   * @param logger {@link Logger}
    * @param records {@link List} {@link Map}
    * @throws InterruptedException InterruptedException
    * @throws IOException IOException
    */
-  @SuppressWarnings("unchecked")
-  private void processRecords(final LambdaLogger logger, final List<Map<String, Object>> records)
+  private void processRecords(final Logger logger, final List<Map<String, Object>> records)
       throws IOException, InterruptedException {
 
     for (Map<String, Object> e : Objects.notNull(records)) {
@@ -441,7 +430,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
               event.siteId(), event.documentId(), event.s3key(), event.s3bucket(), event.type(),
               event.userId(), event.contentType(), event.path(), event.content());
 
-          logger.log(s);
+          logger.info(s);
           processEvent(logger, event);
         }
       }
@@ -451,7 +440,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   /**
    * Sends Webhook.
    * 
-   * @param logger {@link LambdaLogger}
+   * @param logger {@link Logger}
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param actions {@link List} {@link Action}
@@ -459,7 +448,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
    * @throws IOException IOException
    * @throws InterruptedException InterruptedException
    */
-  private void sendWebhook(final LambdaLogger logger, final String siteId, final String documentId,
+  private void sendWebhook(final Logger logger, final String siteId, final String documentId,
       final List<Action> actions, final Action action) throws IOException, InterruptedException {
 
     String url = action.parameters().get("url");
@@ -495,20 +484,17 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   /**
    * Update Complete Action.
    * 
-   * @param logger {@link LambdaLogger}
+   * @param logger {@link Logger}
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param actions {@link List} {@link Action}
    * @param action {@link Action}
    * @param completeStatus {@link ActionStatus}
    */
-  private void updateComplete(final LambdaLogger logger, final String siteId,
-      final String documentId, final List<Action> actions, final Action action,
-      final ActionStatus completeStatus) {
+  private void updateComplete(final Logger logger, final String siteId, final String documentId,
+      final List<Action> actions, final Action action, final ActionStatus completeStatus) {
 
-    if (isDebug()) {
-      logger.log(String.format("updating status of %s to %s", documentId, completeStatus));
-    }
+    logger.trace(String.format("updating status of %s to %s", documentId, completeStatus));
 
     action.status(completeStatus);
     getActionsService().updateActionStatus(siteId, documentId, action);
@@ -518,8 +504,8 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     if (!ActionType.QUEUE.equals(action.type())) {
       boolean publishNextActionEvent =
           getNotificationService().publishNextActionEvent(actions, siteId, documentId);
-      if (isDebug() && publishNextActionEvent) {
-        logger.log(String.format("publishing next event for %s to %s", siteId, documentId));
+      if (logger.isLogged(LogLevel.TRACE) && publishNextActionEvent) {
+        logger.trace(String.format("publishing next event for %s to %s", siteId, documentId));
       }
     }
   }

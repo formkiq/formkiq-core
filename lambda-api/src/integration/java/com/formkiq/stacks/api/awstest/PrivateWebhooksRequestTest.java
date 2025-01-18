@@ -24,18 +24,20 @@
 package com.formkiq.stacks.api.awstest;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocument;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import java.net.http.HttpHeaders;
 import java.net.http.HttpResponse;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
-import java.util.function.BiPredicate;
+
+import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.module.http.HttpHeaders;
+import com.formkiq.module.http.HttpService;
+import com.formkiq.module.http.HttpServiceJdk11;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import com.formkiq.client.api.WebhooksApi;
@@ -46,10 +48,7 @@ import com.formkiq.client.model.GetDocumentResponse;
 import com.formkiq.client.model.GetWebhookResponse;
 import com.formkiq.client.model.GetWebhooksResponse;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
-import com.formkiq.stacks.client.HttpService;
-import com.formkiq.stacks.client.HttpServiceJava;
 import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
-import software.amazon.awssdk.core.sync.RequestBody;
 
 /**
  * Process Urls.
@@ -72,55 +71,46 @@ public class PrivateWebhooksRequestTest extends AbstractAwsIntegrationTest {
    * 
    * @throws Exception Exception
    */
-  @SuppressWarnings("unchecked")
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
-  public void testPublicWebhooks01() throws Exception {
+  @Timeout(value = TEST_TIMEOUT)
+  public void testPrivateWebhooks01() throws Exception {
     // given
-    String siteId = null;
-    for (ApiClient client : getApiClients(siteId)) {
+    for (ApiClient client : getApiClients(null)) {
+
       WebhooksApi api = new WebhooksApi(client);
       AddWebhookResponse addWebhook =
-          api.addWebhook(new AddWebhookRequest().name("paypal").enabled("private"), siteId);
+          api.addWebhook(new AddWebhookRequest().name("paypal").enabled("private"), null);
       String id = addWebhook.getWebhookId();
       String urlpath = getRootHttpUrl() + "/private/webhooks/" + id;
 
-      Map<String, List<String>> headers = Map.of("Authorization",
-          Arrays.asList(getAdminToken().idToken()), "Content-Type", Arrays.asList("text/plain"));
-
-      Optional<HttpHeaders> o =
-          Optional.of(HttpHeaders.of(headers, new BiPredicate<String, String>() {
-            @Override
-            public boolean test(final String t, final String u) {
-              return true;
-            }
-          }));
+      Optional<HttpHeaders> o = Optional.of(new HttpHeaders()
+          .add("Authorization", getAdminToken().idToken()).add("Content-Type", "text/plain"));
 
       String content = "{\"name\":\"John Smith\"}";
 
       // when
-      HttpService hs = new HttpServiceJava();
-      HttpResponse<String> response = hs.post(urlpath, o, RequestBody.fromString(content));
+      HttpService hs = new HttpServiceJdk11();
+      HttpResponse<String> response = hs.post(urlpath, o, Optional.empty(), content);
 
       // then
       assertEquals(STATUS_OK, response.statusCode());
       Map<String, Object> map = GsonUtil.getInstance().fromJson(response.body(), Map.class);
 
       GetDocumentResponse document =
-          waitForDocument(client, siteId, map.get("documentId").toString());
+          waitForDocument(client, null, map.get("documentId").toString());
       assertNotNull(document);
 
-      GetWebhooksResponse webhooks = api.getWebhooks(siteId);
-      List<GetWebhookResponse> list = webhooks.getWebhooks();
+      GetWebhooksResponse webhooks = api.getWebhooks(null, null, null);
+      List<GetWebhookResponse> list = notNull(webhooks.getWebhooks());
       assertFalse(list.isEmpty());
       assertEquals(DEFAULT_SITE_ID, list.get(0).getSiteId());
       assertEquals("paypal", list.get(0).getName());
       assertNotNull(list.get(0).getUrl());
       assertNotNull(list.get(0).getInsertedDate());
       assertNotNull(list.get(0).getWebhookId());
-      assertNotNull("testadminuser@formkiq.com", list.get(0).getUrl());
+      assertNotNull(list.get(0).getUrl());
 
-      api.deleteWebhook(id, siteId);
+      api.deleteWebhook(id, null);
     }
   }
 
@@ -134,36 +124,61 @@ public class PrivateWebhooksRequestTest extends AbstractAwsIntegrationTest {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  @Timeout(value = TEST_TIMEOUT)
   public void testPublicWebhooks02() throws Exception {
     // given
-    String siteId = null;
-    for (ApiClient client : getApiClients(siteId)) {
+    for (ApiClient client : getApiClients(null)) {
       WebhooksApi api = new WebhooksApi(client);
 
       AddWebhookResponse addWebhook =
-          api.addWebhook(new AddWebhookRequest().name("paypal").enabled("private"), siteId);
+          api.addWebhook(new AddWebhookRequest().name("paypal").enabled("private"), null);
       String id = addWebhook.getWebhookId();
       String urlpath = getRootHttpUrl() + "/private/webhooks/" + id;
 
-      Map<String, List<String>> headers = Map.of("Content-Type", Arrays.asList("text/plain"));
-
-      Optional<HttpHeaders> o =
-          Optional.of(HttpHeaders.of(headers, new BiPredicate<String, String>() {
-            @Override
-            public boolean test(final String t, final String u) {
-              return true;
-            }
-          }));
+      Optional<HttpHeaders> o = Optional.of(new HttpHeaders().add("Content-Type", "text/plain"));
 
       String content = "{\"name\":\"John Smith\"}";
 
       // when
-      HttpService hs = new HttpServiceJava();
-      HttpResponse<String> response = hs.post(urlpath, o, RequestBody.fromString(content));
+      HttpService hs = new HttpServiceJdk11();
+      HttpResponse<String> response = hs.post(urlpath, o, Optional.empty(), content);
 
       // then
       assertEquals(STATUS_UNAUTHORIZED, response.statusCode());
     }
+  }
+
+  /**
+   * Test POST /private/webhooks with next token.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  public void testPublicWebhooks03() throws Exception {
+    // given
+    final int count = 5;
+    String siteId = ID.uuid();
+    ApiClient client = getApiClients(siteId).get(0);
+    WebhooksApi api = new WebhooksApi(client);
+
+    for (int i = 0; i < count; i++) {
+      api.addWebhook(new AddWebhookRequest().name("test_" + i), siteId);
+    }
+
+    // when
+    GetWebhooksResponse response = api.getWebhooks(siteId, null, "2");
+
+    // then
+    List<GetWebhookResponse> webhooks = notNull(response.getWebhooks());
+    assertEquals(2, webhooks.size());
+    assertEquals("test_0", webhooks.get(0).getName());
+    assertEquals("test_1", webhooks.get(1).getName());
+
+    response = api.getWebhooks(siteId, response.getNext(), "2");
+    webhooks = notNull(response.getWebhooks());
+    assertEquals(2, webhooks.size());
+    assertEquals("test_2", webhooks.get(0).getName());
+    assertEquals("test_3", webhooks.get(1).getName());
   }
 }

@@ -31,13 +31,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.stacks.dynamodb.base64.Pagination;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
 
@@ -65,14 +64,13 @@ public class ApiKeysServiceDynamoDbTest {
 
   /**
    * Test Create ApiKey.
-   * 
-   * @throws Exception Exception
+   *
    */
   @Test
-  public void testCreateApiKey01() throws Exception {
+  public void testCreateApiKey01() {
     // given
     String userId = "joe";
-    Collection<ApiKeyPermission> permissions = Arrays.asList(ApiKeyPermission.READ);
+    Collection<ApiKeyPermission> permissions = List.of(ApiKeyPermission.READ);
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
@@ -83,9 +81,8 @@ public class ApiKeysServiceDynamoDbTest {
       // then
       assertNotEquals(apiKey0, apiKey1);
 
-      PaginationResults<ApiKey> list = this.service.list(siteId, null, LIMIT);
-      List<String> keys =
-          list.getResults().stream().map(i -> i.apiKey()).collect(Collectors.toList());
+      Pagination<ApiKey> list = this.service.list(siteId, null, LIMIT);
+      List<String> keys = list.getResults().stream().map(ApiKey::apiKey).toList();
 
       assertEquals(2, keys.size());
       assertTrue(keys.contains(this.service.mask(apiKey0)));
@@ -107,17 +104,16 @@ public class ApiKeysServiceDynamoDbTest {
 
   /**
    * Test Create ApiKey.
-   * 
-   * @throws Exception Exception
+   *
    */
   @Test
-  public void testCreateApiKey02() throws Exception {
+  public void testCreateApiKey02() {
     // given
     final int start = 100;
     final int limit = 200;
     final int max = 300;
     String userId = "joe";
-    Collection<ApiKeyPermission> permissions = Arrays.asList(ApiKeyPermission.READ);
+    Collection<ApiKeyPermission> permissions = List.of(ApiKeyPermission.READ);
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
@@ -127,13 +123,13 @@ public class ApiKeysServiceDynamoDbTest {
       }
 
       // then
-      PaginationResults<ApiKey> list = this.service.list(siteId, null, limit);
+      Pagination<ApiKey> list = this.service.list(siteId, null, limit);
       assertEquals(limit, list.getResults().size());
       assertEquals("test_100", list.getResults().get(0).name());
       assertEquals("test_101", list.getResults().get(1).name());
       assertEquals("test_102", list.getResults().get(2).name());
 
-      list = this.service.list(siteId, list.getToken(), limit);
+      list = this.service.list(siteId, list.getNextToken(), limit);
       assertEquals(max - limit, list.getResults().size());
       assertEquals("test_300", list.getResults().get(0).name());
       assertEquals("test_301", list.getResults().get(1).name());

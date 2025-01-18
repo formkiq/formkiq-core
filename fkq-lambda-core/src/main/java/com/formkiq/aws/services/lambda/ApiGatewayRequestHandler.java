@@ -24,7 +24,7 @@
 package com.formkiq.aws.services.lambda;
 
 import java.util.Optional;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
+
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
@@ -40,93 +40,86 @@ public interface ApiGatewayRequestHandler {
 
   /**
    * Called Before "delete" method is called.
-   * 
-   * @param logger {@link LambdaLogger}
+   *
    * @param event {@link ApiGatewayRequestEvent}
    * @param authorization {@link ApiAuthorization}
    * @param awsServices {@link AwsServiceCache}
    * @throws Exception Exception
    */
-  default void beforeDelete(LambdaLogger logger, ApiGatewayRequestEvent event,
-      ApiAuthorization authorization, AwsServiceCache awsServices) throws Exception {
+  default void beforeDelete(ApiGatewayRequestEvent event, ApiAuthorization authorization,
+      AwsServiceCache awsServices) throws Exception {
     // empty
   }
 
   /**
    * Called Before "get" method is called.
-   * 
-   * @param logger {@link LambdaLogger}
+   *
    * @param event {@link ApiGatewayRequestEvent}
    * @param authorization {@link ApiAuthorization}
    * @param awsServices {@link AwsServiceCache}
    * @throws Exception Exception
    */
-  default void beforeGet(LambdaLogger logger, ApiGatewayRequestEvent event,
-      ApiAuthorization authorization, AwsServiceCache awsServices) throws Exception {
+  default void beforeGet(ApiGatewayRequestEvent event, ApiAuthorization authorization,
+      AwsServiceCache awsServices) throws Exception {
     // empty
   }
 
   /**
    * Called Before "head" method is called.
-   * 
-   * @param logger {@link LambdaLogger}
+   *
    * @param event {@link ApiGatewayRequestEvent}
    * @param authorization {@link ApiAuthorization}
    * @param awsServices {@link AwsServiceCache}
    * @throws Exception Exception
    */
-  default void beforeHead(LambdaLogger logger, ApiGatewayRequestEvent event,
-      ApiAuthorization authorization, AwsServiceCache awsServices) throws Exception {
+  default void beforeHead(ApiGatewayRequestEvent event, ApiAuthorization authorization,
+      AwsServiceCache awsServices) throws Exception {
     // empty
   }
 
 
   /**
    * Called Before "patch" method is called.
-   * 
-   * @param logger {@link LambdaLogger}
+   *
    * @param event {@link ApiGatewayRequestEvent}
    * @param authorization {@link ApiAuthorization}
    * @param awsServices {@link AwsServiceCache}
    * @throws Exception Exception
    */
-  default void beforePatch(LambdaLogger logger, ApiGatewayRequestEvent event,
-      ApiAuthorization authorization, AwsServiceCache awsServices) throws Exception {
+  default void beforePatch(ApiGatewayRequestEvent event, ApiAuthorization authorization,
+      AwsServiceCache awsServices) throws Exception {
     // empty
   }
 
   /**
    * Called Before "post" method is called.
-   * 
-   * @param logger {@link LambdaLogger}
+   *
    * @param event {@link ApiGatewayRequestEvent}
    * @param authorization {@link ApiAuthorization}
    * @param awsServices {@link AwsServiceCache}
    * @throws Exception Exception
    */
-  default void beforePost(LambdaLogger logger, ApiGatewayRequestEvent event,
-      ApiAuthorization authorization, AwsServiceCache awsServices) throws Exception {
+  default void beforePost(ApiGatewayRequestEvent event, ApiAuthorization authorization,
+      AwsServiceCache awsServices) throws Exception {
     // empty
   }
 
   /**
    * Called Before "put" method is called.
-   * 
-   * @param logger {@link LambdaLogger}
+   *
    * @param event {@link ApiGatewayRequestEvent}
    * @param authorization {@link ApiAuthorization}
    * @param awsServices {@link AwsServiceCache}
    * @throws Exception Exception
    */
-  default void beforePut(LambdaLogger logger, ApiGatewayRequestEvent event,
-      ApiAuthorization authorization, AwsServiceCache awsServices) throws Exception {
+  default void beforePut(ApiGatewayRequestEvent event, ApiAuthorization authorization,
+      AwsServiceCache awsServices) throws Exception {
     // empty
   }
 
   /**
    * DELETE Request Handler.
    *
-   * @param logger {@link LambdaLogger}
    * @param event {@link ApiGatewayRequestEvent}
    * @param authorization {@link ApiAuthorization}
    * @param awsServices {@link AwsServiceCache}
@@ -135,7 +128,7 @@ public interface ApiGatewayRequestHandler {
    * 
    * @throws Exception Exception
    */
-  default ApiRequestHandlerResponse delete(LambdaLogger logger, ApiGatewayRequestEvent event,
+  default ApiRequestHandlerResponse delete(ApiGatewayRequestEvent event,
       ApiAuthorization authorization, AwsServiceCache awsServices) throws Exception {
     throw new NotFoundException(
         event.getHttpMethod() + " for " + event.getResource() + " not found");
@@ -144,7 +137,6 @@ public interface ApiGatewayRequestHandler {
   /**
    * Get Request Handler.
    *
-   * @param logger {@link LambdaLogger}
    * @param event {@link ApiGatewayRequestEvent}
    * @param authorization {@link ApiAuthorization}
    * @param awsServices {@link AwsServiceCache}
@@ -153,7 +145,7 @@ public interface ApiGatewayRequestHandler {
    * 
    * @throws Exception Exception
    */
-  default ApiRequestHandlerResponse get(LambdaLogger logger, ApiGatewayRequestEvent event,
+  default ApiRequestHandlerResponse get(ApiGatewayRequestEvent event,
       ApiAuthorization authorization, AwsServiceCache awsServices) throws Exception {
     throw new NotFoundException(
         event.getHttpMethod() + " for " + event.getResource() + " not found");
@@ -169,7 +161,6 @@ public interface ApiGatewayRequestHandler {
   /**
    * Head Request Handler.
    *
-   * @param logger {@link LambdaLogger}
    * @param event {@link ApiGatewayRequestEvent}
    * @param authorization {@link ApiAuthorization}
    * @param awsServices {@link AwsServiceCache}
@@ -178,7 +169,7 @@ public interface ApiGatewayRequestHandler {
    * 
    * @throws Exception Exception
    */
-  default ApiRequestHandlerResponse head(LambdaLogger logger, ApiGatewayRequestEvent event,
+  default ApiRequestHandlerResponse head(ApiGatewayRequestEvent event,
       ApiAuthorization authorization, AwsServiceCache awsServices) throws Exception {
     throw new NotFoundException(
         event.getHttpMethod() + " for " + event.getResource() + " not found");
@@ -202,7 +193,6 @@ public interface ApiGatewayRequestHandler {
   /**
    * OPTIONS Request Handler.
    *
-   * @param logger {@link LambdaLogger}
    * @param event {@link ApiGatewayRequestEvent}
    * @param authorization {@link ApiAuthorization}
    * @param awsServices {@link AwsServiceCache}
@@ -211,7 +201,7 @@ public interface ApiGatewayRequestHandler {
    * 
    * @throws Exception Exception
    */
-  default ApiRequestHandlerResponse options(LambdaLogger logger, ApiGatewayRequestEvent event,
+  default ApiRequestHandlerResponse options(ApiGatewayRequestEvent event,
       ApiAuthorization authorization, AwsServiceCache awsServices) throws Exception {
     throw new NotFoundException(
         event.getHttpMethod() + " for " + event.getResource() + " not found");
@@ -220,7 +210,6 @@ public interface ApiGatewayRequestHandler {
   /**
    * PATCH Request Handler.
    *
-   * @param logger {@link LambdaLogger}
    * @param event {@link ApiGatewayRequestEvent}
    * @param authorization {@link ApiAuthorization}
    * @param awsServices {@link AwsServiceCache}
@@ -229,7 +218,7 @@ public interface ApiGatewayRequestHandler {
    * 
    * @throws Exception Exception
    */
-  default ApiRequestHandlerResponse patch(LambdaLogger logger, ApiGatewayRequestEvent event,
+  default ApiRequestHandlerResponse patch(ApiGatewayRequestEvent event,
       ApiAuthorization authorization, AwsServiceCache awsServices) throws Exception {
     throw new NotFoundException(
         event.getHttpMethod() + " for " + event.getResource() + " not found");
@@ -238,7 +227,6 @@ public interface ApiGatewayRequestHandler {
   /**
    * POST Request Handler.
    *
-   * @param logger {@link LambdaLogger}
    * @param event {@link ApiGatewayRequestEvent}
    * @param authorization {@link ApiAuthorization}
    * @param awsServices {@link AwsServiceCache}
@@ -247,7 +235,7 @@ public interface ApiGatewayRequestHandler {
    * 
    * @throws Exception Exception
    */
-  default ApiRequestHandlerResponse post(LambdaLogger logger, ApiGatewayRequestEvent event,
+  default ApiRequestHandlerResponse post(ApiGatewayRequestEvent event,
       ApiAuthorization authorization, AwsServiceCache awsServices) throws Exception {
     throw new NotFoundException(
         event.getHttpMethod() + " for " + event.getResource() + " not found");
@@ -256,7 +244,6 @@ public interface ApiGatewayRequestHandler {
   /**
    * PUT Request Handler.
    *
-   * @param logger {@link LambdaLogger}
    * @param event {@link ApiGatewayRequestEvent}
    * @param authorization {@link ApiAuthorization}
    * @param awsServices {@link AwsServiceCache}
@@ -265,7 +252,7 @@ public interface ApiGatewayRequestHandler {
    * 
    * @throws Exception Exception
    */
-  default ApiRequestHandlerResponse put(LambdaLogger logger, ApiGatewayRequestEvent event,
+  default ApiRequestHandlerResponse put(ApiGatewayRequestEvent event,
       ApiAuthorization authorization, AwsServiceCache awsServices) throws Exception {
     throw new NotFoundException(
         event.getHttpMethod() + " for " + event.getResource() + " not found");

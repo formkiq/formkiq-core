@@ -26,7 +26,7 @@ package com.formkiq.stacks.api.handler;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
+
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -39,7 +39,7 @@ public class PublicDocumentsRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
   /** {@link DocumentsRequestHandler}. */
-  private DocumentsRequestHandler handler = new DocumentsRequestHandler();
+  private final DocumentsRequestHandler handler = new DocumentsRequestHandler();
 
   /**
    * constructor.
@@ -58,11 +58,9 @@ public class PublicDocumentsRequestHandler
     return access ? Optional.of(Boolean.TRUE) : Optional.empty();
   }
 
-  @SuppressWarnings("unchecked")
   @Override
-  public ApiRequestHandlerResponse post(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     Map<String, Object> auth = event.getRequestContext().getAuthorizer();
     if (auth == null) {
@@ -78,6 +76,6 @@ public class PublicDocumentsRequestHandler
 
     claims.put("cognito:username", "public");
 
-    return this.handler.post(logger, event, authorization, awsservice);
+    return this.handler.post(event, authorization, awsservice);
   }
 }

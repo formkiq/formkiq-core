@@ -32,7 +32,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -53,7 +52,7 @@ public class ObjectExaminePdfIdHandler
   /** {@link ObjectExaminePdfIdHandler} URL. */
   public static final String URL = "/objects/examine/{id}/pdf";
   /** {@link PdfService}. */
-  private PdfService service = new PdfServicePdfBox();
+  private final PdfService service = new PdfServicePdfBox();
 
   private Map<String, Object> getFileInfo(final AwsServiceCache awsservice, final String siteId,
       final String id) throws IOException {
@@ -86,9 +85,8 @@ public class ObjectExaminePdfIdHandler
   }
 
   @Override
-  public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorization.getSiteId();
     String id = event.getPathParameters().get("id");

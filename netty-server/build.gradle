@@ -73,4 +73,5 @@ tasks.named('jar') {
 
 composeBuild.dependsOn(jar)
 test.dependsOn(composeBuild)
+integrationTest.dependsOn(composeBuild)
 check.dependsOn(composeBuild)

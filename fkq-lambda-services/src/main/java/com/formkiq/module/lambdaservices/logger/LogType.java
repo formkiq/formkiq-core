@@ -21,36 +21,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb;
-
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
-import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.module.lambdaservices.AwsServiceExtension;
+package com.formkiq.module.lambdaservices.logger;
 
 /**
- * 
- * {@link AwsServiceExtension} for {@link ConfigService}.
- *
+ * Log Type.
  */
-public class ConfigServiceExtension implements AwsServiceExtension<ConfigService> {
-
-  /** {@link ConfigService}. */
-  private ConfigService service;
+public enum LogType {
+  /** Text. */
+  TEXT,
+  /** JSON. */
+  JSON;
 
   /**
-   * constructor.
+   * Convert {@link String} to {@link LogType}.
+   *
+   * @param logType {@link String}
+   * @return {@link LogType}
    */
-  public ConfigServiceExtension() {}
-
-  @Override
-  public ConfigService loadService(final AwsServiceCache awsServiceCache) {
-    if (this.service == null) {
-      DynamoDbConnectionBuilder connection =
-          awsServiceCache.getExtension(DynamoDbConnectionBuilder.class);
-      this.service =
-          new ConfigServiceDynamoDb(connection, awsServiceCache.environment("DOCUMENTS_TABLE"));
+  public static LogType fromString(final String logType) {
+    try {
+      return valueOf(logType.toUpperCase());
+    } catch (Exception e) {
+      return LogType.TEXT;
     }
-
-    return this.service;
   }
 }

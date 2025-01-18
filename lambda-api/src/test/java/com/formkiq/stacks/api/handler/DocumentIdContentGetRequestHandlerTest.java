@@ -32,6 +32,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.Arrays;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Base64;
 
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
@@ -168,6 +171,37 @@ public class DocumentIdContentGetRequestHandlerTest extends AbstractApiClientReq
         assertEquals("{\"message\":\"Document " + documentId + " not found.\"}",
             e.getResponseBody());
       }
+    }
+  }
+
+  /**
+   * /documents/{documentId}/content wrong text/plain content-type.
+   *
+   * Tests S3 URL is returned.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetDocumentContent06() throws Exception {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      byte[] bytes = Files.readAllBytes(Path.of("src/test/resources/ocr/sample.pdf"));
+      String content = Base64.getEncoder().encodeToString(bytes);
+      AddDocumentRequest req = new AddDocumentRequest().content(content).isBase64(Boolean.TRUE)
+          .contentType("text/plain");
+      String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+
+      // when
+      GetDocumentContentResponse response =
+          this.documentsApi.getDocumentContent(documentId, siteId, null, null);
+
+      // then
+      assertNull(response.getContent());
+      assertNotNull(response.getContentUrl());
+      assertEquals("text/plain", response.getContentType());
     }
   }
 

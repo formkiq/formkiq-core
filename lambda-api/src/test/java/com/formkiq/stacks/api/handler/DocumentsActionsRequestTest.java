@@ -24,7 +24,6 @@
 package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
-import static com.formkiq.stacks.dynamodb.ConfigService.CHATGPT_API_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -47,9 +46,9 @@ import com.formkiq.client.model.MappingAttribute;
 import com.formkiq.client.model.MappingAttributeLabelMatchingType;
 import com.formkiq.client.model.MappingAttributeSourceType;
 import com.formkiq.client.model.OcrOutputType;
+import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceExtension;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
@@ -72,8 +71,8 @@ import com.formkiq.module.actions.Queue;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceExtension;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.dynamodb.ConfigService;
-import com.formkiq.stacks.dynamodb.ConfigServiceExtension;
+import com.formkiq.stacks.dynamodb.config.ConfigService;
+import com.formkiq.stacks.dynamodb.config.ConfigServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
@@ -295,7 +294,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       assertEquals(0, actions.size());
 
       // given - engine
-      this.configService.save(siteId, new DynamicObject(Map.of(CHATGPT_API_KEY, "asd")));
+      this.configService.save(siteId, new SiteConfiguration().setChatGptApiKey("ABC"));
 
       req = new AddDocumentActionsRequest().actions(
           Collections.singletonList(new AddAction().type(DocumentActionType.DOCUMENTTAGGING)
@@ -363,9 +362,9 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       // given
       setBearerToken("Admins");
       String documentId = saveDocument(siteId);
+      SiteConfiguration config = new SiteConfiguration().setNotificationEmail("test@formkiq.com");
 
-      this.configService.save(siteId,
-          new DynamicObject(Map.of("NotificationEmail", "test@formkiq.com")));
+      this.configService.save(siteId, config);
 
       AddDocumentActionsRequest req = new AddDocumentActionsRequest()
           .actions(Collections.singletonList(new AddAction().type(DocumentActionType.NOTIFICATION)
@@ -463,9 +462,9 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       this.db.putItem(new Queue().documentId(queueId).name("test").getAttributes(siteId));
 
       String documentId = saveDocument(siteId);
+      SiteConfiguration config = new SiteConfiguration().setNotificationEmail("test@formkiq.com");
 
-      this.configService.save(siteId,
-          new DynamicObject(Map.of("NotificationEmail", "test@formkiq.com")));
+      this.configService.save(siteId, config);
 
       AddDocumentActionsRequest req = new AddDocumentActionsRequest().actions(Collections
           .singletonList(new AddAction().type(DocumentActionType.QUEUE).queueId(queueId)));
