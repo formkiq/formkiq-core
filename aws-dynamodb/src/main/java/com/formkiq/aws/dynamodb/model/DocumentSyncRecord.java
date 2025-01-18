@@ -25,7 +25,6 @@ package com.formkiq.aws.dynamodb.model;
 
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamodbRecord;
-import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.graalvm.annotations.Reflectable;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -37,7 +36,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.formkiq.aws.dynamodb.DbKeys.PREFIX_DOCS;
-import static com.formkiq.aws.dynamodb.DbKeys.TAG_DELIMINATOR;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.objects.DateUtil.getInIso8601Format;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
@@ -276,7 +274,7 @@ public class DocumentSyncRecord implements DynamodbRecord<DocumentSyncRecord> {
 
   @Override
   public String sk() {
-    return SK_SYNCS + getInIso8601Format(this.syncDate) + TAG_DELIMINATOR + ID.uuid();
+    return SK_SYNCS + getInIso8601Format(this.syncDate);
   }
 
   @Override

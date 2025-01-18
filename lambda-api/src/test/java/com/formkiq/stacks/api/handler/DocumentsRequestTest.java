@@ -26,12 +26,16 @@ package com.formkiq.stacks.api.handler;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
+import com.formkiq.client.model.DocumentSync;
+import com.formkiq.client.model.DocumentSyncStatus;
+import com.formkiq.client.model.DocumentSyncType;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.s3.S3ServiceExtension;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
+import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.invoker.ApiResponse;
 import com.formkiq.client.model.AddAction;
@@ -52,6 +56,7 @@ import com.formkiq.client.model.ChildDocument;
 import com.formkiq.client.model.DocumentActionType;
 import com.formkiq.client.model.DocumentAttribute;
 import com.formkiq.client.model.DocumentMetadata;
+import com.formkiq.client.model.DocumentSyncService;
 import com.formkiq.client.model.DocumentTag;
 import com.formkiq.client.model.GetDocumentResponse;
 import com.formkiq.client.model.SchemaAttributes;
@@ -61,12 +66,9 @@ import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
-import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.LocalStackExtension;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.Arrays;
 import java.util.List;
@@ -83,8 +85,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /** Unit Tests for request POST /documents. */
-@ExtendWith(DynamoDbExtension.class)
-@ExtendWith(LocalStackExtension.class)
 public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
   /** Test Timeout. */
@@ -130,7 +130,25 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       assertEquals("application/pdf", site.getContentType());
       assertNotNull(site.getPath());
       assertNotNull(site.getDocumentId());
+
+      assertDocumentEventBridge(documentsApi, null, responseNoSiteId.getDocumentId());
+      assertDocumentEventBridge(documentsApi, siteId, responseSiteId.getDocumentId());
     }
+  }
+
+  private void assertDocumentEventBridge(final DocumentsApi documentsApi, final String siteId,
+      final String documentId) throws ApiException {
+    List<DocumentSync> syncs =
+        notNull(documentsApi.getDocumentSyncs(documentId, siteId, null, null).getSyncs());
+    assertEquals(1, syncs.size());
+    DocumentSync sync = syncs.get(0);
+    assertEquals(DocumentSyncService.EVENTBRIDGE, sync.getService());
+    assertNull(sync.getSyncDate());
+    assertNotNull(sync.getInsertedDate());
+    assertEquals(DocumentSyncType.CONTENT, sync.getType());
+    assertEquals("", sync.getMessage());
+    assertEquals("", sync.getUserId());
+    assertEquals(DocumentSyncStatus.PENDING, sync.getStatus());
   }
 
   /**
