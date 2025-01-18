@@ -29,8 +29,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
+
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -59,8 +58,7 @@ public class DocumentsActionsRetryRequestHandler
   private DocumentItem getDocument(final AwsServiceCache awsservice, final String siteId,
       final String documentId) {
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
-    DocumentItem item = documentService.findDocument(siteId, documentId);
-    return item;
+    return documentService.findDocument(siteId, documentId);
   }
 
   @Override
@@ -69,9 +67,8 @@ public class DocumentsActionsRetryRequestHandler
   }
 
   @Override
-  public ApiRequestHandlerResponse post(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
@@ -83,7 +80,7 @@ public class DocumentsActionsRetryRequestHandler
     List<Action> actions = service.getActions(siteId, documentId);
 
     List<Action> failed = actions.stream().filter(a -> ActionStatus.FAILED.equals(a.status()))
-        .map(a -> a.status(ActionStatus.FAILED_RETRY)).collect(Collectors.toList());
+        .map(a -> a.status(ActionStatus.FAILED_RETRY)).toList();
 
     int idx = actions.size();
     String userId = authorization.getUsername();

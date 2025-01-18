@@ -1,3 +1,6 @@
+#@ load("@ytt:data", "data")
+#@ load("@ytt:assert", "assert")
+---
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: FormKiQ - Email Notify Module
@@ -19,7 +22,32 @@ Parameters:
     Default: "core"
     Type: String
     AllowedValues: ["core", "enterprise"]
-    
+
+  LogRetentionInDays:
+    Type: Number
+    Description: The number of days to retain the log events
+
+  LogFormat:
+    Description: >
+      The format in which the application and system logs are stored.
+    Type: String
+
+  LogLevelApplication:
+    Type: String
+    Description: >
+      The level of logging for the FormKiQ Application logs.
+
+  LogLevelSystem:
+    Type: String
+    Description: >
+      The level of logging for the AWS Platform System logs.
+
+Conditions:
+  IsLogFormatJSON: 
+    Fn::Equals:
+      - Ref: LogFormat
+      - JSON
+      
 Resources:
             
   DocumentsEmailNotification:
@@ -80,9 +108,8 @@ Resources:
   EmailNotifyLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: 
-        Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/${EmailNotify}"
-      RetentionInDays: 90
+      RetentionInDays:
+        Ref: LogRetentionInDays
       
   EmailNotify:
     Type: AWS::Serverless::Function
@@ -94,10 +121,11 @@ Resources:
       Timeout: 60
       MemorySize: 256
       CodeUri: ./module-email-notify.zip
-      AutoPublishCodeSha256: FCB6D933C5B5FCD71A9EE4F9F9B9FB8AC1E719056BEAC9021B3C383FF2AFEE64
+      AutoPublishCodeSha256: #@ data.values.hash or assert.fail("missing version")
       Environment:
         Variables:
-          DEBUG: false
+          LOG_LEVEL:
+            Ref: LogLevelApplication
           EMAIL_TOPIC_ARN: 
             Ref: DocumentsEmailNotification
           CONSOLE_URL: 
@@ -111,6 +139,21 @@ Resources:
           Fn::Sub: "FormKiQ ${FormKiQType}"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
+      LoggingConfig:
+        LogGroup:
+          Ref: EmailNotifyLogGroup
+        LogFormat:
+          Ref: LogFormat
+        ApplicationLogLevel:
+          Fn::If:
+          - IsLogFormatJSON
+          - Ref: LogLevelApplication
+          - Ref: AWS::NoValue
+        SystemLogLevel:
+          Fn::If:
+          - IsLogFormatJSON
+          - Ref: LogLevelSystem
+          - Ref: AWS::NoValue
       Events:
         CreateSQSEvent:
           Type: SQS

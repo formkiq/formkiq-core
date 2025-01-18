@@ -31,10 +31,19 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import com.formkiq.aws.s3.S3Service;
+import com.formkiq.aws.s3.S3ServiceExtension;
+import com.formkiq.aws.ssm.SsmService;
+import com.formkiq.aws.ssm.SsmServiceExtension;
 import com.formkiq.client.api.CustomIndexApi;
 import com.formkiq.client.api.MappingsApi;
 import com.formkiq.client.api.ReindexApi;
 import com.formkiq.client.api.UserManagementApi;
+import com.formkiq.client.api.WebhooksApi;
+import com.formkiq.stacks.dynamodb.config.ConfigService;
+import com.formkiq.stacks.dynamodb.config.ConfigServiceExtension;
+import com.formkiq.stacks.dynamodb.WebhooksService;
+import com.formkiq.stacks.dynamodb.WebhooksServiceExtension;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -135,6 +144,8 @@ public abstract class AbstractApiClientRequestTest {
   protected UserManagementApi userManagementApi = new UserManagementApi(this.client);
   /** {@link CustomIndexApi}. */
   protected CustomIndexApi indexApi = new CustomIndexApi(this.client);
+  /** {@link WebhooksApi}. */
+  protected WebhooksApi webhooksApi = new WebhooksApi(this.client);
   /** Sqs Messages. */
   private final List<Map<String, Object>> sqsMessages = new ArrayList<>();
 
@@ -272,9 +283,16 @@ public abstract class AbstractApiClientRequestTest {
     AwsCredentials creds = AwsBasicCredentials.create("aaa", "bbb");
     StaticCredentialsProvider credentialsProvider = StaticCredentialsProvider.create(creds);
 
-    return new AwsServiceCacheBuilder(server.getEnvironmentMap(), TestServices.getEndpointMap(),
-        credentialsProvider).addService(new DynamoDbAwsServiceRegistry())
-        .addService(new S3AwsServiceRegistry()).addService(new SsmAwsServiceRegistry())
-        .addService(new SqsAwsServiceRegistry()).build();
+    AwsServiceCache services = new AwsServiceCacheBuilder(server.getEnvironmentMap(),
+        TestServices.getEndpointMap(), credentialsProvider)
+        .addService(new DynamoDbAwsServiceRegistry()).addService(new S3AwsServiceRegistry())
+        .addService(new SsmAwsServiceRegistry()).addService(new SqsAwsServiceRegistry()).build();
+
+    services.register(S3Service.class, new S3ServiceExtension());
+    services.register(SsmService.class, new SsmServiceExtension());
+    services.register(WebhooksService.class, new WebhooksServiceExtension());
+    services.register(ConfigService.class, new ConfigServiceExtension());
+
+    return services;
   }
 }

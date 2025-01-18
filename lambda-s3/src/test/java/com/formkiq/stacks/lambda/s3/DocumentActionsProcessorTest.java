@@ -25,7 +25,6 @@ package com.formkiq.stacks.lambda.s3;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.DbKeys;
-import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
@@ -63,8 +62,8 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.module.typesense.TypeSenseService;
 import com.formkiq.module.typesense.TypeSenseServiceImpl;
-import com.formkiq.stacks.dynamodb.ConfigService;
-import com.formkiq.stacks.dynamodb.ConfigServiceDynamoDb;
+import com.formkiq.stacks.dynamodb.config.ConfigService;
+import com.formkiq.stacks.dynamodb.config.ConfigServiceDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
 import com.formkiq.stacks.dynamodb.DocumentSearchServiceImpl;
@@ -80,6 +79,8 @@ import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeServiceDynamodb;
 import com.formkiq.stacks.dynamodb.attributes.AttributeType;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
+import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
+import com.formkiq.stacks.dynamodb.config.SiteConfigurationGoogle;
 import com.formkiq.stacks.dynamodb.documents.DocumentPublicationRecord;
 import com.formkiq.stacks.dynamodb.mappings.Mapping;
 import com.formkiq.stacks.dynamodb.mappings.MappingAttribute;
@@ -90,7 +91,6 @@ import com.formkiq.stacks.dynamodb.mappings.MappingService;
 import com.formkiq.stacks.dynamodb.mappings.MappingServiceDynamodb;
 import com.formkiq.stacks.lambda.s3.actions.AddOcrAction;
 import com.formkiq.stacks.lambda.s3.util.FileUtils;
-import com.formkiq.stacks.lambda.s3.util.LambdaContextRecorder;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.formkiq.testutils.aws.LocalStackExtension;
@@ -99,7 +99,6 @@ import com.formkiq.testutils.aws.TypesenseExtension;
 import com.formkiq.validation.ValidationException;
 import com.google.gson.Gson;
 import joptsimple.internal.Strings;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -135,7 +134,6 @@ import java.util.concurrent.TimeUnit;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
-import static com.formkiq.stacks.dynamodb.ConfigService.CHATGPT_API_KEY;
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
 import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFileAsMap;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
@@ -217,8 +215,6 @@ public class DocumentActionsProcessorTest implements DbKeys {
   private static String sqsQueueArn;
   /** SQS Queue Url. */
   private static String sqsDocumentQueueUrl;
-  /** {@link LambdaContextRecorder}. */
-  private LambdaContextRecorder context;
 
   /**
    * After Class.
@@ -371,7 +367,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     eventBridgeService = serviceCache.getExtension(EventBridgeService.class);
   }
 
-  private static @NotNull Map<String, String> buildEnvironment(final String module,
+  private static Map<String, String> buildEnvironment(final String module,
       final String chatgptUrl) {
     Map<String, String> env = new HashMap<>();
     env.put("AWS_REGION", AWS_REGION.toString());
@@ -392,7 +388,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
    */
   @BeforeEach
   public void beforeEach() {
-    this.context = new LambdaContextRecorder();
+    // null = new LambdaContextRecorder();
     CALLBACK.reset();
 
     initProcessor("opensearch", "chatgpt1");
@@ -418,7 +414,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       List<Action> list = actionsService.getActions(siteId, documentId);
@@ -438,7 +434,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      configService.save(siteId, new DynamicObject(Map.of(CHATGPT_API_KEY, "asd")));
+      SiteConfiguration siteConfig = new SiteConfiguration();
+      siteConfig.setChatGptApiKey("asd");
+      configService.save(siteId, siteConfig);
 
       String documentId = ID.uuid();
 
@@ -464,7 +462,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       final int expectedSize = 6;
@@ -517,7 +515,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       List<Action> list = actionsService.getActions(siteId, documentId);
@@ -539,7 +537,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      configService.save(siteId, new DynamicObject(Map.of(CHATGPT_API_KEY, "asd")));
+      SiteConfiguration siteConfig = new SiteConfiguration();
+      siteConfig.setChatGptApiKey("asd");
+      configService.save(siteId, siteConfig);
 
       String documentId = ID.uuid();
 
@@ -565,7 +565,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       final int expectedSize = 7;
@@ -613,7 +613,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      configService.save(siteId, new DynamicObject(Map.of(CHATGPT_API_KEY, "asd")));
+      SiteConfiguration siteConfig = new SiteConfiguration();
+      siteConfig.setChatGptApiKey("asd");
+      configService.save(siteId, siteConfig);
 
       String documentId = ID.uuid();
 
@@ -639,7 +641,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       final int expectedSize = 6;
@@ -685,7 +687,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      configService.save(siteId, new DynamicObject(Map.of(CHATGPT_API_KEY, "asd")));
+      SiteConfiguration siteConfig = new SiteConfiguration();
+      siteConfig.setChatGptApiKey("asd");
+      configService.save(siteId, siteConfig);
 
       String documentId = ID.uuid();
 
@@ -711,7 +715,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       final int expectedSize = 5;
@@ -753,7 +757,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      configService.save(siteId, new DynamicObject(Map.of(CHATGPT_API_KEY, "asd")));
+      SiteConfiguration siteConfig = new SiteConfiguration();
+      siteConfig.setChatGptApiKey("asd");
+      configService.save(siteId, siteConfig);
 
       String documentId = ID.uuid();
 
@@ -779,7 +785,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       final int expectedSize = 7;
@@ -827,7 +833,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      configService.save(siteId, new DynamicObject(Map.of(CHATGPT_API_KEY, "asd")));
+      SiteConfiguration siteConfig = new SiteConfiguration();
+      siteConfig.setChatGptApiKey("asd");
+      configService.save(siteId, siteConfig);
 
       String documentId = ID.uuid();
 
@@ -853,7 +861,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       final int expectedSize = 5;
@@ -922,7 +930,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       HttpRequest lastRequest = CALLBACK.getLastRequest();
@@ -966,7 +974,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       HttpRequest lastRequest = CALLBACK.getLastRequest();
@@ -1009,7 +1017,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       HttpRequest lastRequest = CALLBACK.getLastRequest();
@@ -1044,7 +1052,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       actions = actionsService.getActions(siteId, documentId);
@@ -1084,7 +1092,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       actions = actionsService.getActions(siteId, documentId);
@@ -1146,7 +1154,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       actions = actionsService.getActions(siteId, documentId);
@@ -1208,7 +1216,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       HttpRequest lastRequest = CALLBACK.getLastRequest();
@@ -1254,7 +1262,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       actions = actionsService.getActions(siteId, documentId);
@@ -1295,7 +1303,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       actions = actionsService.getActions(siteId, documentId);
@@ -1342,7 +1350,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       List<Action> list = actionsService.getActions(siteId, documentId);
@@ -1381,7 +1389,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       List<Action> list = actionsService.getActions(siteId, documentId);
@@ -1422,7 +1430,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       HttpRequest lastRequest = CALLBACK.getLastRequest();
@@ -1448,7 +1456,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     Map<String, Object> map = new HashMap<>();
 
     // when
-    processor.handleRequest(map, this.context);
+    processor.handleRequest(map, null);
 
     // then
   }
@@ -1474,7 +1482,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       assertEquals(ActionStatus.IN_QUEUE,
@@ -2017,6 +2025,57 @@ public class DocumentActionsProcessorTest implements DbKeys {
     }
   }
 
+  /**
+   * Handle Idp with Mapping Action application/pdf and SourceType MANUAL.
+   *
+   * @throws IOException IOException
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testIdp13() throws IOException, ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      String documentId = addPdfToBucket(siteId);
+
+      attributeService.addAttribute(siteId, "certificate_number", null, null);
+
+      Mapping mapping = createMapping("certificate_number", null, null,
+          MappingAttributeSourceType.MANUAL, "123", List.of("111", "222"), null);
+
+      MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
+
+      processIdpRequest(siteId, documentId, "application/pdf", mappingRecord);
+
+      // then
+      Action action = actionsService.getActions(siteId, documentId).get(0);
+      assertNull(action.message());
+      assertEquals(ActionStatus.COMPLETE, action.status());
+      assertEquals(ActionType.IDP, action.type());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertNotNull(action.completedDate());
+
+      List<DocumentAttributeRecord> results =
+          documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
+
+      final int expected = 3;
+      assertEquals(expected, results.size());
+
+      int i = 0;
+      DocumentAttributeRecord record = results.get(i++);
+      assertEquals("certificate_number", record.getKey());
+      assertEquals("111", record.getStringValue());
+
+      record = results.get(i++);
+      assertEquals("certificate_number", record.getKey());
+      assertEquals("123", record.getStringValue());
+
+      record = results.get(i);
+      assertEquals("certificate_number", record.getKey());
+      assertEquals("222", record.getStringValue());
+    }
+  }
+
   private void processIdpRequest(final String siteId, final String documentId,
       final String contentType, final MappingRecord mappingRecord)
       throws ValidationException, IOException {
@@ -2033,7 +2092,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
             documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
     // when
-    processor.handleRequest(map, this.context);
+    processor.handleRequest(map, null);
   }
 
   private Mapping createMapping(final String attributeKey, final String labelText,
@@ -2078,7 +2137,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       Action action = actionsService.getActions(siteId, documentId).get(0);
@@ -2128,7 +2187,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       Action action = actionsService.getActions(siteId, documentId).get(0);
@@ -2147,8 +2206,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
   public void testPdfExportAction02() throws Exception {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      configService.save(siteId, new DynamicObject(Map.of("googleWorkloadIdentityAudience", "abc",
-          "googleWorkloadIdentityServiceAccount", "123")));
+      SiteConfiguration siteConfig = new SiteConfiguration();
+      siteConfig.setGoogle(new SiteConfigurationGoogle().setWorkloadIdentityAudience("abc")
+          .setWorkloadIdentityServiceAccount("123"));
+      configService.save(siteId, siteConfig);
 
       String documentId = ID.uuid();
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
@@ -2164,7 +2225,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       Action action = actionsService.getActions(siteId, documentId).get(0);
@@ -2183,8 +2244,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
   public void testPdfExportAction03() throws Exception {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      configService.save(siteId, new DynamicObject(Map.of("googleWorkloadIdentityAudience", "abc",
-          "googleWorkloadIdentityServiceAccount", "123")));
+      SiteConfiguration siteConfig = new SiteConfiguration();
+      siteConfig.setGoogle(new SiteConfigurationGoogle().setWorkloadIdentityAudience("abc")
+          .setWorkloadIdentityServiceAccount("123"));
+      configService.save(siteId, siteConfig);
 
       String documentId = ID.uuid();
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
@@ -2201,7 +2264,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       Action action = actionsService.getActions(siteId, documentId).get(0);
@@ -2259,7 +2322,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map, null);
 
       // then
       Action action = actionsService.getActions(siteId, documentId).get(0);

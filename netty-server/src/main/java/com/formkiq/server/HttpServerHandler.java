@@ -44,9 +44,9 @@ import io.netty.handler.codec.http.FullHttpRequest;
 public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
   /** {@link List} {@link HttpRequestHandler}. */
-  private List<HttpRequestHandler> handlers;
+  private final List<HttpRequestHandler> handlers;
   /** {@link NotSupportedHttpRequestHandler}. */
-  private NotSupportedHttpRequestHandler notSupported = new NotSupportedHttpRequestHandler();
+  private final NotSupportedHttpRequestHandler notSupported = new NotSupportedHttpRequestHandler();
 
   /**
    * constructor.
@@ -80,13 +80,12 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpReque
   }
 
   @Override
-  protected void channelRead0(final ChannelHandlerContext ctx, final FullHttpRequest req)
-      throws Exception {
+  protected void channelRead0(final ChannelHandlerContext ctx, final FullHttpRequest req) {
 
     Optional<HttpRequestHandler> o =
         this.handlers.stream().filter(h -> h.isSupported(req)).findFirst();
 
-    if (!o.isEmpty()) {
+    if (o.isPresent()) {
 
       try {
         o.get().handle(ctx, req);

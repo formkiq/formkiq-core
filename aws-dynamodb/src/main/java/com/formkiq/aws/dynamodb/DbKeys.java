@@ -31,6 +31,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import com.formkiq.aws.dynamodb.objects.Strings;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
@@ -154,7 +156,7 @@ public interface DbKeys {
    * @param value {@link String}
    */
   default void addN(final Map<String, AttributeValue> map, final String key, final String value) {
-    if (value != null) {
+    if (!Strings.isEmpty(value)) {
       map.put(key, AttributeValue.builder().n(value).build());
     }
   }

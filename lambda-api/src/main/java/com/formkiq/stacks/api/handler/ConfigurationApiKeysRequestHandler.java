@@ -27,29 +27,25 @@ import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
+
 import com.formkiq.aws.dynamodb.DynamicObject;
-import com.formkiq.aws.dynamodb.PaginationMapToken;
-import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
-import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
-import com.formkiq.aws.dynamodb.cache.CacheService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.ApiKey;
 import com.formkiq.stacks.dynamodb.ApiKeyPermission;
 import com.formkiq.stacks.dynamodb.ApiKeysService;
+import com.formkiq.stacks.dynamodb.base64.Pagination;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
@@ -65,14 +61,14 @@ public class ConfigurationApiKeysRequestHandler
   public ConfigurationApiKeysRequestHandler() {}
 
   @Override
-  public void beforeGet(final LambdaLogger logger, final ApiGatewayRequestEvent event,
-      final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
+  public void beforeGet(final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
+      final AwsServiceCache awsServices) throws Exception {
     checkPermissions(event, authorization);
   }
 
   @Override
-  public void beforePost(final LambdaLogger logger, final ApiGatewayRequestEvent event,
-      final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
+  public void beforePost(final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
+      final AwsServiceCache awsServices) throws Exception {
     checkPermissions(event, authorization);
   }
 
@@ -85,23 +81,19 @@ public class ConfigurationApiKeysRequestHandler
   }
 
   @Override
-  public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     ApiKeysService apiKeysService = awsservice.getExtension(ApiKeysService.class);
-    CacheService cacheService = awsservice.getExtension(CacheService.class);
 
-    ApiPagination pagination = getPagination(cacheService, event);
-
-    final int limit = pagination != null ? pagination.getLimit() : getLimit(logger, event);
-    final PaginationMapToken token = pagination != null ? pagination.getStartkey() : null;
+    int limit = getLimit(awsservice.getLogger(), event);
+    String nextToken = event.getQueryStringParameter("next");
 
     String siteId = event.getPathParameters().get("siteId");
-    PaginationResults<ApiKey> list = apiKeysService.list(siteId, token, limit);
+    Pagination<ApiKey> list = apiKeysService.list(siteId, nextToken, limit);
 
     Map<String, Object> map = Map.of("apiKeys", list.getResults());
-    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
+    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map, list.getNextToken()));
   }
 
   @Override
@@ -110,9 +102,8 @@ public class ConfigurationApiKeysRequestHandler
   }
 
   @Override
-  public ApiRequestHandlerResponse post(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = event.getPathParameters().get("siteId");
 
@@ -121,7 +112,7 @@ public class ConfigurationApiKeysRequestHandler
     validate(body);
 
     String name = body.get("name").toString();
-    Collection<ApiKeyPermission> permissions = Collections.emptyList();
+    Collection<ApiKeyPermission> permissions;
 
     List<String> permissionList = body.getStringList("permissions");
     if (!Objects.isEmpty(permissionList)) {

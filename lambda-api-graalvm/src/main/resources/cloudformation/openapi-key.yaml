@@ -796,6 +796,8 @@ Resources:
                 - System Management
               parameters:
                 - $ref: '#/components/parameters/siteIdPathParam'
+                - $ref: '#/components/parameters/nextParam'
+                - $ref: '#/components/parameters/limitParam'
               responses:
                 '200':
                   description: "200 OK"
@@ -3888,6 +3890,8 @@ Resources:
               description: Return a list of webhooks; each webhook's id can be provided to an external service, allowing data to be sent, received, and processed via that webhook
               parameters:
                 - $ref: '#/components/parameters/siteIdParam'
+                - $ref: '#/components/parameters/nextParam'
+                - $ref: '#/components/parameters/limitParam'
               responses:
                 '200':
                   description: "200 OK"
@@ -3977,7 +3981,7 @@ Resources:
                 - $ref: '#/components/parameters/siteIdParam'
               responses:
                 '200':
-                  $ref: '#/components/responses/200Cors'
+                  $ref: '#/components/responses/200CorsDeleteResponse'
               security:
                 - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -3999,7 +4003,7 @@ Resources:
                       $ref: '#/components/schemas/AddWebhookRequest'
               responses:
                 '200':
-                  $ref: '#/components/responses/200Cors'
+                  $ref: '#/components/responses/200CorsUpdateResponse'
               security:
                 - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -6188,6 +6192,19 @@ Resources:
                 application/json:
                   schema:
                     "$ref": "#/components/schemas/DeleteResponse"
+            200CorsUpdateResponse:
+              description: 200 OK
+              headers:
+                Access-Control-Allow-Origin:
+                  $ref: '#/components/headers/AccessControlAllowOrigin'
+                Access-Control-Allow-Methods:
+                  $ref: '#/components/headers/AccessControlAllowMethods'
+                Access-Control-Allow-Headers:
+                  $ref: '#/components/headers/AccessControlAllowHeaders'
+              content:
+                application/json:
+                  schema:
+                    "$ref": "#/components/schemas/UpdateResponse"
             200Cors:
               description: 200 OK
               headers:
@@ -6377,6 +6394,7 @@ Resources:
                   - TEXT
                   - KEY_VALUE
                   - CONTENT_URL
+                  - TABLES
             limitParam:
               name: limit
               in: query
@@ -7325,7 +7343,7 @@ Resources:
                   description: "Name of webhook"
                 ttl:
                   type: "string"
-                  description: "Webhook time to live (expiry)"
+                  description: "Webhook time to live (expiry in seconds)"
                 enabled:
                   type: "string"
                   description: "Is webhook enabled"
@@ -7935,6 +7953,9 @@ Resources:
                 path:
                   type: "string"
                   description: "Path or Name of document"
+                contentType:
+                  type: "string"
+                  description: "Document Content-Type"
                 deepLinkPath:
                   type: "string"
                   description: "Path or Name of deep link"
@@ -7944,6 +7965,11 @@ Resources:
                 lastModifiedDate:
                   type: "string"
                   description: "Last Modified Timestamp"
+                checksum:
+                  type: "string"
+                  description: "Document checksum, changes when document file changes"
+                checksumType:
+                  $ref: "#/components/schemas/ChecksumType"
                 documentId:
                   type: "string"
                   description: "Document Identifier"
@@ -8028,6 +8054,11 @@ Resources:
                 contentLength:
                   type: "integer"
                   description: "Document size"
+                checksum:
+                  type: "string"
+                  description: "Document checksum, changes when document file changes"
+                checksumType:
+                  $ref: "#/components/schemas/ChecksumType"
                 tags:
                   type: "object"
                   additionalProperties:
@@ -9070,6 +9101,7 @@ Resources:
                 - CONTENT_TYPE
                 - BARCODE
                 - FIELD
+                - ATTRIBUTE
 
             RuleConditionAttribute:
               type: string
@@ -9079,6 +9111,7 @@ Resources:
                 - CONTENT_TYPE
                 - BARCODE
                 - FIELD
+                - ATTRIBUTE
 
             RuleConditionOperation:
               type: string
@@ -9094,6 +9127,9 @@ Resources:
                   $ref: "#/components/schemas/RuleConditionAttribute"
                 criterion:
                   $ref: "#/components/schemas/RuleConditionCriterion"
+                attributeKey:
+                  type: "string"
+                  description: "Rule attribute key (only required for ATTRIBUTE criterion)"
                 fieldName:
                   type: "string"
                   description: "Rule field name (only required for FIELD criterion)"
@@ -9142,6 +9178,11 @@ Resources:
               properties:
                 locale:
                   $ref: "#/components/schemas/Locale"
+                insertDocuments:
+                  type: "array"
+                  description: "List of documents to insert"
+                  items:
+                    $ref: "#/components/schemas/DocumentGenerateInsertDocument"
                 datasources:
                   type: "array"
                   description: "List of data sources"
@@ -9155,6 +9196,24 @@ Resources:
                 path:
                   type: "string"
                   description: "The path of the generated document"
+
+            DocumentGenerateInsertDocumentPosition:
+              type: string
+              description: Position of document
+              enum:
+                - APPEND
+
+            DocumentGenerateInsertDocument:
+              type: "object"
+              required:
+                - documentId
+                - position
+              properties:
+                position:
+                  $ref: "#/components/schemas/DocumentGenerateInsertDocumentPosition"
+                documentId:
+                  type: "string"
+                  description: "Document Identifier of the data source document"
 
             DocumentGenerateDataSource:
               type: "object"
@@ -9351,6 +9410,7 @@ Resources:
                 - CONTENT
                 - CONTENT_KEY_VALUE
                 - METADATA
+                - MANUAL
 
             GetAttributeAllowedValuesResponse:
               type: "object"
@@ -9453,6 +9513,9 @@ Resources:
             GetWebhooksResponse:
               type: "object"
               properties:
+                next:
+                  type: "string"
+                  description: "Next page of results token"
                 webhooks:
                   type: "array"
                   description: "List of webhooks"
@@ -9482,6 +9545,9 @@ Resources:
                 enabled:
                   type: "string"
                   description: "Is webhook enabled"
+                ttl:
+                  type: "string"
+                  description: "Webhook time to live (expiry in seconds)"
             GetWebhookTagsResponse:
               type: "object"
               properties:
@@ -9598,6 +9664,25 @@ Resources:
                   description: Action metadata
                   additionalProperties:
                     type: string
+            OcrTable:
+              type: object
+              properties:
+                headers:
+                  type: "array"
+                  items:
+                    type: "string"
+                data:
+                  type: array
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/OcrTableData"
+            OcrTableData:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: Table Value
             OcrKeyValues:
               type: object
               properties:
@@ -9621,6 +9706,10 @@ Resources:
                   description: "List of ocr key / values"
                   items:
                     $ref: "#/components/schemas/OcrKeyValues"
+                tables:
+                  type: "array"
+                  items:
+                    $ref: "#/components/schemas/OcrTable"
                 data:
                   type: string
                   description: OCR text result
@@ -9701,6 +9790,11 @@ Resources:
                 deepLinkPath:
                   type: "string"
                   description: "Path or Name of deep link"
+                checksum:
+                  type: "string"
+                  description: "Document checksum, changes when document file changes"
+                checksumType:
+                  $ref: "#/components/schemas/ChecksumType"
                 tags:
                   type: "array"
                   description: "List of document tags"
@@ -9711,6 +9805,10 @@ Resources:
                   description: "List of document Metadata"
                   items:
                     $ref: "#/components/schemas/AddDocumentMetadata"
+                attributes:
+                  type: "object"
+                  additionalProperties:
+                    $ref: "#/components/schemas/FulltextAttribute"
             AddDocumentFulltextRequest:
               type: object
               properties:
@@ -9731,6 +9829,11 @@ Resources:
                 deepLinkPath:
                   type: "string"
                   description: "Path or Name of deep link"
+                checksum:
+                  type: "string"
+                  description: "Document checksum, changes when document file changes"
+                checksumType:
+                  $ref: "#/components/schemas/ChecksumType"
                 tags:
                   type: "array"
                   description: "List of document tags"
@@ -9741,6 +9844,10 @@ Resources:
                   description: "List of document Metadata"
                   items:
                     $ref: "#/components/schemas/AddDocumentMetadata"
+                attributes:
+                  type: "object"
+                  additionalProperties:
+                    $ref: "#/components/schemas/FulltextAttribute"
             UpdateDocumentFulltextRequest:
               type: object
               properties:
@@ -9761,6 +9868,11 @@ Resources:
                 deepLinkPath:
                   type: "string"
                   description: "Path or Name of deep link"
+                checksum:
+                  type: "string"
+                  description: "Document checksum, changes when document file changes"
+                checksumType:
+                  $ref: "#/components/schemas/ChecksumType"
                 tags:
                   type: "array"
                   description: "List of document tags"
@@ -9771,6 +9883,10 @@ Resources:
                   description: "List of document Metadata"
                   items:
                     $ref: "#/components/schemas/AddDocumentMetadata"
+                attributes:
+                  type: "object"
+                  additionalProperties:
+                    $ref: "#/components/schemas/FulltextAttribute"
             SetAntivirusRequest:
               type: object
             SetAntivirusResponse:
@@ -9938,6 +10054,8 @@ Resources:
                 notificationEmail:
                   type: "string"
                   description: "Email address to use for notifications"
+                ocr:
+                  $ref: "#/components/schemas/OcrConfig"
                 google:
                   $ref: "#/components/schemas/GoogleConfig"
                 docusign:
@@ -10183,6 +10301,9 @@ Resources:
             GetApiKeysResponse:
               type: object
               properties:
+                next:
+                  type: "string"
+                  description: "Next page of results token"
                 apiKeys:
                   type: "array"
                   description: "List of ApiKeys"
@@ -10232,10 +10353,47 @@ Resources:
                 notificationEmail:
                   type: "string"
                   description: "Email address to use for notifications (Must be verified identity created in AWS SES)"
+                ocr:
+                  $ref: "#/components/schemas/OcrConfig"
                 google:
                   $ref: "#/components/schemas/GoogleConfig"
                 docusign:
                   $ref: "#/components/schemas/DocusignConfig"
+
+            SiteConfig:
+              type: "object"
+              properties:
+                maxContentLengthBytes:
+                  type: "string"
+                  description: "Set Maximum Document Content Length in Bytes"
+                maxDocuments:
+                  type: "string"
+                  description: "Set Maximum number of Documents allowed"
+                maxWebhooks:
+                  type: "string"
+                  description: "Set Maximum number of Webhooks allowed"
+                ocr:
+                  $ref: "#/components/schemas/OcrConfig"
+
+            SiteUsage:
+              type: "object"
+              properties:
+                documentCount:
+                  type: "number"
+                  description: "The number of documents in the site (only tracked when using MaxDocuments)"
+                ocrTransactionCount:
+                  type: "number"
+                  description: "The number of ocr tx requests in the site (only tracked when using OCR MaxTransactions)"
+
+            OcrConfig:
+              type: "object"
+              properties:
+                maxPagesPerTransaction:
+                  type: "number"
+                  description: "Max number of OCR pages (-1 for unlimited)"
+                maxTransactions:
+                  type: "number"
+                  description: "Max number of OCR actions that can be created (-1 for unlimited)"
 
             GoogleConfig:
               type: "object"
@@ -10548,6 +10706,10 @@ Resources:
                 uploadEmail:
                   type: "string"
                   description: "SiteId document upload email address"
+                config:
+                  $ref: "#/components/schemas/SiteConfig"
+                usage:
+                  $ref: "#/components/schemas/SiteUsage"
             AddClassificationResponse:
               type: "object"
               properties:

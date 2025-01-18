@@ -37,7 +37,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.PaginationResult;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
@@ -79,6 +78,8 @@ import com.formkiq.stacks.dynamodb.DocumentValidatorImpl;
 import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
+import com.formkiq.stacks.dynamodb.config.ConfigService;
+import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
@@ -100,18 +101,16 @@ public class DocumentIdRequestHandler
   public DocumentIdRequestHandler() {}
 
   @Override
-  public ApiRequestHandlerResponse delete(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse delete(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String documentBucket = awsservice.environment("DOCUMENTS_S3_BUCKET");
 
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
 
-    if (awsservice.debug()) {
-      logger.log("deleting object " + documentId + " from bucket '" + documentBucket + "'");
-    }
+    awsservice.getLogger()
+        .debug("deleting object " + documentId + " from bucket '" + documentBucket + "'");
 
     boolean softDelete = "true".equals(event.getQueryStringParameter("softDelete"));
 
@@ -160,12 +159,11 @@ public class DocumentIdRequestHandler
   }
 
   @Override
-  public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorization.getSiteId();
-    int limit = getLimit(logger, event);
+    int limit = getLimit(awsservice.getLogger(), event);
 
     CacheService cacheService = awsservice.getExtension(CacheService.class);
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
@@ -197,9 +195,8 @@ public class DocumentIdRequestHandler
   }
 
   @Override
-  public ApiRequestHandlerResponse patch(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse patch(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
@@ -219,10 +216,12 @@ public class DocumentIdRequestHandler
 
     validatePatch(awsservice, siteId, documentId, item, request);
 
-    logger.log("setting userId: " + item.getUserId() + " contentType: " + item.getContentType());
+    awsservice.getLogger()
+        .trace("setting userId: " + item.getUserId() + " contentType: " + item.getContentType());
 
-    List<DocumentTag> tags =
-        this.documentEntityValidator.validate(authorization, awsservice, siteId, request, true);
+    SiteConfiguration config = awsservice.getExtension(ConfigService.class).get(siteId);
+    List<DocumentTag> tags = this.documentEntityValidator.validate(authorization, awsservice,
+        config, siteId, request, true);
 
     DocumentService service = awsservice.getExtension(DocumentService.class);
 

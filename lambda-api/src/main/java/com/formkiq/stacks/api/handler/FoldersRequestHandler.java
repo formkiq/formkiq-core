@@ -29,7 +29,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
+
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
@@ -61,9 +61,8 @@ public class FoldersRequestHandler implements ApiGatewayRequestHandler, ApiGatew
   public FoldersRequestHandler() {}
 
   @Override
-  public ApiRequestHandlerResponse post(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     DynamicObject o = fromBodyToDynamicObject(event);
     String path = o.getString("path");
@@ -91,13 +90,13 @@ public class FoldersRequestHandler implements ApiGatewayRequestHandler, ApiGatew
   }
 
   @Override
-  public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     CacheService cacheService = awsservice.getExtension(CacheService.class);
     ApiPagination pagination = getPagination(cacheService, event);
-    int limit = pagination != null ? pagination.getLimit() : getLimit(logger, event);
+    int limit =
+        pagination != null ? pagination.getLimit() : getLimit(awsservice.getLogger(), event);
     PaginationMapToken ptoken = pagination != null ? pagination.getStartkey() : null;
 
     String siteId = authorization.getSiteId();

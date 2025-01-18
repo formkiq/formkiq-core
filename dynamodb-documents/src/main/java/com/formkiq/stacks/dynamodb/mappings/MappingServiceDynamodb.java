@@ -199,14 +199,24 @@ public class MappingServiceDynamodb implements MappingService, DbKeys {
           .error("'sourceType' is required"));
     }
 
-    if (attribute.getLabelMatchingType() == null) {
-      errors.add(new ValidationErrorImpl().key("attribute[" + index + "].labelMatchingType")
-          .error("'labelMatchingType' is required"));
-    }
+    if (MappingAttributeSourceType.MANUAL.equals(attribute.getSourceType())) {
 
-    if (notNull(attribute.getLabelTexts()).isEmpty()) {
-      errors.add(new ValidationErrorImpl().key("attribute[" + index + "].labelTexts")
-          .error("'labelTexts' is required"));
+      if (isEmpty(attribute.getDefaultValue()) && notNull(attribute.getDefaultValues()).isEmpty()) {
+        errors.add(new ValidationErrorImpl().key("attribute[" + index + "].defaultValue")
+            .error("'defaultValue' or 'defaultValues' is required"));
+      }
+
+    } else {
+
+      if (attribute.getLabelMatchingType() == null) {
+        errors.add(new ValidationErrorImpl().key("attribute[" + index + "].labelMatchingType")
+            .error("'labelMatchingType' is required"));
+      }
+
+      if (notNull(attribute.getLabelTexts()).isEmpty()) {
+        errors.add(new ValidationErrorImpl().key("attribute[" + index + "].labelTexts")
+            .error("'labelTexts' is required"));
+      }
     }
   }
 

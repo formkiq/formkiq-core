@@ -23,25 +23,26 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.DocusignConfig;
 import com.formkiq.client.model.GetConfigurationResponse;
 import com.formkiq.client.model.GoogleConfig;
+import com.formkiq.client.model.OcrConfig;
 import com.formkiq.client.model.UpdateConfigurationRequest;
 import com.formkiq.client.model.UpdateConfigurationResponse;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.dynamodb.ConfigService;
-import com.formkiq.stacks.dynamodb.ConfigServiceExtension;
+import com.formkiq.stacks.dynamodb.config.ConfigService;
+import com.formkiq.stacks.dynamodb.config.ConfigServiceExtension;
+import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.Map;
+import java.math.BigDecimal;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
-import static com.formkiq.stacks.dynamodb.ConfigService.CHATGPT_API_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -103,8 +104,9 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     // given
     String siteId = DEFAULT_SITE_ID;
     String group = "Admins";
+    SiteConfiguration siteConfig = new SiteConfiguration().setChatGptApiKey("somevalue");
 
-    this.config.save(siteId, new DynamicObject(Map.of("chatGptApiKey", "somevalue")));
+    this.config.save(siteId, siteConfig);
 
     setBearerToken(group);
 
@@ -132,7 +134,8 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     // given
     String siteId = DEFAULT_SITE_ID;
 
-    this.config.save(siteId, new DynamicObject(Map.of(CHATGPT_API_KEY, "somevalue")));
+    SiteConfiguration siteConfig = new SiteConfiguration().setChatGptApiKey("somevalue");
+    this.config.save(siteId, siteConfig);
 
     String group = "Admins";
     setBearerToken(group);
@@ -161,13 +164,14 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     String group = "Admins";
     setBearerToken(group);
 
-    this.config.save(null, new DynamicObject(Map.of(CHATGPT_API_KEY, "somevalue")));
+    SiteConfiguration siteConfig = new SiteConfiguration().setChatGptApiKey("somevalue");
+    this.config.save(null, siteConfig);
 
     // when
     GetConfigurationResponse response = this.systemApi.getConfiguration(siteId);
 
     // then
-    assertEquals("some*******alue", response.getChatGptApiKey());
+    assertEquals("", response.getChatGptApiKey());
     assertEquals("", response.getMaxContentLengthBytes());
     assertEquals("", response.getMaxDocuments());
     assertEquals("", response.getMaxWebhooks());
@@ -186,8 +190,11 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     String group = "Admins";
     setBearerToken(group);
 
-    this.config.save(null, new DynamicObject(Map.of(CHATGPT_API_KEY, "somevalue")));
-    this.config.save(siteId, new DynamicObject(Map.of(CHATGPT_API_KEY, "anothervalue")));
+    SiteConfiguration siteConfig0 = new SiteConfiguration().setChatGptApiKey("somevalue");
+    this.config.save(null, siteConfig0);
+
+    SiteConfiguration siteConfig1 = new SiteConfiguration().setChatGptApiKey("anothervalue");
+    this.config.save(siteId, siteConfig1);
 
     // when
     GetConfigurationResponse response = this.systemApi.getConfiguration(siteId);
@@ -227,25 +234,28 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     assertEquals("1000", response.getMaxDocuments());
     assertEquals("5", response.getMaxWebhooks());
     assertEquals("", response.getNotificationEmail());
+    assertNotNull(response.getOcr());
+    assertEquals("-1", Objects.formatDouble(java.util.Objects
+        .requireNonNull(response.getOcr().getMaxPagesPerTransaction()).doubleValue()));
+    assertEquals("-1", Objects.formatDouble(
+        java.util.Objects.requireNonNull(response.getOcr().getMaxTransactions()).doubleValue()));
   }
 
   /**
-   * PUT /config default as user.
+   * PATCH /config default as user.
    *
    */
   @Test
-  public void testHandlePutConfiguration02() {
+  public void testHandlePatchConfiguration02() {
     // given
-    String siteId = DEFAULT_SITE_ID;
-    String group = DEFAULT_SITE_ID;
-    setBearerToken(group);
+    setBearerToken(DEFAULT_SITE_ID);
 
     UpdateConfigurationRequest req = new UpdateConfigurationRequest().chatGptApiKey("anotherkey")
         .maxContentLengthBytes("1000000").maxDocuments("1000").maxWebhooks("5");
 
     // when
     try {
-      this.systemApi.updateConfiguration(siteId, req);
+      this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
       fail();
     } catch (ApiException e) {
       final int code = 401;
@@ -254,12 +264,12 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * PUT google configuration /config default as Admin.
+   * PATCH google configuration /config default as Admin.
    *
    * @throws Exception an error has occurred
    */
   @Test
-  public void testHandlePutConfiguration03() throws Exception {
+  public void testHandlePatchConfiguration03() throws Exception {
     // given
     String siteId = DEFAULT_SITE_ID;
     String group = "Admins";
@@ -283,13 +293,12 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * PUT google invalid configuration /config default as Admin.
+   * PATCH google invalid configuration /config default as Admin.
    *
    */
   @Test
-  public void testHandlePutConfiguration04() {
+  public void testHandlePatchConfiguration04() {
     // given
-    String siteId = DEFAULT_SITE_ID;
     String group = "Admins";
     setBearerToken(group);
 
@@ -298,7 +307,7 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
 
     // when
     try {
-      this.systemApi.updateConfiguration(siteId, req);
+      this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
       fail();
     } catch (ApiException e) {
       // then
@@ -311,13 +320,12 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * PUT google invalid configuration /config default as Admin.
+   * PATCH google invalid configuration /config default as Admin.
    *
    */
   @Test
-  public void testHandlePutConfiguration05() {
+  public void testHandlePatchConfiguration05() {
     // given
-    String siteId = DEFAULT_SITE_ID;
     String group = "Admins";
     setBearerToken(group);
 
@@ -326,7 +334,7 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
 
     // when
     try {
-      this.systemApi.updateConfiguration(siteId, req);
+      this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
       fail();
     } catch (ApiException e) {
       // then
@@ -338,11 +346,11 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * PUT docusign valid configuration /config default as Admin.
+   * PATCH docusign valid configuration /config default as Admin.
    *
    */
   @Test
-  public void testHandlePutConfiguration06() throws ApiException {
+  public void testHandlePatchConfiguration06() throws ApiException {
     // given
     String siteId = DEFAULT_SITE_ID;
     String group = "Admins";
@@ -369,13 +377,12 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * PUT docusign invalid RSA key configuration /config default as Admin.
+   * PATCH docusign invalid RSA key configuration /config default as Admin.
    *
    */
   @Test
-  public void testHandlePutConfiguration07() {
+  public void testHandlePatchConfiguration07() {
     // given
-    String siteId = DEFAULT_SITE_ID;
     String group = "Admins";
     setBearerToken(group);
 
@@ -384,13 +391,63 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
 
     // when
     try {
-      this.systemApi.updateConfiguration(siteId, req);
+      this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
       fail();
     } catch (ApiException e) {
       // then
       assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
       assertEquals("{\"errors\":[{\"key\":\"docusignRsaPrivateKey\","
           + "\"error\":\"invalid RSA Private Key\"}]}", e.getResponseBody());
+    }
+  }
+
+  /**
+   * PATCH OCR.
+   *
+   */
+  @Test
+  public void testHandlePatchConfiguration08() throws ApiException {
+    // given
+    String group = "Admins";
+    setBearerToken(group);
+
+    UpdateConfigurationRequest req = new UpdateConfigurationRequest().ocr(new OcrConfig()
+        .maxPagesPerTransaction(new BigDecimal(2)).maxTransactions(new BigDecimal(1)));
+
+    // when
+    UpdateConfigurationResponse response = this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
+
+    // then
+    assertEquals("Config saved", response.getMessage());
+
+    GetConfigurationResponse c = this.systemApi.getConfiguration(DEFAULT_SITE_ID);
+    assertNotNull(c.getOcr());
+    assertEquals("2", Objects.formatDouble(
+        java.util.Objects.requireNonNull(c.getOcr().getMaxPagesPerTransaction()).doubleValue()));
+    assertEquals("1", Objects.formatDouble(
+        java.util.Objects.requireNonNull(c.getOcr().getMaxTransactions()).doubleValue()));
+  }
+
+  /**
+   * PATCH empty request.
+   *
+   */
+  @Test
+  public void testHandlePatchConfiguration09() {
+    // given
+    String group = "Admins";
+    setBearerToken(group);
+
+    UpdateConfigurationRequest req = new UpdateConfigurationRequest();
+
+    // when
+    try {
+      this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
+      fail();
+    } catch (ApiException e) {
+      // then
+      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+      assertEquals("{\"message\":\"missing required body parameters\"}", e.getResponseBody());
     }
   }
 }

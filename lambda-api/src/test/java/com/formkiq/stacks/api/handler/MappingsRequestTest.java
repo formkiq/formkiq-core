@@ -123,7 +123,7 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
 
       setBearerToken(siteId);
 
-      addAttribute(siteId, key0);
+      addAttribute(siteId);
 
       AddMapping mapping = new AddMapping().name("test")
           .addAttributesItem(new MappingAttribute().attributeKey(key0)
@@ -172,6 +172,30 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * POST /mappings SourceType MANUAL.
+   *
+   */
+  @Test
+  public void testAddMappings42() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+
+      setBearerToken(siteId);
+      addAttribute(siteId);
+
+      AddMappingRequest req = new AddMappingRequest().mapping(new AddMapping().name("asd")
+          .addAttributesItem(new MappingAttribute().attributeKey("invoice").defaultValue("23")
+              .sourceType(MappingAttributeSourceType.MANUAL)));
+
+      // when
+      AddMappingResponse response = this.mappingsApi.addMapping(req, siteId);
+
+      // then
+      assertNotNull(response.getMappingId());
+    }
+  }
+
+  /**
    * DELETE /mappings/{mappingId}.
    *
    * @throws ApiException an error has occurred
@@ -185,7 +209,7 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
 
       setBearerToken(siteId);
 
-      addAttribute(siteId, key0);
+      addAttribute(siteId);
 
       AddMapping mapping = new AddMapping().name("test")
           .addAttributesItem(new MappingAttribute().attributeKey(key0)
@@ -236,8 +260,8 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
         String.join(",", notNull(notNull(mapping.getAttributes()).get(0).getLabelTexts())));
   }
 
-  private void addAttribute(final String siteId, final String key) throws ApiException {
-    this.attributesApi
-        .addAttribute(new AddAttributeRequest().attribute(new AddAttribute().key(key)), siteId);
+  private void addAttribute(final String siteId) throws ApiException {
+    this.attributesApi.addAttribute(
+        new AddAttributeRequest().attribute(new AddAttribute().key("invoice")), siteId);
   }
 }

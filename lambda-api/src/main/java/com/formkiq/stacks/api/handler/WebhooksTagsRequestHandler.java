@@ -25,13 +25,12 @@ package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_CREATED;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-import java.util.Arrays;
+
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
+
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
@@ -57,9 +56,8 @@ public class WebhooksTagsRequestHandler
   private static final long TO_MILLIS = 1000L;
 
   @Override
-  public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsServices) throws Exception {
+  public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
 
     String siteId = authorization.getSiteId();
     String id = getPathParameter(event, "webhookId");
@@ -79,7 +77,7 @@ public class WebhooksTagsRequestHandler
       map.put("key", m.getString("tagKey"));
 
       return map;
-    }).collect(Collectors.toList());
+    }).toList();
 
     return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(Map.of("tags", tags)));
   }
@@ -90,13 +88,12 @@ public class WebhooksTagsRequestHandler
   }
 
   @Override
-  public ApiRequestHandlerResponse post(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsServices) throws Exception {
+  public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
 
     DocumentTag tag = fromBodyToObject(event, DocumentTag.class);
 
-    if (tag.getKey() == null || tag.getKey().length() == 0) {
+    if (tag.getKey() == null || tag.getKey().isEmpty()) {
       throw new BadException("invalid json body");
     }
 
@@ -121,7 +118,7 @@ public class WebhooksTagsRequestHandler
       ttl = new Date(epoch * TO_MILLIS);
     }
 
-    webhooksService.addTags(siteId, id, Arrays.asList(tag), ttl);
+    webhooksService.addTags(siteId, id, List.of(tag), ttl);
 
     ApiResponse resp = new ApiMessageResponse("Created Tag '" + tag.getKey() + "'.");
     return new ApiRequestHandlerResponse(SC_CREATED, resp);

@@ -30,6 +30,7 @@ import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
+import com.formkiq.stacks.dynamodb.base64.Pagination;
 
 /** Services for Querying, Updating Webhooks. */
 public interface WebhooksService {
@@ -88,10 +89,12 @@ public interface WebhooksService {
    * Find Webhooks.
    *
    * @param siteId Optional Grouping siteId
+   * @param nextToken {@link String}
+   * @param limit {@link Integer}
    * 
    * @return {@link List} {@link DynamicObject}
    */
-  List<DynamicObject> findWebhooks(String siteId);
+  Pagination<DynamicObject> findWebhooks(String siteId, String nextToken, Integer limit);
 
   /**
    * Save Document and Tags.

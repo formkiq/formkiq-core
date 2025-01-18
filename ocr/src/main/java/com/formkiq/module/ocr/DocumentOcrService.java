@@ -23,7 +23,6 @@
  */
 package com.formkiq.module.ocr;
 
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 
 import java.util.List;
@@ -36,21 +35,23 @@ import java.util.Map;
  */
 public interface DocumentOcrService {
 
+  /** Config OCR Count. */
+  String CONFIG_OCR_COUNT = "OcrTxCount";
   /** Prefix Temp File. */
   String PREFIX_TEMP_FILES = "tempfiles/";
 
   /**
    * Optical character recognition of Document.
-   * 
-   * @param logger {@link LambdaLogger}
+   *
    * @param awsservice {@link AwsServiceCache}
    * @param request {@link OcrRequest}
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param userId {@link String}
+   * @return boolean
    */
-  void convert(LambdaLogger logger, AwsServiceCache awsservice, OcrRequest request, String siteId,
-      String documentId, String userId);
+  boolean convert(AwsServiceCache awsservice, OcrRequest request, String siteId, String documentId,
+      String userId);
 
   /**
    * Delete Document OCR.
@@ -145,4 +146,12 @@ public interface DocumentOcrService {
    * @return {@link List}
    */
   List<Map<String, Object>> toKeyValue(List<String> contents);
+
+  /**
+   * To Tables.
+   * 
+   * @param contents {@link List} {@link String}
+   * @return Object
+   */
+  Object toTables(List<String> contents);
 }

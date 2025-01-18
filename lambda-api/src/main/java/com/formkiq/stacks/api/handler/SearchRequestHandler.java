@@ -23,7 +23,6 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
@@ -149,9 +148,8 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
   }
 
   @Override
-  public ApiRequestHandlerResponse post(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     QueryRequest q = fromBodyToObject(event, QueryRequest.class);
 
@@ -161,7 +159,8 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
 
     CacheService cacheService = awsservice.getExtension(CacheService.class);
     ApiPagination pagination = getPagination(cacheService, event);
-    int limit = pagination != null ? pagination.getLimit() : getLimit(logger, event);
+    int limit =
+        pagination != null ? pagination.getLimit() : getLimit(awsservice.getLogger(), event);
     PaginationMapToken ptoken = pagination != null ? pagination.getStartkey() : null;
 
     Collection<String> documentIds = q.query().getDocumentIds();

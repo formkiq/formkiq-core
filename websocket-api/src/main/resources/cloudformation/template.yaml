@@ -1,3 +1,6 @@
+#@ load("@ytt:data", "data")
+#@ load("@ytt:assert", "assert")
+---
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: FormKiQ - Websocket API
@@ -34,6 +37,31 @@ Parameters:
     Description: The partition in which the resource is located. A partition is a group of AWS Regions
     Type: String
 
+  LogRetentionInDays:
+    Type: Number
+    Description: The number of days to retain the log events
+
+  LogFormat:
+    Description: >
+      The format in which the application and system logs are stored.
+    Type: String
+
+  LogLevelApplication:
+    Type: String
+    Description: >
+      The level of logging for the FormKiQ Application logs.
+
+  LogLevelSystem:
+    Type: String
+    Description: >
+      The level of logging for the AWS Platform System logs.
+
+Conditions:
+  IsLogFormatJSON: 
+    Fn::Equals:
+      - Ref: LogFormat
+      - JSON
+      
 Resources:
 
   WebSocketApi:
@@ -97,7 +125,6 @@ Resources:
     Type: AWS::ApiGatewayV2::Deployment
     DependsOn:
     - ConnectRoute
-    #- MessageRoute
     - DisconnectRoute
     Properties:
       ApiId: 
@@ -207,9 +234,8 @@ Resources:
   ApiFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: 
-        Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/${ApiFunction}"
-      RetentionInDays: 90
+      RetentionInDays:
+        Ref: LogRetentionInDays
       
   ApiFunction:
     Type: AWS::Serverless::Function
@@ -222,7 +248,7 @@ Resources:
       MemorySize: 512
       Description: Lambda function that processes Web-socket requests
       CodeUri: ./websocket-api.zip
-      AutoPublishCodeSha256: FCB6D933C5B5FCD71A9EE4F9F9B9FB8AC1E719056BEAC9021B3C383FF2AFEE64
+      AutoPublishCodeSha256: #@ data.values.hash or assert.fail("missing version")
       Environment:
         Variables:
           API_URL: 
@@ -235,11 +261,27 @@ Resources:
             Ref: CognitoUserPoolClientId
           WEB_CONNECTIONS_TABLE: 
             Ref: WebConnections
-          DEBUG: false
+          LOG_LEVEL:
+            Ref: LogLevelApplication
       Role: 
         Fn::GetAtt: 
         - ApiFunctionRole
         - Arn
+      LoggingConfig:
+        LogGroup:
+          Ref: ApiFunctionLogGroup
+        LogFormat:
+          Ref: LogFormat
+        ApplicationLogLevel:
+          Fn::If:
+          - IsLogFormatJSON
+          - Ref: LogLevelApplication
+          - Ref: AWS::NoValue
+        SystemLogLevel:
+          Fn::If:
+          - IsLogFormatJSON
+          - Ref: LogLevelSystem
+          - Ref: AWS::NoValue
       Tags:
         Application: 
           Fn::Sub: "FormKiQ ${FormKiQType}"

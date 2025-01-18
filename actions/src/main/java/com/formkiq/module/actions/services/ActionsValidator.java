@@ -25,7 +25,7 @@ package com.formkiq.module.actions.services;
 
 import java.util.Collection;
 import java.util.List;
-import com.formkiq.aws.dynamodb.DynamicObject;
+
 import com.formkiq.module.actions.Action;
 import com.formkiq.validation.ValidationError;
 
@@ -41,19 +41,22 @@ public interface ActionsValidator {
    * 
    * @param siteId {@link String}
    * @param action {@link Action}
-   * @param configs {@link DynamicObject}
+   * @param chatGptApiKey {@link String}
+   * @param notificationsEmail {@link String}
    * @return {@link Collection} {@link ValidationError}
    */
-  Collection<ValidationError> validation(String siteId, Action action, DynamicObject configs);
+  Collection<ValidationError> validation(String siteId, Action action, String chatGptApiKey,
+      String notificationsEmail);
 
   /**
    * Validates {@link List} {@link Action}.
    * 
    * @param siteId {@link String}
    * @param action {@link Action}
-   * @param configs {@link DynamicObject}
+   * @param chatGptApiKey {@link String}
+   * @param notificationsEmail {@link String}
    * @return {@link List} {@link Collection} {@link ValidationError}
    */
   List<Collection<ValidationError>> validation(String siteId, List<Action> action,
-      DynamicObject configs);
+      String chatGptApiKey, String notificationsEmail);
 }

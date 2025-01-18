@@ -26,31 +26,29 @@ package com.formkiq.stacks.api.handler;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.model.AddAction;
 import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AddDocumentTag;
 import com.formkiq.client.model.AddDocumentUploadRequest;
 import com.formkiq.client.model.ChecksumType;
+import com.formkiq.client.model.DocumentAction;
+import com.formkiq.client.model.DocumentActionStatus;
+import com.formkiq.client.model.DocumentActionType;
 import com.formkiq.client.model.DocumentTag;
 import com.formkiq.client.model.GetDocumentResponse;
 import com.formkiq.client.model.GetDocumentTagsResponse;
 import com.formkiq.client.model.GetDocumentUrlResponse;
 import com.formkiq.client.model.UpdateConfigurationRequest;
-import com.formkiq.stacks.client.HttpService;
-import com.formkiq.stacks.client.HttpServiceJava;
-import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.module.http.HttpHeaders;
+import com.formkiq.module.http.HttpService;
+import com.formkiq.module.http.HttpServiceJdk11;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import software.amazon.awssdk.core.sync.RequestBody;
 
 import java.io.IOException;
-import java.net.http.HttpHeaders;
 import java.net.http.HttpResponse;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
@@ -58,12 +56,14 @@ import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_BAD_REQUEST;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_FOUND;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /** Unit Tests for request /documents/upload, /documents/{documentId}/upload . */
-@ExtendWith(DynamoDbExtension.class)
-@ExtendWith(LocalStackExtension.class)
 public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
+
+  /** Ten. */
+  private static final int TEN = 10;
 
   /**
    * Get Request Upload Document Url, MAX DocumentGreater than allowed.
@@ -217,10 +217,9 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
   /**
    * Get Request Upload Document Url, invalid documentId.
    *
-   * @throws Exception Exception
    */
   @Test
-  public void testGetUpload01() throws Exception {
+  public void testGetUpload01() {
     // given
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
@@ -635,15 +634,144 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
     }
   }
 
+  /**
+   * Valid POST generate upload document signed url.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  public void testPost09() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      setBearerToken(siteId);
+      AddDocumentUploadRequest req =
+          new AddDocumentUploadRequest().addTagsItem(new AddDocumentTag().key("test").value("this"))
+              .addActionsItem(new AddAction().type(DocumentActionType.OCR));
+
+      // when
+      GetDocumentUrlResponse response =
+          this.documentsApi.addDocumentUpload(req, siteId, 1, null, null);
+
+      // then
+      String url = response.getUrl();
+      assertNotNull(url);
+      assertTrue(
+          siteId != null ? url.contains("/testbucket/" + siteId) : url.contains("/testbucket/"));
+
+      String documentId = response.getDocumentId();
+      List<DocumentAction> actions = notNull(this.documentActionsApi
+          .getDocumentActions(documentId, siteId, null, null, null).getActions());
+      assertEquals(1, actions.size());
+      assertEquals(DocumentActionType.OCR, actions.get(0).getType());
+      assertEquals(DocumentActionStatus.PENDING, actions.get(0).getStatus());
+
+      List<DocumentTag> tags = notNull(
+          this.tagsApi.getDocumentTags(documentId, siteId, null, null, null, null).getTags());
+      assertEquals(1, tags.size());
+      assertEquals("test", tags.get(0).getKey());
+      assertEquals("this", tags.get(0).getValue());
+    }
+  }
+
+  /**
+   * Valid POST generate upload document signed url.
+   *
+   */
+  @Test
+  public void testPost10() {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+      AddDocumentUploadRequest req = new AddDocumentUploadRequest()
+          .addTagsItem(new AddDocumentTag().key("CLAMAV_SCAN_TIMESTAMP").value("this"));
+
+      // when
+      try {
+        this.documentsApi.addDocumentUpload(req, siteId, 1, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"errors\":[{\"key\":\"CLAMAV_SCAN_TIMESTAMP\","
+            + "\"error\":\"unallowed tag key\"}]}", e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * POST Request Content Length greater than allowed.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  public void testPost11() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken("Admins");
+
+      UpdateConfigurationRequest config =
+          new UpdateConfigurationRequest().maxContentLengthBytes("2");
+      this.systemApi.updateConfiguration(siteId, config);
+
+      setBearerToken(siteId);
+      AddDocumentUploadRequest req = new AddDocumentUploadRequest();
+      this.documentsApi.addDocumentUpload(req, siteId, 1, null, null);
+
+      // when
+      try {
+        this.documentsApi.addDocumentUpload(req, siteId, TEN, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"message\":\"'contentLength' cannot exceed 2 bytes\"}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * POST Request Content Length not set.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  public void testPost12() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken("Admins");
+
+      UpdateConfigurationRequest config =
+          new UpdateConfigurationRequest().maxContentLengthBytes("2");
+      this.systemApi.updateConfiguration(siteId, config);
+
+      setBearerToken(siteId);
+      AddDocumentUploadRequest req = new AddDocumentUploadRequest();
+
+      // when
+      try {
+        this.documentsApi.addDocumentUpload(req, siteId, null, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"message\":\"'contentLength' is required when "
+            + "MaxContentLengthBytes is configured\"}", e.getResponseBody());
+      }
+    }
+  }
+
   private HttpResponse<String> putS3Request(final GetDocumentUrlResponse response,
-      final String content) throws IOException, InterruptedException {
-    HttpService http = new HttpServiceJava();
-    RequestBody payload = RequestBody.fromString(content);
+      final String content) throws IOException {
+    HttpService http = new HttpServiceJdk11();
 
-    Map<String, List<String>> headers = notNull(response.getHeaders()).entrySet().stream()
-        .collect(Collectors.toMap(Map.Entry::getKey, entry -> List.of((String) entry.getValue())));
+    HttpHeaders hds = new HttpHeaders();
+    notNull(response.getHeaders()).forEach((h, v) -> hds.add(h, v.toString()));
 
-    Optional<HttpHeaders> o = Optional.of(HttpHeaders.of(headers, (t, u) -> true));
-    return http.put(response.getUrl(), o, payload);
+    return http.put(response.getUrl(), Optional.of(hds), Optional.empty(), content);
   }
 }

@@ -23,11 +23,11 @@
  */
 package com.formkiq.stacks.lambda.s3.actions;
 
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.MappingRecord;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
@@ -54,6 +54,7 @@ import com.formkiq.stacks.lambda.s3.text.TokenGeneratorKeyValue;
 import com.formkiq.validation.ValidationException;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -71,8 +72,6 @@ public class IdpAction implements DocumentAction {
   private final MappingService mappingService;
   /** {@link DocumentContentFunction}. */
   private final DocumentContentFunction documentContentFunc;
-  /** Debug. */
-  private final boolean debug;
   /** {@link DocumentService}. */
   private final DocumentService documentService;
   /** {@link AttributeService}. */
@@ -90,12 +89,11 @@ public class IdpAction implements DocumentAction {
     this.attributeService = serviceCache.getExtension(AttributeService.class);
     this.documentService = serviceCache.getExtension(DocumentService.class);
     this.documentContentFunc = new DocumentContentFunction(serviceCache);
-    this.debug = serviceCache.debug();
   }
 
 
   @Override
-  public void run(final LambdaLogger logger, final String siteId, final String documentId,
+  public void run(final Logger logger, final String siteId, final String documentId,
       final List<Action> actions, final Action action) throws IOException, ValidationException {
 
     String mappingId = action.parameters().get("mappingId");
@@ -106,49 +104,72 @@ public class IdpAction implements DocumentAction {
 
     for (MappingAttribute mappingAttribute : mappingAttributes) {
 
-      TextMatchAlgorithm alg = getTextMatchAlgorithm(mappingAttribute);
+      MappingAttributeSourceType sourceType = mappingAttribute.getSourceType();
 
-      if (MappingAttributeSourceType.CONTENT.equals(mappingAttribute.getSourceType())) {
-
-        String text = getDocumentContent(logger, siteId, documentId);
-
-        List<String> matchValues = findMappingAttributeValue(mappingAttribute, alg, text);
-        createDocumentAttribute(siteId, documentId, mappingAttribute, matchValues);
-
-      } else if (MappingAttributeSourceType.CONTENT_KEY_VALUE
-          .equals(mappingAttribute.getSourceType())) {
-
-        DocumentItem item = this.documentService.findDocument(siteId, documentId);
-
-        List<Map<String, Object>> contentKeyValues =
-            this.documentContentFunc.findContentKeyValues(this.debug ? logger : null, siteId, item);
-
-        List<String> labelTexts = mappingAttribute.getLabelTexts();
-        TextMatch match =
-            matcher.findMatch(null, labelTexts, new TokenGeneratorKeyValue(contentKeyValues), alg);
-
-        if (match != null) {
-          Optional<List<String>> o = contentKeyValues.stream()
-              .filter(m -> m.get("key").toString().contains(match.getToken().getOriginal()))
-              .map(v -> (List<String>) v.get("values")).findFirst();
-
-          if (o.isPresent()) {
-            createDocumentAttribute(siteId, documentId, mappingAttribute, o.get());
-          }
-        }
-
-      } else if (MappingAttributeSourceType.METADATA.equals(mappingAttribute.getSourceType())) {
-
-        String text = getMetadataText(mappingAttribute, siteId, documentId);
-
-        List<String> matchValues = findMappingAttributeValue(mappingAttribute, alg, text);
-        createDocumentAttribute(siteId, documentId, mappingAttribute, matchValues);
-
-      } else {
-        throw new IllegalArgumentException(
-            "Unsupported source type: " + mappingAttribute.getSourceType());
+      switch (sourceType) {
+        case CONTENT -> processContent(logger, siteId, documentId, mappingAttribute);
+        case CONTENT_KEY_VALUE ->
+          processContentKeyValue(logger, siteId, documentId, mappingAttribute);
+        case METADATA -> processMetaData(siteId, documentId, mappingAttribute);
+        case MANUAL -> createDocumentAttribute(siteId, documentId, mappingAttribute,
+            createValues(mappingAttribute));
+        default -> throw new IllegalArgumentException("Unsupported source type: " + sourceType);
       }
     }
+  }
+
+  private List<String> createValues(final MappingAttribute mappingAttribute) {
+    List<String> values = new ArrayList<>();
+
+    if (!isEmpty(mappingAttribute.getDefaultValue())) {
+      values.add(mappingAttribute.getDefaultValue());
+    }
+
+    values.addAll(notNull(mappingAttribute.getDefaultValues()));
+
+    return values;
+  }
+
+  private void processMetaData(final String siteId, final String documentId,
+      final MappingAttribute mappingAttribute) throws ValidationException {
+    String text = getMetadataText(mappingAttribute, siteId, documentId);
+
+    TextMatchAlgorithm alg = getTextMatchAlgorithm(mappingAttribute);
+    List<String> matchValues = findMappingAttributeValue(mappingAttribute, alg, text);
+    createDocumentAttribute(siteId, documentId, mappingAttribute, matchValues);
+  }
+
+  private void processContentKeyValue(final Logger logger, final String siteId,
+      final String documentId, final MappingAttribute mappingAttribute)
+      throws IOException, ValidationException {
+    DocumentItem item = this.documentService.findDocument(siteId, documentId);
+
+    List<Map<String, Object>> contentKeyValues =
+        this.documentContentFunc.findContentKeyValues(logger, siteId, item);
+
+    List<String> labelTexts = mappingAttribute.getLabelTexts();
+    TextMatchAlgorithm alg = getTextMatchAlgorithm(mappingAttribute);
+    TextMatch match =
+        matcher.findMatch(null, labelTexts, new TokenGeneratorKeyValue(contentKeyValues), alg);
+
+    if (match != null) {
+      Optional<List<String>> o = contentKeyValues.stream()
+          .filter(m -> m.get("key").toString().contains(match.getToken().getOriginal()))
+          .map(v -> (List<String>) v.get("values")).findFirst();
+
+      if (o.isPresent()) {
+        createDocumentAttribute(siteId, documentId, mappingAttribute, o.get());
+      }
+    }
+  }
+
+  private void processContent(final Logger logger, final String siteId, final String documentId,
+      final MappingAttribute mappingAttribute) throws IOException, ValidationException {
+    String text = getDocumentContent(logger, siteId, documentId);
+
+    TextMatchAlgorithm alg = getTextMatchAlgorithm(mappingAttribute);
+    List<String> matchValues = findMappingAttributeValue(mappingAttribute, alg, text);
+    createDocumentAttribute(siteId, documentId, mappingAttribute, matchValues);
   }
 
   private String getMetadataText(final MappingAttribute mappingAttribute, final String siteId,
@@ -251,13 +272,12 @@ public class IdpAction implements DocumentAction {
     return textMatchAlgorithm;
   }
 
-  private String getDocumentContent(final LambdaLogger logger, final String siteId,
+  private String getDocumentContent(final Logger logger, final String siteId,
       final String documentId) throws IOException {
 
     DocumentItem item = this.documentService.findDocument(siteId, documentId);
 
-    List<String> contentUrls =
-        this.documentContentFunc.getContentUrls(this.debug ? logger : null, siteId, item);
+    List<String> contentUrls = this.documentContentFunc.getContentUrls(logger, siteId, item);
     StringBuilder sb = this.documentContentFunc.getContentUrls(contentUrls);
     return sb.toString();
   }

@@ -23,6 +23,7 @@
  */
 package com.formkiq.aws.services.lambda;
 
+import java.util.HashMap;
 import java.util.Map;
 import com.formkiq.graalvm.annotations.Reflectable;
 
@@ -44,6 +45,17 @@ public class ApiMapResponse implements ApiResponse {
    */
   public ApiMapResponse(final Map<String, Object> m) {
     this.map = m;
+  }
+
+  /**
+   * constructor.
+   *
+   * @param m {@link Map}
+   * @param nextToken {@link String}
+   */
+  public ApiMapResponse(final Map<String, Object> m, final String nextToken) {
+    this.map = new HashMap<>(m);
+    this.map.put("next", nextToken);
   }
 
   @Override

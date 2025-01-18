@@ -23,7 +23,6 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
@@ -46,13 +45,15 @@ import com.formkiq.stacks.api.transformers.AddDocumentRequestToPresignedUrls;
 import com.formkiq.stacks.api.transformers.DocumentAttributeToDocumentAttributeRecord;
 import com.formkiq.stacks.api.validators.DocumentEntityValidator;
 import com.formkiq.stacks.api.validators.DocumentEntityValidatorImpl;
-import com.formkiq.stacks.dynamodb.DocumentCountService;
+import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentValidator;
 import com.formkiq.stacks.dynamodb.DocumentValidatorImpl;
 import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
+import com.formkiq.stacks.dynamodb.config.ConfigService;
+import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
@@ -92,9 +93,8 @@ public class DocumentsUploadRequestHandler
   public DocumentsUploadRequestHandler() {}
 
   @Override
-  public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     AddDocumentRequest item = new AddDocumentRequest();
     item.setDocumentId(ID.uuid());
@@ -106,15 +106,16 @@ public class DocumentsUploadRequestHandler
 
     validate(awsservice, siteId, item);
 
-    String maxDocumentCount = validateMaxDocuments(awsservice, siteId);
+    ConfigService configService = awsservice.getExtension(ConfigService.class);
+    SiteConfiguration config = configService.get(siteId);
+
+    validateMaxDocuments(awsservice, config, siteId);
 
     ApiRequestHandlerResponse response = buildPresignedResponse(event, authorization, awsservice,
         siteId, item, new ArrayList<>(), null);
 
-    if (maxDocumentCount != null) {
-
-      DocumentCountService countService = awsservice.getExtension(DocumentCountService.class);
-      countService.incrementDocumentCount(siteId);
+    if (!Strings.isEmpty(config.getMaxDocuments())) {
+      configService.increment(siteId, ConfigService.DOCUMENT_COUNT);
     }
 
     return response;
@@ -133,9 +134,8 @@ public class DocumentsUploadRequestHandler
   }
 
   @Override
-  public ApiRequestHandlerResponse post(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
     AddDocumentRequest request = fromBodyToObject(event, AddDocumentRequest.class);
     return post(event, authorization, awsservice, request);
   }
@@ -177,18 +177,19 @@ public class DocumentsUploadRequestHandler
     List<DocumentAttributeRecord> documentAttributes =
         attributes.stream().flatMap(a -> tr.apply(a).stream()).toList();
 
-    List<DocumentTag> tags =
-        this.documentEntityValidator.validate(authorization, awsservice, siteId, request, false);
+    ConfigService configService = awsservice.getExtension(ConfigService.class);
+    SiteConfiguration config = configService.get(siteId);
 
-    String maxDocumentCount = validatePost(awsservice, siteId, request);
+    List<DocumentTag> tags = this.documentEntityValidator.validate(authorization, awsservice,
+        config, siteId, request, false);
+
+    validatePost(awsservice, config, siteId, request);
 
     ApiRequestHandlerResponse response = buildPresignedResponse(event, authorization, awsservice,
         siteId, request, tags, documentAttributes);
 
-    if (maxDocumentCount != null) {
-
-      DocumentCountService countService = awsservice.getExtension(DocumentCountService.class);
-      countService.incrementDocumentCount(siteId);
+    if (!isEmpty(config.getMaxDocuments())) {
+      configService.increment(siteId, ConfigService.DOCUMENT_COUNT);
     }
 
     return response;
@@ -240,8 +241,8 @@ public class DocumentsUploadRequestHandler
     }
   }
 
-  private String validatePost(final AwsServiceCache awsservice, final String siteId,
-      final AddDocumentRequest item) throws BadException, ValidationException {
+  private void validatePost(final AwsServiceCache awsservice, final SiteConfiguration config,
+      final String siteId, final AddDocumentRequest item) throws BadException, ValidationException {
 
     Collection<ValidationError> errors = this.documentValidator.validate(item.getMetadata());
 
@@ -249,18 +250,15 @@ public class DocumentsUploadRequestHandler
       throw new ValidationException(errors);
     }
 
-    return validateMaxDocuments(awsservice, siteId);
+    validateMaxDocuments(awsservice, config, siteId);
   }
 
-  private String validateMaxDocuments(final AwsServiceCache awsservice, final String siteId)
-      throws BadException {
-    String maxDocumentCount = this.restrictionMaxDocuments.getValue(awsservice, siteId);
-    if (maxDocumentCount != null
-        && this.restrictionMaxDocuments.enforced(awsservice, siteId, maxDocumentCount)) {
+  private void validateMaxDocuments(final AwsServiceCache awsservice,
+      final SiteConfiguration config, final String siteId) throws BadException {
+
+    if (this.restrictionMaxDocuments.isViolated(awsservice, config, siteId, null)) {
       throw new BadException("Max Number of Documents reached");
     }
-
-    return maxDocumentCount;
   }
 
   /**
@@ -344,21 +342,28 @@ public class DocumentsUploadRequestHandler
   private Optional<Long> calculateContentLength(final AwsServiceCache awsservice,
       final Map<String, String> query, final String siteId) throws BadException {
 
+    ConfigService configService = awsservice.getExtension(ConfigService.class);
+    SiteConfiguration siteConfiguration = configService.get(siteId);
+
     Long contentLength = query != null && query.containsKey("contentLength")
         ? Long.valueOf(query.get("contentLength"))
         : null;
 
-    String value = this.restrictionMaxContentLength.getValue(awsservice, siteId);
-
-    if (value != null
-        && this.restrictionMaxContentLength.enforced(awsservice, siteId, value, contentLength)) {
+    if (!Strings.isEmpty(siteConfiguration.getMaxContentLengthBytes())) {
 
       if (contentLength == null) {
-        throw new BadException("'contentLength' is required");
-      }
+        throw new BadException(
+            "'contentLength' is required when MaxContentLengthBytes is configured");
+      } else {
+        DocumentItem item = new DocumentItemDynamoDb();
+        item.setContentLength(contentLength);
 
-      String maxContentLengthBytes = this.restrictionMaxContentLength.getValue(awsservice, siteId);
-      throw new BadException("'contentLength' cannot exceed " + maxContentLengthBytes + " bytes");
+        if (this.restrictionMaxContentLength.isViolated(awsservice, siteConfiguration, siteId,
+            item)) {
+          throw new BadException("'contentLength' cannot exceed "
+              + siteConfiguration.getMaxContentLengthBytes() + " bytes");
+        }
+      }
     }
 
     return contentLength != null ? Optional.of(contentLength) : Optional.empty();

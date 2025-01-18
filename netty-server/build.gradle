@@ -30,7 +30,7 @@ dependencies {
 	
 	testImplementation project(':fkq-test-utils')
 	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.11.0'
-	testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.20.1'
+	testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.20.4'
 }
 
 test {
@@ -73,4 +73,5 @@ tasks.named('jar') {
 
 composeBuild.dependsOn(jar)
 test.dependsOn(composeBuild)
+integrationTest.dependsOn(composeBuild)
 check.dependsOn(composeBuild)

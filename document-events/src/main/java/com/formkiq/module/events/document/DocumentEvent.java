@@ -56,15 +56,38 @@ public class DocumentEvent {
   /** Document Content Type. */
   @Reflectable
   private String contentType;
-  /** Docuemnt Path. */
+  /** Document Path. */
   @Reflectable
   private String path;
+  /** Document Content S3 Presigned Url. */
+  @Reflectable
+  private String url;
 
   /**
    * constructor.
    */
   public DocumentEvent() {
 
+  }
+
+  /**
+   * Get S3 presigned url.
+   * 
+   * @return String
+   */
+  public String url() {
+    return this.url;
+  }
+
+  /**
+   * Set S3 presigned url.
+   * 
+   * @param s3PresignedUrl {@link String}
+   * @return {@link String}
+   */
+  public DocumentEvent url(final String s3PresignedUrl) {
+    this.url = s3PresignedUrl;
+    return this;
   }
 
   /**

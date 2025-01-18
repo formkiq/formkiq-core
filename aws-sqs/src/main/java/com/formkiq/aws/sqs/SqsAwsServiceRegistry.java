@@ -44,7 +44,6 @@ public class SqsAwsServiceRegistry implements AwsServiceRegistry {
         .setRegion(serviceCache.region()).setCredentials(credentialsProvider)
         .setEndpointOverride(awsServiceEndpoints.get("sqs"));
 
-    serviceCache.register(SqsConnectionBuilder.class,
-        new ClassServiceExtension<SqsConnectionBuilder>(sqs));
+    serviceCache.register(SqsConnectionBuilder.class, new ClassServiceExtension<>(sqs));
   }
 }

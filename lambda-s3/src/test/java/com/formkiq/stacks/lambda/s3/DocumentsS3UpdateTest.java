@@ -98,8 +98,6 @@ import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
 import com.formkiq.stacks.dynamodb.DynamicDocumentTag;
-import com.formkiq.stacks.lambda.s3.util.LambdaContextRecorder;
-import com.formkiq.stacks.lambda.s3.util.LambdaLoggerRecorder;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbHelper;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
@@ -247,14 +245,9 @@ public class DocumentsS3UpdateTest implements DbKeys {
     ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/api/DocumentsIamUrl", URL);
   }
 
-  /** {@link LambdaContextRecorder}. */
-  private LambdaContextRecorder context;
-
   /** {@link Gson}. */
   private final Gson gson = new GsonBuilder().create();
 
-  /** {@link LambdaLoggerRecorder}. */
-  private LambdaLoggerRecorder logger;
   /** {@link ClientAndServer}. */
   private ClientAndServer mockServer;
 
@@ -338,6 +331,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       assertNotNull(map.get("path"));
     }
 
+    assertTrue(map.get("url").contains("example-bucket"));
     assertNull(map.get("content"));
 
     if (!"delete".equals(eventType)) {
@@ -361,9 +355,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
     dbHelper.truncateTable(DOCUMENTS_TABLE);
     service.setLastShortDate(null);
-
-    this.context = new LambdaContextRecorder();
-    this.logger = (LambdaLoggerRecorder) this.context.getLogger();
 
     for (String queue : Collections.singletonList(sqsDocumentEventUrl)) {
       ReceiveMessageResponse response = sqsService.receiveMessages(queue);
@@ -442,7 +433,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       final Map<String, Object> map) {
 
     // when
-    handler.handleRequest(map, this.context);
+    handler.handleRequest(map, null);
 
     // then
     login();
@@ -460,8 +451,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      this.logger.reset();
-
       String key = createDatabaseKey(siteId, BUCKET_KEY);
       final Map<String, Object> map =
           loadFileAsMap(this, "/objectcreate-event1.json", BUCKET_KEY, key);
@@ -516,8 +505,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      this.logger.reset();
-
       String key = createDatabaseKey(siteId, BUCKET_KEY);
       final Map<String, Object> map =
           loadFileAsMap(this, "/objectupdate-event1.json", BUCKET_KEY, key);
@@ -579,8 +566,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      this.logger.reset();
-
       String key = createDatabaseKey(siteId, BUCKET_KEY);
       final Map<String, Object> map =
           loadFileAsMap(this, "/objectremove-event1.json", BUCKET_KEY, key);
@@ -617,8 +602,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      this.logger.reset();
-
       String key = createDatabaseKey(siteId, BUCKET_KEY);
       final Map<String, Object> map =
           loadFileAsMap(this, "/objectremove-event1.json", BUCKET_KEY, key);
@@ -656,8 +639,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      this.logger.reset();
-
       String key = createDatabaseKey(siteId, documentId);
       final Map<String, Object> map =
           loadFileAsMap(this, "/objectcreate-event1.json", BUCKET_KEY, key);
@@ -717,7 +698,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
   public void testHandleRequest06() throws Exception {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      this.logger.reset();
       Date now = new Date();
       DynamicDocumentItem doc = createSubDocuments(now);
       service.saveDocumentItemWithTag(siteId, doc);
@@ -770,8 +750,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      this.logger.reset();
-
       String key = createDatabaseKey(siteId, BUCKET_KEY);
       final Map<String, Object> map =
           loadFileAsMap(this, "/objectcreate-event1.json", BUCKET_KEY, key);
@@ -805,8 +783,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      this.logger.reset();
-
       String key = createDatabaseKey(siteId, BUCKET_KEY);
       final Map<String, Object> map =
           loadFileAsMap(this, "/objectcreate-event1.json", BUCKET_KEY, key);
@@ -841,8 +817,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      this.logger.reset();
-
       String key = createDatabaseKey(siteId, BUCKET_KEY);
       final Map<String, Object> map =
           loadFileAsMap(this, "/objectcreate-event1.json", BUCKET_KEY, key);
@@ -877,8 +851,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
     String ttl = "1612061365";
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      this.logger.reset();
-
       String key = createDatabaseKey(siteId, BUCKET_KEY);
       final Map<String, Object> map =
           loadFileAsMap(this, "/objectcreate-event1.json", BUCKET_KEY, key);
@@ -959,8 +931,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      this.logger.reset();
-
       String key = createDatabaseKey(siteId, BUCKET_KEY);
       final Map<String, Object> map =
           loadFileAsMap(this, "/objectremove-event1.json", BUCKET_KEY, key);
@@ -997,8 +967,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      this.logger.reset();
-
       String key = createDatabaseKey(siteId, BUCKET_KEY);
       final Map<String, Object> map =
           loadFileAsMap(this, "/objectremove-event1.json", BUCKET_KEY, key);

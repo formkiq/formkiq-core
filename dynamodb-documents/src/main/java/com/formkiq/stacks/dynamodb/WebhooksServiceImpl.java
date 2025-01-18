@@ -40,12 +40,15 @@ import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.MapToAttributeValue;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.PaginationToAttributeValue;
 import com.formkiq.aws.dynamodb.QueryResponseToPagination;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
+import com.formkiq.stacks.dynamodb.base64.Base64ToMap;
+import com.formkiq.stacks.dynamodb.base64.Pagination;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
@@ -66,13 +69,13 @@ public final class WebhooksServiceImpl implements WebhooksService, DbKeys {
   /** MilliSeconds per Second. */
   private static final int MILLISECONDS = 1000;
   /** {@link DynamoDbService}. */
-  private DynamoDbService db;
+  private final DynamoDbService db;
   /** {@link DynamoDbClient}. */
-  private DynamoDbClient dbClient;
+  private final DynamoDbClient dbClient;
   /** {@link SimpleDateFormat} in ISO Standard format. */
-  private SimpleDateFormat df;
+  private final SimpleDateFormat df;
   /** Documents Table Name. */
-  private String documentTableName;
+  private final String documentTableName;
 
   /**
    * constructor.
@@ -101,8 +104,7 @@ public final class WebhooksServiceImpl implements WebhooksService, DbKeys {
       DocumentTagToAttributeValueMap mapper =
           new DocumentTagToAttributeValueMap(this.df, PREFIX_WEBHOOK, siteId, webhookId);
 
-      List<List<Map<String, AttributeValue>>> valueList =
-          tags.stream().map(mapper).collect(Collectors.toList());
+      List<List<Map<String, AttributeValue>>> valueList = tags.stream().map(mapper).toList();
 
       if (ttl != null) {
         valueList.forEach(l -> l.forEach(v -> addTimeToLive(v, ttl)));
@@ -110,7 +112,7 @@ public final class WebhooksServiceImpl implements WebhooksService, DbKeys {
 
       List<Put> putitems = valueList.stream().flatMap(List::stream)
           .map(values -> Put.builder().tableName(this.documentTableName).item(values).build())
-          .collect(Collectors.toList());
+          .toList();
 
       List<TransactWriteItem> writes = putitems.stream()
           .map(i -> TransactWriteItem.builder().put(i).build()).collect(Collectors.toList());
@@ -193,8 +195,7 @@ public final class WebhooksServiceImpl implements WebhooksService, DbKeys {
     QueryResponse result = this.dbClient.query(q);
     AttributeValueToDynamicObject transform = new AttributeValueToDynamicObject();
 
-    List<DynamicObject> objs =
-        result.items().stream().map(i -> transform.apply(i)).collect(Collectors.toList());
+    List<DynamicObject> objs = result.items().stream().map(transform).collect(Collectors.toList());
 
     return new PaginationResults<>(objs, new QueryResponseToPagination().apply(result));
   }
@@ -218,13 +219,18 @@ public final class WebhooksServiceImpl implements WebhooksService, DbKeys {
   }
 
   @Override
-  public List<DynamicObject> findWebhooks(final String siteId) {
+  public Pagination<DynamicObject> findWebhooks(final String siteId, final String nextToken,
+      final Integer limit) {
+
     Map<String, AttributeValue> key = queryKeys(keysGeneric(siteId, PREFIX_WEBHOOKS, null));
 
     String expr = GSI1_PK + " = :pk";
 
+    Map<String, AttributeValue> startKey =
+        new MapToAttributeValue().apply(new Base64ToMap().apply(nextToken));
     QueryRequest q = QueryRequest.builder().tableName(this.documentTableName).indexName(GSI1)
-        .keyConditionExpression(expr).expressionAttributeValues(key).build();
+        .keyConditionExpression(expr).expressionAttributeValues(key).exclusiveStartKey(startKey)
+        .limit(limit).build();
 
     QueryResponse result = this.dbClient.query(q);
 
@@ -240,11 +246,11 @@ public final class WebhooksServiceImpl implements WebhooksService, DbKeys {
 
       AttributeValueToDynamicObject transform = new AttributeValueToDynamicObject();
 
-      retlist = list.stream().map(m -> transform.apply(m)).collect(Collectors.toList());
-      retlist.forEach(ob -> updateWebhookTimeToLive(ob));
+      retlist = list.stream().map(transform).collect(Collectors.toList());
+      retlist.forEach(this::updateWebhookTimeToLive);
     }
 
-    return retlist;
+    return new Pagination<>(retlist, result.lastEvaluatedKey());
   }
 
   @Override

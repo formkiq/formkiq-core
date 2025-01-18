@@ -1,24 +1,24 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: FormKiQ Core - Console
-        
+
 Parameters:
 
   AdminEmail:
     Type: String
     Description: Administrator Email
     AllowedPattern: ".+"
-    
+
   AppEnvironment:
     Type: String
     Description: The Document Stack Environment
     AllowedPattern: ".+"
-          
+
   ConsoleVersion:
     Type: String
     Description: Version of FormKiQ console to deploy
-    Default: v3.7.2
-    
+    Default: v3.7.3
+
   FormKiQType:
     Description: The type of FormKiQ installation
     Default: "core"
@@ -34,30 +34,30 @@ Parameters:
     Description: Is Installation AWS Region gov cloud
     Type: String
     AllowedValues: ["true", "false"]
-    
+
 Conditions:
 
   HasCertificateStackName:
     Fn::Not:
-      - Fn::Equals: 
+      - Fn::Equals:
         - Ref: CertificateStackName
         - ''
-        
+
   IsNotGovCloud:
-    Fn::Equals: 
+    Fn::Equals:
       - Ref: IsGovCloud
       - 'false'
-              
+
 Resources:
 
   Console:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: 
+      BucketName:
         Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-console-${AWS::AccountId}"
       AccessControl: Private
-      BucketEncryption: 
-        ServerSideEncryptionConfiguration: 
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
         - ServerSideEncryptionByDefault:
             SSEAlgorithm: AES256
       PublicAccessBlockConfiguration:
@@ -69,63 +69,63 @@ Resources:
         - Key: Application
           Value: FormKiQ
         - Key: AppEnvironment
-          Value: 
+          Value:
             Fn::Sub: "${AppEnvironment}"
         - Key: StackName
-          Value: 
+          Value:
             Fn::Sub: "${AWS::StackName}"
 
   ConsoleVersionParameter:
     Type: AWS::SSM::Parameter
     Properties:
       Description: "Console Version"
-      Name: 
+      Name:
         Fn::Sub: "/formkiq/${AppEnvironment}/console/version"
       Type: String
-      Value: 
+      Value:
         Ref: ConsoleVersion
       Tags:
-        Application: 
+        Application:
           Fn::Sub: "FormKiQ ${FormKiQType}"
-        AppEnvironment: 
+        AppEnvironment:
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
+        StackName:
           Fn::Sub: "${AWS::StackName}"
-  
+
   ConsoleParameter:
     Type: AWS::SSM::Parameter
     Properties:
       Description: "Console S3 Bucket"
-      Name: 
+      Name:
         Fn::Sub: "/formkiq/${AppEnvironment}/s3/Console"
       Type: String
-      Value: 
+      Value:
         Ref: Console
       Tags:
-        Application: 
+        Application:
           Fn::Sub: "FormKiQ ${FormKiQType}"
-        AppEnvironment: 
+        AppEnvironment:
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
+        StackName:
           Fn::Sub: "${AWS::StackName}"
-        
+
   ConsoleArnParameter:
     Type: AWS::SSM::Parameter
     Properties:
       Description: "Console S3 Bucket Arn"
-      Name: 
+      Name:
         Fn::Sub: "/formkiq/${AppEnvironment}/s3/ConsoleArn"
       Type: String
       Value:
         Fn::GetAtt:
         - Console
-        - Arn        
+        - Arn
       Tags:
-        Application: 
+        Application:
           Fn::Sub: "FormKiQ ${FormKiQType}"
-        AppEnvironment: 
+        AppEnvironment:
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
+        StackName:
           Fn::Sub: "${AWS::StackName}"
 
   ConsoleDomainNameParameter:
@@ -134,40 +134,40 @@ Resources:
     - Console
     Properties:
       Description: "Console S3 Bucket Domain Name"
-      Name: 
+      Name:
         Fn::Sub: "/formkiq/${AppEnvironment}/s3/ConsoleDomainName"
       Type: String
-      Value: 
+      Value:
         Fn::GetAtt:
         - Console
         - DomainName
       Tags:
-        Application: 
+        Application:
           Fn::Sub: "FormKiQ ${FormKiQType}"
-        AppEnvironment: 
+        AppEnvironment:
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
+        StackName:
           Fn::Sub: "${AWS::StackName}"
 
   ConsoleRegionalDomainNameParameter:
     Type: AWS::SSM::Parameter
     Properties:
       Description: "Console S3 Bucket Regional Domain Name"
-      Name: 
+      Name:
         Fn::Sub: "/formkiq/${AppEnvironment}/s3/ConsoleRegionalDomainName"
       Type: String
-      Value: 
+      Value:
         Fn::GetAtt:
         - Console
         - RegionalDomainName
       Tags:
-        Application: 
+        Application:
           Fn::Sub: "FormKiQ ${FormKiQType}"
-        AppEnvironment: 
+        AppEnvironment:
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
+        StackName:
           Fn::Sub: "${AWS::StackName}"
-          
+
   CloudFrontDistribution:
     Type: AWS::CloudFront::Distribution
     Condition: IsNotGovCloud
@@ -176,15 +176,15 @@ Resources:
         Comment:
           Fn::Sub: "FormKiQ Console ${ConsoleVersion}"
         Origins:
-        - DomainName: 
+        - DomainName:
             Fn::GetAtt:
             - Console
             - RegionalDomainName
           Id: s3origin
-          OriginPath: 
+          OriginPath:
             Fn::Sub: "/${ConsoleVersion}"
           S3OriginConfig:
-            OriginAccessIdentity: 
+            OriginAccessIdentity:
               Fn::Sub: 'origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}'
         DefaultCacheBehavior:
           Compress: true
@@ -232,13 +232,13 @@ Resources:
           ResponseCode: '200'
       Tags:
         - Key: Application
-          Value: 
+          Value:
             Fn::Sub: "FormKiQ ${FormKiQType}"
         - Key: AppEnvironment
-          Value: 
+          Value:
             Fn::Sub: "${AppEnvironment}"
         - Key: StackName
-          Value: 
+          Value:
             Fn::Sub: "${AWS::StackName}"
 
   ConsoleUrlParameter:
@@ -246,39 +246,39 @@ Resources:
     Condition: IsNotGovCloud
     Properties:
       Description: "The URL for the FormKiQ Console"
-      Name: 
+      Name:
         Fn::Sub: "/formkiq/${AppEnvironment}/console/Url"
       Type: String
       Value:
         Fn::If:
         - HasCertificateStackName
-        - Fn::Join: 
+        - Fn::Join:
             - ""
-            - 
+            -
               - 'https://'
               - Fn::ImportValue:
                   Fn::Sub: '${CertificateStackName}-ConsoleDomain'
-        - Fn::Join: 
+        - Fn::Join:
             - ""
-            - 
+            -
               - 'https://'
               - Fn::GetAtt:
                 - CloudFrontDistribution
                 - DomainName
       Tags:
-        Application: 
+        Application:
           Fn::Sub: "FormKiQ ${FormKiQType}"
-        AppEnvironment: 
+        AppEnvironment:
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
+        StackName:
           Fn::Sub: "${AWS::StackName}"
-        
+
   CloudFrontOriginAccessIdentity:
     Condition: IsNotGovCloud
     Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
     Properties:
       CloudFrontOriginAccessIdentityConfig:
-        Comment: 
+        Comment:
           Fn::Sub: "FormKiQ Console CloudFront Identity"
 
   ConsoleBucketPolicy:
@@ -287,30 +287,30 @@ Resources:
     DependsOn:
     - CloudFrontOriginAccessIdentity
     - Console
-    Properties: 
-      Bucket: 
+    Properties:
+      Bucket:
         Ref: Console
       PolicyDocument:
         Version: '2012-10-17'
-        Statement: 
-        - 
-          Action: 
+        Statement:
+        -
+          Action:
             - "s3:GetObject"
           Effect: "Allow"
           Resource:
-            Fn::Join: 
+            Fn::Join:
               - ""
-              - 
+              -
                 - Fn::GetAtt:
                   - Console
                   - Arn
                 - "/*"
           Principal:
-            CanonicalUser: 
+            CanonicalUser:
               Fn::GetAtt:
               - CloudFrontOriginAccessIdentity
               - S3CanonicalUserId
-        
+
 Outputs:
 
   ConsoleUrl:
@@ -318,31 +318,31 @@ Outputs:
     Value:
       Fn::If:
       - HasCertificateStackName
-      - Fn::Join: 
+      - Fn::Join:
           - ""
-          - 
+          -
             - 'https://'
             - Fn::ImportValue:
                 Fn::Sub: '${CertificateStackName}-ConsoleDomain'
       - Fn::If:
         - IsNotGovCloud
-        - Fn::Join: 
+        - Fn::Join:
             - ""
-            - 
+            -
               - 'https://'
               - Fn::GetAtt:
                 - CloudFrontDistribution
                 - DomainName
         - "none"
-          
+
   ConsoleBucket:
     Value:
       Ref: Console
-       
+
   ConsoleVersion:
     Value:
       Ref: ConsoleVersion
-      
+
   HostedZoneId:
     Value:
       Fn::If:
@@ -350,7 +350,7 @@ Outputs:
       - Fn::ImportValue:
           Fn::Sub: '${CertificateStackName}-HostedZoneId'
       - ""
-      
+
   CloudFrontDistributionDomainName:
     Value:
       Fn::If:

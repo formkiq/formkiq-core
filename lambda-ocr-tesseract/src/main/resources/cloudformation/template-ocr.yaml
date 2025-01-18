@@ -38,14 +38,38 @@ Parameters:
     Description: The partition in which the resource is located. A partition is a group of AWS Regions
     Type: String
 
+  LogRetentionInDays:
+    Type: Number
+    Description: The number of days to retain the log events
+
+  LogFormat:
+    Description: >
+      The format in which the application and system logs are stored.
+    Type: String
+
+  LogLevelApplication:
+    Type: String
+    Description: >
+      The level of logging for the FormKiQ Application logs.
+
+  LogLevelSystem:
+    Type: String
+    Description: >
+      The level of logging for the AWS Platform System logs.
+
+Conditions:
+  IsLogFormatJSON: 
+    Fn::Equals:
+      - Ref: LogFormat
+      - JSON
+      
 Resources:
 
   OcrProcessorLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: 
-        Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/${OcrProcessor}"
-      RetentionInDays: 90
+      RetentionInDays:
+        Ref: LogRetentionInDays
 
   TesseractLayer:
     Type: AWS::Serverless::LayerVersion
@@ -84,7 +108,8 @@ Resources:
         Variables:
           APP_ENVIRONMENT: 
             Fn::Sub: "${AppEnvironment}"
-          DEBUG: false
+          LOG_LEVEL:
+            Ref: LogLevelApplication
           ENABLE_AWS_X_RAY: true
           FormKiQType:
             Ref: FormKiQType
@@ -102,6 +127,21 @@ Resources:
         Fn::GetAtt:
         - OcrLambdaRole
         - Arn
+      LoggingConfig:
+        LogGroup:
+          Ref: OcrProcessorLogGroup
+        LogFormat:
+          Ref: LogFormat
+        ApplicationLogLevel:
+          Fn::If:
+          - IsLogFormatJSON
+          - Ref: LogLevelApplication
+          - Ref: AWS::NoValue
+        SystemLogLevel:
+          Fn::If:
+          - IsLogFormatJSON
+          - Ref: LogLevelSystem
+          - Ref: AWS::NoValue
       Tags:
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"

@@ -30,6 +30,7 @@ import com.formkiq.aws.sqs.SqsAwsServiceRegistry;
 import com.formkiq.aws.ssm.SsmAwsServiceRegistry;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
+import com.formkiq.module.lambdaservices.logger.LoggerRecorder;
 import com.formkiq.stacks.api.AbstractCoreRequestHandler;
 import com.formkiq.testutils.aws.TestServices;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -60,7 +61,7 @@ public class TestCoreRequestHandler extends AbstractCoreRequestHandler {
             .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
                 new SnsAwsServiceRegistry(), new SqsAwsServiceRegistry(),
                 new SsmAwsServiceRegistry())
-            .build();
+            .build().setLogger(new LoggerRecorder());
 
     initialize(this.serviceCache);
   }

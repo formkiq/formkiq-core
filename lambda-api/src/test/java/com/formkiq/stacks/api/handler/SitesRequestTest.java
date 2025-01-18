@@ -25,8 +25,6 @@ package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
-import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENTS;
-import static com.formkiq.stacks.dynamodb.ConfigService.MAX_WEBHOOKS;
 import static com.formkiq.testutils.aws.TestServices.FORMKIQ_APP_ENVIRONMENT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -35,14 +33,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.List;
-import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
+import com.formkiq.client.model.SiteConfig;
+import com.formkiq.client.model.SiteUsage;
+import com.formkiq.module.ocr.DocumentOcrService;
+import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
+import com.formkiq.stacks.dynamodb.config.SiteConfigurationOcr;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceExtension;
 import com.formkiq.client.invoker.ApiException;
@@ -50,14 +52,14 @@ import com.formkiq.client.model.GetSitesResponse;
 import com.formkiq.client.model.GetVersionResponse;
 import com.formkiq.client.model.Site;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.dynamodb.ConfigService;
-import com.formkiq.stacks.dynamodb.ConfigServiceExtension;
+import com.formkiq.stacks.dynamodb.config.ConfigService;
+import com.formkiq.stacks.dynamodb.config.ConfigServiceExtension;
 
 /** Unit Tests for request /sites. */
 public class SitesRequestTest extends AbstractApiClientRequestTest {
 
   /** {@link ConfigService}. */
-  private static ConfigService config;
+  private static ConfigService configService;
   /** Email Pattern. */
   private static final String EMAIL = "[abcdefghijklmnopqrstuvwxyz0123456789]{8}";
   /** {@link SsmService}. */
@@ -73,7 +75,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     awsServices.register(ConfigService.class, new ConfigServiceExtension());
     awsServices.register(SsmService.class, new SsmServiceExtension());
 
-    config = awsServices.getExtension(ConfigService.class);
+    configService = awsServices.getExtension(ConfigService.class);
     ssm = awsServices.getExtension(SsmService.class);
   }
 
@@ -86,7 +88,8 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
   public void testHandleGetSites01() throws Exception {
     // given
     setBearerToken(new String[] {DEFAULT_SITE_ID, "Admins", "finance"});
-    config.save(null, new DynamicObject(Map.of("chatGptApiKey", "somevalue")));
+    SiteConfiguration siteConfig = new SiteConfiguration().setChatGptApiKey("somevalue");
+    configService.save(null, siteConfig);
 
     ssm.putParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/maildomain", "tryformkiq.com");
 
@@ -94,16 +97,17 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     GetSitesResponse response = this.systemApi.getSites(null);
 
     // then
-    List<Site> sites = response.getSites();
+    List<Site> sites = notNull(response.getSites());
     assertEquals(2, sites.size());
 
     assertEquals(DEFAULT_SITE_ID, sites.get(0).getSiteId());
-    assertEquals("READ_WRITE", sites.get(0).getPermission().toString());
-    assertEquals("ADMIN,DELETE,READ,WRITE",
-        sites.get(0).getPermissions().stream().map(Enum::name).collect(Collectors.joining(",")));
+    assertEquals(Site.PermissionEnum.WRITE, sites.get(0).getPermission());
+    assertEquals("ADMIN,DELETE,READ,WRITE", notNull(sites.get(0).getPermissions()).stream()
+        .map(Enum::name).collect(Collectors.joining(",")));
     assertNotNull(sites.get(0).getUploadEmail());
 
     String uploadEmail = sites.get(0).getUploadEmail();
+    assertNotNull(uploadEmail);
     assertTrue(uploadEmail.endsWith("@tryformkiq.com"));
     assertTrue(Pattern.matches(EMAIL, uploadEmail.subSequence(0, uploadEmail.indexOf("@"))));
 
@@ -116,9 +120,10 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
         ssm.getParameterValue(String.format("/formkiq/ses/%s/%s", strs[1], strs[0])));
 
     assertEquals("finance", sites.get(1).getSiteId());
-    assertEquals("READ_WRITE", sites.get(1).getPermission().toString());
+    assertEquals(Site.PermissionEnum.WRITE, sites.get(1).getPermission());
     assertNotNull(sites.get(1).getUploadEmail());
     uploadEmail = sites.get(1).getUploadEmail();
+    assertNotNull(uploadEmail);
     assertTrue(uploadEmail.endsWith("@tryformkiq.com"));
     assertTrue(Pattern.matches(EMAIL, uploadEmail.subSequence(0, uploadEmail.indexOf("@"))));
     assertNotNull(ssm.getParameterValue(String.format("/formkiq/%s/siteid/%s/email",
@@ -143,14 +148,14 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     GetSitesResponse response = this.systemApi.getSites(null);
 
     // then
-    List<Site> sites = response.getSites();
+    List<Site> sites = notNull(response.getSites());
     assertEquals(2, sites.size());
     assertEquals(DEFAULT_SITE_ID, sites.get(0).getSiteId());
-    assertEquals("READ_WRITE", sites.get(0).getPermission().toString());
+    assertEquals(Site.PermissionEnum.WRITE, sites.get(0).getPermission());
     assertNull(sites.get(0).getUploadEmail());
 
     assertEquals("finance", sites.get(1).getSiteId());
-    assertEquals("READ_WRITE", sites.get(1).getPermission().toString());
+    assertEquals(Site.PermissionEnum.WRITE, sites.get(1).getPermission());
     assertNull(sites.get(1).getUploadEmail());
   }
 
@@ -172,20 +177,21 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     GetSitesResponse response = this.systemApi.getSites(null);
 
     // then
-    List<Site> sites = response.getSites();
+    List<Site> sites = notNull(response.getSites());
 
     assertEquals(2, sites.size());
     assertEquals(DEFAULT_SITE_ID, sites.get(0).getSiteId());
-    assertEquals("READ_ONLY", sites.get(0).getPermission().toString());
+    assertEquals(Site.PermissionEnum.ONLY, sites.get(0).getPermission());
     assertNull(sites.get(0).getUploadEmail());
 
     assertNull(ssm.getParameterValue(String.format("/formkiq/%s/siteid/%s/email",
         FORMKIQ_APP_ENVIRONMENT, sites.get(0).getSiteId())));
 
     assertEquals("finance", sites.get(1).getSiteId());
-    assertEquals("READ_WRITE", sites.get(1).getPermission().toString());
+    assertEquals(Site.PermissionEnum.WRITE, sites.get(1).getPermission());
     assertNotNull(sites.get(1).getUploadEmail());
     String uploadEmail = sites.get(1).getUploadEmail();
+    assertNotNull(uploadEmail);
     assertTrue(uploadEmail.endsWith("@tryformkiq.com"));
     assertTrue(Pattern.matches(EMAIL, uploadEmail.subSequence(0, uploadEmail.indexOf("@"))));
     assertNotNull(ssm.getParameterValue(String.format("/formkiq/%s/siteid/%s/email",
@@ -206,17 +212,37 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     String siteId = "finance";
     setBearerToken(siteId);
 
-    config.save(siteId, new DynamicObject(Map.of(MAX_DOCUMENTS, "5", MAX_WEBHOOKS, "10")));
+    SiteConfiguration siteConfig = new SiteConfiguration().setMaxDocuments("5").setMaxWebhooks("10")
+        .setOcr(new SiteConfigurationOcr().setMaxTransactions(2));
+    configService.save(siteId, siteConfig);
+
+    configService.increment(siteId, ConfigService.DOCUMENT_COUNT);
+    configService.increment(siteId, ConfigService.DOCUMENT_COUNT);
+    configService.increment(siteId, DocumentOcrService.CONFIG_OCR_COUNT);
 
     // when
     GetSitesResponse response = this.systemApi.getSites(null);
 
     // then
-    List<Site> sites = response.getSites();
+    List<Site> sites = notNull(response.getSites());
 
     assertEquals(1, sites.size());
-    assertEquals(siteId, sites.get(0).getSiteId());
-    assertEquals("READ_WRITE", sites.get(0).getPermission().toString());
+    Site site = sites.get(0);
+    assertEquals(siteId, site.getSiteId());
+    assertEquals(Site.PermissionEnum.WRITE, site.getPermission());
+
+    SiteConfig config = site.getConfig();
+    assertNotNull(config);
+    assertEquals("5", config.getMaxDocuments());
+    assertEquals("10", config.getMaxWebhooks());
+
+    assertNotNull(config.getOcr());
+    assertEquals("2", Objects.requireNonNull(config.getOcr().getMaxTransactions()).toString());
+
+    SiteUsage usage = site.getUsage();
+    assertNotNull(usage);
+    assertEquals(2, Objects.requireNonNull(usage.getDocumentCount()).longValue());
+    assertEquals(1, Objects.requireNonNull(usage.getOcrTransactionCount()).longValue());
   }
 
   /**

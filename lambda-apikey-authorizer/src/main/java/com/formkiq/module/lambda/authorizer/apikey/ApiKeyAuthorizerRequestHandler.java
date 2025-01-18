@@ -33,13 +33,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.Context;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
+import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.stacks.dynamodb.ApiKey;
 import com.formkiq.stacks.dynamodb.ApiKeysService;
 import com.formkiq.stacks.dynamodb.ApiKeysServiceExtension;
@@ -86,25 +86,20 @@ public class ApiKeyAuthorizerRequestHandler implements RequestStreamHandler {
     awsServices.register(ApiKeysService.class, new ApiKeysServiceExtension());
   }
 
-  @SuppressWarnings("unchecked")
   private String getIdentitySource(final Map<String, Object> map) {
     List<String> identitySource = (List<String>) map.get("identitySource");
     return !identitySource.isEmpty() ? identitySource.get(0) : null;
   }
 
-  @SuppressWarnings("unchecked")
   @Override
   public void handleRequest(final InputStream input, final OutputStream output,
       final Context context) throws IOException {
 
-    LambdaLogger logger = context.getLogger();
+    Logger logger = awsServices.getLogger();
     ApiKeysService apiKeys = awsServices.getExtension(ApiKeysService.class);
 
     String json = IoUtils.toUtf8String(input);
-
-    if (awsServices.debug()) {
-      logger.log(json);
-    }
+    logger.debug(json);
 
     Map<String, Object> map = this.gson.fromJson(json, Map.class);
 
@@ -134,9 +129,8 @@ public class ApiKeyAuthorizerRequestHandler implements RequestStreamHandler {
     writer.close();
   }
 
-  @SuppressWarnings("unchecked")
-  private void log(final LambdaLogger logger, final Map<String, Object> map,
-      final boolean isAuthorized, final String group) {
+  private void log(final Logger logger, final Map<String, Object> map, final boolean isAuthorized,
+      final String group) {
 
     Map<String, Object> requestContext =
         map.containsKey("requestContext") ? (Map<String, Object>) map.get("requestContext")
@@ -151,6 +145,6 @@ public class ApiKeyAuthorizerRequestHandler implements RequestStreamHandler {
         map.get("requestId"), http.get("sourceIp"), requestContext.get("time"), http.get("method"),
         map.get("routeKey"), requestContext.get("protocol"), group, isAuthorized);
 
-    logger.log(s);
+    logger.info(s);
   }
 }

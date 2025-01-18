@@ -41,21 +41,21 @@ import java.util.Map;
 public class CoreRequestHandler extends AbstractCoreRequestHandler {
 
   /** {@link AwsServiceCache}. */
-  private static AwsServiceCache serviceCache;
+  private static final AwsServiceCache SERVICE_CACHE;
 
   static {
 
-    serviceCache = new AwsServiceCacheBuilder(System.getenv(), Map.of(),
+    SERVICE_CACHE = new AwsServiceCacheBuilder(System.getenv(), Map.of(),
         EnvironmentVariableCredentialsProvider.create())
         .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
             new SnsAwsServiceRegistry(), new SqsAwsServiceRegistry(), new SsmAwsServiceRegistry())
         .build();
 
-    initialize(serviceCache);
+    initialize(SERVICE_CACHE);
   }
 
   @Override
   public AwsServiceCache getAwsServices() {
-    return serviceCache;
+    return SERVICE_CACHE;
   }
 }

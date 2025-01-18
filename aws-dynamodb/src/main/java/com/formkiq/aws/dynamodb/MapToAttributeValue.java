@@ -40,11 +40,14 @@ public class MapToAttributeValue
   @Override
   public Map<String, AttributeValue> apply(final Map<String, Object> map) {
 
-    Map<String, AttributeValue> result = new HashMap<>();
+    Map<String, AttributeValue> result = null;
 
-    for (Map.Entry<String, Object> e : map.entrySet()) {
-      AttributeValue a = convert(e.getValue());
-      result.put(e.getKey(), a);
+    if (map != null) {
+      result = new HashMap<>();
+      for (Map.Entry<String, Object> e : map.entrySet()) {
+        AttributeValue a = convert(e.getValue());
+        result.put(e.getKey(), a);
+      }
     }
 
     return result;
@@ -54,6 +57,8 @@ public class MapToAttributeValue
     AttributeValue o = null;
     if (obj instanceof Double d) {
       o = AttributeValue.fromN(String.valueOf(d));
+    } else if (obj instanceof Long l) {
+      o = AttributeValue.fromN(String.valueOf(l));
     } else if (obj instanceof String s) {
       o = AttributeValue.fromS(s);
     } else if (obj instanceof Collection<?> c) {

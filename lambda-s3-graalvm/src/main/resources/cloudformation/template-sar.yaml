@@ -41,7 +41,26 @@ Parameters:
   TypesenseApiKey:
     Type: String
     Description: TypeSense API Key
-    
+
+  LogRetentionInDays:
+    Type: Number
+    Description: The number of days to retain the log events
+
+  LogFormat:
+    Description: >
+      The format in which the application and system logs are stored.
+    Type: String
+
+  LogLevelApplication:
+    Type: String
+    Description: >
+      The level of logging for the FormKiQ Application logs.
+
+  LogLevelSystem:
+    Type: String
+    Description: >
+      The level of logging for the AWS Platform System logs.
+
 Conditions:
         
   HasVpcStackName:
@@ -60,6 +79,11 @@ Conditions:
     Fn::And:
       - Condition: HasVpcStackName
       - Condition: HasTypesenseApiKey
+
+  IsLogFormatJSON: 
+    Fn::Equals:
+      - Ref: LogFormat
+      - JSON
 
 Resources:
 
@@ -256,9 +280,8 @@ Resources:
   DocumentActionsProcessorLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: 
-        Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/${DocumentActionsProcessor}"
-      RetentionInDays: 90
+      RetentionInDays:
+        Ref: LogRetentionInDays
       
   DocumentActionsProcessor:
     Type: AWS::Serverless::Function
@@ -284,7 +307,8 @@ Resources:
             Ref: Documents
           APP_ENVIRONMENT: 
             Fn::Sub: "${AppEnvironment}"
-          DEBUG: false
+          LOG_LEVEL:
+            Ref: LogLevelApplication
           ENABLE_AWS_X_RAY: true  
           FormKiQType:
             Ref: FormKiQType
@@ -303,6 +327,21 @@ Resources:
         Fn::GetAtt:
         - S3LambdaRole
         - Arn
+      LoggingConfig:
+        LogGroup:
+          Ref: DocumentActionsProcessorLogGroup
+        LogFormat:
+          Ref: LogFormat
+        ApplicationLogLevel:
+          Fn::If:
+          - IsLogFormatJSON
+          - Ref: LogLevelApplication
+          - Ref: AWS::NoValue
+        SystemLogLevel:
+          Fn::If:
+          - IsLogFormatJSON
+          - Ref: LogLevelSystem
+          - Ref: AWS::NoValue
       Tags:
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
@@ -323,9 +362,8 @@ Resources:
   StagingS3CreateLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: 
-        Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/${StagingS3Create}"
-      RetentionInDays: 90
+      RetentionInDays:
+        Ref: LogRetentionInDays
       
   StagingS3Create:
     Type: AWS::Serverless::Function
@@ -351,7 +389,8 @@ Resources:
             Ref: Documents
           APP_ENVIRONMENT: 
             Fn::Sub: "${AppEnvironment}"
-          DEBUG: false
+          LOG_LEVEL:
+            Ref: LogLevelApplication
           ENABLE_AWS_X_RAY: true
           FormKiQType:
             Ref: FormKiQType
@@ -369,6 +408,21 @@ Resources:
         Fn::GetAtt:
         - S3LambdaRole
         - Arn
+      LoggingConfig:
+        LogGroup:
+          Ref: StagingS3CreateLogGroup
+        LogFormat:
+          Ref: LogFormat
+        ApplicationLogLevel:
+          Fn::If:
+          - IsLogFormatJSON
+          - Ref: LogLevelApplication
+          - Ref: AWS::NoValue
+        SystemLogLevel:
+          Fn::If:
+          - IsLogFormatJSON
+          - Ref: LogLevelSystem
+          - Ref: AWS::NoValue
       Tags:
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
@@ -406,9 +460,8 @@ Resources:
   DocumentsS3UpdateLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: 
-        Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/${DocumentsS3Update}"
-      RetentionInDays: 90
+      RetentionInDays:
+        Ref: LogRetentionInDays
 
   DocumentsS3Update:
     Type: AWS::Serverless::Function
@@ -434,7 +487,8 @@ Resources:
             Ref: Cache
           APP_ENVIRONMENT: 
             Fn::Sub: "${AppEnvironment}"
-          DEBUG: false
+          LOG_LEVEL:
+            Ref: LogLevelApplication
           ENABLE_AWS_X_RAY: true
           SNS_DOCUMENT_EVENT: 
             Ref: SnsDocumentEvent
@@ -454,6 +508,21 @@ Resources:
         Fn::GetAtt:
         - S3LambdaRole
         - Arn
+      LoggingConfig:
+        LogGroup:
+          Ref: DocumentsS3UpdateLogGroup
+        LogFormat:
+          Ref: LogFormat
+        ApplicationLogLevel:
+          Fn::If:
+          - IsLogFormatJSON
+          - Ref: LogLevelApplication
+          - Ref: AWS::NoValue
+        SystemLogLevel:
+          Fn::If:
+          - IsLogFormatJSON
+          - Ref: LogLevelSystem
+          - Ref: AWS::NoValue
       Tags:
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"

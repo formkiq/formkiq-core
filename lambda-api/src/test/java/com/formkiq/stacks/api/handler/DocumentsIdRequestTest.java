@@ -26,17 +26,16 @@ package com.formkiq.stacks.api.handler;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
-import java.net.http.HttpHeaders;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.ID;
@@ -50,15 +49,19 @@ import com.formkiq.client.model.AttributeSchemaOptional;
 import com.formkiq.client.model.ChecksumType;
 import com.formkiq.client.model.DocumentAction;
 import com.formkiq.client.model.DocumentAttribute;
+import com.formkiq.client.model.DocumentSearch;
+import com.formkiq.client.model.DocumentSearchMeta;
+import com.formkiq.client.model.DocumentSearchRequest;
 import com.formkiq.client.model.SchemaAttributes;
+import com.formkiq.client.model.SearchResultDocument;
 import com.formkiq.client.model.SetSitesSchemaRequest;
 import com.formkiq.client.model.UpdateDocumentRequest;
-import com.formkiq.stacks.client.HttpService;
-import com.formkiq.stacks.client.HttpServiceJava;
+import com.formkiq.module.http.HttpHeaders;
+import com.formkiq.module.http.HttpService;
+import com.formkiq.module.http.HttpServiceJdk11;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAction;
 import com.formkiq.client.model.AddDocumentRequest;
@@ -69,13 +72,8 @@ import com.formkiq.client.model.DocumentActionType;
 import com.formkiq.client.model.GetDocumentResponse;
 import com.formkiq.client.model.GetDocumentUrlResponse;
 import com.formkiq.client.model.SetDocumentRestoreResponse;
-import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.LocalStackExtension;
-import software.amazon.awssdk.core.sync.RequestBody;
 
 /** Unit Tests for request /documents/{documentId}. */
-@ExtendWith(DynamoDbExtension.class)
-@ExtendWith(LocalStackExtension.class)
 public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
   /** Test Timeout. */
@@ -901,7 +899,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
    * @throws ApiException ApiException
    */
   @Test
-  public void testUpdate11() throws ApiException, IOException, InterruptedException {
+  public void testUpdate11() throws ApiException, IOException {
     // given
     final String content0 = "dummy data";
     final String checksum0 = "797bb0abff798d7200af7685dca7901edffc52bf26500d5bd97282658ee24152";
@@ -962,16 +960,62 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
     }
   }
 
+  /**
+   * Update path to existing path.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  public void testUpdate12() throws Exception {
+    // given
+    String content = "test data";
+    String dir = "somepath";
+    String path = dir + "/" + ID.uuid() + ".txt";
+    DocumentSearchRequest sreq = new DocumentSearchRequest()
+        .query(new DocumentSearch().meta(new DocumentSearchMeta().folder(dir)));
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      AddDocumentRequest req =
+          new AddDocumentRequest().path(path).contentType("text/plain").content(content);
+
+      // when
+      String doc0 = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+      String doc1 = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+
+      // then
+      assertNotEquals(doc0, doc1);
+      assertEquals(path, this.documentsApi.getDocument(doc0, siteId, null).getPath());
+      assertNotEquals(path, this.documentsApi.getDocument(doc1, siteId, null).getPath());
+
+      List<SearchResultDocument> docs =
+          notNull(searchApi.documentSearch(sreq, siteId, null, null, null).getDocuments());
+      assertEquals(2, docs.size());
+
+      // given
+      UpdateDocumentRequest updateReq = new UpdateDocumentRequest().path(path);
+
+      // when
+      this.documentsApi.updateDocument(doc1, updateReq, siteId, null);
+
+      // then
+      assertNotEquals(path, this.documentsApi.getDocument(doc1, siteId, null).getPath());
+
+      docs = notNull(searchApi.documentSearch(sreq, siteId, null, null, null).getDocuments());
+      assertEquals(2, docs.size());
+    }
+  }
+
   private void putS3Request(final String presignedUrl, final Map<String, Object> headerMap,
-      final String content) throws IOException, InterruptedException {
+      final String content) throws IOException {
 
-    HttpService http = new HttpServiceJava();
-    RequestBody payload = RequestBody.fromString(content);
+    HttpService http = new HttpServiceJdk11();
 
-    Map<String, List<String>> headers = headerMap.entrySet().stream()
-        .collect(Collectors.toMap(Map.Entry::getKey, entry -> List.of((String) entry.getValue())));
+    HttpHeaders hds = new HttpHeaders();
+    headerMap.forEach((h, v) -> hds.add(h, v.toString()));
 
-    Optional<HttpHeaders> o = Optional.of(HttpHeaders.of(headers, (t, u) -> true));
-    http.put(presignedUrl, o, payload);
+    http.put(presignedUrl, Optional.of(hds), Optional.empty(), content);
   }
 }

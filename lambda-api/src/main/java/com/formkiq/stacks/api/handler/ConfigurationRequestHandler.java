@@ -25,24 +25,12 @@ package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-import static com.formkiq.stacks.dynamodb.ConfigService.CHATGPT_API_KEY;
-import static com.formkiq.stacks.dynamodb.ConfigService.KEY_DOCUSIGN_HMAC_SIGNATURE;
-import static com.formkiq.stacks.dynamodb.ConfigService.KEY_DOCUSIGN_INTEGRATION_KEY;
-import static com.formkiq.stacks.dynamodb.ConfigService.KEY_DOCUSIGN_RSA_PRIVATE_KEY;
-import static com.formkiq.stacks.dynamodb.ConfigService.KEY_DOCUSIGN_USER_ID;
-import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENTS;
-import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENT_SIZE_BYTES;
-import static com.formkiq.stacks.dynamodb.ConfigService.MAX_WEBHOOKS;
-import static com.formkiq.stacks.dynamodb.ConfigService.NOTIFICATION_EMAIL;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -50,6 +38,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.dynamodb.ApiPermission;
+import com.formkiq.aws.services.lambda.ApiObjectResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
@@ -58,7 +47,10 @@ import com.formkiq.aws.ses.SesConnectionBuilder;
 import com.formkiq.aws.ses.SesService;
 import com.formkiq.aws.ses.SesServiceExtension;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.dynamodb.ConfigService;
+import com.formkiq.stacks.dynamodb.config.ConfigService;
+import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
+import com.formkiq.stacks.dynamodb.config.SiteConfigurationDocusign;
+import com.formkiq.stacks.dynamodb.config.SiteConfigurationGoogle;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
@@ -87,8 +79,8 @@ public class ConfigurationRequestHandler
   public ConfigurationRequestHandler() {}
 
   @Override
-  public void beforePatch(final LambdaLogger logger, final ApiGatewayRequestEvent event,
-      final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
+  public void beforePatch(final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
+      final AwsServiceCache awsServices) throws Exception {
     checkPermissions(event, authorization);
   }
 
@@ -98,53 +90,26 @@ public class ConfigurationRequestHandler
   }
 
   @Override
-  public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = event.getPathParameters().get("siteId");
     ConfigService configService = awsservice.getExtension(ConfigService.class);
 
-    DynamicObject obj = configService.get(siteId);
+    SiteConfiguration obj = configService.get(siteId);
+    obj.setChatGptApiKey(mask(obj.getChatGptApiKey(), CHAT_GPT_MASK));
 
-    Map<String, Object> map = new HashMap<>();
-    map.put("chatGptApiKey", mask(obj.getOrDefault(CHATGPT_API_KEY, "").toString(), CHAT_GPT_MASK));
-    map.put("maxContentLengthBytes", obj.getOrDefault(MAX_DOCUMENT_SIZE_BYTES, ""));
-    map.put("maxDocuments", obj.getOrDefault(MAX_DOCUMENTS, ""));
-    map.put("maxWebhooks", obj.getOrDefault(MAX_WEBHOOKS, ""));
-    map.put("notificationEmail", obj.getOrDefault(NOTIFICATION_EMAIL, ""));
+    // hide from API
+    obj.setDocumentTimeToLive(null);
+    obj.setWebhookTimeToLive(null);
 
-    setupGoogle(obj, map);
-    setupDocusign(obj, map);
-
-    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
-  }
-
-  private void setupGoogle(final DynamicObject obj, final Map<String, Object> map) {
-    String workloadIdentityAudience =
-        (String) obj.getOrDefault("googleWorkloadIdentityAudience", "");
-    String workloadIdentityServiceAccount =
-        (String) obj.getOrDefault("googleWorkloadIdentityServiceAccount", "");
-
-    if (!isEmpty(workloadIdentityAudience) && !isEmpty(workloadIdentityServiceAccount)) {
-      map.put("google", Map.of("workloadIdentityAudience", workloadIdentityAudience,
-          "workloadIdentityServiceAccount", workloadIdentityServiceAccount));
+    SiteConfigurationDocusign docusign = obj.getDocusign();
+    if (docusign != null) {
+      docusign.setHmacSignature(mask(docusign.getHmacSignature(), HMAC_SIG_KEY_MASK));
+      docusign.setRsaPrivateKey(mask(docusign.getRsaPrivateKey(), RSA_PRIVATE_KEY_MASK));
     }
-  }
 
-  private void setupDocusign(final DynamicObject obj, final Map<String, Object> map) {
-    String docusignUserId = (String) obj.getOrDefault(KEY_DOCUSIGN_USER_ID, "");
-    String docusignIntegrationKey = (String) obj.getOrDefault(KEY_DOCUSIGN_INTEGRATION_KEY, "");
-    String docusignRsaPrivateKey = (String) obj.getOrDefault(KEY_DOCUSIGN_RSA_PRIVATE_KEY, "");
-    String docusignHmacSignature = (String) obj.getOrDefault(KEY_DOCUSIGN_HMAC_SIGNATURE, "");
-
-    if (!isEmpty(docusignUserId) && !isEmpty(docusignIntegrationKey)
-        && !isEmpty(docusignRsaPrivateKey)) {
-      map.put("docusign",
-          Map.of("userId", docusignUserId, "integrationKey", docusignIntegrationKey,
-              "rsaPrivateKey", mask(docusignRsaPrivateKey, RSA_PRIVATE_KEY_MASK), "hmacSignature",
-              mask(docusignHmacSignature, HMAC_SIG_KEY_MASK)));
-    }
+    return new ApiRequestHandlerResponse(SC_OK, new ApiObjectResponse(obj, null, null));
   }
 
   @Override
@@ -175,55 +140,21 @@ public class ConfigurationRequestHandler
    */
   private String mask(final String s, final int mask) {
     final int smallDiv = 3;
-    int m = mask > s.length() ? s.length() / smallDiv : mask;
+    int m = s != null && mask > s.length() ? s.length() / smallDiv : mask;
     return !isEmpty(s) ? s.subSequence(0, m) + "*******" + s.substring(s.length() - m) : s;
   }
 
   @Override
-  public ApiRequestHandlerResponse patch(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse patch(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = event.getPathParameter("siteId");
-    Map<String, Object> body = fromBodyToObject(event, Map.class);
+    SiteConfiguration config = fromBodyToObject(event, SiteConfiguration.class);
 
-    Map<String, Object> map = new HashMap<>();
-    put(map, body, CHATGPT_API_KEY, "chatGptApiKey");
-    put(map, body, MAX_DOCUMENT_SIZE_BYTES, "maxContentLengthBytes");
-    put(map, body, MAX_DOCUMENTS, "maxDocuments");
-    put(map, body, MAX_WEBHOOKS, "maxWebhooks");
-    put(map, body, NOTIFICATION_EMAIL, "notificationEmail");
+    validate(awsservice, config);
 
-    if (body.containsKey("google")) {
-
-      Map<String, String> google = (Map<String, String>) body.get("google");
-      String workloadIdentityAudience = google.getOrDefault("workloadIdentityAudience", "");
-      String workloadIdentityServiceAccount =
-          google.getOrDefault("workloadIdentityServiceAccount", "");
-
-      map.put("googleWorkloadIdentityAudience", workloadIdentityAudience);
-      map.put("googleWorkloadIdentityServiceAccount", workloadIdentityServiceAccount);
-    }
-
-    if (body.containsKey("docusign")) {
-
-      Map<String, String> google = (Map<String, String>) body.get("docusign");
-      String docusignUserId = google.getOrDefault("userId", "").trim();
-      String docusignIntegrationKey = google.getOrDefault("integrationKey", "").trim();
-      String docusignRsaPrivateKey = google.getOrDefault("rsaPrivateKey", "").trim();
-      String docusignHmacSignature = google.getOrDefault("hmacSignature", "").trim();
-
-      map.put(KEY_DOCUSIGN_USER_ID, docusignUserId);
-      map.put(KEY_DOCUSIGN_INTEGRATION_KEY, docusignIntegrationKey);
-      map.put(KEY_DOCUSIGN_RSA_PRIVATE_KEY, docusignRsaPrivateKey);
-      map.put(KEY_DOCUSIGN_HMAC_SIGNATURE, docusignHmacSignature);
-    }
-
-    validate(awsservice, map);
-
-    if (!map.isEmpty()) {
-      ConfigService configService = awsservice.getExtension(ConfigService.class);
-      configService.save(siteId, new DynamicObject(map));
+    ConfigService configService = awsservice.getExtension(ConfigService.class);
+    if (configService.save(siteId, config)) {
 
       return new ApiRequestHandlerResponse(SC_OK,
           new ApiMapResponse(Map.of("message", "Config saved")));
@@ -232,19 +163,12 @@ public class ConfigurationRequestHandler
     throw new BadException("missing required body parameters");
   }
 
-  private void put(final Map<String, Object> map, final Map<String, Object> body,
-      final String mapKey, final String bodyKey) {
-    if (body.containsKey(bodyKey)) {
-      map.put(mapKey, body.get(bodyKey));
-    }
-  }
-
-  private void validate(final AwsServiceCache awsservice, final Map<String, Object> map)
+  private void validate(final AwsServiceCache awsservice, final SiteConfiguration config)
       throws ValidationException {
 
     Collection<ValidationError> errors = new ArrayList<>();
 
-    Object notificationEmail = map.getOrDefault(NOTIFICATION_EMAIL, null);
+    String notificationEmail = config.getNotificationEmail();
     if (notificationEmail != null) {
 
       initSes(awsservice);
@@ -259,44 +183,51 @@ public class ConfigurationRequestHandler
       }
     }
 
-    validateGoogle(map, errors);
-    validateDocusign(map, errors);
+    validateGoogle(config, errors);
+    validateDocusign(config, errors);
 
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }
   }
 
-  private void validateGoogle(final Map<String, Object> map,
+  private void validateGoogle(final SiteConfiguration config,
       final Collection<ValidationError> errors) {
-    String googleWorkloadIdentityAudience =
-        (String) map.getOrDefault("googleWorkloadIdentityAudience", null);
-    String googleWorkloadIdentityServiceAccount =
-        (String) map.getOrDefault("googleWorkloadIdentityServiceAccount", null);
 
-    if (!Strings.isEmptyOrHasValues(googleWorkloadIdentityAudience,
-        googleWorkloadIdentityServiceAccount)) {
-      errors.add(new ValidationErrorImpl().key("google")
-          .error("all 'googleWorkloadIdentityAudience', 'googleWorkloadIdentityServiceAccount' "
-              + "are required for google setup"));
+    SiteConfigurationGoogle google = config.getGoogle();
+
+    if (google != null) {
+      String googleWorkloadIdentityAudience = google.getWorkloadIdentityAudience();
+      String googleWorkloadIdentityServiceAccount = google.getWorkloadIdentityServiceAccount();
+
+      if (!Strings.isEmptyOrHasValues(googleWorkloadIdentityAudience,
+          googleWorkloadIdentityServiceAccount)) {
+        errors.add(new ValidationErrorImpl().key("google")
+            .error("all 'googleWorkloadIdentityAudience', 'googleWorkloadIdentityServiceAccount' "
+                + "are required for google setup"));
+      }
     }
   }
 
-  private void validateDocusign(final Map<String, Object> map,
+  private void validateDocusign(final SiteConfiguration config,
       final Collection<ValidationError> errors) {
 
-    String docusignUserId = (String) map.getOrDefault(KEY_DOCUSIGN_USER_ID, null);
-    String docusignIntegrationKey = (String) map.getOrDefault(KEY_DOCUSIGN_INTEGRATION_KEY, null);
-    String docusignRsaPrivateKey = (String) map.getOrDefault(KEY_DOCUSIGN_RSA_PRIVATE_KEY, null);
+    SiteConfigurationDocusign docusign = config.getDocusign();
 
-    if (!Strings.isEmptyOrHasValues(docusignUserId, docusignIntegrationKey,
-        docusignRsaPrivateKey)) {
-      errors.add(new ValidationErrorImpl().key("docusign")
-          .error("all 'docusignUserId', 'docusignIntegrationKey', 'docusignRsaPrivateKey' "
-              + "are required for docusign setup"));
-    } else if (docusignRsaPrivateKey != null && !isValidRsaPrivateKey(docusignRsaPrivateKey)) {
-      errors.add(
-          new ValidationErrorImpl().key("docusignRsaPrivateKey").error("invalid RSA Private Key"));
+    if (docusign != null) {
+      String docusignUserId = docusign.getUserId();
+      String docusignIntegrationKey = docusign.getIntegrationKey();
+      String docusignRsaPrivateKey = docusign.getRsaPrivateKey();
+
+      if (!Strings.isEmptyOrHasValues(docusignUserId, docusignIntegrationKey,
+          docusignRsaPrivateKey)) {
+        errors.add(new ValidationErrorImpl().key("docusign")
+            .error("all 'docusignUserId', 'docusignIntegrationKey', 'docusignRsaPrivateKey' "
+                + "are required for docusign setup"));
+      } else if (docusignRsaPrivateKey != null && !isValidRsaPrivateKey(docusignRsaPrivateKey)) {
+        errors.add(new ValidationErrorImpl().key("docusignRsaPrivateKey")
+            .error("invalid RSA Private Key"));
+      }
     }
   }
 

@@ -30,6 +30,7 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.handler.AddDocumentRequest;
+import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import com.formkiq.validation.ValidationException;
 
 /**
@@ -42,6 +43,7 @@ public interface DocumentEntityValidator {
    * 
    * @param authorization {@link ApiAuthorization}
    * @param awsservice {@link AwsServiceCache}
+   * @param config {@link SiteConfiguration}
    * @param siteId {@link String}
    * @param item {@link DynamicDocumentItem}
    * @param isUpdate boolean
@@ -50,6 +52,6 @@ public interface DocumentEntityValidator {
    * @throws BadException BadException
    */
   List<DocumentTag> validate(ApiAuthorization authorization, AwsServiceCache awsservice,
-      String siteId, AddDocumentRequest item, boolean isUpdate)
+      SiteConfiguration config, String siteId, AddDocumentRequest item, boolean isUpdate)
       throws ValidationException, BadException;
 }

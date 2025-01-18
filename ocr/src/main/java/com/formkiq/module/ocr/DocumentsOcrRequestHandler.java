@@ -23,7 +23,6 @@
  */
 package com.formkiq.module.ocr;
 
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
@@ -92,9 +91,8 @@ public class DocumentsOcrRequestHandler
   }
 
   @Override
-  public ApiRequestHandlerResponse delete(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse delete(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     ApiMapResponse resp = new ApiMapResponse();
     String siteId = authorization.getSiteId();
@@ -109,9 +107,8 @@ public class DocumentsOcrRequestHandler
   }
 
   @Override
-  public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     ApiResponseStatus status = SC_OK;
     String siteId = authorization.getSiteId();
@@ -122,6 +119,7 @@ public class DocumentsOcrRequestHandler
     final boolean contentUrl = isContentUrl(event);
     final boolean textOnly = isTextOnly(event);
     final boolean keyValue = !textOnly && isKeyValue(event);
+    final boolean tables = isTables(event);
 
     DocumentOcrService ocrService = awsservice.getExtension(DocumentOcrService.class);
 
@@ -131,7 +129,7 @@ public class DocumentsOcrRequestHandler
 
     if (map.containsKey("ocrStatus")) {
 
-      if (OcrScanStatus.SUCCESSFUL.name().equalsIgnoreCase(map.get("ocrStatus").toString())) {
+      if (isOcrStatus(map, OcrScanStatus.SUCCESSFUL) || isOcrStatus(map, OcrScanStatus.SKIPPED)) {
 
         S3Service s3 = awsservice.getExtension(S3Service.class);
 
@@ -149,13 +147,8 @@ public class DocumentsOcrRequestHandler
 
         } else {
 
-          Object data = getS3Content(awsservice, ocrService, s3, s3Keys, textOnly, keyValue);
-
-          if (keyValue) {
-            map.put("keyValues", data);
-          } else {
-            map.put("data", data);
-          }
+          List<String> contents = getS3Content(awsservice, s3, s3Keys);
+          updateObject(ocrService, map, contents, textOnly, keyValue, tables);
         }
       }
 
@@ -165,6 +158,10 @@ public class DocumentsOcrRequestHandler
 
     ApiMapResponse resp = new ApiMapResponse(map);
     return new ApiRequestHandlerResponse(status, resp);
+  }
+
+  private boolean isOcrStatus(final Map<String, Object> map, final OcrScanStatus status) {
+    return status.name().equalsIgnoreCase(map.get("ocrStatus").toString());
   }
 
   /**
@@ -222,32 +219,33 @@ public class DocumentsOcrRequestHandler
    * Get S3 Content.
    *
    * @param awsservice {@link AwsServiceCache}
-   * @param ocrService {@link DocumentOcrService}
    * @param s3 {@link S3Service}
    * @param s3Keys {@link List} {@link String}
-   * @param textOnly boolean
-   * @param keyValue boolean
    * @return {@link String}
    */
-  private Object getS3Content(final AwsServiceCache awsservice, final DocumentOcrService ocrService,
-      final S3Service s3, final List<String> s3Keys, final boolean textOnly,
-      final boolean keyValue) {
+  private List<String> getS3Content(final AwsServiceCache awsservice, final S3Service s3,
+      final List<String> s3Keys) {
 
     String ocrBucket = awsservice.environment("OCR_S3_BUCKET");
-    List<String> contents =
-        s3Keys.stream().map(s3Key -> s3.getContentAsString(ocrBucket, s3Key, null)).toList();
+    return s3Keys.stream().map(s3Key -> s3.getContentAsString(ocrBucket, s3Key, null)).toList();
+  }
 
-    Object result = null;
+  private void updateObject(final DocumentOcrService ocrService, final Map<String, Object> map,
+      final List<String> contents, final boolean textOnly, final boolean keyValue,
+      final boolean tables) {
 
     if (textOnly) {
-      result = ocrService.toText(contents);
+      map.put("data", ocrService.toText(contents));
     } else if (keyValue) {
-      result = ocrService.toKeyValue(contents);
+      map.put("keyValues", ocrService.toKeyValue(contents));
     } else {
-      result = contents.stream().collect(Collectors.joining());
+      map.put("data", String.join("", contents));
     }
 
-    return result;
+    if (tables) {
+      map.remove("data");
+      map.put("tables", ocrService.toTables(contents));
+    }
   }
 
   private boolean isContentUrl(final ApiGatewayRequestEvent event) {
@@ -273,6 +271,17 @@ public class DocumentsOcrRequestHandler
     return keyOnly;
   }
 
+  private boolean isTables(final ApiGatewayRequestEvent event) {
+    boolean tables = false;
+
+    String outputType = getOutputType(event);
+    if ("TABLES".equalsIgnoreCase(outputType)) {
+      tables = true;
+    }
+
+    return tables;
+  }
+
   private boolean isTextOnly(final ApiGatewayRequestEvent event) {
     boolean textOnly = event.getQueryStringParameters() != null
         && event.getQueryStringParameters().containsKey("text");
@@ -286,9 +295,8 @@ public class DocumentsOcrRequestHandler
   }
 
   @Override
-  public ApiRequestHandlerResponse post(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
@@ -299,16 +307,17 @@ public class DocumentsOcrRequestHandler
     String userId = authorization.getUsername();
 
     DocumentOcrService ocrService = awsservice.getExtension(DocumentOcrService.class);
-    ocrService.convert(logger, awsservice, request, siteId, documentId, userId);
+    if (!ocrService.convert(awsservice, request, siteId, documentId, userId)) {
+      throw new BadException("Maximum number of OCRs reached");
+    }
 
     ApiMapResponse resp = new ApiMapResponse(Map.of("message", "OCR request submitted"));
     return new ApiRequestHandlerResponse(SC_OK, resp);
   }
 
   @Override
-  public ApiRequestHandlerResponse put(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse put(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
@@ -328,7 +337,8 @@ public class DocumentsOcrRequestHandler
     DocumentOcrService ocrService = awsservice.getExtension(DocumentOcrService.class);
     ocrService.set(awsservice, siteId, documentId, userId, content, contentType);
 
-    ApiMapResponse resp = new ApiMapResponse();
+    ApiMapResponse resp =
+        new ApiMapResponse(Map.of("message", "Set OCR for documentId '" + documentId + "'"));
     return new ApiRequestHandlerResponse(SC_OK, resp);
   }
 

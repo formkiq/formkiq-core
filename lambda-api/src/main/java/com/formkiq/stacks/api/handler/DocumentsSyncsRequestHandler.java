@@ -27,7 +27,7 @@ import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.util.HashMap;
 import java.util.Map;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
+
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
@@ -56,19 +56,19 @@ public class DocumentsSyncsRequestHandler
   public DocumentsSyncsRequestHandler() {}
 
   @Override
-  public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
+  public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     CacheService cacheService = awsservice.getExtension(CacheService.class);
     ApiPagination pagination = getPagination(cacheService, event);
 
-    final int limit = pagination != null ? pagination.getLimit() : getLimit(logger, event);
+    final int limit =
+        pagination != null ? pagination.getLimit() : getLimit(awsservice.getLogger(), event);
     final PaginationMapToken token = pagination != null ? pagination.getStartkey() : null;
 
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
-    verifyDocument(awsservice, event, siteId, documentId);
+    verifyDocument(awsservice, siteId, documentId);
 
     DocumentSyncService sync = awsservice.getExtension(DocumentSyncService.class);
     PaginationResults<DocumentSync> syncs = sync.getSyncs(siteId, documentId, token, limit);
@@ -92,8 +92,8 @@ public class DocumentsSyncsRequestHandler
     return "/documents/{documentId}/syncs";
   }
 
-  private void verifyDocument(final AwsServiceCache awsservice, final ApiGatewayRequestEvent event,
-      final String siteId, final String documentId) throws Exception {
+  private void verifyDocument(final AwsServiceCache awsservice, final String siteId,
+      final String documentId) throws Exception {
     DocumentService ds = awsservice.getExtension(DocumentService.class);
     DocumentItem item = ds.findDocument(siteId, documentId);
     throwIfNull(item, new DocumentNotFoundException(documentId));

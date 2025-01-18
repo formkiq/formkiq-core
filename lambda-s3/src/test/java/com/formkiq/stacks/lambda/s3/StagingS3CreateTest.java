@@ -65,9 +65,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.module.lambdaservices.logger.LoggerRecorder;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -110,7 +110,6 @@ import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsService;
-import com.formkiq.module.events.document.DocumentEvent;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
@@ -128,8 +127,6 @@ import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeType;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
-import com.formkiq.stacks.lambda.s3.util.LambdaContextRecorder;
-import com.formkiq.stacks.lambda.s3.util.LambdaLoggerRecorder;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbHelper;
 import com.formkiq.testutils.aws.LocalStackExtension;
@@ -144,6 +141,7 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
+import software.amazon.awssdk.services.s3.model.S3Object;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 
@@ -274,17 +272,7 @@ public class StagingS3CreateTest implements DbKeys {
   }
 
   private static void createAwService() {
-    Map<String, String> env = new HashMap<>();
-    env.put("AWS_REGION", Region.US_EAST_1.id());
-    env.put("DOCUMENTS_S3_BUCKET", DOCUMENTS_BUCKET);
-    env.put("SNS_DELETE_TOPIC", snsDeleteTopic);
-    env.put("SNS_CREATE_TOPIC", snsCreateTopic);
-    env.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
-    env.put("DOCUMENT_SYNC_TABLE", DOCUMENT_SYNCS_TABLE);
-    env.put("DOCUMENT_VERSIONS_TABLE", DOCUMENTS_VERSION_TABLE);
-    env.put("APP_ENVIRONMENT", APP_ENVIRONMENT);
-    env.put("SNS_DOCUMENT_EVENT", snsDocumentEvent);
-    env.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
+    Map<String, String> env = getEnvironment();
 
     AwsCredentials creds = AwsBasicCredentials.create("aaa", "bbb");
     StaticCredentialsProvider credentialsProvider = StaticCredentialsProvider.create(creds);
@@ -293,7 +281,24 @@ public class StagingS3CreateTest implements DbKeys {
         TestServices.getEndpointMap(), credentialsProvider)
         .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
             new SnsAwsServiceRegistry(), new SqsAwsServiceRegistry(), new SsmAwsServiceRegistry())
-        .build();
+        .build().setLogger(new LoggerRecorder());
+    logger = (LoggerRecorder) awsServices.getLogger();
+  }
+
+  private static Map<String, String> getEnvironment() {
+    Map<String, String> env = new HashMap<>();
+    env.put("AWS_REGION", Region.US_EAST_1.id());
+    env.put("DOCUMENTS_S3_BUCKET", DOCUMENTS_BUCKET);
+    env.put("LOG_LEVEL", "TRACE");
+    env.put("SNS_DELETE_TOPIC", snsDeleteTopic);
+    env.put("SNS_CREATE_TOPIC", snsCreateTopic);
+    env.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
+    env.put("DOCUMENT_SYNC_TABLE", DOCUMENT_SYNCS_TABLE);
+    env.put("DOCUMENT_VERSIONS_TABLE", DOCUMENTS_VERSION_TABLE);
+    env.put("APP_ENVIRONMENT", APP_ENVIRONMENT);
+    env.put("SNS_DOCUMENT_EVENT", snsDocumentEvent);
+    env.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
+    return env;
   }
 
   /**
@@ -369,14 +374,8 @@ public class StagingS3CreateTest implements DbKeys {
     }
   }
 
-  /** {@link LambdaContextRecorder}. */
-  private LambdaContextRecorder context;
-
-  // /** Environment Map. */
-  // private Map<String, String> env = new HashMap<>();
-
-  /** {@link LambdaLoggerRecorder}. */
-  private LambdaLoggerRecorder logger;
+  /** {@link LoggerRecorder}. */
+  private static LoggerRecorder logger;
 
   /**
    * Assert {@link DocumentTag} Equals.
@@ -413,8 +412,7 @@ public class StagingS3CreateTest implements DbKeys {
   @BeforeEach
   void before() {
 
-    this.context = new LambdaContextRecorder();
-    this.logger = (LambdaLoggerRecorder) this.context.getLogger();
+    // this.context = new LambdaContextRecorder();
 
     dbHelper.truncateTable(DOCUMENTS_TABLE);
 
@@ -485,7 +483,7 @@ public class StagingS3CreateTest implements DbKeys {
 
     Optional<String> uuid = Optional.empty();
 
-    List<String> msgs = this.logger.getRecordedMessages();
+    List<String> msgs = logger.getMessages();
 
     Optional<String> copy =
         msgs.stream().filter(s -> s.startsWith("Copying") || s.startsWith("Inserted")).findFirst();
@@ -504,7 +502,7 @@ public class StagingS3CreateTest implements DbKeys {
           }).findFirst();
     }
 
-    return uuid.isPresent() ? uuid.get() : null;
+    return uuid.orElse(null);
   }
 
   /**
@@ -514,8 +512,8 @@ public class StagingS3CreateTest implements DbKeys {
    * @param key {@link String}
    * @return {@link DocumentTag}
    */
-  private DocumentTag findTag(final List<DocumentTag> tags, final String key) {
-    return tags.stream().filter(s -> s.getKey().equals(key)).findFirst().get();
+  private Optional<DocumentTag> findTag(final List<DocumentTag> tags, final String key) {
+    return tags.stream().filter(s -> s.getKey().equals(key)).findFirst();
   }
 
   /**
@@ -524,7 +522,7 @@ public class StagingS3CreateTest implements DbKeys {
    * @param map {@link Map}
    */
   private void handleRequest(final Map<String, Object> map) {
-    Void result = handler.handleRequest(map, this.context);
+    Void result = handler.handleRequest(map, null);
     assertNull(result);
   }
 
@@ -539,7 +537,7 @@ public class StagingS3CreateTest implements DbKeys {
       throws IOException {
 
     String documentId = docitem.getDocumentId();
-    this.logger.reset();
+    logger.getMessages().clear();
 
     String key = createDatabaseKey(siteId, documentId + FORMKIQ_B64_EXT);
 
@@ -562,7 +560,7 @@ public class StagingS3CreateTest implements DbKeys {
 
     // given
     String documentId = ID.uuid();
-    this.logger.reset();
+    logger.getMessages().clear();
 
     String key = createDatabaseKey(siteId, documentId + FORMKIQ_B64_EXT);
 
@@ -576,8 +574,8 @@ public class StagingS3CreateTest implements DbKeys {
     String destDocumentId = findDocumentIdFromLogger(siteId);
 
     if (destDocumentId != null) {
-      assertTrue(this.logger.containsString("Removing " + key + " from bucket example-bucket."));
-      assertTrue(this.logger.containsString("Inserted " + docitem.getPath()
+      assertTrue(logger.containsString("Removing " + key + " from bucket example-bucket."));
+      assertTrue(logger.containsString("Inserted " + docitem.getPath()
           + " into bucket documentsbucket as " + createDatabaseKey(siteId, destDocumentId)));
 
       assertFalse(s3.getObjectMetadata(STAGING_BUCKET, documentId, null).isObjectExists());
@@ -605,8 +603,9 @@ public class StagingS3CreateTest implements DbKeys {
       if (hasTags) {
 
         for (DynamicObject tag : docitem.getList("tags")) {
-          DocumentTag dtag = findTag(tags, tag.getString("key"));
-          assertEquals(tag.getString("value"), dtag.getValue());
+          Optional<DocumentTag> dtag = findTag(tags, tag.getString("key"));
+          assertTrue(dtag.isPresent());
+          assertEquals(tag.getString("value"), dtag.get().getValue());
         }
       }
     }
@@ -624,7 +623,7 @@ public class StagingS3CreateTest implements DbKeys {
       throws IOException {
 
     // given
-    this.logger.reset();
+    logger.getMessages().clear();
 
     String key = siteId != null ? siteId + "/" + path : path;
 
@@ -642,11 +641,11 @@ public class StagingS3CreateTest implements DbKeys {
     // then
     String destDocumentId = findDocumentIdFromLogger(siteId);
 
-    assertTrue(this.logger.containsString("Removing " + key + " from bucket example-bucket."));
-    assertTrue(this.logger.containsString("handling 1 record(s)."));
-    assertTrue(this.logger.containsString("Copying " + key + " from bucket example-bucket to "
+    assertTrue(logger.containsString("Removing " + key + " from bucket example-bucket."));
+    assertTrue(logger.containsString("handling 1 record(s)."));
+    assertTrue(logger.containsString("Copying " + key + " from bucket example-bucket to "
         + createDatabaseKey(siteId, destDocumentId) + " in bucket " + DOCUMENTS_BUCKET + "."));
-    assertTrue(this.logger.containsString("Removing " + key + " from bucket example-bucket."));
+    assertTrue(logger.containsString("Removing " + key + " from bucket example-bucket."));
 
     assertFalse(s3.getObjectMetadata(STAGING_BUCKET, path, null).isObjectExists());
 
@@ -711,6 +710,71 @@ public class StagingS3CreateTest implements DbKeys {
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
       testCopyFile(siteId, documentId, "something/where/test.pdf");
     }
+  }
+
+  /**
+   * Create folder.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  void testCreateFolder01() throws Exception {
+    // given
+    String key = "testsite/";
+    Map<String, Object> map = loadFileAsMap(this, "/sqs-event-create01.json");
+
+    s3.putObject(STAGING_BUCKET, key, "".getBytes(UTF_8), null, Map.of());
+
+    // when
+    handleRequest(map);
+
+    // then
+    List<S3Object> staging = s3.listObjects(STAGING_BUCKET, null).contents();
+    assertEquals(1, staging.size());
+    assertEquals(key, staging.get(0).key());
+
+    List<S3Object> docs = s3.listObjects(DOCUMENTS_BUCKET, null).contents();
+    assertEquals(0, docs.size());
+
+    assertEquals(0, dbHelper.getDocumentItemCount(DOCUMENTS_TABLE));
+  }
+
+  /**
+   * Add Webhook.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  void testAddWebhook01() throws Exception {
+    // given
+    Map<String, Object> map = loadFileAsMap(this, "/objectcreate-event5.json");
+
+    String key = "92779fb5-ee0e-4c72-85e9-84ad11a8b73c.fkb64";
+    String content = """
+        {
+            "path": "webhooks/20292ffc-9d4f-46e8-b65d-aaf32501e384",
+            "TimeToLive": "",
+            "documentId": "92779fb5-ee0e-4c72-85e9-84ad11a8b73c",
+            "contentType": "text/plain",
+            "userId": "webhook/paypal",
+            "content": "{\\"name\\":\\"John Smith\\"}"
+        }""";
+
+    s3.putObject(STAGING_BUCKET, key, content.getBytes(UTF_8), null, Map.of());
+
+    // when
+    handleRequest(map);
+
+    // then
+    List<S3Object> staging = s3.listObjects(STAGING_BUCKET, null).contents();
+    assertEquals(0, staging.size());
+
+    List<S3Object> docs = s3.listObjects(DOCUMENTS_BUCKET, null).contents();
+    assertEquals(1, docs.size());
+
+    assertNotNull(service.findDocument(null, "92779fb5-ee0e-4c72-85e9-84ad11a8b73c"));
   }
 
   /**
@@ -802,7 +866,7 @@ public class StagingS3CreateTest implements DbKeys {
       processFkB64File(siteId, item, null);
     }
 
-    assertTrue(this.logger.containsString("Skipping " + item.getPath() + " no content"));
+    assertTrue(logger.containsString("Skipping " + item.getPath() + " no content"));
   }
 
   /**
@@ -945,7 +1009,7 @@ public class StagingS3CreateTest implements DbKeys {
     DynamicDocumentItem ditem = new DynamicDocumentItem(data);
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
-      this.logger.reset();
+      logger.getMessages().clear();
 
       String key = createDatabaseKey(siteId, "documentId" + FORMKIQ_B64_EXT);
 
@@ -960,7 +1024,7 @@ public class StagingS3CreateTest implements DbKeys {
       // then
       String documentId = findDocumentIdFromLogger(siteId);
       assertEquals(documentId, UUID.fromString(documentId).toString());
-      assertTrue(this.logger.containsString("Removing " + key + " from bucket example-bucket."));
+      assertTrue(logger.containsString("Removing " + key + " from bucket example-bucket."));
 
       assertFalse(s3.getObjectMetadata(STAGING_BUCKET, documentId, null).isObjectExists());
 
@@ -1010,7 +1074,7 @@ public class StagingS3CreateTest implements DbKeys {
     DynamicDocumentItem ditem = new DynamicDocumentItem(data);
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
-      this.logger.reset();
+      logger.getMessages().clear();
 
       String key = createDatabaseKey(siteId, "documentId" + FORMKIQ_B64_EXT);
 
@@ -1025,7 +1089,7 @@ public class StagingS3CreateTest implements DbKeys {
       // then
       String documentId = findDocumentIdFromLogger(siteId);
       assertEquals(documentId, UUID.fromString(documentId).toString());
-      assertTrue(this.logger.containsString("Removing " + key + " from bucket example-bucket."));
+      assertTrue(logger.containsString("Removing " + key + " from bucket example-bucket."));
 
       assertFalse(s3.getObjectMetadata(STAGING_BUCKET, documentId, null).isObjectExists());
 
@@ -1073,7 +1137,7 @@ public class StagingS3CreateTest implements DbKeys {
     DynamicDocumentItem ditem = new DynamicDocumentItem(data);
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
-      this.logger.reset();
+      logger.getMessages().clear();
 
       String key = createDatabaseKey(siteId, "documentId" + FORMKIQ_B64_EXT);
 
@@ -1132,7 +1196,7 @@ public class StagingS3CreateTest implements DbKeys {
     data.put("content", "dGhpcyBpcyBhIHRlc3Q=");
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
-      this.logger.reset();
+      logger.getMessages().clear();
 
       data.put("actions",
           Arrays.asList(
@@ -1211,7 +1275,7 @@ public class StagingS3CreateTest implements DbKeys {
     DynamicDocumentItem ditem = new DynamicDocumentItem(data);
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
-      this.logger.reset();
+      logger.getMessages().clear();
 
       String key = createDatabaseKey(siteId, path + FORMKIQ_B64_EXT);
       if (siteId == null) {
@@ -1510,7 +1574,6 @@ public class StagingS3CreateTest implements DbKeys {
    *
    * @throws IOException IOException
    */
-  @SuppressWarnings("unchecked")
   @Test
   @Timeout(value = TEST_TIMEOUT)
   void testFkB64Extension19() throws IOException {
@@ -1674,7 +1737,7 @@ public class StagingS3CreateTest implements DbKeys {
     final String key = "tempfiles/665f0228-4fbc-4511-912b-6cb6f566e1c0.zip";
     this.handleRequest(map);
 
-    assertTrue(this.logger.containsString(String.format("skipping event for key %s", key)));
+    assertTrue(logger.containsString(String.format("skipping event for key %s", key)));
 
     verifySqsMessages();
   }
@@ -1691,13 +1754,13 @@ public class StagingS3CreateTest implements DbKeys {
     final Map<String, Object> map = loadFileAsMap(this, "/objectunknown-event1.json");
 
     // when
-    Void result = handler.handleRequest(map, this.context);
+    Void result = handler.handleRequest(map, null);
 
     // then
     assertNull(result);
 
-    assertTrue(this.logger.containsString("handling 1 record(s)."));
-    assertTrue(this.logger.containsString("skipping event ObjectUnknwn:Delete"));
+    assertTrue(logger.containsString("handling 1 record(s)."));
+    assertTrue(logger.containsString("skipping event ObjectUnknwn:Delete"));
 
     verifySqsMessages();
   }
@@ -1752,15 +1815,5 @@ public class StagingS3CreateTest implements DbKeys {
 
     assertEquals(0, create.size());
     assertEquals(0, delete.size());
-
-    List<Message> list = new ArrayList<>(create);
-    list.addAll(delete);
-
-    @SuppressWarnings("unchecked")
-    List<Map<String, Object>> maps =
-        list.stream().map(m -> (Map<String, Object>) GSON.fromJson(m.body(), Map.class)).toList();
-
-    maps.stream().map(m -> GSON.fromJson(m.get("Message").toString(), DocumentEvent.class))
-        .collect(Collectors.toList());
   }
 }

@@ -23,6 +23,9 @@
  */
 package com.formkiq.aws.s3;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
 /**
  * 
  * Configuration Options for Presigned Get Url.
@@ -71,7 +74,9 @@ public class PresignGetUrlConfig {
    */
   public PresignGetUrlConfig contentDispositionByPath(final String path, final boolean inline) {
     String s = inline ? "inline" : "attachment";
-    this.contentDisposition = path != null ? String.format("%s; filename=\"%s\"", s, path) : null;
+    String encodedPath = URLEncoder.encode(path, StandardCharsets.UTF_8);
+    this.contentDisposition =
+        path != null ? String.format("%s; filename=\"%s\"", s, encodedPath) : null;
     return this;
   }
 

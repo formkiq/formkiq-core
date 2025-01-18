@@ -158,7 +158,7 @@ public class WebhooksServiceImplTest {
         this.service.deleteWebhook(siteId, id);
 
         // then
-        assertEquals(0, this.service.findWebhooks(siteId).size());
+        assertEquals(0, this.service.findWebhooks(siteId, null, null).getResults().size());
       }
     }
   }
@@ -194,7 +194,7 @@ public class WebhooksServiceImplTest {
         this.service.saveWebhook(siteId, "abc", "joe", null, "true");
 
         // when
-        List<DynamicObject> list = this.service.findWebhooks(siteId);
+        List<DynamicObject> list = this.service.findWebhooks(siteId, null, null).getResults();
 
         // then
         assertEquals(2, list.size());
@@ -211,7 +211,7 @@ public class WebhooksServiceImplTest {
         this.service.deleteWebhook(siteId, list.get(0).getString("documentId"));
 
         // then
-        assertEquals(1, this.service.findWebhooks(siteId).size());
+        assertEquals(1, this.service.findWebhooks(siteId, null, null).getResults().size());
       }
     }
   }
@@ -226,7 +226,7 @@ public class WebhooksServiceImplTest {
       for (String siteId : Arrays.asList(null, ID.uuid())) {
 
         // when
-        List<DynamicObject> list = this.service.findWebhooks(siteId);
+        List<DynamicObject> list = this.service.findWebhooks(siteId, null, null).getResults();
 
         // then
         assertEquals(0, list.size());
