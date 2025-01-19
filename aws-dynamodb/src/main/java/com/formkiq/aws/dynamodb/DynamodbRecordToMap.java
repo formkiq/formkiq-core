@@ -52,7 +52,11 @@ public class DynamodbRecordToMap implements Function<DynamodbRecord<?>, Map<Stri
         val = e.getValue().s();
       }
 
-      m.put(e.getKey(), val);
+      if ("inserteddate".equals(e.getKey())) {
+        m.put("insertedDate", val);
+      } else {
+        m.put(e.getKey(), val);
+      }
     }
 
     return m;

@@ -33,12 +33,12 @@ import java.net.URISyntaxException;
 import java.util.Arrays;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.model.DocumentSyncRecord;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.PaginationResults;
-import com.formkiq.aws.dynamodb.model.DocumentSync;
 import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
 import com.formkiq.aws.dynamodb.model.DocumentSyncType;
 import com.formkiq.testutils.aws.DynamoDbExtension;
@@ -82,7 +82,8 @@ public class DocumentSyncServiceDynamoDbTest {
           DocumentSyncType.METADATA, userId, MESSAGE_ADDED_METADATA);
 
       // then
-      PaginationResults<DocumentSync> results = syncService.getSyncs(siteId, documentId, null, 1);
+      PaginationResults<DocumentSyncRecord> results =
+          syncService.getSyncs(siteId, documentId, null, 1);
       assertEquals(1, results.getResults().size());
 
       assertEquals(documentId, results.getResults().get(0).getDocumentId());
@@ -118,7 +119,8 @@ public class DocumentSyncServiceDynamoDbTest {
           DocumentSyncType.METADATA, userId, null);
 
       // then
-      PaginationResults<DocumentSync> results = syncService.getSyncs(siteId, documentId, null, 1);
+      PaginationResults<DocumentSyncRecord> results =
+          syncService.getSyncs(siteId, documentId, null, 1);
       assertEquals(1, results.getResults().size());
 
       assertEquals(documentId, results.getResults().get(0).getDocumentId());

@@ -33,6 +33,10 @@ import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.model.DocumentSyncRecord;
+import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
+import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
+import com.formkiq.aws.dynamodb.model.DocumentSyncType;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
@@ -62,6 +66,8 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.module.typesense.TypeSenseService;
 import com.formkiq.module.typesense.TypeSenseServiceImpl;
+import com.formkiq.stacks.dynamodb.DocumentSyncService;
+import com.formkiq.stacks.dynamodb.DocumentSyncServiceDynamoDb;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.config.ConfigServiceDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
@@ -135,9 +141,11 @@ import java.util.concurrent.TimeUnit;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
+import static com.formkiq.stacks.dynamodb.DocumentSyncService.MESSAGE_ADDED_METADATA;
 import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFileAsMap;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_VERSION_TABLE;
+import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENT_SYNCS_TABLE;
 import static com.formkiq.testutils.aws.TestServices.AWS_REGION;
 import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
 import static com.formkiq.testutils.aws.TypesenseExtension.API_KEY;
@@ -193,6 +201,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
   private static ConfigService configService;
   /** {@link DocumentService}. */
   private static DocumentService documentService;
+  /** {@link DocumentService}. */
+  private static DocumentSyncService documentSyncService;
   /** {@link DocumentSearchService}. */
   private static DocumentSearchService documentSearchService;
   /** {@link ClientAndServer}. */
@@ -239,12 +249,14 @@ public class DocumentActionsProcessorTest implements DbKeys {
     DynamoDbService db = new DynamoDbServiceImpl(dbBuilder, DOCUMENTS_TABLE);
     DocumentVersionService versionService = new DocumentVersionServiceNoVersioning();
 
-    documentService = new DocumentServiceImpl(dbBuilder, DOCUMENTS_TABLE, versionService);
+    documentService =
+        new DocumentServiceImpl(dbBuilder, DOCUMENTS_TABLE, DOCUMENT_SYNCS_TABLE, versionService);
     actionsService = new ActionsServiceDynamoDb(dbBuilder, DOCUMENTS_TABLE);
     mappingService = new MappingServiceDynamodb(db);
     attributeService = new AttributeServiceDynamodb(db);
     documentSearchService =
         new DocumentSearchServiceImpl(dbBuilder, documentService, DOCUMENTS_TABLE);
+    documentSyncService = new DocumentSyncServiceDynamoDb(dbBuilder, DOCUMENT_SYNCS_TABLE);
     createMockServer();
 
     s3Service = new S3Service(TestServices.getS3Connection(null));
@@ -372,6 +384,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     Map<String, String> env = new HashMap<>();
     env.put("AWS_REGION", AWS_REGION.toString());
     env.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
+    env.put("DOCUMENT_SYNC_TABLE", DOCUMENT_SYNCS_TABLE);
     env.put("DOCUMENT_VERSIONS_TABLE", DOCUMENTS_VERSION_TABLE);
     env.put("APP_ENVIRONMENT", APP_ENVIRONMENT);
     env.put("DOCUMENTS_S3_BUCKET", BUCKET_NAME);
@@ -1487,6 +1500,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       // then
       assertEquals(ActionStatus.IN_QUEUE,
           actionsService.getActions(siteId, documentId).get(0).status());
+      assertSyncsCount(siteId, documentId, 0);
     }
   }
 
@@ -1529,6 +1543,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
                 MappingAttributeSourceType.CONTENT, null, null, null);
         MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
+        // when
         processIdpRequest(siteId, documentId, "text/plain", mappingRecord);
 
         // then
@@ -1546,8 +1561,31 @@ public class DocumentActionsProcessorTest implements DbKeys {
         DocumentAttributeRecord record = results.get(0);
         assertEquals("invoice", record.getKey());
         assertEquals("6200041751", record.getStringValue());
+
+        List<DocumentSyncRecord> syncs = assertSyncsCount(siteId, documentId, 2);
+        assertSyncEquals(syncs.get(0), DocumentSyncType.ATTRIBUTE, "updated Document Attribute");
+        assertSyncEquals(syncs.get(1), DocumentSyncType.METADATA, MESSAGE_ADDED_METADATA);
       }
     }
+  }
+
+  private void assertSyncEquals(final DocumentSyncRecord sync, final DocumentSyncType syncType,
+      final String message) {
+    assertEquals(DocumentSyncServiceType.EVENTBRIDGE, sync.getService());
+    assertNull(sync.getSyncDate());
+    assertNotNull(sync.getInsertedDate());
+    assertEquals(syncType, sync.getType());
+    assertEquals(message, sync.getMessage());
+    assertEquals("System", sync.getUserId());
+    assertEquals(DocumentSyncStatus.PENDING, sync.getStatus());
+  }
+
+  private List<DocumentSyncRecord> assertSyncsCount(final String siteId, final String documentId,
+      final int expected) {
+    List<DocumentSyncRecord> syncs =
+        notNull(documentSyncService.getSyncs(siteId, documentId, null, 2).getResults());
+    assertEquals(expected, syncs.size());
+    return syncs;
   }
 
   /**
@@ -1588,6 +1626,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
         DocumentAttributeRecord record = results.get(0);
         assertEquals("invoice", record.getKey());
         assertEquals("6.200041751E9", record.getNumberValue().toString());
+
+        List<DocumentSyncRecord> syncs = assertSyncsCount(siteId, documentId, 2);
+        assertSyncEquals(syncs.get(0), DocumentSyncType.ATTRIBUTE, "updated Document Attribute");
+        assertSyncEquals(syncs.get(1), DocumentSyncType.METADATA, MESSAGE_ADDED_METADATA);
       }
     }
   }
@@ -1627,6 +1669,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
         List<DocumentAttributeRecord> results =
             documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
         assertEquals(0, results.size());
+
+        List<DocumentSyncRecord> syncs = assertSyncsCount(siteId, documentId, 1);
+        assertSyncEquals(syncs.get(0), DocumentSyncType.METADATA, MESSAGE_ADDED_METADATA);
       }
     }
   }
@@ -1717,6 +1762,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
         record = results.get(1);
         assertEquals("invoice", record.getKey());
         assertEquals("abc", record.getStringValue());
+
+        List<DocumentSyncRecord> syncs = assertSyncsCount(siteId, documentId, 2);
+        assertSyncEquals(syncs.get(0), DocumentSyncType.ATTRIBUTE, "updated Document Attribute");
+        assertSyncEquals(syncs.get(1), DocumentSyncType.METADATA, MESSAGE_ADDED_METADATA);
       }
     }
   }
@@ -2279,6 +2328,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
       if (siteId != null) {
         assertEquals(siteId, lastRequest.getFirstQueryStringParameter("siteId"));
       }
+
+      List<DocumentSyncRecord> syncs = assertSyncsCount(siteId, documentId, 1);
+      assertSyncEquals(syncs.get(0), DocumentSyncType.METADATA, MESSAGE_ADDED_METADATA);
     }
   }
 

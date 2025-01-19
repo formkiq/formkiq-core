@@ -27,6 +27,7 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
+import static com.formkiq.aws.dynamodb.model.DocumentSyncServiceType.EVENTBRIDGE;
 import static com.formkiq.aws.dynamodb.model.DocumentSyncServiceType.FORMKIQ_CLI;
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
 import static com.formkiq.stacks.lambda.s3.StagingS3Create.FORMKIQ_B64_EXT;
@@ -67,6 +68,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.model.DocumentSyncRecord;
 import com.formkiq.module.lambdaservices.logger.LoggerRecorder;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -85,7 +87,6 @@ import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentMetadata;
-import com.formkiq.aws.dynamodb.model.DocumentSync;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
 import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
 import com.formkiq.aws.dynamodb.model.DocumentSyncType;
@@ -1777,10 +1778,12 @@ public class StagingS3CreateTest implements DbKeys {
 
   private void verifyCliSyncs(final String siteId, final String documentId) {
     int i = 0;
-    PaginationResults<DocumentSync> syncs =
+    PaginationResults<DocumentSyncRecord> syncs =
         syncService.getSyncs(siteId, documentId, null, MAX_RESULTS);
-    List<DocumentSync> results = syncs.getResults();
-    assertEquals(2, results.size());
+
+    final int expected = 4;
+    List<DocumentSyncRecord> results = syncs.getResults();
+    assertEquals(expected, results.size());
 
     assertEquals(documentId, results.get(i).getDocumentId());
     assertEquals(FORMKIQ_CLI, results.get(i).getService());
@@ -1790,11 +1793,25 @@ public class StagingS3CreateTest implements DbKeys {
     assertNotNull(results.get(i++).getSyncDate());
 
     assertEquals(documentId, results.get(i).getDocumentId());
+    assertEquals(EVENTBRIDGE, results.get(i).getService());
+    assertEquals(DocumentSyncStatus.PENDING, results.get(i).getStatus());
+    assertEquals(DocumentSyncType.METADATA, results.get(i).getType());
+    assertEquals("updated Document Metadata", results.get(i).getMessage());
+    assertNull(results.get(i++).getSyncDate());
+
+    assertEquals(documentId, results.get(i).getDocumentId());
     assertEquals(FORMKIQ_CLI, results.get(i).getService());
     assertEquals(DocumentSyncStatus.COMPLETE, results.get(i).getStatus());
     assertEquals(DocumentSyncType.CONTENT, results.get(i).getType());
     assertEquals("added Document Content", results.get(i).getMessage());
-    assertNotNull(results.get(i).getSyncDate());
+    assertNotNull(results.get(i++).getSyncDate());
+
+    assertEquals(documentId, results.get(i).getDocumentId());
+    assertEquals(EVENTBRIDGE, results.get(i).getService());
+    assertEquals(DocumentSyncStatus.PENDING, results.get(i).getStatus());
+    assertEquals(DocumentSyncType.METADATA, results.get(i).getType());
+    assertEquals("added Document Metadata", results.get(i).getMessage());
+    assertNull(results.get(i).getSyncDate());
   }
 
   private void verifyS3Metadata(final String siteId, final DocumentItem item) {

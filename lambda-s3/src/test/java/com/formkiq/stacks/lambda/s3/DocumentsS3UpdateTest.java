@@ -34,6 +34,7 @@ import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFile;
 import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFileAsMap;
 import static com.formkiq.testutils.aws.DynamoDbExtension.CACHE_TABLE;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
+import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENT_SYNCS_TABLE;
 import static com.formkiq.testutils.aws.TestServices.AWS_REGION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -245,12 +246,13 @@ public class DocumentsS3UpdateTest implements DbKeys {
       schema.createCacheTable(CACHE_TABLE);
     }
 
-    service = new DocumentServiceImpl(dbBuilder, DOCUMENTS_TABLE,
+    service = new DocumentServiceImpl(dbBuilder, DOCUMENTS_TABLE, DOCUMENT_SYNCS_TABLE,
         new DocumentVersionServiceNoVersioning());
     actionsService = new ActionsServiceDynamoDb(dbBuilder, DOCUMENTS_TABLE);
 
     Map<String, String> map = new HashMap<>();
     map.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
+    map.put("DOCUMENT_SYNC_TABLE", DOCUMENT_SYNCS_TABLE);
     map.put("CACHE_TABLE", CACHE_TABLE);
     map.put("SNS_DOCUMENT_EVENT", snsDocumentEvent);
     map.put("AWS_REGION", AWS_REGION.id());
@@ -381,9 +383,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
     dbHelper.truncateTable(DOCUMENTS_TABLE);
     service.setLastShortDate(null);
-
-    this.context = new LambdaContextRecorder();
-    this.logger = (LambdaLoggerRecorder) this.context.getLogger();
   }
 
   private Date createDate2DaysAgo() {
@@ -471,8 +470,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
     try {
       for (String siteId : Arrays.asList(null, ID.uuid())) {
         // given
-        this.logger.reset();
-
         String key = createDatabaseKey(siteId, BUCKET_KEY);
         final Map<String, Object> map =
             loadFileAsMap(this, "/objectcreate-event1.json", BUCKET_KEY, key);
@@ -532,8 +529,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
     try {
       for (String siteId : Arrays.asList(null, ID.uuid())) {
         // given
-        this.logger.reset();
-
         String key = createDatabaseKey(siteId, BUCKET_KEY);
         final Map<String, Object> map =
             loadFileAsMap(this, "/objectupdate-event1.json", BUCKET_KEY, key);
@@ -637,8 +632,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
     try {
       for (String siteId : Arrays.asList(null, ID.uuid())) {
         // given
-        this.logger.reset();
-
         String key = createDatabaseKey(siteId, BUCKET_KEY);
         final Map<String, Object> map =
             loadFileAsMap(this, "/objectremove-event1.json", BUCKET_KEY, key);
@@ -681,8 +674,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
     try {
       for (String siteId : Arrays.asList(null, ID.uuid())) {
         // given
-        this.logger.reset();
-
         String key = createDatabaseKey(siteId, documentId);
         final Map<String, Object> map =
             loadFileAsMap(this, "/objectcreate-event1.json", BUCKET_KEY, key);
@@ -800,8 +791,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
     try {
       for (String siteId : Arrays.asList(null, ID.uuid())) {
         // given
-        this.logger.reset();
-
         String key = createDatabaseKey(siteId, BUCKET_KEY);
         final Map<String, Object> map =
             loadFileAsMap(this, "/objectcreate-event1.json", BUCKET_KEY, key);
@@ -840,7 +829,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
     try {
       for (String siteId : Arrays.asList(null, ID.uuid())) {
-        this.logger.reset();
 
         String key = createDatabaseKey(siteId, BUCKET_KEY);
         final Map<String, Object> map =
@@ -882,7 +870,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
     try {
       for (String siteId : Arrays.asList(null, ID.uuid())) {
-        this.logger.reset();
 
         String key = createDatabaseKey(siteId, BUCKET_KEY);
         final Map<String, Object> map =
@@ -924,7 +911,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
     try {
       for (String siteId : Arrays.asList(null, ID.uuid())) {
-        this.logger.reset();
 
         String key = createDatabaseKey(siteId, BUCKET_KEY);
         final Map<String, Object> map =

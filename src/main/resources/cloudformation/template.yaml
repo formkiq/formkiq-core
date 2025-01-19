@@ -129,71 +129,6 @@ Parameters:
       The level of logging for the AWS Platform System logs. Only used when LogFormat is JSON
     Default: "INFO"
     AllowedValues: ["DEBUG", "INFO", "WARN"]
-
-Mappings: 
-  RegionMap: 
-    us-east-2:
-      PARTITION: "aws"
-    us-east-1:
-      PARTITION: "aws"
-    us-west-1:
-      PARTITION: "aws"
-    us-west-2:
-      PARTITION: "aws"
-    af-south-1:
-      PARTITION: "aws"
-    ap-east-1:
-      PARTITION: "aws"
-    ap-south-2:
-      PARTITION: "aws"
-    ap-southeast-3:
-      PARTITION: "aws"
-    ap-southeast-4:
-      PARTITION: "aws"
-    ap-south-1:
-      PARTITION: "aws"
-    ap-northeast-3:
-      PARTITION: "aws"
-    ap-northeast-2:
-      PARTITION: "aws"
-    ap-southeast-1:
-      PARTITION: "aws"
-    ap-southeast-2:
-      PARTITION: "aws"
-    ap-northeast-1:
-      PARTITION: "aws"
-    ca-central-1:
-      PARTITION: "aws"
-    ca-west-1:
-      PARTITION: "aws"
-    eu-central-1:
-      PARTITION: "aws"
-    eu-west-1:
-      PARTITION: "aws"
-    eu-west-2:
-      PARTITION: "aws"
-    eu-south-1:
-      PARTITION: "aws"
-    eu-west-3:
-      PARTITION: "aws"
-    eu-south-2:
-      PARTITION: "aws"
-    eu-north-1:
-      PARTITION: "aws"
-    eu-central-2:
-      PARTITION: "aws"
-    il-central-1:
-      PARTITION: "aws"
-    me-south-1:
-      PARTITION: "aws"
-    me-central-1:
-      PARTITION: "aws"
-    sa-east-1:
-      PARTITION: "aws"
-    us-gov-east-1:
-      PARTITION: "aws-us-gov"
-    us-gov-west-1:
-      PARTITION: "aws-us-gov"
       
 Conditions:
 
@@ -291,11 +226,6 @@ Resources:
     Properties:
       Location: console/template-install.yaml
       Parameters:
-        Partition:
-          Fn::FindInMap:
-          - RegionMap
-          - Ref: "AWS::Region"
-          - PARTITION
         LogFormat:
           Ref: LogFormat
         LogLevelApplication:
@@ -533,6 +463,10 @@ Resources:
       Parameters:
         AppEnvironment: 
           Ref: AppEnvironment
+        FormKiQType:
+          Fn::GetAtt:
+            - Config
+            - Outputs.FormKiQType
         LogRetentionInDays:
           Ref: LogRetentionInDays
         LogFormat:
@@ -541,11 +475,6 @@ Resources:
           Ref: LogLevelApplication
         LogLevelSystem:
           Ref: LogLevelSystem
-        Partition:
-          Fn::FindInMap:
-          - RegionMap
-          - Ref: "AWS::Region"
-          - PARTITION
         CognitoUserPoolId: 
           Fn::GetAtt: 
           - Cognito

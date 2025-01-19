@@ -29,7 +29,7 @@ Parameters:
     Type: String
 
   OcrQueueArn:
-    Description: The partition in which the resource is located. A partition is a group of AWS Regions
+    Description: The Ocr Queue Arn
     Type: String
 
   LogRetentionInDays:

@@ -51,8 +51,10 @@ public class DocumentSyncRecord implements DynamodbRecord<DocumentSyncRecord> {
   private final SimpleDateFormat df = DateUtil.getIsoDateFormatter();
   /** Document Id. */
   private String documentId;
-  /** Record inserted date. */
+  /** Record Sync date. */
   private Date syncDate;
+  /** Record inserted date. */
+  private Date insertedDate;
   /** {@link DocumentSyncServiceType}. */
   private DocumentSyncServiceType service;
   /** {@link DocumentSyncStatus}. */
@@ -68,6 +70,26 @@ public class DocumentSyncRecord implements DynamodbRecord<DocumentSyncRecord> {
    * constructor.
    */
   public DocumentSyncRecord() {}
+
+  /**
+   * Get Inserted Date.
+   * 
+   * @return Date
+   */
+  public Date getInsertedDate() {
+    return this.insertedDate;
+  }
+
+  /**
+   * Set Inserted Date.
+   * 
+   * @param date {@link Date}
+   * @return DocumentSyncRecord
+   */
+  public DocumentSyncRecord setInsertedDate(final Date date) {
+    this.insertedDate = date;
+    return this;
+  }
 
   /**
    * Get Document Id.
@@ -219,7 +241,12 @@ public class DocumentSyncRecord implements DynamodbRecord<DocumentSyncRecord> {
 
     map.put("documentId", fromS(this.documentId));
     map.put("service", fromS(this.service.name()));
-    map.put("syncDate", AttributeValue.fromS(this.df.format(this.syncDate)));
+
+    if (this.syncDate != null) {
+      map.put("syncDate", AttributeValue.fromS(this.df.format(this.syncDate)));
+    }
+
+    map.put("inserteddate", AttributeValue.fromS(this.df.format(this.insertedDate)));
     map.put("userId", fromS(this.userId));
     map.put("status", fromS(this.status.name()));
     map.put("type", fromS(this.type.name()));
@@ -243,15 +270,27 @@ public class DocumentSyncRecord implements DynamodbRecord<DocumentSyncRecord> {
           .setType(DocumentSyncType.valueOf(ss(attrs, "type"))).setUserId(ss(attrs, "userId"))
           .setMessage(ss(attrs, "message"));
 
-      String date = ss(attrs, "syncDate");
-      try {
-        record = record.setSyncDate(this.df.parse(date));
-      } catch (ParseException e) {
-        throw new IllegalArgumentException("invalid syncDate '" + date + "'");
-      }
+      record = record.setSyncDate(toDate(attrs, "syncDate"));
+      record = record.setInsertedDate(toDate(attrs, "inserteddate"));
     }
 
     return record;
+  }
+
+  private Date toDate(final Map<String, AttributeValue> attrs, final String key) {
+
+    Date returnDate = null;
+    String date = ss(attrs, key);
+
+    if (!isEmpty(date)) {
+      try {
+        returnDate = this.df.parse(date);
+      } catch (ParseException e) {
+        // ignore
+      }
+    }
+
+    return returnDate;
   }
 
   @Override
@@ -274,7 +313,8 @@ public class DocumentSyncRecord implements DynamodbRecord<DocumentSyncRecord> {
 
   @Override
   public String sk() {
-    return SK_SYNCS + getInIso8601Format(this.syncDate);
+    return SK_SYNCS
+        + getInIso8601Format(this.insertedDate != null ? this.insertedDate : this.syncDate);
   }
 
   @Override

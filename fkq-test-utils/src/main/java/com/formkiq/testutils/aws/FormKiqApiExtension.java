@@ -155,7 +155,7 @@ public class FormKiqApiExtension
     map.put("STAGE_DOCUMENTS_S3_BUCKET", STAGE_BUCKET_NAME);
     map.put("OCR_S3_BUCKET", OCR_BUCKET_NAME);
     map.put("AWS_REGION", AWS_REGION.toString());
-    map.put("DEBUG", "false");
+    map.put("LOG_LEVEL", "info");
     map.put("DISTRIBUTION_BUCKET", "formkiq-distribution-us-east-pro");
     map.put("FORMKIQ_TYPE", "core");
     map.put("FORMKIQ_VERSION", "1.1");

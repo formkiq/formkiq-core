@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.dynamodb;
 
+import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.AttributeValueToMap;
 import com.formkiq.aws.dynamodb.BatchGetConfig;
 import com.formkiq.aws.dynamodb.DbKeys;
@@ -30,6 +31,7 @@ import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
+import com.formkiq.aws.dynamodb.DynamodbRecord;
 import com.formkiq.aws.dynamodb.DynamodbRecordTx;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResult;
@@ -40,6 +42,10 @@ import com.formkiq.aws.dynamodb.QueryResponseToPagination;
 import com.formkiq.aws.dynamodb.ReadRequestBuilder;
 import com.formkiq.aws.dynamodb.WriteRequestBuilder;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.model.DocumentSyncRecord;
+import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
+import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
+import com.formkiq.aws.dynamodb.model.DocumentSyncType;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
@@ -117,6 +123,8 @@ import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static com.formkiq.aws.dynamodb.objects.Strings.isUuid;
 import static com.formkiq.aws.dynamodb.objects.Strings.removeQuotes;
+import static com.formkiq.stacks.dynamodb.DocumentSyncService.MESSAGE_ADDED_METADATA;
+import static com.formkiq.stacks.dynamodb.DocumentSyncService.MESSAGE_UPDATED_METADATA;
 import static com.formkiq.stacks.dynamodb.attributes.AttributeRecord.ATTR;
 import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.fromS;
 
@@ -154,6 +162,8 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   private final DateTimeFormatter yyyymmddFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
   /** {@link DocumentServiceInterceptor}. */
   private final DocumentServiceInterceptor interceptor;
+  /** Document Sync Table. */
+  private final String documentSyncsTable;
   /** Last Short Date. */
   private String lastShortDate = null;
 
@@ -162,11 +172,13 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
    *
    * @param connection {@link DynamoDbConnectionBuilder}
    * @param documentsTable {@link String}
+   * @param syncsTable {@link String}
    * @param documentVersionsService {@link DocumentVersionService}
    */
   public DocumentServiceImpl(final DynamoDbConnectionBuilder connection,
-      final String documentsTable, final DocumentVersionService documentVersionsService) {
-    this(connection, documentsTable, documentVersionsService, null);
+      final String documentsTable, final String syncsTable,
+      final DocumentVersionService documentVersionsService) {
+    this(connection, documentsTable, syncsTable, documentVersionsService, null);
   }
 
   /**
@@ -174,17 +186,24 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
    * 
    * @param connection {@link DynamoDbConnectionBuilder}
    * @param documentsTable {@link String}
+   * @param syncsTable {@link String}
    * @param documentVersionsService {@link DocumentVersionService}
    * @param documentServiceInterceptor {@link DocumentServiceInterceptor}
    */
   public DocumentServiceImpl(final DynamoDbConnectionBuilder connection,
-      final String documentsTable, final DocumentVersionService documentVersionsService,
+      final String documentsTable, final String syncsTable,
+      final DocumentVersionService documentVersionsService,
       final DocumentServiceInterceptor documentServiceInterceptor) {
 
     if (documentsTable == null) {
       throw new IllegalArgumentException("'documentsTable' is null");
     }
 
+    if (syncsTable == null) {
+      throw new IllegalArgumentException("'syncsTable' is null");
+    }
+
+    this.documentSyncsTable = syncsTable;
     this.interceptor = documentServiceInterceptor;
     this.indexWriter = new GlobalIndexService(connection, documentsTable);
     this.versionsService = documentVersionsService;
@@ -1825,13 +1844,17 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     WriteRequestBuilder writeBuilder =
         new WriteRequestBuilder().appends(this.documentTableName, tagValues);
 
+    Date now = new Date();
     DynamodbRecordTx tx = getSaveDocumentAttributesTx(siteId, document.getDocumentId(), attributes,
-        AttributeValidation.FULL, options.getValidationAccess());
+        AttributeValidation.FULL, options.getValidationAccess(), now);
 
     boolean isPathChanged = isPathChanged(siteId, document, previous, documentValues, writeBuilder);
 
     writeBuilder.appends(this.documentTableName,
         tx.getSaves().stream().map(a -> a.getAttributes(siteId)).toList());
+
+    addDocumentSyncRecord(writeBuilder, siteId, document.getDocumentId(), documentExists,
+        tx.getSaves(), now);
 
     if (documentExists) {
       writeBuilder.append(this.documentTableName, documentValues);
@@ -1915,26 +1938,47 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       final Collection<DocumentAttributeRecord> attributes, final AttributeValidation validation,
       final AttributeValidationAccess validationAccess) throws ValidationException {
 
-    DynamodbRecordTx tx =
-        getSaveDocumentAttributesTx(siteId, documentId, attributes, validation, validationAccess);
+    Date now = new Date();
+    DynamodbRecordTx tx = getSaveDocumentAttributesTx(siteId, documentId, attributes, validation,
+        validationAccess, now);
 
-    saveDocumentAttributes(siteId, tx);
+    saveDocumentAttributes(siteId, documentId, tx);
   }
 
-  private void saveDocumentAttributes(final String siteId, final DynamodbRecordTx tx) {
+  private void saveDocumentAttributes(final String siteId, final String documentId,
+      final DynamodbRecordTx tx) {
 
     if (tx != null) {
-      // save document attributes
-      this.dbService.putItems(tx.getSaves().stream().map(k -> k.getAttributes(siteId)).toList());
 
-      // delete old composite keys
-      deleteDocumentAttributes(siteId, (Collection<DocumentAttributeRecord>) tx.getDeletes());
+      // Date now = new Date();
+      // String username = ApiAuthorization.getAuthorization().getUsername();
+      // DocumentSyncRecord a = new
+      // DocumentSyncRecord().setInsertedDate(now).setDocumentId(documentId)
+      // .setService(DocumentSyncServiceType.EVENTBRIDGE).setType(DocumentSyncType.ATTRIBUTE)
+      // .setStatus(DocumentSyncStatus.PENDING).setMessage("updated Document Attribute")
+      // .setUserId(username);
+
+      List<Map<String, AttributeValue>> list =
+          tx.getSaves().stream().map(k -> k.getAttributes(siteId)).toList();
+
+      WriteRequestBuilder builder = new WriteRequestBuilder();
+      builder.appends(this.documentTableName, list);
+      addDocumentSyncRecord(builder, siteId, documentId, true, tx.getSaves(), new Date());
+
+      if (builder.batchWriteItem(this.dbClient)) {
+        // save document attributes
+        // this.dbService
+        // .putItems(Stream.concat(list.stream(), Stream.of(a.getAttributes(siteId))).toList());
+
+        // delete old composite keys
+        deleteDocumentAttributes(siteId, (Collection<DocumentAttributeRecord>) tx.getDeletes());
+      }
     }
   }
 
   private DynamodbRecordTx getSaveDocumentAttributesTx(final String siteId, final String documentId,
       final Collection<DocumentAttributeRecord> allAttributes, final AttributeValidation validation,
-      final AttributeValidationAccess validationAccess) throws ValidationException {
+      final AttributeValidationAccess validationAccess, final Date now) throws ValidationException {
 
     DynamodbRecordTx tx;
 
@@ -1973,7 +2017,6 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
           Objects.concat(compositeKeysToBeDeleted, listBuilder.getCompositeKeysToBeDeleted());
 
       // reset inserted date to match
-      Date now = new Date();
       toSave.forEach(t -> t.setInsertedDate(now));
 
       tx = new DynamodbRecordTx(toSave,
@@ -1983,6 +2026,25 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     }
 
     return tx;
+  }
+
+  private void addDocumentSyncRecord(final WriteRequestBuilder writeBuilder, final String siteId,
+      final String documentId, final boolean documentExists,
+      final Collection<? extends DynamodbRecord<?>> toSave, final Date now) {
+
+    String username = ApiAuthorization.getAuthorization().getUsername();
+    DocumentSyncRecord a = new DocumentSyncRecord().setInsertedDate(now).setDocumentId(documentId)
+        .setService(DocumentSyncServiceType.EVENTBRIDGE).setType(DocumentSyncType.METADATA)
+        .setStatus(DocumentSyncStatus.PENDING)
+        .setMessage(documentExists ? MESSAGE_UPDATED_METADATA : MESSAGE_ADDED_METADATA)
+        .setUserId(username);
+
+    if (!toSave.isEmpty()) {
+      a.setType(DocumentSyncType.ATTRIBUTE);
+      a.setMessage("updated Document Attribute");
+    }
+
+    writeBuilder.appends(this.documentSyncsTable, List.of(a.getAttributes(siteId)));
   }
 
   private boolean isSet(final AttributeValidationAccess validationAccess) {

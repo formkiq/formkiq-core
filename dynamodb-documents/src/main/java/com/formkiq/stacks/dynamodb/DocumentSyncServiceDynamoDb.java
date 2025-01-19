@@ -31,7 +31,7 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
@@ -40,7 +40,6 @@ import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.PaginationToAttributeValue;
 import com.formkiq.aws.dynamodb.QueryConfig;
 import com.formkiq.aws.dynamodb.QueryResponseToPagination;
-import com.formkiq.aws.dynamodb.model.DocumentSync;
 import com.formkiq.aws.dynamodb.model.DocumentSyncRecord;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
 import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
@@ -82,10 +81,10 @@ public final class DocumentSyncServiceDynamoDb implements DocumentSyncService {
   }
 
   @Override
-  public PaginationResults<DocumentSync> getSyncs(final String siteId, final String documentId,
-      final PaginationMapToken token, final int limit) {
+  public PaginationResults<DocumentSyncRecord> getSyncs(final String siteId,
+      final String documentId, final PaginationMapToken token, final int limit) {
 
-    QueryConfig config = new QueryConfig();
+    QueryConfig config = new QueryConfig().scanIndexForward(Boolean.FALSE);
 
     String pk = getPk(siteId, documentId);
     Map<String, AttributeValue> startkey = new PaginationToAttributeValue().apply(token);
@@ -93,8 +92,8 @@ public final class DocumentSyncServiceDynamoDb implements DocumentSyncService {
     QueryResponse response = this.db.queryBeginsWith(config, AttributeValue.fromS(pk),
         AttributeValue.fromS(SK_SYNCS), startkey, limit);
 
-    List<DocumentSync> syncs = response.items().stream().map(new AttributeValueToDocumentSync())
-        .collect(Collectors.toList());
+    List<DocumentSyncRecord> syncs = response.items().stream()
+        .map(a -> new DocumentSyncRecord().getFromAttributes(siteId, a)).toList();
 
     return new PaginationResults<>(syncs, new QueryResponseToPagination().apply(response));
   }
@@ -104,9 +103,10 @@ public final class DocumentSyncServiceDynamoDb implements DocumentSyncService {
       final DocumentSyncServiceType service, final DocumentSyncStatus status,
       final DocumentSyncType type, final String userId, final String message) {
 
-    DocumentSyncRecord r =
-        new DocumentSyncRecord().setDocumentId(documentId).setService(service).setStatus(status)
-            .setType(type).setUserId(userId).setMessage(message).setSyncDate(new Date());
+    Date now = new Date();
+    DocumentSyncRecord r = new DocumentSyncRecord().setDocumentId(documentId).setService(service)
+        .setStatus(status).setType(type).setUserId(userId).setMessage(message).setInsertedDate(now)
+        .setSyncDate(now);
     this.db.putItem(r.getAttributes(siteId));
   }
 

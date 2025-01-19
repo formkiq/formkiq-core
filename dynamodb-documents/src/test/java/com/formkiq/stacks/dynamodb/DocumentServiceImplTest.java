@@ -26,6 +26,7 @@ package com.formkiq.stacks.dynamodb;
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
 import static com.formkiq.stacks.dynamodb.DocumentService.SYSTEM_DEFINED_TAGS;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
+import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENT_SYNCS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -109,7 +110,7 @@ public class DocumentServiceImplTest implements DbKeys {
   public static void beforeAll() throws Exception {
 
     DynamoDbConnectionBuilder dynamoDbConnection = DynamoDbTestServices.getDynamoDbConnection();
-    service = new DocumentServiceImpl(dynamoDbConnection, DOCUMENTS_TABLE,
+    service = new DocumentServiceImpl(dynamoDbConnection, DOCUMENTS_TABLE, DOCUMENT_SYNCS_TABLE,
         new DocumentVersionServiceNoVersioning());
     searchService = new DocumentSearchServiceImpl(dynamoDbConnection, service, DOCUMENTS_TABLE);
     folderIndexProcessor = new FolderIndexProcessorImpl(dynamoDbConnection, DOCUMENTS_TABLE);

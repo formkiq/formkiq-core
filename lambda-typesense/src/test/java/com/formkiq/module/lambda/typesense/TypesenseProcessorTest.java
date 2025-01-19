@@ -36,6 +36,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.model.DocumentSyncRecord;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,7 +45,6 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.PaginationResults;
-import com.formkiq.aws.dynamodb.model.DocumentSync;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
 import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
 import com.formkiq.aws.dynamodb.model.DocumentSyncType;
@@ -117,7 +117,7 @@ class TypesenseProcessorTest {
   }
 
   /** {@link Context}. */
-  private Context context = new LambdaContextRecorder();
+  private final Context context = new LambdaContextRecorder();
 
   /**
    * Load Request File.
@@ -128,11 +128,11 @@ class TypesenseProcessorTest {
    * @return {@link Map}
    * @throws IOException IOException
    */
-  @SuppressWarnings("unchecked")
   private Map<String, Object> loadRequest(final String name, final String original,
       final String replacement) throws IOException {
 
     try (InputStream is = getClass().getResourceAsStream(name)) {
+      assertNotNull(is);
       String s = IoUtils.toUtf8String(is);
       if (original != null) {
         s = s.replaceAll(original, replacement);
@@ -150,7 +150,6 @@ class TypesenseProcessorTest {
   @Test
   void testHandleRequest01() throws Exception {
     // given
-    String siteId = null;
     String oldDocumentId = "acd4be1b-9466-4dcd-b8b8-e5b19135b460";
     String documentId = ID.uuid();
 
@@ -160,17 +159,17 @@ class TypesenseProcessorTest {
     processor.handleRequest(map, this.context);
 
     // then
-    List<String> documents = service.searchFulltext(siteId, "karate", MAX);
+    List<String> documents = service.searchFulltext(null, "karate", MAX);
     assertEquals(1, documents.size());
     assertEquals(documentId, documents.get(0));
 
-    documents = service.searchFulltext(siteId, "test.pdf", MAX);
+    documents = service.searchFulltext(null, "test.pdf", MAX);
     assertEquals(1, documents.size());
 
-    documents = service.searchFulltext(siteId, "bleh.pdf", MAX);
+    documents = service.searchFulltext(null, "bleh.pdf", MAX);
     assertEquals(0, documents.size());
 
-    PaginationResults<DocumentSync> syncs = syncService.getSyncs(siteId, documentId, null, MAX);
+    PaginationResults<DocumentSyncRecord> syncs = syncService.getSyncs(null, documentId, null, MAX);
     assertEquals(1, syncs.getResults().size());
 
     assertEquals(documentId, syncs.getResults().get(0).getDocumentId());
@@ -186,11 +185,9 @@ class TypesenseProcessorTest {
    * 
    * @throws Exception Exception
    */
-  @SuppressWarnings("unchecked")
   @Test
   void testHandleRequest02() throws Exception {
     // given
-    String siteId = null;
     String documentId = "717a3cee-888d-47e0-83a3-a7487a588954";
     Map<String, Object> map = loadRequest("/modify.json", null, null);
 
@@ -198,12 +195,12 @@ class TypesenseProcessorTest {
     processor.handleRequest(map, this.context);
 
     // then
-    List<String> documents = service.searchFulltext(siteId, "some.pdf", MAX);
+    List<String> documents = service.searchFulltext(null, "some.pdf", MAX);
     assertEquals(1, documents.size());
     assertEquals(documentId, documents.get(0));
 
     final int expected = 4;
-    String s = service.getDocument(siteId, documentId).body();
+    String s = service.getDocument(null, documentId).body();
     Map<String, Object> data = GSON.fromJson(s, Map.class);
 
     assertEquals(expected, data.size());
@@ -212,7 +209,7 @@ class TypesenseProcessorTest {
     assertEquals("text/plain", data.get("contentType"));
     assertEquals("", data.get("metadata#"));
 
-    PaginationResults<DocumentSync> syncs = syncService.getSyncs(siteId, documentId, null, MAX);
+    PaginationResults<DocumentSyncRecord> syncs = syncService.getSyncs(null, documentId, null, MAX);
     assertEquals(1, syncs.getResults().size());
 
     assertEquals(documentId, syncs.getResults().get(0).getDocumentId());
@@ -232,7 +229,6 @@ class TypesenseProcessorTest {
   @Test
   void testHandleRequest03() throws Exception {
     // given
-    String siteId = null;
     for (int i = 0; i < 2; i++) {
       String documentId = "717a3cee-888d-47e0-83a3-a7487a588954";
       Map<String, Object> map = loadRequest("/modify.json", null, null);
@@ -241,7 +237,7 @@ class TypesenseProcessorTest {
       processor.handleRequest(map, this.context);
 
       // then
-      List<String> documents = service.searchFulltext(siteId, "some.pdf", MAX);
+      List<String> documents = service.searchFulltext(null, "some.pdf", MAX);
       assertEquals(1, documents.size());
       assertEquals(documentId, documents.get(0));
 
@@ -252,10 +248,11 @@ class TypesenseProcessorTest {
       processor.handleRequest(map, this.context);
 
       // then
-      documents = service.searchFulltext(siteId, "some.pdf", MAX);
+      documents = service.searchFulltext(null, "some.pdf", MAX);
       assertEquals(0, documents.size());
 
-      PaginationResults<DocumentSync> syncs = syncService.getSyncs(siteId, documentId, null, MAX);
+      PaginationResults<DocumentSyncRecord> syncs =
+          syncService.getSyncs(null, documentId, null, MAX);
       assertEquals(0, syncs.getResults().size());
     }
   }
@@ -283,7 +280,8 @@ class TypesenseProcessorTest {
     assertEquals(1, documents.size());
     assertEquals(documentId, documents.get(0));
 
-    PaginationResults<DocumentSync> syncs = syncService.getSyncs(siteId, documentId, null, MAX);
+    PaginationResults<DocumentSyncRecord> syncs =
+        syncService.getSyncs(siteId, documentId, null, MAX);
     assertEquals(1, syncs.getResults().size());
 
     assertEquals(documentId, syncs.getResults().get(0).getDocumentId());
@@ -321,7 +319,8 @@ class TypesenseProcessorTest {
       processor.handleRequest(map1, this.context);
 
       // then
-      PaginationResults<DocumentSync> syncs = syncService.getSyncs(siteId, documentId, null, MAX);
+      PaginationResults<DocumentSyncRecord> syncs =
+          syncService.getSyncs(siteId, documentId, null, MAX);
       assertEquals(2, syncs.getResults().size());
 
       assertEquals(documentId, syncs.getResults().get(0).getDocumentId());
@@ -350,7 +349,6 @@ class TypesenseProcessorTest {
   @Test
   void testHandleRequest06() throws Exception {
     // given
-    String siteId = null;
     String documentId = "0a5f8534-4c27-4fb3-b50f-09015dd96927";
 
     Map<String, Object> map = loadRequest("/insert_subdocument.json", null, null);
@@ -359,10 +357,10 @@ class TypesenseProcessorTest {
     processor.handleRequest(map, this.context);
 
     // then
-    List<String> documents = service.searchFulltext(siteId, documentId, MAX);
+    List<String> documents = service.searchFulltext(null, documentId, MAX);
     assertEquals(0, documents.size());
 
-    PaginationResults<DocumentSync> syncs = syncService.getSyncs(siteId, documentId, null, MAX);
+    PaginationResults<DocumentSyncRecord> syncs = syncService.getSyncs(null, documentId, null, MAX);
     assertEquals(0, syncs.getResults().size());
   }
 
@@ -441,7 +439,6 @@ class TypesenseProcessorTest {
   @Test
   void testHandleRequest09() throws Exception {
     // given
-    String siteId = null;
     String documentId = "3dbc3319-6ef4-402a-a46c-a87a7ce05a73";
 
     Map<String, Object> map = loadRequest("/insert_subdocument01.json", null, null);
@@ -450,11 +447,11 @@ class TypesenseProcessorTest {
     processor.handleRequest(map, this.context);
 
     // then
-    List<String> documents = service.searchFulltext(siteId, documentId, MAX);
+    List<String> documents = service.searchFulltext(null, documentId, MAX);
     assertEquals(1, documents.size());
     assertEquals(documentId, documents.get(0));
 
-    PaginationResults<DocumentSync> syncs = syncService.getSyncs(siteId, documentId, null, MAX);
+    PaginationResults<DocumentSyncRecord> syncs = syncService.getSyncs(null, documentId, null, MAX);
     assertEquals(1, syncs.getResults().size());
     assertEquals(documentId, syncs.getResults().get(0).getDocumentId());
     assertEquals(DocumentSyncServiceType.TYPESENSE, syncs.getResults().get(0).getService());
@@ -470,11 +467,9 @@ class TypesenseProcessorTest {
    * 
    * @throws Exception Exception
    */
-  @SuppressWarnings("unchecked")
   @Test
   void testHandleRequest10() throws Exception {
     // given
-    String siteId = null;
     String oldDocumentId = "acd4be1b-9466-4dcd-b8b8-e5b19135b460";
     String documentId = ID.uuid();
 
@@ -484,7 +479,7 @@ class TypesenseProcessorTest {
     processor.handleRequest(map, this.context);
 
     // then
-    HttpResponse<String> response = service.getDocument(siteId, documentId);
+    HttpResponse<String> response = service.getDocument(null, documentId);
     assertEquals("200", String.valueOf(response.statusCode()));
     Map<String, Object> data = GSON.fromJson(response.body(), Map.class);
     assertEquals("/somewhere/else/test.pdf", data.get("deepLinkPath"));

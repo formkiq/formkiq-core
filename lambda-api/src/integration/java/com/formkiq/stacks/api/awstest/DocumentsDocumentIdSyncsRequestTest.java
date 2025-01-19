@@ -41,12 +41,12 @@ import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.client.model.DocumentSyncService;
 import com.formkiq.client.model.DocumentSyncStatus;
 import com.formkiq.client.model.DocumentSyncType;
+import com.formkiq.client.model.GetDocumentSyncResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.invoker.ApiClient;
-import com.formkiq.client.model.GetDocumentSync;
-import com.formkiq.client.model.GetDocumentSyncResponse;
+import com.formkiq.client.model.DocumentSync;
 import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
 
 /**
@@ -58,12 +58,11 @@ public class DocumentsDocumentIdSyncsRequestTest extends AbstractAwsIntegrationT
   /** JUnit Test Timeout. */
   private static final int TEST_TIMEOUT = 60;
 
-  private List<GetDocumentSync> find(final List<GetDocumentSync> list,
-      final DocumentSyncService type) {
+  private List<DocumentSync> find(final List<DocumentSync> list, final DocumentSyncService type) {
     return list.stream().filter(s -> type.equals(s.getService())).collect(Collectors.toList());
   }
 
-  private Optional<GetDocumentSync> find(final Collection<GetDocumentSync> list,
+  private Optional<DocumentSync> find(final Collection<DocumentSync> list,
       final DocumentSyncType type) {
     return list.stream().filter(s -> type.equals(s.getType())).findFirst();
   }
@@ -101,20 +100,20 @@ public class DocumentsDocumentIdSyncsRequestTest extends AbstractAwsIntegrationT
         }
 
         // then
-        List<GetDocumentSync> list = notNull(syncs.getSyncs());
+        List<DocumentSync> list = notNull(syncs.getSyncs());
         assertFalse(list.isEmpty());
 
-        for (GetDocumentSync sync : list) {
+        for (DocumentSync sync : list) {
           assertNotNull(sync.getUserId());
           assertNotNull(sync.getSyncDate());
           assertEquals(DocumentSyncStatus.COMPLETE, sync.getStatus());
         }
 
-        List<GetDocumentSync> typesense = find(list, DocumentSyncService.TYPESENSE);
+        List<DocumentSync> typesense = find(list, DocumentSyncService.TYPESENSE);
         if (!typesense.isEmpty()) {
           assertEquals(2, typesense.size());
 
-          GetDocumentSync sync = find(typesense, DocumentSyncType.CONTENT).get();
+          DocumentSync sync = find(typesense, DocumentSyncType.CONTENT).get();
           assertEquals(DocumentSyncService.TYPESENSE, sync.getService());
           assertEquals(DocumentSyncType.CONTENT, sync.getType());
 
@@ -123,11 +122,11 @@ public class DocumentsDocumentIdSyncsRequestTest extends AbstractAwsIntegrationT
           assertEquals(DocumentSyncType.METADATA, sync.getType());
         }
 
-        List<GetDocumentSync> opensearch = find(list, DocumentSyncService.OPENSEARCH);
+        List<DocumentSync> opensearch = find(list, DocumentSyncService.OPENSEARCH);
         if (!opensearch.isEmpty()) {
           assertEquals(2, opensearch.size());
 
-          GetDocumentSync sync = find(opensearch, DocumentSyncType.CONTENT).get();
+          DocumentSync sync = find(opensearch, DocumentSyncType.CONTENT).get();
           assertEquals(DocumentSyncService.OPENSEARCH, sync.getService());
           assertEquals(DocumentSyncType.CONTENT, sync.getType());
 

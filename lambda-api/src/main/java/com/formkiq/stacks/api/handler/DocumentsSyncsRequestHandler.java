@@ -26,13 +26,15 @@ package com.formkiq.stacks.api.handler;
 import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import com.formkiq.aws.dynamodb.DynamodbRecordToMap;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
-import com.formkiq.aws.dynamodb.model.DocumentSync;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.model.DocumentSyncRecord;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -71,15 +73,17 @@ public class DocumentsSyncsRequestHandler
     verifyDocument(awsservice, siteId, documentId);
 
     DocumentSyncService sync = awsservice.getExtension(DocumentSyncService.class);
-    PaginationResults<DocumentSync> syncs = sync.getSyncs(siteId, documentId, token, limit);
+    PaginationResults<DocumentSyncRecord> syncs = sync.getSyncs(siteId, documentId, token, limit);
 
     ApiPagination current =
         createPagination(cacheService, event, pagination, syncs.getToken(), limit);
 
     syncs.getResults().forEach(s -> s.setDocumentId(null));
+    List<Map<String, Object>> list =
+        syncs.getResults().stream().map(new DynamodbRecordToMap()).toList();
 
     Map<String, Object> map = new HashMap<>();
-    map.put("syncs", syncs.getResults());
+    map.put("syncs", list);
     map.put("previous", current.getPrevious());
     map.put("next", current.hasNext() ? current.getNext() : null);
 

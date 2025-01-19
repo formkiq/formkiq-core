@@ -38,6 +38,8 @@ import java.util.List;
 import java.util.Map;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.module.lambdaservices.logger.LoggerRecorder;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamicObject;
@@ -58,6 +60,11 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
 
   /** Expected. */
   private static final int EXPECTED_3 = 3;
+
+  @BeforeEach
+  public void setup() {
+    getAwsServices().setLogger(new LoggerRecorder());
+  }
 
   /**
    * Get Document Request, Document not found.

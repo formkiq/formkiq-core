@@ -24,6 +24,7 @@
 package com.formkiq.module.actions;
 
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
+import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENT_SYNCS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -77,8 +78,8 @@ public class ActionsServiceDynamoDbTest {
     ApiAuthorization.login(new ApiAuthorization().username("System"));
     DynamoDbConnectionBuilder db = DynamoDbTestServices.getDynamoDbConnection();
     service = new ActionsServiceDynamoDb(db, DOCUMENTS_TABLE);
-    documentService =
-        new DocumentServiceImpl(db, DOCUMENTS_TABLE, new DocumentVersionServiceNoVersioning());
+    documentService = new DocumentServiceImpl(db, DOCUMENTS_TABLE, DOCUMENT_SYNCS_TABLE,
+        new DocumentVersionServiceNoVersioning());
   }
 
   /**

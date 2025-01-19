@@ -61,7 +61,7 @@ public class TestCoreRequestHandler extends AbstractCoreRequestHandler {
             .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
                 new SnsAwsServiceRegistry(), new SqsAwsServiceRegistry(),
                 new SsmAwsServiceRegistry())
-            .build().setLogger(new LoggerRecorder());
+            .build();
 
     initialize(this.serviceCache);
   }

@@ -48,6 +48,7 @@ import com.formkiq.client.model.DocumentSearchRequest;
 import com.formkiq.client.model.DocumentSearchResponse;
 import com.formkiq.client.model.DocumentSearchTag;
 import com.formkiq.client.model.DocumentSearchTags;
+import com.formkiq.client.model.DocumentSyncService;
 import com.formkiq.client.model.DocumentSyncStatus;
 import com.formkiq.client.model.GetDocumentFulltextResponse;
 import com.formkiq.client.model.GetDocumentSyncResponse;
@@ -678,8 +679,11 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
     GetDocumentSyncResponse syncResponse =
         this.documentsApi.getDocumentSyncs(documentId, null, null, null);
     assertNotNull(syncResponse.getSyncs());
-    assertEquals(1, syncResponse.getSyncs().size());
+    assertEquals(2, syncResponse.getSyncs().size());
     assertEquals(DocumentSyncStatus.COMPLETE, syncResponse.getSyncs().get(0).getStatus());
+    assertEquals(DocumentSyncService.TYPESENSE, syncResponse.getSyncs().get(0).getService());
+    assertEquals(DocumentSyncStatus.PENDING, syncResponse.getSyncs().get(1).getStatus());
+    assertEquals(DocumentSyncService.EVENTBRIDGE, syncResponse.getSyncs().get(1).getService());
 
     GetDocumentFulltextResponse getResponse = null;
     while (getResponse == null) {

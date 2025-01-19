@@ -25,6 +25,7 @@ package com.formkiq.stacks.dynamodb;
 
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
+import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENT_SYNCS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -98,7 +99,7 @@ public class DocumentSearchServiceImplTest implements DbKeys {
     this.df.setTimeZone(TimeZone.getTimeZone("UTC"));
     DynamoDbConnectionBuilder dynamoDbConnection = DynamoDbTestServices.getDynamoDbConnection();
     this.service = new DocumentServiceImpl(dynamoDbConnection, DOCUMENTS_TABLE,
-        new DocumentVersionServiceNoVersioning());
+        DOCUMENT_SYNCS_TABLE, new DocumentVersionServiceNoVersioning());
     this.searchService =
         new DocumentSearchServiceImpl(dynamoDbConnection, this.service, DOCUMENTS_TABLE);
   }

@@ -24,7 +24,7 @@
 package com.formkiq.stacks.lambda.s3.awstest;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import java.io.IOException;
+
 import org.junit.jupiter.api.BeforeAll;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
@@ -96,11 +96,10 @@ public abstract class AbstractAwsTest {
 
   /**
    * beforeclass.
-   * 
-   * @throws IOException IOException
+   *
    */
   @BeforeAll
-  public static void beforeClass() throws IOException {
+  public static void beforeClass() {
 
     awsregion = Region.of(System.getProperty("testregion"));
     String awsprofile = System.getProperty("testprofile");
@@ -139,9 +138,12 @@ public abstract class AbstractAwsTest {
     String documentsTable =
         ssmService.getParameterValue("/formkiq/" + appenvironment + "/dynamodb/DocumentsTableName");
 
+    String documentsSyncsTable = ssmService
+        .getParameterValue("/formkiq/" + appenvironment + "/dynamodb/DocumentSyncsTableName");
+
     dbConnection =
         new DynamoDbConnectionBuilder(false).setCredentials(awsprofile).setRegion(awsregion);
-    documentService = new DocumentServiceImpl(dbConnection, documentsTable,
+    documentService = new DocumentServiceImpl(dbConnection, documentsTable, documentsSyncsTable,
         new DocumentVersionServiceNoVersioning());
     searchService = new DocumentSearchServiceImpl(dbConnection, documentService, documentsTable);
   }

@@ -25,7 +25,7 @@ package com.formkiq.stacks.dynamodb;
 
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
-import com.formkiq.aws.dynamodb.model.DocumentSync;
+import com.formkiq.aws.dynamodb.model.DocumentSyncRecord;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
 import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
 import com.formkiq.aws.dynamodb.model.DocumentSyncType;
@@ -64,15 +64,15 @@ public interface DocumentSyncService {
   void deleteAll(String siteId, String documentId);
 
   /**
-   * Get List of {@link DocumentSync}.
+   * Get List of {@link DocumentSyncRecord}.
    * 
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param token {@link PaginationMapToken}
    * @param limit int
-   * @return {@link PaginationResults} {@link DocumentSync}
+   * @return {@link PaginationResults} {@link DocumentSyncRecord}
    */
-  PaginationResults<DocumentSync> getSyncs(String siteId, String documentId,
+  PaginationResults<DocumentSyncRecord> getSyncs(String siteId, String documentId,
       PaginationMapToken token, int limit);
 
   /**

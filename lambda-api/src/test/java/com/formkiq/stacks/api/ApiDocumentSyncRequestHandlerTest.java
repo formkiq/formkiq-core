@@ -27,6 +27,8 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.stacks.dynamodb.DocumentSyncService.MESSAGE_ADDED_METADATA;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -115,7 +117,9 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractRequestHandler {
 
       Map<String, Object> body = this.gson.fromJsonToMap(m.get("body"));
       List<Map<String, String>> list = (List<Map<String, String>>) body.get("syncs");
-      assertEquals(2, list.size());
+
+      final int expected = 3;
+      assertEquals(expected, list.size());
 
       assertEquals("TYPESENSE", list.get(0).get("service"));
       assertEquals("FAILED", list.get(0).get("status"));
@@ -126,6 +130,11 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractRequestHandler {
       assertEquals("COMPLETE", list.get(1).get("status"));
       assertEquals("METADATA", list.get(1).get("type"));
       assertNotNull(list.get(1).get("syncDate"));
+
+      assertEquals("EVENTBRIDGE", list.get(2).get("service"));
+      assertEquals("PENDING", list.get(2).get("status"));
+      assertEquals("METADATA", list.get(2).get("type"));
+      assertNull(list.get(2).get("syncDate"));
     }
   }
 }

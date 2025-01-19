@@ -27,6 +27,7 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFileAsByteArray;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
+import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENT_SYNCS_TABLE;
 import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
 import static com.formkiq.testutils.aws.TestServices.STAGE_BUCKET_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -75,10 +76,6 @@ import com.formkiq.validation.ValidationException;
 @ExtendWith(LocalStackExtension.class)
 @ExtendWith(DynamoDbExtension.class)
 public class DocumentCompressorTest {
-  /** {@link S3ConnectionBuilder}. */
-  // private static S3ConnectionBuilder s3Builder;
-  /** {@link DynamoDbConnectionBuilder}. */
-  private static DynamoDbConnectionBuilder dbBuilder;
   /** {@link DynamoDbHelper}. */
   private static DynamoDbHelper dbHelper;
   /** {@link S3Service}. */
@@ -112,19 +109,19 @@ public class DocumentCompressorTest {
 
     Map<String, String> env = new HashMap<>();
     env.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
+    env.put("DOCUMENT_SYNC_TABLE", DOCUMENT_SYNCS_TABLE);
     env.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
 
     S3ConnectionBuilder s3Builder = TestServices.getS3Connection(null);
-    dbBuilder = DynamoDbTestServices.getDynamoDbConnection();
+    DynamoDbConnectionBuilder dbBuilder = DynamoDbTestServices.getDynamoDbConnection();
 
     dbHelper = DynamoDbTestServices.getDynamoDbHelper();
     s3 = new S3Service(s3Builder);
-    documentService = new DocumentServiceImpl(dbBuilder, DOCUMENTS_TABLE,
+    documentService = new DocumentServiceImpl(dbBuilder, DOCUMENTS_TABLE, DOCUMENT_SYNCS_TABLE,
         new DocumentVersionServiceNoVersioning());
 
     serviceCache = new AwsServiceCache().environment(env);
-    serviceCache.register(S3ConnectionBuilder.class,
-        new ClassServiceExtension<S3ConnectionBuilder>(s3Builder));
+    serviceCache.register(S3ConnectionBuilder.class, new ClassServiceExtension<>(s3Builder));
     serviceCache.register(DynamoDbConnectionBuilder.class,
         new DynamoDbConnectionBuilderExtension(dbBuilder));
     serviceCache.register(DocumentService.class, new DocumentServiceExtension());
@@ -230,6 +227,6 @@ public class DocumentCompressorTest {
     crc.update(content, 0, content.length);
     long checksum = crc.getValue();
     crc.reset();
-    return Long.valueOf(checksum);
+    return checksum;
   }
 }

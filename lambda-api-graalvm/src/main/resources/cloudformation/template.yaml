@@ -114,10 +114,6 @@ Parameters:
     Description: The name of the FormKiQ Certificate Stack Name
     Default: ""
 
-  Partition:
-    Description: The partition in which the resource is located. A partition is a group of AWS Regions
-    Type: String
-
   LogRetentionInDays:
     Type: Number
     Description: The number of days to retain the log events
@@ -249,8 +245,6 @@ Resources:
           Ref: LogLevelApplication
         LogLevelSystem:
           Ref: LogLevelSystem
-        Partition:
-          Ref: Partition
         FormKiQType:
           Ref: FormKiQType
         DocumentsApiRequestsArn:
@@ -683,6 +677,8 @@ Resources:
       Parameters:
         AppEnvironment: 
           Ref: AppEnvironment
+        FormKiQType:
+          Ref: FormKiQType
         LogRetentionInDays:
           Ref: LogRetentionInDays
         LogFormat:
@@ -691,8 +687,6 @@ Resources:
           Ref: LogLevelApplication
         LogLevelSystem:
           Ref: LogLevelSystem
-        Partition:
-          Ref: Partition
         OcrQueueArn:
           Fn::GetAtt:
             - OcrQueue

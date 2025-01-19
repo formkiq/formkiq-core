@@ -77,6 +77,7 @@ import java.util.UUID;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.stacks.dynamodb.DocumentSyncService.MESSAGE_ADDED_METADATA;
 import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -145,9 +146,9 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
     assertEquals(DocumentSyncService.EVENTBRIDGE, sync.getService());
     assertNull(sync.getSyncDate());
     assertNotNull(sync.getInsertedDate());
-    assertEquals(DocumentSyncType.CONTENT, sync.getType());
-    assertEquals("", sync.getMessage());
-    assertEquals("", sync.getUserId());
+    assertEquals(DocumentSyncType.METADATA, sync.getType());
+    assertEquals(MESSAGE_ADDED_METADATA, sync.getMessage());
+    assertEquals("joesmith", sync.getUserId());
     assertEquals(DocumentSyncStatus.PENDING, sync.getStatus());
   }
 
