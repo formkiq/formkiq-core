@@ -46,7 +46,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -126,11 +125,11 @@ public class DocumentExternalSystemExport {
 
   private void addDocumentTags(final String siteId, final String documentId,
       final List<Action> actions, final DynamicDocumentItem item) {
-    if (hasAction(actions)) {
 
-      Map<String, Collection<DocumentTag>> tagMap =
-          this.documentService.findDocumentsTags(siteId, Collections.singletonList(documentId),
-              Arrays.asList("CLAMAV_SCAN_STATUS", "CLAMAV_SCAN_TIMESTAMP"));
+    if (hasAntivirusAction(actions)) {
+
+      Map<String, Collection<DocumentTag>> tagMap = this.documentService.findDocumentsTags(siteId,
+          List.of(documentId), Arrays.asList("CLAMAV_SCAN_STATUS", "CLAMAV_SCAN_TIMESTAMP"));
 
       Map<String, String> values = new HashMap<>();
       Collection<DocumentTag> tags = tagMap.get(documentId);
@@ -146,7 +145,7 @@ public class DocumentExternalSystemExport {
     }
   }
 
-  private boolean hasAction(final List<Action> actions) {
+  private boolean hasAntivirusAction(final List<Action> actions) {
     return actions.stream().anyMatch(
         a -> ActionType.ANTIVIRUS.equals(a.type()) && ActionStatus.COMPLETE.equals(a.status()));
   }

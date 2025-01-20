@@ -45,7 +45,6 @@ import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.s3.S3ServiceExtension;
-import com.formkiq.aws.sns.SnsAwsServiceRegistry;
 import com.formkiq.aws.ssm.SsmAwsServiceRegistry;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceExtension;
@@ -148,7 +147,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
       serviceCache = new AwsServiceCacheBuilder(System.getenv(), Map.of(),
           EnvironmentVariableCredentialsProvider.create())
           .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
-              new SnsAwsServiceRegistry(), new SsmAwsServiceRegistry())
+              new SsmAwsServiceRegistry())
           .build();
 
       initialize(serviceCache);
@@ -734,10 +733,10 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     String agent = doc.getString("agent");
 
     if (DocumentSyncServiceType.FORMKIQ_CLI.name().equals(agent)) {
-      String message = existingDocument != null ? DocumentSyncService.MESSAGE_UPDATED_CONTENT
-          : DocumentSyncService.MESSAGE_ADDED_CONTENT;
+      // String message = existingDocument != null ? DocumentSyncService.MESSAGE_UPDATED_CONTENT
+      // : DocumentSyncService.MESSAGE_ADDED_CONTENT;
       syncService.saveSync(siteId, doc.getDocumentId(), DocumentSyncServiceType.FORMKIQ_CLI,
-          DocumentSyncStatus.COMPLETE, DocumentSyncType.CONTENT, doc.getUserId(), message);
+          DocumentSyncStatus.COMPLETE, DocumentSyncType.CONTENT, existingDocument != null);
     }
   }
 

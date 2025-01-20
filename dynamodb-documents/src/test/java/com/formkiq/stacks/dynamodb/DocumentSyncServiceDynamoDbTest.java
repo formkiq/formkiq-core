@@ -25,13 +25,13 @@ package com.formkiq.stacks.dynamodb;
 
 import static com.formkiq.aws.dynamodb.model.DocumentSyncServiceType.EVENTBRIDGE;
 import static com.formkiq.aws.dynamodb.model.DocumentSyncServiceType.TYPESENSE;
-import static com.formkiq.stacks.dynamodb.DocumentSyncService.MESSAGE_ADDED_METADATA;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENT_SYNCS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 
+import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.model.DocumentSyncRecord;
 import org.junit.jupiter.api.BeforeAll;
@@ -69,7 +69,7 @@ public class DocumentSyncServiceDynamoDbTest {
   @Test
   public void testGetSyncs01() {
     // given
-    String userId = "joe";
+    ApiAuthorization.login(new ApiAuthorization().username("joe"));
 
     String documentId = ID.uuid();
 
@@ -77,9 +77,9 @@ public class DocumentSyncServiceDynamoDbTest {
 
       // when
       syncService.saveSync(siteId, documentId, TYPESENSE, DocumentSyncStatus.FAILED,
-          DocumentSyncType.METADATA, userId, MESSAGE_ADDED_METADATA);
+          DocumentSyncType.METADATA, false);
       syncService.saveSync(siteId, documentId, TYPESENSE, DocumentSyncStatus.COMPLETE,
-          DocumentSyncType.METADATA, userId, MESSAGE_ADDED_METADATA);
+          DocumentSyncType.METADATA, false);
 
       // then
       PaginationResults<DocumentSyncRecord> results =
@@ -108,7 +108,7 @@ public class DocumentSyncServiceDynamoDbTest {
   @Test
   public void testGetSyncs02() {
     // given
-    String userId = "joe";
+    ApiAuthorization.login(new ApiAuthorization().username("joe"));
 
     String documentId = ID.uuid();
 
@@ -116,7 +116,7 @@ public class DocumentSyncServiceDynamoDbTest {
 
       // when
       syncService.saveSync(siteId, documentId, EVENTBRIDGE, DocumentSyncStatus.COMPLETE,
-          DocumentSyncType.METADATA, userId, null);
+          DocumentSyncType.METADATA, true);
 
       // then
       PaginationResults<DocumentSyncRecord> results =

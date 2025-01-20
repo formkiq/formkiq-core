@@ -76,8 +76,8 @@ import java.util.Map;
 import java.util.UUID;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import static com.formkiq.aws.dynamodb.model.DocumentSyncRecordBuilder.MESSAGE_ADDED_METADATA;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
-import static com.formkiq.stacks.dynamodb.DocumentSyncService.MESSAGE_ADDED_METADATA;
 import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;

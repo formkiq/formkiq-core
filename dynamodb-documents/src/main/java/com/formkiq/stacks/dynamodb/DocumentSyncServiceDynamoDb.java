@@ -41,6 +41,7 @@ import com.formkiq.aws.dynamodb.PaginationToAttributeValue;
 import com.formkiq.aws.dynamodb.QueryConfig;
 import com.formkiq.aws.dynamodb.QueryResponseToPagination;
 import com.formkiq.aws.dynamodb.model.DocumentSyncRecord;
+import com.formkiq.aws.dynamodb.model.DocumentSyncRecordBuilder;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
 import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
 import com.formkiq.aws.dynamodb.model.DocumentSyncType;
@@ -101,12 +102,11 @@ public final class DocumentSyncServiceDynamoDb implements DocumentSyncService {
   @Override
   public void saveSync(final String siteId, final String documentId,
       final DocumentSyncServiceType service, final DocumentSyncStatus status,
-      final DocumentSyncType type, final String userId, final String message) {
+      final DocumentSyncType type, final boolean documentExists) {
 
-    Date now = new Date();
-    DocumentSyncRecord r = new DocumentSyncRecord().setDocumentId(documentId).setService(service)
-        .setStatus(status).setType(type).setUserId(userId).setMessage(message).setInsertedDate(now)
-        .setSyncDate(now);
+    DocumentSyncRecord r = new DocumentSyncRecordBuilder().build(documentId, service, status, type,
+        new Date(), documentExists);
+
     this.db.putItem(r.getAttributes(siteId));
   }
 

@@ -172,8 +172,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
 
     TypesenseProcessor processor = new TypesenseProcessor(awsServices);
 
-    HttpResponse<String> response =
-        processor.addOrUpdate(siteId, documentId, document, "joesmith", false);
+    HttpResponse<String> response = processor.addOrUpdate(siteId, documentId, document, false);
     if (response.statusCode() != ApiResponseStatus.SC_CREATED.getStatusCode()) {
       throw new IOException("status: " + response.statusCode() + " body: " + response.body());
     }

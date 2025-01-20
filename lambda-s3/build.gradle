@@ -19,7 +19,6 @@ dependencies {
  	annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.4.2'
  
 	implementation project(':aws-s3')
-	implementation project(':aws-sns')
 	implementation project(':aws-ssm')
 	implementation project(':aws-ses')
 	implementation project(':aws-eventbridge')

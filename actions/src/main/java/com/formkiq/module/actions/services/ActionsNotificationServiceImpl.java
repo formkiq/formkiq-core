@@ -41,7 +41,7 @@ import com.formkiq.module.events.document.DocumentEvent;
 public final class ActionsNotificationServiceImpl implements ActionsNotificationService {
 
   /** {@link EventService}. */
-  private EventService documentEventService;
+  private final EventService documentEventService;
 
   /**
    * constructor.

@@ -23,7 +23,6 @@
  */
 package com.formkiq.stacks.dynamodb;
 
-import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.AttributeValueToMap;
 import com.formkiq.aws.dynamodb.BatchGetConfig;
 import com.formkiq.aws.dynamodb.DbKeys;
@@ -43,8 +42,7 @@ import com.formkiq.aws.dynamodb.ReadRequestBuilder;
 import com.formkiq.aws.dynamodb.WriteRequestBuilder;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentSyncRecord;
-import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
-import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
+import com.formkiq.aws.dynamodb.model.DocumentSyncRecordBuilder;
 import com.formkiq.aws.dynamodb.model.DocumentSyncType;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
@@ -123,8 +121,6 @@ import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static com.formkiq.aws.dynamodb.objects.Strings.isUuid;
 import static com.formkiq.aws.dynamodb.objects.Strings.removeQuotes;
-import static com.formkiq.stacks.dynamodb.DocumentSyncService.MESSAGE_ADDED_METADATA;
-import static com.formkiq.stacks.dynamodb.DocumentSyncService.MESSAGE_UPDATED_METADATA;
 import static com.formkiq.stacks.dynamodb.attributes.AttributeRecord.ATTR;
 import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.fromS;
 
@@ -1950,14 +1946,6 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
     if (tx != null) {
 
-      // Date now = new Date();
-      // String username = ApiAuthorization.getAuthorization().getUsername();
-      // DocumentSyncRecord a = new
-      // DocumentSyncRecord().setInsertedDate(now).setDocumentId(documentId)
-      // .setService(DocumentSyncServiceType.EVENTBRIDGE).setType(DocumentSyncType.ATTRIBUTE)
-      // .setStatus(DocumentSyncStatus.PENDING).setMessage("updated Document Attribute")
-      // .setUserId(username);
-
       List<Map<String, AttributeValue>> list =
           tx.getSaves().stream().map(k -> k.getAttributes(siteId)).toList();
 
@@ -1966,10 +1954,6 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       addDocumentSyncRecord(builder, siteId, documentId, true, tx.getSaves(), new Date());
 
       if (builder.batchWriteItem(this.dbClient)) {
-        // save document attributes
-        // this.dbService
-        // .putItems(Stream.concat(list.stream(), Stream.of(a.getAttributes(siteId))).toList());
-
         // delete old composite keys
         deleteDocumentAttributes(siteId, (Collection<DocumentAttributeRecord>) tx.getDeletes());
       }
@@ -2032,17 +2016,11 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       final String documentId, final boolean documentExists,
       final Collection<? extends DynamodbRecord<?>> toSave, final Date now) {
 
-    String username = ApiAuthorization.getAuthorization().getUsername();
-    DocumentSyncRecord a = new DocumentSyncRecord().setInsertedDate(now).setDocumentId(documentId)
-        .setService(DocumentSyncServiceType.EVENTBRIDGE).setType(DocumentSyncType.METADATA)
-        .setStatus(DocumentSyncStatus.PENDING)
-        .setMessage(documentExists ? MESSAGE_UPDATED_METADATA : MESSAGE_ADDED_METADATA)
-        .setUserId(username);
-
-    if (!toSave.isEmpty()) {
-      a.setType(DocumentSyncType.ATTRIBUTE);
-      a.setMessage("updated Document Attribute");
-    }
+    DocumentSyncType syncType =
+        !toSave.isEmpty() ? DocumentSyncType.ATTRIBUTE : DocumentSyncType.METADATA;
+    DocumentSyncRecord a =
+        new DocumentSyncRecordBuilder().buildEventBridge(documentId, syncType, documentExists);
+    a.setInsertedDate(now);
 
     writeBuilder.appends(this.documentSyncsTable, List.of(a.getAttributes(siteId)));
   }

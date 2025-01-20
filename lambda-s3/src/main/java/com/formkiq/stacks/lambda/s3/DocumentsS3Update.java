@@ -64,7 +64,6 @@ import com.formkiq.aws.s3.S3PresignerServiceExtension;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.s3.S3ServiceExtension;
 import com.formkiq.aws.s3.S3ServiceInterceptor;
-import com.formkiq.aws.sns.SnsAwsServiceRegistry;
 import com.formkiq.aws.ssm.SsmAwsServiceRegistry;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceExtension;
@@ -140,7 +139,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
       serviceCache = new AwsServiceCacheBuilder(System.getenv(), Map.of(),
           EnvironmentVariableCredentialsProvider.create())
           .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
-              new SnsAwsServiceRegistry(), new SsmAwsServiceRegistry())
+              new SsmAwsServiceRegistry())
           .build();
 
       initialize(serviceCache);

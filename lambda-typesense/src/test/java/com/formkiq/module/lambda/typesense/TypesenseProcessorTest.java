@@ -328,7 +328,7 @@ class TypesenseProcessorTest {
       assertEquals(DocumentSyncStatus.COMPLETE, syncs.getResults().get(0).getStatus());
       assertEquals(DocumentSyncType.CONTENT, syncs.getResults().get(0).getType());
       assertEquals("testadminuser@formkiq.com", syncs.getResults().get(0).getUserId());
-      assertEquals("updated Document Metadata", syncs.getResults().get(0).getMessage());
+      assertEquals("updated Document Content", syncs.getResults().get(0).getMessage());
       assertNotNull(syncs.getResults().get(0).getSyncDate());
 
       assertEquals(documentId, syncs.getResults().get(1).getDocumentId());
@@ -377,10 +377,10 @@ class TypesenseProcessorTest {
 
     DocumentSyncStatus status = DocumentSyncStatus.COMPLETE;
     DocumentSyncType syncType = DocumentSyncType.CONTENT;
-    String message = DocumentSyncService.MESSAGE_ADDED_METADATA;
+    // String message = DocumentSyncService.MESSAGE_ADDED_METADATA;
 
     syncService.saveSync(siteId, documentId, DocumentSyncServiceType.TYPESENSE, status, syncType,
-        "joe", message);
+        false);
     assertEquals(1, syncService.getSyncs(siteId, documentId, null, MAX).getResults().size());
 
     service.addCollection(siteId);
@@ -412,10 +412,10 @@ class TypesenseProcessorTest {
 
     DocumentSyncStatus status = DocumentSyncStatus.COMPLETE;
     DocumentSyncType syncType = DocumentSyncType.CONTENT;
-    String message = DocumentSyncService.MESSAGE_ADDED_METADATA;
+    // String message = DocumentSyncService.MESSAGE_ADDED_METADATA;
 
     syncService.saveSync(siteId, documentId, DocumentSyncServiceType.TYPESENSE, status, syncType,
-        "joe", message);
+        false);
     assertEquals(1, syncService.getSyncs(siteId, documentId, null, MAX).getResults().size());
 
     service.addCollection(siteId);
