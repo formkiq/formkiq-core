@@ -652,11 +652,11 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     URL url = s3PresignedService.presignGetUrl(s3bucket, key, Duration.ofDays(1), null, config);
     event.url(url.toString());
 
-    String eventJson = documentEventService.publish(event);
-    logger.trace(eventJson);
+    // String eventJson = documentEventService.publish(event);
+    // logger.trace(eventJson);
 
     String eventType = event.type();
-    logger.trace("publishing " + event.type() + " document message to " + snsDocumentEvent);
+    // logger.trace("publishing " + event.type() + " document message to " + snsDocumentEvent);
 
     if (CREATE.equals(eventType)) {
       List<Action> actions = actionsService.getActions(siteId, documentId);

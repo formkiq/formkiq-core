@@ -72,6 +72,8 @@ public class DocumentSyncRecordBuilder {
     return switch (syncType) {
       case ATTRIBUTE -> MESSAGE_UPDATED_ATTRIBUTE;
       case CONTENT -> documentExists ? MESSAGE_UPDATED_CONTENT : MESSAGE_ADDED_CONTENT;
+      case DELETE_METADATA -> "deleted Document Metadata";
+      case SOFT_DELETE_METADATA -> "soft deleted Document Metadata";
       default -> documentExists ? MESSAGE_UPDATED_METADATA : MESSAGE_ADDED_METADATA;
     };
   }

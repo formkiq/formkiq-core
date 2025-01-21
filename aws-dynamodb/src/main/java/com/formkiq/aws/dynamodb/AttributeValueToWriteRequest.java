@@ -40,7 +40,7 @@ public class AttributeValueToWriteRequest
     implements Function<Map<String, AttributeValue>, Map<String, WriteRequest>> {
 
   /** Table Name. */
-  private String tableName;
+  private final String tableName;
 
   /**
    * constructor.
@@ -57,8 +57,7 @@ public class AttributeValueToWriteRequest
     PutRequest put = PutRequest.builder().item(value).build();
     WriteRequest req = WriteRequest.builder().putRequest(put).build();
 
-    Map<String, WriteRequest> items = Map.of(this.tableName, req);
-    return items;
+    return Map.of(this.tableName, req);
   }
 
 }

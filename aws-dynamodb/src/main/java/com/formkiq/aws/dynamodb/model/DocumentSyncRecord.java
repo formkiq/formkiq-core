@@ -65,11 +65,33 @@ public class DocumentSyncRecord implements DynamodbRecord<DocumentSyncRecord> {
   private String userId;
   /** Sync Message. */
   private String message;
+  /** Time To Live. */
+  private Long timeToLive;
 
   /**
    * constructor.
    */
   public DocumentSyncRecord() {}
+
+  /**
+   * Get Time To Live.
+   * 
+   * @return Long
+   */
+  public Long getTimeToLive() {
+    return this.timeToLive;
+  }
+
+  /**
+   * Set Time To Live.
+   * 
+   * @param ttl Long
+   * @return DocumentSyncRecord
+   */
+  public DocumentSyncRecord setTimeToLive(final Long ttl) {
+    this.timeToLive = ttl;
+    return this;
+  }
 
   /**
    * Get Inserted Date.
@@ -251,6 +273,10 @@ public class DocumentSyncRecord implements DynamodbRecord<DocumentSyncRecord> {
     map.put("status", fromS(this.status.name()));
     map.put("type", fromS(this.type.name()));
 
+    if (this.timeToLive != null) {
+      map.put("TimeToLive", AttributeValue.fromN(String.valueOf(this.timeToLive)));
+    }
+
     if (!isEmpty(message)) {
       map.put("message", fromS(this.message));
     }
@@ -269,6 +295,10 @@ public class DocumentSyncRecord implements DynamodbRecord<DocumentSyncRecord> {
           .setStatus(DocumentSyncStatus.valueOf(ss(attrs, "status")))
           .setType(DocumentSyncType.valueOf(ss(attrs, "type"))).setUserId(ss(attrs, "userId"))
           .setMessage(ss(attrs, "message"));
+
+      if (attrs.containsKey("TimeToLive")) {
+        record = record.setTimeToLive(Long.valueOf(attrs.get("TimeToLive").n()));
+      }
 
       record = record.setSyncDate(toDate(attrs, "syncDate"));
       record = record.setInsertedDate(toDate(attrs, "inserteddate"));
