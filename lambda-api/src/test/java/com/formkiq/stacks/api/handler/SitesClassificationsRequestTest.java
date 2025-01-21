@@ -33,6 +33,7 @@ import com.formkiq.client.model.AddClassificationRequest;
 import com.formkiq.client.model.AddDocumentAttribute;
 import com.formkiq.client.model.AddDocumentAttributeClassification;
 import com.formkiq.client.model.AddDocumentAttributeStandard;
+import com.formkiq.client.model.AddDocumentAttributesRequest;
 import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AttributeSchemaCompositeKey;
 import com.formkiq.client.model.AttributeSchemaOptional;
@@ -932,6 +933,54 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       int i = 0;
       assertEquals("Classification", documentAttributes.get(i++).getKey());
       assertEquals("invoiceNumber", documentAttributes.get(i).getKey());
+    }
+  }
+
+  /**
+   * Add document classification after the document is already created.
+   */
+  @Test
+  void testAddDocument09() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      // given
+      addAttribute(siteId, "reviewByDate");
+
+      SchemaAttributes attr0 = createSchemaAttributes(List.of("reviewByDate"), null);
+      String classificationId = addClassification(siteId, attr0);
+
+      AddDocumentAttribute attribute = createStringAttribute("reviewByDate", "2025-09-30");
+
+      // when
+      String documentId = addDocument(siteId, List.of(attribute));
+
+      // then
+      List<DocumentAttribute> documentAttributes = notNull(this.documentAttributesApi
+          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+      assertEquals(1, documentAttributes.size());
+      assertEquals("reviewByDate", documentAttributes.get(0).getKey());
+
+      // given
+      AddDocumentAttributeClassification classification =
+          new AddDocumentAttributeClassification().classificationId(classificationId);
+
+      // when
+      this.documentAttributesApi.addDocumentAttributes(documentId,
+          new AddDocumentAttributesRequest()
+              .addAttributesItem(new AddDocumentAttribute(classification)),
+          siteId, null);
+
+      // then
+      documentAttributes = notNull(this.documentAttributesApi
+          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+
+      final int expected = 2;
+      assertEquals(expected, documentAttributes.size());
+      assertEquals("Classification", documentAttributes.get(0).getKey());
+      assertEquals("reviewByDate", documentAttributes.get(1).getKey());
     }
   }
 

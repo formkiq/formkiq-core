@@ -36,7 +36,7 @@ import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
-import com.formkiq.stacks.dynamodb.attributes.AttributeValidation;
+import com.formkiq.stacks.dynamodb.attributes.AttributeValidationType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.documents.DocumentPublicationRecord;
@@ -100,13 +100,13 @@ public interface DocumentService {
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param attributeKey {@link String}
-   * @param validation {@link AttributeValidation}
+   * @param validation {@link AttributeValidationType}
    * @param validationAccess {@link AttributeValidationAccess}
    * @return {@link List} {@link DocumentAttributeRecord}
    * @throws ValidationException ValidationException
    */
   List<DocumentAttributeRecord> deleteDocumentAttribute(String siteId, String documentId,
-      String attributeKey, AttributeValidation validation,
+      String attributeKey, AttributeValidationType validation,
       AttributeValidationAccess validationAccess) throws ValidationException;
 
   /**
@@ -482,12 +482,12 @@ public interface DocumentService {
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param attributes {@link Collection} {@link DocumentAttributeRecord}
-   * @param validation {@link AttributeValidation}
+   * @param validation {@link AttributeValidationType}
    * @param validationAccess {@link AttributeValidationAccess}
    * @throws ValidationException ValidationException
    */
   void saveDocumentAttributes(String siteId, String documentId,
-      Collection<DocumentAttributeRecord> attributes, AttributeValidation validation,
+      Collection<DocumentAttributeRecord> attributes, AttributeValidationType validation,
       AttributeValidationAccess validationAccess) throws ValidationException;
 
   /**

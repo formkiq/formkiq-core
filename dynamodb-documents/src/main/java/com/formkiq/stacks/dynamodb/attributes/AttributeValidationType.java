@@ -24,42 +24,14 @@
 package com.formkiq.stacks.dynamodb.attributes;
 
 /**
- * Attribute Validation Wrapper.
+ * Attribute Validation method.
  */
-public class AttributeValidation {
+public enum AttributeValidationType {
 
-  /** {@link AttributeValidationType}. */
-  private final AttributeValidationType validationType;
-  /** {@link AttributeValidationAccess}. */
-  private final AttributeValidationAccess validationAccess;
-
-  /**
-   * constructor.
-   * 
-   * @param attributeValidationType {@link AttributeValidationType}
-   * @param attributeValidationAccess {@link AttributeValidationAccess}
-   */
-  public AttributeValidation(final AttributeValidationType attributeValidationType,
-      final AttributeValidationAccess attributeValidationAccess) {
-    this.validationType = attributeValidationType;
-    this.validationAccess = attributeValidationAccess;
-  }
-
-  /**
-   * Get {@link AttributeValidationAccess}.
-   * 
-   * @return {@link AttributeValidationAccess}
-   */
-  public AttributeValidationAccess getValidationAccess() {
-    return this.validationAccess;
-  }
-
-  /**
-   * Get {@link AttributeValidationType}.
-   * 
-   * @return {@link AttributeValidationType}
-   */
-  public AttributeValidationType getValidationType() {
-    return this.validationType;
-  }
+  /** Full Validation. */
+  FULL,
+  /** No validation. */
+  NONE,
+  /** Partial Validation. */
+  PARTIAL;
 }

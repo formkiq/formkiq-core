@@ -31,7 +31,7 @@ import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
-import com.formkiq.stacks.dynamodb.attributes.AttributeValidation;
+import com.formkiq.stacks.dynamodb.attributes.AttributeValidationType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
@@ -201,7 +201,7 @@ public class IdpAction implements DocumentAction {
           .map(val -> createDocumentAttribute(siteId, documentId, attributeKey, val)).toList();
 
       this.documentService.saveDocumentAttributes(siteId, documentId, records,
-          AttributeValidation.FULL, AttributeValidationAccess.ADMIN_UPDATE);
+          AttributeValidationType.FULL, AttributeValidationAccess.ADMIN_UPDATE);
     }
   }
 

@@ -58,6 +58,7 @@ import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeServiceDynamodb;
 import com.formkiq.stacks.dynamodb.attributes.AttributeType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidation;
+import com.formkiq.stacks.dynamodb.attributes.AttributeValidationType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidator;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidatorImpl;
@@ -280,13 +281,13 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   @Override
   public void reindexDocumentAttributes(final String siteId, final String documentId)
       throws ValidationException {
-    saveDocumentAttributes(siteId, documentId, Collections.emptyList(), AttributeValidation.NONE,
-        AttributeValidationAccess.ADMIN_UPDATE);
+    saveDocumentAttributes(siteId, documentId, Collections.emptyList(),
+        AttributeValidationType.NONE, AttributeValidationAccess.ADMIN_UPDATE);
   }
 
   private Collection<DocumentAttributeRecord> generateDocumentAttributesToSave(final String siteId,
       final String documentId, final DocumentAttributeRecordListBuilder listBuilder,
-      final AttributeValidation validation, final AttributeValidationAccess validationAccess)
+      final AttributeValidationType validation, final AttributeValidationAccess validationAccess)
       throws ValidationException {
 
     Collection<DocumentAttributeRecord> newDocumentAttributeRecords =
@@ -300,11 +301,11 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
     // Previous document attributes without the ones that are going to be removed, so we don't
     // generate composite keys for them
-    List<DocumentAttributeRecord> previousDocument = previousDocumentAttributeRecords.stream()
-        .filter(element -> !attributesToBeDeleted.contains(element)).toList();
+    List<DocumentAttributeRecord> previousDocumentAttributes = previousDocumentAttributeRecords
+        .stream().filter(element -> !attributesToBeDeleted.contains(element)).toList();
 
     Collection<DocumentAttributeRecord> allAttributes =
-        Objects.concat(newDocumentAttributeRecords, previousDocument);
+        Objects.concat(newDocumentAttributeRecords, previousDocumentAttributes);
 
     Set<String> attrkeys =
         allAttributes.stream().map(DocumentAttributeRecord::getKey).collect(Collectors.toSet());
@@ -334,7 +335,8 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
     // validation
     validateDocumentAttributes(schemaAttributes, siteId, documentId, documentAttributes,
-        attributesToBeDeleted, validation, validationAccess);
+        attributesToBeDeleted, previousDocumentAttributes,
+        new AttributeValidation(validation, validationAccess));
 
     listBuilder.setCompositeKeysToBeDeleted(compositeKeysToBeDeleted);
 
@@ -520,10 +522,10 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
   @Override
   public List<DocumentAttributeRecord> deleteDocumentAttribute(final String siteId,
-      final String documentId, final String attributeKey, final AttributeValidation validation,
+      final String documentId, final String attributeKey, final AttributeValidationType validation,
       final AttributeValidationAccess validationAccess) throws ValidationException {
 
-    if (!AttributeValidation.NONE.equals(validation)) {
+    if (!AttributeValidationType.NONE.equals(validation)) {
       Schema schema = getSchame(siteId);
       Collection<ValidationError> errors = this.attributeValidator.validateDeleteAttribute(schema,
           siteId, attributeKey, validationAccess);
@@ -1856,7 +1858,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
     Date now = new Date();
     DynamodbRecordTx tx = getSaveDocumentAttributesTx(siteId, document.getDocumentId(), attributes,
-        AttributeValidation.FULL, options.getValidationAccess(), now);
+        AttributeValidationType.FULL, options.getValidationAccess(), now);
 
     boolean isPathChanged = isPathChanged(siteId, document, previous, documentValues, writeBuilder);
 
@@ -1945,8 +1947,9 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
   @Override
   public void saveDocumentAttributes(final String siteId, final String documentId,
-      final Collection<DocumentAttributeRecord> attributes, final AttributeValidation validation,
-      final AttributeValidationAccess validationAccess) throws ValidationException {
+      final Collection<DocumentAttributeRecord> attributes,
+      final AttributeValidationType validation, final AttributeValidationAccess validationAccess)
+      throws ValidationException {
 
     Date now = new Date();
     DynamodbRecordTx tx = getSaveDocumentAttributesTx(siteId, documentId, attributes, validation,
@@ -1977,8 +1980,9 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   private DynamodbRecordTx getSaveDocumentAttributesTx(final String siteId, final String documentId,
-      final Collection<DocumentAttributeRecord> allAttributes, final AttributeValidation validation,
-      final AttributeValidationAccess validationAccess, final Date now) throws ValidationException {
+      final Collection<DocumentAttributeRecord> allAttributes,
+      final AttributeValidationType validation, final AttributeValidationAccess validationAccess,
+      final Date now) throws ValidationException {
 
     DynamodbRecordTx tx;
 
@@ -2441,16 +2445,19 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   private void validateDocumentAttributes(final List<SchemaAttributes> schemaAttributes,
       final String siteId, final String documentId,
       final Collection<DocumentAttributeRecord> documentAttributes,
-      final Collection<DocumentAttributeRecord> toBeDeleted, final AttributeValidation validation,
-      final AttributeValidationAccess validationAccess) throws ValidationException {
+      final Collection<DocumentAttributeRecord> toBeDeleted,
+      final List<DocumentAttributeRecord> previousDocumentAttributes,
+      final AttributeValidation validation) throws ValidationException {
 
     Collection<ValidationError> errors = new ArrayList<>();
 
+    AttributeValidationAccess validationAccess = validation.getValidationAccess();
     validateDocumentAttributes(siteId, documentId, documentAttributes, validationAccess, errors);
 
     if (errors.isEmpty()) {
 
-      Collection<DocumentAttributeRecord> concat = Objects.concat(documentAttributes, toBeDeleted);
+      Collection<DocumentAttributeRecord> concat = Objects
+          .concat(Objects.concat(documentAttributes, toBeDeleted), previousDocumentAttributes);
       Map<String, AttributeRecord> attributeRecordMap =
           this.attributeValidator.getAttributeRecordMap(siteId, concat);
 
@@ -2462,7 +2469,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
           attributeRecordMap, validationAccess);
 
       if (errors.isEmpty()) {
-        switch (validation) {
+        switch (validation.getValidationType()) {
           case FULL -> errors = this.attributeValidator.validateFullAttribute(schemaAttributes,
               siteId, documentId, documentAttributes, attributeRecordMap, validationAccess);
           case PARTIAL ->

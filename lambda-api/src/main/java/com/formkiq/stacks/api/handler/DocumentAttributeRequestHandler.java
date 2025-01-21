@@ -46,7 +46,7 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecordToMap;
 import com.formkiq.stacks.api.transformers.DocumentAttributeToDocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.DocumentService;
-import com.formkiq.stacks.dynamodb.attributes.AttributeValidation;
+import com.formkiq.stacks.dynamodb.attributes.AttributeValidationType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.validation.ValidationErrorImpl;
@@ -75,7 +75,7 @@ public class DocumentAttributeRequestHandler
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
     if (documentService.deleteDocumentAttribute(siteId, documentId, attributeKey,
-        AttributeValidation.FULL, validationAccess).isEmpty()) {
+        AttributeValidationType.FULL, validationAccess).isEmpty()) {
       throw new NotFoundException(
           "attribute '" + attributeKey + "' not found on document '" + documentId + "'");
     }
@@ -173,7 +173,7 @@ public class DocumentAttributeRequestHandler
         getAttributeValidationAccess(authorization, siteId);
 
     documentService.saveDocumentAttributes(siteId, documentId, documentAttributes,
-        AttributeValidation.PARTIAL, validationAccess);
+        AttributeValidationType.PARTIAL, validationAccess);
 
     ApiResponse resp = new ApiMessageResponse(
         "Updated attribute '" + attributeKey + "' on document '" + documentId + "'");
