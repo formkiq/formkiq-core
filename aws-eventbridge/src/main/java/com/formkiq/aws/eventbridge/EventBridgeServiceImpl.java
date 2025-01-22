@@ -69,6 +69,11 @@ public class EventBridgeServiceImpl implements EventBridgeService {
   }
 
   @Override
+  public PutEventsResponse putEvents(final String eventBusName, final EventBridgeMessage msg) {
+    return putEvents(eventBusName, msg.getDetailType(), msg.getDetail(), msg.getSource());
+  }
+
+  @Override
   public void createRule(final String eventBusName, final String ruleName,
       final String eventPattern, final String targetId, final String arn) {
     PutRuleRequest ruleReq = PutRuleRequest.builder().name(ruleName).eventBusName(eventBusName)

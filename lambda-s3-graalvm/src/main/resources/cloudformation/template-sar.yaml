@@ -600,6 +600,7 @@ Resources:
         DynamoDBStreamParameters:
           StartingPosition: LATEST
           BatchSize: 1
+          MaximumRetryAttempts: 10
           DeadLetterConfig:
             Arn:
               Fn::GetAtt:

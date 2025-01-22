@@ -24,6 +24,7 @@
 package com.formkiq.stacks.lambda.s3.actions;
 
 import com.formkiq.aws.dynamodb.objects.Strings;
+import com.formkiq.aws.eventbridge.EventBridgeMessage;
 import com.formkiq.aws.eventbridge.EventBridgeService;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -69,18 +70,19 @@ public class EventBridgeAction implements DocumentAction {
     }
 
     String detailType = "Document Action Event";
-    String source = "formkiq." + this.appEnvironment;
-
     String detail = this.systemExport.apply(siteId, documentId, actions);
+
+    EventBridgeMessage msg =
+        new EventBridgeMessageBuilder().build(this.appEnvironment, detailType, detail);
 
     if (logger.isLogged(LogLevel.DEBUG)) {
       String s = String.format(
           "{\"type\",\"%s\",\"eventBusName\":\"%s\","
               + "\"detailType\":\"%s\",\"source\":\"%s\",\"detail\":\"%s\"}",
-          "eventBridge", eventBusName, detailType, source, detail);
+          "eventBridge", eventBusName, msg.getDetailType(), msg.getSource(), msg.getDetail());
       logger.debug(s);
     }
 
-    eventBridgeService.putEvents(eventBusName, detailType, detail, source);
+    eventBridgeService.putEvents(eventBusName, msg);
   }
 }
