@@ -569,7 +569,7 @@ Resources:
                   - "dynamodb:ListStreams"
                 Resource:
                   - Fn::GetAtt:
-                      - Documents
+                      - DocumentSyncs
                       - StreamArn
               - Effect: "Allow"
                 Action:
