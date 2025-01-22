@@ -2144,6 +2144,58 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * PUT /documents/{documentId}/attributes/{attributeKey} with the same values.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testPutDocumentAttribute05() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+
+      setBearerToken(siteId);
+      addAttribute(siteId, "c0", null, null);
+
+      AddDocumentUploadRequest docReq = new AddDocumentUploadRequest();
+      AddDocumentAttribute attr0 = new AddDocumentAttribute(new AddDocumentAttributeStandard()
+          .key("c0").addStringValuesItem("111").addStringValuesItem("222"));
+      docReq.addAttributesItem(attr0);
+
+      String documentId =
+          this.documentsApi.addDocumentUpload(docReq, siteId, null, null, null).getDocumentId();
+
+      SetDocumentAttributeRequest req = new SetDocumentAttributeRequest().attribute(
+          new AddDocumentAttributeValue().addStringValuesItem("111").addStringValuesItem("222"));
+
+      // when
+      SetResponse response =
+          this.documentAttributesApi.setDocumentAttributeValue(documentId, "c0", req, siteId);
+
+      // then
+      assertEquals("Updated attribute 'c0' on document '" + documentId + "'",
+          response.getMessage());
+
+      DocumentAttribute c0 = getDocumentAttribute(siteId, documentId, "c0");
+      assertNotNull(c0);
+      assertEquals("c0", c0.getKey());
+      assertEquals("111,222", String.join(",", notNull(c0.getStringValues())));
+
+      // given
+      req = new SetDocumentAttributeRequest()
+          .attribute(new AddDocumentAttributeValue().addStringValuesItem("111"));
+
+      // when
+      this.documentAttributesApi.setDocumentAttributeValue(documentId, "c0", req, siteId);
+
+      // then
+      c0 = getDocumentAttribute(siteId, documentId, "c0");
+      assertNotNull(c0);
+      assertEquals("c0", c0.getKey());
+      assertEquals("111", c0.getStringValue());
+    }
+  }
+
+  /**
    * PATCH /documents, POST /documents/{documentId}/attributes, PUT
    * /documents/{documentId}/attributes, existing attribute .
    *

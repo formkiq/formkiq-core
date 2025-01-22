@@ -30,6 +30,7 @@ import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
+import com.formkiq.aws.dynamodb.DynamodbRecordKeyPredicate;
 import com.formkiq.aws.dynamodb.DynamodbRecordTx;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResult;
@@ -304,14 +305,11 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     newDocumentAttributeRecords = concat(newDocumentAttributeRecords, defaultValues);
     allAttributes = concat(allAttributes, defaultValues);
 
-    Collection<DocumentAttributeRecord> allCompositeKeys =
+    Collection<DocumentAttributeRecord> newCompositeKeys =
         new SchemaCompositeKeyGenerator().apply(schemaAttributes, documentId, allAttributes);
 
-    Collection<DocumentAttributeRecord> newCompositeKeys =
-        getNewCompositeKeys(allCompositeKeys, previousCompositeKeys);
-
     Collection<DocumentAttributeRecord> compositeKeysToBeDeleted = previousCompositeKeys.stream()
-        .filter(Predicate.not(new DocumentAttributeKeyPredicate(allCompositeKeys))).toList();
+        .filter(Predicate.not(new DocumentAttributeKeyPredicate(newCompositeKeys))).toList();
 
     Collection<DocumentAttributeRecord> documentAttributes =
         Objects.concat(newDocumentAttributeRecords, newCompositeKeys);
@@ -323,18 +321,6 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     listBuilder.setCompositeKeysToBeDeleted(compositeKeysToBeDeleted);
 
     return documentAttributes;
-  }
-
-  private Collection<DocumentAttributeRecord> getNewCompositeKeys(
-      final Collection<DocumentAttributeRecord> allCompositeKeys,
-      final Collection<DocumentAttributeRecord> previousCompositeKeys) {
-
-    Set<String> keys = createAttributeKeys(previousCompositeKeys);
-    Set<String> attributeKeys = previousCompositeKeys.stream().map(DocumentAttributeRecord::getKey)
-        .collect(Collectors.toSet());
-
-    return allCompositeKeys.stream().filter(a -> !attributeKeys.contains(a.getKey())
-        || isDocumentAttributeKeyMatchPredicate(a, attributeKeys, keys)).toList();
   }
 
   /**
@@ -1399,19 +1385,6 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     return this.schemaService.getSitesSchema(siteId);
   }
 
-  /**
-   * Is {@link List} {@link DynamicObject} contain a non generated tag.
-   *
-   * @param tags {@link List} {@link DynamicObject}
-   * @return boolean
-   */
-  private boolean isDocumentUserTagged(final List<DynamicObject> tags) {
-    return tags != null && tags.stream().anyMatch(t -> {
-      String key = t.getString("key");
-      return key != null && !SYSTEM_DEFINED_TAGS.contains(key);
-    });
-  }
-
   @Override
   public boolean isFolderExists(final String siteId, final String path) {
 
@@ -1933,12 +1906,12 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   private DynamodbRecordTx getSaveDocumentAttributesTx(final String siteId, final String documentId,
-      final Collection<DocumentAttributeRecord> allAttributes, final AttributeValidation validation,
+      final Collection<DocumentAttributeRecord> newAttributes, final AttributeValidation validation,
       final AttributeValidationAccess validationAccess) throws ValidationException {
 
     DynamodbRecordTx tx;
 
-    if (allAttributes != null) {
+    if (newAttributes != null) {
 
       DocumentAttributeRecordListBuilder listBuilder = new DocumentAttributeRecordListBuilder();
 
@@ -1948,14 +1921,11 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       List<DocumentAttributeRecord> previousAttributes =
           previousAllAttributes.stream().filter(Predicate.not(PREDICIATE_COMPOSITE_KEY)).toList();
 
-      Collection<DocumentAttributeRecord> newAttributes = isSet(validationAccess) ? allAttributes
-          : filterAttributesByPrevious(allAttributes, previousAttributes);
-
       List<DocumentAttributeRecord> previousCompositeKeys =
           previousAllAttributes.stream().filter(PREDICIATE_COMPOSITE_KEY).toList();
 
       Collection<DocumentAttributeRecord> attributesToBeDeleted =
-          getAttributesToBeDeleted(validationAccess, allAttributes, previousAttributes);
+          getAttributesToBeDeleted(validationAccess, newAttributes, previousAttributes);
 
       listBuilder.setNewAttributes(newAttributes);
       listBuilder.setPreviousAttributes(previousAttributes);
@@ -1976,18 +1946,22 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       Date now = new Date();
       toSave.forEach(t -> t.setInsertedDate(now));
 
-      tx = new DynamodbRecordTx(toSave,
-          Objects.concat(attributesToBeDeleted, compositeKeysToBeDeleted));
+      Collection<DocumentAttributeRecord> toBeDeleted =
+          concat(attributesToBeDeleted, compositeKeysToBeDeleted).stream()
+              .filter(Predicate.not(new DynamodbRecordKeyPredicate(toSave))).toList();
+
+      if (!toBeDeleted.isEmpty() && toSave.isEmpty()) {
+        throw new ValidationException(List.of(new ValidationErrorImpl()
+            .error("No attributes found to be saved, only found ones to delete")));
+      }
+
+      tx = new DynamodbRecordTx(toSave, toBeDeleted);
+
     } else {
       tx = new DynamodbRecordTx(Collections.emptyList(), Collections.emptyList());
     }
 
     return tx;
-  }
-
-  private boolean isSet(final AttributeValidationAccess validationAccess) {
-    return AttributeValidationAccess.SET.equals(validationAccess)
-        || AttributeValidationAccess.ADMIN_SET.equals(validationAccess);
   }
 
   /**
@@ -2049,28 +2023,15 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       attributesToBeDeleted =
           previousAttributes.stream().filter(Predicate.not(PREDICIATE_COMPOSITE_KEY))
               .filter(a -> isDocumentAttributeKeyMatchPredicate(a, attributeKeys, keys)).toList();
-    }
+    } else if (isSetAccess(validationAccess)) {
+      // when setting attributes remove existing attribute keys
+      attributesToBeDeleted = previousAttributes;
 
-    // when setting attributes remove existing attribute keys
-    if (isSetAccess(validationAccess) || isSetItemAccess(validationAccess)) {
-
+    } else if (isSetItemAccess(validationAccess)) { // remove all keys associated with the attribute
       Set<String> attributeKeys =
           attributes.stream().map(DocumentAttributeRecord::getKey).collect(Collectors.toSet());
-      Set<String> keys = createAttributeKeys(attributes);
-
-      // delete existing attribute keys, but if the key is exactly the same key/value as existing,
-      // don't delete
-      if (isSetAccess(validationAccess)) {
-        attributesToBeDeleted =
-            previousAttributes.stream().filter(Predicate.not(PREDICIATE_COMPOSITE_KEY))
-                .filter(a -> !attributeKeys.contains(a.getKey())
-                    || isDocumentAttributeKeyMatchPredicate(a, attributeKeys, keys))
-                .toList();
-      } else {
-        attributesToBeDeleted =
-            previousAttributes.stream().filter(Predicate.not(PREDICIATE_COMPOSITE_KEY))
-                .filter(a -> attributeKeys.contains(a.getKey())).toList();
-      }
+      attributesToBeDeleted =
+          previousAttributes.stream().filter(a -> attributeKeys.contains(a.getKey())).toList();
     }
 
     return attributesToBeDeleted;
@@ -2459,7 +2420,9 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     if (AttributeValidationAccess.CREATE.equals(validationAccess)
         || AttributeValidationAccess.ADMIN_CREATE.equals(validationAccess)) {
 
-      Set<String> keys = documentAttributes.stream().map(DocumentAttributeRecord::getKey)
+      Set<String> keys = documentAttributes.stream()
+          .filter(a -> !DocumentAttributeValueType.COMPOSITE_STRING.equals(a.getValueType()))
+          .map(DocumentAttributeRecord::getKey)
           .filter(k -> !AttributeKeyReserved.RELATIONSHIPS.getKey().equals(k))
           .collect(Collectors.toSet());
 
