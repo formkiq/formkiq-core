@@ -2069,7 +2069,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       } else {
         attributesToBeDeleted =
             previousAttributes.stream().filter(Predicate.not(PREDICIATE_COMPOSITE_KEY))
-                .filter(a -> attributeKeys.contains(a.getKey())).toList();
+                .filter(a -> isDocumentAttributeKeyMatchPredicate(a, attributeKeys, keys)).toList();
       }
     }
 
