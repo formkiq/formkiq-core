@@ -2402,6 +2402,81 @@ public class DocumentActionsProcessorTest implements DbKeys {
     }
   }
 
+  /**
+   * Handle DynamoDb Sync Event.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  public void testDynamoDbSyncEvent01() throws Exception {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      // attributeService.addAttribute(siteId, "category", AttributeDataType.STRING,
+      // AttributeType.STANDARD);
+      //
+      String documentId = ID.uuid();
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      //
+      // DocumentAttributeRecord attr0 = new DocumentAttributeRecord().setDocumentId(documentId)
+      // .setUserId("joe").setKey("category").setStringValue("person").updateValueType();
+      //
+      // DocumentAttributeRecord attr1 = new DocumentAttributeRecord().setDocumentId(documentId)
+      // .setUserId("joe").setKey("category").setStringValue("other").updateValueType();
+      //
+      // List<DocumentAttributeRecord> attributes = List.of(attr0, attr1);
+      documentService.saveDocument(siteId, item, null);
+
+      //
+      // String eventBusName = "test_" + UUID.randomUUID();
+      // eventBridgeService.createEventBridge(eventBusName);
+      //
+      // String eventPattern = "{\"source\":[\"formkiq.test\"]}";
+      // eventBridgeService.createRule(eventBusName, "sqs", eventPattern, "test", sqsQueueArn);
+      //
+      // List<Action> actions = Collections.singletonList(new Action().type(ActionType.EVENTBRIDGE)
+      // .parameters(Map.of("eventBusName", eventBusName)).userId("joe"));
+      // actionsService.saveNewActions(siteId, documentId, actions);
+
+      Map<String, Object> map =
+          loadFileAsMap(this, "/event-dynamodb01.json", "7e4a43d6-b74a-4fb8-a751-e724cff5c3de",
+              documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
+
+      // when
+      processor.handleRequest(map, null);
+
+      // then
+      assertEquals(0, actionsService.getActions(siteId, documentId).size());
+
+      List<DocumentSyncRecord> syncs =
+          notNull(documentSyncService.getSyncs(siteId, documentId, null, MAX_RESULTS).getResults());
+      assertEquals(1, syncs.size());
+      assertEquals(DocumentSyncServiceType.EVENTBRIDGE, syncs.get(0).getService());
+      assertEquals(DocumentSyncType.METADATA, syncs.get(0).getType());
+      assertEquals(DocumentSyncStatus.COMPLETE, syncs.get(0).getStatus());
+      assertNotNull(syncs.get(0).getSyncDate());
+      // Action action = actionsService.getActions(siteId, documentId).get(0);
+      // assertEquals(ActionType.EVENTBRIDGE, action.type());
+      // assertEquals(ActionStatus.COMPLETE, action.status());
+
+      ReceiveMessageResponse response = getReceiveMessageResponse();
+
+      assertEquals(1, response.messages().size());
+      Message message = response.messages().get(0);
+
+      Map<String, Object> data = GSON.fromJson(message.body(), Map.class);
+      assertEquals("formkiq.test", data.get("source"));
+      assertEquals("Document Action Event", data.get("detail-type"));
+      assertTrue(data.get("time").toString().endsWith("Z"));
+
+      data = (Map<String, Object>) data.get("detail");
+      List<Map<String, Object>> documents = (List<Map<String, Object>>) data.get("documents");
+      assertEquals(1, documents.size());
+      assertNotNull(documents.get(0).get("documentId"));
+      assertNotNull(documents.get(0).get("url"));
+      assertNotNull(documents.get(0).get("path"));
+    }
+  }
+
   private void validateAttributes(final List<Map<String, Object>> documents) {
     Collection<Map<String, Object>> attrList =
         (Collection<Map<String, Object>>) documents.get(0).get("attributes");
