@@ -591,12 +591,12 @@ Resources:
           - Arn
       Source:
         Fn::GetAtt:
-          - Documents
+          - DocumentSyncs
           - StreamArn
       SourceParameters:
         FilterCriteria:
           Filters:
-            - Pattern: '{"dynamodb": {"NewImage": {"type": { "S": ["EVENTBRIDGE"] }}}}'
+            - Pattern: '{"dynamodb": {"NewImage": {"type": { "S": ["EVENTBRIDGE"] },"status": { "S": ["PENDING"] }}}}'
         DynamoDBStreamParameters:
           StartingPosition: LATEST
           BatchSize: 1
@@ -1014,7 +1014,7 @@ Resources:
       BillingMode: PAY_PER_REQUEST
       TimeToLiveSpecification:
         AttributeName: TimeToLive
-        Enabled: TRUE            
+        Enabled: TRUE
       StreamSpecification:
         StreamViewType: NEW_AND_OLD_IMAGES
       PointInTimeRecoverySpecification:
@@ -1140,6 +1140,8 @@ Resources:
         Enabled: TRUE
       PointInTimeRecoverySpecification:
         PointInTimeRecoveryEnabled: true
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
       Tags:
         - Key: "Application"
           Value: "FormKiQ"
