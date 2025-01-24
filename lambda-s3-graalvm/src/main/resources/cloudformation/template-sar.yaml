@@ -944,6 +944,7 @@ Resources:
             Action:
             - dynamodb:PutItem
             - dynamodb:BatchWriteItem
+            - dynamodb:UpdateItem
             Resource:
             - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DocumentSyncs}"
           - Effect: Allow
