@@ -596,7 +596,7 @@ Resources:
       SourceParameters:
         FilterCriteria:
           Filters:
-            - Pattern: '{"dynamodb": {"NewImage": {"type": { "S": ["EVENTBRIDGE"] },"status": { "S": ["PENDING"] }}}}'
+            - Pattern: '{"eventName": [{"equals-ignore-case": "INSERT"}],"eventSource": [{"equals-ignore-case": "aws:dynamodb"}],"dynamodb.NewImage.service.S": [{"equals-ignore-case": "EVENTBRIDGE"}],"dynamodb.NewImage.status.S": [{"equals-ignore-case": "PENDING"}]}'
         DynamoDBStreamParameters:
           StartingPosition: LATEST
           BatchSize: 1
