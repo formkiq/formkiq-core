@@ -943,6 +943,7 @@ Resources:
           - Effect: Allow
             Action:
             - dynamodb:PutItem
+            - dynamodb:BatchWriteItem
             Resource:
             - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DocumentSyncs}"
           - Effect: Allow
