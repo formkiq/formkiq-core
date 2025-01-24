@@ -147,7 +147,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
       serviceCache = new AwsServiceCacheBuilder(System.getenv(), Map.of(),
           EnvironmentVariableCredentialsProvider.create())
           .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
-              new SsmAwsServiceRegistry())
+              new SnsAwsServiceRegistry(), new SsmAwsServiceRegistry())
           .build();
 
       initialize(serviceCache);
