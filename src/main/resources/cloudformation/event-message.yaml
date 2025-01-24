@@ -17,6 +17,12 @@ Resources:
       Name:
         Fn::Sub: "FormKiQ-DocumentEvents-${AppEnvironment}"
       Description: "The EventBridge bus used to publish FormKiQ Document Events"
+      Tags:
+        - Key: "Application"
+          Value: "FormKiQ"
+        - Key: "AppEnvironment"
+          Value:
+            Fn::Sub: "${AppEnvironment}"
 
 Outputs:
 

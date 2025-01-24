@@ -149,6 +149,38 @@ Conditions:
 
 Resources:
 
+  EditionParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "FormKiQ Edition"
+      Name:
+        Fn::Sub: "/formkiq/${AppEnvironment}/edition"
+      Type: String
+      Value:
+        Fn::GetAtt:
+          - Config
+          - Outputs.FormKiQType
+      Tags:
+        Application: "FormKiQ"
+        AppEnvironment:
+          Fn::Sub: "${AppEnvironment}"
+
+  VersionParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "FormKiQ Version"
+      Name:
+        Fn::Sub: "/formkiq/${AppEnvironment}/version"
+      Type: String
+      Value:
+        Fn::GetAtt:
+          - Config
+          - Outputs.FormKiQVersion
+      Tags:
+        Application: "FormKiQ"
+        AppEnvironment:
+          Fn::Sub: "${AppEnvironment}"
+
   Config:
     Type: AWS::Serverless::Application
     Properties:
