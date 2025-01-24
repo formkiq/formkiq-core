@@ -36,6 +36,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.formkiq.aws.dynamodb.DbKeys.PREFIX_DOCS;
+import static com.formkiq.aws.dynamodb.DbKeys.SK;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.objects.DateUtil.getInIso8601Format;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
@@ -67,6 +68,8 @@ public class DocumentSyncRecord implements DynamodbRecord<DocumentSyncRecord> {
   private String message;
   /** Time To Live. */
   private Long timeToLive;
+  /** SK. */
+  private String sk;
 
   /**
    * constructor.
@@ -252,7 +255,7 @@ public class DocumentSyncRecord implements DynamodbRecord<DocumentSyncRecord> {
     Map<String, AttributeValue> map = getDataAttributes();
 
     map.put(DbKeys.PK, fromS(pk(siteId)));
-    map.put(DbKeys.SK, fromS(sk()));
+    map.put(SK, fromS(sk()));
 
     return map;
   }
@@ -262,7 +265,10 @@ public class DocumentSyncRecord implements DynamodbRecord<DocumentSyncRecord> {
     Map<String, AttributeValue> map = new HashMap<>();
 
     map.put("documentId", fromS(this.documentId));
-    map.put("service", fromS(this.service.name()));
+
+    if (this.service != null) {
+      map.put("service", fromS(this.service.name()));
+    }
 
     if (this.syncDate != null) {
       map.put("syncDate", AttributeValue.fromS(this.df.format(this.syncDate)));
@@ -270,8 +276,14 @@ public class DocumentSyncRecord implements DynamodbRecord<DocumentSyncRecord> {
 
     map.put("inserteddate", AttributeValue.fromS(this.df.format(this.insertedDate)));
     map.put("userId", fromS(this.userId));
-    map.put("status", fromS(this.status.name()));
-    map.put("type", fromS(this.type.name()));
+
+    if (this.status != null) {
+      map.put("status", fromS(this.status.name()));
+    }
+
+    if (this.type != null) {
+      map.put("type", fromS(this.type.name()));
+    }
 
     if (this.timeToLive != null) {
       map.put("TimeToLive", AttributeValue.fromN(String.valueOf(this.timeToLive)));
@@ -284,6 +296,17 @@ public class DocumentSyncRecord implements DynamodbRecord<DocumentSyncRecord> {
     return map;
   }
 
+  /**
+   * Set Sk.
+   * 
+   * @param skValue {@link String}
+   * @return DocumentSyncRecord
+   */
+  public DocumentSyncRecord setSk(final String skValue) {
+    this.sk = skValue;
+    return this;
+  }
+
   @Override
   public DocumentSyncRecord getFromAttributes(final String siteId,
       final Map<String, AttributeValue> attrs) {
@@ -294,7 +317,7 @@ public class DocumentSyncRecord implements DynamodbRecord<DocumentSyncRecord> {
           .setService(DocumentSyncServiceType.valueOf(ss(attrs, "service")))
           .setStatus(DocumentSyncStatus.valueOf(ss(attrs, "status")))
           .setType(DocumentSyncType.valueOf(ss(attrs, "type"))).setUserId(ss(attrs, "userId"))
-          .setMessage(ss(attrs, "message"));
+          .setMessage(ss(attrs, "message")).setSk(ss(attrs, SK));
 
       if (attrs.containsKey("TimeToLive")) {
         record = record.setTimeToLive(Long.valueOf(attrs.get("TimeToLive").n()));
@@ -343,8 +366,11 @@ public class DocumentSyncRecord implements DynamodbRecord<DocumentSyncRecord> {
 
   @Override
   public String sk() {
-    return SK_SYNCS
-        + getInIso8601Format(this.insertedDate != null ? this.insertedDate : this.syncDate);
+    if (sk == null) {
+      sk = SK_SYNCS
+          + getInIso8601Format(this.insertedDate != null ? this.insertedDate : this.syncDate);
+    }
+    return sk;
   }
 
   @Override

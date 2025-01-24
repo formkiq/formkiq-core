@@ -41,7 +41,7 @@ public class EventBridgeServiceExtension implements AwsServiceExtension<EventBri
     if (this.service == null) {
       EventBridgeConnectionBuilder connection =
           awsServiceCache.getExtension(EventBridgeConnectionBuilder.class);
-      this.service = new EventBridgeServiceImpl(connection);
+      this.service = new EventBridgeServiceImpl(awsServiceCache.getLogger(), connection);
     }
 
     return this.service;

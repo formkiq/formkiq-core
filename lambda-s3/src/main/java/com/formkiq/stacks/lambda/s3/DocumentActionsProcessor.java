@@ -29,9 +29,12 @@ import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceExtension;
+import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
+import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.eventbridge.EventBridgeAwsServiceRegistry;
+import com.formkiq.aws.eventbridge.EventBridgeMessage;
 import com.formkiq.aws.eventbridge.EventBridgeService;
 import com.formkiq.aws.eventbridge.EventBridgeServiceExtension;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
@@ -66,6 +69,8 @@ import com.formkiq.module.lambdaservices.logger.LogLevel;
 import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.module.typesense.TypeSenseService;
 import com.formkiq.module.typesense.TypeSenseServiceExtension;
+import com.formkiq.stacks.dynamodb.DocumentSyncService;
+import com.formkiq.stacks.dynamodb.DocumentSyncServiceExtension;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.config.ConfigServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentService;
@@ -80,6 +85,7 @@ import com.formkiq.stacks.lambda.s3.actions.AddOcrAction;
 import com.formkiq.stacks.lambda.s3.actions.DocumentExternalSystemExport;
 import com.formkiq.stacks.lambda.s3.actions.DocumentTaggingAction;
 import com.formkiq.stacks.lambda.s3.actions.EventBridgeAction;
+import com.formkiq.stacks.lambda.s3.actions.EventBridgeMessageBuilder;
 import com.formkiq.stacks.lambda.s3.actions.FullTextAction;
 import com.formkiq.stacks.lambda.s3.actions.IdpAction;
 import com.formkiq.stacks.lambda.s3.actions.NotificationAction;
@@ -99,6 +105,7 @@ import java.net.http.HttpClient.Redirect;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -147,6 +154,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     awsServiceCache.register(ActionsNotificationService.class,
         new ActionsNotificationServiceExtension());
     awsServiceCache.register(SesService.class, new SesServiceExtension());
+    awsServiceCache.register(DocumentSyncService.class, new DocumentSyncServiceExtension());
     awsServiceCache.register(AttributeService.class, new AttributeServiceExtension());
     awsServiceCache.register(EventBridgeService.class, new EventBridgeServiceExtension());
 
@@ -432,11 +440,40 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
   private void processDynamodbStream(final Logger logger, final Map<String, Object> map) {
 
+    String eventName = (String) map.get("eventName");
+    Map<String, Object> dynamodb = (Map<String, Object>) map.get("dynamodb");
+    Map<String, Object> keys = (Map<String, Object>) dynamodb.get("Keys");
+    Map<String, Object> newImage = (Map<String, Object>) dynamodb.get("NewImage");
+    final String pk = getS((Map<String, Object>) keys.get("PK"));
+    final String sk = getS((Map<String, Object>) keys.get("SK"));
+    String siteId = SiteIdKeyGenerator.getSiteId(pk);
+    String documentId = getS((Map<String, Object>) newImage.get("documentId"));
+
+    String s = String.format("{\"eventName\": \"%s\",\"PK\": \"%s\",\"SK\":\"%s\","
+        + "\"siteId\":\"%s\",\"documentId\": \"%s\"}", eventName, pk, sk, siteId, documentId);
+    logger.info(s);
+
+    String documentEventsBus = serviceCache.environment("DOCUMENT_EVENTS_BUS");
+    String appEnvironment = serviceCache.environment("APP_ENVIRONMENT");
+    String detailType = "Document Create Event";
+    // String detailType = "Document Update Event";
+    String detail = new DocumentExternalSystemExport(serviceCache).apply(siteId, documentId);
+
+    EventBridgeMessage msg =
+        new EventBridgeMessageBuilder().build(appEnvironment, detailType, detail);
+    EventBridgeService eventBridgeService = serviceCache.getExtension(EventBridgeService.class);
+    eventBridgeService.putEvents(documentEventsBus, msg);
+
+    DocumentSyncService sync = serviceCache.getExtension(DocumentSyncService.class);
+    sync.update(pk, sk, DocumentSyncStatus.COMPLETE, new Date());
+  }
+
+  private String getS(final Map<String, Object> map) {
+    return (String) map.getOrDefault("S", null);
   }
 
   private void processDocumentEvent(final Logger logger, final Map<String, Object> map) {
-    DocumentEvent event =
-        this.gson.fromJson(map.get("Message").toString(), DocumentEvent.class);
+    DocumentEvent event = this.gson.fromJson(map.get("Message").toString(), DocumentEvent.class);
 
     String s = String.format(
         "{\"siteId\": \"%s\",\"documentId\": \"%s\",\"s3key\": \"%s\",\"s3bucket\": \"%s\","
@@ -465,7 +502,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
     String url = action.parameters().get("url");
 
-    String body = new DocumentExternalSystemExport(serviceCache).apply(siteId, documentId, actions);
+    String body = new DocumentExternalSystemExport(serviceCache).apply(siteId, documentId);
 
     try {
 

@@ -30,6 +30,8 @@ import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
 import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
 import com.formkiq.aws.dynamodb.model.DocumentSyncType;
 
+import java.util.Date;
+
 /**
  * 
  * Document Sync Service.
@@ -69,4 +71,14 @@ public interface DocumentSyncService {
    */
   void saveSync(String siteId, String documentId, DocumentSyncServiceType service,
       DocumentSyncStatus status, DocumentSyncType type, boolean documentExists);
+
+  /**
+   * Update Document Sync Status.
+   * 
+   * @param pk {@link String}
+   * @param sk {@link String}
+   * @param status {@link DocumentSyncStatus}
+   * @param syncDate {@link java.util.Date}
+   */
+  void update(String pk, String sk, DocumentSyncStatus status, Date syncDate);
 }

@@ -30,9 +30,6 @@ import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3PresignerService;
-import com.formkiq.module.actions.Action;
-import com.formkiq.module.actions.ActionStatus;
-import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentService;
@@ -77,10 +74,9 @@ public class DocumentExternalSystemExport {
    * 
    * @param siteId {@link String}
    * @param documentId {@link String}
-   * @param actions {@link List} {@link Action}
    * @return String
    */
-  public String apply(final String siteId, final String documentId, final List<Action> actions) {
+  public String apply(final String siteId, final String documentId) {
 
     DocumentItem result = this.documentService.findDocument(siteId, documentId);
     DynamicDocumentItem item = new DocumentItemToDynamicDocumentItem().apply(result);
@@ -99,7 +95,7 @@ public class DocumentExternalSystemExport {
       item.put("attributes", attributes);
     }
 
-    addDocumentTags(siteId, documentId, actions, item);
+    addDocumentTags(siteId, documentId, item);
 
     return this.gson.toJson(Map.of("documents", documents));
   }
@@ -124,30 +120,22 @@ public class DocumentExternalSystemExport {
   }
 
   private void addDocumentTags(final String siteId, final String documentId,
-      final List<Action> actions, final DynamicDocumentItem item) {
+      final DynamicDocumentItem item) {
 
-    if (hasAntivirusAction(actions)) {
+    Map<String, Collection<DocumentTag>> tagMap = this.documentService.findDocumentsTags(siteId,
+        List.of(documentId), Arrays.asList("CLAMAV_SCAN_STATUS", "CLAMAV_SCAN_TIMESTAMP"));
 
-      Map<String, Collection<DocumentTag>> tagMap = this.documentService.findDocumentsTags(siteId,
-          List.of(documentId), Arrays.asList("CLAMAV_SCAN_STATUS", "CLAMAV_SCAN_TIMESTAMP"));
-
-      Map<String, String> values = new HashMap<>();
-      Collection<DocumentTag> tags = tagMap.get(documentId);
-      for (DocumentTag tag : tags) {
-        values.put(tag.getKey(), tag.getValue());
-      }
-
-      String status = values.getOrDefault("CLAMAV_SCAN_STATUS", "ERROR");
-      item.put("status", status);
-
-      String timestamp = values.getOrDefault("CLAMAV_SCAN_TIMESTAMP", "");
-      item.put("timestamp", timestamp);
+    Map<String, String> values = new HashMap<>();
+    Collection<DocumentTag> tags = tagMap.get(documentId);
+    for (DocumentTag tag : tags) {
+      values.put(tag.getKey(), tag.getValue());
     }
-  }
 
-  private boolean hasAntivirusAction(final List<Action> actions) {
-    return actions.stream().anyMatch(
-        a -> ActionType.ANTIVIRUS.equals(a.type()) && ActionStatus.COMPLETE.equals(a.status()));
+    String status = values.getOrDefault("CLAMAV_SCAN_STATUS", "ERROR");
+    item.put("status", status);
+
+    String timestamp = values.getOrDefault("CLAMAV_SCAN_TIMESTAMP", "");
+    item.put("timestamp", timestamp);
   }
 
   /**

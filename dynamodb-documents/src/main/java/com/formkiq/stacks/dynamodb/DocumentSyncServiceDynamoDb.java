@@ -111,6 +111,19 @@ public final class DocumentSyncServiceDynamoDb implements DocumentSyncService {
   }
 
   @Override
+  public void update(final String pk, final String sk, final DocumentSyncStatus status,
+      final Date syncDate) {
+
+    DocumentSyncRecord r =
+        new DocumentSyncRecord().setSyncDate(new Date()).setInsertedDate(new Date());
+    Map<String, AttributeValue> attrs = r.getDataAttributes();
+
+    Map<String, AttributeValue> updateValues =
+        Map.of("status", AttributeValue.fromS(status.name()), "syncDate", attrs.get("syncDate"));
+    this.db.updateValues(AttributeValue.fromS(pk), AttributeValue.fromS(sk), updateValues);
+  }
+
+  @Override
   public void deleteAll(final String siteId, final String documentId) {
 
     final int limit = 100;

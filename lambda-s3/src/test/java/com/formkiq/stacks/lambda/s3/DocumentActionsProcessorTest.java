@@ -161,8 +161,6 @@ import static org.mockserver.model.HttpRequest.request;
 @ExtendWith(LocalStackExtension.class)
 public class DocumentActionsProcessorTest implements DbKeys {
 
-  /** SQS Sns Update Queue. */
-  private static final String SQS_QUEUE1 = "sqssnsCreate1";
   /** App Environment. */
   private static final String APP_ENVIRONMENT = "test";
   /** {@link RequestRecordExpectationResponseCallback}. */
@@ -221,10 +219,6 @@ public class DocumentActionsProcessorTest implements DbKeys {
   private static EventBridgeService eventBridgeService;
   /** {@link SqsService}. */
   private static SqsService sqsService;
-  /** Sqs Queue Arn . */
-  private static String sqsQueueArn;
-  /** SQS Queue Url. */
-  private static String sqsDocumentQueueUrl;
 
   /**
    * After Class.
@@ -279,10 +273,6 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
     SqsConnectionBuilder sqsBuilder = TestServices.getSqsConnection(null);
     sqsService = new SqsServiceImpl(sqsBuilder);
-    if (!sqsService.exists(SQS_QUEUE1)) {
-      sqsDocumentQueueUrl = sqsService.createQueue(SQS_QUEUE1).queueUrl();
-      sqsQueueArn = sqsService.getQueueArn(sqsDocumentQueueUrl);
-    }
   }
 
   /**
@@ -362,8 +352,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
                 "contentType": "text/plain","userId": "joe"}"""));
   }
 
-  private static void initProcessor(final String module, final String chatgptUrl) {
-    Map<String, String> env = buildEnvironment(module, chatgptUrl);
+  private static void initProcessor(final String module, final String chatgptUrl,
+      final String eventBusName) {
+    Map<String, String> env = buildEnvironment(module, chatgptUrl, eventBusName);
 
     AwsCredentials creds = AwsBasicCredentials.create("aaa", "bbb");
     StaticCredentialsProvider credentialsProvider = StaticCredentialsProvider.create(creds);
@@ -379,8 +370,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
     eventBridgeService = serviceCache.getExtension(EventBridgeService.class);
   }
 
-  private static Map<String, String> buildEnvironment(final String module,
-      final String chatgptUrl) {
+  private static Map<String, String> buildEnvironment(final String module, final String chatgptUrl,
+      final String eventBusName) {
     Map<String, String> env = new HashMap<>();
     env.put("AWS_REGION", AWS_REGION.toString());
     env.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
@@ -392,6 +383,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     env.put("SNS_DOCUMENT_EVENT", snsDocumentEventTopicArn);
     env.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
     env.put("CHATGPT_API_COMPLETIONS_URL", URL + "/" + chatgptUrl);
+    env.put("DOCUMENT_EVENTS_BUS", eventBusName);
     return env;
   }
 
@@ -404,7 +396,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     // null = new LambdaContextRecorder();
     CALLBACK.reset();
 
-    initProcessor("opensearch", "chatgpt1");
+    initProcessor("opensearch", "chatgpt1", null);
   }
 
   /**
@@ -546,7 +538,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
   @Test
   public void testDocumentTaggingAction04() throws Exception {
 
-    initProcessor("opensearch", "chatgpt2");
+    initProcessor("opensearch", "chatgpt2", null);
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
@@ -622,7 +614,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
   @Test
   public void testDocumentTaggingAction05() throws Exception {
 
-    initProcessor("opensearch", "chatgpt3");
+    initProcessor("opensearch", "chatgpt3", null);
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
@@ -696,7 +688,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
   @Test
   public void testDocumentTaggingAction06() throws Exception {
 
-    initProcessor("opensearch", "chatgpt4");
+    initProcessor("opensearch", "chatgpt4", null);
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
@@ -766,7 +758,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
   @Test
   public void testDocumentTaggingAction07() throws Exception {
 
-    initProcessor("opensearch", "chatgpt5");
+    initProcessor("opensearch", "chatgpt5", null);
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
@@ -842,7 +834,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
   @Test
   public void testDocumentTaggingAction08() throws Exception {
 
-    initProcessor("opensearch", "chatgpt6");
+    initProcessor("opensearch", "chatgpt6", null);
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
@@ -1204,7 +1196,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
    */
   @Test
   public void testHandle07() throws IOException, ValidationException {
-    initProcessor("typesense", "chatgpt1");
+    initProcessor("typesense", "chatgpt1", null);
 
     String content = "this is some data";
 
@@ -2342,8 +2334,12 @@ public class DocumentActionsProcessorTest implements DbKeys {
   @Test
   @Timeout(TEST_TIMEOUT)
   public void testEventBridge01() throws Exception {
+    // given
+    String sqsDocumentQueueUrl = sqsService.createQueue("sqssnsCreate1" + ID.uuid()).queueUrl();
+    String sqsQueueArn = sqsService.getQueueArn(sqsDocumentQueueUrl);
+    String eventBusName = createEventBus(sqsQueueArn);
+
     for (String siteId : Arrays.asList(null, ID.uuid())) {
-      // given
       attributeService.addAttribute(siteId, "category", AttributeDataType.STRING,
           AttributeType.STANDARD);
 
@@ -2358,12 +2354,6 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
       List<DocumentAttributeRecord> attributes = List.of(attr0, attr1);
       documentService.saveDocument(siteId, item, null, attributes, new SaveDocumentOptions());
-
-      String eventBusName = "test_" + UUID.randomUUID();
-      eventBridgeService.createEventBridge(eventBusName);
-
-      String eventPattern = "{\"source\":[\"formkiq.test\"]}";
-      eventBridgeService.createRule(eventBusName, "sqs", eventPattern, "test", sqsQueueArn);
 
       List<Action> actions = Collections.singletonList(new Action().type(ActionType.EVENTBRIDGE)
           .parameters(Map.of("eventBusName", eventBusName)).userId("joe"));
@@ -2381,7 +2371,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertEquals(ActionType.EVENTBRIDGE, action.type());
       assertEquals(ActionStatus.COMPLETE, action.status());
 
-      ReceiveMessageResponse response = getReceiveMessageResponse();
+      ReceiveMessageResponse response = getReceiveMessageResponse(sqsDocumentQueueUrl);
 
       assertEquals(1, response.messages().size());
       Message message = response.messages().get(0);
@@ -2402,44 +2392,46 @@ public class DocumentActionsProcessorTest implements DbKeys {
     }
   }
 
+  private String createEventBus(final String sqsQueueArn) {
+
+    String eventBusName = "test_" + UUID.randomUUID();
+    eventBridgeService.createEventBridge(eventBusName);
+
+    String eventPattern = "{\"source\":[\"formkiq.test\"]}";
+    eventBridgeService.createRule(eventBusName, "sqs", eventPattern, "test", sqsQueueArn);
+    return eventBusName;
+  }
+
   /**
    * Handle DynamoDb Sync Event.
    *
    * @throws Exception Exception
    */
   @Test
+  // @Timeout(TEST_TIMEOUT)
   public void testDynamoDbSyncEvent01() throws Exception {
+    // given
+    String sqsDocumentQueueUrl = sqsService.createQueue("sqssnsCreate1" + ID.uuid()).queueUrl();
+    String sqsQueueArn = sqsService.getQueueArn(sqsDocumentQueueUrl);
+    String eventBusName = createEventBus(sqsQueueArn);
+
+    initProcessor(null, null, eventBusName);
+
     for (String siteId : Arrays.asList(null, ID.uuid())) {
-      // given
-      // attributeService.addAttribute(siteId, "category", AttributeDataType.STRING,
-      // AttributeType.STANDARD);
-      //
+
       String documentId = ID.uuid();
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-      //
-      // DocumentAttributeRecord attr0 = new DocumentAttributeRecord().setDocumentId(documentId)
-      // .setUserId("joe").setKey("category").setStringValue("person").updateValueType();
-      //
-      // DocumentAttributeRecord attr1 = new DocumentAttributeRecord().setDocumentId(documentId)
-      // .setUserId("joe").setKey("category").setStringValue("other").updateValueType();
-      //
-      // List<DocumentAttributeRecord> attributes = List.of(attr0, attr1);
       documentService.saveDocument(siteId, item, null);
 
-      //
-      // String eventBusName = "test_" + UUID.randomUUID();
-      // eventBridgeService.createEventBridge(eventBusName);
-      //
-      // String eventPattern = "{\"source\":[\"formkiq.test\"]}";
-      // eventBridgeService.createRule(eventBusName, "sqs", eventPattern, "test", sqsQueueArn);
-      //
-      // List<Action> actions = Collections.singletonList(new Action().type(ActionType.EVENTBRIDGE)
-      // .parameters(Map.of("eventBusName", eventBusName)).userId("joe"));
-      // actionsService.saveNewActions(siteId, documentId, actions);
+      List<DocumentSyncRecord> syncs =
+          notNull(documentSyncService.getSyncs(siteId, documentId, null, MAX_RESULTS).getResults());
+      assertEquals(1, syncs.size());
 
-      Map<String, Object> map =
-          loadFileAsMap(this, "/event-dynamodb01.json", "7e4a43d6-b74a-4fb8-a751-e724cff5c3de",
-              documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
+      String pk = SiteIdKeyGenerator.createDatabaseKey(siteId, "docs#" + documentId);
+
+      Map<String, Object> map = loadFileAsMap(this, "/event-dynamodb01.json",
+          "docs#7e4a43d6-b74a-4fb8-a751-e724cff5c3de", pk, "7e4a43d6-b74a-4fb8-a751-e724cff5c3de",
+          documentId, "syncs#2025-01-22T15:53:12.342Z", syncs.get(0).sk());
 
       // when
       processor.handleRequest(map, null);
@@ -2447,25 +2439,22 @@ public class DocumentActionsProcessorTest implements DbKeys {
       // then
       assertEquals(0, actionsService.getActions(siteId, documentId).size());
 
-      List<DocumentSyncRecord> syncs =
+      syncs =
           notNull(documentSyncService.getSyncs(siteId, documentId, null, MAX_RESULTS).getResults());
       assertEquals(1, syncs.size());
       assertEquals(DocumentSyncServiceType.EVENTBRIDGE, syncs.get(0).getService());
       assertEquals(DocumentSyncType.METADATA, syncs.get(0).getType());
       assertEquals(DocumentSyncStatus.COMPLETE, syncs.get(0).getStatus());
       assertNotNull(syncs.get(0).getSyncDate());
-      // Action action = actionsService.getActions(siteId, documentId).get(0);
-      // assertEquals(ActionType.EVENTBRIDGE, action.type());
-      // assertEquals(ActionStatus.COMPLETE, action.status());
 
-      ReceiveMessageResponse response = getReceiveMessageResponse();
+      ReceiveMessageResponse response = getReceiveMessageResponse(sqsDocumentQueueUrl);
 
       assertEquals(1, response.messages().size());
       Message message = response.messages().get(0);
 
       Map<String, Object> data = GSON.fromJson(message.body(), Map.class);
       assertEquals("formkiq.test", data.get("source"));
-      assertEquals("Document Action Event", data.get("detail-type"));
+      assertEquals("Document Create Event", data.get("detail-type"));
       assertTrue(data.get("time").toString().endsWith("Z"));
 
       data = (Map<String, Object>) data.get("detail");
@@ -2490,11 +2479,12 @@ public class DocumentActionsProcessorTest implements DbKeys {
     assertEquals("[other, person]", attrMap.get("stringValues").toString());
   }
 
-  private ReceiveMessageResponse getReceiveMessageResponse() throws InterruptedException {
-    ReceiveMessageResponse response = sqsService.receiveMessages(sqsDocumentQueueUrl);
+  private ReceiveMessageResponse getReceiveMessageResponse(final String sqsQueueUrl)
+      throws InterruptedException {
+    ReceiveMessageResponse response = sqsService.receiveMessages(sqsQueueUrl);
     while (response.messages().isEmpty()) {
       TimeUnit.SECONDS.sleep(1);
-      response = sqsService.receiveMessages(sqsDocumentQueueUrl);
+      response = sqsService.receiveMessages(sqsQueueUrl);
     }
     return response;
   }

@@ -173,7 +173,7 @@ public final class SiteIdKeyGenerator {
       } else {
 
         siteId = strs[0];
-        StringBuffer buf = new StringBuffer(strs[1]);
+        StringBuilder buf = new StringBuilder(strs[1]);
         for (int i = 1; i < strs.length; i++) {
           buf.append(strs[i]);
         }

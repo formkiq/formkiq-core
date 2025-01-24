@@ -24,6 +24,7 @@
 package com.formkiq.aws.eventbridge;
 
 import software.amazon.awssdk.services.eventbridge.model.CreateEventBusResponse;
+import software.amazon.awssdk.services.eventbridge.model.DeleteEventBusResponse;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsResponse;
 
 /**
@@ -40,6 +41,14 @@ public interface EventBridgeService {
    * @return CreateEventBusResponse
    */
   CreateEventBusResponse createEventBridge(String eventBusName);
+
+  /**
+   * Delete Event Bridge.
+   * 
+   * @param eventBusName {@link String}
+   * @return DeleteEventBusResponse
+   */
+  DeleteEventBusResponse deleteEventBus(String eventBusName);
 
   /**
    * Put AWS Event Bridge Event.
