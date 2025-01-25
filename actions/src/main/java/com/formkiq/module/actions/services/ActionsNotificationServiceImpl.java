@@ -32,6 +32,7 @@ import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.events.EventService;
 import com.formkiq.module.events.document.DocumentEvent;
+import com.formkiq.module.lambdaservices.logger.Logger;
 
 /**
  * 
@@ -42,16 +43,23 @@ public final class ActionsNotificationServiceImpl implements ActionsNotification
 
   /** {@link EventService}. */
   private final EventService documentEventService;
+  /** {@link Logger}. */
+  private final Logger log;
 
   /**
    * constructor.
-   * 
+   *
+   * @param logger {@link Logger}
    * @param eventService {@link EventService}
    */
-  public ActionsNotificationServiceImpl(final EventService eventService) {
+  public ActionsNotificationServiceImpl(final Logger logger, final EventService eventService) {
     if (eventService == null) {
       throw new IllegalArgumentException("'eventService' is required");
     }
+    if (logger == null) {
+      throw new IllegalArgumentException("'eventService' is required");
+    }
+    this.log = logger;
     this.documentEventService = eventService;
   }
 
@@ -80,7 +88,7 @@ public final class ActionsNotificationServiceImpl implements ActionsNotification
   public boolean publishNextActionEvent(final String siteId, final String documentId) {
     String site = !isEmpty(siteId) ? siteId : DEFAULT_SITE_ID;
     DocumentEvent event = new DocumentEvent().siteId(site).documentId(documentId).type(ACTIONS);
-    this.documentEventService.publish(event);
+    this.documentEventService.publish(this.log, event);
     return true;
   }
 }

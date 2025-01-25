@@ -27,15 +27,12 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.getSiteId;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static com.formkiq.module.events.document.DocumentEventType.CREATE;
-import static com.formkiq.module.events.document.DocumentEventType.DELETE;
 import static com.formkiq.module.events.document.DocumentEventType.UPDATE;
 import static com.formkiq.stacks.dynamodb.DocumentService.SYSTEM_DEFINED_TAGS;
 import static com.formkiq.stacks.dynamodb.DocumentVersionService.S3VERSION_ATTRIBUTE;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.URL;
 import java.net.http.HttpResponse;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -53,10 +50,7 @@ import com.formkiq.aws.dynamodb.cache.CacheServiceExtension;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
-import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
-import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.aws.dynamodb.objects.Strings;
-import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3PresignerService;
@@ -75,7 +69,6 @@ import com.formkiq.module.actions.services.ActionsNotificationServiceExtension;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceExtension;
 import com.formkiq.module.events.EventService;
-import com.formkiq.module.events.EventServiceSns;
 import com.formkiq.module.events.EventServiceSnsExtension;
 import com.formkiq.module.events.document.DocumentEvent;
 import com.formkiq.module.http.HttpService;
@@ -106,8 +99,6 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
   private static ActionsService actionsService;
   /** Bad Request. */
   static final int BAD_REQUEST = 400;
-  /** {@link EventService}. */
-  private static EventService documentEventService;
 
   /** {@link ActionsNotificationService}. */
   private static ActionsNotificationService notificationService;
@@ -123,14 +114,10 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
   /** {@link AwsServiceCache}. */
   private static AwsServiceCache serviceCache;
-  /** SNS Document Event Arn. */
-  private static String snsDocumentEvent;
   /** {@link S3ServiceInterceptor}. */
   private static S3ServiceInterceptor s3ServiceInterceptor;
   /** {@link CacheService}. */
   private static CacheService cacheService;
-  /** {@link S3PresignerService}. */
-  private static S3PresignerService s3PresignedService;
   /** {@link Logger}. */
   private static Logger logger;
 
@@ -208,12 +195,9 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     awsServiceCache.register(HttpService.class, new ClassServiceExtension<>(
         new HttpServiceSigv4(awsServiceCache.region(), awsCredentials)));
 
-    s3PresignedService = awsServiceCache.getExtension(S3PresignerService.class);
     service = awsServiceCache.getExtension(DocumentService.class);
-    snsDocumentEvent = awsServiceCache.environment("SNS_DOCUMENT_EVENT");
     actionsService = awsServiceCache.getExtension(ActionsService.class);
     s3service = awsServiceCache.getExtension(S3Service.class);
-    documentEventService = awsServiceCache.getExtension(EventService.class);
     notificationService = awsServiceCache.getExtension(ActionsNotificationService.class);
     s3ServiceInterceptor = awsServiceCache.getExtension(S3ServiceInterceptor.class);
     cacheService = awsServiceCache.getExtension(CacheService.class);
@@ -296,19 +280,6 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
       throw new IOException(String.format("Unable to delete document %s from site %s in module %s",
           documentId, siteId, module));
     }
-  }
-
-  private String getContent(final String s3bucket, final String key, final S3ObjectMetadata resp,
-      final String contentType) {
-
-    String content = null;
-
-    if (MimeType.isPlainText(contentType) && resp.getContentLength() != null
-        && resp.getContentLength() < EventServiceSns.MAX_SNS_CONTENT_SIZE) {
-      content = s3service.getContentAsString(s3bucket, key, null);
-    }
-
-    return content;
   }
 
   /**
@@ -529,13 +500,6 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
       }
 
       service.deleteDocument(siteId, documentId, false);
-
-      DynamicDocumentItem doc = new DynamicDocumentItem(Map.of("documentId", documentId));
-
-      DocumentEvent event =
-          buildDocumentEvent(DELETE, siteId, doc, bucket, key, doc.getContentType());
-
-      sendSnsMessage(event, doc.getContentType(), bucket, key, null);
     }
   }
 
@@ -593,7 +557,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
       DocumentEvent event =
           buildDocumentEvent(create ? CREATE : UPDATE, siteId, item, s3bucket, key, contentType);
-      sendSnsMessage(event, contentType, s3bucket, key, resp);
+      sendSnsMessage(event);
 
     } else {
       logger.error("Cannot find document " + documentId + " in site " + siteId);
@@ -633,31 +597,12 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
    * Either sends the Create Message to SNS.
    *
    * @param event {@link DocumentEvent}
-   * @param contentType {@link String}
-   * @param s3bucket {@link String}
-   * @param key {@link String}
-   * @param resp {@link S3ObjectMetadata}
    */
-  private void sendSnsMessage(final DocumentEvent event, final String contentType,
-      final String s3bucket, final String key, final S3ObjectMetadata resp) {
-
-    String siteId = event.siteId();
-    String documentId = event.documentId();
-
-    if ("application/json".equals(contentType)) {
-      String content = getContent(s3bucket, key, resp, contentType);
-      event.content(content);
-    }
-
-    PresignGetUrlConfig config = new PresignGetUrlConfig().contentType(contentType);
-    URL url = s3PresignedService.presignGetUrl(s3bucket, key, Duration.ofDays(1), null, config);
-    event.url(url.toString());
-
-    // String eventJson = documentEventService.publish(event);
-    // logger.trace(eventJson);
+  private void sendSnsMessage(final DocumentEvent event) {
 
     String eventType = event.type();
-    // logger.trace("publishing " + event.type() + " document message to " + snsDocumentEvent);
+    String siteId = event.siteId();
+    String documentId = event.documentId();
 
     if (CREATE.equals(eventType)) {
       List<Action> actions = actionsService.getActions(siteId, documentId);

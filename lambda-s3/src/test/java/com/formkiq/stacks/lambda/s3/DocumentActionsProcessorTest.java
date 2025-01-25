@@ -118,6 +118,7 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 import software.amazon.awssdk.utils.IoUtils;
@@ -219,6 +220,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
   private static EventBridgeService eventBridgeService;
   /** {@link SqsService}. */
   private static SqsService sqsService;
+  /** {@link SnsService}. */
+  private static SnsService sns;
 
   /**
    * After Class.
@@ -268,7 +271,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
     configService = new ConfigServiceDynamoDb(dbBuilder, DOCUMENTS_TABLE);
 
-    SnsService sns = new SnsService(TestServices.getSnsConnection(null));
+    sns = new SnsService(TestServices.getSnsConnection(null));
     snsDocumentEventTopicArn = sns.createTopic(SNS_DOCUMENT_EVENT_TOPIC).topicArn();
 
     SqsConnectionBuilder sqsBuilder = TestServices.getSqsConnection(null);
@@ -2371,22 +2374,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertEquals(ActionType.EVENTBRIDGE, action.type());
       assertEquals(ActionStatus.COMPLETE, action.status());
 
-      ReceiveMessageResponse response = getReceiveMessageResponse(sqsDocumentQueueUrl);
+      Message message = getMessage(sqsDocumentQueueUrl);
 
-      assertEquals(1, response.messages().size());
-      Message message = response.messages().get(0);
-
-      Map<String, Object> data = GSON.fromJson(message.body(), Map.class);
-      assertEquals("formkiq.test", data.get("source"));
-      assertEquals("Document Action Event", data.get("detail-type"));
-      assertTrue(data.get("time").toString().endsWith("Z"));
-
-      data = (Map<String, Object>) data.get("detail");
-      List<Map<String, Object>> documents = (List<Map<String, Object>>) data.get("documents");
-      assertEquals(1, documents.size());
-      assertNotNull(documents.get(0).get("documentId"));
-      assertNotNull(documents.get(0).get("url"));
-      assertNotNull(documents.get(0).get("path"));
+      List<Map<String, Object>> documents =
+          assertEventBridgeMessage(message, "Document Action Event");
 
       validateAttributes(documents);
     }
@@ -2403,67 +2394,267 @@ public class DocumentActionsProcessorTest implements DbKeys {
   }
 
   /**
-   * Handle DynamoDb Sync Event.
+   * Handle DynamoDb Create Metadata Sync Event.
    *
    * @throws Exception Exception
    */
   @Test
-  // @Timeout(TEST_TIMEOUT)
+  @Timeout(TEST_TIMEOUT)
   public void testDynamoDbSyncEvent01() throws Exception {
     // given
+    String sqsDocumentQueueUrl = setupDynamoDbSync();
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      String documentId = createDocument(siteId);
+
+      // when
+      handleDynamodb(siteId, documentId);
+
+      // then
+      assertEquals(0, actionsService.getActions(siteId, documentId).size());
+
+      List<DocumentSyncRecord> syncs = getDocumentSyncs(siteId, documentId);
+      assertEquals(1, syncs.size());
+      assertEventBridge(syncs.get(0), DocumentSyncType.METADATA);
+
+      Message message = getMessage(sqsDocumentQueueUrl);
+
+      assertEventBridgeMessage(message, "Document Create Metadata");
+    }
+  }
+
+  /**
+   * Handle DynamoDb Content Sync Event.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(TEST_TIMEOUT)
+  public void testDynamoDbSyncEvent02() throws Exception {
+    // given
+    String sqsDocumentQueueUrl = setupDynamoDbSync();
+
+    String sqsDocumentQueueUrl2 = sqsService.createQueue("sqssnsCreate2" + ID.uuid()).queueUrl();
+    String sqsQueueArn = sqsService.getQueueArn(sqsDocumentQueueUrl2);
+    sns.subscribe(snsDocumentEventTopicArn, "sqs", sqsQueueArn);
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      String documentId = createDocument(siteId);
+
+      String contentType = "text/plain";
+      Map<String, AttributeValue> attributes =
+          Map.of("contentType", AttributeValue.fromS(contentType));
+      documentService.updateDocument(siteId, documentId, attributes);
+
+      // when
+      handleDynamodb(siteId, documentId);
+
+      // then
+      assertEquals(0, actionsService.getActions(siteId, documentId).size());
+
+      List<DocumentSyncRecord> syncs = getDocumentSyncs(siteId, documentId);
+      assertEquals(2, syncs.size());
+      assertEventBridge(syncs.get(0), DocumentSyncType.CONTENT);
+      assertEventBridge(syncs.get(1), DocumentSyncType.METADATA);
+
+      Message message = getMessage(sqsDocumentQueueUrl);
+      assertEventBridgeMessage(message, "Document Create Content");
+
+      message = getMessage(sqsDocumentQueueUrl);
+      assertEventBridgeMessage(message, "Document Create Metadata");
+
+      message = getMessage(sqsDocumentQueueUrl2);
+      assertSnsMessage(message, "create", siteId);
+    }
+  }
+
+  /**
+   * Handle DynamoDb Delete Sync Event.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(TEST_TIMEOUT)
+  public void testDynamoDbSyncEvent03() throws Exception {
+    // given
+    String sqsDocumentQueueUrl = setupDynamoDbSync();
+
+    String sqsDocumentQueueUrl2 = sqsService.createQueue("sqssnsCreate2" + ID.uuid()).queueUrl();
+    String sqsQueueArn = sqsService.getQueueArn(sqsDocumentQueueUrl2);
+    sns.subscribe(snsDocumentEventTopicArn, "sqs", sqsQueueArn);
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      String documentId = createDocument(siteId);
+      TimeUnit.MILLISECONDS.sleep(2);
+
+      documentService.deleteDocument(siteId, documentId, false);
+
+      // when
+      handleDynamodb(siteId, documentId);
+
+      // then
+      assertEquals(0, actionsService.getActions(siteId, documentId).size());
+
+      List<DocumentSyncRecord> syncs = getDocumentSyncs(siteId, documentId);
+      assertEquals(2, syncs.size());
+      assertEventBridge(syncs.get(0), DocumentSyncType.DELETE_METADATA);
+      assertEventBridge(syncs.get(1), DocumentSyncType.METADATA);
+
+      Message message = getMessage(sqsDocumentQueueUrl);
+      assertEventBridgeDeleteMessage(message, "Document Delete Metadata");
+
+      message = getMessage(sqsDocumentQueueUrl);
+      assertEventBridgeDeleteMessage(message, "Document Create Metadata");
+
+      message = getMessage(sqsDocumentQueueUrl2);
+      assertSnsMessage(message, "delete", siteId);
+    }
+  }
+
+  /**
+   * Handle DynamoDb Soft Delete Sync Event.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(TEST_TIMEOUT)
+  public void testDynamoDbSyncEvent04() throws Exception {
+    // given
+    String sqsDocumentQueueUrl = setupDynamoDbSync();
+
+    String sqsDocumentQueueUrl2 = sqsService.createQueue("sqssnsCreate2" + ID.uuid()).queueUrl();
+    String sqsQueueArn = sqsService.getQueueArn(sqsDocumentQueueUrl2);
+    sns.subscribe(snsDocumentEventTopicArn, "sqs", sqsQueueArn);
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      String documentId = createDocument(siteId);
+      TimeUnit.MILLISECONDS.sleep(2);
+      documentService.deleteDocument(siteId, documentId, true);
+
+      // when
+      handleDynamodb(siteId, documentId);
+
+      // then
+      assertEquals(0, actionsService.getActions(siteId, documentId).size());
+
+      List<DocumentSyncRecord> syncs = getDocumentSyncs(siteId, documentId);
+      assertEquals(2, syncs.size());
+      assertEventBridge(syncs.get(0), DocumentSyncType.SOFT_DELETE_METADATA);
+      assertEventBridge(syncs.get(1), DocumentSyncType.METADATA);
+
+      Message message = getMessage(sqsDocumentQueueUrl);
+      assertEventBridgeDeleteMessage(message, "Document Soft Delete Metadata");
+
+      message = getMessage(sqsDocumentQueueUrl);
+      assertEventBridgeDeleteMessage(message, "Document Create Metadata");
+
+      message = getMessage(sqsDocumentQueueUrl2);
+      assertSnsMessage(message, "softDelete", siteId);
+    }
+  }
+
+  private Message getMessage(final String sqsDocumentQueueUrl) throws InterruptedException {
+    ReceiveMessageResponse response = getReceiveMessageResponse(sqsDocumentQueueUrl);
+
+    assertEquals(1, response.messages().size());
+    return response.messages().get(0);
+  }
+
+  private void assertEventBridge(final DocumentSyncRecord sync, final DocumentSyncType syncType) {
+    assertEquals(DocumentSyncServiceType.EVENTBRIDGE, sync.getService());
+    assertEquals(syncType, sync.getType());
+    assertEquals(DocumentSyncStatus.COMPLETE, sync.getStatus());
+    assertNotNull(sync.getSyncDate());
+  }
+
+  private void assertSnsMessage(final Message m, final String eventType, final String siteId) {
+
+    Map<String, String> map = GSON.fromJson(m.body(), Map.class);
+    String message = map.get("Message");
+
+    map = GSON.fromJson(message, Map.class);
+    assertNotNull(map.get("documentId"));
+    assertEquals(eventType, map.get("type"));
+    assertNotNull(map.get("path"));
+
+    assertTrue(map.get("url").contains("testbucket"));
+    assertNull(map.get("content"));
+
+    if (!"delete".equals(eventType) && !"softDelete".equals(eventType)) {
+      assertNotNull(map.get("userId"));
+    }
+
+    assertEquals(Objects.requireNonNullElse(siteId, DEFAULT_SITE_ID), map.get("siteId"));
+  }
+
+  private List<Map<String, Object>> assertEventBridgeMessage(final Message message,
+      final String detailType) {
+    Map<String, Object> data = GSON.fromJson(message.body(), Map.class);
+    assertEquals("formkiq.test", data.get("source"));
+    assertEquals(detailType, data.get("detail-type"));
+    assertTrue(data.get("time").toString().endsWith("Z"));
+
+    data = (Map<String, Object>) data.get("detail");
+    List<Map<String, Object>> documents = (List<Map<String, Object>>) data.get("documents");
+    assertEquals(1, documents.size());
+    assertNotNull(documents.get(0).get("documentId"));
+    assertNotNull(documents.get(0).get("url"));
+    assertNotNull(documents.get(0).get("path"));
+
+    return documents;
+  }
+
+  private void assertEventBridgeDeleteMessage(final Message message, final String detailType) {
+    Map<String, Object> data = GSON.fromJson(message.body(), Map.class);
+    assertEquals("formkiq.test", data.get("source"));
+    assertEquals(detailType, data.get("detail-type"));
+    assertTrue(data.get("time").toString().endsWith("Z"));
+
+    data = (Map<String, Object>) data.get("detail");
+    List<Map<String, Object>> documents = (List<Map<String, Object>>) data.get("documents");
+    assertEquals(1, documents.size());
+    assertNotNull(documents.get(0).get("documentId"));
+    assertNull(documents.get(0).get("url"));
+    assertNull(documents.get(0).get("path"));
+
+  }
+
+  private void handleDynamodb(final String siteId, final String documentId) throws IOException {
+    List<DocumentSyncRecord> syncs = getDocumentSyncs(siteId, documentId);
+
+    for (DocumentSyncRecord sync : syncs) {
+      String pk = SiteIdKeyGenerator.createDatabaseKey(siteId, "docs#" + documentId);
+      Map<String, Object> map =
+          loadFileAsMap(this, "/event-dynamodb01.json", "docs#7e4a43d6-b74a-4fb8-a751-e724cff5c3de",
+              pk, "7e4a43d6-b74a-4fb8-a751-e724cff5c3de", documentId,
+              "syncs#2025-01-22T15:53:12.342Z", sync.sk(), "METADATA", sync.getType().name());
+      processor.handleRequest(map, null);
+    }
+  }
+
+  private List<DocumentSyncRecord> getDocumentSyncs(final String siteId, final String documentId) {
+    return notNull(
+        documentSyncService.getSyncs(siteId, documentId, null, MAX_RESULTS).getResults());
+  }
+
+  private String createDocument(final String siteId) throws ValidationException {
+    String documentId = ID.uuid();
+    DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+    documentService.saveDocument(siteId, item, null);
+    return documentId;
+  }
+
+  private String setupDynamoDbSync() {
     String sqsDocumentQueueUrl = sqsService.createQueue("sqssnsCreate1" + ID.uuid()).queueUrl();
     String sqsQueueArn = sqsService.getQueueArn(sqsDocumentQueueUrl);
     String eventBusName = createEventBus(sqsQueueArn);
 
     initProcessor(null, null, eventBusName);
-
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-
-      String documentId = ID.uuid();
-      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-      documentService.saveDocument(siteId, item, null);
-
-      List<DocumentSyncRecord> syncs =
-          notNull(documentSyncService.getSyncs(siteId, documentId, null, MAX_RESULTS).getResults());
-      assertEquals(1, syncs.size());
-
-      String pk = SiteIdKeyGenerator.createDatabaseKey(siteId, "docs#" + documentId);
-
-      Map<String, Object> map = loadFileAsMap(this, "/event-dynamodb01.json",
-          "docs#7e4a43d6-b74a-4fb8-a751-e724cff5c3de", pk, "7e4a43d6-b74a-4fb8-a751-e724cff5c3de",
-          documentId, "syncs#2025-01-22T15:53:12.342Z", syncs.get(0).sk());
-
-      // when
-      processor.handleRequest(map, null);
-
-      // then
-      assertEquals(0, actionsService.getActions(siteId, documentId).size());
-
-      syncs =
-          notNull(documentSyncService.getSyncs(siteId, documentId, null, MAX_RESULTS).getResults());
-      assertEquals(1, syncs.size());
-      assertEquals(DocumentSyncServiceType.EVENTBRIDGE, syncs.get(0).getService());
-      assertEquals(DocumentSyncType.METADATA, syncs.get(0).getType());
-      assertEquals(DocumentSyncStatus.COMPLETE, syncs.get(0).getStatus());
-      assertNotNull(syncs.get(0).getSyncDate());
-
-      ReceiveMessageResponse response = getReceiveMessageResponse(sqsDocumentQueueUrl);
-
-      assertEquals(1, response.messages().size());
-      Message message = response.messages().get(0);
-
-      Map<String, Object> data = GSON.fromJson(message.body(), Map.class);
-      assertEquals("formkiq.test", data.get("source"));
-      assertEquals("Document Create Event", data.get("detail-type"));
-      assertTrue(data.get("time").toString().endsWith("Z"));
-
-      data = (Map<String, Object>) data.get("detail");
-      List<Map<String, Object>> documents = (List<Map<String, Object>>) data.get("documents");
-      assertEquals(1, documents.size());
-      assertNotNull(documents.get(0).get("documentId"));
-      assertNotNull(documents.get(0).get("url"));
-      assertNotNull(documents.get(0).get("path"));
-    }
+    return sqsDocumentQueueUrl;
   }
 
   private void validateAttributes(final List<Map<String, Object>> documents) {
@@ -2486,6 +2677,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
       TimeUnit.SECONDS.sleep(1);
       response = sqsService.receiveMessages(sqsQueueUrl);
     }
+
+    response.messages().forEach(m -> sqsService.deleteMessage(sqsQueueUrl, m.receiptHandle()));
     return response;
   }
 }

@@ -28,6 +28,9 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.module.lambdaservices.logger.LogLevel;
+import com.formkiq.module.lambdaservices.logger.LogType;
+import com.formkiq.module.lambdaservices.logger.LoggerImpl;
 import org.junit.jupiter.api.Test;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
@@ -41,9 +44,10 @@ import com.formkiq.module.events.document.DocumentEvent;
 public class ActionsNotificationServiceImplTest {
 
   /** {@link EventServiceMock}. */
-  private static EventServiceMock es = new EventServiceMock();
+  private static final EventServiceMock ES = new EventServiceMock();
   /** {@link ActionsNotificationService}. */
-  private static ActionsNotificationService service = new ActionsNotificationServiceImpl(es);
+  private static final ActionsNotificationService SERVICE =
+      new ActionsNotificationServiceImpl(new LoggerImpl(LogLevel.INFO, LogType.TEXT), ES);
 
   /**
    * Test adding pending action.
@@ -52,20 +56,20 @@ public class ActionsNotificationServiceImplTest {
   void publishNextActionEvent01() {
     // given
     String documentId = ID.uuid();
-    List<Action> actions = Arrays.asList(new Action().documentId(documentId).type(ActionType.OCR));
+    List<Action> actions = List.of(new Action().documentId(documentId).type(ActionType.OCR));
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       // when
-      service.publishNextActionEvent(actions, siteId, documentId);
+      SERVICE.publishNextActionEvent(actions, siteId, documentId);
 
       // then
-      assertEquals(1, es.getDocumentEvents().size());
-      DocumentEvent e = es.getDocumentEvents().get(0);
+      assertEquals(1, ES.getDocumentEvents().size());
+      DocumentEvent e = ES.getDocumentEvents().get(0);
       assertEquals(documentId, e.documentId());
       assertEquals("actions", e.type());
 
-      es.getDocumentEvents().clear();
+      ES.getDocumentEvents().clear();
     }
   }
 
@@ -76,16 +80,16 @@ public class ActionsNotificationServiceImplTest {
   void publishNextActionEvent02() {
     // given
     String documentId = ID.uuid();
-    List<Action> actions = Arrays.asList(
-        new Action().documentId(documentId).type(ActionType.OCR).status(ActionStatus.FAILED));
+    List<Action> actions = List
+        .of(new Action().documentId(documentId).type(ActionType.OCR).status(ActionStatus.FAILED));
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       // when
-      service.publishNextActionEvent(actions, siteId, documentId);
+      SERVICE.publishNextActionEvent(actions, siteId, documentId);
 
       // then
-      assertEquals(0, es.getDocumentEvents().size());
+      assertEquals(0, ES.getDocumentEvents().size());
     }
   }
 
@@ -103,10 +107,10 @@ public class ActionsNotificationServiceImplTest {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       // when
-      service.publishNextActionEvent(actions, siteId, documentId);
+      SERVICE.publishNextActionEvent(actions, siteId, documentId);
 
       // then
-      assertEquals(0, es.getDocumentEvents().size());
+      assertEquals(0, ES.getDocumentEvents().size());
     }
   }
 }

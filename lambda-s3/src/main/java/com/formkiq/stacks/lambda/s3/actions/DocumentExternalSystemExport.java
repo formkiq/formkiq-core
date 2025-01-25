@@ -48,6 +48,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 
 /**
  * Export {@link DocumentItem} to External System.
@@ -79,6 +80,10 @@ public class DocumentExternalSystemExport {
   public String apply(final String siteId, final String documentId) {
 
     DocumentItem result = this.documentService.findDocument(siteId, documentId);
+    if (result == null) {
+      result = new DynamicDocumentItem(Map.of("documentId", documentId));
+    }
+
     DynamicDocumentItem item = new DocumentItemToDynamicDocumentItem().apply(result);
 
     String site = siteId != null ? siteId : SiteIdKeyGenerator.DEFAULT_SITE_ID;
@@ -131,10 +136,10 @@ public class DocumentExternalSystemExport {
       values.put(tag.getKey(), tag.getValue());
     }
 
-    String status = values.getOrDefault("CLAMAV_SCAN_STATUS", "ERROR");
+    String status = values.getOrDefault("CLAMAV_SCAN_STATUS", null);
     item.put("status", status);
 
-    String timestamp = values.getOrDefault("CLAMAV_SCAN_TIMESTAMP", "");
+    String timestamp = values.getOrDefault("CLAMAV_SCAN_TIMESTAMP", null);
     item.put("timestamp", timestamp);
   }
 
@@ -147,10 +152,17 @@ public class DocumentExternalSystemExport {
    * @return {@link URL}
    */
   private URL getS3Url(final String siteId, final String documentId, final DocumentItem item) {
-    Duration duration = Duration.ofDays(1);
-    PresignGetUrlConfig config =
-        new PresignGetUrlConfig().contentDispositionByPath(item.getPath(), false);
-    String s3key = createS3Key(siteId, documentId);
-    return s3Presigner.presignGetUrl(documentsBucket, s3key, duration, null, config);
+
+    URL url = null;
+
+    if (item != null && !isEmpty(item.getPath())) {
+      Duration duration = Duration.ofDays(1);
+      PresignGetUrlConfig config =
+          new PresignGetUrlConfig().contentDispositionByPath(item.getPath(), false);
+      String s3key = createS3Key(siteId, documentId);
+      url = s3Presigner.presignGetUrl(documentsBucket, s3key, duration, null, config);
+    }
+
+    return url;
   }
 }

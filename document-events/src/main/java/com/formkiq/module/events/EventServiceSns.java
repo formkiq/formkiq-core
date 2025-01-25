@@ -24,11 +24,12 @@
 package com.formkiq.module.events;
 
 import java.util.Map;
-import com.amazonaws.services.lambda.runtime.LambdaRuntime;
+
 import com.formkiq.aws.sns.SnsConnectionBuilder;
 import com.formkiq.aws.sns.SnsService;
 import com.formkiq.module.events.document.DocumentEvent;
 import com.formkiq.module.events.folder.FolderEvent;
+import com.formkiq.module.lambdaservices.logger.Logger;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.services.sns.model.MessageAttributeValue;
@@ -72,7 +73,7 @@ public final class EventServiceSns implements EventService {
   }
 
   @Override
-  public String publish(final DocumentEvent event) {
+  public String publish(final Logger logger, final DocumentEvent event) {
 
     String eventJson = this.gson.toJson(event);
     if (eventJson.length() > MAX_SNS_CONTENT_SIZE) {
@@ -95,15 +96,15 @@ public final class EventServiceSns implements EventService {
 
     if (!this.topicArn.isEmpty()) {
       PublishResponse response = this.snsService.publish(this.topicArn, eventJson, tags);
-      LambdaRuntime.getLogger().log("publishing to: " + this.topicArn + " messageId: "
-          + response.messageId() + " body: " + eventJson);
+      logger.trace("publishing to: " + this.topicArn + " messageId: " + response.messageId()
+          + " body: " + eventJson);
     }
 
     return eventJson;
   }
 
   @Override
-  public String publish(final FolderEvent event) {
+  public String publish(final Logger logger, final FolderEvent event) {
     String eventJson = this.gson.toJson(event);
 
     MessageAttributeValue typeAttr =
@@ -113,10 +114,10 @@ public final class EventServiceSns implements EventService {
 
     Map<String, MessageAttributeValue> tags = Map.of("type", typeAttr, "siteId", siteIdAttr);
 
-    LambdaRuntime.getLogger().log("publishing to: " + this.topicArn + " body: " + eventJson);
+    logger.trace("publishing to: " + this.topicArn + " body: " + eventJson);
     PublishResponse response = this.snsService.publish(this.topicArn, eventJson, tags);
-    LambdaRuntime.getLogger().log("publishing to: " + this.topicArn + " messageId: "
-        + response.messageId() + " body: " + eventJson);
+    logger.trace("publishing to: " + this.topicArn + " messageId: " + response.messageId()
+        + " body: " + eventJson);
 
     return eventJson;
   }

@@ -52,6 +52,8 @@ import com.formkiq.client.model.DocumentAttribute;
 import com.formkiq.client.model.DocumentSearch;
 import com.formkiq.client.model.DocumentSearchMeta;
 import com.formkiq.client.model.DocumentSearchRequest;
+import com.formkiq.client.model.DocumentSync;
+import com.formkiq.client.model.DocumentSyncType;
 import com.formkiq.client.model.SchemaAttributes;
 import com.formkiq.client.model.SearchResultDocument;
 import com.formkiq.client.model.SetSitesSchemaRequest;
@@ -275,17 +277,13 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       documents = getDocuments(siteId, 1);
       assertEquals(1, documents.size());
       assertEquals(path, documents.get(0).getPath());
-      expectSoftDeleteSqsMessage(siteId, documentId);
-    }
-  }
 
-  private void expectSoftDeleteSqsMessage(final String siteId, final String documentId)
-      throws InterruptedException {
-    Map<String, Object> message = getSqsMessages("softDelete", documentId);
-    assertEquals("softDelete", message.get("type"));
-    assertEquals(siteId != null ? siteId : DEFAULT_SITE_ID, message.get("siteId"));
-    assertEquals(documentId, message.get("documentId"));
-    assertEquals("joesmith", message.get("userId"));
+      List<DocumentSync> syncs =
+          notNull(this.documentsApi.getDocumentSyncs(documentId, siteId, null, null).getSyncs());
+      assertEquals(2, syncs.size());
+      assertEquals(DocumentSyncType.SOFT_DELETE_METADATA, syncs.get(0).getType());
+      assertEquals(DocumentSyncType.METADATA, syncs.get(1).getType());
+    }
   }
 
   /**

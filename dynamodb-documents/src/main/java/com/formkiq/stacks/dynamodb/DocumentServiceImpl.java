@@ -452,8 +452,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
     if (softDelete) {
 
-      deleted = this.dbService.moveItems(list,
-          new DocumentDeleteMoveAttributeFunction(siteId, documentId));
+      deleted = deleteDocumentSoft(siteId, documentId, pk, list);
 
     } else {
 
@@ -472,6 +471,20 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
         Map<String, Object> apply = transform.apply(documentRecord);
         this.interceptor.deleteDocument(siteId, documentId, softDelete, apply);
       }
+    }
+
+    return deleted;
+  }
+
+  private boolean deleteDocumentSoft(final String siteId, final String documentId,
+      final AttributeValue pk, final List<Map<String, AttributeValue>> list) {
+    boolean deleted =
+        this.dbService.moveItems(list, new DocumentDeleteMoveAttributeFunction(siteId, documentId));
+
+    if (deleted) {
+      DocumentSyncRecord a = new DocumentSyncRecordBuilder().buildEventBridge(documentId,
+          DocumentSyncType.SOFT_DELETE_METADATA, true);
+      saveDocumentSyncRecord(siteId, a);
     }
 
     return deleted;

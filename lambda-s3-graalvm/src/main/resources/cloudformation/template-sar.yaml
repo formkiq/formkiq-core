@@ -203,22 +203,6 @@ Resources:
       Topics:
       - Ref: SnsDocumentEvent
 
-  EventDocumentEventRule:
-    Type: AWS::Events::Rule
-    Properties:
-      Name: EventToSnsRule
-      EventBusName:
-        Ref: DocumentEventsBus
-      EventPattern:
-        source:
-          - Fn::Sub: "formkiq.${AppEnvironment}"
-        detail-type:
-          - "Document Action Event"
-      Targets:
-        - Id: SnsTarget
-          Arn:
-            Ref: SnsDocumentEvent
-
   DocumentsS3Buckets:
     Type: AWS::S3::Bucket
     DependsOn:

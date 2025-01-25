@@ -50,7 +50,7 @@ public class ActionsNotificationServiceExtension
     if (this.service == null) {
 
       EventService eventService = awsServiceCache.getExtension(EventService.class);
-      this.service = new ActionsNotificationServiceImpl(eventService);
+      this.service = new ActionsNotificationServiceImpl(awsServiceCache.getLogger(), eventService);
     }
 
     return this.service;
