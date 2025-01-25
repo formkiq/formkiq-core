@@ -26,12 +26,18 @@ package com.formkiq.testutils.aws;
 import com.formkiq.client.api.SchemasApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.model.AddClassification;
+import com.formkiq.client.model.AddClassificationRequest;
 import com.formkiq.client.model.AttributeSchemaCompositeKey;
+import com.formkiq.client.model.AttributeSchemaOptional;
+import com.formkiq.client.model.AttributeSchemaRequired;
 import com.formkiq.client.model.SchemaAttributes;
 import com.formkiq.client.model.SetSitesSchemaRequest;
 
 import java.util.Collections;
 import java.util.List;
+
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 
 /**
  * Fkq Schema Service.
@@ -55,5 +61,39 @@ public class FkqSchemaService {
     SchemaAttributes attributes = new SchemaAttributes().compositeKeys(
         Collections.singletonList(new AttributeSchemaCompositeKey().attributeKeys(compositeKeys)));
     api.setSitesSchema(siteId, new SetSitesSchemaRequest().name(name).attributes(attributes));
+  }
+
+  /**
+   * Create Schema Attributes.
+   * 
+   * @param requiredKeys {@link List} {@link String}
+   * @param optionalKeys {@link List} {@link String}
+   * @return SchemaAttributes
+   */
+  public static SchemaAttributes createSchemaAttributes(final List<String> requiredKeys,
+      final List<String> optionalKeys) {
+    List<AttributeSchemaRequired> required = notNull(requiredKeys).stream()
+        .map(k -> new AttributeSchemaRequired().attributeKey(k)).toList();
+    List<AttributeSchemaOptional> optional = notNull(optionalKeys).stream()
+        .map(k -> new AttributeSchemaOptional().attributeKey(k)).toList();
+    return new SchemaAttributes().required(required).optional(optional);
+  }
+
+  /**
+   * Add Classification.
+   *
+   * @param client {@link ApiClient}
+   * @param siteId {@link String}
+   * @param name {@link String}
+   * @param attr SchemaAttributes
+   * @return String
+   * @throws ApiException ApiException
+   */
+  public static String addClassification(final ApiClient client, final String siteId,
+      final String name, final SchemaAttributes attr) throws ApiException {
+    SchemasApi api = new SchemasApi(client);
+    AddClassificationRequest req = new AddClassificationRequest()
+        .classification(new AddClassification().name(name).attributes(attr));
+    return api.addClassification(siteId, req).getClassificationId();
   }
 }

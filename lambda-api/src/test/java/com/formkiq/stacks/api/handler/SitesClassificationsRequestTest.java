@@ -35,6 +35,7 @@ import com.formkiq.client.model.AddDocumentAttributeClassification;
 import com.formkiq.client.model.AddDocumentAttributeStandard;
 import com.formkiq.client.model.AddDocumentAttributesRequest;
 import com.formkiq.client.model.AddDocumentRequest;
+import com.formkiq.client.model.AttributeDataType;
 import com.formkiq.client.model.AttributeSchemaCompositeKey;
 import com.formkiq.client.model.AttributeSchemaOptional;
 import com.formkiq.client.model.AttributeSchemaRequired;
@@ -58,13 +59,16 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.testutils.aws.FkqAttributeService.createNumberAttribute;
 import static com.formkiq.testutils.aws.FkqAttributeService.createStringAttribute;
+import static com.formkiq.testutils.aws.FkqSchemaService.createSchemaAttributes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -74,15 +78,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 @ExtendWith(DynamoDbExtension.class)
 @ExtendWith(LocalStackExtension.class)
 public class SitesClassificationsRequestTest extends AbstractApiClientRequestTest {
-
-  private static SchemaAttributes createSchemaAttributes(final List<String> requiredKeys,
-      final List<String> optionalKeys) {
-    List<AttributeSchemaRequired> required = notNull(requiredKeys).stream()
-        .map(k -> new AttributeSchemaRequired().attributeKey(k)).toList();
-    List<AttributeSchemaOptional> optional = notNull(optionalKeys).stream()
-        .map(k -> new AttributeSchemaOptional().attributeKey(k)).toList();
-    return new SchemaAttributes().required(required).optional(optional);
-  }
 
   /**
    * GET /sites/{siteId}/classifications.
@@ -136,8 +131,13 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   }
 
   private void addAttribute(final String siteId, final String key) throws ApiException {
+    addAttribute(siteId, key, null);
+  }
+
+  private void addAttribute(final String siteId, final String key, final AttributeDataType dataType)
+      throws ApiException {
     AddAttributeRequest req =
-        new AddAttributeRequest().attribute(new AddAttribute().key(key).dataType(null));
+        new AddAttributeRequest().attribute(new AddAttribute().key(key).dataType(dataType));
     this.attributesApi.addAttribute(req, siteId);
   }
 
@@ -968,10 +968,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
           new AddDocumentAttributeClassification().classificationId(classificationId);
 
       // when
-      this.documentAttributesApi.addDocumentAttributes(documentId,
-          new AddDocumentAttributesRequest()
-              .addAttributesItem(new AddDocumentAttribute(classification)),
-          siteId, null);
+      addDocumentClassification(siteId, documentId, classification);
 
       // then
       documentAttributes = notNull(this.documentAttributesApi
@@ -982,6 +979,82 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       assertEquals("Classification", documentAttributes.get(0).getKey());
       assertEquals("reviewByDate", documentAttributes.get(1).getKey());
     }
+  }
+
+  /**
+   * Add document classification after the document is already created.
+   */
+  @Test
+  void testAddDocument10() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      // given
+      addAttribute(siteId, "invoiceCurrency");
+      addAttribute(siteId, "invoiceDate");
+      addAttribute(siteId, "invoiceNumber");
+      addAttribute(siteId, "invoiceVendorName");
+      addAttribute(siteId, "invoice", AttributeDataType.KEY_ONLY);
+      addAttribute(siteId, "invoiceTotalAmount", AttributeDataType.NUMBER);
+
+      SchemaAttributes attr0 = createSchemaAttributes(
+          List.of("invoiceDate", "invoiceNumber", "invoiceTotalAmount", "invoiceVendorName"),
+          List.of("invoiceCurrency"));
+      String classificationId = addClassification(siteId, attr0);
+
+      String documentId = addDocument(siteId, null);
+
+      AddDocumentAttribute a0 =
+          new AddDocumentAttribute(new AddDocumentAttributeStandard().key("invoice"));
+      AddDocumentAttribute a1 = createStringAttribute("invoiceCurrency", "USD");
+      AddDocumentAttribute a2 = createStringAttribute("invoiceDate", "2023-05-01");
+      AddDocumentAttribute a3 = createStringAttribute("invoiceNumber", "45102");
+      AddDocumentAttribute a4 = createNumberAttribute("invoiceTotalAmount", new BigDecimal(1));
+      AddDocumentAttribute a5 =
+          createStringAttribute("invoiceVendorName", "Mascareene Beef Company");
+      addDocumentAttributes(siteId, documentId, List.of(a0, a1, a2, a3, a4, a5));
+
+      // then
+      final int expected = 6;
+      List<DocumentAttribute> documentAttributes = notNull(this.documentAttributesApi
+          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+      assertEquals(expected, documentAttributes.size());
+
+      // given
+      AddDocumentAttributeClassification classification =
+          new AddDocumentAttributeClassification().classificationId(classificationId);
+
+      // when
+      addDocumentClassification(siteId, documentId, classification);
+
+      // then
+      documentAttributes = notNull(this.documentAttributesApi
+          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+
+      int i = 0;
+      assertEquals(expected + 1, documentAttributes.size());
+      assertEquals("Classification", documentAttributes.get(i++).getKey());
+      assertEquals("invoice", documentAttributes.get(i++).getKey());
+      assertEquals("invoiceCurrency", documentAttributes.get(i++).getKey());
+      assertEquals("invoiceDate", documentAttributes.get(i++).getKey());
+      assertEquals("invoiceNumber", documentAttributes.get(i++).getKey());
+      assertEquals("invoiceTotalAmount", documentAttributes.get(i++).getKey());
+      assertEquals("invoiceVendorName", documentAttributes.get(i).getKey());
+    }
+  }
+
+  private void addDocumentAttributes(final String siteId, final String documentId,
+      final List<AddDocumentAttribute> attributes) throws ApiException {
+    AddDocumentAttributesRequest req = new AddDocumentAttributesRequest().attributes(attributes);
+    this.documentAttributesApi.addDocumentAttributes(documentId, req, siteId, null);
+  }
+
+  private void addDocumentClassification(final String siteId, final String documentId,
+      final AddDocumentAttributeClassification classification) throws ApiException {
+    this.documentAttributesApi.addDocumentAttributes(documentId, new AddDocumentAttributesRequest()
+        .addAttributesItem(new AddDocumentAttribute(classification)), siteId, null);
   }
 
   private @Nullable String addDocument(final String siteId,

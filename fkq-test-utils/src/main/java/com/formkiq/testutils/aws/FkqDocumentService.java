@@ -48,6 +48,7 @@ import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAction;
 import com.formkiq.client.model.AddDocumentAttribute;
+import com.formkiq.client.model.AddDocumentAttributesRequest;
 import com.formkiq.client.model.AddDocumentResponse;
 import com.formkiq.client.model.AddDocumentTagsRequest;
 import com.formkiq.client.model.DocumentAction;
@@ -232,6 +233,22 @@ public class FkqDocumentService {
             .isBase64(Boolean.TRUE).path(path).actions(actions).attributes(attributes);
     AddDocumentResponse response = api.addDocument(req, siteId, null);
     return response.getDocumentId();
+  }
+
+  /**
+   * Add Document Attribute.
+   * 
+   * @param apiClient {@link ApiClient}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param attributes {@link List} {@link AddDocumentAttribute}
+   * @throws ApiException ApiException
+   */
+  public static void addDocumentAttributes(final ApiClient apiClient, final String siteId,
+      final String documentId, final List<AddDocumentAttribute> attributes) throws ApiException {
+    DocumentAttributesApi api = new DocumentAttributesApi(apiClient);
+    AddDocumentAttributesRequest req = new AddDocumentAttributesRequest().attributes(attributes);
+    api.addDocumentAttributes(documentId, req, siteId, null);
   }
 
   /**
