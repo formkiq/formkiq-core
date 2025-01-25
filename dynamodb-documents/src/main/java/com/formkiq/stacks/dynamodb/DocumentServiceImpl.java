@@ -285,11 +285,11 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
     // Previous document attributes without the ones that are going to be removed, so we don't
     // generate composite keys for them
-    List<DocumentAttributeRecord> previousDocument = previousDocumentAttributeRecords.stream()
-        .filter(element -> !attributesToBeDeleted.contains(element)).toList();
+    List<DocumentAttributeRecord> previousDocumentAttributes = previousDocumentAttributeRecords
+        .stream().filter(element -> !attributesToBeDeleted.contains(element)).toList();
 
     Collection<DocumentAttributeRecord> allAttributes =
-        Objects.concat(newDocumentAttributeRecords, previousDocument);
+        Objects.concat(newDocumentAttributeRecords, previousDocumentAttributes);
 
     Set<String> attrkeys =
         allAttributes.stream().map(DocumentAttributeRecord::getKey).collect(Collectors.toSet());
@@ -316,7 +316,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
     // validation
     validateDocumentAttributes(schemaAttributes, siteId, documentId, documentAttributes,
-        attributesToBeDeleted, validation, validationAccess);
+        attributesToBeDeleted, previousDocumentAttributes, validation, validationAccess);
 
     listBuilder.setCompositeKeysToBeDeleted(compositeKeysToBeDeleted);
 
@@ -2332,8 +2332,10 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   private void validateDocumentAttributes(final List<SchemaAttributes> schemaAttributes,
       final String siteId, final String documentId,
       final Collection<DocumentAttributeRecord> documentAttributes,
-      final Collection<DocumentAttributeRecord> toBeDeleted, final AttributeValidation validation,
-      final AttributeValidationAccess validationAccess) throws ValidationException {
+      final Collection<DocumentAttributeRecord> toBeDeleted,
+      final List<DocumentAttributeRecord> previousDocumentAttributes,
+      final AttributeValidation validation, final AttributeValidationAccess validationAccess)
+      throws ValidationException {
 
     Collection<ValidationError> errors = new ArrayList<>();
 
@@ -2341,7 +2343,8 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
     if (errors.isEmpty()) {
 
-      Collection<DocumentAttributeRecord> concat = Objects.concat(documentAttributes, toBeDeleted);
+      Collection<DocumentAttributeRecord> concat = Objects
+          .concat(Objects.concat(documentAttributes, toBeDeleted), previousDocumentAttributes);
       Map<String, AttributeRecord> attributeRecordMap =
           this.attributeValidator.getAttributeRecordMap(siteId, concat);
 
