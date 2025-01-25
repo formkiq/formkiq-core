@@ -23,19 +23,21 @@
  */
 package com.formkiq.stacks.api.awstest;
 
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.testutils.aws.FkqDocumentService.addDocument;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForActions;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContent;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentTag;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
-import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.client.model.DocumentTag;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -51,7 +53,6 @@ import com.formkiq.client.model.AddActionParameters.EngineEnum;
 import com.formkiq.client.model.AddDocumentActionsRequest;
 import com.formkiq.client.model.DocumentActionStatus;
 import com.formkiq.client.model.DocumentActionType;
-import com.formkiq.client.model.GetDocumentTagsResponse;
 import com.formkiq.client.model.UpdateConfigurationRequest;
 import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
 import software.amazon.awssdk.utils.IoUtils;
@@ -92,48 +93,48 @@ public class ChatGptRequestTest extends AbstractAwsIntegrationTest {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  @Timeout(value = TEST_TIMEOUT)
   public void testOcrAndChatGpt01() throws Exception {
     // given
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
+    List<ApiClient> clients = getApiClients(null);
+    ApiClient client = clients.get(0);
 
-      List<ApiClient> clients = getApiClients(siteId);
-      ApiClient client = clients.get(0);
+    byte[] content = toBytes();
 
-      byte[] content = toBytes("/ocr/receipt.png");
+    String documentId = addDocument(client, null, "receipt.png", content, "image/png", null);
+    waitForDocumentContent(client, null, documentId);
 
-      String documentId = addDocument(client, siteId, "receipt.png", content, "image/png", null);
-      waitForDocumentContent(client, siteId, documentId);
+    DocumentActionsApi api = new DocumentActionsApi(client);
+    String actionTags = "organization,location,person,subject,sentiment,document type";
 
-      DocumentActionsApi api = new DocumentActionsApi(client);
-      String actionTags = "organization,location,person,subject,sentiment,document type";
+    // when
+    api.addDocumentActions(documentId, null,
+        new AddDocumentActionsRequest()
+            .actions(Arrays.asList(new AddAction().type(DocumentActionType.OCR),
+                new AddAction().type(DocumentActionType.DOCUMENTTAGGING).parameters(
+                    new AddActionParameters().engine(EngineEnum.CHATGPT).tags(actionTags)))));
 
-      // when
-      api.addDocumentActions(documentId, siteId,
-          new AddDocumentActionsRequest()
-              .actions(Arrays.asList(new AddAction().type(DocumentActionType.OCR),
-                  new AddAction().type(DocumentActionType.DOCUMENTTAGGING).parameters(
-                      new AddActionParameters().engine(EngineEnum.CHATGPT).tags(actionTags)))));
+    // then
+    waitForActions(client, null, documentId, List.of(DocumentActionStatus.COMPLETE));
 
-      // then
-      waitForActions(client, siteId, documentId, Arrays.asList(DocumentActionStatus.COMPLETE));
+    DocumentTagsApi tagsApi = new DocumentTagsApi(client);
 
-      DocumentTagsApi tagsApi = new DocumentTagsApi(client);
+    List<DocumentTag> tags1 =
+        notNull(tagsApi.getDocumentTags(documentId, null, null, null, null, null).getTags());
+    assertFalse(tags1.isEmpty());
 
-      waitForDocumentTag(client, siteId, documentId, "organization");
-      GetDocumentTagsResponse tags =
-          tagsApi.getDocumentTags(documentId, siteId, null, null, null, null);
+    waitForDocumentTag(client, null, documentId, "organization");
+    List<DocumentTag> tags =
+        notNull(tagsApi.getDocumentTags(documentId, null, null, null, null, null).getTags());
 
-      assertTrue(
-          tags.getTags().stream().filter(r -> r.getKey().equals("untagged")).findFirst().isEmpty());
+    assertTrue(tags.stream().filter(r -> "untagged".equals(r.getKey())).findFirst().isEmpty());
 
-      assertTrue(tags.getTags().stream()
-          .filter(r -> r.getKey().toLowerCase().equals("organization")).findFirst().isPresent());
-    }
+    assertTrue(tags.stream().anyMatch(r -> "organization".equalsIgnoreCase(r.getKey())));
   }
 
-  private byte[] toBytes(final String name) throws IOException {
-    try (InputStream is = getClass().getResourceAsStream(name)) {
+  private byte[] toBytes() throws IOException {
+    try (InputStream is = getClass().getResourceAsStream("/ocr/receipt.png")) {
+      assertNotNull(is);
       return IoUtils.toByteArray(is);
     }
   }

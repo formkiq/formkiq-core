@@ -32,7 +32,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -62,14 +61,13 @@ public class DocumentsDocumentIdSyncsRequestTest extends AbstractAwsIntegrationT
     return list.stream().filter(s -> type.equals(s.getService())).collect(Collectors.toList());
   }
 
-  private Optional<DocumentSync> find(final Collection<DocumentSync> list,
-      final DocumentSyncType type) {
-    return list.stream().filter(s -> type.equals(s.getType())).findFirst();
+  private DocumentSync find(final Collection<DocumentSync> list, final DocumentSyncType type) {
+    return list.stream().filter(s -> type.equals(s.getType())).findFirst().orElse(null);
   }
 
   private boolean isComplete(final GetDocumentSyncResponse syncs) {
     int count = notNull(syncs.getSyncs()).size();
-    return count == 2;
+    return count == 4;
   }
 
   /**
@@ -105,19 +103,22 @@ public class DocumentsDocumentIdSyncsRequestTest extends AbstractAwsIntegrationT
 
         for (DocumentSync sync : list) {
           assertNotNull(sync.getUserId());
-          assertNotNull(sync.getSyncDate());
-          assertEquals(DocumentSyncStatus.COMPLETE, sync.getStatus());
+
+          if (!DocumentSyncService.EVENTBRIDGE.equals(sync.getService())) {
+            assertNotNull(sync.getSyncDate());
+            assertEquals(DocumentSyncStatus.COMPLETE, sync.getStatus());
+          }
         }
 
         List<DocumentSync> typesense = find(list, DocumentSyncService.TYPESENSE);
         if (!typesense.isEmpty()) {
           assertEquals(2, typesense.size());
 
-          DocumentSync sync = find(typesense, DocumentSyncType.CONTENT).get();
+          DocumentSync sync = find(typesense, DocumentSyncType.CONTENT);
           assertEquals(DocumentSyncService.TYPESENSE, sync.getService());
           assertEquals(DocumentSyncType.CONTENT, sync.getType());
 
-          sync = find(typesense, DocumentSyncType.METADATA).get();
+          sync = find(typesense, DocumentSyncType.METADATA);
           assertEquals(DocumentSyncService.TYPESENSE, sync.getService());
           assertEquals(DocumentSyncType.METADATA, sync.getType());
         }
@@ -126,15 +127,11 @@ public class DocumentsDocumentIdSyncsRequestTest extends AbstractAwsIntegrationT
         if (!opensearch.isEmpty()) {
           assertEquals(2, opensearch.size());
 
-          DocumentSync sync = find(opensearch, DocumentSyncType.CONTENT).get();
+          DocumentSync sync = find(opensearch, DocumentSyncType.CONTENT);
           assertEquals(DocumentSyncService.OPENSEARCH, sync.getService());
           assertEquals(DocumentSyncType.CONTENT, sync.getType());
 
-          // sync = find(opensearch, DocumentSyncType.TAG).get();
-          // assertEquals(DocumentSyncService.OPENSEARCH, sync.getService());
-          // assertEquals(DocumentSyncType.TAG, sync.getType());
-
-          sync = find(opensearch, DocumentSyncType.METADATA).get();
+          sync = find(opensearch, DocumentSyncType.METADATA);
           assertEquals(DocumentSyncService.OPENSEARCH, sync.getService());
           assertEquals(DocumentSyncType.METADATA, sync.getType());
         }
