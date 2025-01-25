@@ -116,7 +116,7 @@ public class LoggerImpl implements Logger {
    * @return The string with double-quote characters escaped
    */
   private String escapeDoubleQuotes(final String input) {
-    return input.replace("\"", "\\\"");
+    return input != null ? input.replace("\"", "\\\"") : null;
   }
 
   @Override
