@@ -67,7 +67,8 @@ public class DocumentsDocumentIdSyncsRequestTest extends AbstractAwsIntegrationT
 
   private boolean isComplete(final GetDocumentSyncResponse syncs) {
     int count = notNull(syncs.getSyncs()).size();
-    return count == 4;
+    final int expectedCount = 4;
+    return count == expectedCount;
   }
 
   /**
