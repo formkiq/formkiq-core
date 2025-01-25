@@ -202,7 +202,6 @@
       <property name="max" value="50"/>
       <property name="countEmpty" value="false"/>
     </module>
-    <module name="ParameterNumber"/>
     <module name="RedundantModifier"/>
     <module name="EqualsHashCode"/>
     <module name="EmptyStatement"/>
