@@ -30,7 +30,6 @@ import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
-import com.formkiq.aws.dynamodb.DynamodbRecord;
 import com.formkiq.aws.dynamodb.DynamodbRecordKeyPredicate;
 import com.formkiq.aws.dynamodb.DynamodbRecordTx;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
@@ -1851,8 +1850,8 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     writeBuilder.appends(this.documentTableName,
         tx.getSaves().stream().map(a -> a.getAttributes(siteId)).toList());
 
-    addDocumentSyncRecord(writeBuilder, siteId, document.getDocumentId(), documentExists,
-        tx.getSaves(), now, options);
+    addDocumentSyncRecord(writeBuilder, siteId, document.getDocumentId(), documentExists, now,
+        options);
 
     if (documentExists) {
       writeBuilder.append(this.documentTableName, documentValues);
@@ -1955,7 +1954,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       builder.appends(this.documentTableName, list);
 
       SaveDocumentOptions options = new SaveDocumentOptions();
-      addDocumentSyncRecord(builder, siteId, documentId, true, tx.getSaves(), new Date(), options);
+      addDocumentSyncRecord(builder, siteId, documentId, true, new Date(), options);
 
       if (builder.batchWriteItem(this.dbClient)) {
         // delete old composite keys
@@ -2025,13 +2024,11 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   private void addDocumentSyncRecord(final WriteRequestBuilder writeBuilder, final String siteId,
-      final String documentId, final boolean documentExists,
-      final Collection<? extends DynamodbRecord<?>> toSave, final Date now,
+      final String documentId, final boolean documentExists, final Date now,
       final SaveDocumentOptions options) {
 
     if (!options.isSkipDocumentEventBridge()) {
-      DocumentSyncType syncType =
-          !toSave.isEmpty() ? DocumentSyncType.ATTRIBUTE : DocumentSyncType.METADATA;
+      DocumentSyncType syncType = DocumentSyncType.METADATA;
       DocumentSyncRecord a =
           new DocumentSyncRecordBuilder().buildEventBridge(documentId, syncType, documentExists);
       a.setInsertedDate(now);

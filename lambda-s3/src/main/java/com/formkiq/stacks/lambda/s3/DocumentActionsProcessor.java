@@ -569,10 +569,8 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     DocumentSyncType syncType = DocumentSyncType.valueOf(type.toUpperCase());
 
     return switch (syncType) {
-      case ATTRIBUTE -> null;
       case CONTENT -> "Document " + detailType + " Content";
       case METADATA -> "Document " + detailType + " Metadata";
-      case TAG -> "Document " + detailType + " Tag";
       case DELETE_METADATA -> "Document Delete Metadata";
       case SOFT_DELETE_METADATA -> "Document Soft Delete Metadata";
     };

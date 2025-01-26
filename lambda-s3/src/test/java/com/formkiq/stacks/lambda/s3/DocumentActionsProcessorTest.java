@@ -1558,18 +1558,17 @@ public class DocumentActionsProcessorTest implements DbKeys {
         assertEquals("6200041751", record.getStringValue());
 
         List<DocumentSyncRecord> syncs = assertSyncsCount(siteId, documentId, 2);
-        assertSyncEquals(syncs.get(0), DocumentSyncType.ATTRIBUTE, "updated Document Attribute");
-        assertSyncEquals(syncs.get(1), DocumentSyncType.METADATA, MESSAGE_ADDED_METADATA);
+        assertSyncEquals(syncs.get(0), "updated Document Metadata");
+        assertSyncEquals(syncs.get(1), MESSAGE_ADDED_METADATA);
       }
     }
   }
 
-  private void assertSyncEquals(final DocumentSyncRecord sync, final DocumentSyncType syncType,
-      final String message) {
+  private void assertSyncEquals(final DocumentSyncRecord sync, final String message) {
     assertEquals(DocumentSyncServiceType.EVENTBRIDGE, sync.getService());
     assertNull(sync.getSyncDate());
     assertNotNull(sync.getInsertedDate());
-    assertEquals(syncType, sync.getType());
+    assertEquals(DocumentSyncType.METADATA, sync.getType());
     assertEquals(message, sync.getMessage());
     assertEquals("System", sync.getUserId());
     assertEquals(DocumentSyncStatus.PENDING, sync.getStatus());
@@ -1623,8 +1622,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
         assertEquals("6.200041751E9", record.getNumberValue().toString());
 
         List<DocumentSyncRecord> syncs = assertSyncsCount(siteId, documentId, 2);
-        assertSyncEquals(syncs.get(0), DocumentSyncType.ATTRIBUTE, "updated Document Attribute");
-        assertSyncEquals(syncs.get(1), DocumentSyncType.METADATA, MESSAGE_ADDED_METADATA);
+        assertSyncEquals(syncs.get(0), "updated Document Metadata");
+        assertSyncEquals(syncs.get(1), MESSAGE_ADDED_METADATA);
       }
     }
   }
@@ -1666,7 +1665,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
         assertEquals(0, results.size());
 
         List<DocumentSyncRecord> syncs = assertSyncsCount(siteId, documentId, 1);
-        assertSyncEquals(syncs.get(0), DocumentSyncType.METADATA, MESSAGE_ADDED_METADATA);
+        assertSyncEquals(syncs.get(0), MESSAGE_ADDED_METADATA);
       }
     }
   }
@@ -1759,8 +1758,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
         assertEquals("abc", record.getStringValue());
 
         List<DocumentSyncRecord> syncs = assertSyncsCount(siteId, documentId, 2);
-        assertSyncEquals(syncs.get(0), DocumentSyncType.ATTRIBUTE, "updated Document Attribute");
-        assertSyncEquals(syncs.get(1), DocumentSyncType.METADATA, MESSAGE_ADDED_METADATA);
+        assertSyncEquals(syncs.get(0), "updated Document Metadata");
+        assertSyncEquals(syncs.get(1), MESSAGE_ADDED_METADATA);
       }
     }
   }
@@ -2325,7 +2324,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       }
 
       List<DocumentSyncRecord> syncs = assertSyncsCount(siteId, documentId, 1);
-      assertSyncEquals(syncs.get(0), DocumentSyncType.METADATA, MESSAGE_ADDED_METADATA);
+      assertSyncEquals(syncs.get(0), MESSAGE_ADDED_METADATA);
     }
   }
 

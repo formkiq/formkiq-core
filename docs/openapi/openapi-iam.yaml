@@ -8050,9 +8050,7 @@
               type: string
               description: Type of Document Sync
               enum:
-              - ATTRIBUTE
               - METADATA
-              - TAG
               - CONTENT
               - SOFT_DELETE_METADATA
               - DELETE_METADATA

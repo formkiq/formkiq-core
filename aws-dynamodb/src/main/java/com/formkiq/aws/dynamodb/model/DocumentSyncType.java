@@ -30,14 +30,10 @@ package com.formkiq.aws.dynamodb.model;
  */
 public enum DocumentSyncType {
 
-  /** Attribute. */
-  ATTRIBUTE,
   /** CONTENT. */
   CONTENT,
   /** METADATA. */
   METADATA,
-  /** TAG. */
-  TAG,
   /** Delete Metadata. */
   DELETE_METADATA,
   /** Soft Delete Metadata. */
