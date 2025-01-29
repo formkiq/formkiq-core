@@ -7667,7 +7667,6 @@ Resources:
               oneOf:
                 - $ref: '#/components/schemas/AddDocumentAttributeStandard'
                 - $ref: '#/components/schemas/AddDocumentAttributeClassification'
-                - $ref: '#/components/schemas/AddDocumentAttributeWatermark'
                 - $ref: '#/components/schemas/AddDocumentAttributeRelationship'
 
             DocumentRelationshipType:
@@ -7695,16 +7694,6 @@ Resources:
                   $ref: "#/components/schemas/DocumentRelationshipType"
                 inverseRelationship:
                   $ref: "#/components/schemas/DocumentRelationshipType"
-
-            AddDocumentAttributeWatermark:
-              required:
-                - "watermarkKey"
-              type: "object"
-              description: "Document Watermark"
-              properties:
-                watermarkKey:
-                  type: "string"
-                  description: "Watermark Key"
 
             AddDocumentAttributeClassification:
               required:
@@ -8014,6 +8003,7 @@ Resources:
                 - CLASSIFICATION
                 - COMPOSITE_STRING
                 - RELATIONSHIPS
+                - WATERMARK
             FulltextAttribute:
               type: "object"
               properties:
