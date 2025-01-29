@@ -7667,6 +7667,7 @@ Resources:
               oneOf:
                 - $ref: '#/components/schemas/AddDocumentAttributeStandard'
                 - $ref: '#/components/schemas/AddDocumentAttributeClassification'
+                - $ref: '#/components/schemas/AddDocumentAttributeWatermark'
                 - $ref: '#/components/schemas/AddDocumentAttributeRelationship'
 
             DocumentRelationshipType:
@@ -7694,6 +7695,16 @@ Resources:
                   $ref: "#/components/schemas/DocumentRelationshipType"
                 inverseRelationship:
                   $ref: "#/components/schemas/DocumentRelationshipType"
+
+            AddDocumentAttributeWatermark:
+              required:
+                - "watermarkKey"
+              type: "object"
+              description: "Document Watermark"
+              properties:
+                watermarkKey:
+                  type: "string"
+                  description: "Watermark Key"
 
             AddDocumentAttributeClassification:
               required:
@@ -9455,6 +9466,15 @@ Resources:
                   description: "Attribute Key"
                 dataType:
                   $ref: "#/components/schemas/AttributeDataType"
+                watermark:
+                  $ref: "#/components/schemas/Watermark"
+
+            Watermark:
+              type: "object"
+              properties:
+                text:
+                  type: "string"
+                  description: "Watermark text"
 
             AttributeType:
               type: string
@@ -9474,6 +9494,7 @@ Resources:
                 - BOOLEAN
                 - KEY_ONLY
                 - PUBLICATION
+                - WATERMARK
                 
             AddAttributeRequest:
               required:
@@ -9494,6 +9515,8 @@ Resources:
                   $ref: "#/components/schemas/AttributeDataType"
                 type:
                   $ref: "#/components/schemas/AttributeType"
+                watermark:
+                  $ref: "#/components/schemas/Watermark"
 
             AddAttributeResponse:
               type: "object"
