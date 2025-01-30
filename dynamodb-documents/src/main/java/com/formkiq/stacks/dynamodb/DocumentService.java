@@ -39,6 +39,7 @@ import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidationType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
+import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
 import com.formkiq.stacks.dynamodb.documents.DocumentPublicationRecord;
 import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -264,6 +265,20 @@ public interface DocumentService {
    */
   PaginationResults<DocumentAttributeRecord> findDocumentAttributes(String siteId,
       String documentId, PaginationMapToken pagination, int limit);
+
+  /**
+   * Find {@link DocumentAttributeRecord} by Type.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param valueType {@link DocumentAttributeValueType}
+   * @param pagination {@link PaginationMapToken}
+   * @param limit int
+   * @return {@link PaginationResults} {@link DocumentAttributeRecord}
+   */
+  PaginationResults<DocumentAttributeRecord> findDocumentAttributesByType(String siteId,
+      String documentId, DocumentAttributeValueType valueType, PaginationMapToken pagination,
+      int limit);
 
   /**
    * Get Document Format.

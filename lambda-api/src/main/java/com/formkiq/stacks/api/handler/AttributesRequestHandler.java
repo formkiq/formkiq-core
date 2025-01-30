@@ -100,7 +100,9 @@ public class AttributesRequestHandler
     AttributeDataType dataType = attribute.getDataType();
     AttributeType type = attribute.getType();
 
-    Collection<ValidationError> errors = service.addAttribute(siteId, key, dataType, type);
+    Collection<ValidationError> errors = isWatermark(attribute)
+        ? service.addWatermarkAttribute(siteId, key, attribute.getWatermark())
+        : service.addAttribute(siteId, key, dataType, type);
 
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
@@ -108,5 +110,9 @@ public class AttributesRequestHandler
 
     return new ApiRequestHandlerResponse(SC_OK,
         new ApiMapResponse(Map.of("message", "Attribute '" + key + "' created")));
+  }
+
+  private boolean isWatermark(final AddAttribute attribute) {
+    return AttributeDataType.WATERMARK.equals(attribute.getDataType());
   }
 }

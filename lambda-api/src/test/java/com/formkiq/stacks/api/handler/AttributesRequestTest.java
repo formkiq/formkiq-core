@@ -42,6 +42,7 @@ import com.formkiq.client.model.Attribute;
 import com.formkiq.client.model.AttributeDataType;
 import com.formkiq.client.model.AttributeSchemaRequired;
 import com.formkiq.client.model.AttributeType;
+import com.formkiq.client.model.AttributeValueType;
 import com.formkiq.client.model.DeleteResponse;
 import com.formkiq.client.model.DocumentAttribute;
 import com.formkiq.client.model.DocumentRelationshipType;
@@ -51,6 +52,7 @@ import com.formkiq.client.model.DocumentSearchRange;
 import com.formkiq.client.model.DocumentSearchRequest;
 import com.formkiq.client.model.DocumentSearchResponse;
 import com.formkiq.client.model.DocumentTag;
+import com.formkiq.client.model.GetAttributeResponse;
 import com.formkiq.client.model.GetDocumentAttributesResponse;
 import com.formkiq.client.model.SchemaAttributes;
 import com.formkiq.client.model.SearchResponseFields;
@@ -61,6 +63,7 @@ import com.formkiq.client.model.SetDocumentAttributesRequest;
 import com.formkiq.client.model.SetResponse;
 import com.formkiq.client.model.SetSitesSchemaRequest;
 import com.formkiq.client.model.UpdateDocumentRequest;
+import com.formkiq.client.model.Watermark;
 import com.formkiq.stacks.dynamodb.attributes.AttributeKeyReserved;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
@@ -348,6 +351,90 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
                 + "\"error\":\"'publication' is a reserved attribute name\"}]}",
             e.getResponseBody());
       }
+    }
+  }
+
+  /**
+   * POST /attributes watermark.
+   *
+   */
+  @Test
+  public void testAddAttributes04() throws ApiException {
+    // given
+    final String text = "sample text";
+    final String attributeKey = "wm1";
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+
+      setBearerToken(siteId);
+      AddAttributeRequest req =
+          new AddAttributeRequest().attribute(new AddAttribute().key(attributeKey)
+              .dataType(AttributeDataType.WATERMARK).watermark(new Watermark().text(text)));
+
+      // when
+      AddAttributeResponse response = this.attributesApi.addAttribute(req, siteId);
+
+      // then
+      assertEquals("Attribute '" + attributeKey + "' created", response.getMessage());
+
+      GetAttributeResponse attr = this.attributesApi.getAttribute(attributeKey, siteId);
+      assertNotNull(attr.getAttribute());
+      assertEquals(attributeKey, attr.getAttribute().getKey());
+      Watermark watermark = attr.getAttribute().getWatermark();
+      assertNotNull(watermark);
+      assertEquals(text, watermark.getText());
+    }
+  }
+
+  /**
+   * POST /attributes watermark missing watermark text.
+   *
+   */
+  @Test
+  public void testAddAttributes05() {
+    // given
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+
+      setBearerToken(siteId);
+      AddAttributeRequest req = new AddAttributeRequest()
+          .attribute(new AddAttribute().key("wm2").dataType(AttributeDataType.WATERMARK));
+
+      // when
+      try {
+        this.attributesApi.addAttribute(req, siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals("{\"errors\":[{\"key\":\"watermark.text\","
+            + "\"error\":\"'watermark.text' is required\"}]}", e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * POST /attributes watermark on wrong DataType.
+   *
+   */
+  @Test
+  public void testAddAttributes06() throws ApiException {
+    // given
+    final String attributeKey = "wm2";
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+
+      setBearerToken(siteId);
+      AddAttributeRequest req =
+          new AddAttributeRequest().attribute(new AddAttribute().key(attributeKey)
+              .dataType(AttributeDataType.STRING).watermark(new Watermark().text("as")));
+
+      // when
+      AddAttributeResponse response = this.attributesApi.addAttribute(req, siteId);
+
+      // then
+      assertEquals("Attribute '" + attributeKey + "' created", response.getMessage());
+
+      GetAttributeResponse attr = this.attributesApi.getAttribute(attributeKey, siteId);
+      assertNotNull(attr.getAttribute());
+      assertEquals(attributeKey, attr.getAttribute().getKey());
+      assertNull(attr.getAttribute().getWatermark());
     }
   }
 
@@ -747,6 +834,36 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
         assertEquals("{\"message\":\"attribute 'Relationships' not found on document '"
             + documentId3 + "'\"}", e.getResponseBody());
       }
+    }
+  }
+
+  /**
+   * POST /documents ad watermark.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testAddDocumentAttribute13() throws ApiException {
+    // given
+    final String key = "wm1";
+
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+
+      setBearerToken(siteId);
+      AddAttributeRequest req = new AddAttributeRequest().attribute(new AddAttribute().key(key)
+          .dataType(AttributeDataType.WATERMARK).watermark(new Watermark().text("saldjsadkj")));
+      this.attributesApi.addAttribute(req, siteId);
+
+      // when
+      String documentId = addDocument(siteId, key, null, null);
+
+      // then
+      DocumentAttribute response = getDocumentAttribute(siteId, documentId, key);
+      assertNull(response.getStringValue());
+      assertEquals(AttributeValueType.WATERMARK, response.getValueType());
+      assertEquals("joesmith", response.getUserId());
+
+      assertEmptyTags(siteId, documentId);
     }
   }
 

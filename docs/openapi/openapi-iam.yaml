@@ -1767,6 +1767,12 @@
                 schema:
                   type: boolean
                   default: false
+              - name: bypassWatermark
+                in: query
+                description: Allow the by pass of watermark (only allowed by GOVERN / ADMIN permissions)
+                schema:
+                  type: boolean
+                  default: false
               responses:
                 "200":
                   description: 200 OK

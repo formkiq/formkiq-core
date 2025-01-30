@@ -927,6 +927,28 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
+  public PaginationResults<DocumentAttributeRecord> findDocumentAttributesByType(
+      final String siteId, final String documentId, final DocumentAttributeValueType valueType,
+      final PaginationMapToken token, final int limit) {
+
+    DocumentAttributeRecord r =
+        new DocumentAttributeRecord().setDocumentId(documentId).setValueType(valueType);
+    Map<String, AttributeValue> startkey = new PaginationToAttributeValue().apply(token);
+
+    QueryConfig config = new QueryConfig().scanIndexForward(Boolean.TRUE).indexName(GSI2);
+    QueryResponse response = this.dbService.queryBeginsWith(config, r.fromS(r.pkGsi2(siteId)),
+        r.fromS(ATTR + valueType), startkey, limit);
+
+    List<Map<String, AttributeValue>> batch =
+        this.dbService.getBatch(new BatchGetConfig(), response.items());
+
+    List<DocumentAttributeRecord> list = batch.stream()
+        .map(a -> new DocumentAttributeRecord().getFromAttributes(siteId, a)).toList();
+
+    return new PaginationResults<>(list, new QueryResponseToPagination().apply(response));
+  }
+
+  @Override
   public Optional<DocumentFormat> findDocumentFormat(final String siteId, final String documentId,
       final String contentType) {
 
@@ -2413,6 +2435,8 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       Map<String, AttributeRecord> attributeRecordMap =
           this.attributeValidator.getAttributeRecordMap(siteId, concat);
 
+      updateDocumentAttributeFromAttributes(documentAttributes, attributeRecordMap);
+
       Set<String> toBeAddedKeys = documentAttributes.stream().map(DocumentAttributeRecord::getKey)
           .collect(Collectors.toSet());
       List<String> toBeDeletedKeys = toBeDeleted.stream().map(DocumentAttributeRecord::getKey)
@@ -2439,6 +2463,23 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }
+  }
+
+  /**
+   * Update Document Attributes from Attribute {@link Map}.
+   * 
+   * @param documentAttributes {@link Collection} {@link DocumentAttributeRecord}
+   * @param attributeMap {@link Map}
+   */
+  private void updateDocumentAttributeFromAttributes(
+      final Collection<DocumentAttributeRecord> documentAttributes,
+      final Map<String, AttributeRecord> attributeMap) {
+    documentAttributes.forEach(attribute -> {
+      AttributeRecord ar = attributeMap.get(attribute.getKey());
+      if (ar != null && AttributeDataType.WATERMARK.equals(ar.getDataType())) {
+        attribute.setValueType(DocumentAttributeValueType.WATERMARK);
+      }
+    });
   }
 
   /**

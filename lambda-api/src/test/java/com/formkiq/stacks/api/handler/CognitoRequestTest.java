@@ -29,15 +29,12 @@ import com.formkiq.client.model.AddGroup;
 import com.formkiq.client.model.AddGroupRequest;
 import com.formkiq.client.model.AddUser;
 import com.formkiq.client.model.AddUserRequest;
-import com.formkiq.testutils.aws.LocalStackExtension;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /** Unit Tests for request /groups and /users. */
-@ExtendWith(LocalStackExtension.class)
 public class CognitoRequestTest extends AbstractApiClientRequestTest {
 
   /**

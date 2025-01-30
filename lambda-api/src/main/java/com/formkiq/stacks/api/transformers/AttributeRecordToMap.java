@@ -23,9 +23,13 @@
  */
 package com.formkiq.stacks.api.transformers;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
+import com.formkiq.stacks.dynamodb.attributes.Watermark;
+
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 
 /**
  * {@link Function} transform {@link AttributeRecord} to {@link Map}.
@@ -34,7 +38,13 @@ public class AttributeRecordToMap implements Function<AttributeRecord, Map<Strin
 
   @Override
   public Map<String, Object> apply(final AttributeRecord a) {
-    return Map.of("key", a.getKey(), "type", a.getType().name(), "dataType",
-        a.getDataType().name());
+    Map<String, Object> attr = new HashMap<>(
+        Map.of("key", a.getKey(), "type", a.getType().name(), "dataType", a.getDataType().name()));
+
+    if (!isEmpty(a.getWatermarkText())) {
+      attr.put("watermark", new Watermark().setText(a.getWatermarkText()));
+    }
+
+    return attr;
   }
 }

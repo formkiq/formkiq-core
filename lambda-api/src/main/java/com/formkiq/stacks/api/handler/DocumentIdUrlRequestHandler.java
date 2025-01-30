@@ -56,6 +56,7 @@ import com.formkiq.stacks.api.ApiEmptyResponse;
 import com.formkiq.stacks.api.ApiUrlResponse;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
+import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/url". */
@@ -82,8 +83,12 @@ public class DocumentIdUrlRequestHandler
         getDocumentItem(awsservice, siteId, documentId, versionKey, versionAttributes);
     String versionId = getVersionId(awsservice, versionAttributes, versionKey);
 
+    DocumentService documentService = awsservice.getExtension(DocumentService.class);
+    boolean hasWatermarks = !documentService.findDocumentAttributesByType(siteId, documentId,
+        DocumentAttributeValueType.WATERMARK, null, 1).getResults().isEmpty();
+
     boolean inline = "true".equals(getParameter(event, "inline"));
-    URL url = getS3Url(authorization, awsservice, event, item, versionId, inline);
+    URL url = getS3Url(authorization, awsservice, event, item, versionId, inline, hasWatermarks);
 
     if (url != null) {
       if (awsservice.containsExtension(UserActivityPlugin.class)) {
@@ -140,13 +145,15 @@ public class DocumentIdUrlRequestHandler
    * @param item {@link DocumentItem}
    * @param versionId {@link String}
    * @param inline boolean
+   * @param hasWatermarks boolean
    * @return {@link URL}
    * @throws URISyntaxException URISyntaxException
    * @throws MalformedURLException MalformedURLException
    */
   private URL getS3Url(final ApiAuthorization authorization, final AwsServiceCache awsservice,
       final ApiGatewayRequestEvent event, final DocumentItem item, final String versionId,
-      final boolean inline) throws URISyntaxException, MalformedURLException {
+      final boolean inline, final boolean hasWatermarks)
+      throws URISyntaxException, MalformedURLException {
 
     final String documentId = item.getDocumentId();
 
@@ -155,7 +162,8 @@ public class DocumentIdUrlRequestHandler
     awsservice.getLogger().debug(
         "Finding S3 Url for document '" + item.getDocumentId() + "' version = '" + versionId + "'");
 
-    String s3Bucket = awsservice.environment("DOCUMENTS_S3_BUCKET");
+    String s3Bucket = hasWatermarks ? awsservice.environment("ACCESS_POINT_S3_BUCKET")
+        : awsservice.environment("DOCUMENTS_S3_BUCKET");
     String filename = getFilename(item);
 
     PresignGetUrlConfig config = new PresignGetUrlConfig();

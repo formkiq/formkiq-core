@@ -24,6 +24,8 @@
 package com.formkiq.stacks.dynamodb.attributes;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
+
 import java.util.HashMap;
 import java.util.Map;
 import com.formkiq.aws.dynamodb.DbKeys;
@@ -49,12 +51,34 @@ public class AttributeRecord implements DynamodbRecord<AttributeRecord> {
   private String key;
   /** Type of Attribute. */
   private AttributeType type;
+  /** Watermark Text. */
+  private String watermarkText;
 
   /**
    * constructor.
    */
   public AttributeRecord() {
 
+  }
+
+  /**
+   * Get Watermark Text.
+   * 
+   * @return String
+   */
+  public String getWatermarkText() {
+    return this.watermarkText;
+  }
+
+  /**
+   * Set Watermark Text.
+   * 
+   * @param text {@link String}
+   * @return AttributeRecord
+   */
+  public AttributeRecord setWatermarkText(final String text) {
+    this.watermarkText = text;
+    return this;
   }
 
   /**
@@ -89,13 +113,26 @@ public class AttributeRecord implements DynamodbRecord<AttributeRecord> {
     map.put(DbKeys.GSI1_PK, fromS(pkGsi1(siteId)));
     map.put(DbKeys.GSI1_SK, fromS(skGsi1()));
 
+    String pkGsi2 = pkGsi2(siteId);
+    if (!isEmpty(pkGsi2)) {
+      map.put(DbKeys.GSI2_PK, fromS(pkGsi2));
+      map.put(DbKeys.GSI2_SK, fromS(skGsi2()));
+    }
+
     return map;
   }
 
   @Override
   public Map<String, AttributeValue> getDataAttributes() {
-    return Map.of("documentId", fromS(this.documentId), "dataType", fromS(this.dataType.name()),
-        "type", fromS(this.type.name()), "key", fromS(this.key));
+    Map<String, AttributeValue> attr =
+        new HashMap<>(Map.of("documentId", fromS(this.documentId), "dataType",
+            fromS(this.dataType.name()), "type", fromS(this.type.name()), "key", fromS(this.key)));
+
+    if (!isEmpty(this.watermarkText)) {
+      attr.put("watermarkText", fromS(this.watermarkText));
+    }
+
+    return attr;
   }
 
   /**
@@ -125,6 +162,7 @@ public class AttributeRecord implements DynamodbRecord<AttributeRecord> {
     if (!attrs.isEmpty()) {
       record = new AttributeRecord().documentId(ss(attrs, "documentId")).key(ss(attrs, "key"))
           .type(AttributeType.valueOf(ss(attrs, "type")))
+          .setWatermarkText(ss(attrs, "watermarkText"))
           .dataType(AttributeDataType.valueOf(ss(attrs, "dataType")));
     }
 
@@ -175,7 +213,7 @@ public class AttributeRecord implements DynamodbRecord<AttributeRecord> {
 
   @Override
   public String pkGsi2(final String siteId) {
-    return null;
+    return !isEmpty(this.watermarkText) ? createDatabaseKey(siteId, ATTR) : null;
   }
 
   @Override
@@ -193,7 +231,7 @@ public class AttributeRecord implements DynamodbRecord<AttributeRecord> {
 
   @Override
   public String skGsi2() {
-    return null;
+    return !isEmpty(this.watermarkText) ? ATTR + this.dataType : null;
   }
 
   /**

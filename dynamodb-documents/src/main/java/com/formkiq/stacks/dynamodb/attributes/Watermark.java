@@ -26,22 +26,37 @@ package com.formkiq.stacks.dynamodb.attributes;
 import com.formkiq.graalvm.annotations.Reflectable;
 
 /**
- * Attribute Data Type.
+ * Watermark.
  */
 @Reflectable
-public enum AttributeDataType {
-  /** {@link Boolean}. */
-  BOOLEAN,
-  /** Key Only. */
-  KEY_ONLY,
-  /** Number. */
-  NUMBER,
-  /** {@link String}. */
-  STRING,
-  /** Publication. */
-  PUBLICATION,
-  /** Watermark. */
-  WATERMARK,
-  /** Relationship. */
-  RELATIONSHIP;
+public class Watermark {
+  /** Watermark text. */
+  private String text;
+
+  /**
+   * constructor.
+   */
+  public Watermark() {
+
+  }
+
+  /**
+   * Get Watermark text.
+   * 
+   * @return String
+   */
+  public String getText() {
+    return this.text;
+  }
+
+  /**
+   * Set Watermark text.
+   * 
+   * @param watermarkText {@link String}
+   * @return Watermark
+   */
+  public Watermark setText(final String watermarkText) {
+    this.text = watermarkText;
+    return this;
+  }
 }

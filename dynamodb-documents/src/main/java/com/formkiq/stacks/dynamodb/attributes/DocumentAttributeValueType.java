@@ -42,5 +42,7 @@ public enum DocumentAttributeValueType {
   /** Classification. */
   CLASSIFICATION,
   /** Relationships. */
-  RELATIONSHIPS
+  RELATIONSHIPS,
+  /** Watermark. */
+  WATERMARK
 }

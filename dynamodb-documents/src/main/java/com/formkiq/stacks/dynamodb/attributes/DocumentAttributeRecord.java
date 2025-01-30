@@ -26,7 +26,6 @@ package com.formkiq.stacks.dynamodb.attributes;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamodbVersionRecord;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
-import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.graalvm.annotations.Reflectable;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
@@ -38,6 +37,7 @@ import java.util.Map;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.objects.Objects.formatDouble;
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static com.formkiq.stacks.dynamodb.attributes.AttributeRecord.ATTR;
 
 /**
@@ -102,6 +102,12 @@ public class DocumentAttributeRecord
     map.put(DbKeys.SK, fromS(sk()));
     map.put(DbKeys.GSI1_PK, fromS(pkGsi1(siteId)));
     map.put(DbKeys.GSI1_SK, fromS(skGsi1()));
+
+    String pkGsi2 = pkGsi2(siteId);
+    if (!isEmpty(pkGsi2)) {
+      map.put(DbKeys.GSI2_PK, fromS(pkGsi2(siteId)));
+      map.put(DbKeys.GSI2_SK, fromS(skGsi2()));
+    }
 
     return map;
   }
@@ -189,7 +195,9 @@ public class DocumentAttributeRecord
 
   @Override
   public String pkGsi2(final String siteId) {
-    return null;
+    return DocumentAttributeValueType.WATERMARK.equals(this.valueType)
+        ? createDatabaseKey(siteId, PREFIX_DOCS + this.documentId)
+        : null;
   }
 
   @Override
@@ -212,7 +220,7 @@ public class DocumentAttributeRecord
       case STRING, COMPOSITE_STRING, CLASSIFICATION, RELATIONSHIPS -> val += this.stringValue;
       case BOOLEAN -> val += this.booleanValue;
       case NUMBER -> val += formatDouble(this.numberValue);
-      case KEY_ONLY, PUBLICATION -> {
+      case KEY_ONLY, PUBLICATION, WATERMARK -> {
       }
       default -> throw new IllegalArgumentException("Unexpected value: " + this.valueType);
     }
@@ -227,14 +235,16 @@ public class DocumentAttributeRecord
       case NUMBER -> formatDouble(this.numberValue);
       case BOOLEAN -> this.booleanValue.toString();
       case CLASSIFICATION, PUBLICATION -> truncateSk(this.stringValue);
-      case KEY_ONLY -> "#";
+      case KEY_ONLY, WATERMARK -> "#";
     };
 
   }
 
   @Override
   public String skGsi2() {
-    return null;
+    return DocumentAttributeValueType.WATERMARK.equals(this.valueType)
+        ? ATTR + this.valueType + "#" + this.key
+        : null;
   }
 
   /**
@@ -365,7 +375,7 @@ public class DocumentAttributeRecord
   public DocumentAttributeRecord updateValueType() {
     this.valueType = DocumentAttributeValueType.KEY_ONLY;
 
-    if (!Strings.isEmpty(this.stringValue)) {
+    if (!isEmpty(this.stringValue)) {
       this.valueType = DocumentAttributeValueType.STRING;
     } else if (this.numberValue != null) {
       this.valueType = DocumentAttributeValueType.NUMBER;
