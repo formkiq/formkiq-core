@@ -35,9 +35,12 @@ import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.aws.dynamodb.objects.Strings;
@@ -57,6 +60,8 @@ import com.formkiq.stacks.api.ApiUrlResponse;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
+import com.formkiq.validation.ValidationErrorImpl;
+import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/url". */
@@ -83,12 +88,9 @@ public class DocumentIdUrlRequestHandler
         getDocumentItem(awsservice, siteId, documentId, versionKey, versionAttributes);
     String versionId = getVersionId(awsservice, versionAttributes, versionKey);
 
-    DocumentService documentService = awsservice.getExtension(DocumentService.class);
-    boolean hasWatermarks = !documentService.findDocumentAttributesByType(siteId, documentId,
-        DocumentAttributeValueType.WATERMARK, null, 1).getResults().isEmpty();
-
     boolean inline = "true".equals(getParameter(event, "inline"));
-    URL url = getS3Url(authorization, awsservice, event, item, versionId, inline, hasWatermarks);
+    boolean bypassWatermark = isBypassWatermark(event, authorization, siteId);
+    URL url = getS3Url(authorization, awsservice, event, item, versionId, inline, bypassWatermark);
 
     if (url != null) {
       if (awsservice.containsExtension(UserActivityPlugin.class)) {
@@ -100,6 +102,24 @@ public class DocumentIdUrlRequestHandler
     return url != null
         ? new ApiRequestHandlerResponse(SC_OK, new ApiUrlResponse(url.toString(), documentId))
         : new ApiRequestHandlerResponse(SC_NOT_FOUND, new ApiEmptyResponse());
+  }
+
+  private boolean isBypassWatermark(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final String siteId) throws ValidationException {
+
+    boolean isBypassWatermark = "true".equals(getParameter(event, "bypassWatermark"));
+
+    Collection<ApiPermission> permissions = authorization.getPermissions(siteId);
+    if (isBypassWatermark) {
+
+      if (!permissions.contains(ApiPermission.ADMIN)
+          && !permissions.contains(ApiPermission.GOVERN)) {
+        throw new ValidationException(List
+            .of(new ValidationErrorImpl().error("user requires 'admin' or 'govern' permission")));
+      }
+    }
+
+    return isBypassWatermark;
   }
 
   private String getVersionKey(final ApiGatewayRequestEvent event) {
@@ -145,14 +165,14 @@ public class DocumentIdUrlRequestHandler
    * @param item {@link DocumentItem}
    * @param versionId {@link String}
    * @param inline boolean
-   * @param hasWatermarks boolean
+   * @param bypassWatermark boolean
    * @return {@link URL}
    * @throws URISyntaxException URISyntaxException
    * @throws MalformedURLException MalformedURLException
    */
   private URL getS3Url(final ApiAuthorization authorization, final AwsServiceCache awsservice,
       final ApiGatewayRequestEvent event, final DocumentItem item, final String versionId,
-      final boolean inline, final boolean hasWatermarks)
+      final boolean inline, final boolean bypassWatermark)
       throws URISyntaxException, MalformedURLException {
 
     final String documentId = item.getDocumentId();
@@ -162,8 +182,13 @@ public class DocumentIdUrlRequestHandler
     awsservice.getLogger().debug(
         "Finding S3 Url for document '" + item.getDocumentId() + "' version = '" + versionId + "'");
 
-    String s3Bucket = hasWatermarks ? awsservice.environment("ACCESS_POINT_S3_BUCKET")
-        : awsservice.environment("DOCUMENTS_S3_BUCKET");
+    DocumentService documentService = awsservice.getExtension(DocumentService.class);
+    boolean hasWatermarks = !documentService.findDocumentAttributesByType(siteId, documentId,
+        DocumentAttributeValueType.WATERMARK, null, 1).getResults().isEmpty();
+
+    String s3Bucket =
+        !bypassWatermark && hasWatermarks ? awsservice.environment("ACCESS_POINT_S3_BUCKET")
+            : awsservice.environment("DOCUMENTS_S3_BUCKET");
     String filename = getFilename(item);
 
     PresignGetUrlConfig config = new PresignGetUrlConfig();

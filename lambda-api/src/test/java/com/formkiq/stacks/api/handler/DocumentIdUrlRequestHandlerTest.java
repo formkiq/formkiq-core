@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.testutils.aws.TestServices.ACCESS_POINT_S3_BUCKET;
 import static com.formkiq.testutils.aws.TestServices.AWS_REGION;
 import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
@@ -127,7 +128,7 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
 
         // when
         GetDocumentUrlResponse resp =
-            this.documentsApi.getDocumentUrl(documentId, siteId, null, null, null, null);
+            this.documentsApi.getDocumentUrl(documentId, siteId, null, null, null, null, null);
 
         // then
         assertNotNull(resp);
@@ -165,7 +166,7 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
 
       // when
       GetDocumentUrlResponse resp =
-          this.documentsApi.getDocumentUrl(documentId, siteId, null, duration, null, null);
+          this.documentsApi.getDocumentUrl(documentId, siteId, null, duration, null, null, null);
 
       // then
       assertNotNull(resp);
@@ -193,7 +194,7 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
 
       // when
       try {
-        this.documentsApi.getDocumentUrl(documentId, siteId, null, null, null, null);
+        this.documentsApi.getDocumentUrl(documentId, siteId, null, null, null, null, null);
         fail();
       } catch (ApiException e) {
         // then
@@ -234,7 +235,7 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
 
       // when
       GetDocumentUrlResponse resp =
-          this.documentsApi.getDocumentUrl(documentId, siteId, null, duration, null, null);
+          this.documentsApi.getDocumentUrl(documentId, siteId, null, duration, null, null, null);
 
       // then
       assertNotNull(resp);
@@ -284,7 +285,7 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
 
       // when
       GetDocumentUrlResponse resp =
-          this.documentsApi.getDocumentUrl(documentId, siteId, null, null, null, null);
+          this.documentsApi.getDocumentUrl(documentId, siteId, null, null, null, null, null);
 
       // then
       assertNotNull(resp);
@@ -303,31 +304,89 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
       // given
       setBearerToken(siteId);
 
-      Watermark watermark1 = new Watermark().text("watermark1");
-      this.attributesApi.addAttribute(new AddAttributeRequest().attribute(new AddAttribute()
-          .key("wm1").dataType(AttributeDataType.WATERMARK).watermark(watermark1)), siteId);
-
-      Watermark watermark2 = new Watermark().text("watermark2");
-      this.attributesApi.addAttribute(new AddAttributeRequest().attribute(new AddAttribute()
-          .key("wm2").dataType(AttributeDataType.WATERMARK).watermark(watermark2)), siteId);
-
-      AddDocumentRequest req = new AddDocumentRequest().content("test content")
-          .addAttributesItem(
-              new AddDocumentAttribute(new AddDocumentAttributeStandard().key("wm1")))
-          .addAttributesItem(
-              new AddDocumentAttribute(new AddDocumentAttributeStandard().key("wm2")));
-
-      String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+      String documentId = addDocumentWithWatermarks(siteId);
 
       // when
       GetDocumentUrlResponse resp =
-          this.documentsApi.getDocumentUrl(documentId, siteId, null, null, null, null);
+          this.documentsApi.getDocumentUrl(documentId, siteId, null, null, null, null, null);
 
       // then
       assertNotNull(resp);
       assertNotNull(resp.getUrl());
       assertS3Url(resp, ACCESS_POINT_S3_BUCKET, siteId, documentId);
     }
+  }
+
+  /**
+   * /documents/{documentId}/url with watermarks and ByPassWatermark as Admin/govern.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetDocumentContent07() throws Exception {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+      String documentId = addDocumentWithWatermarks(siteId);
+
+      for (String[] groups : Arrays.asList(new String[] {siteId, "admins"},
+          new String[] {siteId, siteId + "_govern"})) {
+        setBearerToken(groups);
+
+        // when
+        GetDocumentUrlResponse resp = this.documentsApi.getDocumentUrl(documentId, siteId, null,
+            null, null, null, Boolean.TRUE);
+
+        // then
+        assertNotNull(resp);
+        assertNotNull(resp.getUrl());
+        assertS3Url(resp, BUCKET_NAME, DEFAULT_SITE_ID.equals(siteId) ? null : siteId, documentId);
+      }
+    }
+  }
+
+  /**
+   * /documents/{documentId}/url with watermarks and ByPassWatermark without permissions.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetDocumentContent08() throws Exception {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      String documentId = addDocumentWithWatermarks(siteId);
+
+      // when
+      try {
+        this.documentsApi.getDocumentUrl(documentId, siteId, null, null, null, null, Boolean.TRUE);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"errors\":[{\"error\":\"user requires 'admin' or 'govern' permission\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  private String addDocumentWithWatermarks(final String siteId) throws ApiException {
+    Watermark watermark1 = new Watermark().text("watermark1");
+    this.attributesApi.addAttribute(new AddAttributeRequest().attribute(
+        new AddAttribute().key("wm1").dataType(AttributeDataType.WATERMARK).watermark(watermark1)),
+        siteId);
+
+    Watermark watermark2 = new Watermark().text("watermark2");
+    this.attributesApi.addAttribute(new AddAttributeRequest().attribute(
+        new AddAttribute().key("wm2").dataType(AttributeDataType.WATERMARK).watermark(watermark2)),
+        siteId);
+
+    AddDocumentRequest req = new AddDocumentRequest().content("test content")
+        .addAttributesItem(new AddDocumentAttribute(new AddDocumentAttributeStandard().key("wm1")))
+        .addAttributesItem(new AddDocumentAttribute(new AddDocumentAttributeStandard().key("wm2")));
+
+    return this.documentsApi.addDocument(req, siteId, null).getDocumentId();
   }
 
   private void assertS3Url(final GetDocumentUrlResponse resp, final String bucket,
