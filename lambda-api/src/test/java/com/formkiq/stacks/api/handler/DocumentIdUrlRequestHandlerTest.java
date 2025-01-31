@@ -300,8 +300,8 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
    */
   @Test
   public void testHandleGetDocumentContent06() throws Exception {
+    // given
     for (String siteId : Arrays.asList(null, ID.uuid())) {
-      // given
       setBearerToken(siteId);
 
       String documentId = addDocumentWithWatermarks(siteId);
@@ -315,6 +315,21 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
       assertNotNull(resp.getUrl());
       assertS3Url(resp, ACCESS_POINT_S3_BUCKET, siteId, documentId);
     }
+
+    // given
+    String siteId = ID.uuid();
+    setBearerToken(new String[] {siteId, "admins"});
+
+    String documentId = addDocumentWithWatermarks(siteId);
+
+    // when
+    GetDocumentUrlResponse resp =
+        this.documentsApi.getDocumentUrl(documentId, siteId, null, null, null, null, null);
+
+    // then
+    assertNotNull(resp);
+    assertNotNull(resp.getUrl());
+    assertS3Url(resp, ACCESS_POINT_S3_BUCKET, siteId, documentId);
   }
 
   /**
