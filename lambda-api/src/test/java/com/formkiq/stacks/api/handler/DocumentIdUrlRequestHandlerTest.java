@@ -386,6 +386,46 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
     }
   }
 
+  /**
+   * /documents/{documentId}/url request deep link to another s3 bucket.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetDocumentContent09() throws Exception {
+
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      setBearerToken(siteId);
+
+      String documentId = ID.uuid();
+      String userId = "jsmith";
+
+      String bucketName = "somebucket";
+      String filename = UUID.randomUUID() + ".pdf";
+      DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, new Date(), userId);
+      item.setDeepLinkPath("s3://" + bucketName + "/" + filename);
+      this.documentService.saveDocument(siteId, item, new ArrayList<>());
+
+      // when
+      GetDocumentUrlResponse resp =
+          this.documentsApi.getDocumentUrl(documentId, siteId, null, null, null, null, null);
+
+      // then
+      assertNotNull(resp);
+      assertNotNull(resp.getUrl());
+
+      URI uri = new URI(resp.getUrl());
+      assertTrue(uri.getQuery().contains("filename=\"" + filename + "\""));
+
+      assertTrue(resp.getUrl().contains("X-Amz-Algorithm=AWS4-HMAC-SHA256"));
+      assertTrue(resp.getUrl().contains("X-Amz-Expires=172800"));
+      assertTrue(resp.getUrl().contains(AWS_REGION.toString()));
+      assertTrue(resp.getUrl().contains(bucketName));
+      assertTrue(resp.getUrl().contains(filename));
+    }
+  }
+
   private String addDocumentWithWatermarks(final String siteId) throws ApiException {
     Watermark watermark1 = new Watermark().text("watermark1");
     this.attributesApi.addAttribute(new AddAttributeRequest().attribute(

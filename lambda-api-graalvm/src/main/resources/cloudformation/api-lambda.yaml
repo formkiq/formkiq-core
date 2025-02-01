@@ -270,6 +270,10 @@ Resources:
             - Effect: Allow
               Action:
               - s3:GetObject
+              Resource: "*"
+            - Effect: Allow
+              Action:
+              - s3:GetObject
               - s3:GetObjectVersion
               - s3:PutObject
               - s3:DeleteObject
