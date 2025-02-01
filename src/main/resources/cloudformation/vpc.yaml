@@ -52,17 +52,28 @@ Parameters:
     AllowedPattern: "^[0-9./\\s]*"
     Default: 10.1.30.0/24
 
-  EnableEnterpriseFeatures:
-    Description: Enable Enterprise VPC features
+  EnableVpcEndpoints:
+    Description: Enable VPC Endpoints (S3, Dynamodb, SNS, SMS, Execute-Api) set to 'true' if using Opensearch
     Default: "false"
     Type: String
     AllowedValues: ["false", "true"]
-    
+
+  EnableVpcLinks:
+    Description: Enable VPC Links (needed for Typesense)
+    Default: "false"
+    Type: String
+    AllowedValues: ["false", "true"]
+
 Conditions:
-  IsEnableEnterpriseFeatures: 
-    Fn::Equals: 
-    - Ref: EnableEnterpriseFeatures
+  IsEnableVpcEndpoints:
+    Fn::Equals:
+    - Ref: EnableVpcEndpoints
     - 'true'
+
+  IsEnableVpcLinks:
+    Fn::Equals:
+      - Ref: EnableVpcLinks
+      - 'true'
 
   UseTwoSubnets: 
     Fn::Equals:
@@ -87,6 +98,7 @@ Resources:
         Ref: InternetGateway
       
   CloudMapNamespace:
+    Condition: IsEnableVpcLinks
     Type: AWS::ServiceDiscovery::PrivateDnsNamespace
     Properties:
       Vpc:
@@ -95,6 +107,7 @@ Resources:
         Ref: VpcLabel
 
   VpcLink:
+    Condition: IsEnableVpcLinks
     Type: AWS::ApiGatewayV2::VpcLink
     Properties:
       Name: vpclink
@@ -109,6 +122,7 @@ Resources:
           - Ref: PrivateSubnet3
 
   VpcLinkSecurityGroup:
+    Condition: IsEnableVpcLinks
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: FormKiQ VPC Link
@@ -290,15 +304,21 @@ Resources:
       VpcId: 
         Ref: Vpc
       Tags:
+        - Key: Name
+          Value:
+            Fn::Sub: "${VpcLabel} Public Route"
         - Key: Application
           Value: FormKiQ
-            
+
   PrivateRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
-      VpcId: 
+      VpcId:
         Ref: Vpc
       Tags:
+        - Key: Name
+          Value:
+            Fn::Sub: "${VpcLabel} Private Route"
         - Key: Application
           Value: FormKiQ
             
@@ -348,6 +368,7 @@ Resources:
           Value: FormKiQ
         
   NfsSecurityGroup:
+    Condition: IsEnableVpcLinks
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Security Group which allows NFS access
@@ -364,51 +385,51 @@ Resources:
 
   S3GatewayEndpoint:
     Type: 'AWS::EC2::VPCEndpoint'
-    Condition: IsEnableEnterpriseFeatures
+    Condition: IsEnableVpcEndpoints
     Properties:
       VpcEndpointType: Gateway
       RouteTableIds:
-        - Ref: PrivateRouteTable      
-      ServiceName: 
+        - Ref: PrivateRouteTable
+      ServiceName:
         Fn::Sub: 'com.amazonaws.${AWS::Region}.s3'
       VpcId:
         Ref: Vpc
-        
+
   DynamoDbGatewayEndpoint:
     Type: 'AWS::EC2::VPCEndpoint'
-    Condition: IsEnableEnterpriseFeatures
+    Condition: IsEnableVpcEndpoints
     Properties:
       VpcEndpointType: Gateway
       RouteTableIds:
-        - Ref: PrivateRouteTable      
-      ServiceName: 
+        - Ref: PrivateRouteTable
+      ServiceName:
         Fn::Sub: 'com.amazonaws.${AWS::Region}.dynamodb'
       VpcId:
         Ref: Vpc
 
   SnsInterfaceEndpoint:
     Type: 'AWS::EC2::VPCEndpoint'
-    Condition: IsEnableEnterpriseFeatures
+    Condition: IsEnableVpcEndpoints
     Properties:
-      VpcEndpointType: Interface      
-      ServiceName: 
+      VpcEndpointType: Interface
+      ServiceName:
         Fn::Sub: 'com.amazonaws.${AWS::Region}.sns'
       VpcId:
         Ref: Vpc
 
   SsmInterfaceEndpoint:
     Type: 'AWS::EC2::VPCEndpoint'
-    Condition: IsEnableEnterpriseFeatures
+    Condition: IsEnableVpcEndpoints
     Properties:
-      VpcEndpointType: Interface      
-      ServiceName: 
+      VpcEndpointType: Interface
+      ServiceName:
         Fn::Sub: 'com.amazonaws.${AWS::Region}.ssm'
       VpcId:
         Ref: Vpc
 
   ExecuteApiInterfaceEndpoint:
     Type: 'AWS::EC2::VPCEndpoint'
-    Condition: IsEnableEnterpriseFeatures
+    Condition: IsEnableVpcEndpoints
     Properties:
       PrivateDnsEnabled: true
       VpcEndpointType: Interface      
@@ -477,6 +498,7 @@ Outputs:
       Name:
         Fn::Sub: "${AWS::StackName}-HttpsSecurityGroup"
   NfsSecurityGroup:
+    Condition: IsEnableVpcLinks
     Description: Security Group which allows NFS access
     Value:
       Ref: NfsSecurityGroup
@@ -518,6 +540,7 @@ Outputs:
       Name:
         Fn::Sub: "${AWS::StackName}-PrivateSubnets"
   CloudMapNamespace:
+    Condition: IsEnableVpcLinks
     Description: "Cloud Map Name Space"
     Value: 
       Ref: CloudMapNamespace
@@ -525,6 +548,7 @@ Outputs:
       Name:
         Fn::Sub: "${AWS::StackName}-CloudMapNamespace"
   VpcLink:
+    Condition: IsEnableVpcLinks
     Description: "ApiGatewayV2 VPC Link"
     Value: 
       Ref: VpcLink
@@ -532,8 +556,10 @@ Outputs:
       Name:
         Fn::Sub: "${AWS::StackName}-VpcLink"
   VpcLinkSecurityGroup:
+    Condition: IsEnableVpcLinks
     Description: "VPC Link Security Group"
-    Value: !Ref VpcLinkSecurityGroup
+    Value:
+      Ref: VpcLinkSecurityGroup
     Export:
       Name:
         Fn::Sub: "${AWS::StackName}-VpcLinkSecurityGroup"
