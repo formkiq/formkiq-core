@@ -1892,8 +1892,8 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
       if (isPathChanged) {
         String path = previous.containsKey("path") ? previous.get("path").s() : null;
-        if (!Strings.isEmpty(path)) {
-          this.folderIndexProcessor.deletePath(siteId, documentId, previous.get("path").s());
+        if (!Strings.isEmpty(path) && !document.getPath().equalsIgnoreCase(path)) {
+          this.folderIndexProcessor.deletePath(siteId, documentId, path);
         }
       }
 

@@ -988,8 +988,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       assertEquals(path, this.documentsApi.getDocument(doc0, siteId, null).getPath());
       assertNotEquals(path, this.documentsApi.getDocument(doc1, siteId, null).getPath());
 
-      List<SearchResultDocument> docs =
-          notNull(searchApi.documentSearch(sreq, siteId, null, null, null).getDocuments());
+      List<SearchResultDocument> docs = search(siteId, sreq);
       assertEquals(2, docs.size());
 
       // given
@@ -1001,9 +1000,62 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       // then
       assertNotEquals(path, this.documentsApi.getDocument(doc1, siteId, null).getPath());
 
-      docs = notNull(searchApi.documentSearch(sreq, siteId, null, null, null).getDocuments());
+      docs = search(siteId, sreq);
       assertEquals(2, docs.size());
     }
+  }
+
+  /**
+   * Update path to existing path different case.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  public void testUpdate13() throws Exception {
+    // given
+    String content = "test data";
+    String dir = "somepath";
+    String id = ID.uuid();
+    String path0 = dir + "/random" + id + ".txt";
+    String path1 = dir + "/Random" + id + ".txt";
+    DocumentSearchRequest sreq = new DocumentSearchRequest()
+        .query(new DocumentSearch().meta(new DocumentSearchMeta().folder(dir)));
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      AddDocumentRequest req =
+          new AddDocumentRequest().path(path0).contentType("text/plain").content(content);
+
+      // when
+      String doc0 = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+
+      // then
+      assertEquals(path0, this.documentsApi.getDocument(doc0, siteId, null).getPath());
+
+      List<SearchResultDocument> docs = search(siteId, sreq);
+      assertEquals(1, docs.size());
+      assertEquals(path0, docs.get(0).getPath());
+
+      // given
+      UpdateDocumentRequest updateReq = new UpdateDocumentRequest().path(path1);
+
+      // when
+      this.documentsApi.updateDocument(doc0, updateReq, siteId, null);
+
+      // then
+      assertEquals(path1, this.documentsApi.getDocument(doc0, siteId, null).getPath());
+
+      docs = search(siteId, sreq);
+      assertEquals(1, docs.size());
+      assertEquals(path1, docs.get(0).getPath());
+    }
+  }
+
+  private List<SearchResultDocument> search(final String siteId, final DocumentSearchRequest sreq)
+      throws ApiException {
+    return notNull(searchApi.documentSearch(sreq, siteId, null, null, null).getDocuments());
   }
 
   private void putS3Request(final String presignedUrl, final Map<String, Object> headerMap,
