@@ -33,6 +33,7 @@ import com.formkiq.client.model.AddClassificationRequest;
 import com.formkiq.client.model.AddDocumentAttribute;
 import com.formkiq.client.model.AddDocumentAttributeClassification;
 import com.formkiq.client.model.AddDocumentAttributeStandard;
+import com.formkiq.client.model.AddDocumentAttributeValue;
 import com.formkiq.client.model.AddDocumentAttributesRequest;
 import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AttributeDataType;
@@ -51,7 +52,10 @@ import com.formkiq.client.model.GetClassificationsResponse;
 import com.formkiq.client.model.SchemaAttributes;
 import com.formkiq.client.model.SearchResultDocument;
 import com.formkiq.client.model.SetClassificationRequest;
+import com.formkiq.client.model.SetDocumentAttributeRequest;
+import com.formkiq.client.model.SetDocumentAttributesRequest;
 import com.formkiq.client.model.SetSitesSchemaRequest;
+import com.formkiq.stacks.dynamodb.attributes.AttributeKeyReserved;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 import org.jetbrains.annotations.NotNull;
@@ -1042,6 +1046,74 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       assertEquals("invoiceNumber", documentAttributes.get(i++).getKey());
       assertEquals("invoiceTotalAmount", documentAttributes.get(i++).getKey());
       assertEquals("invoiceVendorName", documentAttributes.get(i).getKey());
+    }
+  }
+
+  /**
+   * Set Document Classification, missing required attributes.
+   */
+  @Test
+  void testSetDocumentClassification01() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      // given
+      setBearerToken(siteId);
+
+      String documentId = addDocument(siteId, null);
+      addAttribute(siteId, "TestBoolean", AttributeDataType.BOOLEAN);
+      addAttribute(siteId, "TestBoolean2", AttributeDataType.BOOLEAN);
+
+      SchemaAttributes sattr0 = createSchemaAttributes(List.of("TestBoolean"), null);
+      String classificationId0 = addClassification(siteId, sattr0);
+
+      AddDocumentAttributeClassification attr0 =
+          new AddDocumentAttributeClassification().classificationId(classificationId0);
+      SetDocumentAttributesRequest setReq0 =
+          new SetDocumentAttributesRequest().addAttributesItem(new AddDocumentAttribute(attr0));
+
+      AddDocumentAttributeStandard attr1 = new AddDocumentAttributeStandard()
+          .key(AttributeKeyReserved.CLASSIFICATION.getKey()).stringValue(classificationId0);
+      SetDocumentAttributesRequest setReq1 =
+          new SetDocumentAttributesRequest().addAttributesItem(new AddDocumentAttribute(attr1));
+
+      for (SetDocumentAttributesRequest setReq : List.of(setReq0, setReq1)) {
+        // when
+        try {
+          this.documentAttributesApi.setDocumentAttributes(documentId, setReq, siteId);
+          fail();
+        } catch (ApiException e) {
+          // then
+          assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+          assertEquals(
+              "{\"errors\":[{\"key\":\"TestBoolean\","
+                  + "\"error\":\"missing required attribute 'TestBoolean'\"}]}",
+              e.getResponseBody());
+        }
+      }
+
+      // given
+      SchemaAttributes sattr1 = createSchemaAttributes(List.of("TestBoolean2"), null);
+      String classificationId1 = addClassification(siteId, "doc1", sattr1);
+      SetDocumentAttributeRequest setReqValue =
+          new SetDocumentAttributeRequest().attribute(new AddDocumentAttributeValue()
+              .stringValues(List.of(classificationId0, classificationId1)));
+
+      // when
+      try {
+        this.documentAttributesApi.setDocumentAttributeValue(documentId,
+            AttributeKeyReserved.CLASSIFICATION.getKey(), setReqValue, siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"TestBoolean\","
+                + "\"error\":\"missing required attribute 'TestBoolean'\"},"
+                + "{\"key\":\"TestBoolean2\","
+                + "\"error\":\"missing required attribute 'TestBoolean2'\"}]}",
+            e.getResponseBody());
+      }
     }
   }
 

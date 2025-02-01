@@ -77,47 +77,60 @@ public class DocumentAttributeToDocumentAttributeRecord
       String key = a.getKey();
 
       if (isRelationship(a)) {
-        used = true;
         addRelationship(a, c);
-      }
+      } else if (isClassification(a)) {
+        addClassification(a, c);
+      } else {
 
-      if (!isEmpty(a.getClassificationId())) {
-        used = true;
-        addToList(c, DocumentAttributeValueType.CLASSIFICATION,
-            AttributeKeyReserved.CLASSIFICATION.getKey(), a.getClassificationId(), null, null);
-      }
+        if (!isEmpty(a.getStringValue())) {
+          used = true;
+          addToList(c, DocumentAttributeValueType.STRING, key, a.getStringValue(), null, null);
+        }
 
-      if (!isEmpty(a.getStringValue())) {
-        used = true;
-        addToList(c, DocumentAttributeValueType.STRING, key, a.getStringValue(), null, null);
-      }
+        if (a.getNumberValue() != null) {
+          used = true;
+          addToList(c, DocumentAttributeValueType.NUMBER, key, null, null, a.getNumberValue());
+        }
 
-      if (a.getNumberValue() != null) {
-        used = true;
-        addToList(c, DocumentAttributeValueType.NUMBER, key, null, null, a.getNumberValue());
-      }
+        if (a.getBooleanValue() != null) {
+          used = true;
+          addToList(c, DocumentAttributeValueType.BOOLEAN, key, null, a.getBooleanValue(), null);
+        }
 
-      if (a.getBooleanValue() != null) {
-        used = true;
-        addToList(c, DocumentAttributeValueType.BOOLEAN, key, null, a.getBooleanValue(), null);
-      }
+        for (String stringValue : notNull(a.getStringValues())) {
+          used = true;
+          addToList(c, DocumentAttributeValueType.STRING, key, stringValue, null, null);
+        }
 
-      for (String stringValue : notNull(a.getStringValues())) {
-        used = true;
-        addToList(c, DocumentAttributeValueType.STRING, key, stringValue, null, null);
-      }
+        for (Double numberValue : notNull(a.getNumberValues())) {
+          used = true;
+          addToList(c, DocumentAttributeValueType.NUMBER, key, null, null, numberValue);
+        }
 
-      for (Double numberValue : notNull(a.getNumberValues())) {
-        used = true;
-        addToList(c, DocumentAttributeValueType.NUMBER, key, null, null, numberValue);
-      }
-
-      if (!used) {
-        addToList(c, DocumentAttributeValueType.KEY_ONLY, key, null, null, null);
+        if (!used) {
+          addToList(c, DocumentAttributeValueType.KEY_ONLY, key, null, null, null);
+        }
       }
     }
 
     return c;
+  }
+
+  private void addClassification(final DocumentAttribute a,
+      final Collection<DocumentAttributeRecord> c) {
+    String k = AttributeKeyReserved.CLASSIFICATION.getKey();
+
+    if (!isEmpty(a.getClassificationId())) {
+      addToList(c, DocumentAttributeValueType.CLASSIFICATION, k, a.getClassificationId(), null,
+          null);
+    }
+
+    if (!isEmpty(a.getStringValue())) {
+      addToList(c, DocumentAttributeValueType.CLASSIFICATION, k, a.getStringValue(), null, null);
+    }
+
+    notNull(a.getStringValues())
+        .forEach(v -> addToList(c, DocumentAttributeValueType.CLASSIFICATION, k, v, null, null));
   }
 
   private static boolean isRelationship(final DocumentAttribute a) {
@@ -152,5 +165,10 @@ public class DocumentAttributeToDocumentAttributeRecord
     a.setUserId(this.user);
 
     list.add(a);
+  }
+
+  private boolean isClassification(final DocumentAttribute a) {
+    String k = AttributeKeyReserved.CLASSIFICATION.getKey();
+    return k.equalsIgnoreCase(a.getKey()) || !isEmpty(a.getClassificationId());
   }
 }
