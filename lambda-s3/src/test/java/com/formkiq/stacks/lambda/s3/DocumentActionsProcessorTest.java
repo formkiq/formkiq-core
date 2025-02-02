@@ -2119,6 +2119,47 @@ public class DocumentActionsProcessorTest implements DbKeys {
     }
   }
 
+  /**
+   * Handle Idp with Mapping Action application/pdf and SourceType MANUAL and dataonly attribute.
+   *
+   * @throws IOException IOException
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testIdp14() throws IOException, ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      String documentId = addPdfToBucket(siteId);
+
+      attributeService.addAttribute(siteId, "certificate_number", AttributeDataType.KEY_ONLY, null);
+
+      Mapping mapping = createMapping("certificate_number", null, null,
+          MappingAttributeSourceType.MANUAL, null, null, null);
+
+      MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
+
+      processIdpRequest(siteId, documentId, "application/pdf", mappingRecord);
+
+      // then
+      Action action = actionsService.getActions(siteId, documentId).get(0);
+      assertNull(action.message());
+      assertEquals(ActionStatus.COMPLETE, action.status());
+      assertEquals(ActionType.IDP, action.type());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertNotNull(action.completedDate());
+
+      List<DocumentAttributeRecord> results =
+          documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
+
+      assertEquals(1, results.size());
+
+      DocumentAttributeRecord record = results.get(0);
+      assertEquals("certificate_number", record.getKey());
+      assertNull(record.getStringValue());
+    }
+  }
+
   private void processIdpRequest(final String siteId, final String documentId,
       final String contentType, final MappingRecord mappingRecord)
       throws ValidationException, IOException {

@@ -29,6 +29,7 @@ import com.formkiq.module.actions.Action;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.stacks.dynamodb.attributes.AttributeDataType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidationType;
@@ -193,31 +194,37 @@ public class IdpAction implements DocumentAction {
       final MappingAttribute mappingAttribute, final List<String> matchValues)
       throws ValidationException {
 
-    if (!notNull(matchValues).isEmpty()) {
+    String attributeKey = mappingAttribute.getAttributeKey();
+    AttributeRecord attribute = this.attributeService.getAttribute(siteId, attributeKey);
 
-      String attributeKey = mappingAttribute.getAttributeKey();
+    List<DocumentAttributeRecord> records = notNull(matchValues).stream()
+        .map(val -> createDocumentAttribute(siteId, documentId, attribute, attributeKey, val))
+        .toList();
 
-      List<DocumentAttributeRecord> records = matchValues.stream()
-          .map(val -> createDocumentAttribute(siteId, documentId, attributeKey, val)).toList();
+    if (records.isEmpty() && AttributeDataType.KEY_ONLY.equals(attribute.getDataType())) {
+      records = List.of(createDocumentAttribute(siteId, documentId, attribute, attributeKey, null));
+    }
 
+    if (!records.isEmpty()) {
       this.documentService.saveDocumentAttributes(siteId, documentId, records,
           AttributeValidationType.FULL, AttributeValidationAccess.ADMIN_UPDATE);
     }
   }
 
   private DocumentAttributeRecord createDocumentAttribute(final String siteId,
-      final String documentId, final String attributeKey, final String matchValue) {
+      final String documentId, final AttributeRecord attribute, final String attributeKey,
+      final String matchValue) {
 
     DocumentAttributeRecord r = new DocumentAttributeRecord().setDocumentId(documentId)
         .setKey(attributeKey).setUserId("System");
 
-    AttributeRecord attribute = this.attributeService.getAttribute(siteId, attributeKey);
     switch (attribute.getDataType()) {
       case STRING -> r.setValueType(DocumentAttributeValueType.STRING).setStringValue(matchValue);
       case NUMBER -> r.setValueType(DocumentAttributeValueType.NUMBER)
           .setNumberValue(Double.valueOf(matchValue));
       case BOOLEAN -> r.setValueType(DocumentAttributeValueType.BOOLEAN)
           .setBooleanValue(Boolean.valueOf(matchValue));
+      case KEY_ONLY -> r.setValueType(DocumentAttributeValueType.KEY_ONLY);
       default ->
         throw new IllegalArgumentException("Unsupported data type: " + attribute.getDataType());
     }

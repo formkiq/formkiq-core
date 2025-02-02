@@ -43,6 +43,7 @@ import com.formkiq.aws.dynamodb.PaginationToAttributeValue;
 import com.formkiq.aws.dynamodb.QueryConfig;
 import com.formkiq.aws.dynamodb.QueryResponseToPagination;
 import com.formkiq.aws.dynamodb.model.MappingRecord;
+import com.formkiq.stacks.dynamodb.attributes.AttributeDataType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeServiceDynamodb;
@@ -154,9 +155,17 @@ public class MappingServiceDynamodb implements MappingService, DbKeys {
     if (errors.isEmpty()) {
       int size = record.getAttributes().size();
 
+      List<String> attributeKeys =
+          notNull(record.getAttributes()).stream().map(MappingAttribute::getAttributeKey)
+              .filter(attributeKey -> !isEmpty(attributeKey)).toList();
+
+      Map<String, AttributeRecord> attributes =
+          this.attributeService.getAttributes(siteId, attributeKeys);
+
       for (int i = 0; i < size; i++) {
+
         MappingAttribute attribute = record.getAttributes().get(i);
-        validate(attribute, i, errors);
+        validate(attributes, attribute, i, errors);
 
         if (errors.isEmpty()) {
           validateMetadataField(attribute, i, errors);
@@ -164,11 +173,6 @@ public class MappingServiceDynamodb implements MappingService, DbKeys {
       }
 
       if (errors.isEmpty()) {
-        List<String> attributeKeys = notNull(record.getAttributes()).stream()
-            .map(MappingAttribute::getAttributeKey).toList();
-
-        Map<String, AttributeRecord> attributes =
-            this.attributeService.getAttributes(siteId, attributeKeys);
 
         for (String attributeKey : attributeKeys) {
           if (!attributes.containsKey(attributeKey)) {
@@ -186,8 +190,8 @@ public class MappingServiceDynamodb implements MappingService, DbKeys {
     return errors;
   }
 
-  private void validate(final MappingAttribute attribute, final int index,
-      final Collection<ValidationError> errors) {
+  private void validate(final Map<String, AttributeRecord> attributes,
+      final MappingAttribute attribute, final int index, final Collection<ValidationError> errors) {
 
     if (isEmpty(attribute.getAttributeKey())) {
       errors.add(new ValidationErrorImpl().key("attribute[" + index + "].attributeKey")
@@ -201,7 +205,14 @@ public class MappingServiceDynamodb implements MappingService, DbKeys {
 
     if (MappingAttributeSourceType.MANUAL.equals(attribute.getSourceType())) {
 
-      if (isEmpty(attribute.getDefaultValue()) && notNull(attribute.getDefaultValues()).isEmpty()) {
+      if (isKeysOnlyAttribute(attributes, attribute)) {
+
+        if (!isMissingDefaultValue(attribute)) {
+          errors.add(new ValidationErrorImpl().key("attribute[" + index + "].defaultValue")
+              .error("'defaultValue' or 'defaultValues' cannot be used with KEY_ONLY attribute"));
+        }
+
+      } else if (isMissingDefaultValue(attribute)) {
         errors.add(new ValidationErrorImpl().key("attribute[" + index + "].defaultValue")
             .error("'defaultValue' or 'defaultValues' is required"));
       }
@@ -218,6 +229,23 @@ public class MappingServiceDynamodb implements MappingService, DbKeys {
             .error("'labelTexts' is required"));
       }
     }
+  }
+
+  private boolean isKeysOnlyAttribute(final Map<String, AttributeRecord> attributes,
+      final MappingAttribute attribute) {
+    boolean match = false;
+    String attributeKey = attribute.getAttributeKey();
+
+    if (!isEmpty(attributeKey)) {
+      AttributeRecord a = attributes.get(attributeKey);
+      match = a != null && AttributeDataType.KEY_ONLY.equals(a.getDataType());
+    }
+
+    return match;
+  }
+
+  private static boolean isMissingDefaultValue(final MappingAttribute attribute) {
+    return isEmpty(attribute.getDefaultValue()) && notNull(attribute.getDefaultValues()).isEmpty();
   }
 
   private void validateMetadataField(final MappingAttribute attribute, final int index,

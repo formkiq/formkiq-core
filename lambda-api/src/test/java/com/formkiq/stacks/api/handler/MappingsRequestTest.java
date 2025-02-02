@@ -33,6 +33,7 @@ import com.formkiq.client.model.AddAttributeRequest;
 import com.formkiq.client.model.AddMapping;
 import com.formkiq.client.model.AddMappingRequest;
 import com.formkiq.client.model.AddMappingResponse;
+import com.formkiq.client.model.AttributeDataType;
 import com.formkiq.client.model.DeleteResponse;
 import com.formkiq.client.model.GetMappingsResponse;
 import com.formkiq.client.model.Mapping;
@@ -176,7 +177,7 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
    *
    */
   @Test
-  public void testAddMappings42() throws ApiException {
+  public void testAddMappings04() throws ApiException {
     // given
     for (String siteId : Arrays.asList(null, SITE_ID)) {
 
@@ -186,6 +187,60 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
       AddMappingRequest req = new AddMappingRequest().mapping(new AddMapping().name("asd")
           .addAttributesItem(new MappingAttribute().attributeKey("invoice").defaultValue("23")
               .sourceType(MappingAttributeSourceType.MANUAL)));
+
+      // when
+      AddMappingResponse response = this.mappingsApi.addMapping(req, siteId);
+
+      // then
+      assertNotNull(response.getMappingId());
+    }
+  }
+
+  /**
+   * POST /mappings MANUAL, KEY_ONLY attribute.
+   *
+   */
+  @Test
+  public void testAddMappings05() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+
+      setBearerToken(siteId);
+      addAttribute(siteId, AttributeDataType.KEY_ONLY);
+
+      AddMappingRequest req = new AddMappingRequest().mapping(new AddMapping().name("asd")
+          .addAttributesItem(new MappingAttribute().attributeKey("invoice").defaultValue("23")
+              .sourceType(MappingAttributeSourceType.MANUAL)));
+
+      // when
+      try {
+        this.mappingsApi.addMapping(req, siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"errors\":[{\"key\":\"attribute[0].defaultValue\","
+            + "\"error\":\"'defaultValue' or 'defaultValues' cannot be used with "
+            + "KEY_ONLY attribute\"}]}", e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * POST /mappings MANUAL, KEY_ONLY attribute.
+   *
+   */
+  @Test
+  public void testAddMappings06() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+
+      setBearerToken(siteId);
+      addAttribute(siteId, AttributeDataType.KEY_ONLY);
+
+      AddMappingRequest req = new AddMappingRequest()
+          .mapping(new AddMapping().name("asd").addAttributesItem(new MappingAttribute()
+              .attributeKey("invoice").sourceType(MappingAttributeSourceType.MANUAL)));
 
       // when
       AddMappingResponse response = this.mappingsApi.addMapping(req, siteId);
@@ -263,5 +318,12 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
   private void addAttribute(final String siteId) throws ApiException {
     this.attributesApi.addAttribute(
         new AddAttributeRequest().attribute(new AddAttribute().key("invoice")), siteId);
+  }
+
+  private void addAttribute(final String siteId, final AttributeDataType dataType)
+      throws ApiException {
+    this.attributesApi.addAttribute(
+        new AddAttributeRequest().attribute(new AddAttribute().key("invoice").dataType(dataType)),
+        siteId);
   }
 }
