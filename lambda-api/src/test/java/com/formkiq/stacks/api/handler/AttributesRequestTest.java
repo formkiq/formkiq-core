@@ -65,10 +65,7 @@ import com.formkiq.client.model.SetSitesSchemaRequest;
 import com.formkiq.client.model.UpdateDocumentRequest;
 import com.formkiq.client.model.Watermark;
 import com.formkiq.stacks.dynamodb.attributes.AttributeKeyReserved;
-import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.LocalStackExtension;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -92,8 +89,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /** Unit Tests for request /attributes. */
-@ExtendWith(DynamoDbExtension.class)
-@ExtendWith(LocalStackExtension.class)
 public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
   /** SiteId. */
@@ -404,8 +399,9 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
         fail();
       } catch (ApiException e) {
         // then
-        assertEquals("{\"errors\":[{\"key\":\"watermark.text\","
-            + "\"error\":\"'watermark.text' is required\"}]}", e.getResponseBody());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"watermark\"," + "\"error\":\"'watermark' is required\"}]}",
+            e.getResponseBody());
       }
     }
   }
@@ -435,6 +431,54 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       assertNotNull(attr.getAttribute());
       assertEquals(attributeKey, attr.getAttribute().getKey());
       assertNull(attr.getAttribute().getWatermark());
+    }
+  }
+
+  /**
+   * POST /attributes watermark image.
+   *
+   */
+  @Test
+  public void testAddAttributes07() throws ApiException {
+    // given
+    final String attributeKey = "wm1";
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+
+      setBearerToken(siteId);
+      Watermark watermark = new Watermark().imageDocumentId(ID.uuid());
+      AddAttributeRequest req = new AddAttributeRequest().attribute(new AddAttribute()
+          .key(attributeKey).dataType(AttributeDataType.WATERMARK).watermark(watermark));
+
+      // when
+      try {
+        this.attributesApi.addAttribute(req, siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"watermark.imageDocumentId\","
+                + "\"error\":\"watermark.imageDocumentId' does not exist\"}]}",
+            e.getResponseBody());
+      }
+
+      // given
+      String documentId = addDocument(siteId);
+      watermark.setImageDocumentId(documentId);
+
+      // when
+      AddAttributeResponse response = this.attributesApi.addAttribute(req, siteId);
+
+      // then
+      assertEquals("Attribute '" + attributeKey + "' created", response.getMessage());
+
+      GetAttributeResponse attr = this.attributesApi.getAttribute(attributeKey, siteId);
+      assertNotNull(attr.getAttribute());
+      assertEquals(attributeKey, attr.getAttribute().getKey());
+      watermark = attr.getAttribute().getWatermark();
+      assertNotNull(watermark);
+      assertNull(watermark.getText());
+      assertEquals(documentId, watermark.getImageDocumentId());
     }
   }
 

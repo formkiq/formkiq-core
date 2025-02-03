@@ -32,12 +32,34 @@ import com.formkiq.graalvm.annotations.Reflectable;
 public class Watermark {
   /** Watermark text. */
   private String text;
+  /** Image Document Id. */
+  private String imageDocumentId;
 
   /**
    * constructor.
    */
   public Watermark() {
 
+  }
+
+  /**
+   * Get Image Document Id.
+   * 
+   * @return String
+   */
+  public String getImageDocumentId() {
+    return this.imageDocumentId;
+  }
+
+  /**
+   * Set Image Document Id.
+   * 
+   * @param documentId {@link String}
+   * @return Watermark
+   */
+  public Watermark setImageDocumentId(final String documentId) {
+    this.imageDocumentId = documentId;
+    return this;
   }
 
   /**

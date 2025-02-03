@@ -90,6 +90,7 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
       AttributeRecord a = new AttributeRecord().documentId(key).key(key)
           .type(type != null ? type : AttributeType.STANDARD)
           .setWatermarkText(watermark != null ? watermark.getText() : null)
+          .setWatermarkImageDocumentId(watermark != null ? watermark.getImageDocumentId() : null)
           .dataType(dataType != null ? dataType : AttributeDataType.STRING);
 
       this.db.putItem(a.getAttributes(siteId));
@@ -130,17 +131,33 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
       }
     }
 
+    validateWatermark(siteId, dataType, watermark, errors);
+
+    return errors;
+  }
+
+  private void validateWatermark(final String siteId, final AttributeDataType dataType,
+      final Watermark watermark, final Collection<ValidationError> errors) {
     if (AttributeDataType.WATERMARK.equals(dataType)) {
-      if (watermark == null || isEmpty(watermark.getText())) {
-        errors.add(
-            new ValidationErrorImpl().key("watermark.text").error("'watermark.text' is required"));
+
+      if (watermark == null) {
+        errors.add(new ValidationErrorImpl().key("watermark").error("'watermark' is required"));
+      } else if (isEmpty(watermark.getText()) && isEmpty(watermark.getImageDocumentId())) {
+        errors.add(new ValidationErrorImpl().key("watermark")
+            .error("'watermark.text' or 'watermark.imageDocumentId' is required"));
+      } else if (!isEmpty(watermark.getImageDocumentId())) {
+
+        Map<String, AttributeValue> keys = keysDocument(siteId, watermark.getImageDocumentId());
+        if (!this.db.exists(keys.get(PK), keys.get(SK))) {
+          errors.add(new ValidationErrorImpl().key("watermark.imageDocumentId")
+              .error("watermark.imageDocumentId' does not exist"));
+        }
       }
+
     } else if (watermark != null) {
       errors.add(new ValidationErrorImpl().key("watermark.text")
           .error("'watermark' only allowed on dataType 'WATERMARK'"));
     }
-
-    return errors;
   }
 
   @Override

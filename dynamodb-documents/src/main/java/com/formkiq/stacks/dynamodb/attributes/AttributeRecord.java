@@ -53,12 +53,28 @@ public class AttributeRecord implements DynamodbRecord<AttributeRecord> {
   private AttributeType type;
   /** Watermark Text. */
   private String watermarkText;
+  /** Watermark Image DocumentId. */
+  private String watermarkImageDocumentId;
 
   /**
    * constructor.
    */
   public AttributeRecord() {
 
+  }
+
+  /**
+   * Get Watermark Image Document Id.
+   * 
+   * @return String
+   */
+  public String getWatermarkImageDocumentId() {
+    return this.watermarkImageDocumentId;
+  }
+
+  public AttributeRecord setWatermarkImageDocumentId(final String imageDocumentId) {
+    this.watermarkImageDocumentId = imageDocumentId;
+    return this;
   }
 
   /**
@@ -132,6 +148,10 @@ public class AttributeRecord implements DynamodbRecord<AttributeRecord> {
       attr.put("watermarkText", fromS(this.watermarkText));
     }
 
+    if (!isEmpty(this.watermarkImageDocumentId)) {
+      attr.put("watermarkImageDocumentId", fromS(this.watermarkImageDocumentId));
+    }
+
     return attr;
   }
 
@@ -163,6 +183,7 @@ public class AttributeRecord implements DynamodbRecord<AttributeRecord> {
       record = new AttributeRecord().documentId(ss(attrs, "documentId")).key(ss(attrs, "key"))
           .type(AttributeType.valueOf(ss(attrs, "type")))
           .setWatermarkText(ss(attrs, "watermarkText"))
+          .setWatermarkImageDocumentId(ss(attrs, "watermarkImageDocumentId"))
           .dataType(AttributeDataType.valueOf(ss(attrs, "dataType")));
     }
 

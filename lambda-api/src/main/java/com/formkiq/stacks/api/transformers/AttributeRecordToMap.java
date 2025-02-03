@@ -45,6 +45,10 @@ public class AttributeRecordToMap implements Function<AttributeRecord, Map<Strin
       attr.put("watermark", new Watermark().setText(a.getWatermarkText()));
     }
 
+    if (!isEmpty(a.getWatermarkImageDocumentId())) {
+      attr.put("watermark", new Watermark().setImageDocumentId(a.getWatermarkImageDocumentId()));
+    }
+
     return attr;
   }
 }
