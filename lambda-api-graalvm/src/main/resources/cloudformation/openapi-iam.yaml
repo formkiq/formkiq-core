@@ -9471,6 +9471,9 @@ Resources:
                 text:
                   type: "string"
                   description: "Watermark text"
+                imageDocumentId:
+                  type: "string"
+                  description: "Watermark Image Document Id"
 
             AttributeType:
               type: string
