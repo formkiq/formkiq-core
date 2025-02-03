@@ -117,7 +117,7 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
           this.documentService.saveDocumentFormat(siteId, format);
         }
 
-        String filename = "file_" + UUID.randomUUID() + ".pdf";
+        String filename = "file " + UUID.randomUUID() + ".pdf";
         DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, new Date(), userId);
         item.setPath("/somepath/" + filename);
         if ("text/plain".equals(contentType)) {
@@ -135,7 +135,7 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
         assertNotNull(resp.getUrl());
 
         URI uri = new URI(resp.getUrl());
-        assertTrue(uri.getQuery().contains("filename=\"" + filename + "\""));
+        assertTrue(uri.getQuery().contains("filename*=UTF-8''" + filename));
 
         assertTrue(resp.getUrl().contains("X-Amz-Algorithm=AWS4-HMAC-SHA256"));
         assertTrue(resp.getUrl().contains("X-Amz-Expires=172800"));
@@ -416,8 +416,7 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
       assertNotNull(resp.getUrl());
 
       URI uri = new URI(resp.getUrl());
-      assertTrue(uri.getQuery().contains("filename=\"" + filename + "\""));
-
+      assertTrue(uri.getQuery().contains("filename*=UTF-8''" + filename));
       assertTrue(resp.getUrl().contains("X-Amz-Algorithm=AWS4-HMAC-SHA256"));
       assertTrue(resp.getUrl().contains("X-Amz-Expires=172800"));
       assertTrue(resp.getUrl().contains(AWS_REGION.toString()));

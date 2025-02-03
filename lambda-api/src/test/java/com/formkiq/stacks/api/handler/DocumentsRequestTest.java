@@ -898,7 +898,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       // then
       assertEquals(ApiResponseStatus.SC_OK.getStatusCode(), response.getStatusCode());
 
-      assertEquals("attachment; filename=\"" + path + "\"",
+      assertEquals("attachment; filename*=UTF-8''" + path,
           String.join(",", response.getHeaders().get("content-disposition")));
       assertEquals("text/plain", String.join(",", response.getHeaders().get("content-type")));
 
