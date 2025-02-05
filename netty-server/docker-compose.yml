@@ -11,7 +11,7 @@ services:
       COGNITO_USER_POOL_ID: us-east-2_3123
       COGNITO_CLIENT_ID: abcd
       USE_AUTH_API_FOR_SIGNIN: true
-      CONSOLE_VERSION: 3.7.3
+      CONSOLE_VERSION: 3.8.0
   
   typesense:
     image: typesense/typesense:27.1
