@@ -39,6 +39,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
@@ -67,6 +69,11 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/url". */
 public class DocumentIdUrlRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
+
+  /** S3 Prefix. */
+  private static final String S3_PREFIX = "s3://";
+  /** S3 Pattern. */
+  private static final Pattern S3_PATTERN = Pattern.compile("s3://([^/]+)/(.*)");
 
   /**
    * constructor.
@@ -197,10 +204,16 @@ public class DocumentIdUrlRequestHandler
     String s3key = createS3Key(siteId, documentId);
 
     if (isS3Link(item)) {
-      URI u = new URI(item.getDeepLinkPath());
-      s3Bucket = u.getHost();
-      s3key = u.getPath().startsWith("/") ? u.getPath().substring(1) : u.getPath();
+
       filename = Strings.getFilename(item.getDeepLinkPath());
+      Matcher matcher = S3_PATTERN.matcher(item.getDeepLinkPath());
+      if (matcher.matches()) {
+        s3Bucket = matcher.group(1);
+        s3key = matcher.group(2);
+      } else {
+        s3Bucket = null;
+        s3key = filename;
+      }
 
     } else if (!isEmpty(item.getDeepLinkPath())) {
 
@@ -237,7 +250,7 @@ public class DocumentIdUrlRequestHandler
   }
 
   private boolean isS3Link(final DocumentItem item) {
-    return !isEmpty(item.getDeepLinkPath()) && item.getDeepLinkPath().startsWith("s3://");
+    return !isEmpty(item.getDeepLinkPath()) && item.getDeepLinkPath().startsWith(S3_PREFIX);
   }
 
   private Map<String, AttributeValue> getVersionAttributes(final AwsServiceCache awsservice,

@@ -393,7 +393,6 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
    */
   @Test
   public void testHandleGetDocumentContent09() throws Exception {
-
     // given
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       setBearerToken(siteId);
@@ -402,7 +401,7 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
       String userId = "jsmith";
 
       String bucketName = "somebucket";
-      String filename = UUID.randomUUID() + ".pdf";
+      String filename = UUID.randomUUID() + " .pdf";
       DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, new Date(), userId);
       item.setDeepLinkPath("s3://" + bucketName + "/" + filename);
       this.documentService.saveDocument(siteId, item, new ArrayList<>());
@@ -421,7 +420,7 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
       assertTrue(resp.getUrl().contains("X-Amz-Expires=172800"));
       assertTrue(resp.getUrl().contains(AWS_REGION.toString()));
       assertTrue(resp.getUrl().contains(bucketName));
-      assertTrue(resp.getUrl().contains(filename));
+      assertTrue(resp.getUrl().contains(filename.replaceAll(" ", "%20")));
     }
   }
 
