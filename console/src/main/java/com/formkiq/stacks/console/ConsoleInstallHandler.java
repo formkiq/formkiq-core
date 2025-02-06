@@ -108,6 +108,8 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
     String congitoClientId = this.environmentMap.get("COGNITO_USER_POOL_CLIENT_ID");
 
     String documentApi = this.environmentMap.get("API_URL");
+    String apiIamUrl = this.environmentMap.get("API_IAM_URL");
+    String apiKeyUrl = this.environmentMap.get("API_KEY_URL");
     String cognitoSingleSignOnUrl = this.environmentMap.get("COGNITO_SINGLE_SIGN_ON_URL");
     if (cognitoSingleSignOnUrl == null) {
       cognitoSingleSignOnUrl = "";
@@ -115,15 +117,17 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
 
     String json = String.format(
         "{%n" + "  \"documentApi\": \"%s\",%n" + "  \"userPoolId\": \"%s\",%n"
+            + "  \"apiIamUrl\": \"%s\",%n" + "  \"apiKeyUrl\": \"%s\",%n"
             + "  \"clientId\": \"%s\",%n" + "  \"consoleVersion\": \"%s\",%n"
             + "  \"brand\": \"%s\",%n" + "  \"userAuthentication\": \"%s\",%n"
             + "  \"authApi\": \"%s\",%n" + "  \"cognitoHostedUi\": \"%s\",%n"
             + "  \"cognitoSingleSignOnUrl\": \"%s\"%n" + "}",
-        documentApi, cognitoUserPoolId, congitoClientId, consoleVersion, brand, userAuthentication,
-        authApi, cognitoHostedUi, cognitoSingleSignOnUrl);
+        documentApi, cognitoUserPoolId, apiIamUrl, apiKeyUrl, congitoClientId, consoleVersion,
+        brand, userAuthentication, authApi, cognitoHostedUi, cognitoSingleSignOnUrl);
 
     String fileName = consoleVersion + "/assets/config.json";
 
+    System.out.println("PUT: " + destinationBucket + " FILENAME: " + fileName);
     this.s3.putObject(destinationBucket, fileName, json.getBytes(StandardCharsets.UTF_8), null,
         null);
 
@@ -133,10 +137,9 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
   /**
    * Customize Cognito Email Templates.
    *
-   * @param logger {@link LambdaLogger}
    * @throws IOException IOException
    */
-  private void createCognitoEmail(final LambdaLogger logger) throws IOException {
+  private void createCognitoEmail() throws IOException {
     String cognitoConfigBucket = this.environmentMap.get("COGNITO_CONFIG_BUCKET");
     String domain = this.environmentMap.get("DOMAIN");
 
@@ -184,8 +187,7 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
    */
   protected HttpURLConnection getConnection(final String responseUrl) throws IOException {
     URL url = new URL(responseUrl);
-    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-    return connection;
+    return (HttpURLConnection) url.openConnection();
   }
 
   /**
@@ -203,15 +205,15 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
 
     try {
       final String requestType = (String) input.get("RequestType");
-      boolean unzip = requestType != null
-          && ("Create".equalsIgnoreCase(requestType) || "Update".equalsIgnoreCase(requestType));
-      boolean delete = requestType != null && "Delete".equalsIgnoreCase(requestType);
+      boolean unzip =
+          ("Create".equalsIgnoreCase(requestType) || "Update".equalsIgnoreCase(requestType));
+      boolean delete = "Delete".equalsIgnoreCase(requestType);
 
       if (unzip) {
 
-        unzipConsole(input, requestType, context, logger);
+        unzipConsole(input, context, logger);
         createCognitoConfig(logger);
-        createCognitoEmail(logger);
+        createCognitoEmail();
         sendResponse(input, logger, context, "SUCCESS",
             "Request " + requestType + " was successful!");
 
@@ -310,12 +312,11 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
    * Unzip Console file.
    *
    * @param input {@link Map}
-   * @param requestType {@link String}
    * @param context {@link Context}
    * @param logger {@link LambdaLogger}
    */
-  private void unzipConsole(final Map<String, Object> input, final String requestType,
-      final Context context, final LambdaLogger logger) {
+  private void unzipConsole(final Map<String, Object> input, final Context context,
+      final LambdaLogger logger) {
 
     String consoleversion = this.environmentMap.get("CONSOLE_VERSION");
 

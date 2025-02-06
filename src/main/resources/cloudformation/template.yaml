@@ -283,6 +283,14 @@ Resources:
           Fn::GetAtt: 
           - CoreApi
           - Outputs.DocumentsHttpApiUrl
+        IamApiUrl:
+          Fn::GetAtt:
+            - CoreApi
+            - Outputs.DocumentsIamApiUrl
+        KeyApiUrl:
+          Fn::GetAtt:
+            - CoreApi
+            - Outputs.DocumentsKeyApiUrl
         WebsocketApiUrl: 
           Fn::GetAtt: 
           - WebsocketApi

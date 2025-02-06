@@ -7,42 +7,42 @@ Parameters:
   AppEnvironment:
     Type: String
     Description: The Document Stack Environment
-    AllowedPattern: ".+"
 
   ConsoleVersion:
     Type: String
     Description: Version of FormKiQ console to deploy
-    AllowedPattern: ".+"
 
   Domain:
     Description: Amazon Cognito domain to use (include full domain if CertificateArn used)
-    AllowedPattern: ".+"
     Type: String
 
   ConsoleBucket:
     Type: String
     Description: Console S3 Bucket
-    AllowedPattern: ".+"
 
   CognitoConfigBucket:
     Type: String
     Description: Cognito Config S3 Bucket
-    AllowedPattern: ".+"
 
   ApiUrl:
     Type: String
-    Description: API URL
-    AllowedPattern: ".+"
+    Description: JWT API URL
+
+  IamApiUrl:
+    Type: String
+    Description: IAM API URL
+
+  KeyApiUrl:
+    Type: String
+    Description: Key API URL
 
   WebsocketApiUrl:
     Type: String
     Description: WebSocket URL
-    AllowedPattern: ".+"
 
   AuthApiUrl:
     Type: String
     Description: Auth Api URL
-    AllowedPattern: ".+"
 
   Brand:
     Type: String
@@ -194,11 +194,15 @@ Resources:
           COGNITO_CONFIG_BUCKET:
             Fn::Sub: "${CognitoConfigBucket}"
           API_URL:
-            Fn::Sub: "${ApiUrl}"
+            Ref: ApiUrl
+          API_IAM_URL:
+            Ref: IamApiUrl
+          API_KEY_URL:
+            Ref: KeyApiUrl
           API_WEBSOCKET_URL:
             Fn::Sub: "${WebsocketApiUrl}"
           API_AUTH_URL:
-            Fn::Sub: "${AuthApiUrl}"
+            Ref: AuthApiUrl
           BRAND:
             Fn::Sub: "${Brand}"
           ALLOW_ADMIN_CREATE_USER_ONLY:
@@ -320,6 +324,12 @@ Resources:
     Properties:
       Nonce:
         Ref: ConsoleVersion
+      API_URL:
+        Ref: ApiUrl
+      API_IAM_URL:
+        Ref: IamApiUrl
+      API_KEY_URL:
+        Ref: KeyApiUrl
       HttpApiUrl:
         Fn::If:
           - HasCertificateStackName
