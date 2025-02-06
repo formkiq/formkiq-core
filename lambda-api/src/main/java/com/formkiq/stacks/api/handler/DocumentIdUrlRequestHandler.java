@@ -29,8 +29,6 @@ import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_FOUND;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import static software.amazon.awssdk.utils.StringUtils.isEmpty;
 import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -174,13 +172,11 @@ public class DocumentIdUrlRequestHandler
    * @param inline boolean
    * @param bypassWatermark boolean
    * @return {@link URL}
-   * @throws URISyntaxException URISyntaxException
    * @throws MalformedURLException MalformedURLException
    */
   private URL getS3Url(final ApiAuthorization authorization, final AwsServiceCache awsservice,
       final ApiGatewayRequestEvent event, final DocumentItem item, final String versionId,
-      final boolean inline, final boolean bypassWatermark)
-      throws URISyntaxException, MalformedURLException {
+      final boolean inline, final boolean bypassWatermark) throws MalformedURLException {
 
     final String documentId = item.getDocumentId();
 
