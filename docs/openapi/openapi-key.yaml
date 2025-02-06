@@ -97,9 +97,6 @@
         - name: webhooks
           description: Webhooks API
           x-displayName: Webhooks
-        - name: onlyoffice
-          description: Onlyoffice API
-          x-displayName: Onlyoffice
         - name: e-signature
           description: E-Signature API
           x-displayName: E-Signature
@@ -4034,99 +4031,6 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
-          /onlyoffice/{documentId}/edit:
-            post:
-              operationId: OnlyOfficeDocumentEdit
-              summary: Edit onlyoffice document
-              description: Provide ONLYOFFICE integration for editing documents; available as an Add-On Module
-              tags:
-              - Onlyoffice
-              parameters:
-              - $ref: '#/components/parameters/siteIdParam'
-              - $ref: '#/components/parameters/documentIdParam'
-              requestBody:
-                required: true
-                content:
-                  application/json:
-                    schema:
-                      $ref: '#/components/schemas/OnlyOfficeDocumentEditRequest'
-              responses:
-                "200":
-                  description: 200 OK
-                  headers:
-                    Access-Control-Allow-Origin:
-                      $ref: '#/components/headers/AccessControlAllowOrigin'
-                    Access-Control-Allow-Methods:
-                      $ref: '#/components/headers/AccessControlAllowMethods'
-                    Access-Control-Allow-Headers:
-                      $ref: '#/components/headers/AccessControlAllowHeaders'
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/OnlyOfficeDocumentResponse'
-              security:
-              - ApiAuthorization: []
-              x-amazon-apigateway-integration:
-                $ref: '#/components/x-amazon-apigateway-integrations/onlyOfficeLambdaApi200'
-          /onlyoffice/new:
-            post:
-              operationId: OnlyOfficeDocumentNew
-              summary: Create onlyoffice document
-              description: Provide ONLYOFFICE integration for the creation of new documents; available as an Add-On Module
-              tags:
-              - Onlyoffice
-              parameters:
-              - $ref: '#/components/parameters/siteIdParam'
-              requestBody:
-                required: true
-                content:
-                  application/json:
-                    schema:
-                      $ref: '#/components/schemas/OnlyOfficeDocumentNewRequest'
-              responses:
-                "200":
-                  description: 200 OK
-                  headers:
-                    Access-Control-Allow-Origin:
-                      $ref: '#/components/headers/AccessControlAllowOrigin'
-                    Access-Control-Allow-Methods:
-                      $ref: '#/components/headers/AccessControlAllowMethods'
-                    Access-Control-Allow-Headers:
-                      $ref: '#/components/headers/AccessControlAllowHeaders'
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/OnlyOfficeDocumentResponse'
-              security:
-              - ApiAuthorization: []
-              x-amazon-apigateway-integration:
-                $ref: '#/components/x-amazon-apigateway-integrations/onlyOfficeLambdaApi200'
-          /onlyoffice/{documentId}/save:
-            post:
-              operationId: OnlyOfficeDocumentSave
-              summary: Save onlyoffice document
-              description: Save an updated document for ONLYOFFICE integration. available as an Add-On Module
-              tags:
-              - Onlyoffice
-              parameters:
-              - $ref: '#/components/parameters/siteIdParam'
-              - $ref: '#/components/parameters/documentIdParam'
-              responses:
-                "200":
-                  description: 200 OK
-                  headers:
-                    Access-Control-Allow-Origin:
-                      $ref: '#/components/headers/AccessControlAllowOrigin'
-                    Access-Control-Allow-Methods:
-                      $ref: '#/components/headers/AccessControlAllowMethods'
-                    Access-Control-Allow-Headers:
-                      $ref: '#/components/headers/AccessControlAllowHeaders'
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/OnlyOfficeDocumentSaveResponse'
-              x-amazon-apigateway-integration:
-                $ref: '#/components/x-amazon-apigateway-integrations/onlyOfficeLambdaApi200'
           /indices/{indexType}/move:
             post:
               operationId: IndexFolderMove
@@ -11032,63 +10936,6 @@
                   description: Only valid string values
                   items:
                     type: string
-            OnlyOfficeDocumentNewRequest:
-              description: ONLYOFFICE New Document Request
-              properties:
-                extension:
-                  type: string
-                  enum:
-                  - DOCX
-                  - XLSX
-                  - PPTX
-            OnlyOfficeDocumentEditRequest:
-              description: ONLYOFFICE Edit Document Request
-            OnlyOfficeDocumentResponse:
-              type: object
-              properties:
-                config:
-                  $ref: '#/components/schemas/OnlyOfficeConfig'
-            OnlyOfficeConfig:
-              type: object
-              properties:
-                onlyOfficeUrl:
-                  description: URL of the ONLYOFFICE application
-                  type: string
-                token:
-                  description: ONLYOFFICE security token
-                  type: string
-                documentType:
-                  description: Type of document (https://api.onlyoffice.com/editors/config/)
-                  type: string
-                editorConfig:
-                  $ref: '#/components/schemas/OnlyOfficeEditorConfig'
-                document:
-                  $ref: '#/components/schemas/OnlyOfficeConfigDocument'
-            OnlyOfficeEditorConfig:
-              type: object
-              properties:
-                callbackUrl:
-                  type: string
-            OnlyOfficeConfigDocument:
-              type: object
-              properties:
-                url:
-                  description: Defines the absolute URL where the source viewed or edited document is stored
-                  type: string
-                title:
-                  description: Defines the desired file name for the viewed or edited document
-                  type: string
-                key:
-                  description: Defines the unique document identifier used by the service to recognize the document
-                  type: string
-                fileType:
-                  description: Defines the type of the file for the source viewed or edited document
-                  type: string
-            OnlyOfficeDocumentSaveResponse:
-              type: object
-              properties:
-                message:
-                  type: string
             DocusignEnvironment:
               type: string
               description: Docusign Environment
@@ -11376,20 +11223,6 @@
             ocrObjectsLambdaApi200:
               uri:
                 Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${OcrApiRequestsArn}/invocations
-              responses:
-                default:
-                  statusCode: "200"
-                  responseParameters:
-                    method.response.header.Access-Control-Allow-Methods: '''*'''
-                    method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key'''
-                    method.response.header.Access-Control-Allow-Origin: '''*'''
-              passthroughBehavior: when_no_templates
-              httpMethod: POST
-              type: aws_proxy
-              payloadFormatVersion: "1.0"
-            onlyOfficeLambdaApi200:
-              uri:
-                Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
               responses:
                 default:
                   statusCode: "200"

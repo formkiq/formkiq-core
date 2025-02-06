@@ -148,8 +148,7 @@ public class ApiAuthorizationBuilder {
     }
 
     if (defaultSiteId != null && !isValidSiteId(defaultSiteId, groups)
-        && !event.getPath().startsWith("/public/")
-        && !event.getResource().startsWith("/onlyoffice/{documentId}/save")) {
+        && !event.getPath().startsWith("/public/")) {
       String s = String.format("fkq access denied to siteId (%s)", defaultSiteId);
       throw new ForbiddenException(s);
     }
