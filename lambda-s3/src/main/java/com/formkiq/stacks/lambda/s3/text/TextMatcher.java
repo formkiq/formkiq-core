@@ -23,6 +23,9 @@
  */
 package com.formkiq.stacks.lambda.s3.text;
 
+import com.formkiq.strings.StringFormatter;
+import com.formkiq.strings.lexer.TokenGenerator;
+
 import java.util.List;
 
 /**
@@ -37,10 +40,12 @@ public interface TextMatcher {
    * @param matches {@link List} {@link String}
    * @param tokenGenerator {@link TokenGenerator}
    * @param matchAlgorithm {@link TextMatchAlgorithm}
+   * @param splitRegex Regex to split strings or null for none
+   * @param formatter {@link StringFormatter}
    * @return {@link TextMatch}
    */
   TextMatch findMatch(String text, List<String> matches, TokenGenerator tokenGenerator,
-      TextMatchAlgorithm matchAlgorithm);
+      TextMatchAlgorithm matchAlgorithm, String splitRegex, StringFormatter formatter);
 
   /**
    * Find Match Value.

@@ -21,32 +21,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.lambda.s3.text;
+package com.formkiq.strings;
 
-import com.formkiq.strings.lexer.Token;
+import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Function;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
- * {@link Function} that implements contains {@link String} matching.
+ * Unit Test for {@link StringFormatterAlphaNumeric}.
  */
-public class ContainsMatcher implements TextMatchAlgorithm {
+public class StringFormatterAlphaNumericTest {
+  /** {@link StringFormatterAlphaNumeric}. */
+  private StringFormatterAlphaNumeric formatter = new StringFormatterAlphaNumeric();
 
-  @Override
-  public List<TextMatch> findMatches(final List<Token> tokens, final String match) {
-
-    List<TextMatch> matches = new ArrayList<>();
-
-    for (Token token : tokens) {
-
-      if (token.getFormatted().contains(match)) {
-        matches.add(new TextMatch(token, 1));
-        break;
-      }
-    }
-
-    return matches;
+  @Test
+  void format() {
+    assertNull(formatter.format(null));
+    assertEquals("asd", formatter.format("asd"));
+    assertEquals("Asd", formatter.format("Asd"));
+    assertEquals("Asd123ADB0", formatter.format("Asd!1@2$3%ADB0"));
+    assertEquals("Asd123 ADB0", formatter.format("Asd!1@2$3 %ADB0"));
   }
 }

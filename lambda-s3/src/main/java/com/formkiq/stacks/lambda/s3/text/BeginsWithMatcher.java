@@ -23,6 +23,8 @@
  */
 package com.formkiq.stacks.lambda.s3.text;
 
+import com.formkiq.strings.lexer.Token;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;

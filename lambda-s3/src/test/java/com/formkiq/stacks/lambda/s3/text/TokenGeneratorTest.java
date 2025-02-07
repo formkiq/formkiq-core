@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.lambda.s3.text;
 
+import static com.formkiq.stacks.lambda.s3.actions.IdpAction.REGEX;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import java.io.FileInputStream;
@@ -30,11 +31,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
+
+import com.formkiq.stacks.lambda.s3.actions.IdpAction;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.utils.IoUtils;
 
 /**
- * Unit Test for {@link TokenGeneratorDefault}.
+ * Unit Test for {@link TokenGeneratorRegex}.
  */
 public class TokenGeneratorTest {
 
@@ -55,7 +58,8 @@ public class TokenGeneratorTest {
 
       // when
       final TextMatch match = this.idpTextMatcher.findMatch(text, textLabels,
-          new TokenGeneratorDefault(), new FuzzyMatcher());
+          new TokenGeneratorRegex(REGEX, IdpAction.FORMATTER), new FuzzyMatcher(), REGEX,
+          IdpAction.FORMATTER);
       final String matchValue0 = this.idpTextMatcher.findMatchValue(text, match, "");
       final String matchValue1 = this.idpTextMatcher.findMatchValue(text, match, "[0-9]+");
 
@@ -81,7 +85,8 @@ public class TokenGeneratorTest {
 
       // when
       final TextMatch match = this.idpTextMatcher.findMatch(text, textLabels,
-          new TokenGeneratorDefault(), new ExactMatcher());
+          new TokenGeneratorRegex(REGEX, IdpAction.FORMATTER), new ExactMatcher(), REGEX,
+          IdpAction.FORMATTER);
       final String matchValue0 = this.idpTextMatcher.findMatchValue(text, match, "");
       final String matchValue1 = this.idpTextMatcher.findMatchValue(text, match, "[0-9]+");
 
@@ -107,7 +112,8 @@ public class TokenGeneratorTest {
 
       // when
       final TextMatch match = this.idpTextMatcher.findMatch(text, textLabels,
-          new TokenGeneratorDefault(), new ExactMatcher());
+          new TokenGeneratorRegex(REGEX, IdpAction.FORMATTER), new ExactMatcher(), REGEX,
+          IdpAction.FORMATTER);
       final String matchValue0 = this.idpTextMatcher.findMatchValue(text, match, "");
       final String matchValue1 = this.idpTextMatcher.findMatchValue(text, match, "[0-9]+");
 

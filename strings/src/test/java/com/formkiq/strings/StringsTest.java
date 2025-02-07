@@ -21,32 +21,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.lambda.s3.text;
+package com.formkiq.strings;
 
-import com.formkiq.strings.lexer.Token;
+import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Function;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * {@link Function} that implements contains {@link String} matching.
+ * Unit Test for {@link Strings}.
  */
-public class ContainsMatcher implements TextMatchAlgorithm {
+public class StringsTest {
+  /**
+   * Is Empty.
+   */
+  @Test
+  void testIsEmpty() {
+    assertTrue(Strings.isEmpty(null));
+    assertTrue(Strings.isEmpty(""));
+    assertFalse(Strings.isEmpty(" "));
+    assertFalse(Strings.isEmpty("a"));
+  }
 
-  @Override
-  public List<TextMatch> findMatches(final List<Token> tokens, final String match) {
-
-    List<TextMatch> matches = new ArrayList<>();
-
-    for (Token token : tokens) {
-
-      if (token.getFormatted().contains(match)) {
-        matches.add(new TextMatch(token, 1));
-        break;
-      }
-    }
-
-    return matches;
+  @Test
+  void testSplitByChar() {
+    assertEquals("a d sa add", String.join(" ", Strings.splitByChar("a:d:sa:add", ':')));
+    assertEquals("adsa add", String.join(" ", Strings.splitByChar("adsa:add", ':')));
+    assertEquals("adsa:add", String.join(" ", Strings.splitByChar("adsa:add", '!')));
+    assertEquals("", String.join(" ", Strings.splitByChar(null, '!')));
   }
 }

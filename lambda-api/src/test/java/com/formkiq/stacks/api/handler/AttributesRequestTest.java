@@ -483,6 +483,56 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * POST /attributes add watermark text, then try and change to invalid documentid.
+   *
+   */
+  @Test
+  public void testAddAttributes08() throws ApiException {
+    // given
+    final String attributeKey = "wm1";
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+
+      setBearerToken(siteId);
+      Watermark watermark = new Watermark().text("test");
+      AddAttributeRequest req = new AddAttributeRequest().attribute(new AddAttribute()
+          .key(attributeKey).dataType(AttributeDataType.WATERMARK).watermark(watermark));
+
+      // when
+      this.attributesApi.addAttribute(req, siteId);
+
+      // then
+      GetAttributeResponse r = this.attributesApi.getAttribute(attributeKey, siteId);
+      assertNotNull(r);
+      assertNotNull(r.getAttribute());
+      assertNotNull(r.getAttribute().getWatermark());
+      assertEquals("test", r.getAttribute().getWatermark().getText());
+
+      // given
+      watermark.text(null).imageDocumentId(ID.uuid());
+
+      try {
+        this.attributesApi.addAttribute(req, siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[" + "{\"key\":\"key\",\"error\":\"attribute 'wm1' already exists\"},"
+                + "{\"key\":\"watermark.imageDocumentId\","
+                + "\"error\":\"watermark.imageDocumentId' does not exist\"}]}",
+            e.getResponseBody());
+
+        r = this.attributesApi.getAttribute(attributeKey, siteId);
+        assertNotNull(r);
+        List<Attribute> list =
+            notNull(this.attributesApi.getAttributes(siteId, null, null).getAttributes());
+        assertEquals(1, list.size());
+        assertEquals("wm1", list.get(0).getKey());
+      }
+    }
+  }
+
+  /**
    * POST /documents.
    *
    * @throws ApiException ApiException

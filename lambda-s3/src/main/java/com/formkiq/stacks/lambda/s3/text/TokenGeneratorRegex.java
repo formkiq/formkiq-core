@@ -23,28 +23,40 @@
  */
 package com.formkiq.stacks.lambda.s3.text;
 
+import com.formkiq.strings.StringFormatter;
+import com.formkiq.strings.lexer.Token;
+import com.formkiq.strings.lexer.TokenGenerator;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Token Generator.
+ * Regex Token Generator.
  */
-public class TokenGeneratorDefault implements TokenGenerator {
+public class TokenGeneratorRegex implements TokenGenerator {
 
-  /** Alpha Numeric. */
-  private static final String ALPHANUMERIC = "[^a-zA-Z0-9]";
+  /** Regex. */
+  private final String regexString;
+  /** {@link StringFormatter}. */
+  private final StringFormatter stringFormatter;
 
   /**
    * constructor.
+   * 
+   * @param regex {@link String}
+   * @param formatter {@link StringFormatter}
    */
-  public TokenGeneratorDefault() {}
+  public TokenGeneratorRegex(final String regex, final StringFormatter formatter) {
+    this.regexString = regex;
+    this.stringFormatter = formatter;
+  }
 
   @Override
   public List<Token> generateTokens(final String text) {
 
-    Pattern pattern = Pattern.compile(getSplitRegex());
+    Pattern pattern = Pattern.compile(this.regexString);
     Matcher matcher = pattern.matcher(text);
 
     List<Token> tokens = new ArrayList<>();
@@ -65,16 +77,7 @@ public class TokenGeneratorDefault implements TokenGenerator {
 
   private Token createToken(final String text, final int start, final int end) {
     String s = text.substring(start, end);
-    return new Token().setOriginal(s).setFormatted(formatText(s)).setStart(start).setEnd(end);
-  }
-
-  @Override
-  public String formatText(final String text) {
-    return text.toLowerCase().replaceAll("\\p{Punct}", "").replaceAll(ALPHANUMERIC, " ");
-  }
-
-  @Override
-  public String getSplitRegex() {
-    return "\\s+";
+    return new Token().setOriginal(s).setFormatted(stringFormatter.format(s)).setStart(start)
+        .setEnd(end);
   }
 }

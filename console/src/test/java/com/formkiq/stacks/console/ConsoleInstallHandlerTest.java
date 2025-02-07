@@ -29,16 +29,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.s3.S3ServiceExtension;
-import com.formkiq.aws.sns.SnsAwsServiceRegistry;
-import com.formkiq.aws.ssm.SsmAwsServiceRegistry;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.testutils.aws.LocalStackExtension;
@@ -49,9 +45,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.testcontainers.containers.localstack.LocalStackContainer;
-import org.testcontainers.containers.localstack.LocalStackContainer.Service;
-import org.testcontainers.utility.DockerImageName;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
@@ -60,7 +53,6 @@ import com.formkiq.aws.s3.S3Service;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
-import software.amazon.awssdk.regions.Region;
 
 /** Unit Tests for {@link ConsoleInstallHandler}. */
 @ExtendWith(LocalStackExtension.class)
@@ -76,16 +68,15 @@ public class ConsoleInstallHandlerTest {
   /** {@link S3ConnectionBuilder}. */
   private static S3ConnectionBuilder s3Connection;
   /** {@link Gson}. */
-  private Gson gson = new GsonBuilder().create();
+  private final Gson gson = new GsonBuilder().create();
 
   /**
    * Before Class.
    *
    * @throws IOException IOException
-   * @throws URISyntaxException URISyntaxException
    */
   @BeforeAll
-  public static void beforeClass() throws IOException, URISyntaxException {
+  public static void beforeClass() throws IOException {
 
     AwsCredentialsProvider cred = StaticCredentialsProvider
         .create(AwsSessionCredentials.create("ACCESSKEY", "SECRETKEY", "TOKENKEY"));

@@ -21,32 +21,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.lambda.s3.text;
-
-import com.formkiq.strings.lexer.Token;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Function;
+package com.formkiq.strings.lexer;
 
 /**
- * {@link Function} that implements contains {@link String} matching.
+ * Types of Tokens.
  */
-public class ContainsMatcher implements TextMatchAlgorithm {
-
-  @Override
-  public List<TextMatch> findMatches(final List<Token> tokens, final String match) {
-
-    List<TextMatch> matches = new ArrayList<>();
-
-    for (Token token : tokens) {
-
-      if (token.getFormatted().contains(match)) {
-        matches.add(new TextMatch(token, 1));
-        break;
-      }
-    }
-
-    return matches;
-  }
+public enum TokenType {
+  /** KeyWord. */
+  KEYWORD,
+  /** Identifier. */
+  IDENTIFIER,
+  /** Number. */
+  NUMBER,
+  /** Symbol. */
+  SYMBOL,
+  /** Whitespace. */
+  WHITESPACE,
+  /** [. */
+  LEFT_BRACKET,
+  /** ]. */
+  RIGHT_BRACKET,
+  /** (. */
+  LEFT_PAREN,
+  /** ). */
+  RIGHT_PAREN;
 }

@@ -127,7 +127,6 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
 
     String fileName = consoleVersion + "/assets/config.json";
 
-    System.out.println("PUT: " + destinationBucket + " FILENAME: " + fileName);
     this.s3.putObject(destinationBucket, fileName, json.getBytes(StandardCharsets.UTF_8), null,
         null);
 

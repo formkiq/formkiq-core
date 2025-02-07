@@ -21,32 +21,53 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.lambda.s3.text;
-
-import com.formkiq.strings.lexer.Token;
+package com.formkiq.strings;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
 
 /**
- * {@link Function} that implements contains {@link String} matching.
+ * Strings Helper.
  */
-public class ContainsMatcher implements TextMatchAlgorithm {
+public class Strings {
 
-  @Override
-  public List<TextMatch> findMatches(final List<Token> tokens, final String match) {
+  /**
+   * Is {@link String} empty.
+   *
+   * @param cs {@link CharSequence}
+   * @return boolean
+   */
+  public static boolean isEmpty(final CharSequence cs) {
+    return cs == null || cs.isEmpty();
+  }
 
-    List<TextMatch> matches = new ArrayList<>();
+  /**
+   * Splits the given string by each occurrence of the specified delimiter character.
+   *
+   * @param input the string to split
+   * @param delimiter the character to split on
+   * @return an array of substrings obtained by splitting the input string
+   */
+  public static String[] splitByChar(final String input, final char delimiter) {
 
-    for (Token token : tokens) {
+    String[] result = new String[0];
+    if (input != null) {
 
-      if (token.getFormatted().contains(match)) {
-        matches.add(new TextMatch(token, 1));
-        break;
+      int start = 0;
+      List<String> parts = new ArrayList<>();
+
+      for (int i = 0; i < input.length(); i++) {
+        if (input.charAt(i) == delimiter) {
+          parts.add(input.substring(start, i));
+          start = i + 1;
+        }
       }
+
+      parts.add(input.substring(start));
+
+      result = parts.toArray(new String[0]);
     }
 
-    return matches;
+    return result;
   }
 }

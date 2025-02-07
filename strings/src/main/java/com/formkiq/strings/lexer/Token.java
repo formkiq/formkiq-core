@@ -21,13 +21,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.lambda.s3.text;
+package com.formkiq.strings.lexer;
 
 /**
  * {@link String} Token.
  */
 public class Token {
 
+  /** {@link TokenType}. */
+  private TokenType type;
   /** Formatted Text. */
   private String formatted;
   /** Original Text. */
@@ -42,6 +44,26 @@ public class Token {
    */
   public Token() {
 
+  }
+
+  /**
+   * Get {@link TokenType}.
+   * 
+   * @return {@link TokenType}
+   */
+  public TokenType getType() {
+    return this.type;
+  }
+
+  /**
+   * Set {@link TokenType}.
+   * 
+   * @param tokenType {@link TokenType}
+   * @return {@link Token}
+   */
+  public Token setType(final TokenType tokenType) {
+    this.type = tokenType;
+    return this;
   }
 
   /**

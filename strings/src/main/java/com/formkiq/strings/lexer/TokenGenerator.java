@@ -21,32 +21,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.lambda.s3.text;
+package com.formkiq.strings.lexer;
 
-import com.formkiq.strings.lexer.Token;
-
-import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
 
 /**
- * {@link Function} that implements contains {@link String} matching.
+ * Token Generator.
  */
-public class ContainsMatcher implements TextMatchAlgorithm {
+public interface TokenGenerator {
 
-  @Override
-  public List<TextMatch> findMatches(final List<Token> tokens, final String match) {
-
-    List<TextMatch> matches = new ArrayList<>();
-
-    for (Token token : tokens) {
-
-      if (token.getFormatted().contains(match)) {
-        matches.add(new TextMatch(token, 1));
-        break;
-      }
-    }
-
-    return matches;
-  }
+  /**
+   * Generate Tokens.
+   * 
+   * @param text {@link String}
+   * @return {@link List} {@link Token}
+   */
+  List<Token> generateTokens(String text);
 }

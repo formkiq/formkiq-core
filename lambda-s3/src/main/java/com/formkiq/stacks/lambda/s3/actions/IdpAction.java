@@ -50,8 +50,10 @@ import com.formkiq.stacks.lambda.s3.text.FuzzyMatcher;
 import com.formkiq.stacks.lambda.s3.text.IdpTextMatcher;
 import com.formkiq.stacks.lambda.s3.text.TextMatch;
 import com.formkiq.stacks.lambda.s3.text.TextMatchAlgorithm;
-import com.formkiq.stacks.lambda.s3.text.TokenGeneratorDefault;
+import com.formkiq.stacks.lambda.s3.text.TokenGeneratorRegex;
 import com.formkiq.stacks.lambda.s3.text.TokenGeneratorKeyValue;
+import com.formkiq.strings.StringFormatter;
+import com.formkiq.strings.StringFormatterAlphaNumeric;
 import com.formkiq.validation.ValidationException;
 
 import java.io.IOException;
@@ -69,6 +71,15 @@ import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
  */
 public class IdpAction implements DocumentAction {
 
+  /** IDP Regex. */
+  public static final String REGEX = "\\s+";
+  /** Idp Action {@link StringFormatter}. */
+  public static final StringFormatter FORMATTER = new StringFormatter() {
+    @Override
+    public String format(final String text) {
+      return new StringFormatterAlphaNumeric().format(text.toLowerCase());
+    }
+  };
   /** {@link MappingService}. */
   private final MappingService mappingService;
   /** {@link DocumentContentFunction}. */
@@ -150,8 +161,13 @@ public class IdpAction implements DocumentAction {
 
     List<String> labelTexts = mappingAttribute.getLabelTexts();
     TextMatchAlgorithm alg = getTextMatchAlgorithm(mappingAttribute);
-    TextMatch match =
-        matcher.findMatch(null, labelTexts, new TokenGeneratorKeyValue(contentKeyValues), alg);
+    TextMatch match = matcher.findMatch(null, labelTexts,
+        new TokenGeneratorKeyValue(contentKeyValues), alg, null, new StringFormatter() {
+          @Override
+          public String format(final String text) {
+            return text;
+          }
+        });
 
     if (match != null) {
       Optional<List<String>> o = contentKeyValues.stream()
@@ -235,7 +251,9 @@ public class IdpAction implements DocumentAction {
       final TextMatchAlgorithm alg, final String text) {
 
     List<String> labelTexts = mappingAttribute.getLabelTexts();
-    TextMatch match = matcher.findMatch(text, labelTexts, new TokenGeneratorDefault(), alg);
+
+    TextMatch match = matcher.findMatch(text, labelTexts, new TokenGeneratorRegex(REGEX, FORMATTER),
+        alg, REGEX, FORMATTER);
 
     String value;
 

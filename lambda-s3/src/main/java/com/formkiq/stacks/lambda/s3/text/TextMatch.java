@@ -23,6 +23,8 @@
  */
 package com.formkiq.stacks.lambda.s3.text;
 
+import com.formkiq.strings.lexer.Token;
+
 /**
  * Text Match.
  */
