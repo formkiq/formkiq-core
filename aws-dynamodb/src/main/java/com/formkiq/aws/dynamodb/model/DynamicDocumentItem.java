@@ -81,6 +81,16 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
   }
 
   @Override
+  public String getWidth() {
+    return getString("width");
+  }
+
+  @Override
+  public String getHeight() {
+    return getString("height");
+  }
+
+  @Override
   public String getDocumentId() {
     return getString("documentId");
   }
@@ -102,7 +112,6 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
     return getDate("lastModifiedDate");
   }
 
-  @SuppressWarnings("unchecked")
   @Override
   public Collection<DocumentMetadata> getMetadata() {
     Collection<Map<String, Object>> c =
@@ -112,7 +121,7 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
 
     if (c != null) {
       metadata = c.stream().map(m -> {
-        DocumentMetadata md = null;
+        DocumentMetadata md;
         if (m.containsKey("values")) {
           md = new DocumentMetadata((String) m.get("key"), (List<String>) m.get("values"));
         } else {
@@ -178,6 +187,16 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
   @Override
   public void setDeepLinkPath(final String deepLinkPath) {
     put("deepLinkPath", deepLinkPath);
+  }
+
+  @Override
+  public void setWidth(final String width) {
+    put("width", width);
+  }
+
+  @Override
+  public void setHeight(final String height) {
+    put("height", height);
   }
 
   @Override

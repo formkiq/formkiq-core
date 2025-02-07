@@ -73,6 +73,20 @@ public interface DocumentItem {
   String getDeepLinkPath();
 
   /**
+   * Get Width.
+   *
+   * @return {@link String}
+   */
+  String getWidth();
+
+  /**
+   * Get Height.
+   *
+   * @return {@link String}
+   */
+  String getHeight();
+
+  /**
    * Get Document Id.
    *
    * @return {@link String}
@@ -183,6 +197,20 @@ public interface DocumentItem {
    * @param deepLinkPath {@link String}
    */
   void setDeepLinkPath(String deepLinkPath);
+
+  /**
+   * Set Width.
+   *
+   * @param width {@link String}
+   */
+  void setWidth(String width);
+
+  /**
+   * Set Height.
+   *
+   * @param height {@link String}
+   */
+  void setHeight(String height);
 
   /**
    * Set Document ID.

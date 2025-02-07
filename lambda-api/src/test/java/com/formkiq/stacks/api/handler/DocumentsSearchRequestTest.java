@@ -1173,7 +1173,8 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
       AddDocumentAttribute attr1 = new AddDocumentAttribute(
           new AddDocumentAttributeStandard().key("playerId").stringValue("12345"));
       AddDocumentUploadRequest uploadReq =
-          new AddDocumentUploadRequest().addAttributesItem(attr0).addAttributesItem(attr1);
+          new AddDocumentUploadRequest().addAttributesItem(attr0).addAttributesItem(attr1)
+              .deepLinkPath("https://www.example.com").width("100").height("200");
 
       String documentId0 =
           this.documentsApi.addDocumentUpload(uploadReq, siteId, null, null, null).getDocumentId();
@@ -1191,8 +1192,12 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
       // then
       List<SearchResultDocument> documents = notNull(response.getDocuments());
       assertEquals(1, documents.size());
-      assertEquals(documentId0, documents.get(0).getDocumentId());
-      Map<String, SearchResultDocumentAttribute> map = documents.get(0).getAttributes();
+      SearchResultDocument doc = documents.get(0);
+      assertEquals(documentId0, doc.getDocumentId());
+      assertEquals("https://www.example.com", doc.getDeepLinkPath());
+      assertEquals("100", doc.getWidth());
+      assertEquals("200", doc.getHeight());
+      Map<String, SearchResultDocumentAttribute> map = doc.getAttributes();
       assertNotNull(map);
       assertEquals(1, map.size());
       assertEquals("12345", String.join(",", notNull(map.get("playerId").getStringValues())));

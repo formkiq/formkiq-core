@@ -828,6 +828,34 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * Save document with invalid width / auto height.
+   *
+   */
+  @Test
+  public void testPost21() {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      AddDocumentRequest req = new AddDocumentRequest().content("test").width("asd").height("auto");
+
+      // when
+      try {
+        this.documentsApi.addDocument(req, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"width\","
+                + "\"error\":\"invalid 'width' must be numeric or 'auto'\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
    * Test Publish no published document.
    * 
    * @throws ApiException ApiException

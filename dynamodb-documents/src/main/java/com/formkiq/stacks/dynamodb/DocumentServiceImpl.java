@@ -1408,6 +1408,8 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       addS(pkvalues, "checksum", etag);
     }
 
+    addS(pkvalues, "width", document.getWidth());
+    addS(pkvalues, "height", document.getHeight());
     addS(pkvalues, "checksumType", document.getChecksumType());
     addS(pkvalues, "belongsToDocumentId", document.getBelongsToDocumentId());
 
@@ -2403,8 +2405,24 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
           .error("invalid Path contains multiple '//' characters"));
     }
 
+    validateDimension("width", document.getWidth(), errors);
+    validateDimension("height", document.getHeight(), errors);
+
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
+    }
+  }
+
+  private void validateDimension(final String key, final String dimension,
+      final Collection<ValidationError> errors) {
+    if (!isEmpty(dimension)) {
+
+      if (!"auto".equals(dimension)) {
+        if (!com.formkiq.strings.Strings.isNumeric(dimension)) {
+          errors.add(new ValidationErrorImpl().key(key)
+              .error("invalid '" + key + "' must be numeric or 'auto'"));
+        }
+      }
     }
   }
 

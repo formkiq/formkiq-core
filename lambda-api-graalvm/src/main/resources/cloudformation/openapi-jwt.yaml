@@ -6939,6 +6939,12 @@ Resources:
                 path:
                   type: "string"
                   description: "Path or Name of document"
+                width:
+                  type: "string"
+                  description: "Document Content Width property"
+                height:
+                  type: "string"
+                  description: "Document Content Height property"
                 deepLinkPath:
                   type: "string"
                   description: "Path or Name of deep link"
@@ -6989,6 +6995,12 @@ Resources:
                 path:
                   type: "string"
                   description: "Path or Name of document"
+                width:
+                  type: "string"
+                  description: "Document Content Width property"
+                height:
+                  type: "string"
+                  description: "Document Content Height property"
                 deepLinkPath:
                   type: "string"
                   description: "Path or Name of deep link"
@@ -7274,6 +7286,12 @@ Resources:
                 contentType:
                   type: "string"
                   description: "Document media type"
+                width:
+                  type: "string"
+                  description: "Document Content Width property"
+                height:
+                  type: "string"
+                  description: "Document Content Height property"
                 deepLinkPath:
                   type: "string"
                   description: "Path or Name of deep link"
@@ -7319,6 +7337,12 @@ Resources:
                 checksum:
                   type: "string"
                   description: "The checksum value to validate the file against"
+                width:
+                  type: "string"
+                  description: "Document Content Width property"
+                height:
+                  type: "string"
+                  description: "Document Content Height property"
                 deepLinkPath:
                   type: "string"
                   description: "Path or Name of deep link"
@@ -7362,6 +7386,12 @@ Resources:
                 path:
                   type: "string"
                   description: "Path or Name of document"
+                width:
+                  type: "string"
+                  description: "Document Content Width property"
+                height:
+                  type: "string"
+                  description: "Document Content Height property"
                 deepLinkPath:
                   type: "string"
                   description: "Path or Name of deep link"
@@ -7670,6 +7700,12 @@ Resources:
                 path:
                   type: "string"
                   description: "Path or Name of document"
+                width:
+                  type: "string"
+                  description: "Document Content Width property"
+                height:
+                  type: "string"
+                  description: "Document Content Height property"
                 deepLinkPath:
                   type: "string"
                   description: "Path or Name of deep link"
@@ -7866,6 +7902,12 @@ Resources:
                 contentType:
                   type: "string"
                   description: "Document Content-Type"
+                width:
+                  type: "string"
+                  description: "Document Content Width property"
+                height:
+                  type: "string"
+                  description: "Document Content Height property"
                 deepLinkPath:
                   type: "string"
                   description: "Path or Name of deep link"
@@ -7947,6 +7989,12 @@ Resources:
                 path:
                   type: "string"
                   description: "Path or Name of document"
+                width:
+                  type: "string"
+                  description: "Document Content Width property"
+                height:
+                  type: "string"
+                  description: "Document Content Height property"
                 deepLinkPath:
                   type: "string"
                   description: "Path or Name of deep link"
@@ -8136,6 +8184,12 @@ Resources:
                 path:
                   type: "string"
                   description: "Path or Name of document"
+                width:
+                  type: "string"
+                  description: "Document Content Width property"
+                height:
+                  type: "string"
+                  description: "Document Content Height property"
                 deepLinkPath:
                   type: "string"
                   description: "Path or Name of deep link"
@@ -8202,6 +8256,12 @@ Resources:
                 path:
                   type: "string"
                   description: "Path or Name of document"
+                width:
+                  type: "string"
+                  description: "Document Content Width property"
+                height:
+                  type: "string"
+                  description: "Document Content Height property"
                 deepLinkPath:
                   type: "string"
                   description: "Path or Name of deep link"
@@ -9719,6 +9779,12 @@ Resources:
                 path:
                   type: "string"
                   description: "Path or Name of document"
+                width:
+                  type: "string"
+                  description: "Document Content Width property"
+                height:
+                  type: "string"
+                  description: "Document Content Height property"
                 deepLinkPath:
                   type: "string"
                   description: "Path or Name of deep link"
@@ -9758,6 +9824,12 @@ Resources:
                 path:
                   type: "string"
                   description: "Path or Name of document"
+                width:
+                  type: "string"
+                  description: "Document Content Width property"
+                height:
+                  type: "string"
+                  description: "Document Content Height property"
                 deepLinkPath:
                   type: "string"
                   description: "Path or Name of deep link"
@@ -9797,6 +9869,12 @@ Resources:
                 path:
                   type: "string"
                   description: "Path or Name of document"
+                width:
+                  type: "string"
+                  description: "Document Content Width property"
+                height:
+                  type: "string"
+                  description: "Document Content Height property"
                 deepLinkPath:
                   type: "string"
                   description: "Path or Name of deep link"

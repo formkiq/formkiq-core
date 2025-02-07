@@ -70,4 +70,28 @@ public class Strings {
 
     return result;
   }
+
+  /**
+   * Validates whether the provided string is numeric.
+   *
+   * @param str the string to validate
+   * @return true if the string is numeric, false otherwise
+   */
+  public static boolean isNumeric(final String str) {
+
+    boolean match = false;
+
+    if (!isEmpty(str)) {
+      try {
+        // Attempt to parse the string as a double.
+        // This covers integers, decimals, and numbers in scientific notation.
+        Double.parseDouble(str);
+        match = true;
+      } catch (NumberFormatException e) {
+        // ignore
+      }
+    }
+
+    return match;
+  }
 }

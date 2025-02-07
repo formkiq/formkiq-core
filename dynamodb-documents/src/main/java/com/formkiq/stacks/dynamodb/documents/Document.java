@@ -68,6 +68,10 @@ public class Document implements DocumentItem {
   private String userId;
   /** Version. */
   private String version;
+  /** Width. */
+  private String width;
+  /** Height. */
+  private String height;
 
   /**
    * constructor.
@@ -102,6 +106,16 @@ public class Document implements DocumentItem {
   @Override
   public String getDeepLinkPath() {
     return this.deepLinkPath;
+  }
+
+  @Override
+  public String getWidth() {
+    return this.width;
+  }
+
+  @Override
+  public String getHeight() {
+    return this.height;
   }
 
   @Override
@@ -182,6 +196,16 @@ public class Document implements DocumentItem {
   @Override
   public void setDeepLinkPath(final String documentDeepLinkPath) {
     this.deepLinkPath = documentDeepLinkPath;
+  }
+
+  @Override
+  public void setWidth(final String documentWidth) {
+    this.width = documentWidth;
+  }
+
+  @Override
+  public void setHeight(final String documentHeight) {
+    this.height = documentHeight;
   }
 
   @Override

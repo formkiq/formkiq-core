@@ -460,7 +460,8 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       setBearerToken(siteId);
 
-      AddDocumentRequest req = new AddDocumentRequest().contentType("text/plain").content(content0);
+      AddDocumentRequest req = new AddDocumentRequest().contentType("text/plain").content(content0)
+          .width("100").height("200");
 
       // when
       AddDocumentResponse response = this.documentsApi.addDocument(req, siteId, null);
@@ -470,8 +471,13 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       assertEquals(content0,
           this.documentsApi.getDocumentContent(documentId, siteId, null, null).getContent());
 
+      GetDocumentResponse doc = this.documentsApi.getDocument(documentId, siteId, null);
+      assertEquals("100", doc.getWidth());
+      assertEquals("200", doc.getHeight());
+
       // given
-      UpdateDocumentRequest updateReq = new UpdateDocumentRequest().content(content1);
+      UpdateDocumentRequest updateReq =
+          new UpdateDocumentRequest().content(content1).width("300").height("400");
 
       // when
       this.documentsApi.updateDocument(documentId, updateReq, siteId, null);
@@ -479,6 +485,10 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       // then
       assertEquals(content1,
           this.documentsApi.getDocumentContent(documentId, siteId, null, null).getContent());
+
+      doc = this.documentsApi.getDocument(documentId, siteId, null);
+      assertEquals("300", doc.getWidth());
+      assertEquals("400", doc.getHeight());
     }
   }
 

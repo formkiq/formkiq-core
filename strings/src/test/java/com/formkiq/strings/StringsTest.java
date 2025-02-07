@@ -51,4 +51,12 @@ public class StringsTest {
     assertEquals("adsa:add", String.join(" ", Strings.splitByChar("adsa:add", '!')));
     assertEquals("", String.join(" ", Strings.splitByChar(null, '!')));
   }
+
+  @Test
+  void isNumeric() {
+    assertFalse(Strings.isNumeric(null));
+    assertFalse(Strings.isNumeric(""));
+    assertTrue(Strings.isNumeric("1"));
+    assertTrue(Strings.isNumeric("1.234"));
+  }
 }

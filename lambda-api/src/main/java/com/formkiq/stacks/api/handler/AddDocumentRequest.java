@@ -60,12 +60,56 @@ public class AddDocumentRequest {
   private String path;
   /** Document Tags. */
   private List<AddDocumentTag> tags;
+  /** Height. */
+  private String height;
+  /** Width. */
+  private String width;
 
   /**
    * constructor.
    */
   public AddDocumentRequest() {
 
+  }
+
+  /**
+   * Get Height.
+   * 
+   * @return String
+   */
+  public String getHeight() {
+    return this.height;
+  }
+
+  /**
+   * Set Height.
+   * 
+   * @param documentHeight {@link String}
+   * @return AddDocumentRequest
+   */
+  public AddDocumentRequest setHeight(final String documentHeight) {
+    this.height = documentHeight;
+    return this;
+  }
+
+  /**
+   * Get Width.
+   * 
+   * @return String
+   */
+  public String getWidth() {
+    return this.width;
+  }
+
+  /**
+   * Set Width.
+   * 
+   * @param documentWidth {@link String}
+   * @return AddDocumentRequest
+   */
+  public AddDocumentRequest setWidth(final String documentWidth) {
+    this.width = documentWidth;
+    return this;
   }
 
   /**

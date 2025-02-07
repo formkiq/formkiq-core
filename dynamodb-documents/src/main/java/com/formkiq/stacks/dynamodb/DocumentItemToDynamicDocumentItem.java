@@ -58,6 +58,8 @@ public class DocumentItemToDynamicDocumentItem
   private DynamicDocumentItem convert(final DocumentItem item) {
 
     Map<String, Object> map = new HashMap<>();
+    map.put("width", item.getWidth());
+    map.put("height", item.getHeight());
     map.put("checksum", item.getChecksum());
     map.put("checksumType", item.getChecksumType());
     map.put("contentLength", item.getContentLength());
