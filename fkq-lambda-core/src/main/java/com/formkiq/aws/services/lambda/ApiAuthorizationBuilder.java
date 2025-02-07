@@ -37,6 +37,8 @@ import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.exceptions.ForbiddenException;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 /**
  * 
@@ -51,9 +53,10 @@ public class ApiAuthorizationBuilder {
   public static final String COGNITO_READ_SUFFIX = "_read";
   /** The suffix for the 'readonly' Cognito group. */
   public static final String COGNITO_GOVERN_SUFFIX = "_govern";
-
   /** {@link List} {@link ApiAuthorizationInterceptor}. */
   private List<ApiAuthorizationInterceptor> interceptors = null;
+  /** {@link Gson}. */
+  private final Gson gson = new GsonBuilder().create();
 
   /**
    * constructor.
@@ -177,7 +180,6 @@ public class ApiAuthorizationBuilder {
     return claims;
   }
 
-  @SuppressWarnings("unchecked")
   private Map<String, Object> getAuthorizerClaims(final Map<String, Object> authorizer) {
     Map<String, Object> claims = Collections.emptyMap();
 
@@ -190,7 +192,8 @@ public class ApiAuthorizationBuilder {
     }
 
     if (authorizer != null && authorizer.containsKey("sitesClaims")) {
-      claims = (Map<String, Object>) authorizer.get("sitesClaims");
+      String sitesClaims = (String) authorizer.get("sitesClaims");
+      claims = (Map<String, Object>) this.gson.fromJson(sitesClaims, Map.class);
     }
 
     return claims;

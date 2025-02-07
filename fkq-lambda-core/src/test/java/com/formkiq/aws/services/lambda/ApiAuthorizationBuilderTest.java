@@ -34,6 +34,8 @@ import java.util.stream.Collectors;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.ApiPermission;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -42,6 +44,9 @@ import org.junit.jupiter.api.Test;
  *
  */
 class ApiAuthorizationBuilderTest {
+
+  /** {@link Gson}. */
+  private final Gson gson = new GsonBuilder().create();
 
   /**
    * Get {@link ApiGatewayRequestEvent}.
@@ -55,8 +60,8 @@ class ApiAuthorizationBuilderTest {
     ApiGatewayRequestEvent event = new ApiGatewayRequestEvent();
     ApiGatewayRequestContext content = new ApiGatewayRequestContext();
 
-    Map<String, Object> claims = Map.of("sitesClaims",
-        Map.of("cognito:groups", String.join(" ", groups), "permissionsMap", permissions));
+    Map<String, Object> claims = Map.of("sitesClaims", gson
+        .toJson(Map.of("cognito:groups", String.join(" ", groups), "permissionsMap", permissions)));
     content.setAuthorizer(claims);
     event.setRequestContext(content);
 
@@ -774,5 +779,28 @@ class ApiAuthorizationBuilderTest {
         api1.getPermissions().stream().map(Enum::name).collect(Collectors.joining(",")));
     assertEquals("groups: finance (GOVERN)", api1.getAccessSummary());
     assertEquals("finance_govern", String.join(",", api1.getRoles()));
+  }
+
+  /**
+   * Sites permissionsMap with user in default group.
+   */
+  @Test
+  void testApiAuthorizer25() throws Exception {
+    // given
+    ApiGatewayRequestEvent event0 =
+        getExplicitSitesJwtEvent(List.of("default"), Map.of("default", List.of("read")));
+
+    // when
+    final ApiAuthorization api0 = new ApiAuthorizationBuilder().build(event0);
+
+    // then
+    assertEquals("default", api0.getSiteId());
+    assertEquals("default", String.join(",", api0.getSiteIds()));
+    assertEquals("READ",
+        api0.getPermissions().stream().map(Enum::name).collect(Collectors.joining(",")));
+    assertEquals("READ",
+        api0.getPermissions("default").stream().map(Enum::name).collect(Collectors.joining(",")));
+    assertEquals("groups: default (READ)", api0.getAccessSummary());
+    assertEquals("default", String.join(",", api0.getRoles()));
   }
 }
