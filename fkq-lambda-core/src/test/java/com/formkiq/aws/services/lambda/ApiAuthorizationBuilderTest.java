@@ -62,7 +62,7 @@ class ApiAuthorizationBuilderTest {
 
     Map<String, Object> claims = Map.of("sitesClaims", gson
         .toJson(Map.of("cognito:groups", String.join(" ", groups), "permissionsMap", permissions)));
-    content.setAuthorizer(claims);
+    content.setAuthorizer(Map.of("claims", claims));
     event.setRequestContext(content);
 
     return event;

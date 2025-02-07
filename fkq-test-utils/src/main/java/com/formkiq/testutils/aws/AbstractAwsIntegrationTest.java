@@ -60,7 +60,7 @@ public abstract class AbstractAwsIntegrationTest {
   /** {@link AuthenticationResultType}. */
   private static AuthenticationResultType adminToken;
   /** FormKiQ KEY API Client. */
-  private static Map<String, String> apiKeys = new HashMap<>();
+  private static final Map<String, String> API_KEYS = new HashMap<>();
   /** Get App Environment. */
   private static String appenvironment;
   /** {@link String}. */
@@ -195,7 +195,7 @@ public abstract class AbstractAwsIntegrationTest {
 
     String site = siteId != null ? siteId : DEFAULT_SITE_ID;
 
-    if (!apiKeys.containsKey(site)) {
+    if (!API_KEYS.containsKey(site)) {
 
       SystemManagementApi api = new SystemManagementApi(client);
 
@@ -204,10 +204,10 @@ public abstract class AbstractAwsIntegrationTest {
       AddApiKeyRequest req = new AddApiKeyRequest().name("My Api Key").permissions(permissions);
       String apiKey = api.addApiKey(site, req).getApiKey();
 
-      apiKeys.put(site, apiKey);
+      API_KEYS.put(site, apiKey);
     }
 
-    return apiKeys.get(site);
+    return API_KEYS.get(site);
   }
 
   /**
