@@ -502,7 +502,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
         .toList();
 
     // TODO merge deletes together
-    boolean deleted = this.dbService.deleteItems(listKeys);
+    final boolean deleted = this.dbService.deleteItems(listKeys);
     this.versionsService.deleteAllVersionIds(siteId, documentId);
 
     DocumentSyncRecord a = new DocumentSyncRecordBuilder().buildEventBridge(documentId,
