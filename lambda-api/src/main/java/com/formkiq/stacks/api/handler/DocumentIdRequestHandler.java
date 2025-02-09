@@ -130,7 +130,8 @@ public class DocumentIdRequestHandler
         throw new NotFoundException("Document " + documentId + " not found.");
       }
 
-      ApiResponse resp = new ApiMessageResponse("'" + documentId + "' object deleted");
+      ApiResponse resp = new ApiMessageResponse(
+          "'" + documentId + "' object" + (softDelete ? " soft" : "") + " deleted");
       return new ApiRequestHandlerResponse(SC_OK, resp);
 
     } catch (S3Exception e) {

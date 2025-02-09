@@ -432,14 +432,9 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   public boolean deleteDocument(final String siteId, final String documentId,
       final boolean softDelete) {
 
-    boolean deleted = false;
-
-    // TODO fix path being deleted on soft delte...
-    this.versionsService.deleteAllVersionIds(siteId, documentId);
 
     Map<String, AttributeValue> documentRecord = getDocumentRecord(siteId, documentId);
 
-    // TODO fix path being deleted on soft delte...
     if (documentRecord.containsKey("path")) {
       deleteFolderIndex(siteId, documentRecord.get("path").s());
     }
@@ -449,6 +444,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
     List<Map<String, AttributeValue>> list = queryDocumentAttributes(pk, null);
 
+    boolean deleted;
     if (softDelete) {
 
       deleted = deleteDocumentSoft(siteId, documentId, pk, list);
@@ -505,7 +501,9 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)))
         .toList();
 
+    // TODO merge deletes together
     boolean deleted = this.dbService.deleteItems(listKeys);
+    this.versionsService.deleteAllVersionIds(siteId, documentId);
 
     DocumentSyncRecord a = new DocumentSyncRecordBuilder().buildEventBridge(documentId,
         DocumentSyncType.DELETE_METADATA, true);
