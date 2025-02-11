@@ -187,7 +187,7 @@ public class ApiAuthorizationBuilder {
       claims = (Map<String, Object>) authorizer.get("claims");
     }
 
-    if (authorizer != null && claims.containsKey("sitesClaims")) {
+    if (claims != null && claims.containsKey("sitesClaims")) {
       String sitesClaims = (String) claims.get("sitesClaims");
       claims = (Map<String, Object>) this.gson.fromJson(sitesClaims, Map.class);
     } else if (notNull(claims).isEmpty() && authorizer != null
