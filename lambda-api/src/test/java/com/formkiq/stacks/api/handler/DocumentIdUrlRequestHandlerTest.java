@@ -304,6 +304,8 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       setBearerToken(siteId);
 
+      server.getEnvironmentMap().put("ACCESS_POINT_S3_BUCKET", ACCESS_POINT_S3_BUCKET);
+
       String documentId = addDocumentWithWatermarks(siteId);
 
       // when
@@ -333,12 +335,53 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
   }
 
   /**
-   * /documents/{documentId}/url with watermarks and ByPassWatermark as Admin/govern.
+   * /documents/{documentId}/url with watermarks and missing environment variable.
    *
    * @throws Exception an error has occurred
    */
   @Test
   public void testHandleGetDocumentContent07() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      setBearerToken(siteId);
+
+      server.getEnvironmentMap().remove("ACCESS_POINT_S3_BUCKET");
+
+      String documentId = addDocumentWithWatermarks(siteId);
+
+      // when
+      GetDocumentUrlResponse resp =
+          this.documentsApi.getDocumentUrl(documentId, siteId, null, null, null, null, null);
+
+      // then
+      assertNotNull(resp);
+      assertNotNull(resp.getUrl());
+      assertS3Url(resp, BUCKET_NAME, siteId, documentId);
+    }
+
+    // given
+    String siteId = ID.uuid();
+    setBearerToken(new String[] {siteId, "admins"});
+
+    String documentId = addDocumentWithWatermarks(siteId);
+
+    // when
+    GetDocumentUrlResponse resp =
+        this.documentsApi.getDocumentUrl(documentId, siteId, null, null, null, null, null);
+
+    // then
+    assertNotNull(resp);
+    assertNotNull(resp.getUrl());
+    assertS3Url(resp, BUCKET_NAME, siteId, documentId);
+  }
+
+  /**
+   * /documents/{documentId}/url with watermarks and ByPassWatermark as Admin/govern.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetDocumentContent08() throws Exception {
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
       // given
       setBearerToken(siteId);
@@ -366,7 +409,7 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
    * @throws Exception an error has occurred
    */
   @Test
-  public void testHandleGetDocumentContent08() throws Exception {
+  public void testHandleGetDocumentContent09() throws Exception {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
@@ -392,7 +435,7 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
    * @throws Exception an error has occurred
    */
   @Test
-  public void testHandleGetDocumentContent09() throws Exception {
+  public void testHandleGetDocumentContent10() throws Exception {
     // given
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       setBearerToken(siteId);
@@ -430,7 +473,7 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
    * @throws Exception an error has occurred
    */
   @Test
-  public void testHandleGetDocumentContent10() throws Exception {
+  public void testHandleGetDocumentContent11() throws Exception {
     // given
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       setBearerToken(siteId);

@@ -27,7 +27,6 @@ import static com.formkiq.testutils.aws.DynamoDbExtension.CACHE_TABLE;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_VERSION_TABLE;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENT_SYNCS_TABLE;
-import static com.formkiq.testutils.aws.TestServices.ACCESS_POINT_S3_BUCKET;
 import static com.formkiq.testutils.aws.TestServices.AWS_REGION;
 import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
 import static com.formkiq.testutils.aws.TestServices.FORMKIQ_APP_ENVIRONMENT;
@@ -153,7 +152,6 @@ public class FormKiqApiExtension
     map.put("DOCUMENT_SYNC_TABLE", DOCUMENT_SYNCS_TABLE);
     map.put("CACHE_TABLE", CACHE_TABLE);
     map.put("DOCUMENTS_S3_BUCKET", BUCKET_NAME);
-    map.put("ACCESS_POINT_S3_BUCKET", ACCESS_POINT_S3_BUCKET);
     map.put("STAGE_DOCUMENTS_S3_BUCKET", STAGE_BUCKET_NAME);
     map.put("OCR_S3_BUCKET", OCR_BUCKET_NAME);
     map.put("AWS_REGION", AWS_REGION.toString());

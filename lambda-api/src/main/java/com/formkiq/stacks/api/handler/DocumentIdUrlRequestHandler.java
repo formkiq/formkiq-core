@@ -189,9 +189,12 @@ public class DocumentIdUrlRequestHandler
     boolean hasWatermarks = !documentService.findDocumentAttributesByType(siteId, documentId,
         DocumentAttributeValueType.WATERMARK, null, 1).getResults().isEmpty();
 
+    String accessPointS3Bucket = awsservice.environment("ACCESS_POINT_S3_BUCKET");
+    String documentsS3Bucket = awsservice.environment("DOCUMENTS_S3_BUCKET");
+
     String s3Bucket =
-        !bypassWatermark && hasWatermarks ? awsservice.environment("ACCESS_POINT_S3_BUCKET")
-            : awsservice.environment("DOCUMENTS_S3_BUCKET");
+        !bypassWatermark && hasWatermarks && !isEmpty(accessPointS3Bucket) ? accessPointS3Bucket
+            : documentsS3Bucket;
     String filename = getFilename(item);
 
     PresignGetUrlConfig config = new PresignGetUrlConfig();
