@@ -1058,7 +1058,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
       ApiResponse<Void> response = api.getPublishedDocumentContentWithHttpInfo(documentId, siteId);
 
       String location = notNull(response.getHeaders()).get("content-disposition").get(0);
-      assertEquals("attachment; filename=\"" + path + "\"", location);
+      assertEquals("attachment; filename*=UTF-8''" + path, location);
 
       String contentType = notNull(response.getHeaders()).get("content-type").get(0);
       assertEquals("text/plain", contentType);

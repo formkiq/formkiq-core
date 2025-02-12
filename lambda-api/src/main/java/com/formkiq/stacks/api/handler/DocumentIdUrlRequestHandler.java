@@ -199,10 +199,12 @@ public class DocumentIdUrlRequestHandler
     config.contentType(item.getContentType());
     String s3key = createS3Key(siteId, documentId);
 
+    String deepLinkPath = item.getDeepLinkPath();
+
     if (isS3Link(item)) {
 
-      filename = Strings.getFilename(item.getDeepLinkPath());
-      Matcher matcher = S3_PATTERN.matcher(item.getDeepLinkPath());
+      filename = Strings.getFilename(deepLinkPath);
+      Matcher matcher = S3_PATTERN.matcher(deepLinkPath);
       if (matcher.matches()) {
         s3Bucket = matcher.group(1);
         s3key = matcher.group(2);
@@ -211,11 +213,11 @@ public class DocumentIdUrlRequestHandler
         s3key = filename;
       }
 
-    } else if (!isEmpty(item.getDeepLinkPath())) {
+    } else if (!isEmpty(deepLinkPath) && deepLinkPath.contains("://")) {
 
       s3Bucket = null;
-      s3key = item.getDeepLinkPath();
-      filename = Strings.getFilename(item.getDeepLinkPath());
+      s3key = deepLinkPath;
+      filename = Strings.getFilename(deepLinkPath);
     }
 
     config.contentDispositionByPath(filename, inline);

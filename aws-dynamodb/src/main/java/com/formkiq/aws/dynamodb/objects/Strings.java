@@ -238,7 +238,7 @@ public class Strings {
 
   /**
    * Convert {@link Exception} to {@link String}.
-   * 
+   *
    * @param e {@link Exception}
    * @return {@link String}
    */

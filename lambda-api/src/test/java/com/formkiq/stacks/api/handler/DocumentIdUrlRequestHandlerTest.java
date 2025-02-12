@@ -424,6 +424,34 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
     }
   }
 
+  /**
+   * /documents/{documentId}/url request deep link https resource.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetDocumentContent10() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      setBearerToken(siteId);
+
+      String documentId = ID.uuid();
+      String userId = "jsmith";
+      DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, new Date(), userId);
+      item.setDeepLinkPath("https://www.google.com");
+      this.documentService.saveDocument(siteId, item, new ArrayList<>());
+
+      // when
+      GetDocumentUrlResponse resp =
+          this.documentsApi.getDocumentUrl(documentId, siteId, null, null, null, null, null);
+
+      // then
+      assertNotNull(resp);
+      assertNotNull(resp.getUrl());
+      assertEquals("https://www.google.com", resp.getUrl());
+    }
+  }
+
   private String addDocumentWithWatermarks(final String siteId) throws ApiException {
     Watermark watermark1 = new Watermark().text("watermark1");
     this.attributesApi.addAttribute(new AddAttributeRequest().attribute(
