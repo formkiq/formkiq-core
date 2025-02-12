@@ -69,13 +69,24 @@ public class LoggerTest {
   }
 
   @Test
-  public void testLogMessageInJsonFormat() {
+  public void testLogMessageInJsonFormat01() {
     // Log a message with INFO level
     String message = "This is a test message.";
     logger.log(LogLevel.INFO, message);
 
     // Verify the output
     String expectedOutput = "{\"level\":\"INFO\",\"message\":\"This is a test message.\"}\n";
+    assertEquals(expectedOutput, outputStream.toString(StandardCharsets.UTF_8));
+  }
+
+  @Test
+  public void testLogMessageInJsonFormat02() {
+    // Log a message with INFO level
+    String message = "This is a test" + System.lineSeparator() + "\tmessage.";
+    logger.log(LogLevel.INFO, message);
+
+    // Verify the output
+    String expectedOutput = "{\"level\":\"INFO\",\"message\":\"This is a test\\n\\tmessage.\"}\n";
     assertEquals(expectedOutput, outputStream.toString(StandardCharsets.UTF_8));
   }
 

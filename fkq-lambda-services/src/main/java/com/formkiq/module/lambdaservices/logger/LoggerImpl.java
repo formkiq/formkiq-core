@@ -25,6 +25,8 @@ package com.formkiq.module.lambdaservices.logger;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Default {@link Logger} implementation.
@@ -61,7 +63,7 @@ public class LoggerImpl implements Logger {
     if (isLogged(level)) {
       if (LogType.JSON.equals(this.currentLogType)) {
         System.out.printf("%s%n", "{\"level\":\"" + level.name() + "\",\"message\":\""
-            + escapeDoubleQuotes(message) + "\"}");
+            + escapeDoubleQuotes(escapeJsonString(message)) + "\"}");
       } else {
         System.out.printf("%s%n", message);
       }
@@ -117,6 +119,57 @@ public class LoggerImpl implements Logger {
    */
   private String escapeDoubleQuotes(final String input) {
     return input != null ? input.replace("\"", "\\\"") : null;
+  }
+
+  // Pattern matching characters that must be escaped in JSON.
+  private static final Pattern SPECIAL_CHARS = Pattern.compile("[\"\\\\\b\f\n\r\t]");
+
+  /**
+   * Escapes characters in the input string so that it can be used as a JSON string literal.
+   *
+   * @param input the raw string
+   * @return the string with necessary JSON escapes applied
+   */
+  public static String escapeJsonString(String input) {
+    if (input == null) {
+      return "";
+    }
+
+    Matcher matcher = SPECIAL_CHARS.matcher(input);
+    StringBuilder result = new StringBuilder();
+    while (matcher.find()) {
+      String replacement;
+      // Determine which character was matched and set its replacement.
+      switch (matcher.group()) {
+        case "\"":
+          replacement = "\\\\\"";
+          break;
+        case "\\":
+          replacement = "\\\\\\\\";
+          break;
+        case "\b":
+          replacement = "\\\\b";
+          break;
+        case "\f":
+          replacement = "\\\\f";
+          break;
+        case "\n":
+          replacement = "\\\\n";
+          break;
+        case "\r":
+          replacement = "\\\\r";
+          break;
+        case "\t":
+          replacement = "\\\\t";
+          break;
+        default:
+          replacement = matcher.group();
+      }
+      // Append the replacement. Note that appendReplacement takes care of quoting the replacement.
+      matcher.appendReplacement(result, replacement);
+    }
+    matcher.appendTail(result);
+    return result.toString();
   }
 
   @Override
