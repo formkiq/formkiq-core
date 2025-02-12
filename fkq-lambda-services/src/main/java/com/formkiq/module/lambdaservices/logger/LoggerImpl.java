@@ -33,6 +33,9 @@ import java.util.regex.Pattern;
  */
 public class LoggerImpl implements Logger {
 
+  /** Pattern matching characters that must be escaped in JSON. */
+  private static final Pattern SPECIAL_CHARS = Pattern.compile("[\"\\\\\b\f\n\r\t]");
+
   /** Current Log Level. */
   private final LogLevel currentLogLevel;
   /** {@link LogType}. */
@@ -95,13 +98,13 @@ public class LoggerImpl implements Logger {
     json.append("{");
     json.append("\"level\":\"").append(logLevel.name()).append("\",");
     json.append("\"type\":\"").append(e.getClass().getName()).append("\",");
-    json.append("\"message\":\"").append(e.getMessage()).append("\",");
+    json.append("\"message\":\"").append(escapeJsonString(e.getMessage())).append("\",");
 
     // Add stack trace
     json.append("\"stackTrace\":[");
     StackTraceElement[] stackTrace = e.getStackTrace();
     for (int i = 0; i < stackTrace.length; i++) {
-      json.append("\"").append(stackTrace[i].toString().replace("\"", "\\\"")).append("\"");
+      json.append("\"").append(escapeJsonString(stackTrace[i].toString())).append("\"");
       if (i < stackTrace.length - 1) {
         json.append(",");
       }
@@ -121,16 +124,13 @@ public class LoggerImpl implements Logger {
     return input != null ? input.replace("\"", "\\\"") : null;
   }
 
-  // Pattern matching characters that must be escaped in JSON.
-  private static final Pattern SPECIAL_CHARS = Pattern.compile("[\"\\\\\b\f\n\r\t]");
-
   /**
    * Escapes characters in the input string so that it can be used as a JSON string literal.
    *
    * @param input the raw string
    * @return the string with necessary JSON escapes applied
    */
-  public static String escapeJsonString(String input) {
+  public static String escapeJsonString(final String input) {
     if (input == null) {
       return "";
     }
@@ -138,34 +138,16 @@ public class LoggerImpl implements Logger {
     Matcher matcher = SPECIAL_CHARS.matcher(input);
     StringBuilder result = new StringBuilder();
     while (matcher.find()) {
-      String replacement;
-      // Determine which character was matched and set its replacement.
-      switch (matcher.group()) {
-        case "\"":
-          replacement = "\\\\\"";
-          break;
-        case "\\":
-          replacement = "\\\\\\\\";
-          break;
-        case "\b":
-          replacement = "\\\\b";
-          break;
-        case "\f":
-          replacement = "\\\\f";
-          break;
-        case "\n":
-          replacement = "\\\\n";
-          break;
-        case "\r":
-          replacement = "\\\\r";
-          break;
-        case "\t":
-          replacement = "\\\\t";
-          break;
-        default:
-          replacement = matcher.group();
-      }
-      // Append the replacement. Note that appendReplacement takes care of quoting the replacement.
+      String replacement = switch (matcher.group()) {
+        case "\"" -> "\\\\\"";
+        case "\\" -> "\\\\\\\\";
+        case "\b" -> "\\\\b";
+        case "\f" -> "\\\\f";
+        case "\n" -> "\\\\n";
+        case "\r" -> "\\\\r";
+        case "\t" -> "\\\\t";
+        default -> matcher.group();
+      };
       matcher.appendReplacement(result, replacement);
     }
     matcher.appendTail(result);
