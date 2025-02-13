@@ -193,7 +193,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
     AwsCredentials awsCredentials = awsServiceCache.getExtension(AwsCredentials.class);
     awsServiceCache.register(HttpService.class, new ClassServiceExtension<>(
-        new HttpServiceSigv4(awsServiceCache.region(), awsCredentials)));
+        new HttpServiceSigv4(awsServiceCache.region(), awsCredentials, "execute-api")));
 
     service = awsServiceCache.getExtension(DocumentService.class);
     actionsService = awsServiceCache.getExtension(ActionsService.class);

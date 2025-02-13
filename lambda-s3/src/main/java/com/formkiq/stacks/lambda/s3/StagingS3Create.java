@@ -224,7 +224,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
     AwsCredentials awsCredentials = awsServiceCache.getExtension(AwsCredentials.class);
     awsServiceCache.register(HttpService.class, new ClassServiceExtension<>(
-        new HttpServiceSigv4(awsServiceCache.region(), awsCredentials)));
+        new HttpServiceSigv4(awsServiceCache.region(), awsCredentials, "execute-api")));
     logger = awsServiceCache.getLogger();
   }
 

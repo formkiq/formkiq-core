@@ -75,26 +75,14 @@ public final class HttpServiceSigv4 implements HttpService {
    * @param httpClient {@link HttpClient}
    * @param region {@link Region}
    * @param awsCredentials {@link AwsCredentials}
+   * @param serviceName {@link String}
    */
   private HttpServiceSigv4(final HttpClient httpClient, final Region region,
-      final AwsCredentials awsCredentials) {
-    this(httpClient, region, awsCredentials, "execute-api");
-  }
-
-  /**
-   * constructor.
-   *
-   * @param httpClient {@link HttpClient}
-   * @param region {@link Region}
-   * @param awsCredentials {@link AwsCredentials}
-   * @param requestSigningName {@link String}
-   */
-  private HttpServiceSigv4(final HttpClient httpClient, final Region region,
-      final AwsCredentials awsCredentials, final String requestSigningName) {
+      final AwsCredentials awsCredentials, final String serviceName) {
     this.client = httpClient;
     this.signingRegion = region;
     this.signingCredentials = awsCredentials;
-    this.signingName = requestSigningName;
+    this.signingName = serviceName;
 
     if (region == null || awsCredentials == null) {
       throw new IllegalArgumentException();
@@ -106,9 +94,11 @@ public final class HttpServiceSigv4 implements HttpService {
    *
    * @param region {@link Region}
    * @param awsCredentials {@link AwsCredentials}
+   * @param serviceName {@link String}
    */
-  public HttpServiceSigv4(final Region region, final AwsCredentials awsCredentials) {
-    this(HttpClient.newHttpClient(), region, awsCredentials);
+  public HttpServiceSigv4(final Region region, final AwsCredentials awsCredentials,
+      final String serviceName) {
+    this(HttpClient.newHttpClient(), region, awsCredentials, serviceName);
   }
 
   /**
@@ -116,11 +106,12 @@ public final class HttpServiceSigv4 implements HttpService {
    *
    * @param region {@link Region}
    * @param awsCredentials {@link AwsCredentials}
+   * @param serviceName {@link String}
    * @param executor {@link Executor}
    */
   public HttpServiceSigv4(final Region region, final AwsCredentials awsCredentials,
-      final Executor executor) {
-    this(HttpClient.newBuilder().executor(executor).build(), region, awsCredentials);
+      final String serviceName, final Executor executor) {
+    this(HttpClient.newBuilder().executor(executor).build(), region, awsCredentials, serviceName);
   }
 
   /**

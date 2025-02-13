@@ -79,7 +79,7 @@ public final class TypeSenseServiceImpl implements TypeSenseService {
       throw new IllegalArgumentException();
     }
 
-    this.service = new HttpServiceSigv4(region, awsCredentials);
+    this.service = new HttpServiceSigv4(region, awsCredentials, "execute-api");
     this.host = hostAddress;
     this.apiKey = typeSenseApiKey;
   }

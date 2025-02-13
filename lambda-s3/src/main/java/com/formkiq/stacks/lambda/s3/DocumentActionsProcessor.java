@@ -190,7 +190,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     awsServiceCache.environment().put("documentsIamUrl", documentsIamUrl);
     AwsCredentials awsCredentials = awsServiceCache.getExtension(AwsCredentials.class);
     awsServiceCache.register(HttpService.class, new ClassServiceExtension<>(
-        new HttpServiceSigv4(awsServiceCache.region(), awsCredentials)));
+        new HttpServiceSigv4(awsServiceCache.region(), awsCredentials, "execute-api")));
   }
 
   /** {@link Gson}. */
