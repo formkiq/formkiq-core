@@ -13,7 +13,25 @@ on:
       version:
         description: 'The FormKiQ version number string to deploy.'
         required: true
-        
+      aws-region:
+        description: 'AWS region to deploy to'
+        type: choice
+        options:
+          - us-east-1
+          - us-east-2
+          - us-west-2
+          - ap-northeast-2
+          - ap-south-1
+          - ap-southeast-1
+          - ap-southeast-2
+          - ca-central-1
+          - ca-west-1
+          - eu-central-1
+          - eu-west-1
+          - eu-west-3
+          - sa-east-1
+        default: 'us-east-2'
+
 permissions:
   contents: read
 
@@ -33,6 +51,6 @@ jobs:
       env:
         formKiQVersion: ${{ github.event.inputs.version }}
       run: |
-        sam package --s3-prefix ${formKiQVersion} --s3-bucket formkiq-dev-distribution-us-east-2 --template-file template.yaml --region us-east-2 --output-template-file template-${formKiQVersion}.yaml
-        aws s3 cp template-${formKiQVersion}.yaml s3://formkiq-dev-distribution-us-east-2/${formKiQVersion}/template.yaml
-        aws s3 cp vpc.yaml s3://formkiq-dev-distribution-us-east-2/${formKiQVersion}/vpc.yaml
+        sam package --s3-prefix ${formKiQVersion} --s3-bucket formkiq-dev-distribution-${{ github.event.inputs.aws-region }} --template-file template.yaml --region ${{ github.event.inputs.aws-region }} --output-template-file template-${formKiQVersion}.yaml
+        aws s3 cp template-${formKiQVersion}.yaml s3://formkiq-dev-distribution-${{ github.event.inputs.aws-region }}/${formKiQVersion}/template.yaml
+        aws s3 cp vpc.yaml s3://formkiq-dev-distribution-${{ github.event.inputs.aws-region }}/${formKiQVersion}/vpc.yaml
