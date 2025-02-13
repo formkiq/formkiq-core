@@ -50,7 +50,7 @@ import software.amazon.awssdk.http.SdkHttpMethod;
 import software.amazon.awssdk.regions.Region;
 
 /**
- * 
+ *
  * SigV4 implementation of {@link HttpService}.
  *
  */
@@ -66,19 +66,35 @@ public final class HttpServiceSigv4 implements HttpService {
   private final AwsCredentials signingCredentials;
   /** {@link Region}. */
   private final Region signingRegion;
+  /** Sigv4 Signing Name. */
+  private final String signingName;
 
   /**
    * constructor.
-   * 
+   *
    * @param httpClient {@link HttpClient}
    * @param region {@link Region}
    * @param awsCredentials {@link AwsCredentials}
    */
   private HttpServiceSigv4(final HttpClient httpClient, final Region region,
       final AwsCredentials awsCredentials) {
+    this(httpClient, region, awsCredentials, "execute-api");
+  }
+
+  /**
+   * constructor.
+   *
+   * @param httpClient {@link HttpClient}
+   * @param region {@link Region}
+   * @param awsCredentials {@link AwsCredentials}
+   * @param requestSigningName {@link String}
+   */
+  private HttpServiceSigv4(final HttpClient httpClient, final Region region,
+      final AwsCredentials awsCredentials, final String requestSigningName) {
     this.client = httpClient;
     this.signingRegion = region;
     this.signingCredentials = awsCredentials;
+    this.signingName = requestSigningName;
 
     if (region == null || awsCredentials == null) {
       throw new IllegalArgumentException();
@@ -87,7 +103,7 @@ public final class HttpServiceSigv4 implements HttpService {
 
   /**
    * constructor.
-   * 
+   *
    * @param region {@link Region}
    * @param awsCredentials {@link AwsCredentials}
    */
@@ -97,7 +113,7 @@ public final class HttpServiceSigv4 implements HttpService {
 
   /**
    * constructor.
-   * 
+   *
    * @param region {@link Region}
    * @param awsCredentials {@link AwsCredentials}
    * @param executor {@link Executor}
@@ -109,7 +125,7 @@ public final class HttpServiceSigv4 implements HttpService {
 
   /**
    * Build a {@link SdkHttpFullRequest.Builder}.
-   * 
+   *
    * @param uri URI
    * @param method {@link SdkHttpMethod}
    * @param headers {@link HttpHeaders}
@@ -157,11 +173,10 @@ public final class HttpServiceSigv4 implements HttpService {
 
   /**
    * Execute {@link SdkHttpFullRequest}.
-   * 
+   *
    * @param request {@link SdkHttpFullRequest}
    * @return {@link HttpResponse}
    * @throws IOException IOException
-   * @throws InterruptedException InterruptedException
    */
   private HttpResponse<String> execute(final SdkHttpFullRequest request) throws IOException {
 
@@ -176,22 +191,16 @@ public final class HttpServiceSigv4 implements HttpService {
       }
     }
 
-    switch (request.method()) {
-      case GET:
-        builder = builder.GET();
-        break;
-      case POST:
-      case PUT:
-      case PATCH:
-        InputStream is = request.contentStreamProvider().get().newStream();
-        builder = builder.method(request.method().name(), BodyPublishers.ofInputStream(() -> is));
-        break;
-      case DELETE:
-        builder = builder.DELETE();
-        break;
-      default:
-        builder = builder.method(request.method().name(), HttpRequest.BodyPublishers.noBody());
-    }
+    builder = switch (request.method()) {
+      case GET -> builder.GET();
+      case POST, PUT, PATCH -> {
+        try (InputStream is = request.contentStreamProvider().get().newStream()) {
+          yield builder.method(request.method().name(), BodyPublishers.ofInputStream(() -> is));
+        }
+      }
+      case DELETE -> builder.DELETE();
+      default -> builder.method(request.method().name(), BodyPublishers.noBody());
+    };
 
     try {
       return this.client.send(builder.build(), BodyHandlers.ofString());
@@ -211,8 +220,7 @@ public final class HttpServiceSigv4 implements HttpService {
 
   @Override
   public HttpResponse<InputStream> getAsInputStream(final String url,
-      final Optional<HttpHeaders> headers, final Optional<Map<String, String>> parameters)
-      throws IOException {
+      final Optional<HttpHeaders> headers, final Optional<Map<String, String>> parameters) {
     throw new UnsupportedOperationException();
   }
 
@@ -251,7 +259,7 @@ public final class HttpServiceSigv4 implements HttpService {
 
   /**
    * AWS Signature Version 4 signing.
-   * 
+   *
    * @param request {@link SdkHttpFullRequest.Builder}
    * @return {@link SdkHttpFullRequest}
    */
@@ -259,7 +267,7 @@ public final class HttpServiceSigv4 implements HttpService {
 
     SdkHttpFullRequest req = request.build();
 
-    Aws4SignerParams params = Aws4SignerParams.builder().signingName("execute-api")
+    Aws4SignerParams params = Aws4SignerParams.builder().signingName(signingName)
         .signingRegion(this.signingRegion).awsCredentials(this.signingCredentials).build();
 
     Aws4Signer signer = Aws4Signer.create();
@@ -271,7 +279,7 @@ public final class HttpServiceSigv4 implements HttpService {
 
   /**
    * Convert {@link String} to {@link URI}.
-   * 
+   *
    * @param uri {@link String}
    * @return {@link URI}
    * @throws IOException IOException
