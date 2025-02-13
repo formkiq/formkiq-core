@@ -55,6 +55,6 @@ jobs:
       run: |
         aws s3 cp s3://${S3_BUCKET}/formkiq-core/formkiq-core-${formKiQVersion}.zip .
         unzip formkiq-core*
-        sam package --s3-prefix ${formKiQVersion} --s3-bucket formkiq-dev-distribution-${awsRegion} --template-file template.yaml --region ${awsRegion} --output-template-file template-${formKiQVersion}.yaml
-        aws s3 cp template-${formKiQVersion}.yaml s3://formkiq-dev-distribution-${awsRegion}/${formKiQVersion}/template.yaml
-        aws s3 cp vpc.yaml s3://formkiq-dev-distribution-${awsRegion}/${formKiQVersion}/vpc.yaml
+        sam package --s3-prefix ${formKiQVersion} --s3-bucket formkiq-core-distribution-${awsRegion} --template-file template.yaml --region ${awsRegion} --output-template-file template-${formKiQVersion}.yaml
+        aws s3 cp template-${formKiQVersion}.yaml s3://formkiq-core-distribution-${awsRegion}/${formKiQVersion}/template.yaml
+        aws s3 cp vpc.yaml s3://formkiq-core-distribution-${awsRegion}/${formKiQVersion}/vpc.yaml
