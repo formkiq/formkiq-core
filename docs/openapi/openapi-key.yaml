@@ -10132,6 +10132,11 @@
                 message:
                   type: string
                   description: Result message
+            AddResourceItem:
+              oneOf:
+              - $ref: '#/components/schemas/AddLocaleResourceInterfaceItem'
+              - $ref: '#/components/schemas/AddLocaleResourceSchemaItem'
+              - $ref: '#/components/schemas/AddLocaleResourceClassificationItem'
             ResourceItem:
               oneOf:
               - $ref: '#/components/schemas/LocaleResourceInterfaceItem'
@@ -10148,12 +10153,48 @@
               type: object
               properties:
                 resourceItem:
-                  $ref: '#/components/schemas/ResourceItem'
+                  $ref: '#/components/schemas/AddResourceItem'
             AddLocaleResourceItemRequest:
               type: object
               properties:
                 resourceItem:
-                  $ref: '#/components/schemas/ResourceItem'
+                  $ref: '#/components/schemas/AddResourceItem'
+            AddLocaleResourceInterfaceItem:
+              type: object
+              properties:
+                itemType:
+                  $ref: '#/components/schemas/LocaleResourceType'
+                localizedValue:
+                  type: string
+                  description: Localized Value
+                interfaceKey:
+                  type: string
+                  description: Interface Key
+            AddLocaleResourceSchemaItem:
+              type: object
+              properties:
+                itemType:
+                  $ref: '#/components/schemas/LocaleResourceType'
+                attributeKey:
+                  type: string
+                  description: Attribute Key
+                allowedValue:
+                  type: string
+                  description: Resource value
+            AddLocaleResourceClassificationItem:
+              type: object
+              properties:
+                itemType:
+                  $ref: '#/components/schemas/LocaleResourceType'
+                classificationId:
+                  type: string
+                  description: Classification Id
+                attributeKey:
+                  type: string
+                  description: Attribute Key
+                allowedValue:
+                  type: string
+                  description: Resource value
             LocaleResourceInterfaceItem:
               type: object
               properties:
@@ -10165,6 +10206,9 @@
                 interfaceKey:
                   type: string
                   description: Interface Key
+                itemKey:
+                  type: string
+                  description: Item Key
             LocaleResourceSchemaItem:
               type: object
               properties:
@@ -10176,6 +10220,9 @@
                 allowedValue:
                   type: string
                   description: Resource value
+                itemKey:
+                  type: string
+                  description: Item Key
             LocaleResourceClassificationItem:
               type: object
               properties:
@@ -10190,6 +10237,9 @@
                 allowedValue:
                   type: string
                   description: Resource value
+                itemKey:
+                  type: string
+                  description: Item Key
             AddLocaleResourceItemResponse:
               type: object
               properties:
