@@ -21,49 +21,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.dynamodb;
+package com.formkiq.stacks.dynamodb.locale;
 
-import java.util.List;
+import com.formkiq.aws.dynamodb.AttributeValueToMap;
+
 import java.util.Map;
+import java.util.function.Function;
 
 /**
- * Pagination Results for a DynamoDB Query. Use Pagination class INSTEAD!
- *
- * @param <T> Type of Results.
+ * {@link Function} to convert {@link LocaleRecord} to {@link Map}.
  */
-public class PaginationResults<T> {
+public class LocaleRecordToMap implements Function<LocaleRecord, Map<String, Object>> {
 
-  /** {@link List}. */
-  private List<T> results;
-  /** Last Evaluated DynamoDB Key. */
-  private PaginationMapToken token;
+  /** {@link AttributeValueToMap}. */
+  private final AttributeValueToMap to = new AttributeValueToMap();
 
   /**
    * constructor.
    *
-   * @param list {@link List}
-   * @param pagination {@link PaginationMapToken}
    */
-  public PaginationResults(final List<T> list, final PaginationMapToken pagination) {
-    this.results = list;
-    this.token = pagination;
-  }
+  public LocaleRecordToMap() {}
 
-  /**
-   * Get Results.
-   *
-   * @return {@link List}
-   */
-  public List<T> getResults() {
-    return this.results;
-  }
-
-  /**
-   * Get Last Evaluated Key.
-   *
-   * @return {@link Map}
-   */
-  public PaginationMapToken getToken() {
-    return this.token;
+  @Override
+  public Map<String, Object> apply(final LocaleRecord localeRecord) {
+    Map<String, Object> map = to.apply(localeRecord.getDataAttributes());
+    map.put("itemKey", localeRecord.getItemKey());
+    map.remove("locale");
+    return map;
   }
 }

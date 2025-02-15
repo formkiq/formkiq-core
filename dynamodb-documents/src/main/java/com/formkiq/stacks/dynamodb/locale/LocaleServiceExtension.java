@@ -21,49 +21,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.dynamodb;
+package com.formkiq.stacks.dynamodb.locale;
 
-import java.util.List;
-import java.util.Map;
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.AwsServiceExtension;
+import com.formkiq.stacks.dynamodb.schemas.SchemaService;
 
 /**
- * Pagination Results for a DynamoDB Query. Use Pagination class INSTEAD!
+ * 
+ * {@link AwsServiceExtension} for {@link LocaleService}.
  *
- * @param <T> Type of Results.
  */
-public class PaginationResults<T> {
+public class LocaleServiceExtension implements AwsServiceExtension<LocaleService> {
 
-  /** {@link List}. */
-  private List<T> results;
-  /** Last Evaluated DynamoDB Key. */
-  private PaginationMapToken token;
+  /** {@link LocaleService}. */
+  private LocaleService service;
 
   /**
    * constructor.
-   *
-   * @param list {@link List}
-   * @param pagination {@link PaginationMapToken}
    */
-  public PaginationResults(final List<T> list, final PaginationMapToken pagination) {
-    this.results = list;
-    this.token = pagination;
-  }
+  public LocaleServiceExtension() {}
 
-  /**
-   * Get Results.
-   *
-   * @return {@link List}
-   */
-  public List<T> getResults() {
-    return this.results;
-  }
+  @Override
+  public LocaleService loadService(final AwsServiceCache awsServiceCache) {
+    if (this.service == null) {
+      DynamoDbService db = awsServiceCache.getExtension(DynamoDbService.class);
+      SchemaService schemaService = awsServiceCache.getExtension(SchemaService.class);
+      this.service = new LocaleServiceDynamodb(db, schemaService);
+    }
 
-  /**
-   * Get Last Evaluated Key.
-   *
-   * @return {@link Map}
-   */
-  public PaginationMapToken getToken() {
-    return this.token;
+    return this.service;
   }
 }

@@ -35,10 +35,9 @@ import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
-import com.formkiq.aws.dynamodb.MapToAttributeValue;
 import com.formkiq.aws.dynamodb.QueryConfig;
-import com.formkiq.stacks.dynamodb.base64.Base64ToMap;
 import com.formkiq.stacks.dynamodb.base64.Pagination;
+import com.formkiq.stacks.dynamodb.base64.StringToMapAttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 
@@ -148,8 +147,7 @@ public final class ApiKeysServiceDynamoDb implements ApiKeysService, DbKeys {
     AttributeValue pk = fromS(apiKey.pkGsi1(siteId));
     AttributeValue sk = fromS("apikey" + TAG_DELIMINATOR);
 
-    Map<String, AttributeValue> startKey =
-        new MapToAttributeValue().apply(new Base64ToMap().apply(nextToken));
+    Map<String, AttributeValue> startKey = new StringToMapAttributeValue().apply(nextToken);
     QueryResponse response = this.db.queryBeginsWith(config, pk, sk, startKey, limit);
 
     List<Map<String, AttributeValue>> attrs = response.items().stream()

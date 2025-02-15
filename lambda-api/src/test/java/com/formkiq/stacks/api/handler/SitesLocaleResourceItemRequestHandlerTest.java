@@ -1,0 +1,467 @@
+/**
+ * MIT License
+ * 
+ * Copyright (c) 2018 - 2020 FormKiQ
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+package com.formkiq.stacks.api.handler;
+
+import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.services.lambda.ApiResponseStatus;
+import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.model.AddAttribute;
+import com.formkiq.client.model.AddAttributeRequest;
+import com.formkiq.client.model.AddClassification;
+import com.formkiq.client.model.AddClassificationRequest;
+import com.formkiq.client.model.AddLocaleResourceClassificationItem;
+import com.formkiq.client.model.AddLocaleResourceInterfaceItem;
+import com.formkiq.client.model.AddLocaleResourceItemRequest;
+import com.formkiq.client.model.AddLocaleResourceItemResponse;
+import com.formkiq.client.model.AddLocaleResourceSchemaItem;
+import com.formkiq.client.model.AddResourceItem;
+import com.formkiq.client.model.AttributeSchemaRequired;
+import com.formkiq.client.model.GetLocaleResourceItemResponse;
+import com.formkiq.client.model.LocaleResourceType;
+import com.formkiq.client.model.ResourceItem;
+import com.formkiq.client.model.SchemaAttributes;
+import com.formkiq.client.model.SetLocaleResourceItemRequest;
+import com.formkiq.client.model.SetResponse;
+import com.formkiq.client.model.SetSitesSchemaRequest;
+import org.junit.jupiter.api.Test;
+
+import java.util.Arrays;
+import java.util.List;
+
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
+
+/** Unit Tests for request /sites/{siteId}/locales/{locale}. */
+public class SitesLocaleResourceItemRequestHandlerTest extends AbstractApiClientRequestTest {
+
+  private static void assertResourceInterface(final ResourceItem item, final String interfaceKey,
+      final String localizedValue, final String itemKey) {
+    assertEquals(LocaleResourceType.INTERFACE, item.getItemType());
+    assertEquals(interfaceKey, item.getInterfaceKey());
+    assertEquals(localizedValue, item.getLocalizedValue());
+    assertEquals(itemKey, item.getItemKey());
+  }
+
+  private static void assertResourceSchema(final ResourceItem item,
+      final LocaleResourceType resourceType, final String attributeKey, final String allowedValue,
+      final String itemKey) {
+    assertEquals(resourceType, item.getItemType());
+    assertEquals(attributeKey, item.getAttributeKey());
+    assertEquals(allowedValue, item.getAllowedValue());
+    assertEquals(itemKey, item.getItemKey());
+  }
+
+  /**
+   * Post /sites/{siteId}/locales/{locale}/resourceItems.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testAddLocale01() throws Exception {
+    // given
+    String locale = "en";
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      setBearerToken(siteId);
+
+      AddLocaleResourceInterfaceItem item = new AddLocaleResourceInterfaceItem()
+          .interfaceKey("mykey").itemType(LocaleResourceType.INTERFACE).localizedValue("bbb");
+      AddLocaleResourceItemRequest req =
+          new AddLocaleResourceItemRequest().resourceItem(new AddResourceItem(item));
+
+      // when
+      AddLocaleResourceItemResponse response =
+          this.systemApi.addLocaleResourceItem(siteId, locale, req);
+
+      // then
+      assertEquals("INTERFACE#mykey", response.getItemKey());
+
+      List<ResourceItem> items = notNull(
+          this.systemApi.getLocaleResourceItems(siteId, locale, null, null).getResourceItems());
+      assertEquals(1, items.size());
+      assertResourceInterface(items.get(0), "mykey", "bbb", "INTERFACE#mykey");
+
+      GetLocaleResourceItemResponse lri =
+          this.systemApi.getLocaleResourceItem(siteId, locale, response.getItemKey());
+      assertNotNull(lri);
+      assertNotNull(lri.getResourceItem());
+      assertResourceInterface(lri.getResourceItem(), "mykey", "bbb", "INTERFACE#mykey");
+
+      // when
+      this.systemApi.deleteLocaleResourceItem(siteId, locale, response.getItemKey());
+
+      // then
+      try {
+        this.systemApi.getLocaleResourceItem(siteId, locale, response.getItemKey());
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
+        assertEquals("{\"message\":\"ItemKey 'INTERFACE#mykey' not found\"}", e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * Post /sites/{siteId}/locales/{locale}/resourceItems.
+   *
+   */
+  @Test
+  public void testAddLocale02() {
+    // given
+    String locale = "en";
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      setBearerToken(siteId);
+
+      AddLocaleResourceInterfaceItem item =
+          new AddLocaleResourceInterfaceItem().itemType(LocaleResourceType.INTERFACE);
+      AddLocaleResourceItemRequest req =
+          new AddLocaleResourceItemRequest().resourceItem(new AddResourceItem(item));
+
+      // when
+      try {
+        this.systemApi.addLocaleResourceItem(siteId, locale, req);
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"interfaceKey\"," + "\"error\":\"'interfaceKey' is required\"},"
+                + "{\"key\":\"localizedValue\",\"error\":\"'localizedValue' is required\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * Post /sites/{siteId}/locales/{locale}/resourceItems with attribute missing.
+   *
+   */
+  @Test
+  public void testAddLocale03() {
+    // given
+    String locale = "en";
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      setBearerToken(siteId);
+
+      AddLocaleResourceSchemaItem item = new AddLocaleResourceSchemaItem()
+          .itemType(LocaleResourceType.SCHEMA).attributeKey("abc").allowedValue("111");
+      AddLocaleResourceItemRequest req =
+          new AddLocaleResourceItemRequest().resourceItem(new AddResourceItem(item));
+
+      // when
+      try {
+        this.systemApi.addLocaleResourceItem(siteId, locale, req);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"errors\":[{\"key\":\"abc\",\"error\":\"missing attribute 'abc'\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * Post /sites/{siteId}/locales/{locale}/resourceItems with attribute invalid allowed value.
+   *
+   */
+  @Test
+  public void testAddLocale04() throws ApiException {
+    // given
+    String locale = "en";
+    String attributeKey = "abc";
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      setBearerToken(siteId);
+
+      addAttribute(siteId, attributeKey);
+
+      AddLocaleResourceSchemaItem item = new AddLocaleResourceSchemaItem()
+          .itemType(LocaleResourceType.SCHEMA).attributeKey("abc").allowedValue("111");
+      AddLocaleResourceItemRequest req =
+          new AddLocaleResourceItemRequest().resourceItem(new AddResourceItem(item));
+
+      // when
+      try {
+        this.systemApi.addLocaleResourceItem(siteId, locale, req);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"errors\":[{\"key\":\"abc\","
+            + "\"error\":\"AttributeKey 'abc' is not used in schema\"}]}", e.getResponseBody());
+      }
+
+      // given
+      setSiteSchema(siteId, "abc", "222");
+
+      // when
+      try {
+        this.systemApi.addLocaleResourceItem(siteId, locale, req);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"errors\":[{\"key\":\"abc\","
+            + "\"error\":\"invalid allowed value '111' on key 'abc'\"}]}", e.getResponseBody());
+      }
+    }
+  }
+
+  private void addAttribute(final String siteId, final String attributeKey) throws ApiException {
+    AddAttributeRequest attrReq =
+        new AddAttributeRequest().attribute(new AddAttribute().key(attributeKey));
+    attributesApi.addAttribute(attrReq, siteId);
+  }
+
+  private void setSiteSchema(final String siteId, final String attributeKey,
+      final String allowedValue) throws ApiException {
+    SetSitesSchemaRequest siteSchema = new SetSitesSchemaRequest().name("test")
+        .attributes(new SchemaAttributes().addRequiredItem(new AttributeSchemaRequired()
+            .attributeKey(attributeKey).allowedValues(List.of(allowedValue))));
+    this.schemasApi.setSitesSchema(siteId, siteSchema);
+  }
+
+  private String setClassification(final String siteId, final String attributeKey,
+      final String allowedValue) throws ApiException {
+
+    SchemaAttributes schemaAttributes =
+        new SchemaAttributes().addRequiredItem(new AttributeSchemaRequired()
+            .attributeKey(attributeKey).allowedValues(List.of(allowedValue)));
+    AddClassificationRequest classification = new AddClassificationRequest()
+        .classification(new AddClassification().name("myClass").attributes(schemaAttributes));
+    return this.schemasApi.addClassification(siteId, classification).getClassificationId();
+  }
+
+  /**
+   * Post /sites/{siteId}/locales/{locale}/resourceItems with Schema attribute.
+   *
+   */
+  @Test
+  public void testAddLocale05() throws ApiException {
+    // given
+    String locale = "en";
+    String attributeKey = "myAbc";
+    String allowedValue = "129380";
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      setBearerToken(siteId);
+
+      addAttribute(siteId, attributeKey);
+      setSiteSchema(siteId, attributeKey, allowedValue);
+
+      AddLocaleResourceSchemaItem item =
+          new AddLocaleResourceSchemaItem().itemType(LocaleResourceType.SCHEMA)
+              .attributeKey(attributeKey).allowedValue(allowedValue);
+      AddLocaleResourceItemRequest req =
+          new AddLocaleResourceItemRequest().resourceItem(new AddResourceItem(item));
+
+      // when
+      AddLocaleResourceItemResponse response =
+          this.systemApi.addLocaleResourceItem(siteId, locale, req);
+
+      // then
+      assertEquals("SCHEMA#myAbc#129380", response.getItemKey());
+      GetLocaleResourceItemResponse i =
+          this.systemApi.getLocaleResourceItem(siteId, locale, response.getItemKey());
+      assertNotNull(i.getResourceItem());
+      assertResourceSchema(i.getResourceItem(), LocaleResourceType.SCHEMA, attributeKey,
+          allowedValue, "SCHEMA#myAbc#129380");
+    }
+  }
+
+  /**
+   * Post /sites/{siteId}/locales/{locale}/resourceItems with Classification attribute.
+   *
+   */
+  @Test
+  public void testAddLocale06() throws ApiException {
+    // given
+    String locale = "en";
+    String attributeKey = "myAbcd";
+    String allowedValue = "129380";
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      setBearerToken(siteId);
+
+      addAttribute(siteId, attributeKey);
+      String classificationId = setClassification(siteId, attributeKey, allowedValue);
+
+      AddLocaleResourceClassificationItem item = new AddLocaleResourceClassificationItem()
+          .itemType(LocaleResourceType.CLASSIFICATION).classificationId(classificationId)
+          .attributeKey(attributeKey).allowedValue(allowedValue);
+      AddLocaleResourceItemRequest req =
+          new AddLocaleResourceItemRequest().resourceItem(new AddResourceItem(item));
+
+      // when
+      AddLocaleResourceItemResponse response =
+          this.systemApi.addLocaleResourceItem(siteId, locale, req);
+
+      // then
+      assertEquals("CLASSIFICATION#" + classificationId + "#myAbcd#129380", response.getItemKey());
+      GetLocaleResourceItemResponse i =
+          this.systemApi.getLocaleResourceItem(siteId, locale, response.getItemKey());
+      assertNotNull(i.getResourceItem());
+      assertResourceSchema(i.getResourceItem(), LocaleResourceType.CLASSIFICATION, attributeKey,
+          allowedValue, "CLASSIFICATION#" + classificationId + "#myAbcd#129380");
+      assertEquals(classificationId, i.getResourceItem().getClassificationId());
+    }
+  }
+
+  /**
+   * Post /sites/{siteId}/locales/{locale}/resourceItems with Classification attribute, but matching
+   * attribute is on the schema.
+   *
+   */
+  @Test
+  public void testAddLocale07() throws ApiException {
+    // given
+    String locale = "en";
+    String attributeKey0 = "myAbcd";
+    String allowedValue0 = "129380";
+    String attributeKey1 = "other";
+    String allowedValue1 = "111111";
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      setBearerToken(siteId);
+
+      addAttribute(siteId, attributeKey0);
+      addAttribute(siteId, attributeKey1);
+
+      setSiteSchema(siteId, attributeKey0, allowedValue0);
+      String classificationId = setClassification(siteId, attributeKey1, allowedValue1);
+
+      AddLocaleResourceClassificationItem item = new AddLocaleResourceClassificationItem()
+          .itemType(LocaleResourceType.CLASSIFICATION).classificationId(classificationId)
+          .attributeKey(attributeKey0).allowedValue(allowedValue0);
+      AddLocaleResourceItemRequest req =
+          new AddLocaleResourceItemRequest().resourceItem(new AddResourceItem(item));
+
+      // when
+      try {
+        this.systemApi.addLocaleResourceItem(siteId, locale, req);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"myAbcd\","
+                + "\"error\":\"AttributeKey 'myAbcd' is not used in classification\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * PUT /sites/{siteId}/locales/{locale}/resourceItems, not exists.
+   *
+   */
+  @Test
+  public void testPutLocale01() {
+    // given
+    String locale = "en";
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      setBearerToken(siteId);
+
+      AddLocaleResourceInterfaceItem item = new AddLocaleResourceInterfaceItem()
+          .interfaceKey("mykey").itemType(LocaleResourceType.INTERFACE).localizedValue("bbb");
+      SetLocaleResourceItemRequest req =
+          new SetLocaleResourceItemRequest().resourceItem(new AddResourceItem(item));
+
+      // when
+      try {
+        this.systemApi.setLocaleResourceItem(siteId, locale, "asdad", req);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
+        assertEquals("{\"message\":\"itemKey 'asdad' not found\"}", e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * PUT /sites/{siteId}/locales/{locale}/resourceItems.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testPutLocale02() throws Exception {
+    // given
+    String locale = "en";
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      setBearerToken(siteId);
+
+      AddLocaleResourceInterfaceItem item = new AddLocaleResourceInterfaceItem()
+          .interfaceKey("mykey2").itemType(LocaleResourceType.INTERFACE).localizedValue("bbb");
+      AddLocaleResourceItemRequest addReq =
+          new AddLocaleResourceItemRequest().resourceItem(new AddResourceItem(item));
+
+      AddLocaleResourceItemResponse response =
+          this.systemApi.addLocaleResourceItem(siteId, locale, addReq);
+
+      SetLocaleResourceItemRequest setReq =
+          new SetLocaleResourceItemRequest().resourceItem(new AddResourceItem(item));
+      item.setLocalizedValue("ccc");
+
+      // when
+      SetResponse setResponse =
+          this.systemApi.setLocaleResourceItem(siteId, locale, response.getItemKey(), setReq);
+
+      // then
+      assertEquals("set item 'INTERFACE#mykey2' successfully", setResponse.getMessage());
+      GetLocaleResourceItemResponse lri =
+          this.systemApi.getLocaleResourceItem(siteId, locale, response.getItemKey());
+      assertNotNull(lri);
+      assertNotNull(lri.getResourceItem());
+      assertResourceInterface(lri.getResourceItem(), "mykey2", "ccc", "INTERFACE#mykey2");
+    }
+  }
+
+  /**
+   * ItemKey not found.
+   */
+  @Test
+  void testDelete01() {
+    // given
+    String locale = "en";
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      setBearerToken(siteId);
+
+      // when
+      try {
+        this.systemApi.deleteLocaleResourceItem(siteId, locale, "abc");
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
+        assertEquals("{\"message\":\"ItemKey 'abc' not found\"}", e.getResponseBody());
+      }
+    }
+  }
+
+}

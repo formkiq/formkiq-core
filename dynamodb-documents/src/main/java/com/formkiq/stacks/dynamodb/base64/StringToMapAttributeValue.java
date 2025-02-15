@@ -21,49 +21,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.dynamodb;
+package com.formkiq.stacks.dynamodb.base64;
 
-import java.util.List;
+import com.formkiq.aws.dynamodb.MapToAttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+
 import java.util.Map;
+import java.util.function.Function;
 
 /**
- * Pagination Results for a DynamoDB Query. Use Pagination class INSTEAD!
- *
- * @param <T> Type of Results.
+ * {@link Function} to convert Pagination {@link String} next token to a DynamoDb StartKey.
  */
-public class PaginationResults<T> {
-
-  /** {@link List}. */
-  private List<T> results;
-  /** Last Evaluated DynamoDB Key. */
-  private PaginationMapToken token;
-
-  /**
-   * constructor.
-   *
-   * @param list {@link List}
-   * @param pagination {@link PaginationMapToken}
-   */
-  public PaginationResults(final List<T> list, final PaginationMapToken pagination) {
-    this.results = list;
-    this.token = pagination;
-  }
-
-  /**
-   * Get Results.
-   *
-   * @return {@link List}
-   */
-  public List<T> getResults() {
-    return this.results;
-  }
-
-  /**
-   * Get Last Evaluated Key.
-   *
-   * @return {@link Map}
-   */
-  public PaginationMapToken getToken() {
-    return this.token;
+public class StringToMapAttributeValue implements Function<String, Map<String, AttributeValue>> {
+  @Override
+  public Map<String, AttributeValue> apply(final String nextToken) {
+    return new MapToAttributeValue().apply(new Base64ToMap().apply(nextToken));
   }
 }

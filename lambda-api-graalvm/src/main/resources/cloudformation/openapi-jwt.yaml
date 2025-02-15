@@ -10250,10 +10250,27 @@ Resources:
                 - $ref: '#/components/schemas/AddLocaleResourceSchemaItem'
                 - $ref: '#/components/schemas/AddLocaleResourceClassificationItem'
             ResourceItem:
-              oneOf:
-                - $ref: '#/components/schemas/LocaleResourceInterfaceItem'
-                - $ref: '#/components/schemas/LocaleResourceSchemaItem'
-                - $ref: '#/components/schemas/LocaleResourceClassificationItem'
+              properties:
+                itemType:
+                  $ref: "#/components/schemas/LocaleResourceType"
+                localizedValue:
+                  type: "string"
+                  description: "Localized Value"
+                interfaceKey:
+                  type: "string"
+                  description: "Interface Key"
+                itemKey:
+                  type: "string"
+                  description: "Item Key"
+                attributeKey:
+                  type: "string"
+                  description: "Attribute Key"
+                allowedValue:
+                  type: "string"
+                  description: "Resource value"
+                classificationId:
+                  type: "string"
+                  description: "Classification Id"
             LocaleResourceType:
               type: string
               description: Type of Locale Resource
@@ -10307,51 +10324,6 @@ Resources:
                 allowedValue:
                   type: "string"
                   description: "Resource value"
-            LocaleResourceInterfaceItem:
-              type: object
-              properties:
-                itemType:
-                  $ref: "#/components/schemas/LocaleResourceType"
-                localizedValue:
-                  type: "string"
-                  description: "Localized Value"
-                interfaceKey:
-                  type: "string"
-                  description: "Interface Key"
-                itemKey:
-                  type: "string"
-                  description: "Item Key"
-            LocaleResourceSchemaItem:
-              type: object
-              properties:
-                itemType:
-                  $ref: "#/components/schemas/LocaleResourceType"
-                attributeKey:
-                  type: "string"
-                  description: "Attribute Key"
-                allowedValue:
-                  type: "string"
-                  description: "Resource value"
-                itemKey:
-                  type: "string"
-                  description: "Item Key"
-            LocaleResourceClassificationItem:
-              type: object
-              properties:
-                itemType:
-                  $ref: "#/components/schemas/LocaleResourceType"
-                classificationId:
-                  type: "string"
-                  description: "Classification Id"
-                attributeKey:
-                  type: "string"
-                  description: "Attribute Key"
-                allowedValue:
-                  type: "string"
-                  description: "Resource value"
-                itemKey:
-                  type: "string"
-                  description: "Item Key"
             AddLocaleResourceItemResponse:
               type: object
               properties:

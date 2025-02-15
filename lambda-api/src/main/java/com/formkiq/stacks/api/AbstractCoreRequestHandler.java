@@ -69,6 +69,8 @@ import com.formkiq.stacks.api.handler.DocumentAttributesValueRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentIdContentRequestHandler;
 import com.formkiq.stacks.api.handler.GroupRequestHandler;
 import com.formkiq.stacks.api.handler.GroupsUserRequestHandler;
+import com.formkiq.stacks.api.handler.SitesLocaleResourceItemRequestHandler;
+import com.formkiq.stacks.api.handler.SitesLocaleResourceItemsRequestHandler;
 import com.formkiq.stacks.api.handler.PublicationsDocumentIdRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentIdRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentIdRestoreRequestHandler;
@@ -136,6 +138,8 @@ import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeServiceExtension;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidator;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidatorExtension;
+import com.formkiq.stacks.dynamodb.locale.LocaleService;
+import com.formkiq.stacks.dynamodb.locale.LocaleServiceExtension;
 import com.formkiq.stacks.dynamodb.mappings.MappingService;
 import com.formkiq.stacks.dynamodb.mappings.MappingServiceExtension;
 import com.formkiq.stacks.dynamodb.schemas.SchemaService;
@@ -206,6 +210,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     serviceCache.register(AttributeValidator.class, new AttributeValidatorExtension());
     serviceCache.register(SchemaService.class, new SchemaServiceExtension());
     serviceCache.register(MappingService.class, new MappingServiceExtension());
+    serviceCache.register(LocaleService.class, new LocaleServiceExtension());
   }
 
   /**
@@ -257,6 +262,10 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new IndicesRequestHandler());
     addRequestHandler(new IndicesSearchRequestHandler());
     addRequestHandler(new UpdateDocumentMatchingRequestHandler());
+
+    addRequestHandler(new SitesLocaleResourceItemRequestHandler());
+    addRequestHandler(new SitesLocaleResourceItemsRequestHandler());
+
     addGroupUsersEndpoints();
     addDocumentAttributeEndpoints();
 

@@ -21,49 +21,41 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.dynamodb;
+package com.formkiq.stacks.api.handler;
 
-import java.util.List;
-import java.util.Map;
+import com.formkiq.graalvm.annotations.Reflectable;
+import com.formkiq.stacks.dynamodb.locale.LocaleRecord;
 
 /**
- * Pagination Results for a DynamoDB Query. Use Pagination class INSTEAD!
- *
- * @param <T> Type of Results.
+ * Add Locale Resource Item Request.
  */
-public class PaginationResults<T> {
-
-  /** {@link List}. */
-  private List<T> results;
-  /** Last Evaluated DynamoDB Key. */
-  private PaginationMapToken token;
+@Reflectable
+public class AddLocaleResourceItemRequest {
+  /** {@link LocaleRecord}. */
+  private LocaleRecord resourceItem;
 
   /**
    * constructor.
-   *
-   * @param list {@link List}
-   * @param pagination {@link PaginationMapToken}
    */
-  public PaginationResults(final List<T> list, final PaginationMapToken pagination) {
-    this.results = list;
-    this.token = pagination;
+  public AddLocaleResourceItemRequest() {
+
   }
 
   /**
-   * Get Results.
-   *
-   * @return {@link List}
+   * Get Resource Item.
+   * 
+   * @return LocaleRecord
    */
-  public List<T> getResults() {
-    return this.results;
+  public LocaleRecord getResourceItem() {
+    return this.resourceItem;
   }
 
   /**
-   * Get Last Evaluated Key.
-   *
-   * @return {@link Map}
+   * Set Resource Item.
+   * 
+   * @param item {@link LocaleRecord}
    */
-  public PaginationMapToken getToken() {
-    return this.token;
+  public void setResourceItem(final LocaleRecord item) {
+    this.resourceItem = item;
   }
 }
