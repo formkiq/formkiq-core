@@ -10199,6 +10199,9 @@
             GetLocaleResourceItemsResponse:
               type: object
               properties:
+                next:
+                  type: string
+                  description: Next page of results token
                 resourceItems:
                   type: array
                   description: List of permissions
