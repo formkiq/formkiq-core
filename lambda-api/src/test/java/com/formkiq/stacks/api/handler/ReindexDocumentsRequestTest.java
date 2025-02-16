@@ -28,16 +28,16 @@ import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAttribute;
 import com.formkiq.client.model.AddAttributeRequest;
+import com.formkiq.client.model.AddAttributeSchemaRequired;
 import com.formkiq.client.model.AddDocumentAttribute;
 import com.formkiq.client.model.AddDocumentAttributeStandard;
 import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AddReindexDocumentRequest;
 import com.formkiq.client.model.AddResponse;
 import com.formkiq.client.model.AttributeSchemaCompositeKey;
-import com.formkiq.client.model.AttributeSchemaRequired;
 import com.formkiq.client.model.DocumentAttribute;
 import com.formkiq.client.model.ReindexTarget;
-import com.formkiq.client.model.SchemaAttributes;
+import com.formkiq.client.model.SetSchemaAttributes;
 import com.formkiq.client.model.SetSitesSchemaRequest;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
@@ -208,9 +208,9 @@ public class ReindexDocumentsRequestTest extends AbstractApiClientRequestTest {
       assertEquals(0, documentAttributes.size());
 
       // given
-      AttributeSchemaRequired required =
-          new AttributeSchemaRequired().attributeKey("documentType").defaultValue("123");
-      SchemaAttributes sa = new SchemaAttributes().addRequiredItem(required);
+      AddAttributeSchemaRequired required =
+          new AddAttributeSchemaRequired().attributeKey("documentType").defaultValue("123");
+      SetSchemaAttributes sa = new SetSchemaAttributes().addRequiredItem(required);
       setSiteSchema(siteId, sa);
 
       AddReindexDocumentRequest req =
@@ -253,9 +253,9 @@ public class ReindexDocumentsRequestTest extends AbstractApiClientRequestTest {
       assertDocumentAttributes(documentAttributes.get(0), "documentType", "other");
 
       // given
-      AttributeSchemaRequired required =
-          new AttributeSchemaRequired().attributeKey("documentType").defaultValue("123");
-      SchemaAttributes sa = new SchemaAttributes().addRequiredItem(required);
+      AddAttributeSchemaRequired required =
+          new AddAttributeSchemaRequired().attributeKey("documentType").defaultValue("123");
+      SetSchemaAttributes sa = new SetSchemaAttributes().addRequiredItem(required);
       setSiteSchema(siteId, sa);
 
       AddReindexDocumentRequest req =
@@ -274,8 +274,8 @@ public class ReindexDocumentsRequestTest extends AbstractApiClientRequestTest {
     }
   }
 
-  private SchemaAttributes createSiteSchema(final List<String>[] compositeKeys) {
-    SchemaAttributes sa = new SchemaAttributes();
+  private SetSchemaAttributes createSiteSchema(final List<String>[] compositeKeys) {
+    SetSchemaAttributes sa = new SetSchemaAttributes();
 
     for (List<String> compositeKey : compositeKeys) {
       sa.addCompositeKeysItem(new AttributeSchemaCompositeKey().attributeKeys(compositeKey));
@@ -296,7 +296,8 @@ public class ReindexDocumentsRequestTest extends AbstractApiClientRequestTest {
     this.attributesApi.addAttribute(req, siteId);
   }
 
-  private void setSiteSchema(final String siteId, final SchemaAttributes attr) throws ApiException {
+  private void setSiteSchema(final String siteId, final SetSchemaAttributes attr)
+      throws ApiException {
     SetSitesSchemaRequest setSiteSchema = new SetSitesSchemaRequest().name("test").attributes(attr);
     this.schemasApi.setSitesSchema(siteId, setSiteSchema);
   }

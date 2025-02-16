@@ -26,12 +26,12 @@ package com.formkiq.testutils.aws;
 import com.formkiq.client.api.SchemasApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.model.AddAttributeSchemaOptional;
+import com.formkiq.client.model.AddAttributeSchemaRequired;
 import com.formkiq.client.model.AddClassification;
 import com.formkiq.client.model.AddClassificationRequest;
 import com.formkiq.client.model.AttributeSchemaCompositeKey;
-import com.formkiq.client.model.AttributeSchemaOptional;
-import com.formkiq.client.model.AttributeSchemaRequired;
-import com.formkiq.client.model.SchemaAttributes;
+import com.formkiq.client.model.SetSchemaAttributes;
 import com.formkiq.client.model.SetSitesSchemaRequest;
 
 import java.util.Collections;
@@ -58,7 +58,7 @@ public class FkqSchemaService {
 
     SchemasApi api = new SchemasApi(client);
 
-    SchemaAttributes attributes = new SchemaAttributes().compositeKeys(
+    SetSchemaAttributes attributes = new SetSchemaAttributes().compositeKeys(
         Collections.singletonList(new AttributeSchemaCompositeKey().attributeKeys(compositeKeys)));
     api.setSitesSchema(siteId, new SetSitesSchemaRequest().name(name).attributes(attributes));
   }
@@ -68,15 +68,15 @@ public class FkqSchemaService {
    * 
    * @param requiredKeys {@link List} {@link String}
    * @param optionalKeys {@link List} {@link String}
-   * @return SchemaAttributes
+   * @return SetSchemaAttributes
    */
-  public static SchemaAttributes createSchemaAttributes(final List<String> requiredKeys,
+  public static SetSchemaAttributes createSchemaAttributes(final List<String> requiredKeys,
       final List<String> optionalKeys) {
-    List<AttributeSchemaRequired> required = notNull(requiredKeys).stream()
-        .map(k -> new AttributeSchemaRequired().attributeKey(k)).toList();
-    List<AttributeSchemaOptional> optional = notNull(optionalKeys).stream()
-        .map(k -> new AttributeSchemaOptional().attributeKey(k)).toList();
-    return new SchemaAttributes().required(required).optional(optional);
+    List<AddAttributeSchemaRequired> required = notNull(requiredKeys).stream()
+        .map(k -> new AddAttributeSchemaRequired().attributeKey(k)).toList();
+    List<AddAttributeSchemaOptional> optional = notNull(optionalKeys).stream()
+        .map(k -> new AddAttributeSchemaOptional().attributeKey(k)).toList();
+    return new SetSchemaAttributes().required(required).optional(optional);
   }
 
   /**
@@ -85,12 +85,12 @@ public class FkqSchemaService {
    * @param client {@link ApiClient}
    * @param siteId {@link String}
    * @param name {@link String}
-   * @param attr SchemaAttributes
+   * @param attr {@link SetSchemaAttributes}
    * @return String
    * @throws ApiException ApiException
    */
   public static String addClassification(final ApiClient client, final String siteId,
-      final String name, final SchemaAttributes attr) throws ApiException {
+      final String name, final SetSchemaAttributes attr) throws ApiException {
     SchemasApi api = new SchemasApi(client);
     AddClassificationRequest req = new AddClassificationRequest()
         .classification(new AddClassification().name(name).attributes(attr));

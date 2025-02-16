@@ -54,8 +54,8 @@ import com.formkiq.client.model.AttributeDataType;
 import com.formkiq.client.model.AttributeSchemaCompositeKey;
 import com.formkiq.client.model.DocumentSearchMatchAttribute;
 import com.formkiq.client.model.ReindexTarget;
-import com.formkiq.client.model.SchemaAttributes;
 import com.formkiq.client.model.SearchResultDocument;
+import com.formkiq.client.model.SetSchemaAttributes;
 import com.formkiq.client.model.SetSitesSchemaRequest;
 import com.formkiq.testutils.aws.FkqAttributeService;
 import org.junit.jupiter.api.Test;
@@ -260,7 +260,7 @@ public class DocumentAttributesRequestTest extends AbstractAwsIntegrationTest {
     FkqAttributeService.addAttribute(apiClient, siteId, "invoiceTotalAmount",
         AttributeDataType.NUMBER, null);
 
-    SchemaAttributes attr = createSchemaAttributes(
+    SetSchemaAttributes attr = createSchemaAttributes(
         List.of("invoiceDate", "invoiceNumber", "invoiceTotalAmount", "invoiceVendorName"),
         List.of("invoiceCurrency"));
     String classificationId = addClassification(apiClient, siteId, ID.uuid(), attr);
@@ -348,7 +348,7 @@ public class DocumentAttributesRequestTest extends AbstractAwsIntegrationTest {
       // given
       SchemasApi schemasApi = new SchemasApi(apiClient);
       SetSitesSchemaRequest sreq = new SetSitesSchemaRequest().name("test")
-          .attributes(new SchemaAttributes().addCompositeKeysItem(
+          .attributes(new SetSchemaAttributes().addCompositeKeysItem(
               new AttributeSchemaCompositeKey().attributeKeys(List.of(key1, key2))));
       schemasApi.setSitesSchema(siteId, sreq);
 

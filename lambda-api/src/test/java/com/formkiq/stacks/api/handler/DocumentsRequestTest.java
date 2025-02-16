@@ -26,6 +26,7 @@ package com.formkiq.stacks.api.handler;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
+import com.formkiq.client.model.AddAttributeSchemaOptional;
 import com.formkiq.client.model.DocumentSync;
 import com.formkiq.client.model.DocumentSyncStatus;
 import com.formkiq.client.model.DocumentSyncType;
@@ -50,7 +51,6 @@ import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AddDocumentResponse;
 import com.formkiq.client.model.AddDocumentTag;
 import com.formkiq.client.model.AttributeSchemaCompositeKey;
-import com.formkiq.client.model.AttributeSchemaOptional;
 import com.formkiq.client.model.ChecksumType;
 import com.formkiq.client.model.ChildDocument;
 import com.formkiq.client.model.DocumentActionType;
@@ -59,7 +59,7 @@ import com.formkiq.client.model.DocumentMetadata;
 import com.formkiq.client.model.DocumentSyncService;
 import com.formkiq.client.model.DocumentTag;
 import com.formkiq.client.model.GetDocumentResponse;
-import com.formkiq.client.model.SchemaAttributes;
+import com.formkiq.client.model.SetSchemaAttributes;
 import com.formkiq.client.model.SetSitesSchemaRequest;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentService;
@@ -318,8 +318,8 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
             new AddAttributeRequest().attribute(new AddAttribute().key(attributeKey)), siteId);
       }
 
-      SetSitesSchemaRequest sitesSchema = new SetSitesSchemaRequest().name("test")
-          .attributes(new SchemaAttributes().addCompositeKeysItem(new AttributeSchemaCompositeKey()
+      SetSitesSchemaRequest sitesSchema = new SetSitesSchemaRequest().name("test").attributes(
+          new SetSchemaAttributes().addCompositeKeysItem(new AttributeSchemaCompositeKey()
               .attributeKeys(Arrays.asList(attributeKey0, attributeKey1))));
       this.schemasApi.setSitesSchema(siteId, sitesSchema);
 
@@ -366,7 +366,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
           new AddAttributeRequest().attribute(new AddAttribute().key(attributeKey)), siteId);
 
       SetSitesSchemaRequest sitesSchema = new SetSitesSchemaRequest().name("test")
-          .attributes(new SchemaAttributes().addOptionalItem(new AttributeSchemaOptional()
+          .attributes(new SetSchemaAttributes().addOptionalItem(new AddAttributeSchemaOptional()
               .attributeKey(attributeKey).addAllowedValuesItem("abc")));
       this.schemasApi.setSitesSchema(siteId, sitesSchema);
 

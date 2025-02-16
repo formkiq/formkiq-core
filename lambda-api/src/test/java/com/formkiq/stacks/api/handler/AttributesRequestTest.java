@@ -29,6 +29,7 @@ import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAttribute;
 import com.formkiq.client.model.AddAttributeRequest;
 import com.formkiq.client.model.AddAttributeResponse;
+import com.formkiq.client.model.AddAttributeSchemaRequired;
 import com.formkiq.client.model.AddClassification;
 import com.formkiq.client.model.AddClassificationRequest;
 import com.formkiq.client.model.AddDocumentAttribute;
@@ -40,7 +41,6 @@ import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AddDocumentUploadRequest;
 import com.formkiq.client.model.Attribute;
 import com.formkiq.client.model.AttributeDataType;
-import com.formkiq.client.model.AttributeSchemaRequired;
 import com.formkiq.client.model.AttributeType;
 import com.formkiq.client.model.AttributeValueType;
 import com.formkiq.client.model.DeleteResponse;
@@ -54,13 +54,13 @@ import com.formkiq.client.model.DocumentSearchResponse;
 import com.formkiq.client.model.DocumentTag;
 import com.formkiq.client.model.GetAttributeResponse;
 import com.formkiq.client.model.GetDocumentAttributesResponse;
-import com.formkiq.client.model.SchemaAttributes;
 import com.formkiq.client.model.SearchResponseFields;
 import com.formkiq.client.model.SearchResultDocument;
 import com.formkiq.client.model.SearchResultDocumentAttribute;
 import com.formkiq.client.model.SetDocumentAttributeRequest;
 import com.formkiq.client.model.SetDocumentAttributesRequest;
 import com.formkiq.client.model.SetResponse;
+import com.formkiq.client.model.SetSchemaAttributes;
 import com.formkiq.client.model.SetSitesSchemaRequest;
 import com.formkiq.client.model.UpdateDocumentRequest;
 import com.formkiq.client.model.Watermark;
@@ -1612,8 +1612,9 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       AddAttributeRequest areq = new AddAttributeRequest().attribute(new AddAttribute().key(key));
       this.attributesApi.addAttribute(areq, siteId);
 
-      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe").attributes(
-          new SchemaAttributes().addRequiredItem(new AttributeSchemaRequired().attributeKey(key)));
+      SetSitesSchemaRequest req =
+          new SetSitesSchemaRequest().name("joe").attributes(new SetSchemaAttributes()
+              .addRequiredItem(new AddAttributeSchemaRequired().attributeKey(key)));
 
       this.schemasApi.setSitesSchema(siteId, req);
 
@@ -1647,8 +1648,8 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       AddAttributeRequest areq = new AddAttributeRequest().attribute(new AddAttribute().key(key));
       this.attributesApi.addAttribute(areq, siteId);
 
-      SchemaAttributes attr =
-          new SchemaAttributes().addRequiredItem(new AttributeSchemaRequired().attributeKey(key));
+      SetSchemaAttributes attr = new SetSchemaAttributes()
+          .addRequiredItem(new AddAttributeSchemaRequired().attributeKey(key));
       AddClassificationRequest req = new AddClassificationRequest()
           .classification(new AddClassification().name("test").attributes(attr));
       this.schemasApi.addClassification(siteId, req);

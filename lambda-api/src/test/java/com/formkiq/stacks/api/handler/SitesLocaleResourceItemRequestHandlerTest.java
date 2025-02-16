@@ -28,6 +28,8 @@ import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAttribute;
 import com.formkiq.client.model.AddAttributeRequest;
+import com.formkiq.client.model.AddAttributeSchemaOptional;
+import com.formkiq.client.model.AddAttributeSchemaRequired;
 import com.formkiq.client.model.AddClassification;
 import com.formkiq.client.model.AddClassificationRequest;
 import com.formkiq.client.model.AddLocaleResourceClassificationItem;
@@ -44,9 +46,9 @@ import com.formkiq.client.model.GetLocaleResourceItemResponse;
 import com.formkiq.client.model.GetSitesSchemaResponse;
 import com.formkiq.client.model.LocaleResourceType;
 import com.formkiq.client.model.ResourceItem;
-import com.formkiq.client.model.SchemaAttributes;
 import com.formkiq.client.model.SetLocaleResourceItemRequest;
 import com.formkiq.client.model.SetResponse;
+import com.formkiq.client.model.SetSchemaAttributes;
 import com.formkiq.client.model.SetSitesSchemaRequest;
 import org.junit.jupiter.api.Test;
 
@@ -253,14 +255,14 @@ public class SitesLocaleResourceItemRequestHandlerTest extends AbstractApiClient
   private void setSiteSchema(final String siteId, final String attributeKey,
       final List<String> allowedValues, final boolean required) throws ApiException {
 
-    SchemaAttributes schemaAttributes = new SchemaAttributes();
+    SetSchemaAttributes schemaAttributes = new SetSchemaAttributes();
 
     if (required) {
       schemaAttributes.addRequiredItem(
-          new AttributeSchemaRequired().attributeKey(attributeKey).allowedValues(allowedValues));
+          new AddAttributeSchemaRequired().attributeKey(attributeKey).allowedValues(allowedValues));
     } else {
       schemaAttributes.addOptionalItem(
-          new AttributeSchemaOptional().attributeKey(attributeKey).allowedValues(allowedValues));
+          new AddAttributeSchemaOptional().attributeKey(attributeKey).allowedValues(allowedValues));
     }
 
     SetSitesSchemaRequest siteSchema =
@@ -276,14 +278,14 @@ public class SitesLocaleResourceItemRequestHandlerTest extends AbstractApiClient
   private String setClassification(final String siteId, final String attributeKey,
       final List<String> allowedValues, final boolean required) throws ApiException {
 
-    SchemaAttributes schemaAttributes = new SchemaAttributes();
+    SetSchemaAttributes schemaAttributes = new SetSchemaAttributes();
 
     if (required) {
       schemaAttributes.addRequiredItem(
-          new AttributeSchemaRequired().attributeKey(attributeKey).allowedValues(allowedValues));
+          new AddAttributeSchemaRequired().attributeKey(attributeKey).allowedValues(allowedValues));
     } else {
       schemaAttributes.addOptionalItem(
-          new AttributeSchemaOptional().attributeKey(attributeKey).allowedValues(allowedValues));
+          new AddAttributeSchemaOptional().attributeKey(attributeKey).allowedValues(allowedValues));
     }
 
     AddClassificationRequest classification = new AddClassificationRequest()

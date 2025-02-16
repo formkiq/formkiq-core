@@ -42,10 +42,10 @@ import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.model.AddAttribute;
 import com.formkiq.client.model.AddAttributeRequest;
+import com.formkiq.client.model.AddAttributeSchemaOptional;
 import com.formkiq.client.model.AddDocumentAttribute;
 import com.formkiq.client.model.AddDocumentAttributeStandard;
 import com.formkiq.client.model.AttributeSchemaCompositeKey;
-import com.formkiq.client.model.AttributeSchemaOptional;
 import com.formkiq.client.model.ChecksumType;
 import com.formkiq.client.model.DocumentAction;
 import com.formkiq.client.model.DocumentAttribute;
@@ -54,8 +54,8 @@ import com.formkiq.client.model.DocumentSearchMeta;
 import com.formkiq.client.model.DocumentSearchRequest;
 import com.formkiq.client.model.DocumentSync;
 import com.formkiq.client.model.DocumentSyncType;
-import com.formkiq.client.model.SchemaAttributes;
 import com.formkiq.client.model.SearchResultDocument;
+import com.formkiq.client.model.SetSchemaAttributes;
 import com.formkiq.client.model.SetSitesSchemaRequest;
 import com.formkiq.client.model.UpdateDocumentRequest;
 import com.formkiq.module.http.HttpHeaders;
@@ -622,7 +622,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       addAttribute(siteId, attributeKey);
 
       SetSitesSchemaRequest sitesSchema = new SetSitesSchemaRequest().name("test")
-          .attributes(new SchemaAttributes().addOptionalItem(new AttributeSchemaOptional()
+          .attributes(new SetSchemaAttributes().addOptionalItem(new AddAttributeSchemaOptional()
               .attributeKey(attributeKey).addAllowedValuesItem("abc")));
       this.schemasApi.setSitesSchema(siteId, sitesSchema);
 
@@ -716,7 +716,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
         .attributeKeys(Arrays.asList("userId", attributeKey0, attributeKey1));
 
     SetSitesSchemaRequest sitesSchema =
-        new SetSitesSchemaRequest().name("test").attributes(new SchemaAttributes()
+        new SetSitesSchemaRequest().name("test").attributes(new SetSchemaAttributes()
             .compositeKeys(List.of(compositeKey0, compositeKey1, compositeKey2, compositeKey3)));
     this.schemasApi.setSitesSchema(siteId, sitesSchema);
   }

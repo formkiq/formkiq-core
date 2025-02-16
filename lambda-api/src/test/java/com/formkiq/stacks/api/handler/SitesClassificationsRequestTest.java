@@ -28,6 +28,7 @@ import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAttribute;
 import com.formkiq.client.model.AddAttributeRequest;
+import com.formkiq.client.model.AddAttributeSchemaRequired;
 import com.formkiq.client.model.AddClassification;
 import com.formkiq.client.model.AddClassificationRequest;
 import com.formkiq.client.model.AddDocumentAttribute;
@@ -49,11 +50,11 @@ import com.formkiq.client.model.DocumentSearch;
 import com.formkiq.client.model.DocumentSearchAttribute;
 import com.formkiq.client.model.DocumentSearchRequest;
 import com.formkiq.client.model.GetClassificationsResponse;
-import com.formkiq.client.model.SchemaAttributes;
 import com.formkiq.client.model.SearchResultDocument;
 import com.formkiq.client.model.SetClassificationRequest;
 import com.formkiq.client.model.SetDocumentAttributeRequest;
 import com.formkiq.client.model.SetDocumentAttributesRequest;
+import com.formkiq.client.model.SetSchemaAttributes;
 import com.formkiq.client.model.SetSitesSchemaRequest;
 import com.formkiq.stacks.dynamodb.attributes.AttributeKeyReserved;
 import com.formkiq.testutils.aws.DynamoDbExtension;
@@ -99,7 +100,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
 
       addAttribute(siteId, "invoice");
 
-      SchemaAttributes attr0 = createSchemaAttributes(List.of("invoice"), null);
+      SetSchemaAttributes attr0 = createSchemaAttributes(List.of("invoice"), null);
 
       List<String> ids = new ArrayList<>();
 
@@ -156,7 +157,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
 
       setBearerToken(siteId);
 
-      SchemaAttributes attr0 = createSchemaAttributes(List.of("invoice"), null);
+      SetSchemaAttributes attr0 = createSchemaAttributes(List.of("invoice"), null);
       AddClassificationRequest req = new AddClassificationRequest()
           .classification(new AddClassification().name("test").attributes(attr0));
 
@@ -188,7 +189,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
 
       addAttribute(siteId, "invoice");
 
-      SchemaAttributes attr0 = createSchemaAttributes(List.of("invoice"), null);
+      SetSchemaAttributes attr0 = createSchemaAttributes(List.of("invoice"), null);
       AddClassificationRequest req = new AddClassificationRequest()
           .classification(new AddClassification().name("test").attributes(attr0));
 
@@ -273,10 +274,10 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
 
       addAttribute(siteId, "documentType");
 
-      SchemaAttributes attr0 = createSchemaAttributes(List.of("documentType"), null);
+      SetSchemaAttributes attr0 = createSchemaAttributes(List.of("documentType"), null);
       setSiteSchema(siteId, attr0);
 
-      SchemaAttributes attr1 = createSchemaAttributes(null, List.of("documentType"));
+      SetSchemaAttributes attr1 = createSchemaAttributes(null, List.of("documentType"));
       AddClassificationRequest req = new AddClassificationRequest()
           .classification(new AddClassification().name("test").attributes(attr1));
 
@@ -308,10 +309,10 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
 
       addAttribute(siteId, "documentType");
 
-      SchemaAttributes attr0 = createSchemaAttributes(null, List.of("documentType"));
+      SetSchemaAttributes attr0 = createSchemaAttributes(null, List.of("documentType"));
       setSiteSchema(siteId, attr0);
 
-      SchemaAttributes attr1 = createSchemaAttributes(List.of("documentType"), null);
+      SetSchemaAttributes attr1 = createSchemaAttributes(List.of("documentType"), null);
       AddClassificationRequest req = new AddClassificationRequest()
           .classification(new AddClassification().name("test").attributes(attr1));
 
@@ -337,8 +338,8 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
 
       addAttribute(siteId, "documentType");
 
-      SchemaAttributes attr1 = createSchemaAttributes(List.of("documentType"), null);
-      List<AttributeSchemaRequired> required = notNull(attr1.getRequired());
+      SetSchemaAttributes attr1 = createSchemaAttributes(List.of("documentType"), null);
+      List<AddAttributeSchemaRequired> required = notNull(attr1.getRequired());
       required.get(0).setDefaultValue("123");
       required.get(0).setAllowedValues(List.of("1", "2"));
       AddClassificationRequest req = new AddClassificationRequest()
@@ -373,7 +374,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
 
       addAttribute(siteId, "documentType");
 
-      SchemaAttributes attr0 = createSchemaAttributes(List.of("documentType"), null);
+      SetSchemaAttributes attr0 = createSchemaAttributes(List.of("documentType"), null);
 
       String classificationId = addClassification(siteId, "doc", attr0);
 
@@ -413,7 +414,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
 
       addAttribute(siteId, "invoiceNumber");
 
-      SchemaAttributes attr0 = createSchemaAttributes(List.of("invoiceNumber"), null);
+      SetSchemaAttributes attr0 = createSchemaAttributes(List.of("invoiceNumber"), null);
 
       String classificationId = addClassification(siteId, "doc", attr0);
 
@@ -449,7 +450,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
 
       addAttribute(siteId, "documentType");
 
-      SchemaAttributes attr0 = createSchemaAttributes(List.of("documentType"), null);
+      SetSchemaAttributes attr0 = createSchemaAttributes(List.of("documentType"), null);
 
       String classificationId = addClassification(siteId, "doc", attr0);
 
@@ -508,7 +509,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
 
       addAttribute(siteId, "documentType");
 
-      SchemaAttributes attr0 = createSchemaAttributes(List.of("documentType"), null);
+      SetSchemaAttributes attr0 = createSchemaAttributes(List.of("documentType"), null);
 
       String classificationId = addClassification(siteId, "doc", attr0);
 
@@ -559,7 +560,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
 
       addAttribute(siteId, "invoiceNumber");
 
-      SchemaAttributes attr0 = createSchemaAttributes(List.of("invoiceNumber"), null);
+      SetSchemaAttributes attr0 = createSchemaAttributes(List.of("invoiceNumber"), null);
 
       String classificationId = addClassification(siteId, "doc", attr0);
 
@@ -614,7 +615,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
 
       addAttribute(siteId, "invoiceNumber");
 
-      SchemaAttributes attr0 = createSchemaAttributes(List.of("invoiceNumber"), null);
+      SetSchemaAttributes attr0 = createSchemaAttributes(List.of("invoiceNumber"), null);
 
       String classificationId = addClassification(siteId, "doc", attr0);
 
@@ -649,7 +650,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
 
       addAttribute(siteId, "invoiceNumber");
 
-      SchemaAttributes attr0 = createSchemaAttributes(List.of("invoiceNumber"), null);
+      SetSchemaAttributes attr0 = createSchemaAttributes(List.of("invoiceNumber"), null);
       assertNotNull(attr0.getRequired());
       attr0.getRequired().get(0).setDefaultValue("12345");
 
@@ -689,10 +690,10 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       addAttribute(siteId, "other");
       addAttribute(siteId, "invoiceNumber");
 
-      SchemaAttributes attr = createSchemaAttributes(List.of("other"), null);
+      SetSchemaAttributes attr = createSchemaAttributes(List.of("other"), null);
       setSiteSchema(siteId, attr);
 
-      SchemaAttributes attr0 = createSchemaAttributes(List.of("invoiceNumber"), null);
+      SetSchemaAttributes attr0 = createSchemaAttributes(List.of("invoiceNumber"), null);
 
       String classificationId = addClassification(siteId, "doc", attr0);
 
@@ -740,7 +741,8 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
     }
   }
 
-  private void setSiteSchema(final String siteId, final SchemaAttributes attr) throws ApiException {
+  private void setSiteSchema(final String siteId, final SetSchemaAttributes attr)
+      throws ApiException {
     SetSitesSchemaRequest setSiteSchema = new SetSitesSchemaRequest().name("test").attributes(attr);
     this.schemasApi.setSitesSchema(siteId, setSiteSchema);
   }
@@ -758,7 +760,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       addAttribute(siteId, "other");
       addAttribute(siteId, "invoiceNumber");
 
-      SchemaAttributes schemaAttributes =
+      SetSchemaAttributes schemaAttributes =
           createSchemaAttributes(List.of("invoiceNumber", "other"), null);
       schemaAttributes.addCompositeKeysItem(
           new AttributeSchemaCompositeKey().attributeKeys(List.of("invoiceNumber", "other")));
@@ -817,13 +819,13 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       addAttribute(siteId, "type");
       addAttribute(siteId, "invoiceNumber");
 
-      SchemaAttributes schemaAttributes0 =
+      SetSchemaAttributes schemaAttributes0 =
           createSchemaAttributes(List.of("invoiceNumber", "other"), null);
       schemaAttributes0.addCompositeKeysItem(
           new AttributeSchemaCompositeKey().attributeKeys(List.of("invoiceNumber", "other")));
       String classificationId = addClassification(siteId, "doc", schemaAttributes0);
 
-      SchemaAttributes schemaAttributes1 =
+      SetSchemaAttributes schemaAttributes1 =
           createSchemaAttributes(List.of("invoiceNumber", "other"), null);
       schemaAttributes1.addCompositeKeysItem(
           new AttributeSchemaCompositeKey().attributeKeys(List.of("invoiceNumber", "type")));
@@ -875,10 +877,10 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       addAttribute(siteId, "other");
       addAttribute(siteId, "invoiceNumber");
 
-      SchemaAttributes attr = createSchemaAttributes(List.of("other"), null);
+      SetSchemaAttributes attr = createSchemaAttributes(List.of("other"), null);
       setSiteSchema(siteId, attr);
 
-      SchemaAttributes attr0 = createSchemaAttributes(List.of("invoiceNumber"), null);
+      SetSchemaAttributes attr0 = createSchemaAttributes(List.of("invoiceNumber"), null);
       String classificationId = addClassification(siteId, "doc", attr0);
 
       AddDocumentAttribute attribute = createStringAttribute("invoiceNumber", "INV-001");
@@ -910,12 +912,12 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
 
       addAttribute(siteId, "invoiceNumber");
 
-      SchemaAttributes attr0 = createSchemaAttributes(List.of("invoiceNumber"), null);
+      SetSchemaAttributes attr0 = createSchemaAttributes(List.of("invoiceNumber"), null);
       notNull(attr0.getRequired()).get(0).addAllowedValuesItem("123");
 
       setSiteSchema(siteId, attr0);
 
-      SchemaAttributes attr1 = createSchemaAttributes(List.of("invoiceNumber"), null);
+      SetSchemaAttributes attr1 = createSchemaAttributes(List.of("invoiceNumber"), null);
       notNull(attr1.getRequired()).get(0).addAllowedValuesItem("INV-001");
       String classificationId = addClassification(siteId, attr1);
 
@@ -953,7 +955,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       // given
       addAttribute(siteId, "reviewByDate");
 
-      SchemaAttributes attr0 = createSchemaAttributes(List.of("reviewByDate"), null);
+      SetSchemaAttributes attr0 = createSchemaAttributes(List.of("reviewByDate"), null);
       String classificationId = addClassification(siteId, attr0);
 
       AddDocumentAttribute attribute = createStringAttribute("reviewByDate", "2025-09-30");
@@ -1003,7 +1005,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       addAttribute(siteId, "invoice", AttributeDataType.KEY_ONLY);
       addAttribute(siteId, "invoiceTotalAmount", AttributeDataType.NUMBER);
 
-      SchemaAttributes attr0 = createSchemaAttributes(
+      SetSchemaAttributes attr0 = createSchemaAttributes(
           List.of("invoiceDate", "invoiceNumber", "invoiceTotalAmount", "invoiceVendorName"),
           List.of("invoiceCurrency"));
       String classificationId = addClassification(siteId, attr0);
@@ -1064,7 +1066,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       addAttribute(siteId, "TestBoolean", AttributeDataType.BOOLEAN);
       addAttribute(siteId, "TestBoolean2", AttributeDataType.BOOLEAN);
 
-      SchemaAttributes sattr0 = createSchemaAttributes(List.of("TestBoolean"), null);
+      SetSchemaAttributes sattr0 = createSchemaAttributes(List.of("TestBoolean"), null);
       String classificationId0 = addClassification(siteId, sattr0);
 
       AddDocumentAttributeClassification attr0 =
@@ -1093,7 +1095,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       }
 
       // given
-      SchemaAttributes sattr1 = createSchemaAttributes(List.of("TestBoolean2"), null);
+      SetSchemaAttributes sattr1 = createSchemaAttributes(List.of("TestBoolean2"), null);
       String classificationId1 = addClassification(siteId, "doc1", sattr1);
       SetDocumentAttributeRequest setReqValue =
           new SetDocumentAttributeRequest().attribute(new AddDocumentAttributeValue()
@@ -1135,20 +1137,20 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
     return this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
   }
 
-  private String addClassification(final String siteId, final SchemaAttributes attr0)
+  private String addClassification(final String siteId, final SetSchemaAttributes attr0)
       throws ApiException {
     return addClassification(siteId, "doc", attr0);
   }
 
   private String addClassification(final String siteId, final String name,
-      final SchemaAttributes attr0) throws ApiException {
+      final SetSchemaAttributes attr0) throws ApiException {
     AddClassificationRequest req = new AddClassificationRequest()
         .classification(new AddClassification().name(name).attributes(attr0));
     return this.schemasApi.addClassification(siteId, req).getClassificationId();
   }
 
   private void setClassification(final String siteId, final String classificationId,
-      final SchemaAttributes attr0) throws ApiException {
+      final SetSchemaAttributes attr0) throws ApiException {
     SetClassificationRequest req = new SetClassificationRequest()
         .classification(new AddClassification().name("setDoc").attributes(attr0));
     this.schemasApi.setClassification(siteId, classificationId, req);
@@ -1169,7 +1171,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
 
       addAttribute(siteId, attributeKey);
 
-      SchemaAttributes attr0 = createSchemaAttributes(List.of(attributeKey), null);
+      SetSchemaAttributes attr0 = createSchemaAttributes(List.of(attributeKey), null);
       notNull(attr0.getRequired()).get(0).setAllowedValues(List.of("123", "A", "B"));
 
       this.schemasApi.setSitesSchema(siteId,
@@ -1224,16 +1226,16 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
 
       addAttribute(siteId, attributeKey);
 
-      SchemaAttributes attr0 = createSchemaAttributes(List.of(attributeKey), null);
+      SetSchemaAttributes attr0 = createSchemaAttributes(List.of(attributeKey), null);
       notNull(attr0.getRequired()).get(0).setAllowedValues(List.of("123", "A", "B"));
       this.schemasApi.setSitesSchema(siteId,
           new SetSitesSchemaRequest().name("test").attributes(attr0));
 
-      SchemaAttributes attr1 = createSchemaAttributes(List.of(attributeKey), null);
+      SetSchemaAttributes attr1 = createSchemaAttributes(List.of(attributeKey), null);
       notNull(attr1.getRequired()).get(0).addAllowedValuesItem("INV-001");
       String classificationId = addClassification(siteId, attr1);
 
-      SchemaAttributes attr2 = createSchemaAttributes(List.of(attributeKey), null);
+      SetSchemaAttributes attr2 = createSchemaAttributes(List.of(attributeKey), null);
       notNull(attr2.getRequired()).get(0).addAllowedValuesItem("OTHER");
       addClassification(siteId, "doc2", attr2);
 
@@ -1276,8 +1278,8 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       addAttribute(siteId, "test1");
       addAttribute(siteId, "test2");
 
-      SchemaAttributes schemaAttributes =
-          new SchemaAttributes().required(null).optional(null).addCompositeKeysItem(
+      SetSchemaAttributes schemaAttributes =
+          new SetSchemaAttributes().required(null).optional(null).addCompositeKeysItem(
               new AttributeSchemaCompositeKey().attributeKeys(List.of("test1", "test2")));
       schemasApi.setSitesSchema(siteId,
           new SetSitesSchemaRequest().name("test").attributes(schemaAttributes));
