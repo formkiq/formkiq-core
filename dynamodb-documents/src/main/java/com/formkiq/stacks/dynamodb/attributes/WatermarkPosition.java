@@ -26,81 +26,95 @@ package com.formkiq.stacks.dynamodb.attributes;
 import com.formkiq.graalvm.annotations.Reflectable;
 
 /**
- * Watermark.
+ * Watermark Position.
  */
 @Reflectable
-public class Watermark {
-  /** Watermark text. */
-  private String text;
-  /** Image Document Id. */
-  private String imageDocumentId;
-  /** Watermark Position. */
-  private WatermarkPosition position;
+public class WatermarkPosition {
+  /** X Offset. */
+  private Double xOffset;
+  /** Y Offset. */
+  private Double yOffset;
+  /** X Anchor. */
+  private WatermarkAnchor xAnchor;
+  /** Y Anchor. */
+  private WatermarkAnchor yAnchor;
 
   /**
    * constructor.
    */
-  public Watermark() {
+  public WatermarkPosition() {
 
   }
 
   /**
-   * Get {@link WatermarkPosition}.
+   * Get X Offset.
    * 
-   * @return {@link WatermarkPosition}
+   * @return Double
    */
-  public WatermarkPosition getPosition() {
-    return this.position;
+  public Double getxOffset() {
+    return this.xOffset;
   }
 
   /**
-   * Set {@link WatermarkPosition}.
+   * Set x offset.
    * 
-   * @param watermarkPosition {@link WatermarkPosition}
-   * @return Watermark
+   * @param offset Double
    */
-  public Watermark setPosition(final WatermarkPosition watermarkPosition) {
-    this.position = watermarkPosition;
-    return this;
+  public void setxOffset(final Double offset) {
+    this.xOffset = offset;
   }
 
   /**
-   * Get Image Document Id.
+   * Get Y offset.
    * 
-   * @return String
+   * @return Double
    */
-  public String getImageDocumentId() {
-    return this.imageDocumentId;
+  public Double getyOffset() {
+    return this.yOffset;
   }
 
   /**
-   * Set Image Document Id.
+   * Set Y Offset.
    * 
-   * @param documentId {@link String}
-   * @return Watermark
+   * @param offset Double
    */
-  public Watermark setImageDocumentId(final String documentId) {
-    this.imageDocumentId = documentId;
-    return this;
+  public void setyOffset(final Double offset) {
+    this.yOffset = offset;
   }
 
   /**
-   * Get Watermark text.
+   * Get X Anchor.
    * 
-   * @return String
+   * @return WatermarkAnchor
    */
-  public String getText() {
-    return this.text;
+  public WatermarkAnchor getxAnchor() {
+    return this.xAnchor;
   }
 
   /**
-   * Set Watermark text.
+   * Set X Anchor.
    * 
-   * @param watermarkText {@link String}
-   * @return Watermark
+   * @param anchor {@link WatermarkAnchor}
    */
-  public Watermark setText(final String watermarkText) {
-    this.text = watermarkText;
-    return this;
+  public void setxAnchor(final WatermarkAnchor anchor) {
+    this.xAnchor = anchor;
+  }
+
+  /**
+   * Get Y Anchor.
+   * 
+   * @return WatermarkAnchor
+   */
+  public WatermarkAnchor getyAnchor() {
+    return this.yAnchor;
+  }
+
+  /**
+   * Set Y Anchor.
+   * 
+   * @param anchor {@link WatermarkAnchor}
+   */
+  public void setyAnchor(final WatermarkAnchor anchor) {
+    this.yAnchor = anchor;
   }
 }

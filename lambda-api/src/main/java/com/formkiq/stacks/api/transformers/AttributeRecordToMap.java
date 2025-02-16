@@ -28,6 +28,8 @@ import java.util.Map;
 import java.util.function.Function;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.Watermark;
+import com.formkiq.stacks.dynamodb.attributes.WatermarkAnchor;
+import com.formkiq.stacks.dynamodb.attributes.WatermarkPosition;
 
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 
@@ -41,12 +43,35 @@ public class AttributeRecordToMap implements Function<AttributeRecord, Map<Strin
     Map<String, Object> attr = new HashMap<>(
         Map.of("key", a.getKey(), "type", a.getType().name(), "dataType", a.getDataType().name()));
 
+    boolean addWatermark = false;
+    Watermark watermark = new Watermark();
     if (!isEmpty(a.getWatermarkText())) {
-      attr.put("watermark", new Watermark().setText(a.getWatermarkText()));
+      addWatermark = true;
+      watermark.setText(a.getWatermarkText());
     }
 
     if (!isEmpty(a.getWatermarkImageDocumentId())) {
-      attr.put("watermark", new Watermark().setImageDocumentId(a.getWatermarkImageDocumentId()));
+      addWatermark = true;
+      watermark.setImageDocumentId(a.getWatermarkImageDocumentId());
+    }
+
+    if (addWatermark) {
+      WatermarkPosition pos = new WatermarkPosition();
+      if (!isEmpty(a.getWatermarkxAnchor())) {
+        pos.setxAnchor(WatermarkAnchor.valueOf(a.getWatermarkxAnchor()));
+      }
+
+      if (!isEmpty(a.getWatermarkyAnchor())) {
+        pos.setyAnchor(WatermarkAnchor.valueOf(a.getWatermarkyAnchor()));
+      }
+      pos.setxOffset(a.getWatermarkxOffset());
+      pos.setyOffset(a.getWatermarkyOffset());
+
+      watermark.setPosition(pos);
+    }
+
+    if (addWatermark) {
+      attr.put("watermark", watermark);
     }
 
     return attr;

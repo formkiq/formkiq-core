@@ -9514,6 +9514,27 @@
                 imageDocumentId:
                   type: string
                   description: Watermark Image Document Id
+                position:
+                  $ref: '#/components/schemas/WatermarkPosition'
+            WatermarkPosition:
+              type: object
+              properties:
+                xAnchor:
+                  $ref: '#/components/schemas/WatermarkPositionAnchor'
+                yAnchor:
+                  $ref: '#/components/schemas/WatermarkPositionAnchor'
+                xOffset:
+                  type: number
+                  description: X offset
+                yOffset:
+                  type: number
+                  description: Y offset
+            WatermarkPositionAnchor:
+              type: string
+              description: Watermark Position Anchor
+              enum:
+              - LEFT
+              - RIGHT
             AttributeType:
               type: string
               description: Type of Attribute

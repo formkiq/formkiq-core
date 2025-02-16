@@ -25,6 +25,7 @@ package com.formkiq.stacks.dynamodb.attributes;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
+import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.fromN;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -55,12 +56,100 @@ public class AttributeRecord implements DynamodbRecord<AttributeRecord> {
   private String watermarkText;
   /** Watermark Image DocumentId. */
   private String watermarkImageDocumentId;
+  /** Watermark X Anchor. */
+  private String watermarkxAnchor;
+  /** Watermark Y Anchor. */
+  private String watermarkyAnchor;
+  /** Watermark X Offset. */
+  private Double watermarkxOffset;
+  /** Watermark Y Offset. */
+  private Double watermarkyOffset;
 
   /**
    * constructor.
    */
   public AttributeRecord() {
 
+  }
+
+  /**
+   * Get Watermark X Anchor.
+   * 
+   * @return String
+   */
+  public String getWatermarkxAnchor() {
+    return this.watermarkxAnchor;
+  }
+
+  /**
+   * Set Watermark X Anchor.
+   *
+   * @param anchor {@link String}
+   * @return AttributeRecord
+   */
+  public AttributeRecord setWatermarkxAnchor(final String anchor) {
+    this.watermarkxAnchor = anchor;
+    return this;
+  }
+
+  /**
+   * Get Watermark Y Anchor.
+   * 
+   * @return String
+   */
+  public String getWatermarkyAnchor() {
+    return this.watermarkyAnchor;
+  }
+
+  /**
+   * Set Watermark Y Anchor.
+   *
+   * @param anchor {@link String}
+   * @return AttributeRecord
+   */
+  public AttributeRecord setWatermarkyAnchor(final String anchor) {
+    this.watermarkyAnchor = anchor;
+    return this;
+  }
+
+  /**
+   * Get Watermark X Offset.
+   * 
+   * @return float
+   */
+  public Double getWatermarkxOffset() {
+    return this.watermarkxOffset;
+  }
+
+  /**
+   * Set Watermark X Offset.
+   *
+   * @param offset float
+   * @return AttributeRecord
+   */
+  public AttributeRecord setWatermarkxOffset(final Double offset) {
+    this.watermarkxOffset = offset;
+    return this;
+  }
+
+  /**
+   * Get Watermark Y Offset.
+   * 
+   * @return float
+   */
+  public Double getWatermarkyOffset() {
+    return this.watermarkyOffset;
+  }
+
+  /**
+   * Set Watermark Y Offset.
+   *
+   * @param offset float
+   * @return AttributeRecord
+   */
+  public AttributeRecord setWatermarkyOffset(final Double offset) {
+    this.watermarkyOffset = offset;
+    return this;
   }
 
   /**
@@ -152,6 +241,26 @@ public class AttributeRecord implements DynamodbRecord<AttributeRecord> {
       attr.put("watermarkImageDocumentId", fromS(this.watermarkImageDocumentId));
     }
 
+    if (!isEmpty(this.watermarkImageDocumentId)) {
+      attr.put("watermarkImageDocumentId", fromS(this.watermarkImageDocumentId));
+    }
+
+    if (!isEmpty(this.watermarkxAnchor)) {
+      attr.put("watermarkxAnchor", fromS(this.watermarkxAnchor));
+    }
+
+    if (!isEmpty(this.watermarkyAnchor)) {
+      attr.put("watermarkyAnchor", fromS(this.watermarkyAnchor));
+    }
+
+    if (this.watermarkxOffset != null) {
+      attr.put("watermarkxOffset", fromN("" + this.watermarkxOffset));
+    }
+
+    if (this.watermarkyOffset != null) {
+      attr.put("watermarkyOffset", fromN("" + this.watermarkyOffset));
+    }
+
     return attr;
   }
 
@@ -184,6 +293,10 @@ public class AttributeRecord implements DynamodbRecord<AttributeRecord> {
           .type(AttributeType.valueOf(ss(attrs, "type")))
           .setWatermarkText(ss(attrs, "watermarkText"))
           .setWatermarkImageDocumentId(ss(attrs, "watermarkImageDocumentId"))
+          .setWatermarkxAnchor(ss(attrs, "watermarkxAnchor"))
+          .setWatermarkyAnchor(ss(attrs, "watermarkyAnchor"))
+          .setWatermarkxOffset(nn(attrs, "watermarkxOffset"))
+          .setWatermarkyOffset(nn(attrs, "watermarkyOffset"))
           .dataType(AttributeDataType.valueOf(ss(attrs, "dataType")));
     }
 

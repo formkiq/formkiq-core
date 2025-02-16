@@ -64,6 +64,8 @@ import com.formkiq.client.model.SetSchemaAttributes;
 import com.formkiq.client.model.SetSitesSchemaRequest;
 import com.formkiq.client.model.UpdateDocumentRequest;
 import com.formkiq.client.model.Watermark;
+import com.formkiq.client.model.WatermarkPosition;
+import com.formkiq.client.model.WatermarkPositionAnchor;
 import com.formkiq.stacks.dynamodb.attributes.AttributeKeyReserved;
 import org.junit.jupiter.api.Test;
 
@@ -361,9 +363,13 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     for (String siteId : Arrays.asList(null, SITE_ID)) {
 
       setBearerToken(siteId);
-      AddAttributeRequest req =
-          new AddAttributeRequest().attribute(new AddAttribute().key(attributeKey)
-              .dataType(AttributeDataType.WATERMARK).watermark(new Watermark().text(text)));
+      WatermarkPosition pos =
+          new WatermarkPosition().yAnchor(WatermarkPositionAnchor.LEFT).yOffset(new BigDecimal(1))
+              .xAnchor(WatermarkPositionAnchor.RIGHT).xOffset(new BigDecimal(2));
+
+      AddAttributeRequest req = new AddAttributeRequest()
+          .attribute(new AddAttribute().key(attributeKey).dataType(AttributeDataType.WATERMARK)
+              .watermark(new Watermark().text(text).position(pos)));
 
       // when
       AddAttributeResponse response = this.attributesApi.addAttribute(req, siteId);
@@ -377,6 +383,12 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       Watermark watermark = attr.getAttribute().getWatermark();
       assertNotNull(watermark);
       assertEquals(text, watermark.getText());
+      WatermarkPosition position = watermark.getPosition();
+      assertNotNull(position);
+      assertEquals("2.0", String.valueOf(position.getxOffset()));
+      assertEquals("1.0", String.valueOf(position.getyOffset()));
+      assertEquals(WatermarkPositionAnchor.RIGHT, position.getxAnchor());
+      assertEquals(WatermarkPositionAnchor.LEFT, position.getyAnchor());
     }
   }
 

@@ -87,16 +87,32 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
 
     if (errors.isEmpty()) {
 
+      WatermarkPosition position = watermark != null ? watermark.getPosition() : null;
+
       AttributeRecord a = new AttributeRecord().documentId(key).key(key)
           .type(type != null ? type : AttributeType.STANDARD)
           .setWatermarkText(watermark != null ? watermark.getText() : null)
           .setWatermarkImageDocumentId(watermark != null ? watermark.getImageDocumentId() : null)
           .dataType(dataType != null ? dataType : AttributeDataType.STRING);
 
+      if (position != null) {
+        updateWatermarkPosition(a, position);
+      }
+
       this.db.putItem(a.getAttributes(siteId));
     }
 
     return errors;
+  }
+
+  private void updateWatermarkPosition(final AttributeRecord a, final WatermarkPosition position) {
+    String xanchor =
+        position != null && position.getxAnchor() != null ? position.getxAnchor().name() : null;
+    String yanchor =
+        position != null && position.getyAnchor() != null ? position.getyAnchor().name() : null;
+    a.setWatermarkxOffset(position != null ? position.getxOffset() : null)
+        .setWatermarkyOffset(position != null ? position.getyOffset() : null)
+        .setWatermarkxAnchor(xanchor).setWatermarkyAnchor(yanchor);
   }
 
   @Override
