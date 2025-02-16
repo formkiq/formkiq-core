@@ -430,6 +430,7 @@
               - Schemas
               parameters:
               - $ref: '#/components/parameters/siteIdPathParam'
+              - $ref: '#/components/parameters/localeQueryParam'
               responses:
                 "200":
                   description: 200 OK
@@ -496,6 +497,7 @@
               parameters:
               - $ref: '#/components/parameters/siteIdPathParam'
               - $ref: '#/components/parameters/keyParam'
+              - $ref: '#/components/parameters/localeQueryParam'
               responses:
                 "200":
                   description: 200 OK
@@ -591,6 +593,7 @@
               parameters:
               - $ref: '#/components/parameters/siteIdPathParam'
               - $ref: '#/components/parameters/classificationIdParam'
+              - $ref: '#/components/parameters/localeQueryParam'
               responses:
                 "200":
                   description: 200 OK
@@ -686,6 +689,7 @@
               - $ref: '#/components/parameters/siteIdPathParam'
               - $ref: '#/components/parameters/classificationIdParam'
               - $ref: '#/components/parameters/keyParam'
+              - $ref: '#/components/parameters/localeQueryParam'
               responses:
                 "200":
                   description: 200 OK
@@ -6339,8 +6343,15 @@
             localeParam:
               name: locale
               in: path
-              description: Site Locale (follows ISO 3166)
+              description: Site Locale (ISO 639 / ISO 3166)
               required: true
+              schema:
+                type: string
+            localeQueryParam:
+              name: locale
+              in: query
+              description: Site Locale (ISO 639 / ISO 3166)
+              required: false
               schema:
                 type: string
             itemKeyParam:
@@ -9462,6 +9473,10 @@
                   description: Attribute's allowed values
                   items:
                     type: string
+                localizedAllowedValues:
+                  type: object
+                  additionalProperties:
+                    type: string
             GetAttributeResponse:
               type: object
               properties:
@@ -10178,6 +10193,10 @@
                   $ref: '#/components/schemas/AddResourceItem'
             AddLocaleResourceInterfaceItem:
               type: object
+              required:
+              - itemType
+              - interfaceKey
+              - localizedValue
               properties:
                 itemType:
                   $ref: '#/components/schemas/LocaleResourceType'
@@ -10189,6 +10208,11 @@
                   description: Interface Key
             AddLocaleResourceSchemaItem:
               type: object
+              required:
+              - itemType
+              - attributeKey
+              - allowedValue
+              - localizedValue
               properties:
                 itemType:
                   $ref: '#/components/schemas/LocaleResourceType'
@@ -10198,8 +10222,17 @@
                 allowedValue:
                   type: string
                   description: Resource value
+                localizedValue:
+                  type: string
+                  description: Localized Value
             AddLocaleResourceClassificationItem:
               type: object
+              required:
+              - itemType
+              - attributeKey
+              - allowedValue
+              - localizedValue
+              - classificationId
               properties:
                 itemType:
                   $ref: '#/components/schemas/LocaleResourceType'
@@ -10212,6 +10245,9 @@
                 allowedValue:
                   type: string
                   description: Resource value
+                localizedValue:
+                  type: string
+                  description: Localized Value
             AddLocaleResourceItemResponse:
               type: object
               properties:
@@ -11274,6 +11310,10 @@
                   description: Only valid string values
                   items:
                     type: string
+                localizedAllowedValues:
+                  type: object
+                  additionalProperties:
+                    type: string
             AttributeSchemaOptional:
               type: object
               properties:
@@ -11283,6 +11323,10 @@
                   type: array
                   description: Only valid string values
                   items:
+                    type: string
+                localizedAllowedValues:
+                  type: object
+                  additionalProperties:
                     type: string
             DocusignEnvironment:
               type: string

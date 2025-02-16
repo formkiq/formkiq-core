@@ -271,7 +271,6 @@ public class LocaleRecord implements DynamodbRecord<LocaleRecord> {
     map.put("itemType", fromS(this.itemType.name()));
 
     addValue(map, "localizedValue", this.localizedValue);
-    addValue(map, "localizedValue", this.localizedValue);
     addValue(map, "interfaceKey", this.interfaceKey);
     addValue(map, "attributeKey", this.attributeKey);
     addValue(map, "allowedValue", this.allowedValue);

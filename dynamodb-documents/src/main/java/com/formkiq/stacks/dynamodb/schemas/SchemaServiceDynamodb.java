@@ -26,6 +26,7 @@ package com.formkiq.stacks.dynamodb.schemas;
 import com.formkiq.aws.dynamodb.BatchGetConfig;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.DynamodbRecordToKeys;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.QueryConfig;
@@ -35,6 +36,8 @@ import com.formkiq.stacks.dynamodb.attributes.AttributeDataType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeServiceDynamodb;
+import com.formkiq.stacks.dynamodb.locale.LocaleRecord;
+import com.formkiq.stacks.dynamodb.locale.LocaleResourceType;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
@@ -47,8 +50,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -344,6 +349,102 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
     List<Map<String, AttributeValue>> batch = this.db.getBatch(new BatchGetConfig(), keys);
 
     return batch.stream().map(i -> i.get("value").s()).distinct().sorted().toList();
+  }
+
+  @Override
+  public void updateLocalization(final String siteId, final String classificationId,
+      final SchemaAttributes schemaAttributes, final Locale locale) {
+
+    if (schemaAttributes != null && locale != null) {
+
+      Map<String, SchemaAttributesRequired> requiredMap = new HashMap<>();
+      Map<String, SchemaAttributesOptional> optionalMap = new HashMap<>();
+
+      LocaleResourceType resourceType =
+          !isEmpty(classificationId) ? LocaleResourceType.CLASSIFICATION
+              : LocaleResourceType.SCHEMA;
+      List<LocaleRecord> locales = new ArrayList<>();
+
+      notNull(schemaAttributes.getRequired()).forEach(a -> {
+        requiredMap.put(a.getAttributeKey(), a);
+        notNull(a.getAllowedValues()).forEach(allowedValue -> locales.add(createLocaleRecord(locale,
+            resourceType, classificationId, a.getAttributeKey(), allowedValue)));
+      });
+
+      notNull(schemaAttributes.getOptional()).forEach(a -> {
+        optionalMap.put(a.getAttributeKey(), a);
+        notNull(a.getAllowedValues()).forEach(allowedValue -> locales.add(createLocaleRecord(locale,
+            resourceType, classificationId, a.getAttributeKey(), allowedValue)));
+      });
+
+      List<Map<String, AttributeValue>> keys =
+          locales.stream().map(new DynamodbRecordToKeys(siteId)).toList();
+      List<Map<String, AttributeValue>> localized = this.db.getBatch(new BatchGetConfig(), keys);
+
+      localized.forEach(v -> {
+        if (v.containsKey("attributeKey")) {
+          String attributeKey = v.get("attributeKey").s();
+          String localizedValue = v.get("localizedValue").s();
+          String allowedValue = v.get("allowedValue").s();
+
+          if (requiredMap.containsKey(attributeKey)) {
+
+            SchemaAttributesRequired r = requiredMap.get(attributeKey);
+            if (r.localizedAllowedValues() == null) {
+              r.localizedAllowedValues(new HashMap<>());
+            }
+
+            r.localizedAllowedValues().put(allowedValue, localizedValue);
+
+          } else if (optionalMap.containsKey(attributeKey)) {
+
+            SchemaAttributesOptional r = optionalMap.get(attributeKey);
+            if (r.localizedAllowedValues() == null) {
+              r.localizedAllowedValues(new HashMap<>());
+            }
+            r.localizedAllowedValues().put(allowedValue, localizedValue);
+          }
+        }
+      });
+    }
+  }
+
+  @Override
+  public Map<String, String> getAttributeAllowedValuesLocalization(final String siteId,
+      final String classificationId, final String attributeKey,
+      final Collection<String> allowedValues, final Locale locale) {
+
+    Map<String, String> map = new HashMap<>();
+
+    if (locale != null) {
+      LocaleResourceType resourceType =
+          !isEmpty(classificationId) ? LocaleResourceType.CLASSIFICATION
+              : LocaleResourceType.SCHEMA;
+
+      List<LocaleRecord> locales = new ArrayList<>();
+      notNull(allowedValues).forEach(allowedValue -> locales.add(
+          createLocaleRecord(locale, resourceType, classificationId, attributeKey, allowedValue)));
+
+      List<Map<String, AttributeValue>> keys =
+          locales.stream().map(new DynamodbRecordToKeys(siteId)).toList();
+      List<Map<String, AttributeValue>> localized = this.db.getBatch(new BatchGetConfig(), keys);
+
+      localized.forEach(v -> {
+        String localizedValue = v.get("localizedValue").s();
+        String allowedValue = v.get("allowedValue").s();
+        map.put(allowedValue, localizedValue);
+      });
+    }
+
+    return map;
+  }
+
+  private static LocaleRecord createLocaleRecord(final Locale locale,
+      final LocaleResourceType resourceType, final String classificationId,
+      final String attributeKey, final String allowedValue) {
+    return new LocaleRecord().setLocale(locale.getLanguage()).setAttributeKey(attributeKey)
+        .setClassificationId(classificationId).setItemType(resourceType)
+        .setAllowedValue(allowedValue);
   }
 
   private List<SchemaAttributesCompositeKey> mergeCompositeKeys(

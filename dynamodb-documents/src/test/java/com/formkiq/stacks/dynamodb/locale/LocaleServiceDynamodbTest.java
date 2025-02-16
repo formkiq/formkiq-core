@@ -111,8 +111,8 @@ public class LocaleServiceDynamodbTest {
 
       // then
       assertEquals(2, errors.size());
-      assertErrorEquals(errors.get(0), "interfaceKey", "'interfaceKey' is required");
-      assertErrorEquals(errors.get(1), "localizedValue", "'localizedValue' is required");
+      assertErrorEquals(errors.get(0), "localizedValue", "'localizedValue' is required");
+      assertErrorEquals(errors.get(1), "interfaceKey", "'interfaceKey' is required");
     }
   }
 
@@ -128,9 +128,11 @@ public class LocaleServiceDynamodbTest {
       List<ValidationError> errors = service.save(siteId, List.of(r));
 
       // then
-      assertEquals(2, errors.size());
-      assertErrorEquals(errors.get(0), "attributeKey", "'attributeKey' is required");
-      assertErrorEquals(errors.get(1), "allowedValue", "'allowedValue' is required");
+      final int expected = 3;
+      assertEquals(expected, errors.size());
+      assertErrorEquals(errors.get(0), "localizedValue", "'localizedValue' is required");
+      assertErrorEquals(errors.get(1), "attributeKey", "'attributeKey' is required");
+      assertErrorEquals(errors.get(2), "allowedValue", "'allowedValue' is required");
     }
   }
 
@@ -146,11 +148,13 @@ public class LocaleServiceDynamodbTest {
       List<ValidationError> errors = service.save(siteId, List.of(r));
 
       // then
-      final int expected = 3;
+      final int expected = 4;
       assertEquals(expected, errors.size());
-      assertErrorEquals(errors.get(0), "classificationId", "'classificationId' is required");
-      assertErrorEquals(errors.get(1), "attributeKey", "'attributeKey' is required");
-      assertErrorEquals(errors.get(2), "allowedValue", "'allowedValue' is required");
+      int i = 0;
+      assertErrorEquals(errors.get(i++), "localizedValue", "'localizedValue' is required");
+      assertErrorEquals(errors.get(i++), "classificationId", "'classificationId' is required");
+      assertErrorEquals(errors.get(i++), "attributeKey", "'attributeKey' is required");
+      assertErrorEquals(errors.get(i), "allowedValue", "'allowedValue' is required");
     }
   }
 

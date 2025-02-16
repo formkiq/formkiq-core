@@ -24,6 +24,8 @@
 package com.formkiq.stacks.dynamodb.schemas;
 
 import java.util.List;
+import java.util.Map;
+
 import com.formkiq.graalvm.annotations.Reflectable;
 
 /**
@@ -40,12 +42,34 @@ public class SchemaAttributesRequired {
   private String defaultValue;
   /** Default Values. */
   private List<String> defaultValues;
+  /** Localized Allowed Values. */
+  private Map<String, String> localizedAllowedValues;
 
   /**
    * constructor.
    */
   public SchemaAttributesRequired() {
 
+  }
+
+  /**
+   * Get Localized Allowed Values.
+   * 
+   * @return Map
+   */
+  public Map<String, String> localizedAllowedValues() {
+    return this.localizedAllowedValues;
+  }
+
+  /**
+   * Set Localized Allowed Values.
+   * 
+   * @param values {@link Map}
+   * @return SchemaAttributesRequired
+   */
+  public SchemaAttributesRequired localizedAllowedValues(final Map<String, String> values) {
+    this.localizedAllowedValues = values;
+    return this;
   }
 
   /**

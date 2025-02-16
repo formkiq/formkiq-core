@@ -43,7 +43,9 @@ import com.formkiq.stacks.dynamodb.attributes.AttributeKeyReserved;
 import com.formkiq.stacks.dynamodb.schemas.ClassificationRecord;
 import com.formkiq.stacks.dynamodb.schemas.Schema;
 import com.formkiq.stacks.dynamodb.schemas.SchemaService;
+import com.formkiq.strings.Strings;
 
+import java.util.Locale;
 import java.util.Map;
 
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
@@ -68,6 +70,8 @@ public class SitesClassificationIdRequestHandler
 
     String name = result.getName();
     Schema schema = service.getSchema(result);
+    Locale locale = Strings.parseLocale(event.getQueryStringParameter("locale"));
+    service.updateLocalization(siteId, classificationId, schema.getAttributes(), locale);
 
     return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(
         Map.of("classification", Map.of("name", name, "attributes", schema.getAttributes()))));

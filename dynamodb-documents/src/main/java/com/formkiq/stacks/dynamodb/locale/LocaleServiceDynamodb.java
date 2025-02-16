@@ -167,15 +167,17 @@ public class LocaleServiceDynamodb implements LocaleService {
     if (record.getItemType() == null) {
       errors.add(new ValidationErrorImpl().key("itemType").error("'itemType' is required"));
     } else {
+
+      if (isEmpty(record.getLocalizedValue())) {
+        errors.add(
+            new ValidationErrorImpl().key("localizedValue").error("'localizedValue' is required"));
+      }
+
       switch (record.getItemType()) {
         case INTERFACE -> {
           if (isEmpty(record.getInterfaceKey())) {
             errors.add(
                 new ValidationErrorImpl().key("interfaceKey").error("'interfaceKey' is required"));
-          }
-          if (isEmpty(record.getLocalizedValue())) {
-            errors.add(new ValidationErrorImpl().key("localizedValue")
-                .error("'localizedValue' is required"));
           }
         }
         case SCHEMA -> validateAttribute(record, errors);

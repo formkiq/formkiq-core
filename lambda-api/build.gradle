@@ -22,7 +22,8 @@ tasks.processIntegrationResources {
 dependencies {
 
 	annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.4.2'
-	
+
+	api project(':strings')
 	api project(':document-events')
 	api project(':fkq-lambda-services')
 	api project(':fkq-lambda-core')

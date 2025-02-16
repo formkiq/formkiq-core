@@ -25,11 +25,15 @@ package com.formkiq.strings;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Strings Helper.
  */
 public class Strings {
+
+  /** Three. */
+  private static final int THREE = 3;
 
   /**
    * Is {@link String} empty.
@@ -93,5 +97,135 @@ public class Strings {
     }
 
     return match;
+  }
+
+  /**
+   * Tests {@link String} is ISO 639 compliant language code.
+   *
+   * @param str {@link String}
+   * @return boolean
+   */
+  private static boolean isLanguageCodeIso639(final String str) {
+    return isAllLowerCase(str) && (str.length() == 2 || str.length() == THREE);
+  }
+
+  /**
+   * Tests {@link String} against ISO 3166 alpha-2 country code.
+   *
+   * @param str {@link String}
+   * @return boolean
+   */
+  private static boolean isCountryCodeIso3166(final String str) {
+    return isAllUpperCase(str) && str.length() == 2;
+  }
+
+  /**
+   * Tests {@link String} against the UN M.49 numeric area code.
+   *
+   * @param str {@link String}
+   * @return boolean
+   */
+  private static boolean isNumericAreaCode(final String str) {
+    return isNumeric(str) && str.length() == THREE;
+  }
+
+  /**
+   * Parse {@link String} to {@link Locale}.
+   * 
+   * @param str {@link String}
+   * @return Locale
+   */
+  public static Locale parseLocale(final String str) {
+
+    String[] parts = notNull(str).split("[-_]");
+    int len = parts.length;
+
+    return switch (len) {
+      case 1 -> isLanguageCodeIso639(str) ? new Locale(str) : null;
+      case 2 -> isLanguageCodeIso639(parts[0]) && isCountryCodeIso(parts[1])
+          ? new Locale(parts[0], parts[1])
+          : null;
+      case THREE ->
+        isLanguageCodeIso639(parts[0]) && isCountryCodeIso(parts[1]) && !parts[2].isEmpty()
+            ? new Locale(parts[0], parts[1], parts[2])
+            : null;
+      default -> null;
+    };
+  }
+
+  /**
+   * Convert Null {@link String} to "".
+   * 
+   * @param str {@link String}
+   * @return String
+   */
+  public static String notNull(final String str) {
+    return str != null ? str : "";
+  }
+
+  private static boolean isCountryCodeIso(final String s) {
+    return isCountryCodeIso3166(s) || isNumericAreaCode(s);
+  }
+
+  /**
+   * Checks if {@link String} only contains lowercase characters.
+   * 
+   * @param s {@link String}
+   * @return boolean
+   */
+  public static boolean isAllLowerCase(final String s) {
+    return isAllCase(s, true);
+  }
+
+  /**
+   * Checks if {@link String} only contains uppercase characters.
+   *
+   * @param s {@link String}
+   * @return boolean
+   */
+  public static boolean isAllUpperCase(final String s) {
+    return isAllCase(s, false);
+  }
+
+  /**
+   * Is {@link String} all the case.
+   * 
+   * @param s {@link String}
+   * @param lower true for all lowercase, false for uppercase
+   * @return boolean
+   */
+  private static boolean isAllCase(final String s, final boolean lower) {
+    boolean match = false;
+
+    if (!isEmpty(s)) {
+
+      for (int i = 0; i < s.length(); i++) {
+        char c = s.charAt(i);
+        if ((lower && Character.isLowerCase(c)) || (!lower && Character.isUpperCase(c))) {
+          match = true;
+        } else {
+          match = false;
+          break;
+        }
+      }
+    }
+
+    return match;
+  }
+
+  /**
+   * Find first {@link String} that is not empty.
+   * 
+   * @param strs {@link String}
+   * @return String
+   */
+  public static String notEmpty(final String... strs) {
+    for (String str : strs) {
+      if (!isEmpty(str)) {
+        return str;
+      }
+    }
+
+    return null;
   }
 }

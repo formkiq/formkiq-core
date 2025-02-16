@@ -1121,7 +1121,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.schemasApi.getSitesSchema(siteId);
+        this.schemasApi.getSitesSchema(siteId, null);
         fail();
       } catch (ApiException e) {
         // then
@@ -2306,7 +2306,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       // then
       assertEquals("Sites Schema set", response.getMessage());
 
-      GetSitesSchemaResponse schema = this.schemasApi.getSitesSchema(siteId);
+      GetSitesSchemaResponse schema = this.schemasApi.getSitesSchema(siteId, null);
       assertEquals("joe", schema.getName());
       assertNotNull(schema.getAttributes());
       assertEquals(key, notNull(schema.getAttributes().getRequired()).get(0).getAttributeKey());
@@ -2321,7 +2321,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       // then
       assertEquals("Sites Schema set", response.getMessage());
 
-      schema = this.schemasApi.getSitesSchema(siteId);
+      schema = this.schemasApi.getSitesSchema(siteId, null);
       assertEquals("joe", schema.getName());
       assertNotNull(schema.getAttributes());
       assertEquals(key, notNull(schema.getAttributes().getRequired()).get(0).getAttributeKey());
@@ -2456,7 +2456,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       // then
       assertEquals("Sites Schema set", response.getMessage());
 
-      GetSitesSchemaResponse schema = this.schemasApi.getSitesSchema(siteId);
+      GetSitesSchemaResponse schema = this.schemasApi.getSitesSchema(siteId, null);
       assertEquals("joe", schema.getName());
     }
   }

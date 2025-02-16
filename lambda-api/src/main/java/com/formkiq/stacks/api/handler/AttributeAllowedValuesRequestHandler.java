@@ -34,8 +34,10 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.schemas.SchemaService;
+import com.formkiq.strings.Strings;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
@@ -51,9 +53,14 @@ public class AttributeAllowedValuesRequestHandler
 
     String siteId = authorization.getSiteId();
     String key = event.getPathParameters().get("key");
+    String classificationId = event.getPathParameter("classificationId");
+    Locale locale = Strings.parseLocale(event.getQueryStringParameter("locale"));
 
     SchemaService schemaService = awsServices.getExtension(SchemaService.class);
-    List<String> allowedValues = notNull(fetchAllowedValues(schemaService, siteId, null, key));
+    List<String> allowedValues =
+        notNull(fetchAllowedValues(schemaService, siteId, classificationId, key));
+    Map<String, String> localization = schemaService.getAttributeAllowedValuesLocalization(siteId,
+        classificationId, key, allowedValues, locale);
 
     if (allowedValues.isEmpty()) {
       AttributeService service = awsServices.getExtension(AttributeService.class);
@@ -63,7 +70,8 @@ public class AttributeAllowedValuesRequestHandler
       }
     }
 
-    Map<String, Object> map = Map.of("allowedValues", allowedValues);
+    Map<String, Object> map =
+        Map.of("allowedValues", allowedValues, "localizedAllowedValues", localization);
     return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
   }
 

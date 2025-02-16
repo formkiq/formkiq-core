@@ -25,8 +25,12 @@ package com.formkiq.strings;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Locale;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -58,5 +62,55 @@ public class StringsTest {
     assertFalse(Strings.isNumeric(""));
     assertTrue(Strings.isNumeric("1"));
     assertTrue(Strings.isNumeric("1.234"));
+  }
+
+  @Test
+  void testParseLocale() {
+    assertLocale(Strings.parseLocale("en"), "", "en", null);
+    assertLocale(Strings.parseLocale("fr"), "", "fr", null);
+    assertLocale(Strings.parseLocale("fr-124"), "124", "fr", null);
+    assertLocale(Strings.parseLocale("en-US"), "US", "en", null);
+    assertLocale(Strings.parseLocale("fr_FR"), "FR", "fr", null);
+    assertLocale(Strings.parseLocale("en-US-POSIX"), "US", "en", "POSIX");
+    assertLocale(Strings.parseLocale("eng"), "", "eng", null);
+    assertNull(Strings.parseLocale("boourns"));
+    assertNull(Strings.parseLocale("a"));
+    assertNull(Strings.parseLocale(""));
+    assertNull(Strings.parseLocale(null));
+  }
+
+  private void assertLocale(final Locale locale, final String country, final String language,
+      final String variant) {
+    assertNotNull(locale);
+    assertEquals(country, locale.getCountry());
+    assertEquals(language, locale.getLanguage());
+    if (variant != null) {
+      assertEquals(variant, locale.getVariant());
+    }
+  }
+
+  @Test
+  void notNull() {
+    assertNull(Strings.notEmpty(null, null, ""));
+    assertEquals("a", Strings.notEmpty(null, "", "a"));
+    assertEquals("b", Strings.notEmpty(null, "b", "a"));
+  }
+
+  @Test
+  void isAllLowerCase() {
+    assertTrue(Strings.isAllLowerCase("adad"));
+    assertFalse(Strings.isAllLowerCase("aDad"));
+    assertFalse(Strings.isAllLowerCase("adad2"));
+    assertFalse(Strings.isAllLowerCase(""));
+    assertFalse(Strings.isAllLowerCase(null));
+  }
+
+  @Test
+  void isAllUpperCase() {
+    assertTrue(Strings.isAllUpperCase("ADAD"));
+    assertFalse(Strings.isAllUpperCase("aDad"));
+    assertFalse(Strings.isAllUpperCase("ADSD2"));
+    assertFalse(Strings.isAllUpperCase(""));
+    assertFalse(Strings.isAllUpperCase(null));
   }
 }

@@ -320,7 +320,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
           this.schemasApi.addClassification(siteId, req).getClassificationId();
 
       // then
-      assertNotNull(this.schemasApi.getClassification(siteId, classificationId));
+      assertNotNull(this.schemasApi.getClassification(siteId, classificationId, null));
     }
   }
 
@@ -378,7 +378,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       String classificationId = addClassification(siteId, "doc", attr0);
 
       assertNotNull(
-          this.schemasApi.getClassification(siteId, classificationId).getClassification());
+          this.schemasApi.getClassification(siteId, classificationId, null).getClassification());
 
       // when
       DeleteResponse deleteResponse =
@@ -389,7 +389,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
           deleteResponse.getMessage());
 
       try {
-        this.schemasApi.getClassification(siteId, classificationId);
+        this.schemasApi.getClassification(siteId, classificationId, null);
         fail();
       } catch (ApiException e) {
         assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
@@ -455,7 +455,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
 
       // when
       Classification classification =
-          this.schemasApi.getClassification(siteId, classificationId).getClassification();
+          this.schemasApi.getClassification(siteId, classificationId, null).getClassification();
 
       // then
       assertNotNull(classification);
@@ -480,7 +480,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
 
       // then
       classification =
-          this.schemasApi.getClassification(siteId, classificationId).getClassification();
+          this.schemasApi.getClassification(siteId, classificationId, null).getClassification();
 
       assertNotNull(classification);
       assertNotNull(classification.getAttributes());
@@ -514,7 +514,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
 
       // when
       Classification classification =
-          this.schemasApi.getClassification(siteId, classificationId).getClassification();
+          this.schemasApi.getClassification(siteId, classificationId, null).getClassification();
 
       // then
       assertNotNull(classification);
@@ -529,7 +529,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
 
       // then
       classification =
-          this.schemasApi.getClassification(siteId, classificationId).getClassification();
+          this.schemasApi.getClassification(siteId, classificationId, null).getClassification();
 
       assertNotNull(classification);
       assertEquals("doc123", classification.getName());
@@ -540,7 +540,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
 
       // then
       classification =
-          this.schemasApi.getClassification(siteId, classificationId).getClassification();
+          this.schemasApi.getClassification(siteId, classificationId, null).getClassification();
 
       assertNotNull(classification);
       assertEquals("d", classification.getName());
@@ -1242,10 +1242,10 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
           this.attributesApi.getAttributeAllowedValues(attributeKey, siteId).getAllowedValues());
 
       final List<String> allowedValues1 = notNull(this.schemasApi
-          .getSitesSchemaAttributeAllowedValues(siteId, attributeKey).getAllowedValues());
+          .getSitesSchemaAttributeAllowedValues(siteId, attributeKey, null).getAllowedValues());
 
       final List<String> allowedValues2 = notNull(this.schemasApi
-          .getClassificationAttributeAllowedValues(siteId, classificationId, attributeKey)
+          .getClassificationAttributeAllowedValues(siteId, classificationId, attributeKey, null)
           .getAllowedValues());
 
       // then
@@ -1257,9 +1257,9 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       assertEquals(expected1, allowedValues1.size());
       assertEquals("123,A,B", String.join(",", allowedValues1));
 
-      final int expected2 = 3;
+      final int expected2 = 4;
       assertEquals(expected2, allowedValues2.size());
-      assertEquals("123,A,B", String.join(",", allowedValues2));
+      assertEquals("123,A,B,INV-001", String.join(",", allowedValues2));
     }
   }
 

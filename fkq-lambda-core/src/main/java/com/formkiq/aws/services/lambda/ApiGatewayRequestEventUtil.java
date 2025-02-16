@@ -57,14 +57,39 @@ public interface ApiGatewayRequestEventUtil {
   Gson GSON = GsonUtil.getInstance();
 
   /**
+   * Get {@link ApiGatewayRequestEvent} body as {@link String}.
+   *
+   * @param event {@link ApiGatewayRequestEvent}
+   * @return {@link String}
+   * @throws BadException BadException
+   */
+  static String getBodyAsString(final ApiGatewayRequestEvent event) throws BadException {
+    String body = event.getBody();
+    if (body == null) {
+      throw new BadException("request body is required");
+    }
+
+    if (Boolean.TRUE.equals(event.getIsBase64Encoded())) {
+      byte[] bytes = Base64.getDecoder().decode(body);
+      body = new String(bytes, StandardCharsets.UTF_8);
+    }
+
+    if (StringUtils.isEmpty(body)) {
+      throw new BadException("request body is required");
+    }
+
+    return body;
+  }
+
+  /**
    * Create Pagination.
-   * 
+   *
    * @param cacheService {@link CacheService}
    * @param event {@link ApiGatewayRequestEvent}
    * @param lastPagination {@link ApiPagination}
    * @param token {@link PaginationMapToken}
    * @param limit int
-   * 
+   *
    * @return {@link ApiPagination}
    */
   default ApiPagination createPagination(final CacheService cacheService,
@@ -152,31 +177,6 @@ public interface ApiGatewayRequestEventUtil {
     } catch (JsonSyntaxException e) {
       throw new BadException("invalid JSON body");
     }
-  }
-
-  /**
-   * Get {@link ApiGatewayRequestEvent} body as {@link String}.
-   * 
-   * @param event {@link ApiGatewayRequestEvent}
-   * @return {@link String}
-   * @throws BadException BadException
-   */
-  static String getBodyAsString(final ApiGatewayRequestEvent event) throws BadException {
-    String body = event.getBody();
-    if (body == null) {
-      throw new BadException("request body is required");
-    }
-
-    if (Boolean.TRUE.equals(event.getIsBase64Encoded())) {
-      byte[] bytes = Base64.getDecoder().decode(body);
-      body = new String(bytes, StandardCharsets.UTF_8);
-    }
-
-    if (StringUtils.isEmpty(body)) {
-      throw new BadException("request body is required");
-    }
-
-    return body;
   }
 
   /**
