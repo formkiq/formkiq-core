@@ -2540,7 +2540,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
       List<DocumentSyncRecord> syncs = getDocumentSyncs(siteId, documentId);
       assertEquals(2, syncs.size());
-      assertEventBridge(syncs.get(0), DocumentSyncType.DELETE_METADATA);
+      assertEventBridge(syncs.get(0), DocumentSyncType.DELETE);
       assertEventBridge(syncs.get(1), DocumentSyncType.METADATA);
 
       Message message = getMessage(sqsDocumentQueueUrl);
@@ -2583,7 +2583,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
       List<DocumentSyncRecord> syncs = getDocumentSyncs(siteId, documentId);
       assertEquals(2, syncs.size());
-      assertEventBridge(syncs.get(0), DocumentSyncType.SOFT_DELETE_METADATA);
+      assertEventBridge(syncs.get(0), DocumentSyncType.SOFT_DELETE);
       assertEventBridge(syncs.get(1), DocumentSyncType.METADATA);
 
       Message message = getMessage(sqsDocumentQueueUrl);

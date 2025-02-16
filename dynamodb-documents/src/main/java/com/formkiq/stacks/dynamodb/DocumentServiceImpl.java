@@ -478,7 +478,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
     if (deleted) {
       DocumentSyncRecord a = new DocumentSyncRecordBuilder().buildEventBridge(documentId,
-          DocumentSyncType.SOFT_DELETE_METADATA, true);
+          DocumentSyncType.SOFT_DELETE, true);
       saveDocumentSyncRecord(siteId, a);
     }
 
@@ -505,8 +505,8 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     final boolean deleted = this.dbService.deleteItems(listKeys);
     this.versionsService.deleteAllVersionIds(siteId, documentId);
 
-    DocumentSyncRecord a = new DocumentSyncRecordBuilder().buildEventBridge(documentId,
-        DocumentSyncType.DELETE_METADATA, true);
+    DocumentSyncRecord a =
+        new DocumentSyncRecordBuilder().buildEventBridge(documentId, DocumentSyncType.DELETE, true);
 
     long ttl = new TimeToLiveBuilder().withDaysFromNow(1).build();
     a.setTimeToLive(ttl);

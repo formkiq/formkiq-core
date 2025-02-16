@@ -571,8 +571,8 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     return switch (syncType) {
       case CONTENT -> "Document " + detailType + " Content";
       case METADATA -> "Document " + detailType + " Metadata";
-      case DELETE_METADATA -> "Document Delete Metadata";
-      case SOFT_DELETE_METADATA -> "Document Soft Delete Metadata";
+      case DELETE -> "Document Delete Metadata";
+      case SOFT_DELETE -> "Document Soft Delete Metadata";
     };
   }
 

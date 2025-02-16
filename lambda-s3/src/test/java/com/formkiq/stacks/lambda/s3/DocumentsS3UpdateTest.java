@@ -656,8 +656,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
           notNull(syncService.getSyncs(siteId, documentId, null, 2).getResults());
       assertEquals(2, syncs.size());
 
-      assertDocumentSync(syncs.get(0), DocumentSyncType.DELETE_METADATA,
-          "deleted Document Metadata");
+      assertDocumentSync(syncs.get(0), DocumentSyncType.DELETE, "deleted Document");
       assertNotNull(syncs.get(0).getTimeToLive());
       assertDocumentSync(syncs.get(1), DocumentSyncType.METADATA, "added Document Metadata");
       assertNull(syncs.get(1).getTimeToLive());

@@ -281,7 +281,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       List<DocumentSync> syncs =
           notNull(this.documentsApi.getDocumentSyncs(documentId, siteId, null, null).getSyncs());
       assertEquals(2, syncs.size());
-      assertEquals(DocumentSyncType.SOFT_DELETE_METADATA, syncs.get(0).getType());
+      assertEquals(DocumentSyncType.SOFT_DELETE, syncs.get(0).getType());
       assertEquals(DocumentSyncType.METADATA, syncs.get(1).getType());
     }
   }

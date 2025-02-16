@@ -34,8 +34,8 @@ public enum DocumentSyncType {
   CONTENT,
   /** METADATA. */
   METADATA,
-  /** Delete Metadata. */
-  DELETE_METADATA,
-  /** Soft Delete Metadata. */
-  SOFT_DELETE_METADATA
+  /** Delete Document. */
+  DELETE,
+  /** Soft Delete. */
+  SOFT_DELETE
 }

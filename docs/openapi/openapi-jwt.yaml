@@ -8190,8 +8190,8 @@
               enum:
               - METADATA
               - CONTENT
-              - SOFT_DELETE_METADATA
-              - DELETE_METADATA
+              - SOFT_DELETE
+              - DELETE
             DocumentSync:
               type: object
               properties:

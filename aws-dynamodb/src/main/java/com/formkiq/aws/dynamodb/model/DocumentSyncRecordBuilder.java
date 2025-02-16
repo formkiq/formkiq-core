@@ -66,8 +66,8 @@ public class DocumentSyncRecordBuilder {
   private String getMessage(final DocumentSyncType syncType, final boolean documentExists) {
     return switch (syncType) {
       case CONTENT -> documentExists ? MESSAGE_UPDATED_CONTENT : MESSAGE_ADDED_CONTENT;
-      case DELETE_METADATA -> "deleted Document Metadata";
-      case SOFT_DELETE_METADATA -> "soft deleted Document Metadata";
+      case DELETE -> "deleted Document";
+      case SOFT_DELETE -> "soft deleted Document";
       default -> documentExists ? MESSAGE_UPDATED_METADATA : MESSAGE_ADDED_METADATA;
     };
   }
