@@ -30,9 +30,6 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.dynamodb.base64.Pagination;
-import com.formkiq.stacks.dynamodb.locale.LocaleTypeRecord;
-import com.formkiq.stacks.dynamodb.locale.LocaleRecordToMap;
 import com.formkiq.stacks.dynamodb.locale.LocaleService;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
@@ -42,58 +39,34 @@ import java.util.Map;
 
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
-/** {@link ApiGatewayRequestHandler} for "/sites/{siteId}/locales/{locale}/resourceItems". */
-public class SitesLocaleResourceItemsRequestHandler
+/** {@link ApiGatewayRequestHandler} for "/sites/{siteId}/locales/{locale}. */
+public class SitesLocaleRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
   /**
    * constructor.
    */
-  public SitesLocaleResourceItemsRequestHandler() {}
+  public SitesLocaleRequestHandler() {}
 
   @Override
-  public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
+  public ApiRequestHandlerResponse delete(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
-
-    AddLocaleResourceItemRequest record =
-        fromBodyToObject(event, AddLocaleResourceItemRequest.class);
 
     String siteId = authorization.getSiteId();
     String locale = event.getPathParameter("locale");
+
     LocaleService service = awsservice.getExtension(LocaleService.class);
-
-    LocaleTypeRecord item = record.getResourceItem();
-    item.setLocale(locale);
-    List<ValidationError> errors = service.save(siteId, List.of(item));
-
+    List<ValidationError> errors = service.deleteLocale(siteId, locale);
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }
 
     return new ApiRequestHandlerResponse(SC_OK,
-        new ApiMapResponse(Map.of("itemKey", item.getItemKey())));
-  }
-
-  @Override
-  public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
-      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
-
-    String siteId = authorization.getSiteId();
-    String locale = event.getPathParameter("locale");
-    LocaleService service = awsservice.getExtension(LocaleService.class);
-    int limit = getLimit(awsservice.getLogger(), event);
-
-    String nextToken = event.getQueryStringParameter("next");
-    Pagination<LocaleTypeRecord> results = service.findAll(siteId, locale, null, nextToken, limit);
-    List<Map<String, Object>> list =
-        results.getResults().stream().map(new LocaleRecordToMap()).toList();
-
-    return new ApiRequestHandlerResponse(SC_OK,
-        new ApiMapResponse(Map.of("resourceItems", list), results.getNextToken()));
+        new ApiMapResponse(Map.of("message", "deleted locale '" + locale + "'")));
   }
 
   @Override
   public String getRequestUrl() {
-    return "/sites/{siteId}/locales/{locale}/resourceItems";
+    return "/sites/{siteId}/locales/{locale}";
   }
 }

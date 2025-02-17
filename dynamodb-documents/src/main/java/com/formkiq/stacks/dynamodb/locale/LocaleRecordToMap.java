@@ -29,9 +29,9 @@ import java.util.Map;
 import java.util.function.Function;
 
 /**
- * {@link Function} to convert {@link LocaleRecord} to {@link Map}.
+ * {@link Function} to convert {@link LocaleTypeRecord} to {@link Map}.
  */
-public class LocaleRecordToMap implements Function<LocaleRecord, Map<String, Object>> {
+public class LocaleRecordToMap implements Function<LocaleTypeRecord, Map<String, Object>> {
 
   /** {@link AttributeValueToMap}. */
   private final AttributeValueToMap to = new AttributeValueToMap();
@@ -43,7 +43,7 @@ public class LocaleRecordToMap implements Function<LocaleRecord, Map<String, Obj
   public LocaleRecordToMap() {}
 
   @Override
-  public Map<String, Object> apply(final LocaleRecord localeRecord) {
+  public Map<String, Object> apply(final LocaleTypeRecord localeRecord) {
     Map<String, Object> map = to.apply(localeRecord.getDataAttributes());
     map.put("itemKey", localeRecord.getItemKey());
     map.remove("locale");

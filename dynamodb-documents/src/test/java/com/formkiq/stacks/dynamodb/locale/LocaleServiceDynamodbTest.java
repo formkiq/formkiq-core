@@ -88,7 +88,7 @@ public class LocaleServiceDynamodbTest {
   void testSave02() {
     // given
     for (String siteId : Arrays.asList(null, ID.uuid())) {
-      LocaleRecord r = new LocaleRecord();
+      LocaleTypeRecord r = new LocaleTypeRecord();
       // when
       List<ValidationError> errors = service.save(siteId, List.of(r));
 
@@ -105,14 +105,16 @@ public class LocaleServiceDynamodbTest {
   void testSave03() {
     // given
     for (String siteId : Arrays.asList(null, ID.uuid())) {
-      LocaleRecord r = new LocaleRecord().setItemType(LocaleResourceType.INTERFACE);
+      LocaleTypeRecord r = new LocaleTypeRecord().setItemType(LocaleResourceType.INTERFACE);
       // when
       List<ValidationError> errors = service.save(siteId, List.of(r));
 
       // then
-      assertEquals(2, errors.size());
-      assertErrorEquals(errors.get(0), "localizedValue", "'localizedValue' is required");
-      assertErrorEquals(errors.get(1), "interfaceKey", "'interfaceKey' is required");
+      final int expected = 3;
+      assertEquals(expected, errors.size());
+      assertErrorEquals(errors.get(0), "locale", "'locale' is required");
+      assertErrorEquals(errors.get(1), "localizedValue", "'localizedValue' is required");
+      assertErrorEquals(errors.get(2), "interfaceKey", "'interfaceKey' is required");
     }
   }
 
@@ -123,16 +125,18 @@ public class LocaleServiceDynamodbTest {
   void testSave04() {
     // given
     for (String siteId : Arrays.asList(null, ID.uuid())) {
-      LocaleRecord r = new LocaleRecord().setItemType(LocaleResourceType.SCHEMA);
+      LocaleTypeRecord r = new LocaleTypeRecord().setItemType(LocaleResourceType.SCHEMA);
       // when
       List<ValidationError> errors = service.save(siteId, List.of(r));
 
       // then
-      final int expected = 3;
+      final int expected = 4;
+      int i = 0;
       assertEquals(expected, errors.size());
-      assertErrorEquals(errors.get(0), "localizedValue", "'localizedValue' is required");
-      assertErrorEquals(errors.get(1), "attributeKey", "'attributeKey' is required");
-      assertErrorEquals(errors.get(2), "allowedValue", "'allowedValue' is required");
+      assertErrorEquals(errors.get(i++), "locale", "'locale' is required");
+      assertErrorEquals(errors.get(i++), "localizedValue", "'localizedValue' is required");
+      assertErrorEquals(errors.get(i++), "attributeKey", "'attributeKey' is required");
+      assertErrorEquals(errors.get(i), "allowedValue", "'allowedValue' is required");
     }
   }
 
@@ -143,14 +147,15 @@ public class LocaleServiceDynamodbTest {
   void testSave05() {
     // given
     for (String siteId : Arrays.asList(null, ID.uuid())) {
-      LocaleRecord r = new LocaleRecord().setItemType(LocaleResourceType.CLASSIFICATION);
+      LocaleTypeRecord r = new LocaleTypeRecord().setItemType(LocaleResourceType.CLASSIFICATION);
       // when
       List<ValidationError> errors = service.save(siteId, List.of(r));
 
       // then
-      final int expected = 4;
+      final int expected = 5;
       assertEquals(expected, errors.size());
       int i = 0;
+      assertErrorEquals(errors.get(i++), "locale", "'locale' is required");
       assertErrorEquals(errors.get(i++), "localizedValue", "'localizedValue' is required");
       assertErrorEquals(errors.get(i++), "classificationId", "'classificationId' is required");
       assertErrorEquals(errors.get(i++), "attributeKey", "'attributeKey' is required");
@@ -170,24 +175,28 @@ public class LocaleServiceDynamodbTest {
   void testFindAll01() {
     // given
     for (String siteId : Arrays.asList(null, ID.uuid())) {
-      LocaleRecord r0 = new LocaleRecord().setItemType(LocaleResourceType.INTERFACE).setLocale("EN")
-          .setInterfaceKey("test1").setLocalizedValue("111");
-      LocaleRecord r1 = new LocaleRecord().setItemType(LocaleResourceType.INTERFACE).setLocale("EN")
-          .setInterfaceKey("test2").setLocalizedValue("111");
+
+      String locale = "en";
+      service.saveLocale(siteId, locale);
+
+      LocaleTypeRecord r0 = new LocaleTypeRecord().setItemType(LocaleResourceType.INTERFACE)
+          .setLocale(locale).setInterfaceKey("test1").setLocalizedValue("111");
+      LocaleTypeRecord r1 = new LocaleTypeRecord().setItemType(LocaleResourceType.INTERFACE)
+          .setLocale(locale).setInterfaceKey("test2").setLocalizedValue("111");
       List<ValidationError> errors = service.save(siteId, List.of(r0, r1));
       assertEquals(0, errors.size());
 
       // when
-      final Pagination<LocaleRecord> fr0 =
-          service.findAll(siteId, "FR", LocaleResourceType.INTERFACE, null, 1);
-      final Pagination<LocaleRecord> en0 =
-          service.findAll(siteId, "EN", LocaleResourceType.INTERFACE, null, 1);
-      final Pagination<LocaleRecord> en1 =
-          service.findAll(siteId, "EN", LocaleResourceType.INTERFACE, en0.getNextToken(), LIMIT);
-      final Pagination<LocaleRecord> s0 =
-          service.findAll(siteId, "EN", LocaleResourceType.SCHEMA, null, LIMIT);
-      final Pagination<LocaleRecord> c0 =
-          service.findAll(siteId, "EN", LocaleResourceType.CLASSIFICATION, null, LIMIT);
+      final Pagination<LocaleTypeRecord> fr0 =
+          service.findAll(siteId, "fr", LocaleResourceType.INTERFACE, null, 1);
+      final Pagination<LocaleTypeRecord> en0 =
+          service.findAll(siteId, locale, LocaleResourceType.INTERFACE, null, 1);
+      final Pagination<LocaleTypeRecord> en1 =
+          service.findAll(siteId, locale, LocaleResourceType.INTERFACE, en0.getNextToken(), LIMIT);
+      final Pagination<LocaleTypeRecord> s0 =
+          service.findAll(siteId, locale, LocaleResourceType.SCHEMA, null, LIMIT);
+      final Pagination<LocaleTypeRecord> c0 =
+          service.findAll(siteId, locale, LocaleResourceType.CLASSIFICATION, null, LIMIT);
 
       // then
       assertEquals(0, fr0.getResults().size());

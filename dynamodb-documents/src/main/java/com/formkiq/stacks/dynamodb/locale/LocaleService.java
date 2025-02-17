@@ -29,7 +29,7 @@ import com.formkiq.validation.ValidationError;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
+import java.util.Locale;
 
 /**
  * Locale Services.
@@ -37,47 +37,32 @@ import java.util.Map;
 public interface LocaleService {
 
   /**
+   * Find All Locale.
+   *
+   * @param siteId {@link String}
+   * @param token {@link PaginationMapToken}
+   * @param limit int
+   * @return Pagination
+   */
+  Pagination<LocaleRecord> findLocales(String siteId, String token, int limit);
+
+  /**
    * Save {@link LocaleRecord}.
    *
    * @param siteId {@link String}
-   * @param records {@link Collection} {@link LocaleRecord}
+   * @param locale {@link Locale}
    * @return List {@link ValidationError}
    */
-  List<ValidationError> save(String siteId, Collection<LocaleRecord> records);
+  List<ValidationError> saveLocale(String siteId, String locale);
 
   /**
-   * Get Locale for Interface.
+   * Save {@link LocaleTypeRecord}.
    *
    * @param siteId {@link String}
-   * @param locale {@link String}
-   * @param interfaceKeys {@link Collection} {@link String}
-   * @return LocaleRecord
+   * @param records {@link Collection} {@link LocaleTypeRecord}
+   * @return List {@link ValidationError}
    */
-  List<LocaleRecord> getLocaleInterface(String siteId, String locale,
-      Collection<String> interfaceKeys);
-
-  /**
-   * Get Locale for Schema Attribute.
-   *
-   * @param siteId {@link String}
-   * @param locale {@link String}
-   * @param attributeKeys {@link Map} {@link Collection} {@link String}
-   * @return LocaleRecord
-   */
-  List<LocaleRecord> getLocaleSchema(String siteId, String locale,
-      Map<String, Collection<String>> attributeKeys);
-
-  /**
-   * Get Locale for Classification Attribute.
-   *
-   * @param siteId {@link String}
-   * @param locale {@link String}
-   * @param classificationId {@link String}
-   * @param attributeKeys {@link Map} {@link Collection} {@link String}
-   * @return LocaleRecord
-   */
-  List<LocaleRecord> getLocaleSchema(String siteId, String locale, String classificationId,
-      Map<String, Collection<String>> attributeKeys);
+  List<ValidationError> save(String siteId, Collection<LocaleTypeRecord> records);
 
   /**
    * Find All.
@@ -89,21 +74,21 @@ public interface LocaleService {
    * @param limit int
    * @return Pagination
    */
-  Pagination<LocaleRecord> findAll(String siteId, String locale, LocaleResourceType itemType,
+  Pagination<LocaleTypeRecord> findAll(String siteId, String locale, LocaleResourceType itemType,
       String token, int limit);
 
   /**
-   * Find {@link LocaleRecord}.
+   * Find {@link LocaleTypeRecord}.
    * 
    * @param siteId {@link String}
    * @param locale {@link String}
    * @param itemKey {@link String}
    * @return LocaleRecord
    */
-  LocaleRecord find(String siteId, String locale, String itemKey);
+  LocaleTypeRecord find(String siteId, String locale, String itemKey);
 
   /**
-   * Delete {@link LocaleRecord}.
+   * Delete {@link LocaleTypeRecord}.
    * 
    * @param siteId {@link String}
    * @param locale {@link String}
@@ -111,4 +96,13 @@ public interface LocaleService {
    * @return boolean
    */
   boolean delete(String siteId, String locale, String itemKey);
+
+  /**
+   * Delete Locale.
+   *
+   * @param siteId {@link String}
+   * @param locale {@link String}
+   * @return boolean
+   */
+  List<ValidationError> deleteLocale(String siteId, String locale);
 }

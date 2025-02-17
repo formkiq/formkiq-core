@@ -1025,6 +1025,95 @@ Resources:
                 - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /sites/{siteId}/locales:
+            get:
+              operationId: GetLocales
+              description: Returns the list locales
+              summary: Get Locales
+              tags:
+                - System Management
+              parameters:
+                - $ref: '#/components/parameters/siteIdPathParam'
+                - $ref: '#/components/parameters/nextParam'
+                - $ref: '#/components/parameters/limitParam'
+              responses:
+                '200':
+                  description: "200 OK"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        "$ref": "#/components/schemas/GetLocalesResponse"
+              security:
+                - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+            post:
+              operationId: AddLocale
+              description: Add a Locale
+              summary: Add Locale
+              tags:
+                - System Management
+              parameters:
+                - $ref: '#/components/parameters/siteIdPathParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/AddLocaleRequest'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/AddResponse'
+              security:
+                - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /sites/{siteId}/locales/{locale}:
+            delete:
+              operationId: DeleteLocale
+              summary: Delete Locale
+              description: Delete Locale
+              tags:
+                - System Management
+              parameters:
+                - $ref: '#/components/parameters/siteIdPathParam'
+                - $ref: '#/components/parameters/localeParam'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DeleteResponse'
+              security:
+                - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /sites/{siteId}/locales/{locale}/resourceItems:
             get:
               operationId: GetLocaleResourceItems
@@ -9387,16 +9476,6 @@ Resources:
                   description: "The default JSON object path for the data object"
                   default: "data"
 
-            Locale:
-              type: "object"
-              properties:
-                language:
-                  type: "string"
-                  description: "ISO 639-1 language code (eg: en (English), fr (French), de (German))"
-                country:
-                  type: "string"
-                  description: "ISO 3166-1 country code (eg: US, CA, DE, FR)"
-
             DocumentGenerateOutputType:
               type: string
               description: Document Generate Output Type
@@ -10396,6 +10475,29 @@ Resources:
                 itemKey:
                   type: "string"
                   description: "Item Key of resource"
+            Locale:
+              type: object
+              properties:
+                locale:
+                  type: "string"
+                  description: "Name of Locale"
+            AddLocaleRequest:
+              type: object
+              properties:
+                locale:
+                  type: "string"
+                  description: "Name of Locale"
+            GetLocalesResponse:
+              type: object
+              properties:
+                next:
+                  type: "string"
+                  description: "Next page of results token"
+                locales:
+                  type: "array"
+                  description: "List of Locale"
+                  items:
+                    $ref: "#/components/schemas/Locale"
             GetLocaleResourceItemsResponse:
               type: object
               properties:

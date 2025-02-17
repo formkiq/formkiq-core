@@ -24,15 +24,15 @@
 package com.formkiq.stacks.api.handler;
 
 import com.formkiq.graalvm.annotations.Reflectable;
-import com.formkiq.stacks.dynamodb.locale.LocaleRecord;
+import com.formkiq.stacks.dynamodb.locale.LocaleTypeRecord;
 
 /**
  * Add Locale Resource Item Request.
  */
 @Reflectable
 public class AddLocaleResourceItemRequest {
-  /** {@link LocaleRecord}. */
-  private LocaleRecord resourceItem;
+  /** {@link LocaleTypeRecord}. */
+  private LocaleTypeRecord resourceItem;
 
   /**
    * constructor.
@@ -46,16 +46,16 @@ public class AddLocaleResourceItemRequest {
    * 
    * @return LocaleRecord
    */
-  public LocaleRecord getResourceItem() {
+  public LocaleTypeRecord getResourceItem() {
     return this.resourceItem;
   }
 
   /**
    * Set Resource Item.
    * 
-   * @param item {@link LocaleRecord}
+   * @param item {@link LocaleTypeRecord}
    */
-  public void setResourceItem(final LocaleRecord item) {
+  public void setResourceItem(final LocaleTypeRecord item) {
     this.resourceItem = item;
   }
 }

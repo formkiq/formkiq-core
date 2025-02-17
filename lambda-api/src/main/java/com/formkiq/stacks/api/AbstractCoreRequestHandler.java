@@ -69,6 +69,7 @@ import com.formkiq.stacks.api.handler.DocumentAttributesValueRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentIdContentRequestHandler;
 import com.formkiq.stacks.api.handler.GroupRequestHandler;
 import com.formkiq.stacks.api.handler.GroupsUserRequestHandler;
+import com.formkiq.stacks.api.handler.SitesLocaleRequestHandler;
 import com.formkiq.stacks.api.handler.SitesLocaleResourceItemRequestHandler;
 import com.formkiq.stacks.api.handler.SitesLocaleResourceItemsRequestHandler;
 import com.formkiq.stacks.api.handler.PublicationsDocumentIdRequestHandler;
@@ -106,6 +107,7 @@ import com.formkiq.stacks.api.handler.SearchRequestHandler;
 import com.formkiq.stacks.api.handler.SitesClassificationAllowedValuesRequestHandler;
 import com.formkiq.stacks.api.handler.SitesClassificationIdRequestHandler;
 import com.formkiq.stacks.api.handler.SitesClassificationRequestHandler;
+import com.formkiq.stacks.api.handler.SitesLocalesRequestHandler;
 import com.formkiq.stacks.api.handler.SitesRequestHandler;
 import com.formkiq.stacks.api.handler.SitesSchemaAttributeAllowedValuesRequestHandler;
 import com.formkiq.stacks.api.handler.SitesSchemaRequestHandler;
@@ -263,6 +265,8 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new IndicesSearchRequestHandler());
     addRequestHandler(new UpdateDocumentMatchingRequestHandler());
 
+    addRequestHandler(new SitesLocaleRequestHandler());
+    addRequestHandler(new SitesLocalesRequestHandler());
     addRequestHandler(new SitesLocaleResourceItemRequestHandler());
     addRequestHandler(new SitesLocaleResourceItemsRequestHandler());
 

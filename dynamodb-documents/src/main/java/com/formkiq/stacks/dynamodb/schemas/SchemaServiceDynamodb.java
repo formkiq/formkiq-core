@@ -36,7 +36,7 @@ import com.formkiq.stacks.dynamodb.attributes.AttributeDataType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeServiceDynamodb;
-import com.formkiq.stacks.dynamodb.locale.LocaleRecord;
+import com.formkiq.stacks.dynamodb.locale.LocaleTypeRecord;
 import com.formkiq.stacks.dynamodb.locale.LocaleResourceType;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
@@ -363,7 +363,7 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
       LocaleResourceType resourceType =
           !isEmpty(classificationId) ? LocaleResourceType.CLASSIFICATION
               : LocaleResourceType.SCHEMA;
-      List<LocaleRecord> locales = new ArrayList<>();
+      List<LocaleTypeRecord> locales = new ArrayList<>();
 
       notNull(schemaAttributes.getRequired()).forEach(a -> {
         requiredMap.put(a.getAttributeKey(), a);
@@ -421,7 +421,7 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
           !isEmpty(classificationId) ? LocaleResourceType.CLASSIFICATION
               : LocaleResourceType.SCHEMA;
 
-      List<LocaleRecord> locales = new ArrayList<>();
+      List<LocaleTypeRecord> locales = new ArrayList<>();
       notNull(allowedValues).forEach(allowedValue -> locales.add(
           createLocaleRecord(locale, resourceType, classificationId, attributeKey, allowedValue)));
 
@@ -439,10 +439,10 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
     return map;
   }
 
-  private static LocaleRecord createLocaleRecord(final Locale locale,
+  private static LocaleTypeRecord createLocaleRecord(final Locale locale,
       final LocaleResourceType resourceType, final String classificationId,
       final String attributeKey, final String allowedValue) {
-    return new LocaleRecord().setLocale(locale.getLanguage()).setAttributeKey(attributeKey)
+    return new LocaleTypeRecord().setLocale(locale.getLanguage()).setAttributeKey(attributeKey)
         .setClassificationId(classificationId).setItemType(resourceType)
         .setAllowedValue(allowedValue);
   }
