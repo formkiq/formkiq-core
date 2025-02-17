@@ -53,6 +53,7 @@ import com.formkiq.aws.s3.S3Service;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
 
 /** Unit Tests for {@link ConsoleInstallHandler}. */
 @ExtendWith(LocalStackExtension.class)
@@ -140,7 +141,7 @@ public class ConsoleInstallHandlerTest {
   }
 
   private void createHandler(final Map<String, String> map) {
-    this.handler = new ConsoleInstallHandler(map, s3Connection, s3Connection) {
+    this.handler = new ConsoleInstallHandler(map, Region.US_EAST_2, s3Connection, s3Connection) {
 
       @Override
       protected HttpURLConnection getConnection(final String responseUrl) {
@@ -448,6 +449,7 @@ public class ConsoleInstallHandlerTest {
     assertEquals("7223423m2pfgf34qnfokb2po2l", o.get("clientId"));
     assertEquals("0.1", o.get("consoleVersion"));
     assertEquals("24hourcharts", o.get("brand"));
+    assertEquals("us-east-2", o.get("awsRegion"));
     assertEquals("https://test2111111111111111.auth.us-east-2.amazoncognito.com",
         o.get("cognitoHostedUi"));
     assertEquals(cognitoSingleSignOnUrl, o.get("cognitoSingleSignOnUrl"));

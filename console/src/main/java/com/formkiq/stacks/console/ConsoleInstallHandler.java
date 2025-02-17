@@ -56,10 +56,12 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
 
   /** {@link S3Service}. */
   private final S3Service s3UsEast1;
+  /** {@link Region}. */
+  private final Region awsRegion;
 
   /** constructor. */
   public ConsoleInstallHandler() {
-    this(System.getenv(),
+    this(System.getenv(), Region.of(System.getenv("REGION")),
         new S3ConnectionBuilder("true".equals(System.getenv("ENABLE_AWS_X_RAY")))
             .setRegion(Region.US_EAST_1),
         new S3ConnectionBuilder("true".equals(System.getenv("ENABLE_AWS_X_RAY")))
@@ -70,13 +72,15 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
    * constructor.
    *
    * @param map {@link Map}
+   * @param region {@link Region}
    * @param s3builderUsEast1 {@link S3ConnectionBuilder}
    * @param s3builder {@link S3ConnectionBuilder}
    */
-  public ConsoleInstallHandler(final Map<String, String> map,
+  public ConsoleInstallHandler(final Map<String, String> map, final Region region,
       final S3ConnectionBuilder s3builderUsEast1, final S3ConnectionBuilder s3builder) {
 
     this.environmentMap = map;
+    this.awsRegion = region;
 
     this.mimeTypes.put(".woff2", "font/woff2");
     this.mimeTypes.put(".eot", "application/vnd.ms-fontobject");
@@ -121,9 +125,10 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
             + "  \"clientId\": \"%s\",%n" + "  \"consoleVersion\": \"%s\",%n"
             + "  \"brand\": \"%s\",%n" + "  \"userAuthentication\": \"%s\",%n"
             + "  \"authApi\": \"%s\",%n" + "  \"cognitoHostedUi\": \"%s\",%n"
-            + "  \"cognitoSingleSignOnUrl\": \"%s\"%n" + "}",
+            + "  \"awsRegion\": \"%s\",%n" + "  \"cognitoSingleSignOnUrl\": \"%s\"%n" + "}",
         documentApi, cognitoUserPoolId, apiIamUrl, apiKeyUrl, congitoClientId, consoleVersion,
-        brand, userAuthentication, authApi, cognitoHostedUi, cognitoSingleSignOnUrl);
+        brand, userAuthentication, authApi, cognitoHostedUi, this.awsRegion,
+        cognitoSingleSignOnUrl);
 
     String fileName = consoleVersion + "/assets/config.json";
 
