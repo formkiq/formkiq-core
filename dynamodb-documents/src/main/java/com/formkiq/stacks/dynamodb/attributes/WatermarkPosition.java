@@ -35,9 +35,9 @@ public class WatermarkPosition {
   /** Y Offset. */
   private Double yOffset;
   /** X Anchor. */
-  private WatermarkAnchor xAnchor;
+  private WatermarkXanchor xAnchor;
   /** Y Anchor. */
-  private WatermarkAnchor yAnchor;
+  private WatermarkYanchor yAnchor;
 
   /**
    * constructor.
@@ -87,16 +87,16 @@ public class WatermarkPosition {
    * 
    * @return WatermarkAnchor
    */
-  public WatermarkAnchor getxAnchor() {
+  public WatermarkXanchor getxAnchor() {
     return this.xAnchor;
   }
 
   /**
    * Set X Anchor.
    * 
-   * @param anchor {@link WatermarkAnchor}
+   * @param anchor {@link WatermarkXanchor}
    */
-  public void setxAnchor(final WatermarkAnchor anchor) {
+  public void setxAnchor(final WatermarkXanchor anchor) {
     this.xAnchor = anchor;
   }
 
@@ -105,16 +105,16 @@ public class WatermarkPosition {
    * 
    * @return WatermarkAnchor
    */
-  public WatermarkAnchor getyAnchor() {
+  public WatermarkYanchor getyAnchor() {
     return this.yAnchor;
   }
 
   /**
    * Set Y Anchor.
    * 
-   * @param anchor {@link WatermarkAnchor}
+   * @param anchor {@link WatermarkYanchor}
    */
-  public void setyAnchor(final WatermarkAnchor anchor) {
+  public void setyAnchor(final WatermarkYanchor anchor) {
     this.yAnchor = anchor;
   }
 }

@@ -28,8 +28,9 @@ import java.util.Map;
 import java.util.function.Function;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.Watermark;
-import com.formkiq.stacks.dynamodb.attributes.WatermarkAnchor;
+import com.formkiq.stacks.dynamodb.attributes.WatermarkXanchor;
 import com.formkiq.stacks.dynamodb.attributes.WatermarkPosition;
+import com.formkiq.stacks.dynamodb.attributes.WatermarkYanchor;
 
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 
@@ -58,11 +59,11 @@ public class AttributeRecordToMap implements Function<AttributeRecord, Map<Strin
     if (addWatermark) {
       WatermarkPosition pos = new WatermarkPosition();
       if (!isEmpty(a.getWatermarkxAnchor())) {
-        pos.setxAnchor(WatermarkAnchor.valueOf(a.getWatermarkxAnchor()));
+        pos.setxAnchor(WatermarkXanchor.valueOf(a.getWatermarkxAnchor()));
       }
 
       if (!isEmpty(a.getWatermarkyAnchor())) {
-        pos.setyAnchor(WatermarkAnchor.valueOf(a.getWatermarkyAnchor()));
+        pos.setyAnchor(WatermarkYanchor.valueOf(a.getWatermarkyAnchor()));
       }
       pos.setxOffset(a.getWatermarkxOffset());
       pos.setyOffset(a.getWatermarkyOffset());

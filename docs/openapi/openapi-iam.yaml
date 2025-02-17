@@ -9520,21 +9520,27 @@
               type: object
               properties:
                 xAnchor:
-                  $ref: '#/components/schemas/WatermarkPositionAnchor'
+                  $ref: '#/components/schemas/WatermarkPositionXAnchor'
                 yAnchor:
-                  $ref: '#/components/schemas/WatermarkPositionAnchor'
+                  $ref: '#/components/schemas/WatermarkPositionYAnchor'
                 xOffset:
                   type: number
                   description: X offset
                 yOffset:
                   type: number
                   description: Y offset
-            WatermarkPositionAnchor:
+            WatermarkPositionXAnchor:
               type: string
-              description: Watermark Position Anchor
+              description: Watermark X Position Anchor
               enum:
               - LEFT
               - RIGHT
+            WatermarkPositionYAnchor:
+              type: string
+              description: Watermark Y Position Anchor
+              enum:
+              - TOP
+              - BOTTOM
             AttributeType:
               type: string
               description: Type of Attribute

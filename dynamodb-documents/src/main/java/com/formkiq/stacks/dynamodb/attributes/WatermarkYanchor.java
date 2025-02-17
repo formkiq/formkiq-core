@@ -26,12 +26,12 @@ package com.formkiq.stacks.dynamodb.attributes;
 import com.formkiq.graalvm.annotations.Reflectable;
 
 /**
- * Watermark Anchor.
+ * Watermark Y Anchor.
  */
 @Reflectable
-public enum WatermarkAnchor {
-  /** Left Anchor. */
-  LEFT,
-  /** Right Anchor. */
-  RIGHT
+public enum WatermarkYanchor {
+  /** TOP Anchor. */
+  TOP,
+  /** BOTTOM Anchor. */
+  BOTTOM
 }

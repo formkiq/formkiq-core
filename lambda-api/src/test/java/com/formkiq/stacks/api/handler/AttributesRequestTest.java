@@ -65,7 +65,8 @@ import com.formkiq.client.model.SetSitesSchemaRequest;
 import com.formkiq.client.model.UpdateDocumentRequest;
 import com.formkiq.client.model.Watermark;
 import com.formkiq.client.model.WatermarkPosition;
-import com.formkiq.client.model.WatermarkPositionAnchor;
+import com.formkiq.client.model.WatermarkPositionXAnchor;
+import com.formkiq.client.model.WatermarkPositionYAnchor;
 import com.formkiq.stacks.dynamodb.attributes.AttributeKeyReserved;
 import org.junit.jupiter.api.Test;
 
@@ -364,8 +365,8 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       setBearerToken(siteId);
       WatermarkPosition pos =
-          new WatermarkPosition().yAnchor(WatermarkPositionAnchor.LEFT).yOffset(new BigDecimal(1))
-              .xAnchor(WatermarkPositionAnchor.RIGHT).xOffset(new BigDecimal(2));
+          new WatermarkPosition().yAnchor(WatermarkPositionYAnchor.TOP).yOffset(new BigDecimal(1))
+              .xAnchor(WatermarkPositionXAnchor.RIGHT).xOffset(new BigDecimal(2));
 
       AddAttributeRequest req = new AddAttributeRequest()
           .attribute(new AddAttribute().key(attributeKey).dataType(AttributeDataType.WATERMARK)
@@ -387,8 +388,8 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       assertNotNull(position);
       assertEquals("2.0", String.valueOf(position.getxOffset()));
       assertEquals("1.0", String.valueOf(position.getyOffset()));
-      assertEquals(WatermarkPositionAnchor.RIGHT, position.getxAnchor());
-      assertEquals(WatermarkPositionAnchor.LEFT, position.getyAnchor());
+      assertEquals(WatermarkPositionXAnchor.RIGHT, position.getxAnchor());
+      assertEquals(WatermarkPositionYAnchor.TOP, position.getyAnchor());
     }
   }
 
