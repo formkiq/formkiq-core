@@ -11337,6 +11337,12 @@
             AddAttributeSchemaRequired:
               type: object
               properties:
+                minNumberOfValues:
+                  type: number
+                  description: The minimum number of attribute values
+                maxNumberOfValues:
+                  type: number
+                  description: The maximum number of attribute values
                 attributeKey:
                   type: string
                 defaultValue:
@@ -11357,6 +11363,12 @@
               properties:
                 attributeKey:
                   type: string
+                minNumberOfValues:
+                  type: number
+                  description: The minimum number of attribute values
+                maxNumberOfValues:
+                  type: number
+                  description: The maximum number of attribute values
                 defaultValue:
                   type: string
                   description: Default value
@@ -11377,6 +11389,12 @@
             AddAttributeSchemaOptional:
               type: object
               properties:
+                minNumberOfValues:
+                  type: number
+                  description: The minimum number of attribute values
+                maxNumberOfValues:
+                  type: number
+                  description: The maximum number of attribute values
                 attributeKey:
                   type: string
                 allowedValues:
@@ -11387,6 +11405,12 @@
             AttributeSchemaOptional:
               type: object
               properties:
+                minNumberOfValues:
+                  type: number
+                  description: The minimum number of attribute values
+                maxNumberOfValues:
+                  type: number
+                  description: The maximum number of attribute values
                 attributeKey:
                   type: string
                 allowedValues:

@@ -40,6 +40,7 @@ import com.formkiq.client.model.AddDocumentUploadRequest;
 import com.formkiq.client.model.AddResponse;
 import com.formkiq.client.model.AttributeDataType;
 import com.formkiq.client.model.AttributeSchemaCompositeKey;
+import com.formkiq.client.model.AttributeSchemaRequired;
 import com.formkiq.client.model.AttributeValueType;
 import com.formkiq.client.model.DeleteResponse;
 import com.formkiq.client.model.DocumentAttribute;
@@ -411,6 +412,64 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
           .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
       assertEquals(1, attributes.size());
       assertDocumentAttributeEquals(attributes.get(0), "strings", "category", null);
+    }
+  }
+
+  /**
+   * POST /documents/{documentId}/attributes. Add attributes with min/max number of values.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddDocumentAttribute06() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+      addAttribute(siteId, "strings", null);
+      AddAttributeSchemaRequired strings = createRequired("strings")
+          .minNumberOfValues(new BigDecimal("2")).maxNumberOfValues(new BigDecimal("3"));
+
+      AddDocumentRequest areq = new AddDocumentRequest().content("adasd");
+      String documentId = this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes().addRequiredItem(strings));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      AddDocumentAttributeStandard a = new AddDocumentAttributeStandard().key("strings")
+          .stringValues(List.of("1", "2", "3", "4"));
+      AddDocumentAttributesRequest attrReq =
+          new AddDocumentAttributesRequest().addAttributesItem(new AddDocumentAttribute(a));
+
+      // when
+      try {
+        this.documentAttributesApi.addDocumentAttributes(documentId, attrReq, siteId, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"maxNumberOfValues\","
+                + "\"error\":\"number of attributes 4 is more than maximum of 3\"}]}",
+            e.getResponseBody());
+      }
+
+      // given
+      a.stringValues(List.of("1"));
+
+      // when
+      try {
+        this.documentAttributesApi.addDocumentAttributes(documentId, attrReq, siteId, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"minNumberOfValues\","
+                + "\"error\":\"number of attributes 1 is less than minimum of 2\"}]}",
+            e.getResponseBody());
+      }
     }
   }
 
@@ -2312,11 +2371,15 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       GetSitesSchemaResponse schema = this.schemasApi.getSitesSchema(siteId, null);
       assertEquals("joe", schema.getName());
       assertNotNull(schema.getAttributes());
-      assertEquals(key, notNull(schema.getAttributes().getRequired()).get(0).getAttributeKey());
-      assertTrue(notNull(schema.getAttributes().getRequired().get(0).getAllowedValues()).isEmpty());
+      List<AttributeSchemaRequired> required = notNull(schema.getAttributes().getRequired());
+      assertEquals(key, required.get(0).getAttributeKey());
+      assertTrue(notNull(required.get(0).getAllowedValues()).isEmpty());
+      assertNull(required.get(0).getMinNumberOfValues());
+      assertNull(required.get(0).getMaxNumberOfValues());
 
-      req = new SetSitesSchemaRequest().name("joe").attributes(new SetSchemaAttributes()
-          .addRequiredItem(createRequired(key).addAllowedValuesItem("123")));
+      req = new SetSitesSchemaRequest().name("joe").attributes(
+          new SetSchemaAttributes().addRequiredItem(createRequired(key).addAllowedValuesItem("123")
+              .minNumberOfValues(new BigDecimal(1)).maxNumberOfValues(new BigDecimal(2))));
 
       // when
       response = this.schemasApi.setSitesSchema(siteId, req);
@@ -2327,9 +2390,12 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       schema = this.schemasApi.getSitesSchema(siteId, null);
       assertEquals("joe", schema.getName());
       assertNotNull(schema.getAttributes());
-      assertEquals(key, notNull(schema.getAttributes().getRequired()).get(0).getAttributeKey());
-      assertEquals("123", String.join(",",
-          notNull(schema.getAttributes().getRequired().get(0).getAllowedValues())));
+      required = notNull(schema.getAttributes().getRequired());
+      AttributeSchemaRequired r = required.get(0);
+      assertEquals(key, r.getAttributeKey());
+      assertEquals("123", String.join(",", notNull(r.getAllowedValues())));
+      assertEquals(1, requireNonNull(r.getMinNumberOfValues()).intValue());
+      assertEquals(2, requireNonNull(r.getMaxNumberOfValues()).intValue());
     }
   }
 

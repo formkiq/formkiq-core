@@ -610,7 +610,33 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
       errors = validateAttributes(siteId, schema);
     }
 
+    if (errors.isEmpty()) {
+      validateNumberOfValues(schema.getAttributes(), errors);
+    }
+
     return errors;
+  }
+
+  private void validateNumberOfValues(final SchemaAttributes attributes,
+      final Collection<ValidationError> errors) {
+    notNull(attributes.getRequired())
+        .forEach(r -> validateNumberOfValues(r.minNumberOfValues(), r.maxNumberOfValues(), errors));
+    notNull(attributes.getOptional())
+        .forEach(r -> validateNumberOfValues(r.minNumberOfValues(), r.maxNumberOfValues(), errors));
+  }
+
+  private void validateNumberOfValues(final Double minNumberOfValues,
+      final Double maxNumberOfValues, final Collection<ValidationError> errors) {
+    if (minNumberOfValues != null && maxNumberOfValues == null) {
+      errors.add(new ValidationErrorImpl().key("maxNumberOfValues")
+          .error("both 'minNumberOfValues' and 'maxNumberOfValues' is required"));
+    } else if (minNumberOfValues == null && maxNumberOfValues != null) {
+      errors.add(new ValidationErrorImpl().key("minNumberOfValues")
+          .error("both 'minNumberOfValues' and 'maxNumberOfValues' is required"));
+    } else if (minNumberOfValues != null && minNumberOfValues > maxNumberOfValues) {
+      errors.add(new ValidationErrorImpl().key("minNumberOfValues")
+          .error("minNumberOfValues cannot be more than maxNumberOfValues"));
+    }
   }
 
   /**
