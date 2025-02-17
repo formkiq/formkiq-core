@@ -232,6 +232,15 @@ public class SchemaServiceDynamodbTest {
 
       // then
       assertEquals(0, errors.size());
+
+      // given
+      require0.maxNumberOfValues(Double.valueOf("-1"));
+
+      // when
+      errors = setSitesSchema(siteId, schemaAttributes);
+
+      // then
+      assertEquals(0, errors.size());
     }
   }
 

@@ -474,6 +474,50 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * POST /documents/{documentId}/attributes. Add attributes with min/max number of values.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddDocumentAttribute07() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+      addAttribute(siteId, "strings", null);
+
+      for (int max : List.of(2, -1)) {
+
+        AddDocumentRequest areq = new AddDocumentRequest().content("adasd");
+        String documentId = this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
+
+        AddAttributeSchemaRequired strings = createRequired("strings")
+            .minNumberOfValues(new BigDecimal("1")).maxNumberOfValues(new BigDecimal(max));
+
+        SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+            .attributes(new SetSchemaAttributes().addRequiredItem(strings));
+        this.schemasApi.setSitesSchema(siteId, req);
+
+        AddDocumentAttributeStandard a =
+            new AddDocumentAttributeStandard().key("strings").stringValues(List.of("1", "2"));
+        AddDocumentAttributesRequest attrReq =
+            new AddDocumentAttributesRequest().addAttributesItem(new AddDocumentAttribute(a));
+
+        // when
+        AddResponse addResponse =
+            this.documentAttributesApi.addDocumentAttributes(documentId, attrReq, siteId, null);
+
+        // then
+        assertEquals("added attributes to documentId '" + documentId + "'",
+            addResponse.getMessage());
+
+        req.getAttributes().getRequired().clear();
+        this.schemasApi.setSitesSchema(siteId, req);
+      }
+    }
+  }
+
+  /**
    * POST /documents/upload with site schema required attribute.
    *
    * @throws ApiException an error has occurred
@@ -2372,10 +2416,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       assertEquals("joe", schema.getName());
       assertNotNull(schema.getAttributes());
       List<AttributeSchemaRequired> required = notNull(schema.getAttributes().getRequired());
-      assertEquals(key, required.get(0).getAttributeKey());
-      assertTrue(notNull(required.get(0).getAllowedValues()).isEmpty());
-      assertNull(required.get(0).getMinNumberOfValues());
-      assertNull(required.get(0).getMaxNumberOfValues());
+      assertAttributeSchemaRequired(required.get(0), key, null, 0, 0);
 
       req = new SetSitesSchemaRequest().name("joe").attributes(
           new SetSchemaAttributes().addRequiredItem(createRequired(key).addAllowedValuesItem("123")
@@ -2391,11 +2432,29 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       assertEquals("joe", schema.getName());
       assertNotNull(schema.getAttributes());
       required = notNull(schema.getAttributes().getRequired());
-      AttributeSchemaRequired r = required.get(0);
-      assertEquals(key, r.getAttributeKey());
-      assertEquals("123", String.join(",", notNull(r.getAllowedValues())));
-      assertEquals(1, requireNonNull(r.getMinNumberOfValues()).intValue());
-      assertEquals(2, requireNonNull(r.getMaxNumberOfValues()).intValue());
+      assertAttributeSchemaRequired(required.get(0), key, "123", 1, 2);
+    }
+  }
+
+  private void assertAttributeSchemaRequired(final AttributeSchemaRequired r,
+      final String attributeKey, final String allowedValues, final int minNumberOfValues,
+      final int maxNumberOfValues) {
+    assertEquals(attributeKey, r.getAttributeKey());
+    if (allowedValues != null) {
+      assertEquals(allowedValues, String.join(",", notNull(r.getAllowedValues())));
+    } else {
+      assertTrue(notNull(r.getAllowedValues()).isEmpty());
+    }
+    if (r.getMinNumberOfValues() != null) {
+      assertEquals(minNumberOfValues, requireNonNull(r.getMinNumberOfValues()).intValue());
+    } else {
+      assertNull(r.getMinNumberOfValues());
+    }
+
+    if (r.getMaxNumberOfValues() != null) {
+      assertEquals(maxNumberOfValues, requireNonNull(r.getMaxNumberOfValues()).intValue());
+    } else {
+      assertNull(r.getMaxNumberOfValues());
     }
   }
 

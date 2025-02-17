@@ -633,7 +633,8 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
     } else if (minNumberOfValues == null && maxNumberOfValues != null) {
       errors.add(new ValidationErrorImpl().key("minNumberOfValues")
           .error("both 'minNumberOfValues' and 'maxNumberOfValues' is required"));
-    } else if (minNumberOfValues != null && minNumberOfValues > maxNumberOfValues) {
+    } else if (minNumberOfValues != null && maxNumberOfValues > -1
+        && minNumberOfValues > maxNumberOfValues) {
       errors.add(new ValidationErrorImpl().key("minNumberOfValues")
           .error("minNumberOfValues cannot be more than maxNumberOfValues"));
     }

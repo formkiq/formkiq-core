@@ -143,12 +143,14 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
 
     if (documentAttributeMap.containsKey(attributeKey) && minNumberOfValues != null
         && maxNumberOfValues != null) {
+
+      double max = maxNumberOfValues < 0 ? Double.MAX_VALUE : maxNumberOfValues;
       int count = documentAttributeMap.get(attributeKey).size();
       if (count < minNumberOfValues) {
         errors.add(new ValidationErrorImpl().key("minNumberOfValues")
             .error(String.format("number of attributes %d is less than minimum of %d", count,
                 minNumberOfValues.intValue())));
-      } else if (count > maxNumberOfValues) {
+      } else if (count > max) {
         errors.add(new ValidationErrorImpl().key("maxNumberOfValues")
             .error(String.format("number of attributes %d is more than maximum of %d", count,
                 maxNumberOfValues.intValue())));
