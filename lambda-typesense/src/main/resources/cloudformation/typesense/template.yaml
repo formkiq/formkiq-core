@@ -137,7 +137,7 @@ Resources:
     Properties:
       Handler: com.formkiq.module.lambda.typesense.TypesenseProcessor
       Description: Lambda function to add DynamoDB records to Typesense
-      Runtime: provided.al2
+      Runtime: provided.al2023
       Timeout: 
         Fn::Sub: "${LambdaTimeout}"
       MemorySize: 
