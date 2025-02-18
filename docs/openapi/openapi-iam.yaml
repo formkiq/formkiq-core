@@ -9591,9 +9591,14 @@
                 text:
                   type: string
                   description: Watermark text
+                rotation:
+                  type: number
+                  description: Watermark Rotation
                 imageDocumentId:
                   type: string
                   description: Watermark Image Document Id
+                scale:
+                  $ref: '#/components/schemas/WatermarkScale'
                 position:
                   $ref: '#/components/schemas/WatermarkPosition'
             WatermarkPosition:
@@ -9609,6 +9614,12 @@
                 yOffset:
                   type: number
                   description: Y offset
+            WatermarkScale:
+              type: string
+              description: Watermark Scale
+              enum:
+              - BEST_FIT
+              - ORIGINAL
             WatermarkPositionXAnchor:
               type: string
               description: Watermark X Position Anchor

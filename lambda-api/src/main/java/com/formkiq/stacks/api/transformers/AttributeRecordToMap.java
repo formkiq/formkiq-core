@@ -24,47 +24,45 @@
 package com.formkiq.stacks.api.transformers;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
+
+import com.formkiq.aws.dynamodb.DynamodbRecordToMap;
+import com.formkiq.stacks.dynamodb.attributes.AttributeDataType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.Watermark;
-import com.formkiq.stacks.dynamodb.attributes.WatermarkXanchor;
 import com.formkiq.stacks.dynamodb.attributes.WatermarkPosition;
-import com.formkiq.stacks.dynamodb.attributes.WatermarkYanchor;
-
-import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 
 /**
  * {@link Function} transform {@link AttributeRecord} to {@link Map}.
  */
 public class AttributeRecordToMap implements Function<AttributeRecord, Map<String, Object>> {
 
+  /** {@link DynamodbRecordToMap}. */
+  private final DynamodbRecordToMap toMap = new DynamodbRecordToMap(List.of("documentId"));
+
   @Override
   public Map<String, Object> apply(final AttributeRecord a) {
-    Map<String, Object> attr = new HashMap<>(
-        Map.of("key", a.getKey(), "type", a.getType().name(), "dataType", a.getDataType().name()));
 
-    boolean addWatermark = false;
+    Map<String, Object> attr = new HashMap<>(toMap.apply(a));
+
+    Set<Map.Entry<String, Object>> keys = attr.entrySet();
+    keys.removeIf(e -> e.getKey().startsWith("watermark"));
+
     Watermark watermark = new Watermark();
-    if (!isEmpty(a.getWatermarkText())) {
-      addWatermark = true;
-      watermark.setText(a.getWatermarkText());
-    }
+    watermark.setScale(a.getWatermarkScale());
+    watermark.setRotation(a.getWatermarkRotation());
+    watermark.setText(a.getWatermarkText());
+    watermark.setImageDocumentId(a.getWatermarkImageDocumentId());
 
-    if (!isEmpty(a.getWatermarkImageDocumentId())) {
-      addWatermark = true;
-      watermark.setImageDocumentId(a.getWatermarkImageDocumentId());
-    }
+    boolean addWatermark = hasWatermark(a);
 
     if (addWatermark) {
       WatermarkPosition pos = new WatermarkPosition();
-      if (!isEmpty(a.getWatermarkxAnchor())) {
-        pos.setxAnchor(WatermarkXanchor.valueOf(a.getWatermarkxAnchor()));
-      }
-
-      if (!isEmpty(a.getWatermarkyAnchor())) {
-        pos.setyAnchor(WatermarkYanchor.valueOf(a.getWatermarkyAnchor()));
-      }
+      pos.setxAnchor(a.getWatermarkxAnchor());
+      pos.setyAnchor(a.getWatermarkyAnchor());
       pos.setxOffset(a.getWatermarkxOffset());
       pos.setyOffset(a.getWatermarkyOffset());
 
@@ -76,5 +74,9 @@ public class AttributeRecordToMap implements Function<AttributeRecord, Map<Strin
     }
 
     return attr;
+  }
+
+  private boolean hasWatermark(final AttributeRecord attribute) {
+    return AttributeDataType.WATERMARK.equals(attribute.getDataType());
   }
 }

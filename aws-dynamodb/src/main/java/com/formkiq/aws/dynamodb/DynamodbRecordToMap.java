@@ -23,6 +23,8 @@
  */
 package com.formkiq.aws.dynamodb;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -32,6 +34,25 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
  * Convert {@link DynamodbRecord} to {@link Map}.
  */
 public class DynamodbRecordToMap implements Function<DynamodbRecord<?>, Map<String, Object>> {
+
+  /** Attribute Keys to be removed. */
+  private final Collection<String> keysToRemove;
+
+  /**
+   * constructor.
+   */
+  public DynamodbRecordToMap() {
+    this.keysToRemove = Collections.emptyList();
+  }
+
+  /**
+   * constructor.
+   * 
+   * @param attributeKeysToRemove {@link Collection} {@link String}
+   */
+  public DynamodbRecordToMap(final Collection<String> attributeKeysToRemove) {
+    this.keysToRemove = attributeKeysToRemove;
+  }
 
   @Override
   public Map<String, Object> apply(final DynamodbRecord<?> r) {
@@ -59,6 +80,7 @@ public class DynamodbRecordToMap implements Function<DynamodbRecord<?>, Map<Stri
       }
     }
 
+    this.keysToRemove.forEach(m::remove);
     return m;
   }
 

@@ -23,9 +23,14 @@
  */
 package com.formkiq.stacks.dynamodb.attributes;
 
+import static com.formkiq.aws.dynamodb.AttributeValueHelper.addEnumIfNotNull;
+import static com.formkiq.aws.dynamodb.AttributeValueHelper.addNumberIfNotEmpty;
+import static com.formkiq.aws.dynamodb.AttributeValueHelper.addStringIfNotEmpty;
+import static com.formkiq.aws.dynamodb.AttributeValueHelper.toDoubleValue;
+import static com.formkiq.aws.dynamodb.AttributeValueHelper.toEnumValue;
+import static com.formkiq.aws.dynamodb.AttributeValueHelper.toStringValue;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
-import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.fromN;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -57,13 +62,17 @@ public class AttributeRecord implements DynamodbRecord<AttributeRecord> {
   /** Watermark Image DocumentId. */
   private String watermarkImageDocumentId;
   /** Watermark X Anchor. */
-  private String watermarkxAnchor;
+  private WatermarkXanchor watermarkxAnchor;
   /** Watermark Y Anchor. */
-  private String watermarkyAnchor;
+  private WatermarkYanchor watermarkyAnchor;
   /** Watermark X Offset. */
   private Double watermarkxOffset;
   /** Watermark Y Offset. */
   private Double watermarkyOffset;
+  /** Watermark Y Offset. */
+  private Double watermarkRotation;
+  /** {@link WatermarkScale}. */
+  private WatermarkScale watermarkScale;
 
   /**
    * constructor.
@@ -73,11 +82,51 @@ public class AttributeRecord implements DynamodbRecord<AttributeRecord> {
   }
 
   /**
+   * Get Watermark Rotation.
+   * 
+   * @return Double
+   */
+  public Double getWatermarkRotation() {
+    return this.watermarkRotation;
+  }
+
+  /**
+   * Set Watermark Rotation.
+   * 
+   * @param rotation Double
+   * @return AttributeRecord
+   */
+  public AttributeRecord setWatermarkRotation(final Double rotation) {
+    this.watermarkRotation = rotation;
+    return this;
+  }
+
+  /**
+   * Get {@link WatermarkScale}.
+   * 
+   * @return {@link WatermarkScale}
+   */
+  public WatermarkScale getWatermarkScale() {
+    return this.watermarkScale;
+  }
+
+  /**
+   * Set {@link WatermarkScale}.
+   * 
+   * @param scale {@link WatermarkScale}
+   * @return AttributeRecord
+   */
+  public AttributeRecord setWatermarkScale(final WatermarkScale scale) {
+    this.watermarkScale = scale;
+    return this;
+  }
+
+  /**
    * Get Watermark X Anchor.
    * 
-   * @return String
+   * @return WatermarkXanchor
    */
-  public String getWatermarkxAnchor() {
+  public WatermarkXanchor getWatermarkxAnchor() {
     return this.watermarkxAnchor;
   }
 
@@ -87,7 +136,7 @@ public class AttributeRecord implements DynamodbRecord<AttributeRecord> {
    * @param anchor {@link String}
    * @return AttributeRecord
    */
-  public AttributeRecord setWatermarkxAnchor(final String anchor) {
+  public AttributeRecord setWatermarkxAnchor(final WatermarkXanchor anchor) {
     this.watermarkxAnchor = anchor;
     return this;
   }
@@ -97,7 +146,7 @@ public class AttributeRecord implements DynamodbRecord<AttributeRecord> {
    * 
    * @return String
    */
-  public String getWatermarkyAnchor() {
+  public WatermarkYanchor getWatermarkyAnchor() {
     return this.watermarkyAnchor;
   }
 
@@ -107,7 +156,7 @@ public class AttributeRecord implements DynamodbRecord<AttributeRecord> {
    * @param anchor {@link String}
    * @return AttributeRecord
    */
-  public AttributeRecord setWatermarkyAnchor(final String anchor) {
+  public AttributeRecord setWatermarkyAnchor(final WatermarkYanchor anchor) {
     this.watermarkyAnchor = anchor;
     return this;
   }
@@ -233,33 +282,14 @@ public class AttributeRecord implements DynamodbRecord<AttributeRecord> {
         new HashMap<>(Map.of("documentId", fromS(this.documentId), "dataType",
             fromS(this.dataType.name()), "type", fromS(this.type.name()), "key", fromS(this.key)));
 
-    if (!isEmpty(this.watermarkText)) {
-      attr.put("watermarkText", fromS(this.watermarkText));
-    }
-
-    if (!isEmpty(this.watermarkImageDocumentId)) {
-      attr.put("watermarkImageDocumentId", fromS(this.watermarkImageDocumentId));
-    }
-
-    if (!isEmpty(this.watermarkImageDocumentId)) {
-      attr.put("watermarkImageDocumentId", fromS(this.watermarkImageDocumentId));
-    }
-
-    if (!isEmpty(this.watermarkxAnchor)) {
-      attr.put("watermarkxAnchor", fromS(this.watermarkxAnchor));
-    }
-
-    if (!isEmpty(this.watermarkyAnchor)) {
-      attr.put("watermarkyAnchor", fromS(this.watermarkyAnchor));
-    }
-
-    if (this.watermarkxOffset != null) {
-      attr.put("watermarkxOffset", fromN("" + this.watermarkxOffset));
-    }
-
-    if (this.watermarkyOffset != null) {
-      attr.put("watermarkyOffset", fromN("" + this.watermarkyOffset));
-    }
+    addEnumIfNotNull(attr, "watermarkScale", this.watermarkScale);
+    addStringIfNotEmpty(attr, "watermarkText", this.watermarkText);
+    addStringIfNotEmpty(attr, "watermarkImageDocumentId", this.watermarkImageDocumentId);
+    addEnumIfNotNull(attr, "watermarkxAnchor", this.watermarkxAnchor);
+    addEnumIfNotNull(attr, "watermarkyAnchor", this.watermarkyAnchor);
+    addNumberIfNotEmpty(attr, "watermarkxOffset", this.watermarkxOffset);
+    addNumberIfNotEmpty(attr, "watermarkyOffset", this.watermarkyOffset);
+    addNumberIfNotEmpty(attr, "watermarkRotation", this.watermarkRotation);
 
     return attr;
   }
@@ -289,15 +319,17 @@ public class AttributeRecord implements DynamodbRecord<AttributeRecord> {
     AttributeRecord record = null;
 
     if (!attrs.isEmpty()) {
-      record = new AttributeRecord().documentId(ss(attrs, "documentId")).key(ss(attrs, "key"))
-          .type(AttributeType.valueOf(ss(attrs, "type")))
-          .setWatermarkText(ss(attrs, "watermarkText"))
-          .setWatermarkImageDocumentId(ss(attrs, "watermarkImageDocumentId"))
-          .setWatermarkxAnchor(ss(attrs, "watermarkxAnchor"))
-          .setWatermarkyAnchor(ss(attrs, "watermarkyAnchor"))
-          .setWatermarkxOffset(nn(attrs, "watermarkxOffset"))
-          .setWatermarkyOffset(nn(attrs, "watermarkyOffset"))
-          .dataType(AttributeDataType.valueOf(ss(attrs, "dataType")));
+      record = new AttributeRecord().documentId(toStringValue(attrs, "documentId"))
+          .key(toStringValue(attrs, "key")).type(toEnumValue(attrs, AttributeType.class, "type"))
+          .setWatermarkText(toStringValue(attrs, "watermarkText"))
+          .setWatermarkImageDocumentId(toStringValue(attrs, "watermarkImageDocumentId"))
+          .setWatermarkxAnchor(toEnumValue(attrs, WatermarkXanchor.class, "watermarkxAnchor"))
+          .setWatermarkyAnchor(toEnumValue(attrs, WatermarkYanchor.class, "watermarkyAnchor"))
+          .setWatermarkxOffset(toDoubleValue(attrs, "watermarkxOffset"))
+          .setWatermarkRotation(toDoubleValue(attrs, "watermarkRotation"))
+          .setWatermarkyOffset(toDoubleValue(attrs, "watermarkyOffset"))
+          .setWatermarkScale(toEnumValue(attrs, WatermarkScale.class, "watermarkScale"))
+          .dataType(toEnumValue(attrs, AttributeDataType.class, "dataType"));
     }
 
     return record;

@@ -67,6 +67,7 @@ import com.formkiq.client.model.Watermark;
 import com.formkiq.client.model.WatermarkPosition;
 import com.formkiq.client.model.WatermarkPositionXAnchor;
 import com.formkiq.client.model.WatermarkPositionYAnchor;
+import com.formkiq.client.model.WatermarkScale;
 import com.formkiq.stacks.dynamodb.attributes.AttributeKeyReserved;
 import org.junit.jupiter.api.Test;
 
@@ -370,7 +371,8 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       AddAttributeRequest req = new AddAttributeRequest()
           .attribute(new AddAttribute().key(attributeKey).dataType(AttributeDataType.WATERMARK)
-              .watermark(new Watermark().text(text).position(pos)));
+              .watermark(new Watermark().scale(com.formkiq.client.model.WatermarkScale.ORIGINAL)
+                  .rotation(new BigDecimal("123")).text(text).position(pos)));
 
       // when
       AddAttributeResponse response = this.attributesApi.addAttribute(req, siteId);
@@ -384,6 +386,8 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       Watermark watermark = attr.getAttribute().getWatermark();
       assertNotNull(watermark);
       assertEquals(text, watermark.getText());
+      assertEquals(WatermarkScale.ORIGINAL, watermark.getScale());
+      assertEquals("123.0", watermark.getRotation().toString());
       WatermarkPosition position = watermark.getPosition();
       assertNotNull(position);
       assertEquals("2.0", String.valueOf(position.getxOffset()));

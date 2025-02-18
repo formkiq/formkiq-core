@@ -32,16 +32,60 @@ import com.formkiq.graalvm.annotations.Reflectable;
 public class Watermark {
   /** Watermark text. */
   private String text;
+  /** Watermark Rotation. */
+  private Double rotation;
   /** Image Document Id. */
   private String imageDocumentId;
   /** Watermark Position. */
   private WatermarkPosition position;
+  /** {@link WatermarkScale}. */
+  private WatermarkScale scale;
 
   /**
    * constructor.
    */
   public Watermark() {
 
+  }
+
+  /**
+   * Get {@link WatermarkScale}.
+   * 
+   * @return {@link WatermarkScale}
+   */
+  public WatermarkScale getScale() {
+    return this.scale;
+  }
+
+  /**
+   * Set Scale.
+   * 
+   * @param watermarkScale {@link WatermarkScale}
+   * @return Watermark
+   */
+  public Watermark setScale(final WatermarkScale watermarkScale) {
+    this.scale = watermarkScale;
+    return this;
+  }
+
+  /**
+   * Get {@link Double} rotation.
+   * 
+   * @return Double
+   */
+  public Double getRotation() {
+    return this.rotation;
+  }
+
+  /**
+   * Set Rotation.
+   * 
+   * @param watermarkRotation {@link Double}
+   * @return Watermark
+   */
+  public Watermark setRotation(final Double watermarkRotation) {
+    this.rotation = watermarkRotation;
+    return this;
   }
 
   /**

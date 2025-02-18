@@ -144,10 +144,11 @@ public interface DynamodbRecord<T> {
    * @param attrs {@link Map} {@link AttributeValue}
    * @param key {@link String}
    * @return {@link String}
+   * @deprecated use {@link AttributeValueHelper}
    */
+  @Deprecated
   default String ss(final Map<String, AttributeValue> attrs, final String key) {
-    AttributeValue av = attrs.get(key);
-    return av != null ? av.s() : null;
+    return AttributeValueHelper.toStringValue(attrs, key);
   }
 
   /**
