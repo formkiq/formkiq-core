@@ -33,5 +33,7 @@ public enum WatermarkYanchor {
   /** TOP Anchor. */
   TOP,
   /** BOTTOM Anchor. */
-  BOTTOM
+  BOTTOM,
+  /** Center Anchor. */
+  CENTER
 }

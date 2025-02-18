@@ -9626,12 +9626,14 @@
               enum:
               - LEFT
               - RIGHT
+              - CENTER
             WatermarkPositionYAnchor:
               type: string
               description: Watermark Y Position Anchor
               enum:
               - TOP
               - BOTTOM
+              - CENTER
             AttributeType:
               type: string
               description: Type of Attribute

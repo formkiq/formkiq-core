@@ -9735,6 +9735,7 @@ Resources:
               enum:
                 - LEFT
                 - RIGHT
+                - CENTER
 
             WatermarkPositionYAnchor:
               type: string
@@ -9742,6 +9743,7 @@ Resources:
               enum:
                 - TOP
                 - BOTTOM
+                - CENTER
 
             AttributeType:
               type: string

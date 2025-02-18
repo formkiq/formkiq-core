@@ -33,5 +33,7 @@ public enum WatermarkXanchor {
   /** Left Anchor. */
   LEFT,
   /** Right Anchor. */
-  RIGHT
+  RIGHT,
+  /** Center Anchor. */
+  CENTER
 }
