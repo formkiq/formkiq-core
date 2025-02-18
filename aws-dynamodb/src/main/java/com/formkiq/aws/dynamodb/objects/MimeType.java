@@ -23,6 +23,8 @@
  */
 package com.formkiq.aws.dynamodb.objects;
 
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
+
 /**
  * Supported Conversion Formats.
  *
@@ -51,6 +53,10 @@ public enum MimeType {
   MIME_PDF("application/pdf", "pdf"),
   /** text/plain. */
   MIME_PLAIN_TEXT("text/plain", "txt"),
+  /** text/csv. */
+  MIME_PLAIN_CSV("text/csv", "csv"),
+  /** text/plain. */
+  MIME_PLAIN_MARKDOWN("text/markdown", "md"),
   /** image/png. */
   MIME_PNG("image/png", "png"),
   /** image/tif. */
@@ -65,6 +71,8 @@ public enum MimeType {
   MIME_XLS("application/vnd.ms-excel", "xls"),
   /** application/vnd.ms-excel. */
   MIME_XLSX("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "xlsx"),
+  /** application/vnd.ms-powerpoint. */
+  MIME_PPT("application/vnd.ms-powerpoint", "ppt"),
   /** application/vnd.openxmlformats-officedocument.presentationml.presentation. */
   MIME_PPTX("application/vnd.openxmlformats-officedocument.presentationml.presentation", "pptx"),
   /** application/javascript. */
@@ -73,6 +81,8 @@ public enum MimeType {
   MIME_RAR("application/x-rar-compressed", "rar"),
   /** application/gzip. */
   MIME_GZIP("application/gzip", "gz"),
+  /** image/svg+xml. */
+  MIME_SVG("image/svg+xml", "svg"),
   /** Unknown Mime. */
   MIME_UNKNOWN("UNKNOWN", ""),
   /** image/webp. */
@@ -88,9 +98,31 @@ public enum MimeType {
 
     MimeType type = MimeType.MIME_UNKNOWN;
 
-    if (ct != null) {
+    if (!isEmpty(ct)) {
       for (MimeType mt : MimeType.values()) {
         if (ct.equals(mt.getContentType())) {
+          type = mt;
+          break;
+        }
+      }
+    }
+
+    return type;
+  }
+
+  /**
+   * Find {@link MimeType} from Extension.
+   *
+   * @param ext {@link String}
+   * @return {@link MimeType}
+   */
+  public static MimeType fromExtension(final String ext) {
+
+    MimeType type = MimeType.MIME_UNKNOWN;
+
+    if (!isEmpty(ext)) {
+      for (MimeType mt : MimeType.values()) {
+        if (ext.equals(mt.getExtension())) {
           type = mt;
           break;
         }

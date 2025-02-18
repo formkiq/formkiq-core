@@ -199,7 +199,6 @@ public class DocumentIdUrlRequestHandler
 
     PresignGetUrlConfig config = new PresignGetUrlConfig();
 
-    config.contentType(item.getContentType());
     String s3key = createS3Key(siteId, documentId);
 
     String deepLinkPath = item.getDeepLinkPath();
@@ -223,6 +222,7 @@ public class DocumentIdUrlRequestHandler
       filename = Strings.getFilename(deepLinkPath);
     }
 
+    config.contentType(findContentType(item));
     config.contentDispositionByPath(filename, inline);
 
     int hours = getDurationHours(event);
@@ -231,6 +231,19 @@ public class DocumentIdUrlRequestHandler
     S3PresignerService s3Service = awsservice.getExtension(S3PresignerService.class);
     return s3Bucket != null ? s3Service.presignGetUrl(s3Bucket, s3key, duration, versionId, config)
         : new URL(s3key);
+  }
+
+  private String findContentType(final DocumentItem item) {
+    String contentType = item.getContentType();
+    if (isEmpty(contentType)) {
+
+      String path = !isEmpty(item.getDeepLinkPath()) ? item.getDeepLinkPath() : item.getPath();
+      String ext = Strings.getExtension(path);
+      MimeType mimeType = MimeType.fromExtension(ext);
+      contentType = mimeType.getContentType();
+    }
+
+    return contentType;
   }
 
   private String getFilename(final DocumentItem item) {

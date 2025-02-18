@@ -230,7 +230,6 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
       String userId = "jsmith";
       DocumentItemDynamoDb doc = new DocumentItemDynamoDb(documentId, new Date(), userId);
       doc.setDeepLinkPath("s3://anotherbucket/somefile.txt");
-      doc.setContentType("text/plain");
       this.documentService.saveDocument(siteId, doc, new ArrayList<>());
 
       // when
@@ -253,6 +252,7 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
       }
 
       assertTrue(resp.getUrl().contains("somefile.txt"));
+      assertTrue(resp.getUrl().contains("text%2Fplain"));
       assertEquals("Some data", getS3().getContentAsString("anotherbucket", "somefile.txt", null));
       assertEquals("Some data",
           this.http.get(resp.getUrl(), Optional.empty(), Optional.empty()).body());
@@ -280,7 +280,6 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
       String userId = "jsmith";
       DocumentItemDynamoDb doc = new DocumentItemDynamoDb(documentId, new Date(), userId);
       doc.setDeepLinkPath("https://www.google.com/something/else.pdf");
-      doc.setContentType("application/pdf");
       this.documentService.saveDocument(siteId, doc, new ArrayList<>());
 
       // when
