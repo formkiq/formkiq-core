@@ -8,7 +8,8 @@
 	<subpackage name="httpsigv4">
 	
 		<allow pkg="com.formkiq.module.http" />
-	
+
+		<allow pkg="java.security" />
 		<allow pkg="java.io" />
 		<allow pkg="java.net" />
 		<allow pkg="java.net.http" />
@@ -18,6 +19,7 @@
 		
 		<allow pkg="java.nio.charset" />
 		<allow pkg="software.amazon.awssdk.http" />
+		<allow pkg="software.amazon.awssdk.utils" />
 		
 		<allow pkg="software.amazon.awssdk.auth.credentials" />
 		<allow pkg="software.amazon.awssdk.auth.signer" />

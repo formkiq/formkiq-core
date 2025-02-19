@@ -296,7 +296,7 @@ public final class HttpServiceSigv4 implements HttpService {
     }
   }
 
-  private static String sha256Hex(byte[] data) {
+  private static String sha256Hex(final byte[] data) {
     try {
       MessageDigest md = MessageDigest.getInstance("SHA-256");
       byte[] digest = md.digest(data);
