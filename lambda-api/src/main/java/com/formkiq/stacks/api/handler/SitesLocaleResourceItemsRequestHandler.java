@@ -29,6 +29,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.base64.Pagination;
 import com.formkiq.stacks.dynamodb.locale.LocaleTypeRecord;
@@ -56,14 +57,19 @@ public class SitesLocaleResourceItemsRequestHandler
   public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
+    String siteId = authorization.getSiteId();
+    LocaleService service = awsservice.getExtension(LocaleService.class);
+
     AddLocaleResourceItemRequest record =
         fromBodyToObject(event, AddLocaleResourceItemRequest.class);
 
-    String siteId = authorization.getSiteId();
-    String locale = event.getPathParameter("locale");
-    LocaleService service = awsservice.getExtension(LocaleService.class);
+    if (record == null) {
+      throw new BadException("Invalid request");
+    }
 
     LocaleTypeRecord item = record.getResourceItem();
+
+    String locale = event.getPathParameter("locale");
     item.setLocale(locale);
     List<ValidationError> errors = service.save(siteId, List.of(item));
 
