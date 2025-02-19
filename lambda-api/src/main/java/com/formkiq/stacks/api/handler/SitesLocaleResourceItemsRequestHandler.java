@@ -40,6 +40,7 @@ import com.formkiq.validation.ValidationException;
 import java.util.List;
 import java.util.Map;
 
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_CREATED;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
 /** {@link ApiGatewayRequestHandler} for "/sites/{siteId}/locales/{locale}/resourceItems". */
@@ -70,7 +71,7 @@ public class SitesLocaleResourceItemsRequestHandler
       throw new ValidationException(errors);
     }
 
-    return new ApiRequestHandlerResponse(SC_OK,
+    return new ApiRequestHandlerResponse(SC_CREATED,
         new ApiMapResponse(Map.of("itemKey", item.getItemKey())));
   }
 

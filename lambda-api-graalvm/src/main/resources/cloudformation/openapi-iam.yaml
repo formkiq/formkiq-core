@@ -1069,8 +1069,8 @@ Resources:
                     schema:
                       $ref: '#/components/schemas/AddLocaleRequest'
               responses:
-                '200':
-                  description: 200 OK
+                '201':
+                  description: 201 CREATED
                   headers:
                     Access-Control-Allow-Origin:
                       $ref: '#/components/headers/AccessControlAllowOrigin'
@@ -1161,7 +1161,7 @@ Resources:
                       $ref: '#/components/schemas/AddLocaleResourceItemRequest'
               responses:
                 '200':
-                  description: 200 OK
+                  description: 201 CREATED
                   headers:
                     Access-Control-Allow-Origin:
                       $ref: '#/components/headers/AccessControlAllowOrigin'

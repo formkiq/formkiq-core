@@ -33,6 +33,7 @@ import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAttribute;
 import com.formkiq.client.model.AddAttributeRequest;
 import com.formkiq.client.model.AddAttributeSchemaRequired;
+import com.formkiq.client.model.AddLocaleRequest;
 import com.formkiq.client.model.AddLocaleResourceInterfaceItem;
 import com.formkiq.client.model.AddLocaleResourceItemRequest;
 import com.formkiq.client.model.AddLocaleResourceItemResponse;
@@ -106,6 +107,7 @@ public class SiteSchemaRequestTest extends AbstractAwsIntegrationTest {
   void testPutSitesSchema01() throws ApiException {
     // given
     String siteId = ID.uuid();
+    final String locale = "en";
 
     List<ApiClient> apiClients = getApiClients(siteId);
     for (ApiClient apiClient : apiClients) {
@@ -131,16 +133,18 @@ public class SiteSchemaRequestTest extends AbstractAwsIntegrationTest {
       // given
       SystemManagementApi api = new SystemManagementApi(apiClient);
 
+      api.addLocale(siteId, new AddLocaleRequest().locale(locale));
+
       AddLocaleResourceSchemaItem aitem = new AddLocaleResourceSchemaItem().localizedValue("777")
           .allowedValue("222").itemType(LocaleResourceType.SCHEMA).attributeKey(key);
       AddLocaleResourceItemRequest addResourceReq =
           new AddLocaleResourceItemRequest().resourceItem(new AddResourceItem(aitem));
 
       // when
-      api.addLocaleResourceItem(siteId, "en", addResourceReq);
+      api.addLocaleResourceItem(siteId, locale, addResourceReq);
 
       // then
-      GetSitesSchemaResponse sitesSchema = schemasApi.getSitesSchema(siteId, "en");
+      GetSitesSchemaResponse sitesSchema = schemasApi.getSitesSchema(siteId, locale);
       assertNotNull(sitesSchema);
       assertNotNull(sitesSchema.getAttributes());
       List<AttributeSchemaRequired> required = notNull(sitesSchema.getAttributes().getRequired());
@@ -170,6 +174,7 @@ public class SiteSchemaRequestTest extends AbstractAwsIntegrationTest {
   @Test
   void addResourceItem01() throws ApiException {
     // given
+    String locale = "en";
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       List<ApiClient> apiClients = getApiClients(siteId);
@@ -177,13 +182,15 @@ public class SiteSchemaRequestTest extends AbstractAwsIntegrationTest {
 
         String key = ID.uuid();
         SystemManagementApi api = new SystemManagementApi(apiClient);
+        api.addLocale(siteId, new AddLocaleRequest().locale(locale));
+
         AddLocaleResourceInterfaceItem item = new AddLocaleResourceInterfaceItem()
             .itemType(LocaleResourceType.INTERFACE).interfaceKey(key).localizedValue("123");
         AddLocaleResourceItemRequest addReq =
             new AddLocaleResourceItemRequest().resourceItem(new AddResourceItem(item));
 
         // when
-        AddLocaleResourceItemResponse response = api.addLocaleResourceItem(siteId, "en", addReq);
+        AddLocaleResourceItemResponse response = api.addLocaleResourceItem(siteId, locale, addReq);
 
         // then
         assertEquals("INTERFACE#" + key, response.getItemKey());
