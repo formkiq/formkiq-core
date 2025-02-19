@@ -34,12 +34,16 @@ import java.net.http.HttpRequest.Builder;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Executor;
+
 import com.formkiq.module.http.HttpHeaders;
 import com.formkiq.module.http.HttpService;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
@@ -48,6 +52,7 @@ import software.amazon.awssdk.auth.signer.params.Aws4SignerParams;
 import software.amazon.awssdk.http.SdkHttpFullRequest;
 import software.amazon.awssdk.http.SdkHttpMethod;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.utils.IoUtils;
 
 /**
  *
@@ -182,16 +187,15 @@ public final class HttpServiceSigv4 implements HttpService {
       }
     }
 
-    builder = switch (request.method()) {
-      case GET -> builder.GET();
-      case POST, PUT, PATCH -> {
-        try (InputStream is = request.contentStreamProvider().get().newStream()) {
-          yield builder.method(request.method().name(), BodyPublishers.ofInputStream(() -> is));
-        }
+    if (request.contentStreamProvider().isPresent()) {
+      try (InputStream is = request.contentStreamProvider().get().newStream()) {
+        byte[] data = IoUtils.toByteArray(is);
+        builder.method(request.method().name(), BodyPublishers.ofByteArray(data));
+        builder.header("x-amz-content-sha256", sha256Hex(data));
       }
-      case DELETE -> builder.DELETE();
-      default -> builder.method(request.method().name(), BodyPublishers.noBody());
-    };
+    } else {
+      builder.method(request.method().name(), BodyPublishers.noBody());
+    }
 
     try {
       return this.client.send(builder.build(), BodyHandlers.ofString());
@@ -205,6 +209,15 @@ public final class HttpServiceSigv4 implements HttpService {
       final Optional<Map<String, String>> parameters) throws IOException {
     SdkHttpFullRequest.Builder request =
         buildRequest(url, SdkHttpMethod.GET, headers, parameters, Optional.empty());
+    SdkHttpFullRequest req = sign(request);
+    return execute(req);
+  }
+
+  @Override
+  public HttpResponse<String> get(final String url, final Optional<HttpHeaders> headers,
+      final Optional<Map<String, String>> parameters, final String payload) throws IOException {
+    SdkHttpFullRequest.Builder request =
+        buildRequest(url, SdkHttpMethod.GET, headers, parameters, Optional.of(payload));
     SdkHttpFullRequest req = sign(request);
     return execute(req);
   }
@@ -280,6 +293,16 @@ public final class HttpServiceSigv4 implements HttpService {
       return new URI(uri);
     } catch (URISyntaxException e) {
       throw new IOException(e);
+    }
+  }
+
+  private static String sha256Hex(byte[] data) {
+    try {
+      MessageDigest md = MessageDigest.getInstance("SHA-256");
+      byte[] digest = md.digest(data);
+      return HexFormat.of().formatHex(digest);
+    } catch (NoSuchAlgorithmException e) {
+      throw new IllegalStateException(e);
     }
   }
 }

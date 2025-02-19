@@ -125,6 +125,20 @@ public class HttpServiceJdk11 implements HttpService {
   }
 
   @Override
+  public HttpResponse<String> get(final String url, final Optional<HttpHeaders> headers,
+      final Optional<Map<String, String>> parameters, final String payload) throws IOException {
+
+    BodyPublisher body =
+        payload != null ? BodyPublishers.ofString(payload) : HttpRequest.BodyPublishers.noBody();
+    HttpRequest request = build(url, headers, parameters).method("GET", body).build();
+    try {
+      return this.client.send(request, HttpResponse.BodyHandlers.ofString());
+    } catch (InterruptedException e) {
+      throw new IOException(e);
+    }
+  }
+
+  @Override
   public HttpResponse<InputStream> getAsInputStream(final String url,
       final Optional<HttpHeaders> headers, final Optional<Map<String, String>> parameters)
       throws IOException {
