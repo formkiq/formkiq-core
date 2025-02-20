@@ -34,10 +34,8 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.schemas.SchemaService;
-import com.formkiq.strings.Strings;
 
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
@@ -54,7 +52,7 @@ public class AttributeAllowedValuesRequestHandler
     String siteId = authorization.getSiteId();
     String key = event.getPathParameters().get("key");
     String classificationId = event.getPathParameter("classificationId");
-    Locale locale = Strings.parseLocale(event.getQueryStringParameter("locale"));
+    String locale = event.getQueryStringParameter("locale");
 
     SchemaService schemaService = awsServices.getExtension(SchemaService.class);
     List<String> allowedValues =

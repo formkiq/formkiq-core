@@ -647,44 +647,64 @@ public class SitesLocaleResourceItemRequestHandlerTest extends AbstractApiClient
   @Test
   void testGetSchema01() throws ApiException {
     // given
-    String locale = "en";
-    String attributeKey = "myattr";
+    String locale = "en-001";
+    String key = "myattr";
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
       setBearerToken(siteId);
 
-      this.systemApi.addLocale(siteId, new AddLocaleRequest().locale(locale));
+      for (boolean flag : Arrays.asList(true, false)) {
+        this.systemApi.addLocale(siteId, new AddLocaleRequest().locale(locale));
 
-      addAttribute(siteId, attributeKey);
-      setSiteSchema(siteId, attributeKey, List.of("1111", "222", "333"), true);
-      addLocaleSchemaResourceItem(siteId, attributeKey, "222", "localVal", locale);
+        String attributeKey = key + "_" + ID.uuid();
+        addAttribute(siteId, attributeKey);
+        setSiteSchema(siteId, attributeKey, List.of("1111", "222", "333"), flag);
+        addLocaleSchemaResourceItem(siteId, attributeKey, "222", "localVal", locale);
 
-      // when
-      final GetSitesSchemaResponse sitesSchema0 = this.schemasApi.getSitesSchema(siteId, locale);
-      final GetSitesSchemaResponse sitesSchema1 = this.schemasApi.getSitesSchema(siteId, null);
+        // when
+        final GetSitesSchemaResponse sitesSchema0 = this.schemasApi.getSitesSchema(siteId, locale);
+        final GetSitesSchemaResponse sitesSchema1 = this.schemasApi.getSitesSchema(siteId, null);
 
-      // then
-      assertNotNull(sitesSchema0.getAttributes());
-      List<AttributeSchemaRequired> required = notNull(sitesSchema0.getAttributes().getRequired());
-      assertEquals(1, required.size());
-      AttributeSchemaRequired attr0 = required.get(0);
-      assertEquals(attributeKey, attr0.getAttributeKey());
-      assertEquals(1, notNull(attr0.getLocalizedAllowedValues()).size());
-      assertEquals("localVal", attr0.getLocalizedAllowedValues().get("222"));
+        // then
+        assertNotNull(sitesSchema0.getAttributes());
+        if (flag) {
+          List<AttributeSchemaRequired> reqd = notNull(sitesSchema0.getAttributes().getRequired());
+          assertEquals(1, reqd.size());
+          AttributeSchemaRequired attr0 = reqd.get(0);
+          assertEquals(attributeKey, attr0.getAttributeKey());
+          assertEquals(1, notNull(attr0.getLocalizedAllowedValues()).size());
+          assertEquals("localVal", attr0.getLocalizedAllowedValues().get("222"));
+        } else {
+          List<AttributeSchemaOptional> required =
+              notNull(sitesSchema0.getAttributes().getOptional());
+          assertEquals(1, required.size());
+          AttributeSchemaOptional attr0 = required.get(0);
+          assertEquals(attributeKey, attr0.getAttributeKey());
+          assertEquals(1, notNull(attr0.getLocalizedAllowedValues()).size());
+          assertEquals("localVal", attr0.getLocalizedAllowedValues().get("222"));
+        }
 
-      assertNotNull(sitesSchema1.getAttributes());
-      AttributeSchemaRequired attr1 = notNull(sitesSchema1.getAttributes().getRequired()).get(0);
-      assertEquals(0, notNull(attr1.getLocalizedAllowedValues()).size());
+        assertNotNull(sitesSchema1.getAttributes());
+        if (flag) {
+          AttributeSchemaRequired attr1 =
+              notNull(sitesSchema1.getAttributes().getRequired()).get(0);
+          assertEquals(0, notNull(attr1.getLocalizedAllowedValues()).size());
+        } else {
+          AttributeSchemaOptional attr1 =
+              notNull(sitesSchema1.getAttributes().getOptional()).get(0);
+          assertEquals(0, notNull(attr1.getLocalizedAllowedValues()).size());
+        }
 
-      // when
-      GetAttributeAllowedValuesResponse resp0 =
-          this.schemasApi.getSitesSchemaAttributeAllowedValues(siteId, attributeKey, locale);
-      GetAttributeAllowedValuesResponse resp1 =
-          this.schemasApi.getSitesSchemaAttributeAllowedValues(siteId, attributeKey, null);
+        // when
+        GetAttributeAllowedValuesResponse resp0 =
+            this.schemasApi.getSitesSchemaAttributeAllowedValues(siteId, attributeKey, locale);
+        GetAttributeAllowedValuesResponse resp1 =
+            this.schemasApi.getSitesSchemaAttributeAllowedValues(siteId, attributeKey, null);
 
-      // then
-      assertEquals(1, notNull(resp0.getLocalizedAllowedValues()).size());
-      assertEquals("localVal", resp0.getLocalizedAllowedValues().get("222"));
-      assertEquals(0, notNull(resp1.getLocalizedAllowedValues()).size());
+        // then
+        assertEquals(1, notNull(resp0.getLocalizedAllowedValues()).size());
+        assertEquals("localVal", resp0.getLocalizedAllowedValues().get("222"));
+        assertEquals(0, notNull(resp1.getLocalizedAllowedValues()).size());
+      }
     }
   }
 

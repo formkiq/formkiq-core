@@ -168,10 +168,10 @@ public interface SchemaService {
    * @param siteId {@link String}
    * @param classificationId {@link String}
    * @param schemaAttributes {@link SchemaAttributes}
-   * @param locale {@link Locale}
+   * @param locale {@link String}
    */
   void updateLocalization(String siteId, String classificationId, SchemaAttributes schemaAttributes,
-      Locale locale);
+      String locale);
 
   /**
    * Get Attribute Allowed Values Localization.
@@ -180,9 +180,9 @@ public interface SchemaService {
    * @param classificationId {@link String}
    * @param attributeKey {@link String}
    * @param allowedValues {@link Collection} {@link String}
-   * @param locale {@link Locale}
+   * @param locale {@link String}
    * @return Map
    */
   Map<String, String> getAttributeAllowedValuesLocalization(String siteId, String classificationId,
-      String attributeKey, Collection<String> allowedValues, Locale locale);
+      String attributeKey, Collection<String> allowedValues, String locale);
 }

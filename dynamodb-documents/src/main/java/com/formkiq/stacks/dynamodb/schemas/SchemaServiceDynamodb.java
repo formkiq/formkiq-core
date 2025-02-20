@@ -53,7 +53,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -353,7 +352,7 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
 
   @Override
   public void updateLocalization(final String siteId, final String classificationId,
-      final SchemaAttributes schemaAttributes, final Locale locale) {
+      final SchemaAttributes schemaAttributes, final String locale) {
 
     if (schemaAttributes != null && locale != null) {
 
@@ -412,7 +411,7 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
   @Override
   public Map<String, String> getAttributeAllowedValuesLocalization(final String siteId,
       final String classificationId, final String attributeKey,
-      final Collection<String> allowedValues, final Locale locale) {
+      final Collection<String> allowedValues, final String locale) {
 
     Map<String, String> map = new HashMap<>();
 
@@ -439,10 +438,10 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
     return map;
   }
 
-  private static LocaleTypeRecord createLocaleRecord(final Locale locale,
+  private static LocaleTypeRecord createLocaleRecord(final String locale,
       final LocaleResourceType resourceType, final String classificationId,
       final String attributeKey, final String allowedValue) {
-    return new LocaleTypeRecord().setLocale(locale.getLanguage()).setAttributeKey(attributeKey)
+    return new LocaleTypeRecord().setLocale(locale).setAttributeKey(attributeKey)
         .setClassificationId(classificationId).setItemType(resourceType)
         .setAllowedValue(allowedValue);
   }

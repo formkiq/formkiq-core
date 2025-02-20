@@ -25,7 +25,6 @@ package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.util.Collection;
-import java.util.Locale;
 import java.util.Map;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
@@ -40,7 +39,6 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.schemas.Schema;
 import com.formkiq.stacks.dynamodb.schemas.SchemaService;
 import com.formkiq.stacks.dynamodb.schemas.SitesSchemaRecord;
-import com.formkiq.strings.Strings;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
 import com.google.gson.Gson;
@@ -68,7 +66,7 @@ public class SitesSchemaRequestHandler
     String json = record.getSchema();
     Schema schema = this.gson.fromJson(json, Schema.class);
 
-    Locale locale = Strings.parseLocale(event.getQueryStringParameter("locale"));
+    String locale = event.getQueryStringParameter("locale");
     service.updateLocalization(siteId, null, schema.getAttributes(), locale);
 
     Map<String, Object> map =
