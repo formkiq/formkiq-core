@@ -395,12 +395,12 @@ public class SitesLocaleResourceItemRequestHandlerTest extends AbstractApiClient
           addLocaleSchemaResourceItem(siteId, attributeKey, allowedValue, "localval", locale);
 
       // then
-      assertEquals("SCHEMA#myAbc##129380", response.getItemKey());
+      assertEquals("SCHEMA##myAbc##129380", response.getItemKey());
       GetLocaleResourceItemResponse i =
           this.systemApi.getLocaleResourceItem(siteId, locale, response.getItemKey());
       assertNotNull(i.getResourceItem());
       assertResourceSchema(i.getResourceItem(), LocaleResourceType.SCHEMA, attributeKey,
-          allowedValue, "SCHEMA#myAbc##129380");
+          allowedValue, "SCHEMA##myAbc##129380");
     }
   }
 

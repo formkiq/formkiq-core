@@ -93,7 +93,7 @@ public class LocaleTypeRecord implements DynamodbRecord<LocaleTypeRecord> {
    */
   public static String getSchemaSk(final String locale, final LocaleResourceType itemType,
       final String attributeKey, final String allowedValue) {
-    return locale + "##" + itemType.name() + "#" + attributeKey + "##" + allowedValue;
+    return locale + "##" + itemType.name() + "##" + attributeKey + "##" + allowedValue;
   }
 
   /**
