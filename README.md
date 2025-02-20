@@ -59,7 +59,9 @@ And it ALL runs in *your* AWS account.
 ## Demo
 
 Try out our [FormKiQ Readonly Demo](https://explore.tryformkiq.com/)
+
 Email: demo@formkiq.com
+
 Password: tryformkiq
 
 (You can also sign up for a FormKiQ Explore workspace at https://formkiq.com)
