@@ -346,7 +346,7 @@ public class LocaleServiceDynamodb implements LocaleService {
   public Pagination<LocaleTypeRecord> findAll(final String siteId, final String locale,
       final LocaleResourceType itemType, final String nextToken, final int limit) {
 
-    String sk = locale + "#" + (itemType != null ? itemType.name() : "");
+    String sk = locale + "##" + (itemType != null ? itemType.name() : "");
     Map<String, AttributeValue> key = toMap(siteId, sk);
     Map<String, AttributeValue> startKey = new StringToMapAttributeValue().apply(nextToken);
     QueryConfig config = new QueryConfig().scanIndexForward(Boolean.TRUE);
@@ -362,7 +362,7 @@ public class LocaleServiceDynamodb implements LocaleService {
   public LocaleTypeRecord find(final String siteId, final String locale, final String itemKey) {
     LocaleTypeRecord record = new LocaleTypeRecord();
     String pk = record.pk(siteId);
-    String sk = locale + "#" + itemKey;
+    String sk = locale + "##" + itemKey;
     Map<String, AttributeValue> attr = this.db.get(fromS(pk), fromS(sk));
     return record.getFromAttributes(siteId, attr);
   }
@@ -371,7 +371,7 @@ public class LocaleServiceDynamodb implements LocaleService {
   public boolean delete(final String siteId, final String locale, final String itemKey) {
     LocaleTypeRecord record = new LocaleTypeRecord();
     String pk = record.pk(siteId);
-    String sk = locale + "#" + itemKey;
+    String sk = locale + "##" + itemKey;
     return this.db.deleteItem(fromS(pk), fromS(sk));
   }
 

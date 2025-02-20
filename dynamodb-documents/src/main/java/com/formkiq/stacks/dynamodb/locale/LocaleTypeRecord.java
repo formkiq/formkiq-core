@@ -79,7 +79,7 @@ public class LocaleTypeRecord implements DynamodbRecord<LocaleTypeRecord> {
    */
   public static String getInterfaceSk(final String locale, final LocaleResourceType itemType,
       final String interfaceKey) {
-    return locale + "#" + itemType.name() + "#" + interfaceKey;
+    return locale + "##" + itemType.name() + "##" + interfaceKey;
   }
 
   /**
@@ -93,7 +93,7 @@ public class LocaleTypeRecord implements DynamodbRecord<LocaleTypeRecord> {
    */
   public static String getSchemaSk(final String locale, final LocaleResourceType itemType,
       final String attributeKey, final String allowedValue) {
-    return locale + "#" + itemType.name() + "#" + attributeKey + "#" + allowedValue;
+    return locale + "##" + itemType.name() + "#" + attributeKey + "##" + allowedValue;
   }
 
   /**
@@ -108,7 +108,7 @@ public class LocaleTypeRecord implements DynamodbRecord<LocaleTypeRecord> {
    */
   public static String getClassificationSk(final String locale, final LocaleResourceType itemType,
       final String classificationId, final String attributeKey, final String allowedValue) {
-    return locale + "#" + itemType.name() + "#" + classificationId + "#" + attributeKey + "#"
+    return locale + "##" + itemType.name() + "##" + classificationId + "##" + attributeKey + "##"
         + allowedValue;
   }
 
@@ -374,6 +374,6 @@ public class LocaleTypeRecord implements DynamodbRecord<LocaleTypeRecord> {
 
   public String getItemKey() {
     String sk = sk();
-    return sk.substring(sk.indexOf("#") + 1);
+    return sk.substring(sk.indexOf("##") + 2);
   }
 }

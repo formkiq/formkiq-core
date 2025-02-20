@@ -117,10 +117,9 @@ public class SitesLocaleResourceItemRequestHandlerTest extends AbstractApiClient
   /**
    * DELETE /sites/{siteId}/locales.
    *
-   * @throws Exception an error has occurred
    */
   @Test
-  public void testDeleteLocale01() throws Exception {
+  public void testDeleteLocale01() {
     // given
     String locale = "en";
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
@@ -163,18 +162,18 @@ public class SitesLocaleResourceItemRequestHandlerTest extends AbstractApiClient
           this.systemApi.addLocaleResourceItem(siteId, locale, req);
 
       // then
-      assertEquals("INTERFACE#mykey", response.getItemKey());
+      assertEquals("INTERFACE##mykey", response.getItemKey());
 
       List<ResourceItem> items = notNull(
           this.systemApi.getLocaleResourceItems(siteId, locale, null, null).getResourceItems());
       assertEquals(1, items.size());
-      assertResourceInterface(items.get(0), "mykey", "bbb", "INTERFACE#mykey");
+      assertResourceInterface(items.get(0), "mykey", "bbb", "INTERFACE##mykey");
 
       GetLocaleResourceItemResponse lri =
           this.systemApi.getLocaleResourceItem(siteId, locale, response.getItemKey());
       assertNotNull(lri);
       assertNotNull(lri.getResourceItem());
-      assertResourceInterface(lri.getResourceItem(), "mykey", "bbb", "INTERFACE#mykey");
+      assertResourceInterface(lri.getResourceItem(), "mykey", "bbb", "INTERFACE##mykey");
 
       // when
       try {
@@ -199,7 +198,7 @@ public class SitesLocaleResourceItemRequestHandlerTest extends AbstractApiClient
       } catch (ApiException e) {
         // then
         assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
-        assertEquals("{\"message\":\"ItemKey 'INTERFACE#mykey' not found\"}", e.getResponseBody());
+        assertEquals("{\"message\":\"ItemKey 'INTERFACE##mykey' not found\"}", e.getResponseBody());
       }
     }
   }
@@ -396,12 +395,12 @@ public class SitesLocaleResourceItemRequestHandlerTest extends AbstractApiClient
           addLocaleSchemaResourceItem(siteId, attributeKey, allowedValue, "localval", locale);
 
       // then
-      assertEquals("SCHEMA#myAbc#129380", response.getItemKey());
+      assertEquals("SCHEMA#myAbc##129380", response.getItemKey());
       GetLocaleResourceItemResponse i =
           this.systemApi.getLocaleResourceItem(siteId, locale, response.getItemKey());
       assertNotNull(i.getResourceItem());
       assertResourceSchema(i.getResourceItem(), LocaleResourceType.SCHEMA, attributeKey,
-          allowedValue, "SCHEMA#myAbc#129380");
+          allowedValue, "SCHEMA#myAbc##129380");
     }
   }
 
@@ -461,12 +460,13 @@ public class SitesLocaleResourceItemRequestHandlerTest extends AbstractApiClient
           this.systemApi.addLocaleResourceItem(siteId, locale, req);
 
       // then
-      assertEquals("CLASSIFICATION#" + classificationId + "#myAbcd#129380", response.getItemKey());
+      assertEquals("CLASSIFICATION##" + classificationId + "##myAbcd##129380",
+          response.getItemKey());
       GetLocaleResourceItemResponse i =
           this.systemApi.getLocaleResourceItem(siteId, locale, response.getItemKey());
       assertNotNull(i.getResourceItem());
       assertResourceSchema(i.getResourceItem(), LocaleResourceType.CLASSIFICATION, attributeKey,
-          allowedValue, "CLASSIFICATION#" + classificationId + "#myAbcd#129380");
+          allowedValue, "CLASSIFICATION##" + classificationId + "##myAbcd##129380");
       assertEquals(classificationId, i.getResourceItem().getClassificationId());
     }
   }
@@ -606,12 +606,12 @@ public class SitesLocaleResourceItemRequestHandlerTest extends AbstractApiClient
           this.systemApi.setLocaleResourceItem(siteId, locale, response.getItemKey(), setReq);
 
       // then
-      assertEquals("set item 'INTERFACE#mykey2' successfully", setResponse.getMessage());
+      assertEquals("set item 'INTERFACE##mykey2' successfully", setResponse.getMessage());
       GetLocaleResourceItemResponse lri =
           this.systemApi.getLocaleResourceItem(siteId, locale, response.getItemKey());
       assertNotNull(lri);
       assertNotNull(lri.getResourceItem());
-      assertResourceInterface(lri.getResourceItem(), "mykey2", "ccc", "INTERFACE#mykey2");
+      assertResourceInterface(lri.getResourceItem(), "mykey2", "ccc", "INTERFACE##mykey2");
     }
   }
 
