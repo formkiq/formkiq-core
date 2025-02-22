@@ -37,6 +37,7 @@ import com.formkiq.client.model.AddDocumentAttributeStandard;
 import com.formkiq.client.model.AddDocumentTag;
 import com.formkiq.client.model.AddDocumentTagsRequest;
 import com.formkiq.client.model.AddDocumentUploadRequest;
+import com.formkiq.client.model.AttributeDataType;
 import com.formkiq.client.model.AttributeValueType;
 import com.formkiq.client.model.DocumentSearch;
 import com.formkiq.client.model.DocumentSearchAttribute;
@@ -55,6 +56,7 @@ import com.formkiq.client.model.GetDocumentSyncResponse;
 import com.formkiq.client.model.SearchResponseFields;
 import com.formkiq.client.model.SearchResultDocument;
 import com.formkiq.client.model.SearchResultDocumentAttribute;
+import com.formkiq.client.model.Watermark;
 import com.formkiq.module.lambda.typesense.TypesenseProcessor;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.FolderIndexProcessor;
@@ -1238,6 +1240,46 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
       // then
       assertEquals(1, documents.size());
       assertEquals("b", documents.get(0).getPath());
+    }
+  }
+
+  /**
+   * Add watermark attribute types.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleSearchRequest30() throws Exception {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      AddAttributeRequest req = new AddAttributeRequest().attribute(new AddAttribute().key("wm1")
+          .watermark(new Watermark().text("123")).dataType(AttributeDataType.WATERMARK));
+      this.attributesApi.addAttribute(req, siteId);
+
+      AddDocumentUploadRequest uploadReq = new AddDocumentUploadRequest();
+
+      AddDocumentAttribute attr0 =
+          new AddDocumentAttribute(new AddDocumentAttributeStandard().key("wm1"));
+      uploadReq.addAttributesItem(attr0);
+
+      this.documentsApi.addDocumentUpload(uploadReq, siteId, null, null, null).getDocumentId();
+
+      DocumentSearchAttribute attributes = new DocumentSearchAttribute().key("wm1");
+
+      DocumentSearchRequest dsq =
+          new DocumentSearchRequest().query(new DocumentSearch().attribute(attributes))
+              .responseFields(new SearchResponseFields().addAttributesItem("wm1"));
+
+      // when
+      DocumentSearchResponse response =
+          this.searchApi.documentSearch(dsq, siteId, null, null, null);
+
+      // then
+      List<SearchResultDocument> documents = notNull(response.getDocuments());
+      assertEquals(1, documents.size());
     }
   }
 }
