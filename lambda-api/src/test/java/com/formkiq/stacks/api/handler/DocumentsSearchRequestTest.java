@@ -1265,7 +1265,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
           new AddDocumentAttribute(new AddDocumentAttributeStandard().key("wm1"));
       uploadReq.addAttributesItem(attr0);
 
-      this.documentsApi.addDocumentUpload(uploadReq, siteId, null, null, null).getDocumentId();
+      this.documentsApi.addDocumentUpload(uploadReq, siteId, null, null, null);
 
       DocumentSearchAttribute attributes = new DocumentSearchAttribute().key("wm1");
 
