@@ -25,21 +25,24 @@ package com.formkiq.aws.dynamodb.model;
 
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamodbRecord;
-import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.graalvm.annotations.Reflectable;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.formkiq.aws.dynamodb.AttributeValueHelper.addDateIfNotNull;
+import static com.formkiq.aws.dynamodb.AttributeValueHelper.addEnumIfNotNull;
+import static com.formkiq.aws.dynamodb.AttributeValueHelper.addNumberIfNotEmpty;
+import static com.formkiq.aws.dynamodb.AttributeValueHelper.addStringIfNotEmpty;
+import static com.formkiq.aws.dynamodb.AttributeValueHelper.toDateValue;
+import static com.formkiq.aws.dynamodb.AttributeValueHelper.toEnumValue;
+import static com.formkiq.aws.dynamodb.AttributeValueHelper.toStringValue;
 import static com.formkiq.aws.dynamodb.DbKeys.PREFIX_DOCS;
 import static com.formkiq.aws.dynamodb.DbKeys.SK;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.objects.DateUtil.getInIso8601Format;
-import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 
 /**
  * Document Sync Record.
@@ -48,8 +51,6 @@ import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 public class DocumentSyncRecord implements DynamodbRecord<DocumentSyncRecord> {
   /** Syncs SK. */
   private static final String SK_SYNCS = "syncs#";
-  /** {@link SimpleDateFormat}. */
-  private final SimpleDateFormat df = DateUtil.getIsoDateFormatter();
   /** Document Id. */
   private String documentId;
   /** Record Sync date. */
@@ -264,34 +265,15 @@ public class DocumentSyncRecord implements DynamodbRecord<DocumentSyncRecord> {
   public Map<String, AttributeValue> getDataAttributes() {
     Map<String, AttributeValue> map = new HashMap<>();
 
-    map.put("documentId", fromS(this.documentId));
-
-    if (this.service != null) {
-      map.put("service", fromS(this.service.name()));
-    }
-
-    if (this.syncDate != null) {
-      map.put("syncDate", AttributeValue.fromS(this.df.format(this.syncDate)));
-    }
-
-    map.put("inserteddate", AttributeValue.fromS(this.df.format(this.insertedDate)));
-    map.put("userId", fromS(this.userId));
-
-    if (this.status != null) {
-      map.put("status", fromS(this.status.name()));
-    }
-
-    if (this.type != null) {
-      map.put("type", fromS(this.type.name()));
-    }
-
-    if (this.timeToLive != null) {
-      map.put("TimeToLive", AttributeValue.fromN(String.valueOf(this.timeToLive)));
-    }
-
-    if (!isEmpty(message)) {
-      map.put("message", fromS(this.message));
-    }
+    addStringIfNotEmpty(map, "documentId", this.documentId);
+    addEnumIfNotNull(map, "service", this.service);
+    addDateIfNotNull(map, "syncDate", this.syncDate);
+    addDateIfNotNull(map, "inserteddate", this.insertedDate);
+    addStringIfNotEmpty(map, "userId", this.userId);
+    addEnumIfNotNull(map, "status", this.status);
+    addEnumIfNotNull(map, "type", this.type);
+    addNumberIfNotEmpty(map, "TimeToLive", this.timeToLive);
+    addStringIfNotEmpty(map, "message", this.message);
 
     return map;
   }
@@ -313,37 +295,22 @@ public class DocumentSyncRecord implements DynamodbRecord<DocumentSyncRecord> {
     DocumentSyncRecord record = null;
 
     if (!attrs.isEmpty()) {
-      record = new DocumentSyncRecord().setDocumentId(ss(attrs, "documentId"))
-          .setService(DocumentSyncServiceType.valueOf(ss(attrs, "service")))
-          .setStatus(DocumentSyncStatus.valueOf(ss(attrs, "status")))
-          .setType(DocumentSyncType.valueOf(ss(attrs, "type"))).setUserId(ss(attrs, "userId"))
-          .setMessage(ss(attrs, "message")).setSk(ss(attrs, SK));
+      record = new DocumentSyncRecord().setDocumentId(toStringValue(attrs, "documentId"))
+          .setService(toEnumValue(attrs, DocumentSyncServiceType.class, "service"))
+          .setStatus(toEnumValue(attrs, DocumentSyncStatus.class, "status"))
+          .setType(toEnumValue(attrs, DocumentSyncType.class, "type"))
+          .setUserId(toStringValue(attrs, "userId")).setMessage(toStringValue(attrs, "message"))
+          .setSk(toStringValue(attrs, SK));
 
       if (attrs.containsKey("TimeToLive")) {
         record = record.setTimeToLive(Long.valueOf(attrs.get("TimeToLive").n()));
       }
 
-      record = record.setSyncDate(toDate(attrs, "syncDate"));
-      record = record.setInsertedDate(toDate(attrs, "inserteddate"));
+      record = record.setSyncDate(toDateValue(attrs, "syncDate"));
+      record = record.setInsertedDate(toDateValue(attrs, "inserteddate"));
     }
 
     return record;
-  }
-
-  private Date toDate(final Map<String, AttributeValue> attrs, final String key) {
-
-    Date returnDate = null;
-    String date = ss(attrs, key);
-
-    if (!isEmpty(date)) {
-      try {
-        returnDate = this.df.parse(date);
-      } catch (ParseException e) {
-        // ignore
-      }
-    }
-
-    return returnDate;
   }
 
   @Override

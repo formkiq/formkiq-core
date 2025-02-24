@@ -23,8 +23,12 @@
  */
 package com.formkiq.aws.dynamodb;
 
+import com.formkiq.aws.dynamodb.objects.DateUtil;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Map;
 
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
@@ -35,6 +39,21 @@ import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.from
  * Helper class for {@link software.amazon.awssdk.services.dynamodb.model.AttributeValue}.
  */
 public class AttributeValueHelper {
+
+  /**
+   * Add {@link Date} to {@link Map} if value is not empty.
+   *
+   * @param map {@link Map}
+   * @param key {@link String}
+   * @param value {@link Date}
+   */
+  public static void addDateIfNotNull(final Map<String, AttributeValue> map, final String key,
+      final Date value) {
+    if (value != null) {
+      SimpleDateFormat df = DateUtil.getIsoDateFormatter();
+      map.put(key, AttributeValue.fromS(df.format(value)));
+    }
+  }
 
   /**
    * Add {@link String} to {@link Map} if value is not empty.
@@ -79,6 +98,20 @@ public class AttributeValueHelper {
   }
 
   /**
+   * Add {@link String} to {@link Map} if value is not empty.
+   *
+   * @param map {@link Map}
+   * @param key {@link String}
+   * @param value {@link Long}
+   */
+  public static void addNumberIfNotEmpty(final Map<String, AttributeValue> map, final String key,
+      final Long value) {
+    if (value != null) {
+      map.put(key, AttributeValue.fromN(String.valueOf(value)));
+    }
+  }
+
+  /**
    * Convert {@link AttributeValue} to {@link String} or null.
    * 
    * @param attrs {@link Map}
@@ -88,6 +121,30 @@ public class AttributeValueHelper {
   public static String toStringValue(final Map<String, AttributeValue> attrs, final String key) {
     AttributeValue av = attrs.get(key);
     return av != null ? av.s() : null;
+  }
+
+  /**
+   * Convert {@link AttributeValue} to {@link Date}.
+   * 
+   * @param attrs {@link Map}
+   * @param key {@link String}
+   * @return Date
+   */
+  public static Date toDateValue(final Map<String, AttributeValue> attrs, final String key) {
+
+    Date returnDate = null;
+    String date = toStringValue(attrs, key);
+
+    if (!isEmpty(date)) {
+      try {
+        SimpleDateFormat df = DateUtil.getIsoDateFormatter();
+        returnDate = df.parse(date);
+      } catch (ParseException e) {
+        // ignore
+      }
+    }
+
+    return returnDate;
   }
 
   /**
