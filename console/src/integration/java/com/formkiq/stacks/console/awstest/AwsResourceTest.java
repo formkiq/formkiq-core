@@ -1,6 +1,6 @@
 /**
  * MIT License
- * 
+ *
  * Copyright (c) 2018 - 2020 FormKiQ
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -12,7 +12,7 @@
  *
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -75,10 +75,9 @@ public class AwsResourceTest {
   /**
    * beforeclass.
    *
-   * @throws IOException IOException
    */
   @BeforeAll
-  public static void beforeClass() throws IOException {
+  public static void beforeClass() {
 
     Region region = Region.of(System.getProperty("testregion"));
 
@@ -130,7 +129,6 @@ public class AwsResourceTest {
    * @throws InterruptedException InterruptedException
    * @throws IOException IOException
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testLogin() throws URISyntaxException, IOException, InterruptedException {
     String url = ssmService.getParameterValue("/formkiq/" + appenvironment + "/console/Url");
@@ -168,9 +166,7 @@ public class AwsResourceTest {
             page.fill("[placeholder=\"me@mycompany.com\"]", USER);
             page.click("[placeholder=\"******\"]");
             page.fill("[placeholder=\"******\"]", PASSWORD);
-            page.waitForNavigation(() -> {
-              page.locator("input:has-text(\"Sign In\")").click();
-            });
+            page.waitForNavigation(() -> page.locator("input:has-text(\"Sign In\")").click());
 
             page.waitForSelector("button:has-text(\"New\")");
             page.waitForSelector("text=Documents & Folders");
@@ -201,7 +197,7 @@ public class AwsResourceTest {
    */
   @Test
   public void testSsmParameters() {
-    assertEquals("v3.8.0",
+    assertEquals("v3.8.1",
         ssmService.getParameterValue("/formkiq/" + appenvironment + "/console/version"));
     assertTrue(ssmService.getParameterValue("/formkiq/" + appenvironment + "/s3/Console")
         .contains(appenvironment + "-console-"));
