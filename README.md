@@ -2,21 +2,20 @@
 
 <center>
 
-[Get started](https://formkiq.com) · [Docs](https://docs.formkiq.com/) · [Issues](https://github.com/formkiq/formkiq-core/issues) · [Discord](https://discord.gg/q5K5cRhymW) · [Get in touch](mailto:info@formkiq.com)
+[Get started](https://formkiq.com) · [Docs](https://docs.formkiq.com/) · [Issues](https://github.com/formkiq/formkiq-core/issues) · [Get in touch](mailto:info@formkiq.com)
 
 </center>
 
 [![Star us on GitHub](https://img.shields.io/github/stars/formkiq/formkiq-core?color=FFD700&label=Stars&logo=Github)](https://github.com/formiq/formkiq-core)
-[![twitter](https://img.shields.io/twitter/follow/formkiq?style=social)](https://twitter.com/intent/follow?screen_name=RevertdotDev) 
 <a href="https://github.com/formkiq/formkiq-core/tree/main/LICENSE.txt" target="_blank">
 <img src="https://img.shields.io/static/v1?label=license&message=MIT&color=white" alt="License">
 </a>
 
-## Document Layer for your Application
+## Document Management / Document Layer for your Application
 
 Storing documents in your application isn't as easy as it should be and most of the time they end up getting stuffed into your data layer.
 
-FormKiQ acts as your document layer along side your data layer of your application. It handles the storage and metadata of your documents so you don't have to.
+FormKiQ acts as your document layer along side your data layer of your application. It handles the storage and metadata of your documents so you don't have to, providing document management functionality.
 
 <div align="center" style="margin: 30px;">
 <img src="https://github.com/formkiq/formkiq-core/blob/1af9e28504f467c8b2ea91b4a497a868ee7f2740/docs/images/multi-tier-architecture.png" style="width:600px;" align="center" />
@@ -59,7 +58,13 @@ And it ALL runs in *your* AWS account.
 
 ## Demo
 
-Try out our [FormKiQ Readonly Demo](https://demo.tryformkiq.com/?demo=tryformkiq)
+Try out our [FormKiQ Readonly Demo](https://explore.tryformkiq.com/)
+
+Email: demo@formkiq.com
+
+Password: tryformkiq
+
+(You can also sign up for a FormKiQ Explore workspace at https://formkiq.com)
 
 ## Installation
 
