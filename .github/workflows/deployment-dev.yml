@@ -58,3 +58,4 @@ jobs:
         sam package --s3-prefix ${formKiQVersion} --s3-bucket formkiq-core-distribution-${awsRegion} --template-file template.yaml --region ${awsRegion} --output-template-file template-${formKiQVersion}.yaml
         aws s3 cp template-${formKiQVersion}.yaml s3://formkiq-core-distribution-${awsRegion}/${formKiQVersion}/template.yaml
         aws s3 cp vpc.yaml s3://formkiq-core-distribution-${awsRegion}/${formKiQVersion}/vpc.yaml
+        aws s3 cp vpc-import.yaml s3://formkiq-core-distribution-${awsRegion}/${formKiQVersion}/vpc-import.yaml
