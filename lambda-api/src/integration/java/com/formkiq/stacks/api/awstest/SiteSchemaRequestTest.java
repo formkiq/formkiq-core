@@ -193,7 +193,7 @@ public class SiteSchemaRequestTest extends AbstractAwsIntegrationTest {
         AddLocaleResourceItemResponse response = api.addLocaleResourceItem(siteId, locale, addReq);
 
         // then
-        assertEquals("INTERFACE#" + key, response.getItemKey());
+        assertEquals("INTERFACE##" + key, response.getItemKey());
         assertFalse(getResourceItems(api, siteId, "en").isEmpty());
         assertTrue(getResourceItems(api, siteId, "fr").isEmpty());
 
