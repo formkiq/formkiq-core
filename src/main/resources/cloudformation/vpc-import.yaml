@@ -45,9 +45,8 @@ Parameters:
     AllowedValues: ["false", "true"]
 
   PrivateRouteTableId:
-    Type: String
+    Type: CommaDelimitedList
     Description: Private Route Table ID (starts with 'rtb-')
-    Default: "rtb-05ca3181aca20a196"
 
 Conditions:
 
@@ -146,7 +145,7 @@ Resources:
     Properties:
       VpcEndpointType: Gateway
       RouteTableIds:
-        - Ref: PrivateRouteTableId
+        Ref: PrivateRouteTableId
       ServiceName:
         Fn::Sub: 'com.amazonaws.${AWS::Region}.s3'
       VpcId:
@@ -158,7 +157,7 @@ Resources:
     Properties:
       VpcEndpointType: Gateway
       RouteTableIds:
-        - Ref: PrivateRouteTableId
+        Ref: PrivateRouteTableId
       ServiceName:
         Fn::Sub: 'com.amazonaws.${AWS::Region}.dynamodb'
       VpcId:
