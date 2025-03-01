@@ -10,15 +10,18 @@ Parameters:
 
   PublicSubnet1Id:
     Type: String
-    Description: Public Subnet 1 ID (starts with 'subnet-')
+    Description: Public Subnet 1 (optional) ID (starts with 'subnet-')
+    Default: ""
 
   PublicSubnet2Id:
     Type: String
-    Description: Public Subnet 2 ID (starts with 'subnet-')
+    Description: Public Subnet 2 (optional) ID (starts with 'subnet-')
+    Default: ""
 
   PublicSubnet3Id:
     Type: String
-    Description: Public Subnet 3 ID (starts with 'subnet-')
+    Description: Public Subnet 3 (optional) ID (starts with 'subnet-')
+    Default: ""
 
   PrivateSubnet1Id:
     Type: String
