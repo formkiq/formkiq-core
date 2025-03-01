@@ -505,7 +505,7 @@ Resources:
         Fn::ImportValue:
           Fn::Sub: '${VpcStackName}-PublicSubnet1'
       SecurityGroups:
-        - NfsSecurityGroup
+        - Ref: NfsSecurityGroup
 
   MountTargetResource2:
     Type: AWS::EFS::MountTarget
@@ -517,7 +517,7 @@ Resources:
         Fn::ImportValue:
           Fn::Sub: '${VpcStackName}-PublicSubnet2'
       SecurityGroups:
-        - NfsSecurityGroup
+        - Ref: NfsSecurityGroup
 
   MountTargetResource3:
     Type: AWS::EFS::MountTarget
@@ -529,7 +529,7 @@ Resources:
         Fn::ImportValue:
           Fn::Sub: '${VpcStackName}-PublicSubnet3'
       SecurityGroups:
-        - NfsSecurityGroup
+        - Ref: NfsSecurityGroup
 
   ApiGateway:
     Type: AWS::ApiGatewayV2::Api
