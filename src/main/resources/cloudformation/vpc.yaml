@@ -371,19 +371,21 @@ Resources:
   HttpsSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Security Group which allows HTTPS access
+      GroupDescription: Security Group which allows HTTPS in private subnet
       VpcId: 
         Ref: Vpc
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 443
           ToPort: 443
-          CidrIp: 0.0.0.0/0
+          CidrIp:
+            Ref: VpcCidr
       SecurityGroupEgress:
         - IpProtocol: tcp
           FromPort: 443
           ToPort: 443
-          CidrIp: 0.0.0.0/0
+          CidrIp: 
+            Ref: VpcCidr
       Tags:
         - Key: Application
           Value: FormKiQ

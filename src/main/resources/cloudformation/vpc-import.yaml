@@ -8,6 +8,10 @@ Parameters:
     Description: "The ID of the existing VPC (leave blank to create new vpc)"
     Type: String
 
+  VpcCidr:
+    Type: String
+    Description: VPC CIDR block
+
   PublicSubnet1Id:
     Type: String
     Description: Public Subnet 1 (optional) ID (starts with 'subnet-')
@@ -116,12 +120,14 @@ Resources:
         - IpProtocol: tcp
           FromPort: 443
           ToPort: 443
-          CidrIp: 0.0.0.0/0
+          CidrIp:
+            Ref: VpcCidr
       SecurityGroupEgress:
         - IpProtocol: tcp
           FromPort: 443
           ToPort: 443
-          CidrIp: 0.0.0.0/0
+          CidrIp: 
+            Ref: VpcCidr
       Tags:
         - Key: Application
           Value: FormKiQ
