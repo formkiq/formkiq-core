@@ -477,6 +477,24 @@ Resources:
           Value: 
             Fn::Sub: "${AWS::StackName}-Typesense"
 
+  NfsSecurityGroup:
+    Condition: CreateResources
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security Group which allows NFS access
+      VpcId:
+        Ref:
+          Fn::ImportValue:
+            Fn::Sub: '${VpcStackName}-Vpc'
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 2049
+          ToPort: 2049
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Application
+          Value: FormKiQ
+
   MountTargetResource1:
     Type: AWS::EFS::MountTarget
     Condition: CreateResources
@@ -487,8 +505,7 @@ Resources:
         Fn::ImportValue:
           Fn::Sub: '${VpcStackName}-PublicSubnet1'
       SecurityGroups:
-      - Fn::ImportValue:
-          Fn::Sub: '${VpcStackName}-NfsSecurityGroup'
+        - NfsSecurityGroup
 
   MountTargetResource2:
     Type: AWS::EFS::MountTarget
@@ -500,9 +517,8 @@ Resources:
         Fn::ImportValue:
           Fn::Sub: '${VpcStackName}-PublicSubnet2'
       SecurityGroups:
-      - Fn::ImportValue:
-          Fn::Sub: '${VpcStackName}-NfsSecurityGroup'
-          
+        - NfsSecurityGroup
+
   MountTargetResource3:
     Type: AWS::EFS::MountTarget
     Condition: CreateResources
@@ -513,9 +529,8 @@ Resources:
         Fn::ImportValue:
           Fn::Sub: '${VpcStackName}-PublicSubnet3'
       SecurityGroups:
-      - Fn::ImportValue:
-          Fn::Sub: '${VpcStackName}-NfsSecurityGroup'
-    
+        - NfsSecurityGroup
+
   ApiGateway:
     Type: AWS::ApiGatewayV2::Api
     Condition: CreateResources

@@ -126,22 +126,6 @@ Resources:
         - Key: Application
           Value: FormKiQ
 
-  NfsSecurityGroup:
-    Condition: IsEnableVpcLinks
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: Security Group which allows NFS access
-      VpcId:
-        Ref: VpcId
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 2049
-          ToPort: 2049
-          CidrIp: 0.0.0.0/0
-      Tags:
-        - Key: Application
-          Value: FormKiQ
-
   S3GatewayEndpoint:
     Type: 'AWS::EC2::VPCEndpoint'
     Condition: IsEnableVpcEndpoints
@@ -249,6 +233,7 @@ Outputs:
     Export:
       Name:
         Fn::Sub: "${AWS::StackName}-PrivateSubnet3"
+
   HttpsSecurityGroup:
     Description: Security Group which allows HTTPS access
     Value:
@@ -256,14 +241,7 @@ Outputs:
     Export:
       Name:
         Fn::Sub: "${AWS::StackName}-HttpsSecurityGroup"
-  NfsSecurityGroup:
-    Condition: IsEnableVpcLinks
-    Description: Security Group which allows NFS access
-    Value:
-      Ref: NfsSecurityGroup
-    Export:
-      Name:
-        Fn::Sub: "${AWS::StackName}-NfsSecurityGroup"
+
   PublicSubnets:
     Description: "VPC Public Subnets"
     Value:
