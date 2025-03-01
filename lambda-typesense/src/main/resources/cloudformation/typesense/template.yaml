@@ -483,9 +483,8 @@ Resources:
     Properties:
       GroupDescription: Security Group which allows NFS access
       VpcId:
-        Ref:
-          Fn::ImportValue:
-            Fn::Sub: '${VpcStackName}-Vpc'
+        Fn::ImportValue:
+          Fn::Sub: '${VpcStackName}-Vpc'
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 2049
