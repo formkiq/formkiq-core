@@ -62,31 +62,36 @@ public class DocumentsIdPurgeRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testDocumentDelete01() throws Exception {
 
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-      // given
-      setBearerToken("Admins");
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
-      AddDocumentUploadRequest req = new AddDocumentUploadRequest().path("test.txt");
-      GetDocumentUrlResponse response =
-          this.documentsApi.addDocumentUpload(req, siteId, null, null, null);
+      for (String token : Arrays.asList("Admins", siteId + "_govern")) {
+        setBearerToken(token);
 
-      String documentId = response.getDocumentId();
-      HttpResponse<String> put = putS3Request(response);
-      assertEquals(SC_OK.getStatusCode(), put.statusCode());
+        AddDocumentUploadRequest req = new AddDocumentUploadRequest().path("test.txt");
+        GetDocumentUrlResponse response =
+            this.documentsApi.addDocumentUpload(req, siteId, null, null, null);
 
-      List<S3Object> s3Files = getS3Files(siteId, documentId);
-      assertEquals(1, s3Files.size());
+        String documentId = response.getDocumentId();
+        this.documentsApi.getDocument(documentId, siteId, null);
+        HttpResponse<String> put = putS3Request(response);
+        assertEquals(SC_OK.getStatusCode(), put.statusCode());
 
-      // when
-      DeleteResponse deleteResponse = this.documentsApi.purgeDocument(documentId, siteId);
+        List<S3Object> s3Files = getS3Files(siteId, documentId);
+        assertEquals(1, s3Files.size());
 
-      // then
-      assertEquals("'" + documentId + "' object deleted all versions", deleteResponse.getMessage());
-      List<Document> documents = getDocuments(siteId);
-      assertEquals(0, documents.size());
+        // when
+        DeleteResponse deleteResponse = this.documentsApi.purgeDocument(documentId, siteId);
 
-      s3Files = getS3Files(siteId, documentId);
-      assertEquals(0, s3Files.size());
+        // then
+        assertEquals("'" + documentId + "' object deleted all versions",
+            deleteResponse.getMessage());
+        List<Document> documents = getDocuments(siteId);
+        assertEquals(0, documents.size());
+
+        s3Files = getS3Files(siteId, documentId);
+        assertEquals(0, s3Files.size());
+      }
     }
   }
 
@@ -128,7 +133,6 @@ public class DocumentsIdPurgeRequestTest extends AbstractApiClientRequestTest {
 
     HttpHeaders hds = new HttpHeaders();
     notNull(response.getHeaders()).forEach((h, v) -> hds.add(h, v.toString()));
-
     return http.put(response.getUrl(), Optional.of(hds), Optional.empty(), "test content");
   }
 

@@ -83,8 +83,8 @@ public class ApiAuthorizationBuilder {
           authorization.addPermission(group.replace(COGNITO_READ_SUFFIX, ""),
               List.of(ApiPermission.READ));
         } else if (group.endsWith(COGNITO_GOVERN_SUFFIX)) {
-          authorization.addPermission(group.replace(COGNITO_GOVERN_SUFFIX, ""),
-              List.of(ApiPermission.GOVERN));
+          authorization.addPermission(group.replace(COGNITO_GOVERN_SUFFIX, ""), List.of(
+              ApiPermission.GOVERN, ApiPermission.READ, ApiPermission.WRITE, ApiPermission.DELETE));
         } else if (admin) {
           authorization.addPermission(group, Arrays.asList(ApiPermission.READ, ApiPermission.WRITE,
               ApiPermission.DELETE, ApiPermission.ADMIN));

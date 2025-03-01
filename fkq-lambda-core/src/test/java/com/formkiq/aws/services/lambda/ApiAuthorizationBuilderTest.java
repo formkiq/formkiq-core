@@ -768,16 +768,16 @@ class ApiAuthorizationBuilderTest {
     // then
     assertEquals(DEFAULT_SITE_ID, api0.getSiteId());
     assertEquals(DEFAULT_SITE_ID, String.join(",", api0.getSiteIds()));
-    assertEquals("GOVERN",
+    assertEquals("GOVERN,READ,WRITE,DELETE",
         api0.getPermissions().stream().map(Enum::name).collect(Collectors.joining(",")));
-    assertEquals("groups: default (GOVERN)", api0.getAccessSummary());
+    assertEquals("groups: default (DELETE,GOVERN,READ,WRITE)", api0.getAccessSummary());
     assertEquals("default_govern", String.join(",", api0.getRoles()));
 
     assertEquals("finance", api1.getSiteId());
     assertEquals("finance", String.join(",", api1.getSiteIds()));
-    assertEquals("GOVERN",
+    assertEquals("GOVERN,READ,WRITE,DELETE",
         api1.getPermissions().stream().map(Enum::name).collect(Collectors.joining(",")));
-    assertEquals("groups: finance (GOVERN)", api1.getAccessSummary());
+    assertEquals("groups: finance (DELETE,GOVERN,READ,WRITE)", api1.getAccessSummary());
     assertEquals("finance_govern", String.join(",", api1.getRoles()));
   }
 
