@@ -1028,7 +1028,7 @@ Resources:
           /sites/{siteId}/locales:
             get:
               operationId: GetLocales
-              description: Returns the list locales
+              description: Returns a list of locale(s) in a specified site
               summary: Get Locales
               tags:
                 - System Management
@@ -1056,7 +1056,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             post:
               operationId: AddLocale
-              description: Add a Locale
+              description: Adds a new locale to the specified site
               summary: Add Locale
               tags:
                 - System Management
@@ -1146,7 +1146,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             post:
               operationId: AddLocaleResourceItem
-              description: Add a new Locale Resource Item
+              description: Adds a new localized resource item for a given locale
               summary: Add Locale Resource Item
               tags:
                 - System Management
@@ -1332,7 +1332,9 @@ Resources:
             post:
               operationId: AddDocument
               description: |-
-                Creates a new document; body may include document content if less than 5 MB
+                Creates a new document; body may include document content if less than 5 MB.
+
+                Returns a unique **documentId** used in subsequent operations.
                 
                 See POST /documents/{documentId}/tags for adding tags to document schema
                 
@@ -1542,6 +1544,10 @@ Resources:
                 - If the content is plain text but exceeds 6 MB, an error will be returned.
                 - For documents not in plain text format, pre-signed S3 URLs will be returned to download the content from S3.
                 It is recommended to use the `/documents/{documentId}/url` endpoint to retrieve pre-signed S3 URLs for downloading the content.
+
+                If the document has a Content-Type of text/, application/json, application/x-www-form-urlencoded the content field will be returned. 
+                All other Content-Type, the contentUrl field will be returned, which is a S3 Presigned url.
+
               tags:
                 - Documents
               parameters:
@@ -2088,7 +2094,7 @@ Resources:
             post:
               operationId: AddDocumentUpload
               summary: Add large document
-              description: Returns a URL that can be used to upload document content and create a new document, while allowing metadata to also be sent; this endpoint (whether GET or POST) is required in order to add content that is larger than 5 MB
+              description: Returns a URL that can be used to upload document content and create a new document, while allowing metadata to also be sent; this endpoint (whether GET or POST) is required in order to add content that is larger than 5 MB. The POST endpoint allow the adding of document metadata at the same time as the document is created.
               tags:
                 - Documents
               parameters:
