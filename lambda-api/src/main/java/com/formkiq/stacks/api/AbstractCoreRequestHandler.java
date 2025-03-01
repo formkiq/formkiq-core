@@ -67,6 +67,7 @@ import com.formkiq.stacks.api.handler.DocumentAttributeRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentAttributesRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentAttributesValueRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentIdContentRequestHandler;
+import com.formkiq.stacks.api.handler.DocumentIdPurgeRequestHandler;
 import com.formkiq.stacks.api.handler.GroupRequestHandler;
 import com.formkiq.stacks.api.handler.GroupsUserRequestHandler;
 import com.formkiq.stacks.api.handler.SitesLocaleRequestHandler;
@@ -258,6 +259,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new WebhooksRequestHandler());
     addRequestHandler(new DocumentsRequestHandler());
     addRequestHandler(new DocumentIdRequestHandler());
+    addRequestHandler(new DocumentIdPurgeRequestHandler());
     addRequestHandler(new DocumentIdRestoreRequestHandler());
     addRequestHandler(new DocumentsCompressRequestHandler());
     addRequestHandler(new IndicesFolderMoveRequestHandler());
