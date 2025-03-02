@@ -371,21 +371,19 @@ Resources:
   HttpsSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Security Group which allows HTTPS in private subnet
-      VpcId: 
+      GroupDescription: Security Group which allows HTTPS access
+      VpcId:
         Ref: Vpc
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 443
           ToPort: 443
-          CidrIp:
-            Ref: VpcCidr
+          CidrIp: 0.0.0.0/0
       SecurityGroupEgress:
         - IpProtocol: tcp
           FromPort: 443
           ToPort: 443
-          CidrIp: 
-            Ref: VpcCidr
+          CidrIp: 0.0.0.0/0
       Tags:
         - Key: Application
           Value: FormKiQ
@@ -453,6 +451,13 @@ Outputs:
     Export:
       Name: 
         Fn::Sub: "${AWS::StackName}-Vpc"
+  VpcCidr:
+    Description: "VPC Cidr"
+    Value:
+      Ref: VpcCidr
+    Export:
+      Name: 
+        Fn::Sub: "${AWS::StackName}-VpcCidr"
   PublicSubnet1:
     Condition: HasPublic
     Description: "Public Subnet 1"

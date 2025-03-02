@@ -57,6 +57,15 @@ Parameters:
 
 Conditions:
 
+  HasPublic:
+    Fn::And:
+      - Fn::Not:
+          - Fn::Equals: [ !Ref PublicSubnet1Id, "" ]
+      - Fn::Not:
+          - Fn::Equals: [ !Ref PublicSubnet2Id, "" ]
+      - Fn::Not:
+          - Fn::Equals: [ !Ref PublicSubnet3Id, "" ]
+
   IsEnableVpcEndpoints:
     Fn::Equals:
       - Ref: EnableVpcEndpoints
@@ -72,9 +81,15 @@ Conditions:
       - Ref: "AWS::Region"
       - "ca-central-1"
 
-  UseThreeSubnets:
+  UseThreePrivateSubnets:
     Fn::Not:
       - Condition: UseTwoSubnets
+
+  UseThreePublicSubnets:
+    Fn::And:
+      - Fn::Not:
+        - Condition: UseTwoSubnets
+      - !Condition HasPublic
 
 Resources:
 
@@ -195,7 +210,15 @@ Outputs:
     Export:
       Name:
         Fn::Sub: "${AWS::StackName}-Vpc"
+  VpcCidr:
+    Description: "VPC Cidr"
+    Value:
+      Ref: VpcCidr
+    Export:
+      Name: 
+        Fn::Sub: "${AWS::StackName}-VpcCidr"
   PublicSubnet1:
+    Condition: HasPublic
     Description: "Public Subnet 1"
     Value:
       Ref: PublicSubnet1Id
@@ -203,6 +226,7 @@ Outputs:
       Name:
         Fn::Sub: "${AWS::StackName}-PublicSubnet1"
   PublicSubnet2:
+    Condition: HasPublic
     Description: "Public Subnet 2"
     Value:
       Ref: PublicSubnet2Id
@@ -210,7 +234,7 @@ Outputs:
       Name:
         Fn::Sub: "${AWS::StackName}-PublicSubnet2"
   PublicSubnet3:
-    Condition: UseThreeSubnets
+    Condition: UseThreePublicSubnets
     Description: "Public Subnet 3"
     Value:
       Ref: PublicSubnet3Id
@@ -232,14 +256,13 @@ Outputs:
       Name:
         Fn::Sub: "${AWS::StackName}-PrivateSubnet2"
   PrivateSubnet3:
-    Condition: UseThreeSubnets
+    Condition: UseThreePrivateSubnets
     Description: "Private Subnet 3"
     Value:
       Ref: PrivateSubnet3Id
     Export:
       Name:
         Fn::Sub: "${AWS::StackName}-PrivateSubnet3"
-
   HttpsSecurityGroup:
     Description: Security Group which allows HTTPS access
     Value:
@@ -249,10 +272,11 @@ Outputs:
         Fn::Sub: "${AWS::StackName}-HttpsSecurityGroup"
 
   PublicSubnets:
+    Condition: HasPublic
     Description: "VPC Public Subnets"
     Value:
       Fn::If:
-        - UseThreeSubnets
+        - UseThreePublicSubnets
         - Fn::Join:
             - ","
             - - Ref: PublicSubnet1Id
@@ -269,7 +293,7 @@ Outputs:
     Description: "VPC Private Subnets"
     Value:
       Fn::If:
-        - UseThreeSubnets
+        - UseThreePrivateSubnets
         - Fn::Join:
             - ","
             - - Ref: PrivateSubnet1Id
