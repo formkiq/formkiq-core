@@ -196,6 +196,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
       // then
       String documentId = response.getDocumentId();
+      assertNull(response.getUploadUrl());
 
       GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
       assertEquals("https://google.com", document.getDeepLinkPath());

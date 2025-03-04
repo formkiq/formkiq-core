@@ -28,6 +28,7 @@ import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
@@ -412,6 +413,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       AddDocumentResponse response = this.documentsApi.addDocument(req, siteId, null);
 
       // then
+      assertNull(response.getUploadUrl());
       String documentId = response.getDocumentId();
       GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
       assertEquals("sample.pdf", document.getPath());
@@ -800,9 +802,11 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
               .addActionsItem(new AddAction().type(DocumentActionType.PDFEXPORT));
 
       // when
-      this.documentsApi.updateDocument(documentId, updateReq, siteId, null);
+      AddDocumentResponse updateResponse =
+          this.documentsApi.updateDocument(documentId, updateReq, siteId, null);
 
       // then
+      assertNull(updateResponse.getUploadUrl());
       Map<String, Object> message = getSqsMessages("actions", documentId);
       assertEquals(documentId, message.get("documentId"));
       assertEquals("actions", message.get("type"));
