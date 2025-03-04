@@ -46,7 +46,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 
@@ -63,10 +65,13 @@ public class DocumentExternalSystemExport {
   private final String documentsBucket;
   /** {@link S3PresignerService}. */
   private final S3PresignerService s3Presigner;
+  /** Staging Bucket. */
+  private final String stagingBucket;
 
   public DocumentExternalSystemExport(final AwsServiceCache serviceCache) {
     this.documentService = serviceCache.getExtension(DocumentService.class);
     this.documentsBucket = serviceCache.environment("DOCUMENTS_S3_BUCKET");
+    this.stagingBucket = serviceCache.environment("STAGE_DOCUMENTS_S3_BUCKET");
     this.s3Presigner = serviceCache.getExtension(S3PresignerService.class);
   }
 
@@ -91,6 +96,7 @@ public class DocumentExternalSystemExport {
 
     URL s3Url = getS3Url(siteId, documentId, item);
     item.put("url", s3Url);
+    item.put("actionCallbackUrl", getActionCallbackUrl(siteId, documentId));
 
     List<DynamicDocumentItem> documents = new ArrayList<>();
     documents.add(item);
@@ -103,6 +109,14 @@ public class DocumentExternalSystemExport {
     addDocumentTags(siteId, documentId, item);
 
     return this.gson.toJson(Map.of("documents", documents));
+  }
+
+  private URL getActionCallbackUrl(final String siteId, final String documentId) {
+    Duration duration = Duration.ofDays(1);
+    String s3key =
+        "tempfiles/eventcallback/" + (siteId != null ? siteId : DEFAULT_SITE_ID) + "/" + documentId;
+    return s3Presigner.presignPutUrl(documentsBucket, s3key, duration, null, null, Optional.empty(),
+        Map.of());
   }
 
   private Collection<Map<String, Object>> addDocumentAttributes(final String siteId,

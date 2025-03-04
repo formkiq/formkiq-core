@@ -50,7 +50,9 @@ import static org.mockserver.model.HttpRequest.request;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -69,6 +71,9 @@ import java.util.concurrent.TimeUnit;
 
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.model.DocumentSyncRecord;
+import com.formkiq.aws.s3.S3PresignerService;
+import com.formkiq.aws.s3.S3PresignerServiceExtension;
+import com.formkiq.module.http.HttpServiceJdk11;
 import com.formkiq.module.lambdaservices.logger.LoggerRecorder;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -176,6 +181,8 @@ public class StagingS3CreateTest implements DbKeys {
   private static final int PORT = 8888;
   /** {@link S3Service}. */
   private static S3Service s3;
+  /** {@link S3PresignerService}. */
+  private static S3PresignerService presignerService;
   /** {@link DocumentService}. */
   private static DocumentService service;
   /** {@link AttributeService}. */
@@ -213,7 +220,6 @@ public class StagingS3CreateTest implements DbKeys {
   /** {@link StagingS3Create}. */
   private static StagingS3Create handler;
 
-
   /**
    * After Class.
    *
@@ -248,8 +254,10 @@ public class StagingS3CreateTest implements DbKeys {
     handler = new StagingS3Create(awsServices);
 
     awsServices.register(SqsService.class, new SqsServiceExtension());
+    awsServices.register(S3PresignerService.class, new S3PresignerServiceExtension());
 
     s3 = awsServices.getExtension(S3Service.class);
+    presignerService = awsServices.getExtension(S3PresignerService.class);
     syncService = awsServices.getExtension(DocumentSyncService.class);
     sqsService = awsServices.getExtension(SqsService.class);
     actionsService = awsServices.getExtension(ActionsService.class);
@@ -815,6 +823,57 @@ public class StagingS3CreateTest implements DbKeys {
     try (InputStream zipContent = s3.getContentAsInputStream(STAGING_BUCKET, zipKey)) {
       DocumentCompressorTest.validateZipContent(zipContent, expectedChecksums);
     }
+  }
+
+  /**
+   * Tests document event callback.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  void testDocumentEventCallback() throws Exception {
+    // given
+    for (String siteId : List.of(DEFAULT_SITE_ID, ID.uuid())) {
+
+      String queueUrl = sqsService.createQueue("sqssnsCreate1" + ID.uuid()).queueUrl();
+      String sqsQueueArn = sqsService.getQueueArn(queueUrl);
+      snsService.subscribe(snsDocumentEvent, "sqs", sqsQueueArn);
+
+      String documentId = ID.uuid();
+      String s3Key = "tempfiles/eventcallback/" + siteId + "/" + documentId;
+      URL url = presignerService.presignPutUrl(STAGING_BUCKET, s3Key, Duration.ofDays(1), null,
+          null, Optional.empty(), Map.of());
+      new HttpServiceJdk11().put(url.toString(), Optional.empty(), Optional.empty(), "");
+
+      // when
+      Map<String, Object> map = loadFileAsMap(this, "/documents-compress-event.json",
+          "tempfiles/665f0228-4fbc-4511-912b-6cb6f566e1c0.json", s3Key);
+      this.handleRequest(map);
+
+      // then
+      assertTrue(s3.getObjectMetadata(STAGING_BUCKET, s3Key, null).isObjectExists());
+      ReceiveMessageResponse response = getReceiveMessageResponse(queueUrl);
+      assertEquals(1, response.messages().size());
+      Message msg = response.messages().get(0);
+      Map<String, Object> json = GSON.fromJson(msg.body(), Map.class);
+      json = GSON.fromJson((String) json.get("Message"), Map.class);
+      assertEquals(siteId, json.get("siteId"));
+      assertEquals(documentId, json.get("documentId"));
+      assertEquals("actions", json.get("type"));
+    }
+  }
+
+  private ReceiveMessageResponse getReceiveMessageResponse(final String sqsQueueUrl)
+      throws InterruptedException {
+    ReceiveMessageResponse response = sqsService.receiveMessages(sqsQueueUrl);
+    while (response.messages().isEmpty()) {
+      TimeUnit.SECONDS.sleep(1);
+      response = sqsService.receiveMessages(sqsQueueUrl);
+    }
+
+    response.messages().forEach(m -> sqsService.deleteMessage(sqsQueueUrl, m.receiptHandle()));
+    return response;
   }
 
   /**

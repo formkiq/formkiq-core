@@ -23,7 +23,6 @@
  */
 package com.formkiq.stacks.lambda.s3;
 
-import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
@@ -51,7 +50,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -107,8 +105,6 @@ import com.formkiq.testutils.aws.DynamoDbHelper;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.formkiq.testutils.aws.LocalStackExtension;
 import com.formkiq.testutils.aws.TestServices;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -116,7 +112,6 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 import software.amazon.awssdk.services.s3.model.Tag;
-import software.amazon.awssdk.services.sqs.model.Message;
 
 /** {@link DocumentsS3Update} Unit Tests. */
 @ExtendWith(DynamoDbExtension.class)
@@ -175,14 +170,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
    * {@link DocumentService}.
    */
   private static DocumentServiceImpl service;
-  /**
-   * 500 SECONDS.
-   */
-  private static final long SLEEP = 500L;
-  /**
-   * {@link SqsService}.
-   */
-  private static SqsService sqsService;
 
   /**
    * Test server URL.
@@ -218,7 +205,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
     dbHelper = DynamoDbTestServices.getDynamoDbHelper();
 
     SqsConnectionBuilder sqsBuilder = TestServices.getSqsConnection(null);
-    sqsService = new SqsServiceImpl(sqsBuilder);
+    SqsService sqsService = new SqsServiceImpl(sqsBuilder);
 
     if (!sqsService.exists(ERROR_SQS_QUEUE)) {
       sqsService.createQueue(ERROR_SQS_QUEUE);
@@ -270,9 +257,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
     SsmService ssmService = awsServices.getExtension(SsmService.class);
     ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/api/DocumentsIamUrl", URL);
   }
-
-  /** {@link Gson}. */
-  private final Gson gson = new GsonBuilder().create();
 
   /** {@link ClientAndServer}. */
   private ClientAndServer mockServer;
@@ -342,47 +326,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
     assertEquals(syncType, sync.getType());
     assertNotNull(sync.getInsertedDate());
     assertEquals(message, sync.getMessage());
-  }
-
-  /**
-   * Assert Publish SNS Topic.
-   *
-   * @param siteId {@link String}
-   * @param sqsQueueUrl {@link String}
-   * @param eventType {@link String}
-   * @param childDoc boolean
-   * @throws InterruptedException InterruptedException
-   */
-  private void assertPublishSnsMessage2(final String siteId, final String sqsQueueUrl,
-      final String eventType, final boolean childDoc) throws InterruptedException {
-
-    List<Message> msgs = sqsService.receiveMessages(sqsQueueUrl).messages();
-    while (msgs.size() != 1) {
-      Thread.sleep(SLEEP);
-      msgs = sqsService.receiveMessages(sqsQueueUrl).messages();
-    }
-    assertEquals(1, msgs.size());
-
-    sqsService.deleteMessage(sqsQueueUrl, msgs.get(0).receiptHandle());
-    Map<String, String> map = this.gson.fromJson(msgs.get(0).body(), Map.class);
-    String message = map.get("Message");
-
-    map = this.gson.fromJson(message, Map.class);
-    assertEquals(eventType, map.get("type"));
-    assertNotNull(map.get("documentId"));
-
-    if (!childDoc) {
-      assertNotNull(map.get("path"));
-    }
-
-    assertTrue(map.get("url").contains("example-bucket"));
-    assertNull(map.get("content"));
-
-    if (!"delete".equals(eventType)) {
-      assertNotNull(map.get("userId"));
-    }
-
-    assertEquals(Objects.requireNonNullElse(siteId, DEFAULT_SITE_ID), map.get("siteId"));
   }
 
   /**
