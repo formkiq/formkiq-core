@@ -31,7 +31,7 @@ import com.formkiq.graalvm.annotations.Reflectable;
 @Reflectable
 public enum WatermarkScale {
   /** Best Fit. */
-  BEST_FIT,
+  FIT_BEST,
   /** Original. */
   ORIGINAL
 }

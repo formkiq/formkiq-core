@@ -9632,7 +9632,7 @@
               type: string
               description: Watermark Scale
               enum:
-              - BEST_FIT
+              - FIT_BEST
               - ORIGINAL
             WatermarkPositionXAnchor:
               type: string
