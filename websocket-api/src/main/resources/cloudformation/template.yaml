@@ -120,11 +120,18 @@ Resources:
     Properties:
       ApiId: 
         Ref: WebSocketApi
-        
+
+  ApiGatewayLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays:
+        Ref: LogRetentionInDays
+
   Stage:
     Type: AWS::ApiGatewayV2::Stage
     DependsOn:
       - WebSocketApi
+      - ApiGatewayLogGroup
     Properties:
       StageName: 
         Ref: StageName
@@ -133,6 +140,17 @@ Resources:
         Ref: Deployment
       ApiId: 
         Ref: WebSocketApi
+      AccessLogSettings:
+        DestinationArn:
+          Fn::GetAtt:
+            - ApiGatewayLogGroup
+            - Arn
+        Format: >-
+          {"requestId":"$context.requestId", "ip": "$context.identity.sourceIp",
+          "caller":"$context.identity.caller",
+          "user":"$context.identity.user","requestTime":"$context.requestTime",
+          "eventType":"$context.eventType","routeKey":"$context.routeKey",
+          "status":"$context.status","connectionId":"$context.connectionId"}
       Tags:
         Application: "FormKiQ"
         AppEnvironment: 
