@@ -7,6 +7,11 @@ Description: #@ "FormKiQ Core " + data.values.version or assert.fail("missing ve
         
 Parameters:
 
+  ConsoleWafACLId:
+    Type: String
+    Default: ""
+    Description: (Optional) ARN of the Console WAF WebACL to associate with the CloudFront distribution. Leave empty to disable.
+
   AdminEmail:
     Type: String
     Description: Administrator Email (required)
@@ -244,6 +249,8 @@ Resources:
             - Outputs.FormKiQType
         AdminEmail: 
           Ref: AdminEmail
+        WAFWebACLId:
+          Ref: ConsoleWafACLId
         IsGovCloud:
           Fn::If:
           - IsGovCloud
