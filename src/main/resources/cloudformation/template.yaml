@@ -10,7 +10,7 @@ Parameters:
   ConsoleWafACLId:
     Type: String
     Default: ""
-    Description: (Optional) ARN of the Console WAF WebACL to associate with the CloudFront distribution. Leave empty to disable.
+    Description: ARN of the Console WAF WebACL to associate with the CloudFront distribution
 
   AdminEmail:
     Type: String

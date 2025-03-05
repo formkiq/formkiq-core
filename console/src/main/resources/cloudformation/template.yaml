@@ -42,7 +42,7 @@ Conditions:
   HasWAF:
     Fn::Not:
       - Fn::Equals:
-          - Fn::Ref: WAFWebACLId
+          - Ref: WAFWebACLId
           - ""
 
   HasCertificateStackName:
