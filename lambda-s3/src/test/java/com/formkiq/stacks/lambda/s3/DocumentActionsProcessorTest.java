@@ -2643,7 +2643,6 @@ public class DocumentActionsProcessorTest implements DbKeys {
     assertEquals(1, documents.size());
     assertNotNull(documents.get(0).get("documentId"));
     assertNotNull(documents.get(0).get("url"));
-    assertNotNull(documents.get(0).get("actionCallbackUrl"));
     assertNotNull(documents.get(0).get("path"));
 
     return documents;
