@@ -61,6 +61,12 @@ Parameters:
     Type: String
     AllowedValues: ["false", "true"]
 
+  EnableVpcFlowLogs:
+    Description: Enable VPC Flow Logs (set to 'true' to enable)
+    Type: String
+    Default: "false"
+    AllowedValues: ["false", "true"]
+
 Conditions:
 
   HasPublic:
@@ -71,6 +77,11 @@ Conditions:
           - Fn::Equals: [ !Ref PublicSubnet2Cidr, "" ]
       - Fn::Not:
           - Fn::Equals: [ !Ref PublicSubnet3Cidr, "" ]
+
+  IsEnableVpcFlowLogs:
+    Fn::Equals:
+      - Ref: EnableVpcFlowLogs
+      - "true"
 
   IsEnableVpcEndpoints:
     Fn::Equals:
@@ -442,8 +453,60 @@ Resources:
         Fn::Sub: 'com.amazonaws.${AWS::Region}.execute-api'
       VpcId:
         Ref: Vpc
-        
+
+  VpcFlowLogsBucket:
+    Condition: IsEnableVpcFlowLogs
+    Type: AWS::S3::Bucket
+
+  VpcFlowLogsBucketPolicy:
+    Condition: IsEnableVpcFlowLogs
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: 
+        Ref: VpcFlowLogsBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: "AWSFlowLogsWrite"
+            Effect: Allow
+            Principal:
+              Service: vpc-flow-logs.amazonaws.com
+            Action: "s3:PutObject"
+            Resource:
+              Fn::Sub: "${VpcFlowLogsBucket.Arn}/*"
+            Condition:
+              StringEquals:
+                "s3:x-amz-acl": "bucket-owner-full-control"
+
+  VpcFlowLog:
+    Condition: IsEnableVpcFlowLogs
+    DependsOn: VpcFlowLogsBucketPolicy
+    Type: AWS::EC2::FlowLog
+    Properties:
+      LogDestination: 
+        Fn::GetAtt:
+          - VpcFlowLogsBucket
+          - Arn
+      LogDestinationType: s3
+      ResourceId: 
+        Ref: Vpc
+      ResourceType: VPC
+      TrafficType: ALL
+      Tags:
+        - Key: Name
+          Value: 
+            Ref: VpcLabel
+        - Key: Application
+          Value: FormKiQ
+
 Outputs:
+
+  VpcFlowLogsBucket:
+    Condition: IsEnableVpcFlowLogs
+    Description: "Vpc Flow Logs S3 Bucket"
+    Value:
+      Ref: VpcFlowLogsBucket
+
   Vpc:
     Description: "VPC Id"
     Value:
