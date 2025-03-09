@@ -67,6 +67,18 @@ Parameters:
     Default: "false"
     AllowedValues: ["false", "true"]
 
+  VpcFlowLogsDestination:
+    Description: "Destination for VPC Flow Logs. Options: s3, cloud-watch-logs"
+    Type: String
+    Default: "s3"
+    AllowedValues: ["s3", "cloud-watch-logs"]
+
+  FlowLogsRetentionInDays:
+    Description: "Retention period in days for CloudWatch Logs. Allowed values: 1,3,5,7,14,30,60,90,120,150,180,365,400,545,731,1827,3653"
+    Type: Number
+    Default: 30
+    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
+
 Conditions:
 
   HasPublic:
@@ -82,6 +94,22 @@ Conditions:
     Fn::Equals:
       - Ref: EnableVpcFlowLogs
       - "true"
+
+  IsFlowLogToS3:
+    Fn::Equals: [ !Ref VpcFlowLogsDestination, "s3" ]
+  
+  IsFlowLogToCloudWatch:
+    Fn::Equals: [ !Ref VpcFlowLogsDestination, "cloud-watch-logs" ]
+
+  IsFlowLogToS3AndEnabled:
+    Fn::And:
+      - Condition: IsEnableVpcFlowLogs
+      - Condition: IsFlowLogToS3
+
+  IsFlowLogToCloudWatchAndEnabled:
+    Fn::And:
+      - Condition: IsEnableVpcFlowLogs
+      - Condition: IsFlowLogToCloudWatch
 
   IsEnableVpcEndpoints:
     Fn::Equals:
@@ -455,11 +483,11 @@ Resources:
         Ref: Vpc
 
   VpcFlowLogsBucket:
-    Condition: IsEnableVpcFlowLogs
+    Condition: IsFlowLogToS3AndEnabled
     Type: AWS::S3::Bucket
 
   VpcFlowLogsBucketPolicy:
-    Condition: IsEnableVpcFlowLogs
+    Condition: IsFlowLogToS3AndEnabled
     Type: AWS::S3::BucketPolicy
     Properties:
       Bucket: 
@@ -478,31 +506,72 @@ Resources:
               StringEquals:
                 "s3:x-amz-acl": "bucket-owner-full-control"
 
-  VpcFlowLog:
-    Condition: IsEnableVpcFlowLogs
-    DependsOn: VpcFlowLogsBucketPolicy
+  VpcFlowLogS3:
+    Condition: IsFlowLogToS3AndEnabled
     Type: AWS::EC2::FlowLog
     Properties:
-      LogDestination: 
-        Fn::GetAtt:
-          - VpcFlowLogsBucket
-          - Arn
-      LogDestinationType: s3
-      ResourceId: 
-        Ref: Vpc
+      LogDestination: !GetAtt VpcFlowLogsBucket.Arn
+      LogDestinationType: !Ref VpcFlowLogsDestination
+      ResourceId: !Ref Vpc
       ResourceType: VPC
       TrafficType: ALL
       Tags:
         - Key: Name
-          Value: 
-            Ref: VpcLabel
+          Value: !Ref VpcLabel
         - Key: Application
           Value: FormKiQ
+
+  VpcFlowLogCloudWatch:
+    Condition: IsFlowLogToCloudWatchAndEnabled
+    Type: AWS::EC2::FlowLog
+    Properties:
+      LogDestination: !GetAtt VpcFlowLogs.Arn
+      LogDestinationType: !Ref VpcFlowLogsDestination
+      ResourceId: !Ref Vpc
+      ResourceType: VPC
+      DeliverLogsPermissionArn: !GetAtt VpcFlowLogsCWRole.Arn
+      TrafficType: ALL
+      Tags:
+        - Key: Name
+          Value: !Ref VpcLabel
+        - Key: Application
+          Value: FormKiQ
+
+  VpcFlowLogs:
+    Condition: IsFlowLogToCloudWatchAndEnabled
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: !Ref FlowLogsRetentionInDays
+
+  VpcFlowLogsCWRole:
+    Condition: IsFlowLogToCloudWatchAndEnabled
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: vpc-flow-logs.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: VPCFlowLogsPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:DescribeLogGroups
+                  - logs:DescribeLogStreams
+                  - logs:PutLogEvents
+                Resource: "*"
 
 Outputs:
 
   VpcFlowLogsBucket:
-    Condition: IsEnableVpcFlowLogs
+    Condition: IsFlowLogToS3AndEnabled
     Description: "Vpc Flow Logs S3 Bucket"
     Value:
       Ref: VpcFlowLogsBucket
