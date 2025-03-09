@@ -115,7 +115,7 @@ Resources:
                 Change the password for an authenticated user. 
                 The user must provide the current (old) password and the new password.
               security:
-                - bearerAuth: []
+                - ApiAuthorization: []
               requestBody:
                 description: Current and new password details.
                 required: true

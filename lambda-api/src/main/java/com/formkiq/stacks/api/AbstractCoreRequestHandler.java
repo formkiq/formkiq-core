@@ -119,7 +119,7 @@ import com.formkiq.stacks.api.handler.UserGroupsRequestHandler;
 import com.formkiq.stacks.api.handler.UserLoginRequestHandler;
 import com.formkiq.stacks.api.handler.UserOperationRequestHandler;
 import com.formkiq.stacks.api.handler.UserRequestHandler;
-import com.formkiq.stacks.api.handler.UserResetPasswordRequestHandler;
+import com.formkiq.stacks.api.handler.UserForgotPasswordRequestHandler;
 import com.formkiq.stacks.api.handler.UsersRequestHandler;
 import com.formkiq.stacks.api.handler.VersionRequestHandler;
 import com.formkiq.stacks.api.handler.WebhooksIdRequestHandler;
@@ -322,7 +322,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new UserGroupsRequestHandler());
     addRequestHandler(new UserLoginRequestHandler());
     addRequestHandler(new UserChangePasswordRequestHandler());
-    addRequestHandler(new UserResetPasswordRequestHandler());
+    addRequestHandler(new UserForgotPasswordRequestHandler());
     addRequestHandler(new UserConfirmRegistrationRequestHandler());
   }
 
@@ -369,7 +369,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
       return hander;
     }
 
-    throw new NotFoundException(resource + " not found");
+    throw new NotFoundException(resource + " request handler not found");
   }
 
   @Override

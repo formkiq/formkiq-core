@@ -41,12 +41,12 @@ import java.util.Optional;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import static com.formkiq.strings.Strings.isEmpty;
 
-/** {@link ApiGatewayRequestHandler} for "/resetPassword". */
-public class UserResetPasswordRequestHandler
+/** {@link ApiGatewayRequestHandler} for "/forgotPassword". */
+public class UserForgotPasswordRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
-  /** {@link UserResetPasswordRequestHandler} URL. */
-  public static final String URL = "/resetPassword";
+  /** {@link UserForgotPasswordRequestHandler} URL. */
+  public static final String URL = "/forgotPassword";
 
   @Override
   public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
