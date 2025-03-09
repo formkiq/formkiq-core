@@ -177,7 +177,8 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
       setCognitoGroup(event, siteId);
 
       String expected = "{" + getHeaders()
-          + ",\"body\":\"{\\\"message\\\":\\\"/unknown not found\\\"}\"," + "\"statusCode\":404}";
+          + ",\"body\":\"{\\\"message\\\":\\\"/unknown request handler not found\\\"}\","
+          + "\"statusCode\":404}";
 
       // when
       String response = handleRequest(event);

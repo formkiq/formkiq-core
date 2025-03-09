@@ -164,7 +164,7 @@ public class HttpServerTest {
     HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
     assertEquals(HttpResponseStatus.NOT_FOUND.code(), response.statusCode());
-    assertEquals("{\"message\":\"/hello not found\"}", response.body());
+    assertEquals("{\"message\":\"/hello request handler not found\"}", response.body());
   }
 
   /**
