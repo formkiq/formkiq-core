@@ -100,13 +100,13 @@ public class CognitoAuthRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * POST /resetPassword missing parameters.
+   * POST /forgotPassword missing parameters.
    *
    */
   @Test
-  public void testResetPassword01() throws IOException {
+  public void testForgotPassword01() throws IOException {
     // given
-    String url = server.getBasePath() + "/resetPassword";
+    String url = server.getBasePath() + "/forgotPassword";
 
     // when
     HttpResponse<String> post = http.post(url, Optional.empty(), Optional.empty(), "");
