@@ -34,6 +34,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
 import org.mockserver.model.HttpRequest;
 
 /**
@@ -59,16 +60,21 @@ public class HttpRequestToApiHttpRequest implements Function<HttpRequest, ApiHtt
         .collect(Collectors.toList());
   }
 
+  private boolean isPublicEndpoint(final String url) {
+    List<String> publicUrls =
+        List.of("/login", "/resetPassword", "/confirmRegistration", "/changePassword");
+    return publicUrls.stream().anyMatch(url::contains);
+  }
+
   @Override
   public ApiHttpRequest apply(final HttpRequest httpRequest) {
 
     List<String> headers = httpRequest.getHeader("Authorization");
-    if (headers.isEmpty()) {
+    if (!isPublicEndpoint(httpRequest.getPath().getValue()) && headers.isEmpty()) {
       throw new RuntimeException("missing 'Authorization' header");
     }
 
-    String authorization = headers.get(0);
-    JwtTokenDecoder decoder = new JwtTokenDecoder(authorization);
+    JwtTokenDecoder decoder = getDecoder(headers);
 
     String path = httpRequest.getPath().getValue();
 
@@ -82,16 +88,34 @@ public class HttpRequestToApiHttpRequest implements Function<HttpRequest, ApiHtt
         httpRequest.getQueryStringParameterList().stream().collect(Collectors.toMap(
             p -> decode(p.getName().getValue()), p -> decode(p.getValues().get(0).getValue())));
 
-    String group = String.join(" ", decoder.getGroups());
-    Map<String, List<String>> permissions = decoder.getPermissions();
+    String group = getGroup(decoder);
+    Map<String, List<String>> permissions = getPermissions(decoder);
 
     Map<String, String> httpHeaders = httpRequest.getHeaders().getEntries().stream().collect(
         Collectors.toMap(h -> h.getName().getValue(), h -> h.getValues().get(0).getValue()));
 
     return new ApiHttpRequest().headers(httpHeaders).httpMethod(httpRequest.getMethod().getValue())
         .resource(resource).path(path).pathParameters(pathParameters)
-        .queryParameters(queryParameters).user(decoder.getUsername()).group(group)
+        .queryParameters(queryParameters).user(getUsername(decoder)).group(group)
         .permissions(permissions).body(body);
+  }
+
+  private Map<String, List<String>> getPermissions(final JwtTokenDecoder decoder) {
+    return decoder != null ? decoder.getPermissions() : Map.of();
+  }
+
+  private String getGroup(final JwtTokenDecoder decoder) {
+    return decoder != null ? String.join(" ", decoder.getGroups()) : "";
+  }
+
+  private JwtTokenDecoder getDecoder(final List<String> headers) {
+    String bearerToken =
+        !headers.isEmpty() && headers.get(0).startsWith("ey") ? headers.get(0) : null;
+    return bearerToken != null ? new JwtTokenDecoder(headers.get(0)) : null;
+  }
+
+  private String getUsername(final JwtTokenDecoder decoder) {
+    return decoder != null ? decoder.getUsername() : "";
   }
 
   /**

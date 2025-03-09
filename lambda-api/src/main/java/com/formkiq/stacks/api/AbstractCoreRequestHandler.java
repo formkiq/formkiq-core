@@ -113,9 +113,13 @@ import com.formkiq.stacks.api.handler.SitesRequestHandler;
 import com.formkiq.stacks.api.handler.SitesSchemaAttributeAllowedValuesRequestHandler;
 import com.formkiq.stacks.api.handler.SitesSchemaRequestHandler;
 import com.formkiq.stacks.api.handler.UpdateDocumentMatchingRequestHandler;
+import com.formkiq.stacks.api.handler.UserChangePasswordRequestHandler;
+import com.formkiq.stacks.api.handler.UserConfirmRegistrationRequestHandler;
 import com.formkiq.stacks.api.handler.UserGroupsRequestHandler;
+import com.formkiq.stacks.api.handler.UserLoginRequestHandler;
 import com.formkiq.stacks.api.handler.UserOperationRequestHandler;
 import com.formkiq.stacks.api.handler.UserRequestHandler;
+import com.formkiq.stacks.api.handler.UserResetPasswordRequestHandler;
 import com.formkiq.stacks.api.handler.UsersRequestHandler;
 import com.formkiq.stacks.api.handler.VersionRequestHandler;
 import com.formkiq.stacks.api.handler.WebhooksIdRequestHandler;
@@ -316,6 +320,10 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new UserRequestHandler());
     addRequestHandler(new UserOperationRequestHandler());
     addRequestHandler(new UserGroupsRequestHandler());
+    addRequestHandler(new UserLoginRequestHandler());
+    addRequestHandler(new UserChangePasswordRequestHandler());
+    addRequestHandler(new UserResetPasswordRequestHandler());
+    addRequestHandler(new UserConfirmRegistrationRequestHandler());
   }
 
   private static void addDocumentAttributeEndpoints() {

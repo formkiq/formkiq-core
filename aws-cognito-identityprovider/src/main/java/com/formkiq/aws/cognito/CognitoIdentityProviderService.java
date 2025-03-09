@@ -51,9 +51,13 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.AttributeTy
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthFlowType;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthenticationResultType;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ChallengeNameType;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.ChangePasswordRequest;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.ChangePasswordResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.CreateGroupRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.CreateGroupResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.DeleteGroupRequest;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.ForgotPasswordRequest;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.ForgotPasswordResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.GetGroupRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.GetGroupResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.GetUserRequest;
@@ -189,6 +193,33 @@ public class CognitoIdentityProviderService {
 
     AdminCreateUserResponse createUserResult = this.cognitoProvider.adminCreateUser(cognitoRequest);
     return createUserResult.user();
+  }
+
+  /**
+   * Change User Password.
+   * 
+   * @param accessToken {@link String}
+   * @param previousPassword {@link String}
+   * @param proposedPassword {@link String}
+   * @return ChangePasswordResponse
+   */
+  public ChangePasswordResponse setChangePassword(final String accessToken,
+      final String previousPassword, final String proposedPassword) {
+    ChangePasswordRequest request = ChangePasswordRequest.builder().accessToken(accessToken)
+        .previousPassword(previousPassword).proposedPassword(proposedPassword).build();
+    return this.cognitoProvider.changePassword(request);
+  }
+
+  /**
+   * Reset User Password.
+   *
+   * @param username {@link String}
+   * @return ForgotPasswordResponse
+   */
+  public ForgotPasswordResponse setResetPassword(final String username) {
+    ForgotPasswordRequest request =
+        ForgotPasswordRequest.builder().clientId(this.clientId).username(username).build();
+    return this.cognitoProvider.forgotPassword(request);
   }
 
   /**

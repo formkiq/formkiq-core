@@ -371,6 +371,7 @@ Resources:
               - cognito-idp:AdminResetUserPassword
               - cognito-idp:AdminGetUser
               - cognito-idp:AdminListGroupsForUser
+              - cognito-idp:AdminInitiateAuth
               Resource:
               - Fn::Sub: "arn:${AWS::Partition}:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${CognitoUserPool}"
             - Effect: Allow
