@@ -41,12 +41,12 @@ import java.util.Optional;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import static com.formkiq.strings.Strings.isEmpty;
 
-/** {@link ApiGatewayRequestHandler} for "/confirmRegistration". */
-public class UserConfirmRegistrationRequestHandler
+/** {@link ApiGatewayRequestHandler} for "/forgotPasswordConfirm". */
+public class UserForgotPasswordConfirmRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
-  /** {@link UserConfirmRegistrationRequestHandler} URL. */
-  public static final String URL = "/confirmRegistration";
+  /** {@link UserForgotPasswordConfirmRequestHandler} URL. */
+  public static final String URL = "/forgotPasswordConfirm";
 
   @Override
   public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
@@ -58,19 +58,23 @@ public class UserConfirmRegistrationRequestHandler
     CognitoIdentityProviderService service =
         awsservice.getExtension(CognitoIdentityProviderService.class);
 
-    service.initiateAuth((String) map.get("username"), (String) map.get("code"));
+    String username = (String) map.get("username");
+    String code = (String) map.get("code");
+    String password = (String) map.get("password");
+    service.forgotPasswordConfirm(username, code, password);
 
-    ApiMapResponse resp = new ApiMapResponse(Map.of("message", "User registration confirmed"));
+    ApiMapResponse resp = new ApiMapResponse(Map.of("message", "Password set"));
     return new ApiRequestHandlerResponse(SC_OK, resp);
   }
 
   private void validate(final Map<String, Object> map) throws ValidationException {
     String username = (String) map.get("username");
     String code = (String) map.get("code");
+    String password = (String) map.get("password");
 
-    if (isEmpty(username) || isEmpty(code)) {
+    if (isEmpty(username) || isEmpty(code) || isEmpty(password)) {
       throw new ValidationException(
-          List.of(new ValidationErrorImpl().error("'username' and 'code' are required")));
+          List.of(new ValidationErrorImpl().error("'username', 'code', 'password' are required")));
     }
   }
 

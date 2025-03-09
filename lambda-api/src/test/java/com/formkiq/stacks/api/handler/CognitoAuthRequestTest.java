@@ -120,7 +120,32 @@ public class CognitoAuthRequestTest extends AbstractApiClientRequestTest {
 
     // then
     assertEquals("400", String.valueOf(post.statusCode()));
-    assertEquals("{\"errors\":[{\"error\":\"'email' are required\"}]}", post.body());
+    assertEquals("{\"errors\":[{\"error\":\"'username' are required\"}]}", post.body());
+  }
+
+  /**
+   * POST /forgotPasswordConfirm missing parameters.
+   *
+   */
+  @Test
+  public void testForgotPasswordConfirm01() throws IOException {
+    // given
+    String url = server.getBasePath() + "/forgotPasswordConfirm";
+
+    // when
+    HttpResponse<String> post = http.post(url, Optional.empty(), Optional.empty(), "");
+
+    // then
+    assertEquals("400", String.valueOf(post.statusCode()));
+    assertEquals("{\"message\":\"request body is required\"}", post.body());
+
+    // when
+    post = http.post(url, Optional.empty(), Optional.empty(), "{}");
+
+    // then
+    assertEquals("400", String.valueOf(post.statusCode()));
+    assertEquals("{\"errors\":[{\"error\":\"'username', 'code', 'password' are required\"}]}",
+        post.body());
   }
 
   /**
@@ -144,6 +169,6 @@ public class CognitoAuthRequestTest extends AbstractApiClientRequestTest {
 
     // then
     assertEquals("400", String.valueOf(post.statusCode()));
-    assertEquals("{\"errors\":[{\"error\":\"'email' and 'code' are required\"}]}", post.body());
+    assertEquals("{\"errors\":[{\"error\":\"'username' and 'code' are required\"}]}", post.body());
   }
 }

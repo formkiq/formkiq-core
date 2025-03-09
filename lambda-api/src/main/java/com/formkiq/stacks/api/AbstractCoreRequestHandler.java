@@ -115,6 +115,7 @@ import com.formkiq.stacks.api.handler.SitesSchemaRequestHandler;
 import com.formkiq.stacks.api.handler.UpdateDocumentMatchingRequestHandler;
 import com.formkiq.stacks.api.handler.UserChangePasswordRequestHandler;
 import com.formkiq.stacks.api.handler.UserConfirmRegistrationRequestHandler;
+import com.formkiq.stacks.api.handler.UserForgotPasswordConfirmRequestHandler;
 import com.formkiq.stacks.api.handler.UserGroupsRequestHandler;
 import com.formkiq.stacks.api.handler.UserLoginRequestHandler;
 import com.formkiq.stacks.api.handler.UserOperationRequestHandler;
@@ -323,6 +324,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new UserLoginRequestHandler());
     addRequestHandler(new UserChangePasswordRequestHandler());
     addRequestHandler(new UserForgotPasswordRequestHandler());
+    addRequestHandler(new UserForgotPasswordConfirmRequestHandler());
     addRequestHandler(new UserConfirmRegistrationRequestHandler());
   }
 

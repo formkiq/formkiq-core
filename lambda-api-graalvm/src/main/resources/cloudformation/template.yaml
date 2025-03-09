@@ -256,21 +256,21 @@ Resources:
           - Ocr
           - Outputs.OcrProcessorArn
 
-  AuthApi:
-    Type: AWS::Serverless::Application
-    Properties:
-      Location: ./api-auth.yaml
-      Parameters:
-        AppEnvironment:
-          Ref: AppEnvironment
-        CognitoUserPool:
-          Ref: CognitoUserPool
-        CognitoUserPoolClient:
-          Ref: CognitoUserPoolClient
-        DocumentsApiRequestsArn:
-          Fn::GetAtt:
-            - ApiLambda
-            - Outputs.DocumentsApiRequestsArn
+#!  AuthApi:
+#!    Type: AWS::Serverless::Application
+#!    Properties:
+#!      Location: ./api-auth.yaml
+#!      Parameters:
+#!        AppEnvironment:
+#!          Ref: AppEnvironment
+#!        CognitoUserPool:
+#!          Ref: CognitoUserPool
+#!        CognitoUserPoolClient:
+#!          Ref: CognitoUserPoolClient
+#!        DocumentsApiRequestsArn:
+#!          Fn::GetAtt:
+#!            - ApiLambda
+#!            - Outputs.DocumentsApiRequestsArn
           
   DocumentsApiInvokePermission:
     Type: "AWS::Lambda::Permission"
@@ -410,47 +410,47 @@ Resources:
       Stage: 
         Ref: KeyDocumentsStage
 
-  AuthStage:
-    Type: AWS::ApiGatewayV2::Stage
-    DependsOn:
-      - AuthApi
-    Properties:
-      ApiId:
-        Fn::GetAtt:
-          - AuthApi
-          - Outputs.AuthApi
-      AutoDeploy: true
-      Description:
-        Fn::Sub: "Auth API ${AppEnvironment}"
-      StageName: "$default"
-      AccessLogSettings:
-        DestinationArn:
-          Fn::GetAtt:
-            - AuthStageAccessLogs
-            - Arn
-        Format: '{ "requestId":"$context.requestId", "ip": "$context.identity.sourceIp", "requestTime":"$context.requestTime", "httpMethod":"$context.httpMethod","routeKey":"$context.routeKey", "status":"$context.status","protocol":"$context.protocol", "integrationStatus": $context.integrationStatus, "integrationLatency": $context.integrationLatency, "responseLength":"$context.responseLength" }'
+#!  AuthStage:
+#!    Type: AWS::ApiGatewayV2::Stage
+#!    DependsOn:
+#!      - AuthApi
+#!    Properties:
+#!      ApiId:
+#!        Fn::GetAtt:
+#!          - AuthApi
+#!          - Outputs.AuthApi
+#!      AutoDeploy: true
+#!      Description:
+#!        Fn::Sub: "Auth API ${AppEnvironment}"
+#!      StageName: "$default"
+#!      AccessLogSettings:
+#!        DestinationArn:
+#!          Fn::GetAtt:
+#!            - AuthStageAccessLogs
+#!            - Arn
+#!        Format: '{ "requestId":"$context.requestId", "ip": "$context.identity.sourceIp", "requestTime":"$context.requestTime", "httpMethod":"$context.httpMethod","routeKey":"$context.routeKey", "status":"$context.status","protocol":"$context.protocol", "integrationStatus": $context.integrationStatus, "integrationLatency": $context.integrationLatency, "responseLength":"$context.responseLength" }'
 
-  AuthStageMapping:
-    Condition: HasCertificateStackName
-    Type: 'AWS::ApiGatewayV2::ApiMapping'
-    Properties:
-      DomainName:
-        Fn::ImportValue:
-          Fn::Sub: '${CertificateStackName}-AuthApiDomain'
-      ApiId:
-        Fn::GetAtt:
-          - AuthApi
-          - Outputs.AuthApi
-      Stage:
-        Ref: AuthStage
+#!  AuthStageMapping:
+#!    Condition: HasCertificateStackName
+#!    Type: 'AWS::ApiGatewayV2::ApiMapping'
+#!    Properties:
+#!      DomainName:
+#!        Fn::ImportValue:
+#!          Fn::Sub: '${CertificateStackName}-AuthApiDomain'
+#!      ApiId:
+#!        Fn::GetAtt:
+#!          - AuthApi
+#!          - Outputs.AuthApi
+#!      Stage:
+#!        Ref: AuthStage
 
-  AuthStageAccessLogs:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      RetentionInDays:
-        Ref: LogRetentionInDays
-      LogGroupName:
-        Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/APIAuthAccessLogs"
+#!  AuthStageAccessLogs:
+#!    Type: AWS::Logs::LogGroup
+#!    Properties:
+#!      RetentionInDays:
+#!        Ref: LogRetentionInDays
+#!      LogGroupName:
+#!        Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/APIAuthAccessLogs"
 
   DocumentsHttpApiIdParameter:
     Type: AWS::SSM::Parameter
@@ -816,16 +816,16 @@ Outputs:
         - Fn::GetAtt:
           - HttpApi
           - Outputs.DocumentsHttpApiUrl
-  AuthApiUrl:
-    Description: "The endpoint url for the Auth API"
-    Value:
-      Fn::If:
-        - HasCertificateStackName
-        - Fn::Join:
-            - ''
-            - - 'https://'
-              - Fn::ImportValue:
-                  Fn::Sub: '${CertificateStackName}-AuthApiDomain'
-        - Fn::GetAtt:
-            - AuthApi
-            - Outputs.AuthApiUrl
+#!  AuthApiUrl:
+#!    Description: "The endpoint url for the Auth API"
+#!    Value:
+#!      Fn::If:
+#!        - HasCertificateStackName
+#!        - Fn::Join:
+#!            - ''
+#!            - - 'https://'
+#!              - Fn::ImportValue:
+#!                  Fn::Sub: '${CertificateStackName}-AuthApiDomain'
+#!        - Fn::GetAtt:
+#!            - AuthApi
+#!            - Outputs.AuthApiUrl

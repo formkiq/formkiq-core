@@ -645,12 +645,12 @@ Outputs:
       Fn::GetAtt: 
       - CoreApi
       - Outputs.DocumentsHttpApiUrl
-  AuthApiUrl:
-    Description: "The endpoint url for the Auth API"
-    Value:
-      Fn::GetAtt:
-        - CoreApi
-        - Outputs.AuthApiUrl
+#!  AuthApiUrl:
+#!    Description: "The endpoint url for the Auth API"
+#!    Value:
+#!      Fn::GetAtt:
+#!        - CoreApi
+#!        - Outputs.AuthApiUrl
   WebsocketApiUrl:
     Description: "The URL for the Websocket API endpoint"
     Value: 

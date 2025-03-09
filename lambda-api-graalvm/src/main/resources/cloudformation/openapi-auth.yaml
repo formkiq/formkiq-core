@@ -161,22 +161,20 @@ Resources:
             post:
               summary: Forgot Password
               description: >
-                Initiate the password reset process. The user provides their email address 
+                Initiate the password reset process. The user provides their username 
                 and receives instructions to reset their password.
               requestBody:
-                description: Email address of the user requesting password reset.
+                description: Username address of the user requesting password reset.
                 required: true
                 content:
                   application/json:
                     schema:
                       type: object
                       required:
-                        - email
+                        - username
                       properties:
-                        email:
+                        username:
                           type: string
-                          format: email
-                          example: "user@example.com"
               responses:
                 '200':
                   description: Password reset instructions sent.
@@ -187,7 +185,43 @@ Resources:
                         properties:
                           message:
                             type: string
-                            example: "Password reset email sent"
+                            example: "Password reset sent"
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /forgotPasswordConfirm:
+            post:
+              summary: Confirm Forgot Password
+              description: >
+                Confirms the Forgot password reset process.
+              requestBody:
+                description: Username address of the user requesting password reset.
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      type: object
+                      required:
+                        - username
+                        - code
+                        - password
+                      properties:
+                        username:
+                          type: string
+                        code:
+                          type: string
+                        password:
+                          type: string
+              responses:
+                '200':
+                  description: Confirms Password reset.
+                  content:
+                    application/json:
+                      schema:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+                            example: "Password set"
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
 
@@ -196,25 +230,22 @@ Resources:
               summary: Confirm Registration
               description: >
                 Confirm a new user's registration using a confirmation code. 
-                The request body must contain the user's email and the confirmation code.
+                The request body must contain the user's username and the confirmation code.
               requestBody:
-                description: User email and confirmation code for registration confirmation.
+                description: Username and confirmation code for registration confirmation.
                 required: true
                 content:
                   application/json:
                     schema:
                       type: object
                       required:
-                        - email
+                        - username
                         - code
                       properties:
-                        email:
+                        username:
                           type: string
-                          format: email
-                          example: "user@example.com"
                         code:
                           type: string
-                          example: "123456"
               responses:
                 '200':
                   description: Registration confirmed successfully.
@@ -226,6 +257,8 @@ Resources:
                           message:
                             type: string
                             example: "User registration confirmed successfully"
+                          challengeName:
+                            type: string
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
         components:

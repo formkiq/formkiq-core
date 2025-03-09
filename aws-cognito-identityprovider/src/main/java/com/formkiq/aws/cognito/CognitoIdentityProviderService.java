@@ -53,6 +53,8 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.Authenticat
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ChallengeNameType;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ChangePasswordRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ChangePasswordResponse;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.ConfirmForgotPasswordRequest;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.ConfirmForgotPasswordResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.CreateGroupRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.CreateGroupResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.DeleteGroupRequest;
@@ -62,6 +64,8 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.GetGroupReq
 import software.amazon.awssdk.services.cognitoidentityprovider.model.GetGroupResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.GetUserRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.GetUserResponse;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.InitiateAuthRequest;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.InitiateAuthResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ListGroupsRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ListGroupsResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersInGroupRequest;
@@ -211,15 +215,31 @@ public class CognitoIdentityProviderService {
   }
 
   /**
-   * Reset User Password.
+   * Sends Forgot Password Reset.
    *
    * @param username {@link String}
    * @return ForgotPasswordResponse
    */
-  public ForgotPasswordResponse setResetPassword(final String username) {
+  public ForgotPasswordResponse forgotPassword(final String username) {
     ForgotPasswordRequest request =
         ForgotPasswordRequest.builder().clientId(this.clientId).username(username).build();
     return this.cognitoProvider.forgotPassword(request);
+  }
+
+  /**
+   * Confirms Forgot Password Reset.
+   *
+   * @param username {@link String}
+   * @param code {@link String}
+   * @param password {@link String}
+   * @return ForgotPasswordResponse
+   */
+  public ConfirmForgotPasswordResponse forgotPasswordConfirm(final String username,
+      final String code, final String password) {
+    ConfirmForgotPasswordRequest request =
+        ConfirmForgotPasswordRequest.builder().clientId(this.clientId).username(username)
+            .confirmationCode(code).password(password).build();
+    return this.cognitoProvider.confirmForgotPassword(request);
   }
 
   /**
@@ -404,6 +424,21 @@ public class CognitoIdentityProviderService {
             .userPoolId(this.userPoolId).clientId(this.clientId).authParameters(authParams).build();
 
     return this.cognitoProvider.adminInitiateAuth(authRequest);
+  }
+
+  /**
+   * Login User.
+   * 
+   * @param username {@link String}
+   * @param password {@link String}
+   * @return InitiateAuthResponse
+   */
+  public InitiateAuthResponse initiateAuth(final String username, final String password) {
+    AuthFlowType authFlow = AuthFlowType.USER_PASSWORD_AUTH;
+    Map<String, String> authMap = Map.of("USERNAME", username, "PASSWORD", password);
+    InitiateAuthRequest req =
+        InitiateAuthRequest.builder().authFlow(authFlow).authParameters(authMap).build();
+    return this.cognitoProvider.initiateAuth(req);
   }
 
   /**

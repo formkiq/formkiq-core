@@ -58,18 +58,19 @@ public class UserForgotPasswordRequestHandler
     CognitoIdentityProviderService service =
         awsservice.getExtension(CognitoIdentityProviderService.class);
 
-    service.setResetPassword(authorization.getUsername());
+    String username = (String) map.get("username");
+    service.forgotPassword(username);
 
-    ApiMapResponse resp = new ApiMapResponse(Map.of("message", "Password reset email sent"));
+    ApiMapResponse resp = new ApiMapResponse(Map.of("message", "Password reset sent"));
     return new ApiRequestHandlerResponse(SC_OK, resp);
   }
 
   private void validate(final Map<String, Object> map) throws ValidationException {
-    String email = (String) map.get("email");
+    String username = (String) map.get("username");
 
-    if (isEmpty(email)) {
+    if (isEmpty(username)) {
       throw new ValidationException(
-          List.of(new ValidationErrorImpl().error("'email' are required")));
+          List.of(new ValidationErrorImpl().error("'username' are required")));
     }
   }
 
