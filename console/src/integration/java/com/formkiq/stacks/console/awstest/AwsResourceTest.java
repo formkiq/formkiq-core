@@ -75,10 +75,9 @@ public class AwsResourceTest {
   /**
    * beforeclass.
    *
-   * @throws IOException IOException
    */
   @BeforeAll
-  public static void beforeClass() throws IOException {
+  public static void beforeClass() {
 
     Region region = Region.of(System.getProperty("testregion"));
 
@@ -130,7 +129,6 @@ public class AwsResourceTest {
    * @throws InterruptedException InterruptedException
    * @throws IOException IOException
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testLogin() throws URISyntaxException, IOException, InterruptedException {
     String url = ssmService.getParameterValue("/formkiq/" + appenvironment + "/console/Url");
@@ -168,9 +166,7 @@ public class AwsResourceTest {
             page.fill("[placeholder=\"me@mycompany.com\"]", USER);
             page.click("[placeholder=\"******\"]");
             page.fill("[placeholder=\"******\"]", PASSWORD);
-            page.waitForNavigation(() -> {
-              page.locator("input:has-text(\"Sign In\")").click();
-            });
+            page.waitForNavigation(() -> page.locator("input:has-text(\"Sign In\")").click());
 
             page.waitForSelector("button:has-text(\"New\")");
             page.waitForSelector("text=Documents & Folders");
@@ -201,7 +197,7 @@ public class AwsResourceTest {
    */
   @Test
   public void testSsmParameters() {
-    assertEquals("v3.7.3",
+    assertEquals("v3.8.1",
         ssmService.getParameterValue("/formkiq/" + appenvironment + "/console/version"));
     assertTrue(ssmService.getParameterValue("/formkiq/" + appenvironment + "/s3/Console")
         .contains(appenvironment + "-console-"));

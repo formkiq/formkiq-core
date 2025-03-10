@@ -29,12 +29,6 @@ Parameters:
     Description: The Cognito Identity Pool Id
     AllowedPattern: ".+"
 
-  FormKiQType:
-    Description: The type of FormKiQ installation
-    Default: "core"
-    Type: String
-    AllowedValues: ["core", "enterprise"]
-  
   Domain:
     Description: Amazon Cognito domain to use (include full domain if CertificateArn used)
     AllowedPattern: ".+"
@@ -52,12 +46,9 @@ Resources:
       Value: 
         Ref: CognitoUserPool
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
         
   CognitoUserPoolArnParameter:
     Type: AWS::SSM::Parameter
@@ -69,12 +60,9 @@ Resources:
       Value: 
         Ref: CognitoUserPoolArn
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
 
   CognitoUserPoolClientIdParameter:
     Type: AWS::SSM::Parameter
@@ -86,12 +74,9 @@ Resources:
       Value: 
         Ref: CognitoUserPoolClient
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
 
   CognitoIdentityPoolIdParameter:
     Type: AWS::SSM::Parameter
@@ -103,12 +88,9 @@ Resources:
       Value: 
         Ref: CognitoIdentityPool
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
 
   CustomMessageAdminCreateUserSubjectParameter:
     Type: AWS::SSM::Parameter
@@ -119,12 +101,9 @@ Resources:
       Type: String
       Value: "Welcome to FormKiQ"
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
           
   CustomMessageSignUpUserSubjectParameter:
     Type: AWS::SSM::Parameter
@@ -135,12 +114,9 @@ Resources:
       Type: String
       Value: "Welcome to FormKiQ"
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
           
   CustomMessageSignUpUserSubjectParameter:
     Type: AWS::SSM::Parameter
@@ -151,12 +127,9 @@ Resources:
       Type: String
       Value: "Welcome to FormKiQ"
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
 
   CustomMessageForgotPasswordUserSubjectParameter:
     Type: AWS::SSM::Parameter
@@ -167,10 +140,7 @@ Resources:
       Type: String
       Value: "FormKiQ Password Reset"
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
           

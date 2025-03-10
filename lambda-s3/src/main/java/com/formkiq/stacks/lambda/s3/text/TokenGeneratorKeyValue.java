@@ -23,6 +23,9 @@
  */
 package com.formkiq.stacks.lambda.s3.text;
 
+import com.formkiq.strings.lexer.Token;
+import com.formkiq.strings.lexer.TokenGenerator;
+
 import java.util.List;
 import java.util.Map;
 
@@ -47,15 +50,5 @@ public class TokenGeneratorKeyValue implements TokenGenerator {
   @Override
   public List<Token> generateTokens(final String text) {
     return tokens;
-  }
-
-  @Override
-  public String getSplitRegex() {
-    return null;
-  }
-
-  @Override
-  public String formatText(final String text) {
-    return text;
   }
 }

@@ -7,42 +7,42 @@ Parameters:
   AppEnvironment:
     Type: String
     Description: The Document Stack Environment
-    AllowedPattern: ".+"
 
   ConsoleVersion:
     Type: String
     Description: Version of FormKiQ console to deploy
-    AllowedPattern: ".+"
 
   Domain:
     Description: Amazon Cognito domain to use (include full domain if CertificateArn used)
-    AllowedPattern: ".+"
     Type: String
 
   ConsoleBucket:
     Type: String
     Description: Console S3 Bucket
-    AllowedPattern: ".+"
 
   CognitoConfigBucket:
     Type: String
     Description: Cognito Config S3 Bucket
-    AllowedPattern: ".+"
 
   ApiUrl:
     Type: String
-    Description: API URL
-    AllowedPattern: ".+"
+    Description: JWT API URL
+
+  IamApiUrl:
+    Type: String
+    Description: IAM API URL
+
+  KeyApiUrl:
+    Type: String
+    Description: Key API URL
 
   WebsocketApiUrl:
     Type: String
     Description: WebSocket URL
-    AllowedPattern: ".+"
 
   AuthApiUrl:
     Type: String
     Description: Auth Api URL
-    AllowedPattern: ".+"
 
   Brand:
     Type: String
@@ -53,12 +53,6 @@ Parameters:
     Type: String
     Description: FormKiQ Distribution BucketName
     Default: "formkiq-distribution-console"
-
-  FormKiQType:
-    Description: The type of FormKiQ installation
-    Default: "core"
-    Type: String
-    AllowedValues: ["core", "enterprise"]
 
   AllowAdminCreateUserOnly:
     Description: When true only Cognito Admin can create users, false users can register themselves
@@ -100,10 +94,6 @@ Parameters:
     Description: The cloudfront domain name of the resource
     Type: String
     Default: ""
-
-  Partition:
-    Description: The partition in which the resource is located. A partition is a group of AWS Regions
-    Type: String
 
   IsGovCloud:
     Description: Is Installation AWS Region gov cloud
@@ -169,12 +159,9 @@ Resources:
       Value:
         Ref: ConsoleInstaller
       Tags:
-        Application:
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment:
           Fn::Sub: "${AppEnvironment}"
-        StackName:
-          Fn::Sub: "${AWS::StackName}"
 
   ConsoleInstaller:
     Type: AWS::Serverless::Function
@@ -191,12 +178,9 @@ Resources:
         - Arn
       CodeUri: ./console-installer.zip
       Tags:
-        Application:
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment:
           Fn::Sub: "${AppEnvironment}"
-        StackName:
-          Fn::Sub: "${AWS::StackName}"
       Environment:
         Variables:
           CONSOLE_VERSION:
@@ -210,11 +194,15 @@ Resources:
           COGNITO_CONFIG_BUCKET:
             Fn::Sub: "${CognitoConfigBucket}"
           API_URL:
-            Fn::Sub: "${ApiUrl}"
+            Ref: ApiUrl
+          API_IAM_URL:
+            Ref: IamApiUrl
+          API_KEY_URL:
+            Ref: KeyApiUrl
           API_WEBSOCKET_URL:
             Fn::Sub: "${WebsocketApiUrl}"
           API_AUTH_URL:
-            Fn::Sub: "${AuthApiUrl}"
+            Ref: AuthApiUrl
           BRAND:
             Fn::Sub: "${Brand}"
           ALLOW_ADMIN_CREATE_USER_ONLY:
@@ -249,8 +237,7 @@ Resources:
     Properties:
       Tags:
         - Key: "Application"
-          Value:
-            Fn::Sub: "FormKiQ ${FormKiQType}"
+          Value: "FormKiQ"
         - Key: "AppEnvironment"
           Value:
             Fn::Sub: "${AppEnvironment}"
@@ -281,7 +268,7 @@ Resources:
               Action:
               - ssm:GetParameter
               Resource:
-              - Fn::Sub: "arn:${Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/formkiq/*"
+              - Fn::Sub: "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/formkiq/*"
             - Effect: Allow
               Action:
               - s3:GetObject
@@ -291,11 +278,11 @@ Resources:
               Resource:
               - Fn::Join:
                 - ''
-                - - Fn::Sub: "arn:${Partition}:s3:::"
+                - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
                   - Ref: ConsoleBucket
               - Fn::Join:
                 - ''
-                - - Fn::Sub: "arn:${Partition}:s3:::"
+                - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
                   - Ref: ConsoleBucket
                   - '/*'
             - Effect: Allow
@@ -306,11 +293,11 @@ Resources:
               Resource:
               - Fn::Join:
                 - ''
-                - - Fn::Sub: "arn:${Partition}:s3:::"
+                - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
                   - Ref: CognitoConfigBucket
               - Fn::Join:
                 - ''
-                - - Fn::Sub: "arn:${Partition}:s3:::"
+                - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
                   - Ref: CognitoConfigBucket
                   - '/*'
             - Effect: Allow
@@ -319,7 +306,7 @@ Resources:
               Resource:
               - Fn::Join:
                 - ''
-                - - Fn::Sub: "arn:${Partition}:s3:::"
+                - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
                   - Ref: DistributionBucket
                   - '/*'
             - Effect: Allow
@@ -337,6 +324,12 @@ Resources:
     Properties:
       Nonce:
         Ref: ConsoleVersion
+      API_URL:
+        Ref: ApiUrl
+      API_IAM_URL:
+        Ref: IamApiUrl
+      API_KEY_URL:
+        Ref: KeyApiUrl
       HttpApiUrl:
         Fn::If:
           - HasCertificateStackName

@@ -34,6 +34,8 @@ import java.util.stream.Collectors;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.ApiPermission;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -42,6 +44,9 @@ import org.junit.jupiter.api.Test;
  *
  */
 class ApiAuthorizationBuilderTest {
+
+  /** {@link Gson}. */
+  private final Gson gson = new GsonBuilder().create();
 
   /**
    * Get {@link ApiGatewayRequestEvent}.
@@ -55,9 +60,9 @@ class ApiAuthorizationBuilderTest {
     ApiGatewayRequestEvent event = new ApiGatewayRequestEvent();
     ApiGatewayRequestContext content = new ApiGatewayRequestContext();
 
-    Map<String, Object> claims = Map.of("sitesClaims",
-        Map.of("cognito:groups", String.join(" ", groups), "permissionsMap", permissions));
-    content.setAuthorizer(claims);
+    Map<String, Object> claims = Map.of("sitesClaims", gson
+        .toJson(Map.of("cognito:groups", String.join(" ", groups), "permissionsMap", permissions)));
+    content.setAuthorizer(Map.of("claims", claims));
     event.setRequestContext(content);
 
     return event;
@@ -763,16 +768,39 @@ class ApiAuthorizationBuilderTest {
     // then
     assertEquals(DEFAULT_SITE_ID, api0.getSiteId());
     assertEquals(DEFAULT_SITE_ID, String.join(",", api0.getSiteIds()));
-    assertEquals("GOVERN",
+    assertEquals("GOVERN,READ,WRITE,DELETE",
         api0.getPermissions().stream().map(Enum::name).collect(Collectors.joining(",")));
-    assertEquals("groups: default (GOVERN)", api0.getAccessSummary());
+    assertEquals("groups: default (DELETE,GOVERN,READ,WRITE)", api0.getAccessSummary());
     assertEquals("default_govern", String.join(",", api0.getRoles()));
 
     assertEquals("finance", api1.getSiteId());
     assertEquals("finance", String.join(",", api1.getSiteIds()));
-    assertEquals("GOVERN",
+    assertEquals("GOVERN,READ,WRITE,DELETE",
         api1.getPermissions().stream().map(Enum::name).collect(Collectors.joining(",")));
-    assertEquals("groups: finance (GOVERN)", api1.getAccessSummary());
+    assertEquals("groups: finance (DELETE,GOVERN,READ,WRITE)", api1.getAccessSummary());
     assertEquals("finance_govern", String.join(",", api1.getRoles()));
+  }
+
+  /**
+   * Sites permissionsMap with user in default group.
+   */
+  @Test
+  void testApiAuthorizer25() throws Exception {
+    // given
+    ApiGatewayRequestEvent event0 =
+        getExplicitSitesJwtEvent(List.of("default"), Map.of("default", List.of("read")));
+
+    // when
+    final ApiAuthorization api0 = new ApiAuthorizationBuilder().build(event0);
+
+    // then
+    assertEquals("default", api0.getSiteId());
+    assertEquals("default", String.join(",", api0.getSiteIds()));
+    assertEquals("READ",
+        api0.getPermissions().stream().map(Enum::name).collect(Collectors.joining(",")));
+    assertEquals("READ",
+        api0.getPermissions("default").stream().map(Enum::name).collect(Collectors.joining(",")));
+    assertEquals("groups: default (READ)", api0.getAccessSummary());
+    assertEquals("default", String.join(",", api0.getRoles()));
   }
 }

@@ -31,9 +31,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.util.Arrays;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Base64;
 
 import com.formkiq.aws.dynamodb.ID;
@@ -202,6 +202,37 @@ public class DocumentIdContentGetRequestHandlerTest extends AbstractApiClientReq
       assertNull(response.getContent());
       assertNotNull(response.getContentUrl());
       assertEquals("text/plain", response.getContentType());
+    }
+  }
+
+  /**
+   * /documents/{documentId}/content TOO large content.
+   *
+   * Tests S3 URL is returned.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetDocumentContent07() throws Exception {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      final int sixMb = 6 * 1024 * 1024; // 6 MB in bytes
+      String content = "a".repeat(sixMb);
+      AddDocumentRequest req = new AddDocumentRequest().content(content).contentType("text/plain");
+      String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+
+      // when
+      try {
+        this.documentsApi.getDocumentContent(documentId, siteId, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"message\":\"Response exceeds allowed size\"}", e.getResponseBody());
+      }
     }
   }
 

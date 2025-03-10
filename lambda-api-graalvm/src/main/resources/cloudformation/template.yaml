@@ -14,10 +14,14 @@ Parameters:
 
   FormKiQType:
     Description: The type of FormKiQ installation
-    Default: "core"
+    AllowedPattern: ".+"
     Type: String
-    AllowedValues: ["core", "enterprise"]
-    
+
+  FormKiQVersion:
+    Type: String
+    Description: The formkiq version
+    AllowedPattern: ".+"
+
   LambdaMemory:
     Type: Number
     Description: The amount of memory used by lambda function (MB)
@@ -110,10 +114,6 @@ Parameters:
     Description: The name of the FormKiQ Certificate Stack Name
     Default: ""
 
-  Partition:
-    Description: The partition in which the resource is located. A partition is a group of AWS Regions
-    Type: String
-
   LogRetentionInDays:
     Type: Number
     Description: The number of days to retain the log events
@@ -165,6 +165,8 @@ Resources:
           Ref: LogLevelSystem
         FormKiQType: 
           Ref: FormKiQType
+        FormKiQVersion:
+          Ref: FormKiQVersion
         CognitoUserPool:
           Ref: CognitoUserPool
         CognitoUserPoolClient:
@@ -189,8 +191,6 @@ Resources:
             - Arn
         VpcStackName:
           Ref: VpcStackName
-        Partition:
-          Ref: Partition
         EnablePublicUrls:
           Ref: EnablePublicUrls
 
@@ -201,8 +201,6 @@ Resources:
       Parameters:
         AppEnvironment: 
           Ref: AppEnvironment
-        Partition:
-          Ref: Partition
         CognitoUserPool:
           Ref: CognitoUserPool
         CognitoUserPoolClient:
@@ -223,8 +221,6 @@ Resources:
       Parameters:
         AppEnvironment: 
           Ref: AppEnvironment
-        Partition:
-          Ref: Partition
         DocumentsApiRequestsArn:
           Fn::GetAtt: 
           - ApiLambda
@@ -249,8 +245,6 @@ Resources:
           Ref: LogLevelApplication
         LogLevelSystem:
           Ref: LogLevelSystem
-        Partition:
-          Ref: Partition
         FormKiQType:
           Ref: FormKiQType
         DocumentsApiRequestsArn:
@@ -261,6 +255,22 @@ Resources:
           Fn::GetAtt: 
           - Ocr
           - Outputs.OcrProcessorArn
+
+#!  AuthApi:
+#!    Type: AWS::Serverless::Application
+#!    Properties:
+#!      Location: ./api-auth.yaml
+#!      Parameters:
+#!        AppEnvironment:
+#!          Ref: AppEnvironment
+#!        CognitoUserPool:
+#!          Ref: CognitoUserPool
+#!        CognitoUserPoolClient:
+#!          Ref: CognitoUserPoolClient
+#!        DocumentsApiRequestsArn:
+#!          Fn::GetAtt:
+#!            - ApiLambda
+#!            - Outputs.DocumentsApiRequestsArn
           
   DocumentsApiInvokePermission:
     Type: "AWS::Lambda::Permission"
@@ -400,6 +410,48 @@ Resources:
       Stage: 
         Ref: KeyDocumentsStage
 
+#!  AuthStage:
+#!    Type: AWS::ApiGatewayV2::Stage
+#!    DependsOn:
+#!      - AuthApi
+#!    Properties:
+#!      ApiId:
+#!        Fn::GetAtt:
+#!          - AuthApi
+#!          - Outputs.AuthApi
+#!      AutoDeploy: true
+#!      Description:
+#!        Fn::Sub: "Auth API ${AppEnvironment}"
+#!      StageName: "$default"
+#!      AccessLogSettings:
+#!        DestinationArn:
+#!          Fn::GetAtt:
+#!            - AuthStageAccessLogs
+#!            - Arn
+#!        Format: '{ "requestId":"$context.requestId", "ip": "$context.identity.sourceIp", "requestTime":"$context.requestTime", "httpMethod":"$context.httpMethod","routeKey":"$context.routeKey", "status":"$context.status","protocol":"$context.protocol", "integrationStatus": $context.integrationStatus, "integrationLatency": $context.integrationLatency, "responseLength":"$context.responseLength" }'
+
+#!  AuthStageMapping:
+#!    Condition: HasCertificateStackName
+#!    Type: 'AWS::ApiGatewayV2::ApiMapping'
+#!    Properties:
+#!      DomainName:
+#!        Fn::ImportValue:
+#!          Fn::Sub: '${CertificateStackName}-AuthApiDomain'
+#!      ApiId:
+#!        Fn::GetAtt:
+#!          - AuthApi
+#!          - Outputs.AuthApi
+#!      Stage:
+#!        Ref: AuthStage
+
+#!  AuthStageAccessLogs:
+#!    Type: AWS::Logs::LogGroup
+#!    Properties:
+#!      RetentionInDays:
+#!        Ref: LogRetentionInDays
+#!      LogGroupName:
+#!        Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/APIAuthAccessLogs"
+
   DocumentsHttpApiIdParameter:
     Type: AWS::SSM::Parameter
     Properties:
@@ -412,12 +464,9 @@ Resources:
           - HttpApi
           - Outputs.DocumentsHttpApi
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
           
   DocumentsHttpApiUrlParameter:
     Type: AWS::SSM::Parameter
@@ -438,12 +487,9 @@ Resources:
             - HttpApi
             - Outputs.DocumentsHttpApiUrl
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
 
   DocumentsPublicHttpApiUrlParameter:
     Type: AWS::SSM::Parameter
@@ -464,12 +510,9 @@ Resources:
             - HttpApi
             - Outputs.DocumentsHttpApiUrl
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
 
   DocumentsIamApiUrlParameter:
     Type: AWS::SSM::Parameter
@@ -490,12 +533,9 @@ Resources:
             - IamApi
             - Outputs.DocumentsIamApiUrl
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
           
   DocumentsIamApiIdParameter:
     Type: AWS::SSM::Parameter
@@ -509,12 +549,9 @@ Resources:
           - IamApi
           - Outputs.DocumentsIamApi
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
           
   DocumentsKeyApiUrlParameter:
     Type: AWS::SSM::Parameter
@@ -535,12 +572,9 @@ Resources:
             - KeyApi
             - Outputs.DocumentsKeyApiUrl
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
           
   DocumentsKeyApiIdParameter:
     Type: AWS::SSM::Parameter
@@ -554,12 +588,9 @@ Resources:
           - KeyApi
           - Outputs.DocumentsKeyApi
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
         
   DocumentsApiRequestsParameter:
     Type: AWS::SSM::Parameter
@@ -573,20 +604,16 @@ Resources:
         - ApiLambda
         - Outputs.DocumentsApiRequests
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
 
   CloudWatchRole:
     Type: 'AWS::IAM::Role'
     Properties:
       Tags:
         - Key: "Application"
-          Value: 
-            Fn::Sub: "FormKiQ ${FormKiQType}"        
+          Value: "FormKiQ"
         - Key: "AppEnvironment"
           Value: 
             Fn::Sub: "${AppEnvironment}"
@@ -600,7 +627,7 @@ Resources:
             Action: 'sts:AssumeRole'
       Path: /
       ManagedPolicyArns:
-      - Fn::Sub: "arn:${Partition}:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
+      - Fn::Sub: "arn:${AWS::Partition}:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
       
   ApiGatewayAccount:
     Type: 'AWS::ApiGateway::Account'
@@ -615,14 +642,10 @@ Resources:
     Properties:
       Tags:
         - Key: "Application"
-          Value: 
-            Fn::Sub: "FormKiQ ${FormKiQType}"        
+          Value: "FormKiQ"
         - Key: "AppEnvironment"
           Value: 
             Fn::Sub: "${AppEnvironment}"
-        - Key: "StackName"
-          Value: 
-            Fn::Sub: "${AWS::StackName}"
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -634,13 +657,13 @@ Resources:
             Action: 'sts:AssumeRole'
       Path: /
       ManagedPolicyArns:
-      - Fn::Sub: "arn:${Partition}:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess"
+      - Fn::Sub: "arn:${AWS::Partition}:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess"
 
   ApiGatewayInvokeGroup:
     Type: AWS::IAM::Group
     Properties:
       ManagedPolicyArns:
-      - Fn::Sub: "arn:${Partition}:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess"
+      - Fn::Sub: "arn:${AWS::Partition}:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess"
 
   ApiGatewayInvokeGroupParameter:
     Type: AWS::SSM::Parameter
@@ -652,12 +675,9 @@ Resources:
       Value: 
         Ref: ApiGatewayInvokeGroup
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
 
   ApiGatewayInvokeGroupArnParameter:
     Type: AWS::SSM::Parameter
@@ -671,12 +691,9 @@ Resources:
         - ApiGatewayInvokeGroup
         - Arn
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
     
   ApiGatewayInvokeRoleParameter:
     Type: AWS::SSM::Parameter
@@ -688,12 +705,9 @@ Resources:
       Value: 
         Ref: ApiGatewayInvokeRole
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
 
   ApiGatewayInvokeRoleArnParameter:
     Type: AWS::SSM::Parameter
@@ -707,12 +721,9 @@ Resources:
         - ApiGatewayInvokeRole
         - Arn
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
 
   Ocr:
     Type: AWS::Serverless::Application
@@ -724,6 +735,8 @@ Resources:
       Parameters:
         AppEnvironment: 
           Ref: AppEnvironment
+        FormKiQType:
+          Ref: FormKiQType
         LogRetentionInDays:
           Ref: LogRetentionInDays
         LogFormat:
@@ -732,8 +745,6 @@ Resources:
           Ref: LogLevelApplication
         LogLevelSystem:
           Ref: LogLevelSystem
-        Partition:
-          Ref: Partition
         OcrQueueArn:
           Fn::GetAtt:
             - OcrQueue
@@ -805,3 +816,16 @@ Outputs:
         - Fn::GetAtt:
           - HttpApi
           - Outputs.DocumentsHttpApiUrl
+#!  AuthApiUrl:
+#!    Description: "The endpoint url for the Auth API"
+#!    Value:
+#!      Fn::If:
+#!        - HasCertificateStackName
+#!        - Fn::Join:
+#!            - ''
+#!            - - 'https://'
+#!              - Fn::ImportValue:
+#!                  Fn::Sub: '${CertificateStackName}-AuthApiDomain'
+#!        - Fn::GetAtt:
+#!            - AuthApi
+#!            - Outputs.AuthApiUrl

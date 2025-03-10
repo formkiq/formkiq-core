@@ -82,6 +82,12 @@ public class DocumentItemDynamoDb implements DocumentItem {
   /** Document Version. */
   @Reflectable
   private String version;
+  /** Document Width. */
+  @Reflectable
+  private String width;
+  /** Document Height. */
+  @Reflectable
+  private String height;
 
   /** constructor. */
   public DocumentItemDynamoDb() {}
@@ -128,6 +134,16 @@ public class DocumentItemDynamoDb implements DocumentItem {
   @Override
   public String getDeepLinkPath() {
     return this.deepLinkPath;
+  }
+
+  @Override
+  public String getWidth() {
+    return this.width;
+  }
+
+  @Override
+  public String getHeight() {
+    return this.height;
   }
 
   @Override
@@ -208,6 +224,16 @@ public class DocumentItemDynamoDb implements DocumentItem {
   @Override
   public void setDeepLinkPath(final String linkPath) {
     this.deepLinkPath = linkPath;
+  }
+
+  @Override
+  public void setWidth(final String documentWidth) {
+    this.width = documentWidth;
+  }
+
+  @Override
+  public void setHeight(final String documentHeight) {
+    this.height = documentHeight;
   }
 
   @Override

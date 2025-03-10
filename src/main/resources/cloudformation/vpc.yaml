@@ -18,20 +18,17 @@ Parameters:
 
   PublicSubnet1Cidr:
     Type: String
-    Description: Public Subnet1 CIDR block
-    AllowedPattern: "^[0-9./\\s]*"
+    Description: Public Subnet1 CIDR block (optional leave empty to skip)
     Default: 10.1.1.0/24
     
   PublicSubnet2Cidr:
     Type: String
-    Description: Public Subnet2 CIDR block
-    AllowedPattern: "^[0-9./\\s]*"
+    Description: Public Subnet2 CIDR block (optional leave empty to skip)
     Default: 10.1.2.0/24
 
   PublicSubnet3Cidr:
     Type: String
-    Description: Public Subnet3 CIDR block
-    AllowedPattern: "^[0-9./\\s]*"
+    Description: Public Subnet3 CIDR block (optional leave empty to skip)
     Default: 10.1.3.0/24
 
   PrivateSubnet1Cidr:
@@ -52,33 +49,101 @@ Parameters:
     AllowedPattern: "^[0-9./\\s]*"
     Default: 10.1.30.0/24
 
-  EnableEnterpriseFeatures:
-    Description: Enable Enterprise VPC features
+  EnableVpcEndpoints:
+    Description: Enable VPC Endpoints (S3, Dynamodb, SNS, SMS, Execute-Api) set to 'true' if using Opensearch
     Default: "false"
     Type: String
     AllowedValues: ["false", "true"]
-    
+
+  EnableVpcLinks:
+    Description: Enable VPC Links (needed for Typesense)
+    Default: "false"
+    Type: String
+    AllowedValues: ["false", "true"]
+
+  EnableVpcFlowLogs:
+    Description: Enable VPC Flow Logs (set to 'true' to enable)
+    Type: String
+    Default: "false"
+    AllowedValues: ["false", "true"]
+
+  VpcFlowLogsDestination:
+    Description: "Destination for VPC Flow Logs. Options: s3, cloud-watch-logs"
+    Type: String
+    Default: "s3"
+    AllowedValues: ["s3", "cloud-watch-logs"]
+
+  FlowLogsRetentionInDays:
+    Description: "Retention period in days for CloudWatch Logs. Allowed values: 1,3,5,7,14,30,60,90,120,150,180,365,400,545,731,1827,3653"
+    Type: Number
+    Default: 30
+    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
+
 Conditions:
-  IsEnableEnterpriseFeatures: 
-    Fn::Equals: 
-    - Ref: EnableEnterpriseFeatures
+
+  HasPublic:
+    Fn::And:
+      - Fn::Not:
+          - Fn::Equals: [ !Ref PublicSubnet1Cidr, "" ]
+      - Fn::Not:
+          - Fn::Equals: [ !Ref PublicSubnet2Cidr, "" ]
+      - Fn::Not:
+          - Fn::Equals: [ !Ref PublicSubnet3Cidr, "" ]
+
+  IsEnableVpcFlowLogs:
+    Fn::Equals:
+      - Ref: EnableVpcFlowLogs
+      - "true"
+
+  IsFlowLogToS3:
+    Fn::Equals: [ !Ref VpcFlowLogsDestination, "s3" ]
+  
+  IsFlowLogToCloudWatch:
+    Fn::Equals: [ !Ref VpcFlowLogsDestination, "cloud-watch-logs" ]
+
+  IsFlowLogToS3AndEnabled:
+    Fn::And:
+      - Condition: IsEnableVpcFlowLogs
+      - Condition: IsFlowLogToS3
+
+  IsFlowLogToCloudWatchAndEnabled:
+    Fn::And:
+      - Condition: IsEnableVpcFlowLogs
+      - Condition: IsFlowLogToCloudWatch
+
+  IsEnableVpcEndpoints:
+    Fn::Equals:
+    - Ref: EnableVpcEndpoints
     - 'true'
+
+  IsEnableVpcLinks:
+    Fn::Equals:
+      - Ref: EnableVpcLinks
+      - 'true'
 
   UseTwoSubnets: 
     Fn::Equals:
       - Ref: "AWS::Region"
       - "ca-central-1"
 
-  UseThreeSubnets: 
+  UseThreePrivateSubnets:
     Fn::Not:
       - Condition: UseTwoSubnets
+
+  UseThreePublicSubnets:
+    Fn::And:
+      - Fn::Not:
+        - Condition: UseTwoSubnets
+      - !Condition HasPublic
     
 Resources:
 
   InternetGateway:
+    Condition: HasPublic
     Type: AWS::EC2::InternetGateway
 
   GatewayToInternet:
+    Condition: HasPublic
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
       VpcId:
@@ -87,6 +152,7 @@ Resources:
         Ref: InternetGateway
       
   CloudMapNamespace:
+    Condition: IsEnableVpcLinks
     Type: AWS::ServiceDiscovery::PrivateDnsNamespace
     Properties:
       Vpc:
@@ -95,6 +161,7 @@ Resources:
         Ref: VpcLabel
 
   VpcLink:
+    Condition: IsEnableVpcLinks
     Type: AWS::ApiGatewayV2::VpcLink
     Properties:
       Name: vpclink
@@ -109,6 +176,7 @@ Resources:
           - Ref: PrivateSubnet3
 
   VpcLinkSecurityGroup:
+    Condition: IsEnableVpcLinks
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: FormKiQ VPC Link
@@ -129,12 +197,10 @@ Resources:
             Ref: VpcLabel
         - Key: Application
           Value: FormKiQ
-        - Key: StackName
-          Value: 
-            Fn::Sub: "${AWS::StackName}"
 
   PublicSubnet1:
     Type: AWS::EC2::Subnet
+    Condition: HasPublic
     Properties:
       VpcId:
         Ref: Vpc
@@ -152,12 +218,10 @@ Resources:
             Fn::Sub: "FormKiQ PublicSubnet1 (${PublicSubnet1Cidr})"
         - Key: Application
           Value: FormKiQ
-        - Key: StackName
-          Value: 
-            Fn::Sub: "${AWS::StackName}"      
  
   PublicSubnet2:
     Type: AWS::EC2::Subnet
+    Condition: HasPublic
     Properties:
       VpcId:
         Ref: Vpc
@@ -175,12 +239,9 @@ Resources:
             Fn::Sub: "FormKiQ PublicSubnet2 (${PublicSubnet2Cidr})"
         - Key: Application
           Value: FormKiQ
-        - Key: StackName
-          Value: 
-            Fn::Sub: "${AWS::StackName}"      
 
   PublicSubnet3:
-    Condition: UseThreeSubnets
+    Condition: UseThreePublicSubnets
     Type: AWS::EC2::Subnet
     Properties:
       VpcId:
@@ -199,9 +260,6 @@ Resources:
             Fn::Sub: "FormKiQ PublicSubnet3 (${PublicSubnet3Cidr})"
         - Key: Application
           Value: FormKiQ
-        - Key: StackName
-          Value: 
-            Fn::Sub: "${AWS::StackName}"
             
   PrivateSubnet1:
     Type: AWS::EC2::Subnet
@@ -221,9 +279,6 @@ Resources:
             Fn::Sub: "FormKiQ PrivateSubnet1 (${PrivateSubnet1Cidr})"
         - Key: Application
           Value: FormKiQ
-        - Key: StackName
-          Value: 
-            Fn::Sub: "${AWS::StackName}"
             
   PrivateSubnet2:
     Type: AWS::EC2::Subnet
@@ -243,13 +298,10 @@ Resources:
             Fn::Sub: "FormKiQ PrivateSubnet2 (${PrivateSubnet2Cidr})"
         - Key: Application
           Value: FormKiQ
-        - Key: StackName
-          Value: 
-            Fn::Sub: "${AWS::StackName}"
             
   PrivateSubnet3:
     Type: AWS::EC2::Subnet
-    Condition: UseThreeSubnets
+    Condition: UseThreePrivateSubnets
     Properties:
       VpcId: 
         Ref: Vpc
@@ -266,12 +318,10 @@ Resources:
             Fn::Sub: "FormKiQ PrivateSubnet3 (${PrivateSubnet3Cidr})"
         - Key: Application
           Value: FormKiQ
-        - Key: StackName
-          Value: 
-            Fn::Sub: "${AWS::StackName}"
 
   PublicRoute:
     Type: AWS::EC2::Route
+    Condition: HasPublic
     DependsOn: GatewayToInternet
     Properties:
       RouteTableId:
@@ -282,6 +332,7 @@ Resources:
 
   PubliceSubnet1RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
+    Condition: HasPublic
     Properties:
       SubnetId:
         Ref: PublicSubnet1
@@ -290,6 +341,7 @@ Resources:
         
   PubliceSubnet2RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
+    Condition: HasPublic
     Properties:
       SubnetId:
         Ref: PublicSubnet2
@@ -297,7 +349,7 @@ Resources:
         Ref: PublicRouteTable
         
   PubliceSubnet3RouteTableAssociation:
-    Condition: UseThreeSubnets
+    Condition: UseThreePublicSubnets
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId:
@@ -307,27 +359,28 @@ Resources:
                     
   PublicRouteTable:
     Type: AWS::EC2::RouteTable
+    Condition: HasPublic
     Properties:
       VpcId: 
         Ref: Vpc
       Tags:
+        - Key: Name
+          Value:
+            Fn::Sub: "${VpcLabel} Public Route"
         - Key: Application
           Value: FormKiQ
-        - Key: StackName
-          Value: 
-            Fn::Sub: "${AWS::StackName}"
-            
+
   PrivateRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
-      VpcId: 
+      VpcId:
         Ref: Vpc
       Tags:
+        - Key: Name
+          Value:
+            Fn::Sub: "${VpcLabel} Private Route"
         - Key: Application
           Value: FormKiQ
-        - Key: StackName
-          Value: 
-            Fn::Sub: "${AWS::StackName}"
             
   PrivateSubnet1RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
@@ -346,7 +399,7 @@ Resources:
         Ref: PrivateRouteTable
         
   PrivateSubnet3RouteTableAssociation:
-    Condition: UseThreeSubnets
+    Condition: UseThreePrivateSubnets
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: 
@@ -358,7 +411,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Security Group which allows HTTPS access
-      VpcId: 
+      VpcId:
         Ref: Vpc
       SecurityGroupIngress:
         - IpProtocol: tcp
@@ -373,75 +426,54 @@ Resources:
       Tags:
         - Key: Application
           Value: FormKiQ
-        - Key: StackName
-          Value: 
-            Fn::Sub: "${AWS::StackName}"
-        
-  NfsSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: Security Group which allows NFS access
-      VpcId: 
-        Ref: Vpc
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 2049
-          ToPort: 2049
-          CidrIp: 0.0.0.0/0
-      Tags:
-        - Key: Application
-          Value: FormKiQ
-        - Key: StackName
-          Value: 
-            Fn::Sub: "${AWS::StackName}"
 
   S3GatewayEndpoint:
     Type: 'AWS::EC2::VPCEndpoint'
-    Condition: IsEnableEnterpriseFeatures
+    Condition: IsEnableVpcEndpoints
     Properties:
       VpcEndpointType: Gateway
       RouteTableIds:
-        - Ref: PrivateRouteTable      
-      ServiceName: 
+        - Ref: PrivateRouteTable
+      ServiceName:
         Fn::Sub: 'com.amazonaws.${AWS::Region}.s3'
       VpcId:
         Ref: Vpc
-        
+
   DynamoDbGatewayEndpoint:
     Type: 'AWS::EC2::VPCEndpoint'
-    Condition: IsEnableEnterpriseFeatures
+    Condition: IsEnableVpcEndpoints
     Properties:
       VpcEndpointType: Gateway
       RouteTableIds:
-        - Ref: PrivateRouteTable      
-      ServiceName: 
+        - Ref: PrivateRouteTable
+      ServiceName:
         Fn::Sub: 'com.amazonaws.${AWS::Region}.dynamodb'
       VpcId:
         Ref: Vpc
 
   SnsInterfaceEndpoint:
     Type: 'AWS::EC2::VPCEndpoint'
-    Condition: IsEnableEnterpriseFeatures
+    Condition: IsEnableVpcEndpoints
     Properties:
-      VpcEndpointType: Interface      
-      ServiceName: 
+      VpcEndpointType: Interface
+      ServiceName:
         Fn::Sub: 'com.amazonaws.${AWS::Region}.sns'
       VpcId:
         Ref: Vpc
 
   SsmInterfaceEndpoint:
     Type: 'AWS::EC2::VPCEndpoint'
-    Condition: IsEnableEnterpriseFeatures
+    Condition: IsEnableVpcEndpoints
     Properties:
-      VpcEndpointType: Interface      
-      ServiceName: 
+      VpcEndpointType: Interface
+      ServiceName:
         Fn::Sub: 'com.amazonaws.${AWS::Region}.ssm'
       VpcId:
         Ref: Vpc
 
   ExecuteApiInterfaceEndpoint:
     Type: 'AWS::EC2::VPCEndpoint'
-    Condition: IsEnableEnterpriseFeatures
+    Condition: IsEnableVpcEndpoints
     Properties:
       PrivateDnsEnabled: true
       VpcEndpointType: Interface      
@@ -449,8 +481,101 @@ Resources:
         Fn::Sub: 'com.amazonaws.${AWS::Region}.execute-api'
       VpcId:
         Ref: Vpc
-        
+
+  VpcFlowLogsBucket:
+    Condition: IsFlowLogToS3AndEnabled
+    Type: AWS::S3::Bucket
+
+  VpcFlowLogsBucketPolicy:
+    Condition: IsFlowLogToS3AndEnabled
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: 
+        Ref: VpcFlowLogsBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: "AWSFlowLogsWrite"
+            Effect: Allow
+            Principal:
+              Service: vpc-flow-logs.amazonaws.com
+            Action: "s3:PutObject"
+            Resource:
+              Fn::Sub: "${VpcFlowLogsBucket.Arn}/*"
+            Condition:
+              StringEquals:
+                "s3:x-amz-acl": "bucket-owner-full-control"
+
+  VpcFlowLogS3:
+    Condition: IsFlowLogToS3AndEnabled
+    Type: AWS::EC2::FlowLog
+    Properties:
+      LogDestination: !GetAtt VpcFlowLogsBucket.Arn
+      LogDestinationType: !Ref VpcFlowLogsDestination
+      ResourceId: !Ref Vpc
+      ResourceType: VPC
+      TrafficType: ALL
+      Tags:
+        - Key: Name
+          Value: !Ref VpcLabel
+        - Key: Application
+          Value: FormKiQ
+
+  VpcFlowLogCloudWatch:
+    Condition: IsFlowLogToCloudWatchAndEnabled
+    Type: AWS::EC2::FlowLog
+    Properties:
+      LogDestination: !GetAtt VpcFlowLogs.Arn
+      LogDestinationType: !Ref VpcFlowLogsDestination
+      ResourceId: !Ref Vpc
+      ResourceType: VPC
+      DeliverLogsPermissionArn: !GetAtt VpcFlowLogsCWRole.Arn
+      TrafficType: ALL
+      Tags:
+        - Key: Name
+          Value: !Ref VpcLabel
+        - Key: Application
+          Value: FormKiQ
+
+  VpcFlowLogs:
+    Condition: IsFlowLogToCloudWatchAndEnabled
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: !Ref FlowLogsRetentionInDays
+
+  VpcFlowLogsCWRole:
+    Condition: IsFlowLogToCloudWatchAndEnabled
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: vpc-flow-logs.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: VPCFlowLogsPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:DescribeLogGroups
+                  - logs:DescribeLogStreams
+                  - logs:PutLogEvents
+                Resource: "*"
+
 Outputs:
+
+  VpcFlowLogsBucket:
+    Condition: IsFlowLogToS3AndEnabled
+    Description: "Vpc Flow Logs S3 Bucket"
+    Value:
+      Ref: VpcFlowLogsBucket
+
   Vpc:
     Description: "VPC Id"
     Value:
@@ -458,7 +583,15 @@ Outputs:
     Export:
       Name: 
         Fn::Sub: "${AWS::StackName}-Vpc"
+  VpcCidr:
+    Description: "VPC Cidr"
+    Value:
+      Ref: VpcCidr
+    Export:
+      Name: 
+        Fn::Sub: "${AWS::StackName}-VpcCidr"
   PublicSubnet1:
+    Condition: HasPublic
     Description: "Public Subnet 1"
     Value:
       Ref: PublicSubnet1
@@ -466,6 +599,7 @@ Outputs:
       Name:
         Fn::Sub: "${AWS::StackName}-PublicSubnet1"
   PublicSubnet2:
+    Condition: HasPublic
     Description: "Public Subnet 2"
     Value:
       Ref: PublicSubnet2
@@ -473,7 +607,7 @@ Outputs:
       Name:
         Fn::Sub: "${AWS::StackName}-PublicSubnet2"
   PublicSubnet3:
-    Condition: UseThreeSubnets
+    Condition: UseThreePublicSubnets
     Description: "Public Subnet 3"
     Value:
       Ref: PublicSubnet3
@@ -495,7 +629,7 @@ Outputs:
       Name:
         Fn::Sub: "${AWS::StackName}-PrivateSubnet2"
   PrivateSubnet3:
-    Condition: UseThreeSubnets
+    Condition: UseThreePrivateSubnets
     Description: "Private Subnet 3"
     Value:
       Ref: PrivateSubnet3
@@ -509,18 +643,13 @@ Outputs:
     Export:
       Name:
         Fn::Sub: "${AWS::StackName}-HttpsSecurityGroup"
-  NfsSecurityGroup:
-    Description: Security Group which allows NFS access
-    Value:
-      Ref: NfsSecurityGroup
-    Export:
-      Name:
-        Fn::Sub: "${AWS::StackName}-NfsSecurityGroup"
+
   PublicSubnets:
+    Condition: HasPublic
     Description: "VPC Public Subnets"
     Value: 
       Fn::If:
-        - UseThreeSubnets
+        - UseThreePublicSubnets
         - Fn::Join:
           - ","
           - - Ref: PublicSubnet1
@@ -537,7 +666,7 @@ Outputs:
     Description: "VPC Private Subnets"
     Value: 
       Fn::If:
-        - UseThreeSubnets
+        - UseThreePrivateSubnets
         - Fn::Join:
           - ","
           - - Ref: PrivateSubnet1
@@ -551,6 +680,7 @@ Outputs:
       Name:
         Fn::Sub: "${AWS::StackName}-PrivateSubnets"
   CloudMapNamespace:
+    Condition: IsEnableVpcLinks
     Description: "Cloud Map Name Space"
     Value: 
       Ref: CloudMapNamespace
@@ -558,6 +688,7 @@ Outputs:
       Name:
         Fn::Sub: "${AWS::StackName}-CloudMapNamespace"
   VpcLink:
+    Condition: IsEnableVpcLinks
     Description: "ApiGatewayV2 VPC Link"
     Value: 
       Ref: VpcLink
@@ -565,8 +696,10 @@ Outputs:
       Name:
         Fn::Sub: "${AWS::StackName}-VpcLink"
   VpcLinkSecurityGroup:
+    Condition: IsEnableVpcLinks
     Description: "VPC Link Security Group"
-    Value: !Ref VpcLinkSecurityGroup
+    Value:
+      Ref: VpcLinkSecurityGroup
     Export:
       Name:
         Fn::Sub: "${AWS::StackName}-VpcLinkSecurityGroup"

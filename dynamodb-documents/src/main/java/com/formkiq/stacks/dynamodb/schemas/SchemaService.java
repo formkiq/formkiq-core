@@ -25,6 +25,7 @@ package com.formkiq.stacks.dynamodb.schemas;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import com.formkiq.aws.dynamodb.PaginationResults;
@@ -160,4 +161,28 @@ public interface SchemaService {
    * @return {@link List} {@link String}
    */
   List<String> getAttributeAllowedValues(String siteId, String attributeKey);
+
+  /**
+   * Update {@link SchemaAttributes} with {@link Locale}.
+   *
+   * @param siteId {@link String}
+   * @param classificationId {@link String}
+   * @param schemaAttributes {@link SchemaAttributes}
+   * @param locale {@link String}
+   */
+  void updateLocalization(String siteId, String classificationId, SchemaAttributes schemaAttributes,
+      String locale);
+
+  /**
+   * Get Attribute Allowed Values Localization.
+   * 
+   * @param siteId {@link String}
+   * @param classificationId {@link String}
+   * @param attributeKey {@link String}
+   * @param allowedValues {@link Collection} {@link String}
+   * @param locale {@link String}
+   * @return Map
+   */
+  Map<String, String> getAttributeAllowedValuesLocalization(String siteId, String classificationId,
+      String attributeKey, Collection<String> allowedValues, String locale);
 }

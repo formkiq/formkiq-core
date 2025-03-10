@@ -67,8 +67,12 @@ import com.formkiq.stacks.api.handler.DocumentAttributeRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentAttributesRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentAttributesValueRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentIdContentRequestHandler;
+import com.formkiq.stacks.api.handler.DocumentIdPurgeRequestHandler;
 import com.formkiq.stacks.api.handler.GroupRequestHandler;
 import com.formkiq.stacks.api.handler.GroupsUserRequestHandler;
+import com.formkiq.stacks.api.handler.SitesLocaleRequestHandler;
+import com.formkiq.stacks.api.handler.SitesLocaleResourceItemRequestHandler;
+import com.formkiq.stacks.api.handler.SitesLocaleResourceItemsRequestHandler;
 import com.formkiq.stacks.api.handler.PublicationsDocumentIdRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentIdRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentIdRestoreRequestHandler;
@@ -104,13 +108,19 @@ import com.formkiq.stacks.api.handler.SearchRequestHandler;
 import com.formkiq.stacks.api.handler.SitesClassificationAllowedValuesRequestHandler;
 import com.formkiq.stacks.api.handler.SitesClassificationIdRequestHandler;
 import com.formkiq.stacks.api.handler.SitesClassificationRequestHandler;
+import com.formkiq.stacks.api.handler.SitesLocalesRequestHandler;
 import com.formkiq.stacks.api.handler.SitesRequestHandler;
 import com.formkiq.stacks.api.handler.SitesSchemaAttributeAllowedValuesRequestHandler;
 import com.formkiq.stacks.api.handler.SitesSchemaRequestHandler;
 import com.formkiq.stacks.api.handler.UpdateDocumentMatchingRequestHandler;
+import com.formkiq.stacks.api.handler.UserChangePasswordRequestHandler;
+import com.formkiq.stacks.api.handler.UserConfirmRegistrationRequestHandler;
+import com.formkiq.stacks.api.handler.UserForgotPasswordConfirmRequestHandler;
 import com.formkiq.stacks.api.handler.UserGroupsRequestHandler;
+import com.formkiq.stacks.api.handler.UserLoginRequestHandler;
 import com.formkiq.stacks.api.handler.UserOperationRequestHandler;
 import com.formkiq.stacks.api.handler.UserRequestHandler;
+import com.formkiq.stacks.api.handler.UserForgotPasswordRequestHandler;
 import com.formkiq.stacks.api.handler.UsersRequestHandler;
 import com.formkiq.stacks.api.handler.VersionRequestHandler;
 import com.formkiq.stacks.api.handler.WebhooksIdRequestHandler;
@@ -136,6 +146,8 @@ import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeServiceExtension;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidator;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidatorExtension;
+import com.formkiq.stacks.dynamodb.locale.LocaleService;
+import com.formkiq.stacks.dynamodb.locale.LocaleServiceExtension;
 import com.formkiq.stacks.dynamodb.mappings.MappingService;
 import com.formkiq.stacks.dynamodb.mappings.MappingServiceExtension;
 import com.formkiq.stacks.dynamodb.schemas.SchemaService;
@@ -206,6 +218,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     serviceCache.register(AttributeValidator.class, new AttributeValidatorExtension());
     serviceCache.register(SchemaService.class, new SchemaServiceExtension());
     serviceCache.register(MappingService.class, new MappingServiceExtension());
+    serviceCache.register(LocaleService.class, new LocaleServiceExtension());
   }
 
   /**
@@ -251,12 +264,19 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new WebhooksRequestHandler());
     addRequestHandler(new DocumentsRequestHandler());
     addRequestHandler(new DocumentIdRequestHandler());
+    addRequestHandler(new DocumentIdPurgeRequestHandler());
     addRequestHandler(new DocumentIdRestoreRequestHandler());
     addRequestHandler(new DocumentsCompressRequestHandler());
     addRequestHandler(new IndicesFolderMoveRequestHandler());
     addRequestHandler(new IndicesRequestHandler());
     addRequestHandler(new IndicesSearchRequestHandler());
     addRequestHandler(new UpdateDocumentMatchingRequestHandler());
+
+    addRequestHandler(new SitesLocaleRequestHandler());
+    addRequestHandler(new SitesLocalesRequestHandler());
+    addRequestHandler(new SitesLocaleResourceItemRequestHandler());
+    addRequestHandler(new SitesLocaleResourceItemsRequestHandler());
+
     addGroupUsersEndpoints();
     addDocumentAttributeEndpoints();
 
@@ -301,6 +321,11 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new UserRequestHandler());
     addRequestHandler(new UserOperationRequestHandler());
     addRequestHandler(new UserGroupsRequestHandler());
+    addRequestHandler(new UserLoginRequestHandler());
+    addRequestHandler(new UserChangePasswordRequestHandler());
+    addRequestHandler(new UserForgotPasswordRequestHandler());
+    addRequestHandler(new UserForgotPasswordConfirmRequestHandler());
+    addRequestHandler(new UserConfirmRegistrationRequestHandler());
   }
 
   private static void addDocumentAttributeEndpoints() {
@@ -346,7 +371,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
       return hander;
     }
 
-    throw new NotFoundException(resource + " not found");
+    throw new NotFoundException(resource + " request handler not found");
   }
 
   @Override

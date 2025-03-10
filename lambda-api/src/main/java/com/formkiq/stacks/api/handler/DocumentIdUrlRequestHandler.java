@@ -29,15 +29,18 @@ import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_FOUND;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import static software.amazon.awssdk.utils.StringUtils.isEmpty;
 import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.aws.dynamodb.objects.Strings;
@@ -56,11 +59,19 @@ import com.formkiq.stacks.api.ApiEmptyResponse;
 import com.formkiq.stacks.api.ApiUrlResponse;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
+import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
+import com.formkiq.validation.ValidationErrorImpl;
+import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/url". */
 public class DocumentIdUrlRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
+
+  /** S3 Prefix. */
+  private static final String S3_PREFIX = "s3://";
+  /** S3 Pattern. */
+  private static final Pattern S3_PATTERN = Pattern.compile("s3://([^/]+)/(.*)");
 
   /**
    * constructor.
@@ -83,7 +94,8 @@ public class DocumentIdUrlRequestHandler
     String versionId = getVersionId(awsservice, versionAttributes, versionKey);
 
     boolean inline = "true".equals(getParameter(event, "inline"));
-    URL url = getS3Url(authorization, awsservice, event, item, versionId, inline);
+    boolean bypassWatermark = isBypassWatermark(event, authorization, siteId);
+    URL url = getS3Url(authorization, awsservice, event, item, versionId, inline, bypassWatermark);
 
     if (url != null) {
       if (awsservice.containsExtension(UserActivityPlugin.class)) {
@@ -95,6 +107,24 @@ public class DocumentIdUrlRequestHandler
     return url != null
         ? new ApiRequestHandlerResponse(SC_OK, new ApiUrlResponse(url.toString(), documentId))
         : new ApiRequestHandlerResponse(SC_NOT_FOUND, new ApiEmptyResponse());
+  }
+
+  private boolean isBypassWatermark(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final String siteId) throws ValidationException {
+
+    boolean isBypassWatermark = "true".equals(getParameter(event, "bypassWatermark"));
+
+    Collection<ApiPermission> permissions = authorization.getPermissions(siteId);
+    if (isBypassWatermark) {
+
+      if (!permissions.contains(ApiPermission.ADMIN)
+          && !permissions.contains(ApiPermission.GOVERN)) {
+        throw new ValidationException(List
+            .of(new ValidationErrorImpl().error("user requires 'admin' or 'govern' permission")));
+      }
+    }
+
+    return isBypassWatermark;
   }
 
   private String getVersionKey(final ApiGatewayRequestEvent event) {
@@ -140,13 +170,13 @@ public class DocumentIdUrlRequestHandler
    * @param item {@link DocumentItem}
    * @param versionId {@link String}
    * @param inline boolean
+   * @param bypassWatermark boolean
    * @return {@link URL}
-   * @throws URISyntaxException URISyntaxException
    * @throws MalformedURLException MalformedURLException
    */
   private URL getS3Url(final ApiAuthorization authorization, final AwsServiceCache awsservice,
       final ApiGatewayRequestEvent event, final DocumentItem item, final String versionId,
-      final boolean inline) throws URISyntaxException, MalformedURLException {
+      final boolean inline, final boolean bypassWatermark) throws MalformedURLException {
 
     final String documentId = item.getDocumentId();
 
@@ -155,27 +185,44 @@ public class DocumentIdUrlRequestHandler
     awsservice.getLogger().debug(
         "Finding S3 Url for document '" + item.getDocumentId() + "' version = '" + versionId + "'");
 
-    String s3Bucket = awsservice.environment("DOCUMENTS_S3_BUCKET");
+    DocumentService documentService = awsservice.getExtension(DocumentService.class);
+    boolean hasWatermarks = !documentService.findDocumentAttributesByType(siteId, documentId,
+        DocumentAttributeValueType.WATERMARK, null, 1).getResults().isEmpty();
+
+    String accessPointS3Bucket = awsservice.environment("ACCESS_POINT_S3_BUCKET");
+    String documentsS3Bucket = awsservice.environment("DOCUMENTS_S3_BUCKET");
+
+    String s3Bucket =
+        !bypassWatermark && hasWatermarks && !isEmpty(accessPointS3Bucket) ? accessPointS3Bucket
+            : documentsS3Bucket;
     String filename = getFilename(item);
 
     PresignGetUrlConfig config = new PresignGetUrlConfig();
 
-    config.contentType(item.getContentType());
     String s3key = createS3Key(siteId, documentId);
 
-    if (isS3Link(item)) {
-      URI u = new URI(item.getDeepLinkPath());
-      s3Bucket = u.getHost();
-      s3key = u.getPath().startsWith("/") ? u.getPath().substring(1) : u.getPath();
-      filename = Strings.getFilename(item.getDeepLinkPath());
+    String deepLinkPath = item.getDeepLinkPath();
 
-    } else if (!isEmpty(item.getDeepLinkPath())) {
+    if (isS3Link(item)) {
+
+      filename = Strings.getFilename(deepLinkPath);
+      Matcher matcher = S3_PATTERN.matcher(deepLinkPath);
+      if (matcher.matches()) {
+        s3Bucket = matcher.group(1);
+        s3key = matcher.group(2);
+      } else {
+        s3Bucket = null;
+        s3key = filename;
+      }
+
+    } else if (!isEmpty(deepLinkPath) && deepLinkPath.contains("://")) {
 
       s3Bucket = null;
-      s3key = item.getDeepLinkPath();
-      filename = Strings.getFilename(item.getDeepLinkPath());
+      s3key = deepLinkPath;
+      filename = Strings.getFilename(deepLinkPath);
     }
 
+    config.contentType(findContentType(item));
     config.contentDispositionByPath(filename, inline);
 
     int hours = getDurationHours(event);
@@ -184,6 +231,19 @@ public class DocumentIdUrlRequestHandler
     S3PresignerService s3Service = awsservice.getExtension(S3PresignerService.class);
     return s3Bucket != null ? s3Service.presignGetUrl(s3Bucket, s3key, duration, versionId, config)
         : new URL(s3key);
+  }
+
+  private String findContentType(final DocumentItem item) {
+    String contentType = item.getContentType();
+    if (isEmpty(contentType)) {
+
+      String path = !isEmpty(item.getDeepLinkPath()) ? item.getDeepLinkPath() : item.getPath();
+      String ext = Strings.getExtension(path);
+      MimeType mimeType = MimeType.fromExtension(ext);
+      contentType = mimeType.getContentType();
+    }
+
+    return contentType;
   }
 
   private String getFilename(final DocumentItem item) {
@@ -204,7 +264,7 @@ public class DocumentIdUrlRequestHandler
   }
 
   private boolean isS3Link(final DocumentItem item) {
-    return !isEmpty(item.getDeepLinkPath()) && item.getDeepLinkPath().startsWith("s3://");
+    return !isEmpty(item.getDeepLinkPath()) && item.getDeepLinkPath().startsWith(S3_PREFIX);
   }
 
   private Map<String, AttributeValue> getVersionAttributes(final AwsServiceCache awsservice,

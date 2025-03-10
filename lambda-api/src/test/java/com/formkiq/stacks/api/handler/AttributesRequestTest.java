@@ -29,6 +29,7 @@ import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAttribute;
 import com.formkiq.client.model.AddAttributeRequest;
 import com.formkiq.client.model.AddAttributeResponse;
+import com.formkiq.client.model.AddAttributeSchemaRequired;
 import com.formkiq.client.model.AddClassification;
 import com.formkiq.client.model.AddClassificationRequest;
 import com.formkiq.client.model.AddDocumentAttribute;
@@ -40,8 +41,8 @@ import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AddDocumentUploadRequest;
 import com.formkiq.client.model.Attribute;
 import com.formkiq.client.model.AttributeDataType;
-import com.formkiq.client.model.AttributeSchemaRequired;
 import com.formkiq.client.model.AttributeType;
+import com.formkiq.client.model.AttributeValueType;
 import com.formkiq.client.model.DeleteResponse;
 import com.formkiq.client.model.DocumentAttribute;
 import com.formkiq.client.model.DocumentRelationshipType;
@@ -51,21 +52,24 @@ import com.formkiq.client.model.DocumentSearchRange;
 import com.formkiq.client.model.DocumentSearchRequest;
 import com.formkiq.client.model.DocumentSearchResponse;
 import com.formkiq.client.model.DocumentTag;
+import com.formkiq.client.model.GetAttributeResponse;
 import com.formkiq.client.model.GetDocumentAttributesResponse;
-import com.formkiq.client.model.SchemaAttributes;
 import com.formkiq.client.model.SearchResponseFields;
 import com.formkiq.client.model.SearchResultDocument;
 import com.formkiq.client.model.SearchResultDocumentAttribute;
 import com.formkiq.client.model.SetDocumentAttributeRequest;
 import com.formkiq.client.model.SetDocumentAttributesRequest;
 import com.formkiq.client.model.SetResponse;
+import com.formkiq.client.model.SetSchemaAttributes;
 import com.formkiq.client.model.SetSitesSchemaRequest;
 import com.formkiq.client.model.UpdateDocumentRequest;
+import com.formkiq.client.model.Watermark;
+import com.formkiq.client.model.WatermarkPosition;
+import com.formkiq.client.model.WatermarkPositionXAnchor;
+import com.formkiq.client.model.WatermarkPositionYAnchor;
+import com.formkiq.client.model.WatermarkScale;
 import com.formkiq.stacks.dynamodb.attributes.AttributeKeyReserved;
-import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.LocalStackExtension;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -89,8 +93,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /** Unit Tests for request /attributes. */
-@ExtendWith(DynamoDbExtension.class)
-@ExtendWith(LocalStackExtension.class)
 public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
   /** SiteId. */
@@ -347,6 +349,202 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
             "{\"errors\":[{\"key\":\"key\","
                 + "\"error\":\"'publication' is a reserved attribute name\"}]}",
             e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * POST /attributes watermark.
+   *
+   */
+  @Test
+  public void testAddAttributes04() throws ApiException {
+    // given
+    final String text = "sample text";
+    final String attributeKey = "wm1";
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+
+      setBearerToken(siteId);
+      WatermarkPosition pos =
+          new WatermarkPosition().yAnchor(WatermarkPositionYAnchor.TOP).yOffset(new BigDecimal(1))
+              .xAnchor(WatermarkPositionXAnchor.RIGHT).xOffset(new BigDecimal(2));
+
+      AddAttributeRequest req = new AddAttributeRequest()
+          .attribute(new AddAttribute().key(attributeKey).dataType(AttributeDataType.WATERMARK)
+              .watermark(new Watermark().scale(com.formkiq.client.model.WatermarkScale.ORIGINAL)
+                  .rotation(new BigDecimal("123")).text(text).position(pos)));
+
+      // when
+      AddAttributeResponse response = this.attributesApi.addAttribute(req, siteId);
+
+      // then
+      assertEquals("Attribute '" + attributeKey + "' created", response.getMessage());
+
+      GetAttributeResponse attr = this.attributesApi.getAttribute(attributeKey, siteId);
+      assertNotNull(attr.getAttribute());
+      assertEquals(attributeKey, attr.getAttribute().getKey());
+      Watermark watermark = attr.getAttribute().getWatermark();
+      assertNotNull(watermark);
+      assertEquals(text, watermark.getText());
+      assertEquals(WatermarkScale.ORIGINAL, watermark.getScale());
+      assertEquals("123.0", watermark.getRotation().toString());
+      WatermarkPosition position = watermark.getPosition();
+      assertNotNull(position);
+      assertEquals("2.0", String.valueOf(position.getxOffset()));
+      assertEquals("1.0", String.valueOf(position.getyOffset()));
+      assertEquals(WatermarkPositionXAnchor.RIGHT, position.getxAnchor());
+      assertEquals(WatermarkPositionYAnchor.TOP, position.getyAnchor());
+    }
+  }
+
+  /**
+   * POST /attributes watermark missing watermark text.
+   *
+   */
+  @Test
+  public void testAddAttributes05() {
+    // given
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+
+      setBearerToken(siteId);
+      AddAttributeRequest req = new AddAttributeRequest()
+          .attribute(new AddAttribute().key("wm2").dataType(AttributeDataType.WATERMARK));
+
+      // when
+      try {
+        this.attributesApi.addAttribute(req, siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(
+            "{\"errors\":[{\"key\":\"watermark\"," + "\"error\":\"'watermark' is required\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * POST /attributes watermark on wrong DataType.
+   *
+   */
+  @Test
+  public void testAddAttributes06() throws ApiException {
+    // given
+    final String attributeKey = "wm2";
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+
+      setBearerToken(siteId);
+      AddAttributeRequest req =
+          new AddAttributeRequest().attribute(new AddAttribute().key(attributeKey)
+              .dataType(AttributeDataType.STRING).watermark(new Watermark().text("as")));
+
+      // when
+      AddAttributeResponse response = this.attributesApi.addAttribute(req, siteId);
+
+      // then
+      assertEquals("Attribute '" + attributeKey + "' created", response.getMessage());
+
+      GetAttributeResponse attr = this.attributesApi.getAttribute(attributeKey, siteId);
+      assertNotNull(attr.getAttribute());
+      assertEquals(attributeKey, attr.getAttribute().getKey());
+      assertNull(attr.getAttribute().getWatermark());
+    }
+  }
+
+  /**
+   * POST /attributes watermark image.
+   *
+   */
+  @Test
+  public void testAddAttributes07() throws ApiException {
+    // given
+    final String attributeKey = "wm1";
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+
+      setBearerToken(siteId);
+      Watermark watermark = new Watermark().imageDocumentId(ID.uuid());
+      AddAttributeRequest req = new AddAttributeRequest().attribute(new AddAttribute()
+          .key(attributeKey).dataType(AttributeDataType.WATERMARK).watermark(watermark));
+
+      // when
+      try {
+        this.attributesApi.addAttribute(req, siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"watermark.imageDocumentId\","
+                + "\"error\":\"watermark.imageDocumentId' does not exist\"}]}",
+            e.getResponseBody());
+      }
+
+      // given
+      String documentId = addDocument(siteId);
+      watermark.setImageDocumentId(documentId);
+
+      // when
+      AddAttributeResponse response = this.attributesApi.addAttribute(req, siteId);
+
+      // then
+      assertEquals("Attribute '" + attributeKey + "' created", response.getMessage());
+
+      GetAttributeResponse attr = this.attributesApi.getAttribute(attributeKey, siteId);
+      assertNotNull(attr.getAttribute());
+      assertEquals(attributeKey, attr.getAttribute().getKey());
+      watermark = attr.getAttribute().getWatermark();
+      assertNotNull(watermark);
+      assertNull(watermark.getText());
+      assertEquals(documentId, watermark.getImageDocumentId());
+    }
+  }
+
+  /**
+   * POST /attributes add watermark text, then try and change to invalid documentid.
+   *
+   */
+  @Test
+  public void testAddAttributes08() throws ApiException {
+    // given
+    final String attributeKey = "wm1";
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+
+      setBearerToken(siteId);
+      Watermark watermark = new Watermark().text("test");
+      AddAttributeRequest req = new AddAttributeRequest().attribute(new AddAttribute()
+          .key(attributeKey).dataType(AttributeDataType.WATERMARK).watermark(watermark));
+
+      // when
+      this.attributesApi.addAttribute(req, siteId);
+
+      // then
+      GetAttributeResponse r = this.attributesApi.getAttribute(attributeKey, siteId);
+      assertNotNull(r);
+      assertNotNull(r.getAttribute());
+      assertNotNull(r.getAttribute().getWatermark());
+      assertEquals("test", r.getAttribute().getWatermark().getText());
+
+      // given
+      watermark.text(null).imageDocumentId(ID.uuid());
+
+      try {
+        this.attributesApi.addAttribute(req, siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[" + "{\"key\":\"key\",\"error\":\"attribute 'wm1' already exists\"},"
+                + "{\"key\":\"watermark.imageDocumentId\","
+                + "\"error\":\"watermark.imageDocumentId' does not exist\"}]}",
+            e.getResponseBody());
+
+        r = this.attributesApi.getAttribute(attributeKey, siteId);
+        assertNotNull(r);
+        List<Attribute> list =
+            notNull(this.attributesApi.getAttributes(siteId, null, null).getAttributes());
+        assertEquals(1, list.size());
+        assertEquals("wm1", list.get(0).getKey());
       }
     }
   }
@@ -747,6 +945,36 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
         assertEquals("{\"message\":\"attribute 'Relationships' not found on document '"
             + documentId3 + "'\"}", e.getResponseBody());
       }
+    }
+  }
+
+  /**
+   * POST /documents ad watermark.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testAddDocumentAttribute13() throws ApiException {
+    // given
+    final String key = "wm1";
+
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+
+      setBearerToken(siteId);
+      AddAttributeRequest req = new AddAttributeRequest().attribute(new AddAttribute().key(key)
+          .dataType(AttributeDataType.WATERMARK).watermark(new Watermark().text("saldjsadkj")));
+      this.attributesApi.addAttribute(req, siteId);
+
+      // when
+      String documentId = addDocument(siteId, key, null, null);
+
+      // then
+      DocumentAttribute response = getDocumentAttribute(siteId, documentId, key);
+      assertNull(response.getStringValue());
+      assertEquals(AttributeValueType.WATERMARK, response.getValueType());
+      assertEquals("joesmith", response.getUserId());
+
+      assertEmptyTags(siteId, documentId);
     }
   }
 
@@ -1401,8 +1629,9 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       AddAttributeRequest areq = new AddAttributeRequest().attribute(new AddAttribute().key(key));
       this.attributesApi.addAttribute(areq, siteId);
 
-      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe").attributes(
-          new SchemaAttributes().addRequiredItem(new AttributeSchemaRequired().attributeKey(key)));
+      SetSitesSchemaRequest req =
+          new SetSitesSchemaRequest().name("joe").attributes(new SetSchemaAttributes()
+              .addRequiredItem(new AddAttributeSchemaRequired().attributeKey(key)));
 
       this.schemasApi.setSitesSchema(siteId, req);
 
@@ -1436,8 +1665,8 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       AddAttributeRequest areq = new AddAttributeRequest().attribute(new AddAttribute().key(key));
       this.attributesApi.addAttribute(areq, siteId);
 
-      SchemaAttributes attr =
-          new SchemaAttributes().addRequiredItem(new AttributeSchemaRequired().attributeKey(key));
+      SetSchemaAttributes attr = new SetSchemaAttributes()
+          .addRequiredItem(new AddAttributeSchemaRequired().attributeKey(key));
       AddClassificationRequest req = new AddClassificationRequest()
           .classification(new AddClassification().name("test").attributes(attr));
       this.schemasApi.addClassification(siteId, req);

@@ -64,6 +64,14 @@
 			<allow pkg="software.amazon.awssdk.utils" />
 			<allow pkg="software.amazon.awssdk.utils.http" />
 
+			<subpackage name="actions">
+				<allow pkg="com.formkiq.strings" />
+			</subpackage>
+
+			<subpackage name="text">
+				<allow pkg="com.formkiq.strings" />
+			</subpackage>
+
 			<subpackage name="util">
 
 				<allow pkg="com.amazonaws.services.lambda.runtime" />

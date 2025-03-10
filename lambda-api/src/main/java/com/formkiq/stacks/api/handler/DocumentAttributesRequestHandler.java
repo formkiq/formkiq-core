@@ -52,7 +52,7 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecordToMap;
 import com.formkiq.stacks.api.transformers.DocumentAttributeToDocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.DocumentService;
-import com.formkiq.stacks.dynamodb.attributes.AttributeValidation;
+import com.formkiq.stacks.dynamodb.attributes.AttributeValidationType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.validation.ValidationErrorImpl;
@@ -150,8 +150,8 @@ public class DocumentAttributesRequestHandler
         AttributeValidationAccess.ADMIN_CREATE, AttributeValidationAccess.CREATE);
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
-    documentService.saveDocumentAttributes(siteId, documentId, attributes, AttributeValidation.FULL,
-        validationAccess);
+    documentService.saveDocumentAttributes(siteId, documentId, attributes,
+        AttributeValidationType.FULL, validationAccess);
 
     ApiResponse resp =
         new ApiMessageResponse("added attributes to documentId '" + documentId + "'");
@@ -184,8 +184,8 @@ public class DocumentAttributesRequestHandler
     AttributeValidationAccess validationAccess = getAttributeValidationAccess(authorization, siteId,
         AttributeValidationAccess.ADMIN_SET, AttributeValidationAccess.SET);
 
-    documentService.saveDocumentAttributes(siteId, documentId, attributes, AttributeValidation.FULL,
-        validationAccess);
+    documentService.saveDocumentAttributes(siteId, documentId, attributes,
+        AttributeValidationType.FULL, validationAccess);
 
     ApiResponse resp = new ApiMessageResponse("set attributes on documentId '" + documentId + "'");
     return new ApiRequestHandlerResponse(SC_CREATED, resp);

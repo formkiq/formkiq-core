@@ -249,6 +249,7 @@ public abstract class AbstractRequestHandler {
         TestServices.getSqsDocumentFormatsQueueUrl(TestServices.getSqsConnection(null)));
     this.map.put("DISTRIBUTION_BUCKET", "formkiq-distribution-us-east-pro");
     this.map.put("FORMKIQ_TYPE", "core");
+    this.map.put("FORMKIQ_VERSION", "1.1");
     this.map.put("USER_AUTHENTICATION", userAuthentication);
     this.map.put("WEBSOCKET_SQS_URL",
         TestServices.getSqsWebsocketQueueUrl(TestServices.getSqsConnection(null)));

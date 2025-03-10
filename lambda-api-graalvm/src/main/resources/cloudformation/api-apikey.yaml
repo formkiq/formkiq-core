@@ -11,11 +11,7 @@ Parameters:
     Type: String
     AllowedPattern: ".+"
     Description: The FormKiQ Environment
-    
-  Partition:
-    Description: The partition in which the resource is located. A partition is a group of AWS Regions
-    Type: String
-    
+
   DocumentsApiRequestsArn:
     Description: Lambda to invoke
     Type: String
@@ -91,7 +87,7 @@ Resources:
     Properties:
       Handler: com.formkiq.module.lambda.authorizer.apikey.ApiKeyAuthorizerRequestHandler
       Description: Lambda function that processes ApiKey Authorizer
-      Runtime: provided.al2
+      Runtime: provided.al2023
       Timeout: 
         Fn::Sub: "${LambdaTimeout}"
       MemorySize: 
@@ -130,12 +126,9 @@ Resources:
         - ApiKeyAuthorizerRole
         - Arn
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
 
   #@overlay/match missing_ok=True
   ApiKeyAuthorizerInvokePermission:
@@ -154,8 +147,7 @@ Resources:
     Properties:
       Tags:
         - Key: "Application"
-          Value: 
-            Fn::Sub: "FormKiQ ${FormKiQType}"
+          Value: "FormKiQ"
         - Key: "AppEnvironment"
           Value: 
             Fn::Sub: "${AppEnvironment}"
@@ -170,7 +162,7 @@ Resources:
           - sts:AssumeRole
       Path: /
       ManagedPolicyArns:
-      - Fn::Sub: "arn:${Partition}:iam::aws:policy/AWSXRayDaemonWriteAccess"
+      - Fn::Sub: "arn:${AWS::Partition}:iam::aws:policy/AWSXRayDaemonWriteAccess"
       Policies:
         -
           PolicyName: apikeylambdarole
@@ -190,7 +182,7 @@ Resources:
               - dynamodb:Get*
               - dynamodb:Query
               Resource: 
-              - Fn::Sub: "arn:${Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"
+              - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"
 
 Outputs:
   DocumentsKeyApi:

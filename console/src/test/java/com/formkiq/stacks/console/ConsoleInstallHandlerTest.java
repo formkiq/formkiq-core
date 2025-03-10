@@ -29,18 +29,22 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.formkiq.aws.s3.S3AwsServiceRegistry;
+import com.formkiq.aws.s3.S3ServiceExtension;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
+import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.testutils.aws.TestServices;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.localstack.LocalStackContainer;
-import org.testcontainers.containers.localstack.LocalStackContainer.Service;
-import org.testcontainers.utility.DockerImageName;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
@@ -52,6 +56,7 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 
 /** Unit Tests for {@link ConsoleInstallHandler}. */
+@ExtendWith(LocalStackExtension.class)
 public class ConsoleInstallHandlerTest {
 
   /** {@link HttpURLConnection}. */
@@ -59,38 +64,32 @@ public class ConsoleInstallHandlerTest {
 
   /** Console Bucket. */
   private static final String CONSOLE_BUCKET = "destbucket";
-
-  /** LocalStack {@link DockerImageName}. */
-  private static DockerImageName localStackImage =
-      DockerImageName.parse("localstack/localstack:2.1");
-  /** {@link LocalStackContainer}. */
-  private static LocalStackContainer localStackInstance =
-      new LocalStackContainer(localStackImage).withServices(Service.S3);
   /** {@link S3Service}. */
   private static S3Service s3;
   /** {@link S3ConnectionBuilder}. */
   private static S3ConnectionBuilder s3Connection;
+  /** {@link Gson}. */
+  private final Gson gson = new GsonBuilder().create();
 
   /**
    * Before Class.
    *
    * @throws IOException IOException
-   * @throws InterruptedException InterruptedException
-   * @throws URISyntaxException URISyntaxException
    */
   @BeforeAll
-  public static void beforeClass() throws IOException, URISyntaxException, InterruptedException {
+  public static void beforeClass() throws IOException {
 
     AwsCredentialsProvider cred = StaticCredentialsProvider
         .create(AwsSessionCredentials.create("ACCESSKEY", "SECRETKEY", "TOKENKEY"));
 
-    localStackInstance.start();
+    Map<String, String> env = Map.of("AWS_REGION", "us-east-1");
+    AwsServiceCache serviceCache =
+        new AwsServiceCacheBuilder(env, TestServices.getEndpointMap(), cred)
+            .addService(new S3AwsServiceRegistry()).build();
+    serviceCache.register(S3Service.class, new S3ServiceExtension());
 
-    s3Connection = new S3ConnectionBuilder(false).setCredentials(cred).setRegion(Region.US_EAST_1)
-        .setEndpointOverride(
-            new URI(localStackInstance.getEndpointOverride(Service.S3).toString()));
-
-    s3 = new S3Service(s3Connection);
+    s3Connection = serviceCache.getExtension(S3ConnectionBuilder.class);
+    s3 = serviceCache.getExtension(S3Service.class);
 
     s3.createBucket("distrobucket");
     s3.createBucket(CONSOLE_BUCKET);
@@ -104,12 +103,12 @@ public class ConsoleInstallHandlerTest {
   }
 
   /** {@link LambdaContextRecorder}. */
-  private LambdaContextRecorder context = new LambdaContextRecorder();
+  private final LambdaContextRecorder context = new LambdaContextRecorder();
   /** {@link ConsoleInstallHandler}. */
   private ConsoleInstallHandler handler;
 
   /** {@link LambdaLogger}. */
-  private LambdaLoggerRecorder logger = this.context.getLoggerRecorder();
+  private final LambdaLoggerRecorder logger = this.context.getLoggerRecorder();
 
   /** before. */
   @BeforeEach
@@ -126,6 +125,8 @@ public class ConsoleInstallHandlerTest {
     map.put("CONSOLE_BUCKET", CONSOLE_BUCKET);
     map.put("API_URL",
         "https://chartapi.24hourcharts.com.execute-api.us-east-1.amazonaws.com/prod/");
+    map.put("API_IAM_URL", "https://auth.execute-api.us-east-1.amazonaws.com/iam/");
+    map.put("API_KEY_URL", "https://auth.execute-api.us-east-1.amazonaws.com/key/");
     map.put("API_AUTH_URL", "https://auth.execute-api.us-east-1.amazonaws.com/prod/");
     map.put("API_WEBSOCKET_URL", "wss://me.execute-api.us-east-1.amazonaws.com/prod/");
     map.put("BRAND", "24hourcharts");
@@ -140,10 +141,10 @@ public class ConsoleInstallHandlerTest {
   }
 
   private void createHandler(final Map<String, String> map) {
-    this.handler = new ConsoleInstallHandler(map, s3Connection, s3Connection) {
+    this.handler = new ConsoleInstallHandler(map, Region.US_EAST_2, s3Connection, s3Connection) {
 
       @Override
-      protected HttpURLConnection getConnection(final String responseUrl) throws IOException {
+      protected HttpURLConnection getConnection(final String responseUrl) {
         return ConsoleInstallHandlerTest.this.getConnection();
       }
     };
@@ -175,10 +176,9 @@ public class ConsoleInstallHandlerTest {
   /**
    * Test Handle Request 'CREATE'.
    *
-   * @throws Exception Exception
    */
   @Test
-  public void testHandleRequest01() throws Exception {
+  public void testHandleRequest01() {
     // given
     final int contentlength = 105;
     Map<String, Object> input = createInput("Create");
@@ -243,10 +243,9 @@ public class ConsoleInstallHandlerTest {
   /**
    * Test Handle Request 'UPDATE'.
    *
-   * @throws Exception Exception
    */
   @Test
-  public void testHandleRequest02() throws Exception {
+  public void testHandleRequest02() {
     // given
     final int contentlength = 105;
     final Map<String, Object> input = createInput("Update");
@@ -312,10 +311,9 @@ public class ConsoleInstallHandlerTest {
   /**
    * Test Handle Request 'DELETE'.
    *
-   * @throws Exception Exception
    */
   @Test
-  public void testHandleRequest03() throws Exception {
+  public void testHandleRequest03() {
     // given
     final int contentlength = 105;
     final Map<String, Object> input = createInput("Delete");
@@ -340,10 +338,9 @@ public class ConsoleInstallHandlerTest {
   /**
    * Test Handle Request 'UNKNOWN'.
    *
-   * @throws Exception Exception
    */
   @Test
-  public void testHandleRequest04() throws Exception {
+  public void testHandleRequest04() {
     // given
     final int contentlength = 122;
     final Map<String, Object> input = createInput("UNKNOWN");
@@ -367,10 +364,9 @@ public class ConsoleInstallHandlerTest {
   /**
    * Test Handle Request 'CREATE'.
    *
-   * @throws Exception Exception
    */
   @Test
-  public void testHandleRequest05() throws Exception {
+  public void testHandleRequest05() {
     // given
     String cognitoSingleSignOnUrl =
         "https://something.auth.us-east-2.amazoncognito.com/oauth2/authorize";
@@ -445,25 +441,28 @@ public class ConsoleInstallHandlerTest {
    */
   private void verifyConfigWritten(final String cognitoSingleSignOnUrl) {
 
-    String config = String.format("{%n"
-        + "  \"documentApi\": \"https://chartapi.24hourcharts.com.execute-api.us-east-1.amazonaws.com/prod/\",%n"
-        + "  \"userPoolId\": \"us-east-2_blGeBpyLg\",%n"
-        + "  \"clientId\": \"7223423m2pfgf34qnfokb2po2l\",%n" + "  \"consoleVersion\": \"0.1\",%n"
-        + "  \"brand\": \"24hourcharts\",%n" + "  \"userAuthentication\": \"cognito\",%n"
-        + "  \"authApi\": \"https://auth.execute-api.us-east-1.amazonaws.com/prod/\",%n"
-        + "  \"cognitoHostedUi\": \"https://test2111111111111111.auth.us-east-2.amazoncognito.com\",%n"
-        + "  \"cognitoSingleSignOnUrl\": \"" + cognitoSingleSignOnUrl + "\"%n" + "}");
-
-    assertTrue(this.logger.containsString("writing Cognito config: " + config));
+    String json = s3.getContentAsString("destbucket", "0.1/assets/config.json", null);
+    Map<String, String> o = this.gson.fromJson(json, Map.class);
+    assertEquals("https://chartapi.24hourcharts.com.execute-api.us-east-1.amazonaws.com/prod/",
+        o.get("documentApi"));
+    assertEquals("us-east-2_blGeBpyLg", o.get("userPoolId"));
+    assertEquals("7223423m2pfgf34qnfokb2po2l", o.get("clientId"));
+    assertEquals("0.1", o.get("consoleVersion"));
+    assertEquals("24hourcharts", o.get("brand"));
+    assertEquals("us-east-2", o.get("awsRegion"));
+    assertEquals("https://test2111111111111111.auth.us-east-2.amazoncognito.com",
+        o.get("cognitoHostedUi"));
+    assertEquals(cognitoSingleSignOnUrl, o.get("cognitoSingleSignOnUrl"));
+    assertEquals("https://auth.execute-api.us-east-1.amazonaws.com/iam/", o.get("apiIamUrl"));
+    assertEquals("https://auth.execute-api.us-east-1.amazonaws.com/key/", o.get("apiKeyUrl"));
   }
 
   /**
    * expect Send Response.
    *
    * @param contentLength int
-   * @throws IOException IOException
    */
-  private void verifySendResponse(final int contentLength) throws IOException {
+  private void verifySendResponse(final int contentLength) {
 
     assertTrue(this.logger.containsString("Response Code: 200"));
     assertTrue(connection.getDoOutput());

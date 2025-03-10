@@ -68,6 +68,8 @@ public class SitesClassificationIdRequestHandler
 
     String name = result.getName();
     Schema schema = service.getSchema(result);
+    String locale = event.getQueryStringParameter("locale");
+    service.updateLocalization(siteId, classificationId, schema.getAttributes(), locale);
 
     return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(
         Map.of("classification", Map.of("name", name, "attributes", schema.getAttributes()))));

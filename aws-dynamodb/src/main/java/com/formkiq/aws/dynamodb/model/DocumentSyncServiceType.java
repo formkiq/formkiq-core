@@ -32,8 +32,10 @@ public enum DocumentSyncServiceType {
 
   /** FormKiQ CLI. */
   FORMKIQ_CLI,
-  /** https://opensearch.org. */
+  /** <a href="https://opensearch.org">...</a>. */
   OPENSEARCH,
-  /** https://typesense.org. */
-  TYPESENSE;
+  /** <a href="https://typesense.org">...</a>. */
+  TYPESENSE,
+  /** Amazon Event Bridge. */
+  EVENTBRIDGE
 }

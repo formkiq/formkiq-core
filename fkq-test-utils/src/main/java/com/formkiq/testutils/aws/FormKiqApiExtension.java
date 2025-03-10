@@ -38,6 +38,8 @@ import static org.mockserver.model.HttpRequest.request;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+
+import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.mockserver.integration.ClientAndServer;
@@ -48,7 +50,7 @@ import org.mockserver.integration.ClientAndServer;
  *
  */
 public class FormKiqApiExtension
-    implements BeforeAllCallback, ExtensionContext.Store.CloseableResource {
+    implements BeforeAllCallback, AfterAllCallback, ExtensionContext.Store.CloseableResource {
 
   /** {@link Random}. */
   private static final Random NUM_RAND = new Random();
@@ -106,6 +108,7 @@ public class FormKiqApiExtension
 
     if (!this.running) {
 
+      System.setProperty("mockserver.logLevel", "WARN");
       this.environmentMap = generateMap();
 
       this.callback.setEnvironmentMap(this.environmentMap);
@@ -119,7 +122,10 @@ public class FormKiqApiExtension
 
   @Override
   public void close() throws Throwable {
+    closeServer();
+  }
 
+  private void closeServer() {
     if (this.formkiqServer != null) {
       this.formkiqServer.stop();
     }
@@ -149,9 +155,10 @@ public class FormKiqApiExtension
     map.put("STAGE_DOCUMENTS_S3_BUCKET", STAGE_BUCKET_NAME);
     map.put("OCR_S3_BUCKET", OCR_BUCKET_NAME);
     map.put("AWS_REGION", AWS_REGION.toString());
-    map.put("DEBUG", "true");
+    map.put("LOG_LEVEL", "info");
     map.put("DISTRIBUTION_BUCKET", "formkiq-distribution-us-east-pro");
     map.put("FORMKIQ_TYPE", "core");
+    map.put("FORMKIQ_VERSION", "1.1");
     map.put("USER_AUTHENTICATION", "cognito");
     map.put("MODULE_site_permissions", "automatic");
 
@@ -181,5 +188,10 @@ public class FormKiqApiExtension
    */
   public Map<String, String> getEnvironmentMap() {
     return this.environmentMap;
+  }
+
+  @Override
+  public void afterAll(final ExtensionContext context) {
+    closeServer();
   }
 }

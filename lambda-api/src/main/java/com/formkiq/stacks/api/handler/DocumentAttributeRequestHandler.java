@@ -29,6 +29,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -46,9 +47,10 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecordToMap;
 import com.formkiq.stacks.api.transformers.DocumentAttributeToDocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.DocumentService;
-import com.formkiq.stacks.dynamodb.attributes.AttributeValidation;
+import com.formkiq.stacks.dynamodb.attributes.AttributeValidationType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
+import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
 
@@ -75,7 +77,7 @@ public class DocumentAttributeRequestHandler
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
     if (documentService.deleteDocumentAttribute(siteId, documentId, attributeKey,
-        AttributeValidation.FULL, validationAccess).isEmpty()) {
+        AttributeValidationType.FULL, validationAccess).isEmpty()) {
       throw new NotFoundException(
           "attribute '" + attributeKey + "' not found on document '" + documentId + "'");
     }
@@ -141,12 +143,10 @@ public class DocumentAttributeRequestHandler
           Collections.singletonList(new ValidationErrorImpl().error("no attribute values found")));
     }
 
-    Collection<DocumentAttributeRecord> documentAttributes =
-        new DocumentAttributeToDocumentAttributeRecord(documentId, authorization.getUsername())
-            .apply(request.getAttribute());
-    documentAttributes.forEach(a -> a.setKey(attributeKey));
+    request.getAttribute().key(attributeKey);
 
-    return documentAttributes;
+    return new DocumentAttributeToDocumentAttributeRecord(documentId, authorization.getUsername())
+        .apply(request.getAttribute());
   }
 
   @Override
@@ -172,12 +172,20 @@ public class DocumentAttributeRequestHandler
     AttributeValidationAccess validationAccess =
         getAttributeValidationAccess(authorization, siteId);
 
-    documentService.saveDocumentAttributes(siteId, documentId, documentAttributes,
-        AttributeValidation.PARTIAL, validationAccess);
+    AttributeValidationType type = getValidationType(documentAttributes);
+    documentService.saveDocumentAttributes(siteId, documentId, documentAttributes, type,
+        validationAccess);
 
     ApiResponse resp = new ApiMessageResponse(
         "Updated attribute '" + attributeKey + "' on document '" + documentId + "'");
     return new ApiRequestHandlerResponse(SC_OK, resp);
+  }
+
+  private static AttributeValidationType getValidationType(
+      final Collection<DocumentAttributeRecord> documentAttributes) {
+    Optional<DocumentAttributeRecord> o = documentAttributes.stream()
+        .filter(a -> DocumentAttributeValueType.CLASSIFICATION.equals(a.getValueType())).findAny();
+    return o.isPresent() ? AttributeValidationType.FULL : AttributeValidationType.PARTIAL;
   }
 
   private void verifyDocument(final AwsServiceCache awsservice, final String siteId,

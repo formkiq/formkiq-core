@@ -37,6 +37,8 @@ import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.exceptions.ForbiddenException;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 /**
  * 
@@ -51,9 +53,10 @@ public class ApiAuthorizationBuilder {
   public static final String COGNITO_READ_SUFFIX = "_read";
   /** The suffix for the 'readonly' Cognito group. */
   public static final String COGNITO_GOVERN_SUFFIX = "_govern";
-
   /** {@link List} {@link ApiAuthorizationInterceptor}. */
   private List<ApiAuthorizationInterceptor> interceptors = null;
+  /** {@link Gson}. */
+  private final Gson gson = new GsonBuilder().create();
 
   /**
    * constructor.
@@ -80,8 +83,8 @@ public class ApiAuthorizationBuilder {
           authorization.addPermission(group.replace(COGNITO_READ_SUFFIX, ""),
               List.of(ApiPermission.READ));
         } else if (group.endsWith(COGNITO_GOVERN_SUFFIX)) {
-          authorization.addPermission(group.replace(COGNITO_GOVERN_SUFFIX, ""),
-              List.of(ApiPermission.GOVERN));
+          authorization.addPermission(group.replace(COGNITO_GOVERN_SUFFIX, ""), List.of(
+              ApiPermission.GOVERN, ApiPermission.READ, ApiPermission.WRITE, ApiPermission.DELETE));
         } else if (admin) {
           authorization.addPermission(group, Arrays.asList(ApiPermission.READ, ApiPermission.WRITE,
               ApiPermission.DELETE, ApiPermission.ADMIN));
@@ -148,8 +151,7 @@ public class ApiAuthorizationBuilder {
     }
 
     if (defaultSiteId != null && !isValidSiteId(defaultSiteId, groups)
-        && !event.getPath().startsWith("/public/")
-        && !event.getResource().startsWith("/onlyoffice/{documentId}/save")) {
+        && !event.getPath().startsWith("/public/")) {
       String s = String.format("fkq access denied to siteId (%s)", defaultSiteId);
       throw new ForbiddenException(s);
     }
@@ -178,7 +180,6 @@ public class ApiAuthorizationBuilder {
     return claims;
   }
 
-  @SuppressWarnings("unchecked")
   private Map<String, Object> getAuthorizerClaims(final Map<String, Object> authorizer) {
     Map<String, Object> claims = Collections.emptyMap();
 
@@ -186,12 +187,12 @@ public class ApiAuthorizationBuilder {
       claims = (Map<String, Object>) authorizer.get("claims");
     }
 
-    if (notNull(claims).isEmpty() && authorizer != null && authorizer.containsKey("apiKeyClaims")) {
+    if (claims != null && claims.containsKey("sitesClaims")) {
+      String sitesClaims = (String) claims.get("sitesClaims");
+      claims = (Map<String, Object>) this.gson.fromJson(sitesClaims, Map.class);
+    } else if (notNull(claims).isEmpty() && authorizer != null
+        && authorizer.containsKey("apiKeyClaims")) {
       claims = (Map<String, Object>) authorizer.get("apiKeyClaims");
-    }
-
-    if (authorizer != null && authorizer.containsKey("sitesClaims")) {
-      claims = (Map<String, Object>) authorizer.get("sitesClaims");
     }
 
     return claims;

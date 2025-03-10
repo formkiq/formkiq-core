@@ -30,6 +30,7 @@ import software.amazon.awssdk.services.s3.model.BucketVersioningStatus;
 import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
 import software.amazon.awssdk.services.s3.model.CopyObjectResponse;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
+import software.amazon.awssdk.services.s3.model.DeleteMarkerEntry;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectTaggingRequest;
 import software.amazon.awssdk.services.s3.model.GetBucketNotificationConfigurationRequest;
@@ -49,6 +50,7 @@ import software.amazon.awssdk.services.s3.model.ListObjectsResponse;
 import software.amazon.awssdk.services.s3.model.MetadataDirective;
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
+import software.amazon.awssdk.services.s3.model.ObjectVersion;
 import software.amazon.awssdk.services.s3.model.PutBucketVersioningRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectResponse;
@@ -204,6 +206,58 @@ public class S3Service {
 
       isDone = !resp.isTruncated();
     }
+  }
+
+  /**
+   * Deletes all versions (including delete markers) for the specified file in a versioned bucket.
+   *
+   * @param bucketName the name of the S3 bucket
+   * @param key the key (path/filename) of the file to delete
+   * @return int number of objects deleted
+   */
+  public int deleteAllVersionsOfFile(final String bucketName, final String key) {
+
+    int totalDeleted = 0;
+    final int maxKeys = 1000;
+    String keyMarker = null;
+    String versionIdMarker = null;
+    ListObjectVersionsResponse response;
+
+    ListObjectVersionsRequest.Builder requestBuilder =
+        ListObjectVersionsRequest.builder().bucket(bucketName).prefix(key).maxKeys(maxKeys);
+
+    do {
+
+      if (keyMarker != null && versionIdMarker != null) {
+        requestBuilder.keyMarker(keyMarker).versionIdMarker(versionIdMarker);
+      }
+
+      response = s3Client.listObjectVersions(requestBuilder.build());
+
+      for (ObjectVersion version : response.versions()) {
+        if (version.key().equals(key)) {
+          DeleteObjectRequest deleteVersionRequest = DeleteObjectRequest.builder()
+              .bucket(bucketName).key(key).versionId(version.versionId()).build();
+          totalDeleted++;
+          s3Client.deleteObject(deleteVersionRequest);
+        }
+      }
+
+      for (DeleteMarkerEntry deleteMarker : response.deleteMarkers()) {
+        if (deleteMarker.key().equals(key)) {
+          DeleteObjectRequest deleteMarkerRequest = DeleteObjectRequest.builder().bucket(bucketName)
+              .key(key).versionId(deleteMarker.versionId()).build();
+          totalDeleted++;
+          s3Client.deleteObject(deleteMarkerRequest);
+        }
+      }
+
+      // Prepare for next page of results, if any
+      keyMarker = response.nextKeyMarker();
+      versionIdMarker = response.nextVersionIdMarker();
+    } while (response.isTruncated());
+
+    return totalDeleted;
   }
 
   /**

@@ -25,10 +25,12 @@ package com.formkiq.stacks.dynamodb;
 
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
-import com.formkiq.aws.dynamodb.model.DocumentSync;
+import com.formkiq.aws.dynamodb.model.DocumentSyncRecord;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
 import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
 import com.formkiq.aws.dynamodb.model.DocumentSyncType;
+
+import java.util.Date;
 
 /**
  * 
@@ -36,24 +38,6 @@ import com.formkiq.aws.dynamodb.model.DocumentSyncType;
  *
  */
 public interface DocumentSyncService {
-
-  /** Sync Message for Added Content. */
-  String MESSAGE_ADDED_CONTENT = "added Document Content";
-
-  /** Sync Message for Added Metadata. */
-  String MESSAGE_ADDED_METADATA = "added Document Metadata";
-
-  /** Sync Message for Add Tag. */
-  String MESSAGE_ADDED_TAG = "added Tag '%s'";
-
-  /** Sync Message for Updated Content. */
-  String MESSAGE_UPDATED_CONTENT = "updated Document Content";
-
-  /** Sync Message for Updated Metadata. */
-  String MESSAGE_UPDATED_METADATA = "updated Document Metadata";
-
-  /** Sync Message for Updated Tag. */
-  String MESSAGE_UPDATED_TAG = "updated Tag '%s'";
 
   /**
    * Delete All.
@@ -64,15 +48,15 @@ public interface DocumentSyncService {
   void deleteAll(String siteId, String documentId);
 
   /**
-   * Get List of {@link DocumentSync}.
+   * Get List of {@link DocumentSyncRecord}.
    * 
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param token {@link PaginationMapToken}
    * @param limit int
-   * @return {@link PaginationResults} {@link DocumentSync}
+   * @return {@link PaginationResults} {@link DocumentSyncRecord}
    */
-  PaginationResults<DocumentSync> getSyncs(String siteId, String documentId,
+  PaginationResults<DocumentSyncRecord> getSyncs(String siteId, String documentId,
       PaginationMapToken token, int limit);
 
   /**
@@ -83,9 +67,18 @@ public interface DocumentSyncService {
    * @param service {@link DocumentSyncServiceType}
    * @param status {@link DocumentSyncStatus}
    * @param type {@link DocumentSyncType}
-   * @param userId {@link String}
-   * @param message {@link String}
+   * @param documentExists boolean
    */
   void saveSync(String siteId, String documentId, DocumentSyncServiceType service,
-      DocumentSyncStatus status, DocumentSyncType type, String userId, String message);
+      DocumentSyncStatus status, DocumentSyncType type, boolean documentExists);
+
+  /**
+   * Update Document Sync Status.
+   * 
+   * @param pk {@link String}
+   * @param sk {@link String}
+   * @param status {@link DocumentSyncStatus}
+   * @param syncDate {@link java.util.Date}
+   */
+  void update(String pk, String sk, DocumentSyncStatus status, Date syncDate);
 }

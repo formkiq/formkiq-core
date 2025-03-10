@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Pagination Results for a DynamoDB Query.
+ * Pagination Results for a DynamoDB Query. Use Pagination class INSTEAD!
  *
  * @param <T> Type of Results.
  */

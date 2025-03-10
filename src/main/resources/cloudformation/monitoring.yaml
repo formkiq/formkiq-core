@@ -61,8 +61,6 @@ Resources:
       Tags:
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
 
 Outputs:
 

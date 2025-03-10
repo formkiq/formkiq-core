@@ -73,10 +73,12 @@ public class PresignGetUrlConfig {
    * @return {@link PresignGetUrlConfig}
    */
   public PresignGetUrlConfig contentDispositionByPath(final String path, final boolean inline) {
-    String s = inline ? "inline" : "attachment";
-    String encodedPath = URLEncoder.encode(path, StandardCharsets.UTF_8);
-    this.contentDisposition =
-        path != null ? String.format("%s; filename=\"%s\"", s, encodedPath) : null;
+
+    if (path != null) {
+      String s = inline ? "inline" : "attachment";
+      String encodedPath = URLEncoder.encode(path, StandardCharsets.UTF_8).replaceAll("\\+", " ");
+      this.contentDisposition = String.format("%s; filename*=UTF-8''%s", s, encodedPath);
+    }
     return this;
   }
 

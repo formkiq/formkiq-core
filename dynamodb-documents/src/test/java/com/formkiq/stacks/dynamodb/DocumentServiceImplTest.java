@@ -23,9 +23,11 @@
  */
 package com.formkiq.stacks.dynamodb;
 
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
 import static com.formkiq.stacks.dynamodb.DocumentService.SYSTEM_DEFINED_TAGS;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
+import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENT_SYNCS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -62,7 +64,16 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.stacks.dynamodb.attributes.AttributeDataType;
+import com.formkiq.stacks.dynamodb.attributes.AttributeService;
+import com.formkiq.stacks.dynamodb.attributes.AttributeServiceDynamodb;
+import com.formkiq.stacks.dynamodb.attributes.AttributeType;
+import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
+import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
+import com.formkiq.stacks.dynamodb.attributes.Watermark;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -99,6 +110,8 @@ public class DocumentServiceImplTest implements DbKeys {
   private static DocumentService service;
   /** {@link FolderIndexProcessor}. */
   private static FolderIndexProcessor folderIndexProcessor;
+  /** {@link AttributeService}. */
+  private static AttributeService attributeService;
 
   /**
    * Before Test.
@@ -109,10 +122,12 @@ public class DocumentServiceImplTest implements DbKeys {
   public static void beforeAll() throws Exception {
 
     DynamoDbConnectionBuilder dynamoDbConnection = DynamoDbTestServices.getDynamoDbConnection();
-    service = new DocumentServiceImpl(dynamoDbConnection, DOCUMENTS_TABLE,
+    service = new DocumentServiceImpl(dynamoDbConnection, DOCUMENTS_TABLE, DOCUMENT_SYNCS_TABLE,
         new DocumentVersionServiceNoVersioning());
     searchService = new DocumentSearchServiceImpl(dynamoDbConnection, service, DOCUMENTS_TABLE);
     folderIndexProcessor = new FolderIndexProcessorImpl(dynamoDbConnection, DOCUMENTS_TABLE);
+    DynamoDbService db = new DynamoDbServiceImpl(dynamoDbConnection, DOCUMENTS_TABLE);
+    attributeService = new AttributeServiceDynamodb(db);
   }
 
   /** {@link SimpleDateFormat}. */
@@ -2316,6 +2331,44 @@ public class DocumentServiceImplTest implements DbKeys {
 
       // then
       assertEquals("sample.pdf", service.findDocument(siteId, documentId).getPath());
+    }
+  }
+
+  /**
+   * FindDocumentAttributesByType.
+   */
+  @Test
+  public void testFindDocumentAttributesByType01() throws ValidationException {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      attributeService.addAttribute(siteId, "key", AttributeDataType.STRING,
+          AttributeType.STANDARD);
+      attributeService.addWatermarkAttribute(siteId, "wm1", new Watermark().setText("watermark1"));
+      attributeService.addWatermarkAttribute(siteId, "wm2", new Watermark().setText("watermark2"));
+
+      String documentId = ID.uuid();
+
+      Collection<DocumentAttributeRecord> attributes = new ArrayList<>();
+      attributes.add(new DocumentAttributeRecord().setKey("key").setDocumentId(documentId)
+          .setValueType(DocumentAttributeValueType.STRING).setStringValue("13").setUserId("joe"));
+      attributes.add(new DocumentAttributeRecord().setKey("wm1").setDocumentId(documentId)
+          .setValueType(DocumentAttributeValueType.WATERMARK).setUserId("joe"));
+      attributes.add(new DocumentAttributeRecord().setKey("wm2").setDocumentId(documentId)
+          .setValueType(DocumentAttributeValueType.WATERMARK).setUserId("joe"));
+
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      service.saveDocument(siteId, item, null, attributes, new SaveDocumentOptions());
+
+      // when
+      List<DocumentAttributeRecord> docAttributes =
+          notNull(service.findDocumentAttributesByType(siteId, documentId,
+              DocumentAttributeValueType.WATERMARK, null, MAX_RESULTS).getResults());
+
+      // then
+      assertEquals(2, docAttributes.size());
+      assertEquals("wm1", docAttributes.get(0).getKey());
+      assertEquals("wm2", docAttributes.get(1).getKey());
     }
   }
 }

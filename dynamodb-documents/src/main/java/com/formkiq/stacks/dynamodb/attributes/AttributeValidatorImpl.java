@@ -123,13 +123,39 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
       String attributeKey = a.getAttributeKey();
       List<String> allowedValues = a.getAllowedValues();
       validateAllowedValues(documentAttributeMap, attributeKey, allowedValues, errors);
+      validateNumberOfValues(documentAttributeMap, attributeKey, a.minNumberOfValues(),
+          a.maxNumberOfValues(), errors);
     });
 
     notNull(attributes.getOptional()).forEach(a -> {
       String attributeKey = a.getAttributeKey();
       List<String> allowedValues = a.getAllowedValues();
       validateAllowedValues(documentAttributeMap, attributeKey, allowedValues, errors);
+      validateNumberOfValues(documentAttributeMap, attributeKey, a.minNumberOfValues(),
+          a.maxNumberOfValues(), errors);
     });
+  }
+
+  private void validateNumberOfValues(
+      final Map<String, List<DocumentAttributeRecord>> documentAttributeMap,
+      final String attributeKey, final Double minNumberOfValues, final Double maxNumberOfValues,
+      final Collection<ValidationError> errors) {
+
+    if (documentAttributeMap.containsKey(attributeKey) && minNumberOfValues != null
+        && maxNumberOfValues != null) {
+
+      double max = maxNumberOfValues < 0 ? Double.MAX_VALUE : maxNumberOfValues;
+      int count = documentAttributeMap.get(attributeKey).size();
+      if (count < minNumberOfValues) {
+        errors.add(new ValidationErrorImpl().key("minNumberOfValues")
+            .error(String.format("number of attributes %d is less than minimum of %d", count,
+                minNumberOfValues.intValue())));
+      } else if (count > max) {
+        errors.add(new ValidationErrorImpl().key("maxNumberOfValues")
+            .error(String.format("number of attributes %d is more than maximum of %d", count,
+                maxNumberOfValues.intValue())));
+      }
+    }
   }
 
   /**

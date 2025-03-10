@@ -27,6 +27,7 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
+import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENT_SYNCS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -83,8 +84,8 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
   @BeforeAll
   public static void beforeAll() throws URISyntaxException {
     DynamoDbConnectionBuilder db = DynamoDbTestServices.getDynamoDbConnection();
-    documentService =
-        new DocumentServiceImpl(db, DOCUMENTS_TABLE, new DocumentVersionServiceNoVersioning());
+    documentService = new DocumentServiceImpl(db, DOCUMENTS_TABLE, DOCUMENT_SYNCS_TABLE,
+        new DocumentVersionServiceNoVersioning());
     dss = new DocumentSearchServiceImpl(db, documentService, DOCUMENTS_TABLE);
   }
 

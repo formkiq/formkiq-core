@@ -30,9 +30,6 @@ import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3PresignerService;
-import com.formkiq.module.actions.Action;
-import com.formkiq.module.actions.ActionStatus;
-import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentService;
@@ -46,12 +43,12 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 
 /**
  * Export {@link DocumentItem} to External System.
@@ -78,12 +75,15 @@ public class DocumentExternalSystemExport {
    * 
    * @param siteId {@link String}
    * @param documentId {@link String}
-   * @param actions {@link List} {@link Action}
    * @return String
    */
-  public String apply(final String siteId, final String documentId, final List<Action> actions) {
+  public String apply(final String siteId, final String documentId) {
 
     DocumentItem result = this.documentService.findDocument(siteId, documentId);
+    if (result == null) {
+      result = new DynamicDocumentItem(Map.of("documentId", documentId));
+    }
+
     DynamicDocumentItem item = new DocumentItemToDynamicDocumentItem().apply(result);
 
     String site = siteId != null ? siteId : SiteIdKeyGenerator.DEFAULT_SITE_ID;
@@ -100,7 +100,7 @@ public class DocumentExternalSystemExport {
       item.put("attributes", attributes);
     }
 
-    addDocumentTags(siteId, documentId, actions, item);
+    addDocumentTags(siteId, documentId, item);
 
     return this.gson.toJson(Map.of("documents", documents));
   }
@@ -125,30 +125,22 @@ public class DocumentExternalSystemExport {
   }
 
   private void addDocumentTags(final String siteId, final String documentId,
-      final List<Action> actions, final DynamicDocumentItem item) {
-    if (hasAction(actions)) {
+      final DynamicDocumentItem item) {
 
-      Map<String, Collection<DocumentTag>> tagMap =
-          this.documentService.findDocumentsTags(siteId, Collections.singletonList(documentId),
-              Arrays.asList("CLAMAV_SCAN_STATUS", "CLAMAV_SCAN_TIMESTAMP"));
+    Map<String, Collection<DocumentTag>> tagMap = this.documentService.findDocumentsTags(siteId,
+        List.of(documentId), Arrays.asList("CLAMAV_SCAN_STATUS", "CLAMAV_SCAN_TIMESTAMP"));
 
-      Map<String, String> values = new HashMap<>();
-      Collection<DocumentTag> tags = tagMap.get(documentId);
-      for (DocumentTag tag : tags) {
-        values.put(tag.getKey(), tag.getValue());
-      }
-
-      String status = values.getOrDefault("CLAMAV_SCAN_STATUS", "ERROR");
-      item.put("status", status);
-
-      String timestamp = values.getOrDefault("CLAMAV_SCAN_TIMESTAMP", "");
-      item.put("timestamp", timestamp);
+    Map<String, String> values = new HashMap<>();
+    Collection<DocumentTag> tags = tagMap.get(documentId);
+    for (DocumentTag tag : tags) {
+      values.put(tag.getKey(), tag.getValue());
     }
-  }
 
-  private boolean hasAction(final List<Action> actions) {
-    return actions.stream().anyMatch(
-        a -> ActionType.ANTIVIRUS.equals(a.type()) && ActionStatus.COMPLETE.equals(a.status()));
+    String status = values.getOrDefault("CLAMAV_SCAN_STATUS", null);
+    item.put("status", status);
+
+    String timestamp = values.getOrDefault("CLAMAV_SCAN_TIMESTAMP", null);
+    item.put("timestamp", timestamp);
   }
 
   /**
@@ -160,10 +152,17 @@ public class DocumentExternalSystemExport {
    * @return {@link URL}
    */
   private URL getS3Url(final String siteId, final String documentId, final DocumentItem item) {
-    Duration duration = Duration.ofDays(1);
-    PresignGetUrlConfig config =
-        new PresignGetUrlConfig().contentDispositionByPath(item.getPath(), false);
-    String s3key = createS3Key(siteId, documentId);
-    return s3Presigner.presignGetUrl(documentsBucket, s3key, duration, null, config);
+
+    URL url = null;
+
+    if (item != null && !isEmpty(item.getPath())) {
+      Duration duration = Duration.ofDays(1);
+      PresignGetUrlConfig config =
+          new PresignGetUrlConfig().contentDispositionByPath(item.getPath(), false);
+      String s3key = createS3Key(siteId, documentId);
+      url = s3Presigner.presignGetUrl(documentsBucket, s3key, duration, null, config);
+    }
+
+    return url;
   }
 }

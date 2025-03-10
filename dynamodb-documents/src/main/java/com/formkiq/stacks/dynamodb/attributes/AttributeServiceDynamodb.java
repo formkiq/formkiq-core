@@ -25,7 +25,6 @@ package com.formkiq.stacks.dynamodb.attributes;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -45,6 +44,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 
 
 /**
@@ -75,33 +75,70 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
   public Collection<ValidationError> addAttribute(final String siteId, final String key,
       final AttributeDataType dataType, final AttributeType type,
       final boolean allowReservedAttributeKey) {
+    return addAttribute(siteId, key, dataType, type, allowReservedAttributeKey, null);
+  }
 
-    Collection<ValidationError> errors = validate(siteId, key, allowReservedAttributeKey);
+  private Collection<ValidationError> addAttribute(final String siteId, final String key,
+      final AttributeDataType dataType, final AttributeType type,
+      final boolean allowReservedAttributeKey, final Watermark watermark) {
+
+    Collection<ValidationError> errors =
+        validate(siteId, key, dataType, allowReservedAttributeKey, watermark);
 
     if (errors.isEmpty()) {
 
+      WatermarkPosition position = watermark != null ? watermark.getPosition() : null;
+
       AttributeRecord a = new AttributeRecord().documentId(key).key(key)
           .type(type != null ? type : AttributeType.STANDARD)
+          .setWatermarkText(watermark != null ? watermark.getText() : null)
+          .setWatermarkImageDocumentId(watermark != null ? watermark.getImageDocumentId() : null)
+          .setWatermarkRotation(watermark != null ? watermark.getRotation() : null)
+          .setWatermarkScale(watermark != null ? watermark.getScale() : null)
           .dataType(dataType != null ? dataType : AttributeDataType.STRING);
-      this.db.putItem(a.getAttributes(siteId));
+
+      if (position != null) {
+        updateWatermarkPosition(a, position);
+      }
+
+      Map<String, AttributeValue> attrs = a.getAttributes(siteId);
+      this.db.putItem(attrs);
     }
 
     return errors;
   }
 
+  private void updateWatermarkPosition(final AttributeRecord a, final WatermarkPosition position) {
+    WatermarkXanchor xanchor =
+        position != null && position.getxAnchor() != null ? position.getxAnchor() : null;
+    WatermarkYanchor yanchor =
+        position != null && position.getyAnchor() != null ? position.getyAnchor() : null;
+
+    a.setWatermarkxOffset(position != null ? position.getxOffset() : null)
+        .setWatermarkyOffset(position != null ? position.getyOffset() : null)
+        .setWatermarkxAnchor(xanchor).setWatermarkyAnchor(yanchor);
+  }
+
+  @Override
+  public Collection<ValidationError> addWatermarkAttribute(final String siteId, final String key,
+      final Watermark watermark) {
+    return addAttribute(siteId, key, AttributeDataType.WATERMARK, AttributeType.STANDARD, false,
+        watermark);
+  }
+
   private Collection<ValidationError> validate(final String siteId, final String key,
-      final boolean allowReservedAttributeKey) {
+      final AttributeDataType dataType, final boolean allowReservedAttributeKey,
+      final Watermark watermark) {
 
-    Collection<ValidationError> errors = Collections.emptyList();
+    Collection<ValidationError> errors = new ArrayList<>();
 
-    if (key == null || key.isEmpty()) {
-      errors = Collections
-          .singletonList(new ValidationErrorImpl().key("key").error("'key' is required"));
+    if (isEmpty(key)) {
+      errors.add(new ValidationErrorImpl().key("key").error("'key' is required"));
     } else if (!allowReservedAttributeKey) {
 
       AttributeKeyReserved r = AttributeKeyReserved.find(key);
       if (r != null) {
-        errors = Collections.singletonList(new ValidationErrorImpl().key("key")
+        errors.add(new ValidationErrorImpl().key("key")
             .error("'" + key + "' is a reserved attribute name"));
       }
     }
@@ -109,12 +146,38 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
     if (errors.isEmpty()) {
       AttributeRecord attribute = getAttribute(siteId, key);
       if (attribute != null) {
-        errors = Collections.singletonList(
+        errors.add(
             new ValidationErrorImpl().key("key").error("attribute '" + key + "' already exists"));
       }
     }
 
+    validateWatermark(siteId, dataType, watermark, errors);
+
     return errors;
+  }
+
+  private void validateWatermark(final String siteId, final AttributeDataType dataType,
+      final Watermark watermark, final Collection<ValidationError> errors) {
+    if (AttributeDataType.WATERMARK.equals(dataType)) {
+
+      if (watermark == null) {
+        errors.add(new ValidationErrorImpl().key("watermark").error("'watermark' is required"));
+      } else if (isEmpty(watermark.getText()) && isEmpty(watermark.getImageDocumentId())) {
+        errors.add(new ValidationErrorImpl().key("watermark")
+            .error("'watermark.text' or 'watermark.imageDocumentId' is required"));
+      } else if (!isEmpty(watermark.getImageDocumentId())) {
+
+        Map<String, AttributeValue> keys = keysDocument(siteId, watermark.getImageDocumentId());
+        if (!this.db.exists(keys.get(PK), keys.get(SK))) {
+          errors.add(new ValidationErrorImpl().key("watermark.imageDocumentId")
+              .error("watermark.imageDocumentId' does not exist"));
+        }
+      }
+
+    } else if (watermark != null) {
+      errors.add(new ValidationErrorImpl().key("watermark.text")
+          .error("'watermark' only allowed on dataType 'WATERMARK'"));
+    }
   }
 
   @Override

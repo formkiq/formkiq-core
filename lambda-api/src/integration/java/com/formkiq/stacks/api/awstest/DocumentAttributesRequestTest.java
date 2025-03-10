@@ -24,14 +24,21 @@
 package com.formkiq.stacks.api.awstest;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.testutils.aws.FkqAttributeService.createNumberAttribute;
+import static com.formkiq.testutils.aws.FkqAttributeService.createStringAttribute;
 import static com.formkiq.testutils.aws.FkqDocumentService.addDocument;
+import static com.formkiq.testutils.aws.FkqDocumentService.addDocumentAttributes;
+import static com.formkiq.testutils.aws.FkqDocumentService.getDocumentAttributes;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContent;
+import static com.formkiq.testutils.aws.FkqSchemaService.addClassification;
+import static com.formkiq.testutils.aws.FkqSchemaService.createSchemaAttributes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -40,14 +47,17 @@ import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.api.ReindexApi;
 import com.formkiq.client.api.SchemasApi;
+import com.formkiq.client.model.AddDocumentAttributeClassification;
 import com.formkiq.client.model.AddDocumentAttributeStandard;
 import com.formkiq.client.model.AddReindexDocumentRequest;
+import com.formkiq.client.model.AttributeDataType;
 import com.formkiq.client.model.AttributeSchemaCompositeKey;
 import com.formkiq.client.model.DocumentSearchMatchAttribute;
 import com.formkiq.client.model.ReindexTarget;
-import com.formkiq.client.model.SchemaAttributes;
 import com.formkiq.client.model.SearchResultDocument;
+import com.formkiq.client.model.SetSchemaAttributes;
 import com.formkiq.client.model.SetSitesSchemaRequest;
+import com.formkiq.testutils.aws.FkqAttributeService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import com.formkiq.client.api.AttributesApi;
@@ -228,6 +238,74 @@ public class DocumentAttributesRequestTest extends AbstractAwsIntegrationTest {
   }
 
   /**
+   * Add document classification after the document is already created.
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  void testAddDocument10() throws ApiException, InterruptedException {
+    // given
+    String siteId = ID.uuid();
+    ApiClient apiClient = getApiClients(siteId).get(0);
+
+    FkqAttributeService.addAttribute(apiClient, siteId, "invoiceCurrency", AttributeDataType.STRING,
+        null);
+    FkqAttributeService.addAttribute(apiClient, siteId, "invoiceDate", AttributeDataType.STRING,
+        null);
+    FkqAttributeService.addAttribute(apiClient, siteId, "invoiceNumber", AttributeDataType.STRING,
+        null);
+    FkqAttributeService.addAttribute(apiClient, siteId, "invoiceVendorName",
+        AttributeDataType.STRING, null);
+    FkqAttributeService.addAttribute(apiClient, siteId, "invoice", AttributeDataType.KEY_ONLY,
+        null);
+    FkqAttributeService.addAttribute(apiClient, siteId, "invoiceTotalAmount",
+        AttributeDataType.NUMBER, null);
+
+    SetSchemaAttributes attr = createSchemaAttributes(
+        List.of("invoiceDate", "invoiceNumber", "invoiceTotalAmount", "invoiceVendorName"),
+        List.of("invoiceCurrency"));
+    String classificationId = addClassification(apiClient, siteId, ID.uuid(), attr);
+
+    String documentId = createDocument(apiClient, siteId);
+
+    AddDocumentAttribute a0 =
+        new AddDocumentAttribute(new AddDocumentAttributeStandard().key("invoice"));
+    AddDocumentAttribute a1 = createStringAttribute("invoiceCurrency", "USD");
+    AddDocumentAttribute a2 = createStringAttribute("invoiceDate", "2023-05-01");
+    AddDocumentAttribute a3 = createStringAttribute("invoiceNumber", "45102");
+    AddDocumentAttribute a4 = createNumberAttribute("invoiceTotalAmount", new BigDecimal(1));
+    AddDocumentAttribute a5 = createStringAttribute("invoiceVendorName", "Mascareene Beef Company");
+    addDocumentAttributes(apiClient, siteId, documentId, List.of(a0, a1, a2, a3, a4, a5));
+
+    // then
+    final int expected = 6;
+    List<DocumentAttribute> documentAttributes =
+        getDocumentAttributes(apiClient, siteId, documentId);
+    assertEquals(expected, documentAttributes.size());
+
+    // given
+    DocumentAttributesApi api = new DocumentAttributesApi(apiClient);
+    AddDocumentAttributeClassification classification =
+        new AddDocumentAttributeClassification().classificationId(classificationId);
+
+    // when
+    api.addDocumentAttributes(documentId, new AddDocumentAttributesRequest()
+        .addAttributesItem(new AddDocumentAttribute(classification)), siteId, null);
+
+    // then
+    documentAttributes = getDocumentAttributes(apiClient, siteId, documentId);
+
+    int i = 0;
+    assertEquals(expected + 1, documentAttributes.size());
+    assertEquals("Classification", documentAttributes.get(i++).getKey());
+    assertEquals("invoice", documentAttributes.get(i++).getKey());
+    assertEquals("invoiceCurrency", documentAttributes.get(i++).getKey());
+    assertEquals("invoiceDate", documentAttributes.get(i++).getKey());
+    assertEquals("invoiceNumber", documentAttributes.get(i++).getKey());
+    assertEquals("invoiceTotalAmount", documentAttributes.get(i++).getKey());
+    assertEquals("invoiceVendorName", documentAttributes.get(i).getKey());
+  }
+
+  /**
    * Test add document with attributes, add a composite key to schema and then reindex.
    *
    * @throws Exception Exception
@@ -270,7 +348,7 @@ public class DocumentAttributesRequestTest extends AbstractAwsIntegrationTest {
       // given
       SchemasApi schemasApi = new SchemasApi(apiClient);
       SetSitesSchemaRequest sreq = new SetSitesSchemaRequest().name("test")
-          .attributes(new SchemaAttributes().addCompositeKeysItem(
+          .attributes(new SetSchemaAttributes().addCompositeKeysItem(
               new AttributeSchemaCompositeKey().attributeKeys(List.of(key1, key2))));
       schemasApi.setSitesSchema(siteId, sreq);
 

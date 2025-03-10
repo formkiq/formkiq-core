@@ -67,7 +67,6 @@ public abstract class AbstractFormKiqApiResponseCallback implements ExpectationR
    * @param response {@link String}
    * @return {@link HttpResponse}
    */
-  @SuppressWarnings("unchecked")
   private HttpResponse createResponse(final String response) {
 
     Map<String, Object> map = this.gson.fromJson(response, Map.class);

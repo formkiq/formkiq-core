@@ -108,6 +108,8 @@ public class AddDocumentRequestToDocumentItem
       item.setPath(r.getPath());
     }
 
+    item.setWidth(r.getWidth());
+    item.setHeight(r.getHeight());
     item.setChecksum(r.getChecksum());
     item.setChecksumType(r.getChecksumType());
 

@@ -87,12 +87,22 @@ public final class DateUtil {
 
   /**
    * Returns Now in ISO 8601 format.
-   * 
+   *
    * @return String
    */
   public static String getNowInIso8601Format() {
     Instant nowUtc = Instant.now();
     return DateTimeFormatter.ISO_INSTANT.format(nowUtc);
+  }
+
+  /**
+   * Returns Now in ISO 8601 format.
+   * 
+   * @param date {@link Date}
+   * @return String
+   */
+  public static String getInIso8601Format(final Date date) {
+    return DateTimeFormatter.ISO_INSTANT.format(date.toInstant());
   }
 
   /**

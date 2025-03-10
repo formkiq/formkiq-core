@@ -55,14 +55,10 @@ Resources:
     Properties:
       Tags:
         - Key: "Application"
-          Value: 
-            Fn::Sub: "FormKiQ ${FormKiQType}"      
+          Value: "FormKiQ"
         - Key: "AppEnvironment"
           Value: 
             Fn::Sub: "${AppEnvironment}"
-        - Key: "StackName"
-          Value: 
-            Fn::Sub: "${AWS::StackName}" 
 
   EmailSubscription:
     Type: AWS::SNS::Subscription
@@ -83,12 +79,9 @@ Resources:
       Value: 
         Ref: DocumentsEmailNotification
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
 
   Module:
     Type: AWS::Serverless::Application
@@ -98,12 +91,9 @@ Resources:
         AppEnvironment: 
           Ref: AppEnvironment
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
 
   EmailNotifyLogGroup:
     Type: AWS::Logs::LogGroup
@@ -135,8 +125,7 @@ Resources:
         - EmailNotifyRole
         - Arn
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
       LoggingConfig:
@@ -169,14 +158,10 @@ Resources:
     Properties:
       Tags:
         - Key: "Application"
-          Value: 
-            Fn::Sub: "FormKiQ ${FormKiQType}"
+          Value: "FormKiQ"
         - Key: "AppEnvironment"
           Value: 
             Fn::Sub: "${AppEnvironment}"
-        - Key: StackName
-          Value: 
-            Fn::Sub: "${AWS::StackName}"
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:

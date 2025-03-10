@@ -25,11 +25,16 @@ package com.formkiq.module.lambdaservices.logger;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Default {@link Logger} implementation.
  */
 public class LoggerImpl implements Logger {
+
+  /** Pattern matching characters that must be escaped in JSON. */
+  private static final Pattern SPECIAL_CHARS = Pattern.compile("[\"\\\\\b\f\n\r\t]");
 
   /** Current Log Level. */
   private final LogLevel currentLogLevel;
@@ -61,7 +66,7 @@ public class LoggerImpl implements Logger {
     if (isLogged(level)) {
       if (LogType.JSON.equals(this.currentLogType)) {
         System.out.printf("%s%n", "{\"level\":\"" + level.name() + "\",\"message\":\""
-            + escapeDoubleQuotes(message) + "\"}");
+            + escapeDoubleQuotes(escapeJsonString(message)) + "\"}");
       } else {
         System.out.printf("%s%n", message);
       }
@@ -93,13 +98,13 @@ public class LoggerImpl implements Logger {
     json.append("{");
     json.append("\"level\":\"").append(logLevel.name()).append("\",");
     json.append("\"type\":\"").append(e.getClass().getName()).append("\",");
-    json.append("\"message\":\"").append(e.getMessage()).append("\",");
+    json.append("\"message\":\"").append(escapeJsonString(e.getMessage())).append("\",");
 
     // Add stack trace
     json.append("\"stackTrace\":[");
     StackTraceElement[] stackTrace = e.getStackTrace();
     for (int i = 0; i < stackTrace.length; i++) {
-      json.append("\"").append(stackTrace[i].toString().replace("\"", "\\\"")).append("\"");
+      json.append("\"").append(escapeJsonString(stackTrace[i].toString())).append("\"");
       if (i < stackTrace.length - 1) {
         json.append(",");
       }
@@ -116,7 +121,37 @@ public class LoggerImpl implements Logger {
    * @return The string with double-quote characters escaped
    */
   private String escapeDoubleQuotes(final String input) {
-    return input.replace("\"", "\\\"");
+    return input != null ? input.replace("\"", "\\\"") : null;
+  }
+
+  /**
+   * Escapes characters in the input string so that it can be used as a JSON string literal.
+   *
+   * @param input the raw string
+   * @return the string with necessary JSON escapes applied
+   */
+  public static String escapeJsonString(final String input) {
+    if (input == null) {
+      return "";
+    }
+
+    Matcher matcher = SPECIAL_CHARS.matcher(input);
+    StringBuilder result = new StringBuilder();
+    while (matcher.find()) {
+      String replacement = switch (matcher.group()) {
+        case "\"" -> "\\\\\"";
+        case "\\" -> "\\\\\\\\";
+        case "\b" -> "\\\\b";
+        case "\f" -> "\\\\f";
+        case "\n" -> "\\\\n";
+        case "\r" -> "\\\\r";
+        case "\t" -> "\\\\t";
+        default -> matcher.group();
+      };
+      matcher.appendReplacement(result, replacement);
+    }
+    matcher.appendTail(result);
+    return result.toString();
   }
 
   @Override

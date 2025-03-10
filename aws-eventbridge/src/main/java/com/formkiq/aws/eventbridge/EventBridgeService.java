@@ -24,6 +24,7 @@
 package com.formkiq.aws.eventbridge;
 
 import software.amazon.awssdk.services.eventbridge.model.CreateEventBusResponse;
+import software.amazon.awssdk.services.eventbridge.model.DeleteEventBusResponse;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsResponse;
 
 /**
@@ -42,6 +43,14 @@ public interface EventBridgeService {
   CreateEventBusResponse createEventBridge(String eventBusName);
 
   /**
+   * Delete Event Bridge.
+   * 
+   * @param eventBusName {@link String}
+   * @return DeleteEventBusResponse
+   */
+  DeleteEventBusResponse deleteEventBus(String eventBusName);
+
+  /**
    * Put AWS Event Bridge Event.
    *
    * @param eventBusName The name or ARN of the event bus to receive the event. Only the rules that
@@ -54,6 +63,17 @@ public interface EventBridgeService {
    * @return PutEventsResponse
    */
   PutEventsResponse putEvents(String eventBusName, String detailType, String detail, String source);
+
+  /**
+   * Put AWS Event Bridge Event.
+   *
+   * @param eventBusName The name or ARN of the event bus to receive the event. Only the rules that
+   *        are associated with this event bus are used to match the event. If you omit this, the
+   *        default event bus is used.
+   * @param eventBridgeMessage {@link EventBridgeMessage}
+   * @return PutEventsResponse
+   */
+  PutEventsResponse putEvents(String eventBusName, EventBridgeMessage eventBridgeMessage);
 
   /**
    * Create Event Bridge Rule.

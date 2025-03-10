@@ -65,6 +65,8 @@ public final class TestServices {
   public static final Region AWS_REGION = Region.US_EAST_1;
   /** {@link String}. */
   public static final String BUCKET_NAME = "testbucket";
+  /** ACCESS_POINT_S3_BUCKET. */
+  public static final String ACCESS_POINT_S3_BUCKET = "accesspointTestBucket";
   /** Default LocalStack Port. */
   private static final int DEFAULT_LOCALSTACK_PORT = 4566;
   /** App Environment. */
@@ -73,7 +75,7 @@ public final class TestServices {
   private static LocalStackContainer localstack = null;
   /** LocalStack {@link DockerImageName}. */
   private static final DockerImageName LOCALSTACK_IMAGE =
-      DockerImageName.parse("localstack/localstack:3.6.0");
+      DockerImageName.parse("localstack/localstack:4.0.3");
   /** {@link String}. */
   public static final String OCR_BUCKET_NAME = "ocrbucket";
   /** {@link S3ConnectionBuilder}. */

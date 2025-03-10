@@ -1,0 +1,30 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: FormKiQ Config
+
+Parameters:
+
+  FormKiQType:
+    Type: String
+    Description: The formkiq type of installation
+    AllowedPattern: ".+"
+
+  FormKiQVersion:
+    Type: String
+    Description: The formkiq version
+    AllowedPattern: ".+"
+
+Resources:
+  PlaceholderResource:
+    Type: AWS::CloudFormation::WaitConditionHandle
+
+Outputs:
+
+  FormKiQType:
+    Description: The FormKiQ type of installation
+    Value:
+      Ref: FormKiQType
+
+  FormKiQVersion:
+    Description: The FormKiQ version
+    Value:
+      Ref: FormKiQVersion

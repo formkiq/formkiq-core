@@ -101,7 +101,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     assertEquals(2, sites.size());
 
     assertEquals(DEFAULT_SITE_ID, sites.get(0).getSiteId());
-    assertEquals(Site.PermissionEnum.WRITE, sites.get(0).getPermission());
+    assertEquals(Site.PermissionEnum.READ_WRITE, sites.get(0).getPermission());
     assertEquals("ADMIN,DELETE,READ,WRITE", notNull(sites.get(0).getPermissions()).stream()
         .map(Enum::name).collect(Collectors.joining(",")));
     assertNotNull(sites.get(0).getUploadEmail());
@@ -120,7 +120,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
         ssm.getParameterValue(String.format("/formkiq/ses/%s/%s", strs[1], strs[0])));
 
     assertEquals("finance", sites.get(1).getSiteId());
-    assertEquals(Site.PermissionEnum.WRITE, sites.get(1).getPermission());
+    assertEquals(Site.PermissionEnum.READ_WRITE, sites.get(1).getPermission());
     assertNotNull(sites.get(1).getUploadEmail());
     uploadEmail = sites.get(1).getUploadEmail();
     assertNotNull(uploadEmail);
@@ -151,11 +151,11 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     List<Site> sites = notNull(response.getSites());
     assertEquals(2, sites.size());
     assertEquals(DEFAULT_SITE_ID, sites.get(0).getSiteId());
-    assertEquals(Site.PermissionEnum.WRITE, sites.get(0).getPermission());
+    assertEquals(Site.PermissionEnum.READ_WRITE, sites.get(0).getPermission());
     assertNull(sites.get(0).getUploadEmail());
 
     assertEquals("finance", sites.get(1).getSiteId());
-    assertEquals(Site.PermissionEnum.WRITE, sites.get(1).getPermission());
+    assertEquals(Site.PermissionEnum.READ_WRITE, sites.get(1).getPermission());
     assertNull(sites.get(1).getUploadEmail());
   }
 
@@ -181,14 +181,14 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
 
     assertEquals(2, sites.size());
     assertEquals(DEFAULT_SITE_ID, sites.get(0).getSiteId());
-    assertEquals(Site.PermissionEnum.ONLY, sites.get(0).getPermission());
+    assertEquals(Site.PermissionEnum.READ_ONLY, sites.get(0).getPermission());
     assertNull(sites.get(0).getUploadEmail());
 
     assertNull(ssm.getParameterValue(String.format("/formkiq/%s/siteid/%s/email",
         FORMKIQ_APP_ENVIRONMENT, sites.get(0).getSiteId())));
 
     assertEquals("finance", sites.get(1).getSiteId());
-    assertEquals(Site.PermissionEnum.WRITE, sites.get(1).getPermission());
+    assertEquals(Site.PermissionEnum.READ_WRITE, sites.get(1).getPermission());
     assertNotNull(sites.get(1).getUploadEmail());
     String uploadEmail = sites.get(1).getUploadEmail();
     assertNotNull(uploadEmail);
@@ -229,7 +229,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     assertEquals(1, sites.size());
     Site site = sites.get(0);
     assertEquals(siteId, site.getSiteId());
-    assertEquals(Site.PermissionEnum.WRITE, site.getPermission());
+    assertEquals(Site.PermissionEnum.READ_WRITE, site.getPermission());
 
     SiteConfig config = site.getConfig();
     assertNotNull(config);

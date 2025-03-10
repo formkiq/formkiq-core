@@ -25,16 +25,20 @@ package com.formkiq.stacks.api.validators;
 
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsValidator;
 import com.formkiq.module.actions.services.ActionsValidatorImpl;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import com.formkiq.validation.ValidationError;
+import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 
 /**
  * Api Validators.
@@ -56,5 +60,12 @@ public interface ApiValidator {
     if (firstError.isPresent()) {
       throw new ValidationException(firstError.get());
     }
+
+    if (notNull(actions).stream().anyMatch(o -> ActionType.QUEUE.equals(o.type()))) {
+      ValidationError e =
+          new ValidationErrorImpl().key("type").error("action type cannot be 'QUEUE'");
+      throw new ValidationException(List.of(e));
+    }
+
   }
 }

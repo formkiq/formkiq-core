@@ -41,9 +41,13 @@ import com.formkiq.aws.dynamodb.QueryResponseToPagination;
 import com.formkiq.aws.dynamodb.ReadRequestBuilder;
 import com.formkiq.aws.dynamodb.WriteRequestBuilder;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.model.DocumentSyncRecord;
+import com.formkiq.aws.dynamodb.model.DocumentSyncRecordBuilder;
+import com.formkiq.aws.dynamodb.model.DocumentSyncType;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.dynamodb.model.TimeToLiveBuilder;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.objects.Strings;
@@ -54,6 +58,7 @@ import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeServiceDynamodb;
 import com.formkiq.stacks.dynamodb.attributes.AttributeType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidation;
+import com.formkiq.stacks.dynamodb.attributes.AttributeValidationType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidator;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidatorImpl;
@@ -155,6 +160,8 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   private final DateTimeFormatter yyyymmddFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
   /** {@link DocumentServiceInterceptor}. */
   private final DocumentServiceInterceptor interceptor;
+  /** Document Sync Table. */
+  private final String documentSyncsTable;
   /** Last Short Date. */
   private String lastShortDate = null;
 
@@ -163,11 +170,13 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
    *
    * @param connection {@link DynamoDbConnectionBuilder}
    * @param documentsTable {@link String}
+   * @param syncsTable {@link String}
    * @param documentVersionsService {@link DocumentVersionService}
    */
   public DocumentServiceImpl(final DynamoDbConnectionBuilder connection,
-      final String documentsTable, final DocumentVersionService documentVersionsService) {
-    this(connection, documentsTable, documentVersionsService, null);
+      final String documentsTable, final String syncsTable,
+      final DocumentVersionService documentVersionsService) {
+    this(connection, documentsTable, syncsTable, documentVersionsService, null);
   }
 
   /**
@@ -175,17 +184,24 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
    * 
    * @param connection {@link DynamoDbConnectionBuilder}
    * @param documentsTable {@link String}
+   * @param syncsTable {@link String}
    * @param documentVersionsService {@link DocumentVersionService}
    * @param documentServiceInterceptor {@link DocumentServiceInterceptor}
    */
   public DocumentServiceImpl(final DynamoDbConnectionBuilder connection,
-      final String documentsTable, final DocumentVersionService documentVersionsService,
+      final String documentsTable, final String syncsTable,
+      final DocumentVersionService documentVersionsService,
       final DocumentServiceInterceptor documentServiceInterceptor) {
 
     if (documentsTable == null) {
       throw new IllegalArgumentException("'documentsTable' is null");
     }
 
+    if (syncsTable == null) {
+      throw new IllegalArgumentException("'syncsTable' is null");
+    }
+
+    this.documentSyncsTable = syncsTable;
     this.interceptor = documentServiceInterceptor;
     this.indexWriter = new GlobalIndexService(connection, documentsTable);
     this.versionsService = documentVersionsService;
@@ -265,13 +281,13 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   @Override
   public void reindexDocumentAttributes(final String siteId, final String documentId)
       throws ValidationException {
-    saveDocumentAttributes(siteId, documentId, Collections.emptyList(), AttributeValidation.NONE,
-        AttributeValidationAccess.ADMIN_UPDATE);
+    saveDocumentAttributes(siteId, documentId, Collections.emptyList(),
+        AttributeValidationType.NONE, AttributeValidationAccess.ADMIN_UPDATE);
   }
 
   private Collection<DocumentAttributeRecord> generateDocumentAttributesToSave(final String siteId,
       final String documentId, final DocumentAttributeRecordListBuilder listBuilder,
-      final AttributeValidation validation, final AttributeValidationAccess validationAccess)
+      final AttributeValidationType validation, final AttributeValidationAccess validationAccess)
       throws ValidationException {
 
     Collection<DocumentAttributeRecord> newDocumentAttributeRecords =
@@ -316,7 +332,8 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
     // validation
     validateDocumentAttributes(schemaAttributes, siteId, documentId, documentAttributes,
-        attributesToBeDeleted, previousDocumentAttributes, validation, validationAccess);
+        attributesToBeDeleted, previousDocumentAttributes,
+        new AttributeValidation(validation, validationAccess));
 
     listBuilder.setCompositeKeysToBeDeleted(compositeKeysToBeDeleted);
 
@@ -415,9 +432,6 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   public boolean deleteDocument(final String siteId, final String documentId,
       final boolean softDelete) {
 
-    boolean deleted = false;
-
-    this.versionsService.deleteAllVersionIds(siteId, documentId);
 
     Map<String, AttributeValue> documentRecord = getDocumentRecord(siteId, documentId);
 
@@ -427,35 +441,17 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
     Map<String, AttributeValue> keys = keysGeneric(siteId, PREFIX_DOCS + documentId, null);
     AttributeValue pk = keys.get(PK);
-    AttributeValue sk;
 
     List<Map<String, AttributeValue>> list = queryDocumentAttributes(pk, null);
 
+    boolean deleted;
     if (softDelete) {
 
-      deleted = this.dbService.moveItems(list,
-          new DocumentDeleteMoveAttributeFunction(siteId, documentId));
+      deleted = deleteDocumentSoft(siteId, documentId, pk, list);
 
     } else {
 
-      pk = fromS(SOFT_DELETE + pk.s());
-      list.addAll(queryDocumentAttributes(pk, null));
-
-      keys = keysGeneric(siteId, SOFT_DELETE + PREFIX_DOCS, null);
-      pk = keys.get(PK);
-      sk = fromS(SOFT_DELETE + "document#" + documentId);
-
-      list.addAll(queryDocumentAttributes(pk, sk));
-
-      List<Map<String, AttributeValue>> listKeys = list.stream()
-          .map(map -> map.entrySet().stream()
-              .filter(entry -> entry.getKey().equals(PK) || entry.getKey().equals(SK))
-              .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)))
-          .toList();
-
-      if (this.dbService.deleteItems(listKeys)) {
-        deleted = true;
-      }
+      deleted = deleteDocumentHard(siteId, documentId, pk, list);
     }
 
     if (this.interceptor != null) {
@@ -475,12 +471,57 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     return deleted;
   }
 
+  private boolean deleteDocumentSoft(final String siteId, final String documentId,
+      final AttributeValue pk, final List<Map<String, AttributeValue>> list) {
+    boolean deleted =
+        this.dbService.moveItems(list, new DocumentDeleteMoveAttributeFunction(siteId, documentId));
+
+    if (deleted) {
+      DocumentSyncRecord a = new DocumentSyncRecordBuilder().buildEventBridge(documentId,
+          DocumentSyncType.SOFT_DELETE, true);
+      saveDocumentSyncRecord(siteId, a);
+    }
+
+    return deleted;
+  }
+
+  private boolean deleteDocumentHard(final String siteId, final String documentId,
+      final AttributeValue pk, final List<Map<String, AttributeValue>> list) {
+
+    list.addAll(queryDocumentAttributes(fromS(SOFT_DELETE + pk.s()), null));
+
+    Map<String, AttributeValue> keys = keysGeneric(siteId, SOFT_DELETE + PREFIX_DOCS, null);
+    AttributeValue sk = fromS(SOFT_DELETE + "document#" + documentId);
+
+    list.addAll(queryDocumentAttributes(keys.get(PK), sk));
+
+    List<Map<String, AttributeValue>> listKeys = list.stream()
+        .map(map -> map.entrySet().stream()
+            .filter(entry -> entry.getKey().equals(PK) || entry.getKey().equals(SK))
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)))
+        .toList();
+
+    // TODO merge deletes together
+    final boolean deleted = this.dbService.deleteItems(listKeys);
+    this.versionsService.deleteAllVersionIds(siteId, documentId);
+
+    DocumentSyncRecord a =
+        new DocumentSyncRecordBuilder().buildEventBridge(documentId, DocumentSyncType.DELETE, true);
+
+    long ttl = new TimeToLiveBuilder().withDaysFromNow(1).build();
+    a.setTimeToLive(ttl);
+
+    saveDocumentSyncRecord(siteId, a);
+
+    return deleted;
+  }
+
   @Override
   public List<DocumentAttributeRecord> deleteDocumentAttribute(final String siteId,
-      final String documentId, final String attributeKey, final AttributeValidation validation,
+      final String documentId, final String attributeKey, final AttributeValidationType validation,
       final AttributeValidationAccess validationAccess) throws ValidationException {
 
-    if (!AttributeValidation.NONE.equals(validation)) {
+    if (!AttributeValidationType.NONE.equals(validation)) {
       Schema schema = getSchame(siteId);
       Collection<ValidationError> errors = this.attributeValidator.validateDeleteAttribute(schema,
           siteId, attributeKey, validationAccess);
@@ -878,6 +919,28 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
         r.fromS(AttributeRecord.ATTR), startkey, limit);
 
     List<DocumentAttributeRecord> list = response.items().stream()
+        .map(a -> new DocumentAttributeRecord().getFromAttributes(siteId, a)).toList();
+
+    return new PaginationResults<>(list, new QueryResponseToPagination().apply(response));
+  }
+
+  @Override
+  public PaginationResults<DocumentAttributeRecord> findDocumentAttributesByType(
+      final String siteId, final String documentId, final DocumentAttributeValueType valueType,
+      final PaginationMapToken token, final int limit) {
+
+    DocumentAttributeRecord r =
+        new DocumentAttributeRecord().setDocumentId(documentId).setValueType(valueType);
+    Map<String, AttributeValue> startkey = new PaginationToAttributeValue().apply(token);
+
+    QueryConfig config = new QueryConfig().scanIndexForward(Boolean.TRUE).indexName(GSI2);
+    QueryResponse response = this.dbService.queryBeginsWith(config, r.fromS(r.pkGsi2(siteId)),
+        r.fromS(ATTR + valueType), startkey, limit);
+
+    List<Map<String, AttributeValue>> batch =
+        this.dbService.getBatch(new BatchGetConfig(), response.items());
+
+    List<DocumentAttributeRecord> list = batch.stream()
         .map(a -> new DocumentAttributeRecord().getFromAttributes(siteId, a)).toList();
 
     return new PaginationResults<>(list, new QueryResponseToPagination().apply(response));
@@ -1343,6 +1406,8 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       addS(pkvalues, "checksum", etag);
     }
 
+    addS(pkvalues, "width", document.getWidth());
+    addS(pkvalues, "height", document.getHeight());
     addS(pkvalues, "checksumType", document.getChecksumType());
     addS(pkvalues, "belongsToDocumentId", document.getBelongsToDocumentId());
 
@@ -1742,8 +1807,8 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       keys =
           keysDocument(siteId, item.getDocumentId(), Optional.of(subdoc.getString("documentId")));
 
-      SaveDocumentOptions childOptions =
-          new SaveDocumentOptions().saveDocumentDate(false).timeToLive(doc.getString("TimeToLive"));
+      SaveDocumentOptions childOptions = new SaveDocumentOptions().saveDocumentDate(false)
+          .timeToLive(doc.getString("TimeToLive")).setSkipDocumentEventBridge(true);
       saveDocument(keys, siteId, dockey, null, null, childOptions);
 
       List<DynamicObject> doctags = subdoc.getList("tags");
@@ -1754,8 +1819,8 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
       keys = keysDocument(siteId, subdoc.getString("documentId"));
 
-      childOptions =
-          new SaveDocumentOptions().saveDocumentDate(false).timeToLive(doc.getString("TimeToLive"));
+      childOptions = new SaveDocumentOptions().saveDocumentDate(false)
+          .timeToLive(doc.getString("TimeToLive")).setSkipDocumentEventBridge(false);
       saveDocument(keys, siteId, document, tags, null, childOptions);
     }
   }
@@ -1798,13 +1863,17 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     WriteRequestBuilder writeBuilder =
         new WriteRequestBuilder().appends(this.documentTableName, tagValues);
 
+    Date now = new Date();
     DynamodbRecordTx tx = getSaveDocumentAttributesTx(siteId, document.getDocumentId(), attributes,
-        AttributeValidation.FULL, options.getValidationAccess());
+        AttributeValidationType.FULL, options.getValidationAccess());
 
     boolean isPathChanged = isPathChanged(siteId, document, previous, documentValues, writeBuilder);
 
     writeBuilder.appends(this.documentTableName,
         tx.getSaves().stream().map(a -> a.getAttributes(siteId)).toList());
+
+    addDocumentSyncRecord(writeBuilder, siteId, document.getDocumentId(), documentExists, now,
+        options);
 
     if (documentExists) {
       writeBuilder.append(this.documentTableName, documentValues);
@@ -1823,8 +1892,8 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
       if (isPathChanged) {
         String path = previous.containsKey("path") ? previous.get("path").s() : null;
-        if (!Strings.isEmpty(path)) {
-          this.folderIndexProcessor.deletePath(siteId, documentId, previous.get("path").s());
+        if (!Strings.isEmpty(path) && !document.getPath().equalsIgnoreCase(path)) {
+          this.folderIndexProcessor.deletePath(siteId, documentId, path);
         }
       }
 
@@ -1885,29 +1954,41 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
   @Override
   public void saveDocumentAttributes(final String siteId, final String documentId,
-      final Collection<DocumentAttributeRecord> attributes, final AttributeValidation validation,
-      final AttributeValidationAccess validationAccess) throws ValidationException {
+      final Collection<DocumentAttributeRecord> attributes,
+      final AttributeValidationType validation, final AttributeValidationAccess validationAccess)
+      throws ValidationException {
 
     DynamodbRecordTx tx =
         getSaveDocumentAttributesTx(siteId, documentId, attributes, validation, validationAccess);
 
-    saveDocumentAttributes(siteId, tx);
+    saveDocumentAttributes(siteId, documentId, tx);
   }
 
-  private void saveDocumentAttributes(final String siteId, final DynamodbRecordTx tx) {
+  private void saveDocumentAttributes(final String siteId, final String documentId,
+      final DynamodbRecordTx tx) {
 
     if (tx != null) {
-      // save document attributes
-      this.dbService.putItems(tx.getSaves().stream().map(k -> k.getAttributes(siteId)).toList());
 
-      // delete old composite keys
-      deleteDocumentAttributes(siteId, (Collection<DocumentAttributeRecord>) tx.getDeletes());
+      List<Map<String, AttributeValue>> list =
+          tx.getSaves().stream().map(k -> k.getAttributes(siteId)).toList();
+
+      WriteRequestBuilder builder = new WriteRequestBuilder();
+      builder.appends(this.documentTableName, list);
+
+      SaveDocumentOptions options = new SaveDocumentOptions();
+      addDocumentSyncRecord(builder, siteId, documentId, true, new Date(), options);
+
+      if (builder.batchWriteItem(this.dbClient)) {
+        // delete old composite keys
+        deleteDocumentAttributes(siteId, (Collection<DocumentAttributeRecord>) tx.getDeletes());
+      }
     }
   }
 
   private DynamodbRecordTx getSaveDocumentAttributesTx(final String siteId, final String documentId,
-      final Collection<DocumentAttributeRecord> newAttributes, final AttributeValidation validation,
-      final AttributeValidationAccess validationAccess) throws ValidationException {
+      final Collection<DocumentAttributeRecord> newAttributes,
+      final AttributeValidationType validation, final AttributeValidationAccess validationAccess)
+      throws ValidationException {
 
     DynamodbRecordTx tx;
 
@@ -1964,23 +2045,18 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     return tx;
   }
 
-  /**
-   * Filter out Composite Keys and any previous attributes that match new attributes.
-   * 
-   * @param newAttributes {@link Collection} {@link DocumentAttributeRecord}
-   * @param previousAttributes {@link Collection} {@link DocumentAttributeRecord}
-   * @return {@link Collection} {@link DocumentAttributeRecord}
-   */
-  private Collection<DocumentAttributeRecord> filterAttributesByPrevious(
-      final Collection<DocumentAttributeRecord> newAttributes,
-      final Collection<DocumentAttributeRecord> previousAttributes) {
+  private void addDocumentSyncRecord(final WriteRequestBuilder writeBuilder, final String siteId,
+      final String documentId, final boolean documentExists, final Date now,
+      final SaveDocumentOptions options) {
 
-    Set<String> attributeKeys = previousAttributes.stream().map(DocumentAttributeRecord::getKey)
-        .collect(Collectors.toSet());
-    Set<String> keys = createAttributeKeys(previousAttributes);
+    if (!options.isSkipDocumentEventBridge()) {
+      DocumentSyncType syncType = DocumentSyncType.METADATA;
+      DocumentSyncRecord a =
+          new DocumentSyncRecordBuilder().buildEventBridge(documentId, syncType, documentExists);
+      a.setInsertedDate(now);
 
-    return newAttributes.stream().filter(a -> !attributeKeys.contains(a.getKey())
-        || isDocumentAttributeKeyMatchPredicate(a, attributeKeys, keys)).toList();
+      writeBuilder.appends(this.documentSyncsTable, List.of(a.getAttributes(siteId)));
+    }
   }
 
   private Collection<DocumentAttributeRecord> getCompositeKeysToBeDeletedByAttributes(
@@ -2278,6 +2354,17 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
     Map<String, AttributeValue> keys = keysDocument(siteId, documentId);
     this.dbService.updateValues(keys.get(PK), keys.get(SK), attributes);
+
+    DocumentSyncRecord a = new DocumentSyncRecordBuilder().buildEventBridge(documentId,
+        DocumentSyncType.CONTENT, false);
+
+    saveDocumentSyncRecord(siteId, a);
+  }
+
+  private void saveDocumentSyncRecord(final String siteId, final DocumentSyncRecord a) {
+    WriteRequestBuilder writeBuilder =
+        new WriteRequestBuilder().append(this.documentSyncsTable, a.getAttributes(siteId));
+    writeBuilder.batchWriteItem(this.dbClient);
   }
 
   private void updatePathFromDeepLink(final DocumentItem item) {
@@ -2316,8 +2403,24 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
           .error("invalid Path contains multiple '//' characters"));
     }
 
+    validateDimension("width", document.getWidth(), errors);
+    validateDimension("height", document.getHeight(), errors);
+
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
+    }
+  }
+
+  private void validateDimension(final String key, final String dimension,
+      final Collection<ValidationError> errors) {
+    if (!isEmpty(dimension)) {
+
+      if (!"auto".equals(dimension)) {
+        if (!com.formkiq.strings.Strings.isNumeric(dimension)) {
+          errors.add(new ValidationErrorImpl().key(key)
+              .error("invalid '" + key + "' must be numeric or 'auto'"));
+        }
+      }
     }
   }
 
@@ -2334,11 +2437,11 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       final Collection<DocumentAttributeRecord> documentAttributes,
       final Collection<DocumentAttributeRecord> toBeDeleted,
       final List<DocumentAttributeRecord> previousDocumentAttributes,
-      final AttributeValidation validation, final AttributeValidationAccess validationAccess)
-      throws ValidationException {
+      final AttributeValidation validation) throws ValidationException {
 
     Collection<ValidationError> errors = new ArrayList<>();
 
+    AttributeValidationAccess validationAccess = validation.getValidationAccess();
     validateDocumentAttributes(siteId, documentId, documentAttributes, validationAccess, errors);
 
     if (errors.isEmpty()) {
@@ -2348,6 +2451,8 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       Map<String, AttributeRecord> attributeRecordMap =
           this.attributeValidator.getAttributeRecordMap(siteId, concat);
 
+      updateDocumentAttributeFromAttributes(documentAttributes, attributeRecordMap);
+
       Set<String> toBeAddedKeys = documentAttributes.stream().map(DocumentAttributeRecord::getKey)
           .collect(Collectors.toSet());
       List<String> toBeDeletedKeys = toBeDeleted.stream().map(DocumentAttributeRecord::getKey)
@@ -2356,7 +2461,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
           attributeRecordMap, validationAccess);
 
       if (errors.isEmpty()) {
-        switch (validation) {
+        switch (validation.getValidationType()) {
           case FULL -> errors = this.attributeValidator.validateFullAttribute(schemaAttributes,
               siteId, documentId, documentAttributes, attributeRecordMap, validationAccess);
           case PARTIAL ->
@@ -2374,6 +2479,23 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }
+  }
+
+  /**
+   * Update Document Attributes from Attribute {@link Map}.
+   * 
+   * @param documentAttributes {@link Collection} {@link DocumentAttributeRecord}
+   * @param attributeMap {@link Map}
+   */
+  private void updateDocumentAttributeFromAttributes(
+      final Collection<DocumentAttributeRecord> documentAttributes,
+      final Map<String, AttributeRecord> attributeMap) {
+    documentAttributes.forEach(attribute -> {
+      AttributeRecord ar = attributeMap.get(attribute.getKey());
+      if (ar != null && AttributeDataType.WATERMARK.equals(ar.getDataType())) {
+        attribute.setValueType(DocumentAttributeValueType.WATERMARK);
+      }
+    });
   }
 
   /**

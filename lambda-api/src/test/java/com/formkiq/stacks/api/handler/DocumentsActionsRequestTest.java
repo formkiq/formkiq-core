@@ -472,14 +472,16 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       setBearerToken(siteId);
 
       // when
-      AddDocumentActionsResponse response =
-          this.documentActionsApi.addDocumentActions(documentId, siteId, req);
-
-      // then
-      assertEquals("Actions saved", response.getMessage());
-      List<Action> actions = this.service.getActions(siteId, documentId);
-      assertEquals(1, actions.size());
-      assertEquals(ActionType.QUEUE, actions.get(0).type());
+      try {
+        this.documentActionsApi.addDocumentActions(documentId, siteId, req);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"type\"," + "\"error\":\"action type cannot be 'QUEUE'\"}]}",
+            e.getResponseBody());
+      }
     }
   }
 

@@ -23,18 +23,60 @@
  */
 package com.formkiq.stacks.api.transformers;
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
+
+import com.formkiq.aws.dynamodb.DynamodbRecordToMap;
+import com.formkiq.stacks.dynamodb.attributes.AttributeDataType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
+import com.formkiq.stacks.dynamodb.attributes.Watermark;
+import com.formkiq.stacks.dynamodb.attributes.WatermarkPosition;
 
 /**
  * {@link Function} transform {@link AttributeRecord} to {@link Map}.
  */
 public class AttributeRecordToMap implements Function<AttributeRecord, Map<String, Object>> {
 
+  /** {@link DynamodbRecordToMap}. */
+  private final DynamodbRecordToMap toMap = new DynamodbRecordToMap(List.of("documentId"));
+
   @Override
   public Map<String, Object> apply(final AttributeRecord a) {
-    return Map.of("key", a.getKey(), "type", a.getType().name(), "dataType",
-        a.getDataType().name());
+
+    Map<String, Object> attr = new HashMap<>(toMap.apply(a));
+
+    Set<Map.Entry<String, Object>> keys = attr.entrySet();
+    keys.removeIf(e -> e.getKey().startsWith("watermark"));
+
+    Watermark watermark = new Watermark();
+    watermark.setScale(a.getWatermarkScale());
+    watermark.setRotation(a.getWatermarkRotation());
+    watermark.setText(a.getWatermarkText());
+    watermark.setImageDocumentId(a.getWatermarkImageDocumentId());
+
+    boolean addWatermark = hasWatermark(a);
+
+    if (addWatermark) {
+      WatermarkPosition pos = new WatermarkPosition();
+      pos.setxAnchor(a.getWatermarkxAnchor());
+      pos.setyAnchor(a.getWatermarkyAnchor());
+      pos.setxOffset(a.getWatermarkxOffset());
+      pos.setyOffset(a.getWatermarkyOffset());
+
+      watermark.setPosition(pos);
+    }
+
+    if (addWatermark) {
+      attr.put("watermark", watermark);
+    }
+
+    return attr;
+  }
+
+  private boolean hasWatermark(final AttributeRecord attribute) {
+    return AttributeDataType.WATERMARK.equals(attribute.getDataType());
   }
 }

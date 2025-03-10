@@ -36,7 +36,7 @@ test {
 }
 
 task buildTemplate {
-	inputs.files("src/main/resources/cloudformation/template.yaml", "src/main/resources/cloudformation/module-extra-core-ocr.yaml", "src/main/resources/cloudformation/api.yaml", "src/main/resources/cloudformation/api-iam.yaml", "src/main/resources/cloudformation/api-apikey.yaml", "src/main/resources/cloudformation/api-lambda.yaml")
+	inputs.files("src/main/resources/cloudformation/template.yaml", "src/main/resources/cloudformation/module-extra-core-ocr.yaml", "src/main/resources/cloudformation/api.yaml", "src/main/resources/cloudformation/api-iam.yaml", "src/main/resources/cloudformation/api-apikey.yaml", "src/main/resources/cloudformation/api-lambda.yaml", "src/main/resources/cloudformation/api-auth.yaml")
 	outputs.files("${buildDir}/distributions/api/template.yaml")
 	
 	def randomtext = ('0'..'z').shuffled().take(10).join();
@@ -68,7 +68,11 @@ task buildTemplate {
 		exec {
 			commandLine getCmd(), getCmdParam(), "ytt --data-value hash=${sha256} --data-value version=${project.version} -f src/main/resources/cloudformation/api-apikey.yaml -f src/main/resources/cloudformation/openapi-key.yaml > ${buildDir}/distributions/api/api-apikey.yaml"
 		}
-		
+
+		exec {
+			commandLine getCmd(), getCmdParam(), "ytt --data-value hash=${sha256} --data-value version=${project.version} -f src/main/resources/cloudformation/api-auth.yaml -f src/main/resources/cloudformation/openapi-auth.yaml > ${buildDir}/distributions/api/api-auth.yaml"
+		}
+
 		// build template
 		exec {
 			commandLine getCmd(), getCmdParam(), "ytt --data-value hash=${sha256} -f src/main/resources/cloudformation/template.yaml -f src/main/resources/cloudformation/module-extra-core-ocr.yaml  > ${buildDir}/distributions/api/template.yaml"
@@ -78,7 +82,7 @@ task buildTemplate {
 
 task downloadOpenApiGenerator(type: Download) {
 	dependsOn check
-    src "https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/7.8.0/openapi-generator-cli-7.8.0.jar"
+    src "https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/7.10.0/openapi-generator-cli-7.10.0.jar"
     dest buildDir
     overwrite false
 }
@@ -92,13 +96,13 @@ task assembleOpenApiTemplate {
 		def fileSpec = new File("${buildDir}/openapi-spec.yaml")
 		fileSpec.text = ["Resources:"].join(System.lineSeparator())
 		
-		for (fileName in ["openapi-jwt", "openapi-iam", "openapi-key"]) {
+		for (fileName in ["openapi-jwt", "openapi-iam", "openapi-key", "openapi-auth"]) {
 			exec {
 				commandLine getCmd(), getCmdParam(), "ytt --data-value version=${project.version} -f ${buildDir}/openapi-spec.yaml -f ${buildDir}/../src/main/resources/cloudformation/${fileName}.yaml > ${buildDir}/temp-${fileName}.yaml"
 			}
 		}
 
-		for (fileName in ["openapi-jwt", "openapi-iam", "openapi-key"]) {
+		for (fileName in ["openapi-jwt", "openapi-iam", "openapi-key", "openapi-auth"]) {
 		
 			def lines = new File("${buildDir}/temp-${fileName}.yaml").readLines()
 			for (int i = 0; i < 4; i++) {
@@ -117,7 +121,7 @@ task assembleOpenApiTemplate {
 			javaexec { 
     			main="-jar";
     			args = [
-            		"${buildDir}/openapi-generator-cli-7.8.0.jar",
+            		"${buildDir}/openapi-generator-cli-7.10.0.jar",
             		"generate",
             		"-i", "${buildDir}/../../docs/openapi/${fileName}.yaml",
             		"-g", "asciidoc", 

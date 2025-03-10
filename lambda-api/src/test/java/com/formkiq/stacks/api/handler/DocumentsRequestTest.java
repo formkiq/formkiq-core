@@ -26,12 +26,17 @@ package com.formkiq.stacks.api.handler;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
+import com.formkiq.client.model.AddAttributeSchemaOptional;
+import com.formkiq.client.model.DocumentSync;
+import com.formkiq.client.model.DocumentSyncStatus;
+import com.formkiq.client.model.DocumentSyncType;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.s3.S3ServiceExtension;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
+import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.invoker.ApiResponse;
 import com.formkiq.client.model.AddAction;
@@ -46,27 +51,24 @@ import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AddDocumentResponse;
 import com.formkiq.client.model.AddDocumentTag;
 import com.formkiq.client.model.AttributeSchemaCompositeKey;
-import com.formkiq.client.model.AttributeSchemaOptional;
 import com.formkiq.client.model.ChecksumType;
 import com.formkiq.client.model.ChildDocument;
 import com.formkiq.client.model.DocumentActionType;
 import com.formkiq.client.model.DocumentAttribute;
 import com.formkiq.client.model.DocumentMetadata;
+import com.formkiq.client.model.DocumentSyncService;
 import com.formkiq.client.model.DocumentTag;
 import com.formkiq.client.model.GetDocumentResponse;
-import com.formkiq.client.model.SchemaAttributes;
+import com.formkiq.client.model.SetSchemaAttributes;
 import com.formkiq.client.model.SetSitesSchemaRequest;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
-import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.LocalStackExtension;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.Arrays;
 import java.util.List;
@@ -74,6 +76,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import static com.formkiq.aws.dynamodb.model.DocumentSyncRecordBuilder.MESSAGE_ADDED_METADATA;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -83,8 +86,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /** Unit Tests for request POST /documents. */
-@ExtendWith(DynamoDbExtension.class)
-@ExtendWith(LocalStackExtension.class)
 public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
   /** Test Timeout. */
@@ -130,7 +131,25 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       assertEquals("application/pdf", site.getContentType());
       assertNotNull(site.getPath());
       assertNotNull(site.getDocumentId());
+
+      assertDocumentEventBridge(documentsApi, null, responseNoSiteId.getDocumentId());
+      assertDocumentEventBridge(documentsApi, siteId, responseSiteId.getDocumentId());
     }
+  }
+
+  private void assertDocumentEventBridge(final DocumentsApi documentsApi, final String siteId,
+      final String documentId) throws ApiException {
+    List<DocumentSync> syncs =
+        notNull(documentsApi.getDocumentSyncs(documentId, siteId, null, null).getSyncs());
+    assertEquals(1, syncs.size());
+    DocumentSync sync = syncs.get(0);
+    assertEquals(DocumentSyncService.EVENTBRIDGE, sync.getService());
+    assertNull(sync.getSyncDate());
+    assertNotNull(sync.getInsertedDate());
+    assertEquals(DocumentSyncType.METADATA, sync.getType());
+    assertEquals(MESSAGE_ADDED_METADATA, sync.getMessage());
+    assertEquals("joesmith", sync.getUserId());
+    assertEquals(DocumentSyncStatus.PENDING, sync.getStatus());
   }
 
   /**
@@ -177,6 +196,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
       // then
       String documentId = response.getDocumentId();
+      assertNull(response.getUploadUrl());
 
       GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
       assertEquals("https://google.com", document.getDeepLinkPath());
@@ -299,8 +319,8 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
             new AddAttributeRequest().attribute(new AddAttribute().key(attributeKey)), siteId);
       }
 
-      SetSitesSchemaRequest sitesSchema = new SetSitesSchemaRequest().name("test")
-          .attributes(new SchemaAttributes().addCompositeKeysItem(new AttributeSchemaCompositeKey()
+      SetSitesSchemaRequest sitesSchema = new SetSitesSchemaRequest().name("test").attributes(
+          new SetSchemaAttributes().addCompositeKeysItem(new AttributeSchemaCompositeKey()
               .attributeKeys(Arrays.asList(attributeKey0, attributeKey1))));
       this.schemasApi.setSitesSchema(siteId, sitesSchema);
 
@@ -347,7 +367,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
           new AddAttributeRequest().attribute(new AddAttribute().key(attributeKey)), siteId);
 
       SetSitesSchemaRequest sitesSchema = new SetSitesSchemaRequest().name("test")
-          .attributes(new SchemaAttributes().addOptionalItem(new AttributeSchemaOptional()
+          .attributes(new SetSchemaAttributes().addOptionalItem(new AddAttributeSchemaOptional()
               .attributeKey(attributeKey).addAllowedValuesItem("abc")));
       this.schemasApi.setSitesSchema(siteId, sitesSchema);
 
@@ -809,6 +829,34 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * Save document with invalid width / auto height.
+   *
+   */
+  @Test
+  public void testPost21() {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      AddDocumentRequest req = new AddDocumentRequest().content("test").width("asd").height("auto");
+
+      // when
+      try {
+        this.documentsApi.addDocument(req, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"width\","
+                + "\"error\":\"invalid 'width' must be numeric or 'auto'\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
    * Test Publish no published document.
    * 
    * @throws ApiException ApiException
@@ -879,7 +927,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       // then
       assertEquals(ApiResponseStatus.SC_OK.getStatusCode(), response.getStatusCode());
 
-      assertEquals("attachment; filename=\"" + path + "\"",
+      assertEquals("attachment; filename*=UTF-8''" + path,
           String.join(",", response.getHeaders().get("content-disposition")));
       assertEquals("text/plain", String.join(",", response.getHeaders().get("content-type")));
 

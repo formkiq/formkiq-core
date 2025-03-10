@@ -145,6 +145,16 @@ public class ApiGatewayRequestEvent {
   }
 
   /**
+   * Get Header Value.
+   *
+   * @param key {@link String}
+   * @return String
+   */
+  public String getHeaderValue(final String key) {
+    return this.headers != null ? this.headers.get(key) : null;
+  }
+
+  /**
    * Get Query Parameter.
    * 
    * @param key {@link String}

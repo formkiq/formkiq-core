@@ -26,6 +26,7 @@ package com.formkiq.stacks.api.handler;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.formkiq.stacks.dynamodb.attributes.AttributeDataType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeType;
+import com.formkiq.stacks.dynamodb.attributes.Watermark;
 
 /**
  * Add Attribute Class.
@@ -39,12 +40,34 @@ public class AddAttribute {
   private String key;
   /** Type of Attribute. */
   private AttributeType type;
+  /** Watermark. */
+  private Watermark watermark;
 
   /**
    * constructor.
    */
   public AddAttribute() {
 
+  }
+
+  /**
+   * Get {@link Watermark}.
+   * 
+   * @return {@link Watermark}
+   */
+  public Watermark getWatermark() {
+    return this.watermark;
+  }
+
+  /**
+   * Set {@link Watermark}.
+   * 
+   * @param attributeWatermark {@link Watermark}
+   * @return AddAttribute
+   */
+  public AddAttribute setWatermark(final Watermark attributeWatermark) {
+    this.watermark = attributeWatermark;
+    return this;
   }
 
   /**

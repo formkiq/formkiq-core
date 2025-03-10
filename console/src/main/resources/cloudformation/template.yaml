@@ -4,6 +4,11 @@ Description: FormKiQ Core - Console
 
 Parameters:
 
+  WAFWebACLId:
+    Type: String
+    Default: ""
+    Description: (Optional) ARN of the AWS WAF WebACL to associate with the CloudFront distribution. Leave empty to disable.
+
   AdminEmail:
     Type: String
     Description: Administrator Email
@@ -17,13 +22,11 @@ Parameters:
   ConsoleVersion:
     Type: String
     Description: Version of FormKiQ console to deploy
-    Default: v3.7.3
+    Default: v3.8.1
 
   FormKiQType:
     Description: The type of FormKiQ installation
-    Default: "core"
     Type: String
-    AllowedValues: ["core", "enterprise"]
 
   CertificateStackName:
     Type: String
@@ -36,6 +39,11 @@ Parameters:
     AllowedValues: ["true", "false"]
 
 Conditions:
+  HasWAF:
+    Fn::Not:
+      - Fn::Equals:
+          - Ref: WAFWebACLId
+          - ""
 
   HasCertificateStackName:
     Fn::Not:
@@ -71,9 +79,6 @@ Resources:
         - Key: AppEnvironment
           Value:
             Fn::Sub: "${AppEnvironment}"
-        - Key: StackName
-          Value:
-            Fn::Sub: "${AWS::StackName}"
 
   ConsoleVersionParameter:
     Type: AWS::SSM::Parameter
@@ -85,12 +90,9 @@ Resources:
       Value:
         Ref: ConsoleVersion
       Tags:
-        Application:
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment:
           Fn::Sub: "${AppEnvironment}"
-        StackName:
-          Fn::Sub: "${AWS::StackName}"
 
   ConsoleParameter:
     Type: AWS::SSM::Parameter
@@ -102,12 +104,9 @@ Resources:
       Value:
         Ref: Console
       Tags:
-        Application:
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment:
           Fn::Sub: "${AppEnvironment}"
-        StackName:
-          Fn::Sub: "${AWS::StackName}"
 
   ConsoleArnParameter:
     Type: AWS::SSM::Parameter
@@ -121,12 +120,9 @@ Resources:
         - Console
         - Arn
       Tags:
-        Application:
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment:
           Fn::Sub: "${AppEnvironment}"
-        StackName:
-          Fn::Sub: "${AWS::StackName}"
 
   ConsoleDomainNameParameter:
     Type: AWS::SSM::Parameter
@@ -142,12 +138,9 @@ Resources:
         - Console
         - DomainName
       Tags:
-        Application:
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment:
           Fn::Sub: "${AppEnvironment}"
-        StackName:
-          Fn::Sub: "${AWS::StackName}"
 
   ConsoleRegionalDomainNameParameter:
     Type: AWS::SSM::Parameter
@@ -161,12 +154,9 @@ Resources:
         - Console
         - RegionalDomainName
       Tags:
-        Application:
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment:
           Fn::Sub: "${AppEnvironment}"
-        StackName:
-          Fn::Sub: "${AWS::StackName}"
 
   CloudFrontDistribution:
     Type: AWS::CloudFront::Distribution
@@ -222,6 +212,11 @@ Resources:
             - Ref: "AWS::NoValue"
             - 'true'
         Enabled: true
+        WebACLId:
+          Fn::If:
+            - HasWAF
+            - Ref: WAFWebACLId
+            - Ref: AWS::NoValue
         HttpVersion: http2
         CustomErrorResponses:
         - ErrorCode: '403'
@@ -232,14 +227,10 @@ Resources:
           ResponseCode: '200'
       Tags:
         - Key: Application
-          Value:
-            Fn::Sub: "FormKiQ ${FormKiQType}"
+          Value: "FormKiQ"
         - Key: AppEnvironment
           Value:
             Fn::Sub: "${AppEnvironment}"
-        - Key: StackName
-          Value:
-            Fn::Sub: "${AWS::StackName}"
 
   ConsoleUrlParameter:
     Type: AWS::SSM::Parameter
@@ -266,12 +257,9 @@ Resources:
                 - CloudFrontDistribution
                 - DomainName
       Tags:
-        Application:
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment:
           Fn::Sub: "${AppEnvironment}"
-        StackName:
-          Fn::Sub: "${AWS::StackName}"
 
   CloudFrontOriginAccessIdentity:
     Condition: IsNotGovCloud

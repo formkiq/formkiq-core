@@ -51,9 +51,14 @@ public class AttributeAllowedValuesRequestHandler
 
     String siteId = authorization.getSiteId();
     String key = event.getPathParameters().get("key");
+    String classificationId = event.getPathParameter("classificationId");
+    String locale = event.getQueryStringParameter("locale");
 
     SchemaService schemaService = awsServices.getExtension(SchemaService.class);
-    List<String> allowedValues = notNull(fetchAllowedValues(schemaService, siteId, null, key));
+    List<String> allowedValues =
+        notNull(fetchAllowedValues(schemaService, siteId, classificationId, key));
+    Map<String, String> localization = schemaService.getAttributeAllowedValuesLocalization(siteId,
+        classificationId, key, allowedValues, locale);
 
     if (allowedValues.isEmpty()) {
       AttributeService service = awsServices.getExtension(AttributeService.class);
@@ -63,7 +68,8 @@ public class AttributeAllowedValuesRequestHandler
       }
     }
 
-    Map<String, Object> map = Map.of("allowedValues", allowedValues);
+    Map<String, Object> map =
+        Map.of("allowedValues", allowedValues, "localizedAllowedValues", localization);
     return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
   }
 

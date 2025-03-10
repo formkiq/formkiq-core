@@ -60,6 +60,16 @@ public interface AttributeService {
       AttributeType type, boolean allowReservedAttributeKey);
 
   /**
+   * Add Watermark Attribute.
+   *
+   * @param siteId {@link String}
+   * @param key {@link String}
+   * @param watermark {@link Watermark}
+   * @return {@link Collection} {@link ValidationError}
+   */
+  Collection<ValidationError> addWatermarkAttribute(String siteId, String key, Watermark watermark);
+
+  /**
    * Delete Attribute.
    * 
    * @param siteId {@link String}

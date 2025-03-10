@@ -55,6 +55,7 @@ public class SitesSchemaRequestHandler
       final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
 
     String siteId = authorization.getSiteId();
+
     SchemaService service = awsServices.getExtension(SchemaService.class);
     SitesSchemaRecord record = service.getSitesSchemaRecord(siteId);
 
@@ -64,6 +65,9 @@ public class SitesSchemaRequestHandler
 
     String json = record.getSchema();
     Schema schema = this.gson.fromJson(json, Schema.class);
+
+    String locale = event.getQueryStringParameter("locale");
+    service.updateLocalization(siteId, null, schema.getAttributes(), locale);
 
     Map<String, Object> map =
         Map.of("name", schema.getName(), "attributes", schema.getAttributes());

@@ -24,7 +24,12 @@
 package com.formkiq.stacks.lambda.s3.text;
 
 import com.formkiq.aws.dynamodb.objects.Strings;
+import com.formkiq.strings.StringFormatter;
+import com.formkiq.strings.lexer.Token;
+import com.formkiq.strings.lexer.TokenGenerator;
 
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -37,18 +42,18 @@ public class IdpTextMatcher implements TextMatcher {
 
   @Override
   public TextMatch findMatch(final String text, final List<String> matches,
-      final TokenGenerator tokenGenerator, final TextMatchAlgorithm matchAlgorithm) {
+      final TokenGenerator tokenGenerator, final TextMatchAlgorithm matchAlgorithm,
+      final String splitRegex, final StringFormatter formatter) {
 
     TextMatch bestMatch = null;
     List<Token> tokens = tokenGenerator.generateTokens(text);
 
     for (String m : matches) {
 
-      String match = tokenGenerator.formatText(m);
-      String splitRegex = tokenGenerator.getSplitRegex();
+      String match = formatter.format(m);
       int groupSize = splitRegex != null ? match.split(splitRegex).length : 1;
 
-      List<Token> groupTokens = tokenGenerator.groupTokens(tokens, groupSize);
+      List<Token> groupTokens = groupTokens(tokens, groupSize);
 
       List<TextMatch> textMatches = matchAlgorithm.findMatches(groupTokens, match);
       Optional<TextMatch> o = textMatches.stream().max(new TextMatchScoreComparator());
@@ -61,6 +66,53 @@ public class IdpTextMatcher implements TextMatcher {
     }
 
     return bestMatch;
+  }
+
+  /**
+   * Group Tokens to a certain size.
+   *
+   * @param tokens {@link List} {@link Token}
+   * @param tokenGroupSize int
+   * @return {@link List} {@link Token}
+   */
+  private List<Token> groupTokens(final List<Token> tokens, final int tokenGroupSize) {
+
+    List<Token> groupedTokens = tokenGroupSize > 1 ? new ArrayList<>() : new ArrayList<>(tokens);
+
+    if (tokenGroupSize > 1) {
+
+      Iterator<Token> itr = tokens.iterator();
+
+      for (int i = 0; i < tokenGroupSize - 1; i++) {
+
+        if (itr.hasNext()) {
+          Token token = itr.next();
+          groupedTokens.add(createToken(token));
+        }
+      }
+
+      while (itr.hasNext()) {
+
+        Token token = itr.next();
+        groupedTokens.add(createToken(token));
+
+        int size = groupedTokens.size();
+
+        for (int i = 1; i < tokenGroupSize; i++) {
+          Token groupedToken = groupedTokens.get(size - 1 - i);
+          groupedToken.setOriginal(groupedToken.getOriginal() + " " + token.getOriginal());
+          groupedToken.setFormatted(groupedToken.getFormatted() + " " + token.getFormatted());
+          groupedToken.setEnd(token.getEnd());
+        }
+      }
+    }
+
+    return groupedTokens;
+  }
+
+  private Token createToken(final Token token) {
+    return new Token().setOriginal(token.getOriginal()).setFormatted(token.getFormatted())
+        .setStart(token.getStart()).setEnd(token.getEnd());
   }
 
   @Override

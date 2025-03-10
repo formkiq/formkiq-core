@@ -23,22 +23,22 @@
  */
 package com.formkiq.stacks.dynamodb;
 
+import static com.formkiq.aws.dynamodb.model.DocumentSyncServiceType.EVENTBRIDGE;
 import static com.formkiq.aws.dynamodb.model.DocumentSyncServiceType.TYPESENSE;
-import static com.formkiq.stacks.dynamodb.DocumentSyncService.MESSAGE_ADDED_METADATA;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENT_SYNCS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.net.URISyntaxException;
 import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
 
+import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.model.DocumentSyncRecord;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.PaginationResults;
-import com.formkiq.aws.dynamodb.model.DocumentSync;
 import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
 import com.formkiq.aws.dynamodb.model.DocumentSyncType;
 import com.formkiq.testutils.aws.DynamoDbExtension;
@@ -64,13 +64,12 @@ public class DocumentSyncServiceDynamoDbTest {
 
   /**
    * Get Document Syncs.
-   * 
-   * @throws Exception Exception
+   *
    */
   @Test
-  public void testGetSyncs01() throws Exception {
+  public void testGetSyncs01() {
     // given
-    String userId = "joe";
+    ApiAuthorization.login(new ApiAuthorization().username("joe"));
 
     String documentId = ID.uuid();
 
@@ -78,13 +77,13 @@ public class DocumentSyncServiceDynamoDbTest {
 
       // when
       syncService.saveSync(siteId, documentId, TYPESENSE, DocumentSyncStatus.FAILED,
-          DocumentSyncType.METADATA, userId, MESSAGE_ADDED_METADATA);
-      TimeUnit.SECONDS.sleep(1);
+          DocumentSyncType.METADATA, false);
       syncService.saveSync(siteId, documentId, TYPESENSE, DocumentSyncStatus.COMPLETE,
-          DocumentSyncType.METADATA, userId, MESSAGE_ADDED_METADATA);
+          DocumentSyncType.METADATA, false);
 
       // then
-      PaginationResults<DocumentSync> results = syncService.getSyncs(siteId, documentId, null, 1);
+      PaginationResults<DocumentSyncRecord> results =
+          syncService.getSyncs(siteId, documentId, null, 1);
       assertEquals(1, results.getResults().size());
 
       assertEquals(documentId, results.getResults().get(0).getDocumentId());
@@ -98,6 +97,35 @@ public class DocumentSyncServiceDynamoDbTest {
       assertEquals(documentId, results.getResults().get(0).getDocumentId());
       assertEquals(TYPESENSE, results.getResults().get(0).getService());
       assertEquals(DocumentSyncStatus.FAILED, results.getResults().get(0).getStatus());
+      assertNotNull(results.getResults().get(0).getSyncDate());
+    }
+  }
+
+  /**
+   * Get Document Syncs.
+   *
+   */
+  @Test
+  public void testGetSyncs02() {
+    // given
+    ApiAuthorization.login(new ApiAuthorization().username("joe"));
+
+    String documentId = ID.uuid();
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      // when
+      syncService.saveSync(siteId, documentId, EVENTBRIDGE, DocumentSyncStatus.COMPLETE,
+          DocumentSyncType.METADATA, true);
+
+      // then
+      PaginationResults<DocumentSyncRecord> results =
+          syncService.getSyncs(siteId, documentId, null, 1);
+      assertEquals(1, results.getResults().size());
+
+      assertEquals(documentId, results.getResults().get(0).getDocumentId());
+      assertEquals(EVENTBRIDGE, results.getResults().get(0).getService());
+      assertEquals(DocumentSyncStatus.COMPLETE, results.getResults().get(0).getStatus());
       assertNotNull(results.getResults().get(0).getSyncDate());
     }
   }

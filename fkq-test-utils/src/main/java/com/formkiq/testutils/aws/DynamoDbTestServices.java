@@ -44,7 +44,7 @@ public final class DynamoDbTestServices {
   /** Aws Region. */
   private static final Region AWS_REGION = Region.US_EAST_1;
   /** Dynamodb Image Name. */
-  private static final String DYNAMODB_IMAGE_NAME = "amazon/dynamodb-local:2.5.2";
+  private static final String DYNAMODB_IMAGE_NAME = "amazon/dynamodb-local:2.5.4";
   /** {@link DynamoDbConnectionBuilder}. */
   private static DynamoDbConnectionBuilder dbConnection;
   /** {@link DynamoDbHelper}. */

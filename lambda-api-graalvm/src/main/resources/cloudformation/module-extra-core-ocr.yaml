@@ -30,14 +30,10 @@ Resources:
         RestrictPublicBuckets: true
       Tags:
         - Key: "Application"
-          Value: 
-            Fn::Sub: "FormKiQ ${FormKiQType}"
+          Value: "FormKiQ"
         - Key: "AppEnvironment"
           Value: 
             Fn::Sub: "${AppEnvironment}"
-        - Key: "StackName"
-          Value: 
-            Fn::Sub: "${AWS::StackName}"
             
   #@overlay/match missing_ok=True
   OcrBucketParameter:
@@ -50,12 +46,9 @@ Resources:
       Value:   
         Ref: OcrBucket
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
 
   #@overlay/match missing_ok=True
   OcrQueue:
@@ -69,14 +62,10 @@ Resources:
           Fn::Sub: '{{resolve:ssm:/formkiq/${AppEnvironment}/sqs/DocumentsDeadLetterQueueArn}}'
       Tags:
         - Key: "Application"
-          Value: 
-            Fn::Sub: "FormKiQ ${FormKiQType}"
+          Value: "FormKiQ"
         - Key: "AppEnvironment"
           Value: 
             Fn::Sub: "${AppEnvironment}"
-        - Key: "StackName"
-          Value: 
-            Fn::Sub: "${AWS::StackName}"
 
   #@overlay/match missing_ok=True
   OcrQueuePolicy:
@@ -111,12 +100,9 @@ Resources:
       Value: 
         Ref: OcrQueue
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
           
   #@overlay/match missing_ok=True
   OcrQueueUrlParameter:
@@ -131,12 +117,9 @@ Resources:
         - OcrQueue
         - QueueUrl
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
           
   #@overlay/match missing_ok=True
   OcrQueueArnParameter:
@@ -151,12 +134,9 @@ Resources:
         - OcrQueue
         - Arn
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
           
 Outputs:
   #@overlay/match missing_ok=True

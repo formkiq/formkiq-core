@@ -23,9 +23,12 @@
  */
 package com.formkiq.aws.eventbridge;
 
+import com.formkiq.module.lambdaservices.logger.Logger;
 import software.amazon.awssdk.services.eventbridge.EventBridgeClient;
 import software.amazon.awssdk.services.eventbridge.model.CreateEventBusRequest;
 import software.amazon.awssdk.services.eventbridge.model.CreateEventBusResponse;
+import software.amazon.awssdk.services.eventbridge.model.DeleteEventBusRequest;
+import software.amazon.awssdk.services.eventbridge.model.DeleteEventBusResponse;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequest;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsResponse;
@@ -40,15 +43,20 @@ public class EventBridgeServiceImpl implements EventBridgeService {
 
   /** {@link EventBridgeClient}. */
   private final EventBridgeClient client;
+  /** {@link Logger}. */
+  private final Logger log;
 
   /**
    * constructor.
    * 
    * @param connection {@link EventBridgeConnectionBuilder}
+   * @param logger {@link Logger}
    * 
    */
-  public EventBridgeServiceImpl(final EventBridgeConnectionBuilder connection) {
+  public EventBridgeServiceImpl(final Logger logger,
+      final EventBridgeConnectionBuilder connection) {
     this.client = connection.build();
+    this.log = logger;
   }
 
   @Override
@@ -57,15 +65,35 @@ public class EventBridgeServiceImpl implements EventBridgeService {
     return client.createEventBus(req);
   }
 
+  public DeleteEventBusResponse deleteEventBus(final String eventBusName) {
+    DeleteEventBusRequest req = DeleteEventBusRequest.builder().name(eventBusName).build();
+    return client.deleteEventBus(req);
+  }
+
   @Override
   public PutEventsResponse putEvents(final String eventBusName, final String detailType,
       final String detail, final String source) {
+
+    if (eventBusName == null) {
+      throw new IllegalStateException("'eventBusName' cannot be null");
+    }
+
+    String s = String.format(
+        "{\"type\",\"%s\",\"eventBusName\":\"%s\","
+            + "\"detailType\":\"%s\",\"source\":\"%s\",\"detail\":\"%s\"}",
+        "eventBridge", eventBusName, detailType, source, detail);
+    this.log.debug(s);
 
     PutEventsRequestEntry requestEntry = PutEventsRequestEntry.builder().eventBusName(eventBusName)
         .detailType(detailType).source(source).detail(detail).build();
 
     PutEventsRequest request = PutEventsRequest.builder().entries(requestEntry).build();
     return client.putEvents(request);
+  }
+
+  @Override
+  public PutEventsResponse putEvents(final String eventBusName, final EventBridgeMessage msg) {
+    return putEvents(eventBusName, msg.getDetailType(), msg.getDetail(), msg.getSource());
   }
 
   @Override

@@ -37,6 +37,7 @@ import com.formkiq.client.model.AddDocumentAttributeStandard;
 import com.formkiq.client.model.AddDocumentTag;
 import com.formkiq.client.model.AddDocumentTagsRequest;
 import com.formkiq.client.model.AddDocumentUploadRequest;
+import com.formkiq.client.model.AttributeDataType;
 import com.formkiq.client.model.AttributeValueType;
 import com.formkiq.client.model.DocumentSearch;
 import com.formkiq.client.model.DocumentSearchAttribute;
@@ -48,12 +49,14 @@ import com.formkiq.client.model.DocumentSearchRequest;
 import com.formkiq.client.model.DocumentSearchResponse;
 import com.formkiq.client.model.DocumentSearchTag;
 import com.formkiq.client.model.DocumentSearchTags;
+import com.formkiq.client.model.DocumentSyncService;
 import com.formkiq.client.model.DocumentSyncStatus;
 import com.formkiq.client.model.GetDocumentFulltextResponse;
 import com.formkiq.client.model.GetDocumentSyncResponse;
 import com.formkiq.client.model.SearchResponseFields;
 import com.formkiq.client.model.SearchResultDocument;
 import com.formkiq.client.model.SearchResultDocumentAttribute;
+import com.formkiq.client.model.Watermark;
 import com.formkiq.module.lambda.typesense.TypesenseProcessor;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.FolderIndexProcessor;
@@ -171,8 +174,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
 
     TypesenseProcessor processor = new TypesenseProcessor(awsServices);
 
-    HttpResponse<String> response =
-        processor.addOrUpdate(siteId, documentId, document, "joesmith", false);
+    HttpResponse<String> response = processor.addOrUpdate(siteId, documentId, document, false);
     if (response.statusCode() != ApiResponseStatus.SC_CREATED.getStatusCode()) {
       throw new IOException("status: " + response.statusCode() + " body: " + response.body());
     }
@@ -678,8 +680,11 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
     GetDocumentSyncResponse syncResponse =
         this.documentsApi.getDocumentSyncs(documentId, null, null, null);
     assertNotNull(syncResponse.getSyncs());
-    assertEquals(1, syncResponse.getSyncs().size());
+    assertEquals(2, syncResponse.getSyncs().size());
     assertEquals(DocumentSyncStatus.COMPLETE, syncResponse.getSyncs().get(0).getStatus());
+    assertEquals(DocumentSyncService.TYPESENSE, syncResponse.getSyncs().get(0).getService());
+    assertEquals(DocumentSyncStatus.PENDING, syncResponse.getSyncs().get(1).getStatus());
+    assertEquals(DocumentSyncService.EVENTBRIDGE, syncResponse.getSyncs().get(1).getService());
 
     GetDocumentFulltextResponse getResponse = null;
     while (getResponse == null) {
@@ -1170,7 +1175,8 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
       AddDocumentAttribute attr1 = new AddDocumentAttribute(
           new AddDocumentAttributeStandard().key("playerId").stringValue("12345"));
       AddDocumentUploadRequest uploadReq =
-          new AddDocumentUploadRequest().addAttributesItem(attr0).addAttributesItem(attr1);
+          new AddDocumentUploadRequest().addAttributesItem(attr0).addAttributesItem(attr1)
+              .deepLinkPath("https://www.example.com").width("100").height("200");
 
       String documentId0 =
           this.documentsApi.addDocumentUpload(uploadReq, siteId, null, null, null).getDocumentId();
@@ -1188,8 +1194,12 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
       // then
       List<SearchResultDocument> documents = notNull(response.getDocuments());
       assertEquals(1, documents.size());
-      assertEquals(documentId0, documents.get(0).getDocumentId());
-      Map<String, SearchResultDocumentAttribute> map = documents.get(0).getAttributes();
+      SearchResultDocument doc = documents.get(0);
+      assertEquals(documentId0, doc.getDocumentId());
+      assertEquals("https://www.example.com", doc.getDeepLinkPath());
+      assertEquals("100", doc.getWidth());
+      assertEquals("200", doc.getHeight());
+      Map<String, SearchResultDocumentAttribute> map = doc.getAttributes();
       assertNotNull(map);
       assertEquals(1, map.size());
       assertEquals("12345", String.join(",", notNull(map.get("playerId").getStringValues())));
@@ -1230,6 +1240,46 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
       // then
       assertEquals(1, documents.size());
       assertEquals("b", documents.get(0).getPath());
+    }
+  }
+
+  /**
+   * Add watermark attribute types.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleSearchRequest30() throws Exception {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      AddAttributeRequest req = new AddAttributeRequest().attribute(new AddAttribute().key("wm1")
+          .watermark(new Watermark().text("123")).dataType(AttributeDataType.WATERMARK));
+      this.attributesApi.addAttribute(req, siteId);
+
+      AddDocumentUploadRequest uploadReq = new AddDocumentUploadRequest();
+
+      AddDocumentAttribute attr0 =
+          new AddDocumentAttribute(new AddDocumentAttributeStandard().key("wm1"));
+      uploadReq.addAttributesItem(attr0);
+
+      this.documentsApi.addDocumentUpload(uploadReq, siteId, null, null, null);
+
+      DocumentSearchAttribute attributes = new DocumentSearchAttribute().key("wm1");
+
+      DocumentSearchRequest dsq =
+          new DocumentSearchRequest().query(new DocumentSearch().attribute(attributes))
+              .responseFields(new SearchResponseFields().addAttributesItem("wm1"));
+
+      // when
+      DocumentSearchResponse response =
+          this.searchApi.documentSearch(dsq, siteId, null, null, null);
+
+      // then
+      List<SearchResultDocument> documents = notNull(response.getDocuments());
+      assertEquals(1, documents.size());
     }
   }
 }

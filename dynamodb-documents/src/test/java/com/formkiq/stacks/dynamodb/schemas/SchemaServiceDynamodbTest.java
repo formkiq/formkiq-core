@@ -190,6 +190,61 @@ public class SchemaServiceDynamodbTest {
   }
 
   /**
+   * Set Sites Schema with min / max values.
+   */
+  @Test
+  public void testSetSitesSchema03() {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      addAttribute(siteId, "category");
+      SchemaAttributesRequired require0 = createCategoryRequired(List.of("A", "B"));
+      require0.minNumberOfValues(Double.valueOf("20"));
+      require0.maxNumberOfValues(Double.valueOf("2"));
+      SchemaAttributes schemaAttributes = new SchemaAttributes().required(List.of(require0));
+
+      // when
+      Collection<ValidationError> errors = setSitesSchema(siteId, schemaAttributes);
+
+      // then
+      assertEquals(1, errors.size());
+      assertEquals("minNumberOfValues cannot be more than maxNumberOfValues",
+          errors.iterator().next().error());
+    }
+  }
+
+  /**
+   * Set Sites Schema with min / max values.
+   */
+  @Test
+  public void testSetSitesSchema04() {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      addAttribute(siteId, "category");
+      SchemaAttributesRequired require0 = createCategoryRequired(List.of("A", "B"));
+      require0.minNumberOfValues(Double.valueOf("2"));
+      require0.maxNumberOfValues(Double.valueOf("2"));
+      SchemaAttributes schemaAttributes = new SchemaAttributes().required(List.of(require0));
+
+      // when
+      Collection<ValidationError> errors = setSitesSchema(siteId, schemaAttributes);
+
+      // then
+      assertEquals(0, errors.size());
+
+      // given
+      require0.maxNumberOfValues(Double.valueOf("-1"));
+
+      // when
+      errors = setSitesSchema(siteId, schemaAttributes);
+
+      // then
+      assertEquals(0, errors.size());
+    }
+  }
+
+  /**
    * Set Classification.
    */
   @Test

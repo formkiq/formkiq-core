@@ -29,6 +29,7 @@ import software.amazon.awssdk.services.sns.model.ConfirmSubscriptionRequest;
 import software.amazon.awssdk.services.sns.model.ConfirmSubscriptionResponse;
 import software.amazon.awssdk.services.sns.model.CreateTopicRequest;
 import software.amazon.awssdk.services.sns.model.CreateTopicResponse;
+import software.amazon.awssdk.services.sns.model.ListSubscriptionsResponse;
 import software.amazon.awssdk.services.sns.model.ListTopicsRequest;
 import software.amazon.awssdk.services.sns.model.ListTopicsResponse;
 import software.amazon.awssdk.services.sns.model.MessageAttributeValue;
@@ -46,7 +47,7 @@ import software.amazon.awssdk.services.sns.model.UnsubscribeResponse;
 public class SnsService {
 
   /** {@link SnsClient}. */
-  private SnsClient snsClient;
+  private final SnsClient snsClient;
 
   /**
    * constructor.
@@ -128,5 +129,13 @@ public class SnsService {
   public UnsubscribeResponse unsubscribe(final String subscriptionArn) {
     return this.snsClient
         .unsubscribe(UnsubscribeRequest.builder().subscriptionArn(subscriptionArn).build());
+  }
+
+  /**
+   * Unsubscribe all subscriptions.
+   */
+  public void unsubscribeAll() {
+    ListSubscriptionsResponse response = this.snsClient.listSubscriptions();
+    response.subscriptions().forEach(s -> unsubscribe(s.subscriptionArn()));
   }
 }

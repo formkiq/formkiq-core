@@ -1,0 +1,291 @@
+#@ load("@ytt:overlay", "overlay")
+#@ load("@ytt:data", "data")
+#@ load("@ytt:assert", "assert")
+#@overlay/match by=overlay.all
+---
+Resources:
+
+  AuthApi:
+    Properties:
+      #@overlay/match missing_ok=True
+      Body:
+        openapi: 3.0.0
+        info:
+          title:
+            Fn::Sub: "Authentication API - ${AppEnvironment}"
+          contact:
+            name: FormKiQ
+            url: https://formkiq.com
+            email: support@formkiq.com
+          x-logo:
+            url: https://docs.formkiq.com/docs/latest/_images/formkiq-logo.png
+            backgroundColor: "#FFFFFF"
+            altText: "FormKiQ Logo"
+          license:
+            name: Apache 2.0
+            url: https://www.apache.org/licenses/LICENSE-2.0.html
+          version: #@ data.values.version or assert.fail("missing version")
+          description: >
+            This API provides endpoints for user authentication including login, 
+            password change, and password reset functionality.
+        servers:
+          - url: http://localhost
+            description: Local development server
+        paths:
+          /login:
+            post:
+              summary: User Login
+              description: Authenticate a user with a username and password.
+              requestBody:
+                description: User credentials for login.
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      type: object
+                      required:
+                        - username
+                        - password
+                      properties:
+                        username:
+                          type: string
+                          example: "john_doe"
+                        password:
+                          type: string
+                          example: "secret123"
+              responses:
+                '200':
+                  description: Login successful. Returns authentication details similar to AWS Cognito.
+                  content:
+                    application/json:
+                      schema:
+                        type: object
+                        properties:
+                          ChallengeParameters:
+                            type: object
+                            description: "Empty object for challenge parameters."
+                            example: {}
+                          AuthenticationResult:
+                            type: object
+                            properties:
+                              AccessToken:
+                                type: string
+                                description: "JWT access token."
+                                example: "eyJraWQiOiJ0W..."
+                              ExpiresIn:
+                                type: integer
+                                description: "Time in seconds until the token expires."
+                                example: 86400
+                              TokenType:
+                                type: string
+                                description: "Type of token."
+                                example: "Bearer"
+                              RefreshToken:
+                                type: string
+                                description: "Refresh token for obtaining new access tokens."
+                                example: "eyJjdHkiO..."
+                              IdToken:
+                                type: string
+                                description: "JWT id token."
+                                example: "eyJraWQiOiI5YUpvb..."
+                        example:
+                          ChallengeParameters: {}
+                          AuthenticationResult:
+                            AccessToken: "eyJraWQiOiJ0W..."
+                            ExpiresIn: 86400
+                            TokenType: "Bearer"
+                            RefreshToken: "eyJjdHkiO..."
+                            IdToken: "eyJraWQiOiI5YUpvb..."
+                '401':
+                  description: Invalid credentials provided.
+                  content:
+                    application/json:
+                      schema:
+                        type: object
+                        properties:
+                          error:
+                            type: string
+                            example: "Invalid username or password."
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /changePassword:
+            post:
+              summary: Change Password
+              description: >
+                Change the password for an authenticated user. 
+                The user must provide the current (old) password and the new password.
+              security:
+                - ApiAuthorization: []
+              requestBody:
+                description: Current and new password details.
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      type: object
+                      required:
+                        - oldPassword
+                        - newPassword
+                      properties:
+                        oldPassword:
+                          type: string
+                          example: "oldSecret123"
+                        newPassword:
+                          type: string
+                          example: "newSecret456"
+              responses:
+                '200':
+                  description: Password changed successfully.
+                  content:
+                    application/json:
+                      schema:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+                            example: "Password updated successfully"
+                '400':
+                  description: Invalid input provided.
+                  content:
+                    application/json:
+                      schema:
+                        type: object
+                        properties:
+                          error:
+                            type: string
+                            example: "New password must meet the security requirements"
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+
+          /forgotPassword:
+            post:
+              summary: Forgot Password
+              description: >
+                Initiate the password reset process. The user provides their username 
+                and receives instructions to reset their password.
+              requestBody:
+                description: Username address of the user requesting password reset.
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      type: object
+                      required:
+                        - username
+                      properties:
+                        username:
+                          type: string
+              responses:
+                '200':
+                  description: Password reset instructions sent.
+                  content:
+                    application/json:
+                      schema:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+                            example: "Password reset sent"
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /forgotPasswordConfirm:
+            post:
+              summary: Confirm Forgot Password
+              description: >
+                Confirms the Forgot password reset process.
+              requestBody:
+                description: Username address of the user requesting password reset.
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      type: object
+                      required:
+                        - username
+                        - code
+                        - password
+                      properties:
+                        username:
+                          type: string
+                        code:
+                          type: string
+                        password:
+                          type: string
+              responses:
+                '200':
+                  description: Confirms Password reset.
+                  content:
+                    application/json:
+                      schema:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+                            example: "Password set"
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+
+          /confirmRegistration:
+            post:
+              summary: Confirm Registration
+              description: >
+                Confirm a new user's registration using a confirmation code. 
+                The request body must contain the user's username and the confirmation code.
+              requestBody:
+                description: Username and confirmation code for registration confirmation.
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      type: object
+                      required:
+                        - username
+                        - code
+                      properties:
+                        username:
+                          type: string
+                        code:
+                          type: string
+              responses:
+                '200':
+                  description: Registration confirmed successfully.
+                  content:
+                    application/json:
+                      schema:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+                            example: "User registration confirmed successfully"
+                          challengeName:
+                            type: string
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+        components:
+          securitySchemes:
+            ApiAuthorization:
+              type: oauth2
+              flows: {}
+              x-amazon-apigateway-authorizer:
+                type: jwt
+                jwtConfiguration:
+                  issuer:
+                    Fn::Sub: https://cognito-idp.${AWS::Region}.amazonaws.com/${CognitoUserPool}
+                  audience:
+                    - Fn::Sub: "${CognitoUserPoolClient}"
+                identitySource: "$request.header.Authorization"
+          x-amazon-apigateway-integrations:
+            lambdaApi200:
+              uri:
+                Fn::Sub: "arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations"
+              responses:
+                default:
+                  statusCode: "200"
+                  responseParameters:
+                    method.response.header.Access-Control-Allow-Methods: "'*'"
+                    method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+                    method.response.header.Access-Control-Allow-Origin: "'*'"
+              passthroughBehavior: "when_no_templates"
+              httpMethod: "POST"
+              type: "aws_proxy"
+              payloadFormatVersion: "1.0"

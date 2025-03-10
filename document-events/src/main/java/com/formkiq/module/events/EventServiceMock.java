@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 import com.formkiq.module.events.document.DocumentEvent;
 import com.formkiq.module.events.folder.FolderEvent;
+import com.formkiq.module.lambdaservices.logger.Logger;
 
 /**
  * Mock implementation of {@link EventService}.
@@ -66,13 +67,13 @@ public class EventServiceMock implements EventService {
   }
 
   @Override
-  public String publish(final DocumentEvent event) {
+  public String publish(final Logger logger, final DocumentEvent event) {
     this.documentEvents.add(event);
     return null;
   }
 
   @Override
-  public String publish(final FolderEvent event) {
+  public String publish(final Logger logger, final FolderEvent event) {
     this.folderEvents.add(event);
     return null;
   }

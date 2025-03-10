@@ -26,16 +26,10 @@ Parameters:
 
   FormKiQType:
     Description: The type of FormKiQ installation
-    Default: "core"
-    Type: String
-    AllowedValues: ["core", "enterprise"]
-
-  Partition:
-    Description: The partition in which the resource is located. A partition is a group of AWS Regions
     Type: String
 
   OcrQueueArn:
-    Description: The partition in which the resource is located. A partition is a group of AWS Regions
+    Description: The Ocr Queue Arn
     Type: String
 
   LogRetentionInDays:
@@ -145,10 +139,7 @@ Resources:
       Tags:
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
+        Application: "FormKiQ"
       Events:
         OcrSQSEvent:
           Type: SQS
@@ -167,12 +158,9 @@ Resources:
       Value:
         Ref: OcrProcessor
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
           
   OcrLambdaRolePolicy: 
     Type: "AWS::IAM::Policy"
@@ -197,7 +185,7 @@ Resources:
             Resource:
               Fn::Join:
               - ''
-              - - Fn::Sub: "arn:${Partition}:s3:::"
+              - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
                 - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket}}"
                 - "/*"
           - Effect: Allow
@@ -207,7 +195,7 @@ Resources:
             Resource:
               Fn::Join:
               - ''
-              - - Fn::Sub: "arn:${Partition}:s3:::"
+              - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
                 - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsStageS3Bucket}}"
                 - "/*"
           - Effect: Allow
@@ -216,7 +204,7 @@ Resources:
             Resource:
               Fn::Join:
               - ''
-              - - Fn::Sub: "arn:${Partition}:s3:::"
+              - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
                 - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/OcrBucket}}"
           - Effect: Allow
             Action:
@@ -225,7 +213,7 @@ Resources:
             Resource:
               Fn::Join:
               - ''
-              - - Fn::Sub: "arn:${Partition}:s3:::"
+              - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
                 - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/OcrBucket}}"
                 - "/*"
           - Effect: Allow
@@ -244,7 +232,7 @@ Resources:
             - dynamodb:BatchGetItem
             - dynamodb:BatchWriteItem
             Resource:
-            - Fn::Sub: "arn:${Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"
+            - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"
           - Effect: Allow
             Action:
             - sns:Publish
@@ -257,14 +245,10 @@ Resources:
     Properties:
       Tags:
         - Key: "Application"
-          Value: 
-            Fn::Sub: "FormKiQ ${FormKiQType}"        
+          Value: "FormKiQ"
         - Key: "AppEnvironment"
           Value: 
             Fn::Sub: "${AppEnvironment}"
-        - Key: "StackName"
-          Value: 
-            Fn::Sub: "${AWS::StackName}"
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -276,7 +260,7 @@ Resources:
           - sts:AssumeRole
       Path: /
       ManagedPolicyArns:
-      - Fn::Sub: "arn:${Partition}:iam::aws:policy/AWSXRayDaemonWriteAccess"
+      - Fn::Sub: "arn:${AWS::Partition}:iam::aws:policy/AWSXRayDaemonWriteAccess"
 
 Outputs:
   OcrProcessor:

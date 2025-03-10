@@ -31,9 +31,7 @@ Parameters:
 
   FormKiQType:
     Description: The type of FormKiQ installation
-    Default: "core"
     Type: String
-    AllowedValues: ["core", "enterprise"]
 
   TypesenseApiKey:
     Type: String
@@ -52,10 +50,6 @@ Parameters:
   ECSCluster:
     Type: String
     Description: Reference to the ECSCluster
-
-  Partition:
-    Description: The partition in which the resource is located. A partition is a group of AWS Regions
-    Type: String
 
   LogRetentionInDays:
     Type: Number
@@ -143,7 +137,7 @@ Resources:
     Properties:
       Handler: com.formkiq.module.lambda.typesense.TypesenseProcessor
       Description: Lambda function to add DynamoDB records to Typesense
-      Runtime: provided.al2
+      Runtime: provided.al2023
       Timeout: 
         Fn::Sub: "${LambdaTimeout}"
       MemorySize: 
@@ -193,10 +187,7 @@ Resources:
       Tags:
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
+        Application: "FormKiQ"
 
   TypesenseProcessorParameter:
     Type: AWS::SSM::Parameter
@@ -209,12 +200,9 @@ Resources:
       Value:
         Ref: TypesenseProcessor
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
 
   TypesenseApiEndpointParameter:
     Type: AWS::SSM::Parameter
@@ -229,12 +217,9 @@ Resources:
           - ApiGateway
           - ApiEndpoint
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
           
   TypesenseApiIdParameter:
     Type: AWS::SSM::Parameter
@@ -252,12 +237,9 @@ Resources:
           - ApiId
         - ""
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
           
   TypesenseLambdaRole:
     Type: AWS::IAM::Role
@@ -265,14 +247,10 @@ Resources:
     Properties:
       Tags:
         - Key: "Application"
-          Value: 
-            Fn::Sub: "FormKiQ ${FormKiQType}"        
+          Value: "FormKiQ"
         - Key: "AppEnvironment"
           Value: 
             Fn::Sub: "${AppEnvironment}"
-        - Key: "StackName"
-          Value: 
-            Fn::Sub: "${AWS::StackName}"
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -284,9 +262,9 @@ Resources:
           - sts:AssumeRole
       Path: /
       ManagedPolicyArns:
-      - Fn::Sub: "arn:${Partition}:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
-      - Fn::Sub: "arn:${Partition}:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess"
-      - Fn::Sub: "arn:${Partition}:iam::aws:policy/AWSXRayDaemonWriteAccess"
+      - Fn::Sub: "arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+      - Fn::Sub: "arn:${AWS::Partition}:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess"
+      - Fn::Sub: "arn:${AWS::Partition}:iam::aws:policy/AWSXRayDaemonWriteAccess"
       
   TypesenseLambdaRolePolicy: 
     Type: "AWS::IAM::Policy"
@@ -312,14 +290,14 @@ Resources:
             - dynamodb:GetShardIterator
             - dynamodb:ListStreams
             Resource: 
-            - Fn::Sub: "arn:${Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}/stream/*"
+            - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}/stream/*"
           - Effect: Allow
             Action:
             - dynamodb:PutItem
             - dynamodb:Query
             - dynamodb:DeleteItem
             Resource:
-            - Fn::Sub: "arn:${Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentSyncsTableName}}" 
+            - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentSyncsTableName}}" 
             
   TypesenseTableStream:
     Type: AWS::Lambda::EventSourceMapping
@@ -474,7 +452,7 @@ Resources:
             Principal:
               Service: [ecs-tasks.amazonaws.com]
       ManagedPolicyArns:
-        - Fn::Sub: "arn:${Partition}:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+        - Fn::Sub: "arn:${AWS::Partition}:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
       Policies:
         -
           PolicyName: 
@@ -499,6 +477,23 @@ Resources:
           Value: 
             Fn::Sub: "${AWS::StackName}-Typesense"
 
+  NfsSecurityGroup:
+    Condition: CreateResources
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security Group which allows NFS access
+      VpcId:
+        Fn::ImportValue:
+          Fn::Sub: '${VpcStackName}-Vpc'
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 2049
+          ToPort: 2049
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Application
+          Value: FormKiQ
+
   MountTargetResource1:
     Type: AWS::EFS::MountTarget
     Condition: CreateResources
@@ -509,8 +504,7 @@ Resources:
         Fn::ImportValue:
           Fn::Sub: '${VpcStackName}-PublicSubnet1'
       SecurityGroups:
-      - Fn::ImportValue:
-          Fn::Sub: '${VpcStackName}-NfsSecurityGroup'
+        - Ref: NfsSecurityGroup
 
   MountTargetResource2:
     Type: AWS::EFS::MountTarget
@@ -522,9 +516,8 @@ Resources:
         Fn::ImportValue:
           Fn::Sub: '${VpcStackName}-PublicSubnet2'
       SecurityGroups:
-      - Fn::ImportValue:
-          Fn::Sub: '${VpcStackName}-NfsSecurityGroup'
-          
+        - Ref: NfsSecurityGroup
+
   MountTargetResource3:
     Type: AWS::EFS::MountTarget
     Condition: CreateResources
@@ -535,9 +528,8 @@ Resources:
         Fn::ImportValue:
           Fn::Sub: '${VpcStackName}-PublicSubnet3'
       SecurityGroups:
-      - Fn::ImportValue:
-          Fn::Sub: '${VpcStackName}-NfsSecurityGroup'
-    
+        - Ref: NfsSecurityGroup
+
   ApiGateway:
     Type: AWS::ApiGatewayV2::Api
     Condition: CreateResources

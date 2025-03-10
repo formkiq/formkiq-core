@@ -23,12 +23,15 @@
  */
 package com.formkiq.module.lambdaservices.logger;
 
+import com.google.gson.Gson;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -39,6 +42,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class LoggerTest {
 
+  /** {@link Gson}. */
+  private static final Gson GSON = new Gson();
   /** {@link LoggerImpl}. */
   private LoggerImpl logger;
   /** {@link ByteArrayOutputStream}. */
@@ -69,13 +74,24 @@ public class LoggerTest {
   }
 
   @Test
-  public void testLogMessageInJsonFormat() {
+  public void testLogMessageInJsonFormat01() {
     // Log a message with INFO level
     String message = "This is a test message.";
     logger.log(LogLevel.INFO, message);
 
     // Verify the output
     String expectedOutput = "{\"level\":\"INFO\",\"message\":\"This is a test message.\"}\n";
+    assertEquals(expectedOutput, outputStream.toString(StandardCharsets.UTF_8));
+  }
+
+  @Test
+  public void testLogMessageInJsonFormat02() {
+    // Log a message with INFO level
+    String message = "This is a test" + System.lineSeparator() + "\tmessage.";
+    logger.log(LogLevel.INFO, message);
+
+    // Verify the output
+    String expectedOutput = "{\"level\":\"INFO\",\"message\":\"This is a test\\n\\tmessage.\"}\n";
     assertEquals(expectedOutput, outputStream.toString(StandardCharsets.UTF_8));
   }
 
@@ -96,15 +112,21 @@ public class LoggerTest {
   @Test
   public void testLogExceptionInJsonFormat() {
     // Log an exception with WARN level
-    Exception exception = new NullPointerException("Test exception");
+    Exception exception = new NullPointerException("Test \nexception");
     logger.log(LogLevel.ERROR, exception);
 
     // Verify the output contains JSON representation
     String output = outputStream.toString(StandardCharsets.UTF_8);
-    assertTrue(output.contains("\"level\":\"ERROR\""));
-    assertTrue(output.contains("\"type\":\"java.lang.NullPointerException\""));
-    assertTrue(output.contains("\"message\":\"Test exception\""));
-    assertTrue(output.contains("\"stackTrace\":"));
+    Map<String, Object> map = GSON.fromJson(output, Map.class);
+    assertEquals("ERROR", map.get("level"));
+    assertEquals("java.lang.NullPointerException", map.get("type"));
+    assertEquals("Test \nexception", map.get("message"));
+
+    final int expected = 85;
+    List<String> list = (List<String>) map.get("stackTrace");
+    assertEquals(expected, list.size());
+    assertEquals("com.formkiq.module.lambdaservices.logger.LoggerTest."
+        + "testLogExceptionInJsonFormat(LoggerTest.java:115)", list.get(0));
   }
 
   @Test

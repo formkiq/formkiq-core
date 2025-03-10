@@ -275,13 +275,16 @@ public class AwsServiceCache {
 
   /**
    * Registers an {@link AwsServiceExtension}.
-   * 
+   *
    * @param clazz {@link Class}
    * @param <T> Type of Class
    * @param extension {@link AwsServiceExtension}
+   * @return AwsServiceCache
    */
-  public <T> void register(final Class<T> clazz, final AwsServiceExtension<T> extension) {
+  public <T> AwsServiceCache register(final Class<T> clazz,
+      final AwsServiceExtension<T> extension) {
     register(clazz, extension, true);
+    return this;
   }
 
   /**

@@ -40,6 +40,8 @@ public enum AttributeDataType {
   STRING,
   /** Publication. */
   PUBLICATION,
+  /** Watermark. */
+  WATERMARK,
   /** Relationship. */
   RELATIONSHIP;
 }

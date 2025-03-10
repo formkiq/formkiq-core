@@ -213,15 +213,13 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
           switch (vt) {
             case BOOLEAN -> attributeFields.put((String) a.get("key"),
                 Map.of("valueType", a.get("valueType"), "booleanValue", a.get("booleanValue")));
-            case KEY_ONLY ->
-              attributeFields.put((String) a.get("key"), Map.of("valueType", a.get("valueType")));
             case NUMBER -> attributeFields.put((String) a.get("key"),
                 Map.of("valueType", a.get("valueType"), "numberValues", a.get("numberValues")));
             case STRING, COMPOSITE_STRING, RELATIONSHIPS, CLASSIFICATION, PUBLICATION ->
               attributeFields.put((String) a.get("key"),
                   Map.of("stringValues", a.get("stringValues"), "valueType", a.get("valueType")));
             default ->
-              throw new IllegalArgumentException("Unexpected value: " + a.get("valueType"));
+              attributeFields.put((String) a.get("key"), Map.of("valueType", a.get("valueType")));
           }
         });
 
@@ -1024,7 +1022,7 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
 
     PaginationResults<DynamicDocumentItem> ret;
 
-    if (projectionExpression == null || !"documentId".equals(projectionExpression)) {
+    if (!"documentId".equals(projectionExpression)) {
 
       List<DocumentItem> list = this.docService.findDocuments(siteId, documentIds);
 

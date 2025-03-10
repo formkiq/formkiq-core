@@ -38,7 +38,7 @@
 
 	<subpackage name="stacks">
 		<subpackage name="api">
-
+			<allow pkg="com.formkiq.strings" />
 			<allow pkg="com.formkiq.module.events" />
 			<allow pkg="com.amazonaws.services.lambda.runtime" />
 			<allow pkg="com.amazonaws.xray" />

@@ -1,0 +1,32 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: FormKiQ Event Messaging
+
+Parameters:
+
+  AppEnvironment:
+    Type: String
+    Description: Unique Application Environment Identifier, IE dev/staging/prod
+    AllowedPattern: ".+"
+
+Resources:
+
+  DocumentEventsBus:
+    Type: AWS::Events::EventBus
+    Properties:
+      Name:
+        Fn::Sub: "FormKiQ-DocumentEvents-${AppEnvironment}"
+      Description: "The EventBridge bus used to publish FormKiQ Document Events"
+      Tags:
+        - Key: "Application"
+          Value: "FormKiQ"
+        - Key: "AppEnvironment"
+          Value:
+            Fn::Sub: "${AppEnvironment}"
+
+Outputs:
+
+  DocumentEventsBus:
+    Description: Name EventBridge Event Bus
+    Value:
+      Ref: DocumentEventsBus

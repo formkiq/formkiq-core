@@ -37,12 +37,34 @@ public class SaveDocumentOptions {
   private String timeToLive;
   /** {@link AttributeValidationAccess}. */
   private AttributeValidationAccess validationAccess;
+  /** Whether to skip the Document Event Bridge. */
+  private boolean skipDocumentEventBridge;
 
   /**
    * constructor.
    */
   public SaveDocumentOptions() {
 
+  }
+
+  /**
+   * Whether to skip document event bridge.
+   * 
+   * @return boolean
+   */
+  public boolean isSkipDocumentEventBridge() {
+    return this.skipDocumentEventBridge;
+  }
+
+  /**
+   * Set Skip Document Event Bridge Event.
+   * 
+   * @param skip boolean
+   * @return SaveDocumentOptions
+   */
+  public SaveDocumentOptions setSkipDocumentEventBridge(final boolean skip) {
+    this.skipDocumentEventBridge = skip;
+    return this;
   }
 
   /**

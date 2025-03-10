@@ -71,6 +71,9 @@ import software.amazon.awssdk.utils.IoUtils;
  */
 public abstract class AbstractRestApiRequestHandler implements RequestStreamHandler {
 
+  /** Define the size limit in bytes (6 MB = 6 * 1024 * 1024 bytes). */
+  private static final long MAX_PAYLOAD_SIZE_MB = 6L * 1024 * 1024;
+
   /** {@link Gson}. */
   protected Gson gson = GsonUtil.getInstance();
 
@@ -641,11 +644,11 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
    *
    * @param awsservices {@link AwsServiceCache}
    * @param output {@link OutputStream}
-   * @param response {@link Object}
+   * @param response {@link Map}
    * @throws IOException IOException
    */
   protected void writeJson(final AwsServiceCache awsservices, final OutputStream output,
-      final Object response) throws IOException {
+      final Map<String, Object> response) throws IOException {
 
     String json = this.gson.toJson(response);
 
@@ -656,7 +659,27 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
     }
 
     OutputStreamWriter writer = new OutputStreamWriter(output, StandardCharsets.UTF_8);
+
+    if (isResponseTooLarge(json)) {
+
+      response.put("body", this.gson.toJson(Map.of("message", "Response exceeds allowed size")));
+      response.put("statusCode", SC_BAD_REQUEST.getStatusCode());
+      json = this.gson.toJson(response);
+    }
+
     writer.write(json);
+
     writer.close();
+  }
+
+  /**
+   * Determines if the size of the given string exceeds 6 MB.
+   *
+   * @param input The string to check.
+   * @return true if the string size is greater than 6 MB, false otherwise.
+   */
+  private boolean isResponseTooLarge(final String input) {
+    long sizeInBytes = input.getBytes(StandardCharsets.UTF_8).length;
+    return sizeInBytes > MAX_PAYLOAD_SIZE_MB;
   }
 }

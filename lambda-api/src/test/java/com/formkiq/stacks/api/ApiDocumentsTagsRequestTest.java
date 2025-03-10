@@ -42,6 +42,8 @@ import java.util.Map;
 import java.util.UUID;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.module.lambdaservices.logger.LoggerRecorder;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -78,6 +80,11 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
 
   /** {@link SimpleDateFormat} in ISO Standard format. */
   private final SimpleDateFormat df = DateUtil.getIsoDateFormatter();
+
+  @BeforeEach
+  public void beforeEach() {
+    getAwsServices().setLogger(new LoggerRecorder());
+  }
 
   /**
    * any method /document/{documentId}/tags request.

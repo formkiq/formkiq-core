@@ -24,9 +24,10 @@
 package com.formkiq.stacks.api;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
-import static com.formkiq.stacks.dynamodb.DocumentSyncService.MESSAGE_ADDED_METADATA;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -56,7 +57,7 @@ import com.formkiq.testutils.aws.LocalStackExtension;
 public class ApiDocumentSyncRequestHandlerTest extends AbstractRequestHandler {
 
   /** {@link JsonServiceGson}. */
-  private JsonServiceGson gson = new JsonServiceGson();
+  private final JsonServiceGson gson = new JsonServiceGson();
 
   /**
    * Get /esignature/docusign/config request.
@@ -66,12 +67,11 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractRequestHandler {
    * @return {@link ApiGatewayRequestEvent}
    */
   private ApiGatewayRequestEvent getRequest(final String siteId, final String documentId) {
-    ApiGatewayRequestEvent event = new ApiGatewayRequestEventBuilder().method("get")
+    return new ApiGatewayRequestEventBuilder().method("get")
         .resource("/documents/{documentId}/syncs").path("/documents/" + documentId + "/syncs")
         .group(siteId != null ? siteId : DEFAULT_SITE_ID).user("joesmith")
         .pathParameters(Map.of("documentId", documentId))
         .queryParameters(siteId != null ? Map.of("siteId", siteId) : null).build();
-    return event;
   }
 
   /**
@@ -79,7 +79,6 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocumentSyncs01() throws Exception {
 
@@ -96,10 +95,10 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractRequestHandler {
       service.saveDocument(siteId, item, null);
 
       syncService.saveSync(siteId, documentId, DocumentSyncServiceType.OPENSEARCH,
-          DocumentSyncStatus.COMPLETE, DocumentSyncType.METADATA, userId, MESSAGE_ADDED_METADATA);
+          DocumentSyncStatus.COMPLETE, DocumentSyncType.METADATA, false);
       TimeUnit.SECONDS.sleep(1);
       syncService.saveSync(siteId, documentId, DocumentSyncServiceType.TYPESENSE,
-          DocumentSyncStatus.FAILED, DocumentSyncType.METADATA, userId, MESSAGE_ADDED_METADATA);
+          DocumentSyncStatus.FAILED, DocumentSyncType.METADATA, false);
 
       ApiGatewayRequestEvent event = getRequest(siteId, documentId);
 
@@ -115,7 +114,9 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractRequestHandler {
 
       Map<String, Object> body = this.gson.fromJsonToMap(m.get("body"));
       List<Map<String, String>> list = (List<Map<String, String>>) body.get("syncs");
-      assertEquals(2, list.size());
+
+      final int expected = 3;
+      assertEquals(expected, list.size());
 
       assertEquals("TYPESENSE", list.get(0).get("service"));
       assertEquals("FAILED", list.get(0).get("status"));
@@ -126,6 +127,11 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractRequestHandler {
       assertEquals("COMPLETE", list.get(1).get("status"));
       assertEquals("METADATA", list.get(1).get("type"));
       assertNotNull(list.get(1).get("syncDate"));
+
+      assertEquals("EVENTBRIDGE", list.get(2).get("service"));
+      assertEquals("PENDING", list.get(2).get("status"));
+      assertEquals("METADATA", list.get(2).get("type"));
+      assertNull(list.get(2).get("syncDate"));
     }
   }
 }

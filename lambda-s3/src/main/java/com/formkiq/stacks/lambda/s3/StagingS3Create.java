@@ -32,6 +32,7 @@ import com.formkiq.aws.dynamodb.DynamoDbServiceExtension;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
+import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
 import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
@@ -224,7 +225,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
     AwsCredentials awsCredentials = awsServiceCache.getExtension(AwsCredentials.class);
     awsServiceCache.register(HttpService.class, new ClassServiceExtension<>(
-        new HttpServiceSigv4(awsServiceCache.region(), awsCredentials)));
+        new HttpServiceSigv4(awsServiceCache.region(), awsCredentials, "execute-api")));
     logger = awsServiceCache.getLogger();
   }
 
@@ -587,8 +588,10 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     final String tempFolder = "tempfiles/";
     if (objectCreated && key.startsWith(tempFolder)) {
 
-      if (Strings.getExtension(key).equals("json")) {
-        this.handleCompressionRequest(bucket, key);
+      if (key.startsWith("tempfiles/eventcallback/")) {
+        handleEventCallBack(key);
+      } else if (Strings.getExtension(key).equals("json")) {
+        handleCompressionRequest(bucket, key);
       } else {
         logger.trace(String.format("skipping event for key %s", key));
       }
@@ -604,6 +607,19 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     if (!objectCreated) {
       logger.trace("skipping event " + eventName);
     }
+  }
+
+  /**
+   * Handle Document Event Callback.
+   * 
+   * @param s3Key {@link String}
+   */
+  private void handleEventCallBack(final String s3Key) {
+    String key = s3Key.replace("tempfiles/eventcallback/", "");
+    String siteId = SiteIdKeyGenerator.getSiteId(key);
+    String documentId = SiteIdKeyGenerator.getDocumentId(key);
+
+    notificationService.publishNextActionEvent(siteId, documentId);
   }
 
   /**
@@ -734,10 +750,8 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     String agent = doc.getString("agent");
 
     if (DocumentSyncServiceType.FORMKIQ_CLI.name().equals(agent)) {
-      String message = existingDocument != null ? DocumentSyncService.MESSAGE_UPDATED_CONTENT
-          : DocumentSyncService.MESSAGE_ADDED_CONTENT;
       syncService.saveSync(siteId, doc.getDocumentId(), DocumentSyncServiceType.FORMKIQ_CLI,
-          DocumentSyncStatus.COMPLETE, DocumentSyncType.CONTENT, doc.getUserId(), message);
+          DocumentSyncStatus.COMPLETE, DocumentSyncType.CONTENT, existingDocument != null);
     }
   }
 

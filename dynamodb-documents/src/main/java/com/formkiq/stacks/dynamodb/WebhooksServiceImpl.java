@@ -40,15 +40,14 @@ import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.ID;
-import com.formkiq.aws.dynamodb.MapToAttributeValue;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.PaginationToAttributeValue;
 import com.formkiq.aws.dynamodb.QueryResponseToPagination;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
-import com.formkiq.stacks.dynamodb.base64.Base64ToMap;
 import com.formkiq.stacks.dynamodb.base64.Pagination;
+import com.formkiq.stacks.dynamodb.base64.StringToMapAttributeValue;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
@@ -226,8 +225,7 @@ public final class WebhooksServiceImpl implements WebhooksService, DbKeys {
 
     String expr = GSI1_PK + " = :pk";
 
-    Map<String, AttributeValue> startKey =
-        new MapToAttributeValue().apply(new Base64ToMap().apply(nextToken));
+    Map<String, AttributeValue> startKey = new StringToMapAttributeValue().apply(nextToken);
     QueryRequest q = QueryRequest.builder().tableName(this.documentTableName).indexName(GSI1)
         .keyConditionExpression(expr).expressionAttributeValues(key).exclusiveStartKey(startKey)
         .limit(limit).build();

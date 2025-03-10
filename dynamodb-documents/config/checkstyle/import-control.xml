@@ -35,7 +35,11 @@
 		<allow pkg="java.text" />
 		<allow pkg="java.time" />
 		<allow pkg="java.util" />
-		
+
+		<subpackage name="locale">
+			<allow pkg="com.formkiq.strings" />
+		</subpackage>
+
 		<subpackage name="query">
 			<allow pkg="software.amazon.awssdk.services.dynamodb" />
 			<allow pkg="java.io" />

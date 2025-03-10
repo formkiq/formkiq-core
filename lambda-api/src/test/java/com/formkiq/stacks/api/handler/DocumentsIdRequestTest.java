@@ -28,6 +28,7 @@ import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
@@ -42,18 +43,20 @@ import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.model.AddAttribute;
 import com.formkiq.client.model.AddAttributeRequest;
+import com.formkiq.client.model.AddAttributeSchemaOptional;
 import com.formkiq.client.model.AddDocumentAttribute;
 import com.formkiq.client.model.AddDocumentAttributeStandard;
 import com.formkiq.client.model.AttributeSchemaCompositeKey;
-import com.formkiq.client.model.AttributeSchemaOptional;
 import com.formkiq.client.model.ChecksumType;
 import com.formkiq.client.model.DocumentAction;
 import com.formkiq.client.model.DocumentAttribute;
 import com.formkiq.client.model.DocumentSearch;
 import com.formkiq.client.model.DocumentSearchMeta;
 import com.formkiq.client.model.DocumentSearchRequest;
-import com.formkiq.client.model.SchemaAttributes;
+import com.formkiq.client.model.DocumentSync;
+import com.formkiq.client.model.DocumentSyncType;
 import com.formkiq.client.model.SearchResultDocument;
+import com.formkiq.client.model.SetSchemaAttributes;
 import com.formkiq.client.model.SetSitesSchemaRequest;
 import com.formkiq.client.model.UpdateDocumentRequest;
 import com.formkiq.module.http.HttpHeaders;
@@ -275,17 +278,13 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       documents = getDocuments(siteId, 1);
       assertEquals(1, documents.size());
       assertEquals(path, documents.get(0).getPath());
-      expectSoftDeleteSqsMessage(siteId, documentId);
-    }
-  }
 
-  private void expectSoftDeleteSqsMessage(final String siteId, final String documentId)
-      throws InterruptedException {
-    Map<String, Object> message = getSqsMessages("softDelete", documentId);
-    assertEquals("softDelete", message.get("type"));
-    assertEquals(siteId != null ? siteId : DEFAULT_SITE_ID, message.get("siteId"));
-    assertEquals(documentId, message.get("documentId"));
-    assertEquals("joesmith", message.get("userId"));
+      List<DocumentSync> syncs =
+          notNull(this.documentsApi.getDocumentSyncs(documentId, siteId, null, null).getSyncs());
+      assertEquals(2, syncs.size());
+      assertEquals(DocumentSyncType.SOFT_DELETE, syncs.get(0).getType());
+      assertEquals(DocumentSyncType.METADATA, syncs.get(1).getType());
+    }
   }
 
   /**
@@ -414,6 +413,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       AddDocumentResponse response = this.documentsApi.addDocument(req, siteId, null);
 
       // then
+      assertNull(response.getUploadUrl());
       String documentId = response.getDocumentId();
       GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
       assertEquals("sample.pdf", document.getPath());
@@ -462,7 +462,8 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       setBearerToken(siteId);
 
-      AddDocumentRequest req = new AddDocumentRequest().contentType("text/plain").content(content0);
+      AddDocumentRequest req = new AddDocumentRequest().contentType("text/plain").content(content0)
+          .width("100").height("200");
 
       // when
       AddDocumentResponse response = this.documentsApi.addDocument(req, siteId, null);
@@ -472,8 +473,13 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       assertEquals(content0,
           this.documentsApi.getDocumentContent(documentId, siteId, null, null).getContent());
 
+      GetDocumentResponse doc = this.documentsApi.getDocument(documentId, siteId, null);
+      assertEquals("100", doc.getWidth());
+      assertEquals("200", doc.getHeight());
+
       // given
-      UpdateDocumentRequest updateReq = new UpdateDocumentRequest().content(content1);
+      UpdateDocumentRequest updateReq =
+          new UpdateDocumentRequest().content(content1).width("300").height("400");
 
       // when
       this.documentsApi.updateDocument(documentId, updateReq, siteId, null);
@@ -481,6 +487,10 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       // then
       assertEquals(content1,
           this.documentsApi.getDocumentContent(documentId, siteId, null, null).getContent());
+
+      doc = this.documentsApi.getDocument(documentId, siteId, null);
+      assertEquals("300", doc.getWidth());
+      assertEquals("400", doc.getHeight());
     }
   }
 
@@ -614,7 +624,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       addAttribute(siteId, attributeKey);
 
       SetSitesSchemaRequest sitesSchema = new SetSitesSchemaRequest().name("test")
-          .attributes(new SchemaAttributes().addOptionalItem(new AttributeSchemaOptional()
+          .attributes(new SetSchemaAttributes().addOptionalItem(new AddAttributeSchemaOptional()
               .attributeKey(attributeKey).addAllowedValuesItem("abc")));
       this.schemasApi.setSitesSchema(siteId, sitesSchema);
 
@@ -708,7 +718,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
         .attributeKeys(Arrays.asList("userId", attributeKey0, attributeKey1));
 
     SetSitesSchemaRequest sitesSchema =
-        new SetSitesSchemaRequest().name("test").attributes(new SchemaAttributes()
+        new SetSitesSchemaRequest().name("test").attributes(new SetSchemaAttributes()
             .compositeKeys(List.of(compositeKey0, compositeKey1, compositeKey2, compositeKey3)));
     this.schemasApi.setSitesSchema(siteId, sitesSchema);
   }
@@ -792,9 +802,11 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
               .addActionsItem(new AddAction().type(DocumentActionType.PDFEXPORT));
 
       // when
-      this.documentsApi.updateDocument(documentId, updateReq, siteId, null);
+      AddDocumentResponse updateResponse =
+          this.documentsApi.updateDocument(documentId, updateReq, siteId, null);
 
       // then
+      assertNull(updateResponse.getUploadUrl());
       Map<String, Object> message = getSqsMessages("actions", documentId);
       assertEquals(documentId, message.get("documentId"));
       assertEquals("actions", message.get("type"));
@@ -990,8 +1002,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       assertEquals(path, this.documentsApi.getDocument(doc0, siteId, null).getPath());
       assertNotEquals(path, this.documentsApi.getDocument(doc1, siteId, null).getPath());
 
-      List<SearchResultDocument> docs =
-          notNull(searchApi.documentSearch(sreq, siteId, null, null, null).getDocuments());
+      List<SearchResultDocument> docs = search(siteId, sreq);
       assertEquals(2, docs.size());
 
       // given
@@ -1003,9 +1014,62 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       // then
       assertNotEquals(path, this.documentsApi.getDocument(doc1, siteId, null).getPath());
 
-      docs = notNull(searchApi.documentSearch(sreq, siteId, null, null, null).getDocuments());
+      docs = search(siteId, sreq);
       assertEquals(2, docs.size());
     }
+  }
+
+  /**
+   * Update path to existing path different case.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  public void testUpdate13() throws Exception {
+    // given
+    String content = "test data";
+    String dir = "somepath";
+    String id = ID.uuid();
+    String path0 = dir + "/random" + id + ".txt";
+    String path1 = dir + "/Random" + id + ".txt";
+    DocumentSearchRequest sreq = new DocumentSearchRequest()
+        .query(new DocumentSearch().meta(new DocumentSearchMeta().folder(dir)));
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      AddDocumentRequest req =
+          new AddDocumentRequest().path(path0).contentType("text/plain").content(content);
+
+      // when
+      String doc0 = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+
+      // then
+      assertEquals(path0, this.documentsApi.getDocument(doc0, siteId, null).getPath());
+
+      List<SearchResultDocument> docs = search(siteId, sreq);
+      assertEquals(1, docs.size());
+      assertEquals(path0, docs.get(0).getPath());
+
+      // given
+      UpdateDocumentRequest updateReq = new UpdateDocumentRequest().path(path1);
+
+      // when
+      this.documentsApi.updateDocument(doc0, updateReq, siteId, null);
+
+      // then
+      assertEquals(path1, this.documentsApi.getDocument(doc0, siteId, null).getPath());
+
+      docs = search(siteId, sreq);
+      assertEquals(1, docs.size());
+      assertEquals(path1, docs.get(0).getPath());
+    }
+  }
+
+  private List<SearchResultDocument> search(final String siteId, final DocumentSearchRequest sreq)
+      throws ApiException {
+    return notNull(searchApi.documentSearch(sreq, siteId, null, null, null).getDocuments());
   }
 
   private void putS3Request(final String presignedUrl, final Map<String, Object> headerMap,

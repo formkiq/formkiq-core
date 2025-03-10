@@ -26,12 +26,6 @@ Parameters:
 
   FormKiQType:
     Description: The type of FormKiQ installation
-    Default: "core"
-    Type: String
-    AllowedValues: ["core", "enterprise"]
-
-  Partition:
-    Description: The partition in which the resource is located. A partition is a group of AWS Regions
     Type: String
 
   VpcStackName:
@@ -41,6 +35,10 @@ Parameters:
   TypesenseApiKey:
     Type: String
     Description: TypeSense API Key
+
+  DocumentEventsBus:
+    Type: String
+    Description: Name EventBridge Event Bus
 
   LogRetentionInDays:
     Type: Number
@@ -97,12 +95,9 @@ Resources:
       Value: 
         Ref: SnsDocumentEvent
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
 
   DocumentsS3BucketParameter:
     Type: AWS::SSM::Parameter
@@ -114,12 +109,9 @@ Resources:
       Value:   
         Ref: DocumentsS3Buckets
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
 
   DocumentsStageS3BucketParameter:
     Type: AWS::SSM::Parameter
@@ -131,12 +123,9 @@ Resources:
       Value: 
         Ref: DocumentsStageS3Bucket
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
-        AppEnvironment: 
+        Application: "FormKiQ"
+        AppEnvironment:
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
                       
   DocumentsStageS3Bucket:
     Type: AWS::S3::Bucket
@@ -174,28 +163,20 @@ Resources:
             ExpirationInDays: 1
       Tags:
         - Key: "Application"
-          Value: 
-            Fn::Sub: "FormKiQ ${FormKiQType}"
+          Value: "FormKiQ"
         - Key: "AppEnvironment"
           Value: 
             Fn::Sub: "${AppEnvironment}"
-        - Key: "StackName"
-          Value: 
-            Fn::Sub: "${AWS::StackName}"
 
   SnsDocumentEvent:
     Type: "AWS::SNS::Topic"
     Properties:
       Tags:
           - Key: "Application"
-            Value: 
-              Fn::Sub: "FormKiQ ${FormKiQType}"      
+            Value: "FormKiQ"
           - Key: "AppEnvironment"
             Value: 
               Fn::Sub: "${AppEnvironment}"
-          - Key: "StackName"
-            Value: 
-              Fn::Sub: "${AWS::StackName}"            
             
   SnsDocumentEventPolicy:
     Type: AWS::SNS::TopicPolicy
@@ -205,15 +186,23 @@ Resources:
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
-        - Effect: Allow
+        - Sid: AllowLambdaPublish
+          Effect: Allow
           Principal:
             Service: lambda.amazonaws.com
           Action: sns:Publish
           Resource: 
             Ref: SnsDocumentEvent
+        - Sid: AllowEventsPublish
+          Effect: Allow
+          Principal:
+            Service: events.amazonaws.com
+          Action: sns:Publish
+          Resource:
+            Ref: SnsDocumentEvent
       Topics:
       - Ref: SnsDocumentEvent
-      
+
   DocumentsS3Buckets:
     Type: AWS::S3::Bucket
     DependsOn:
@@ -251,14 +240,10 @@ Resources:
             - Arn
       Tags:
         - Key: "Application"
-          Value: 
-            Fn::Sub: "FormKiQ ${FormKiQType}"
+          Value: "FormKiQ"
         - Key: "AppEnvironment"
           Value: 
             Fn::Sub: "${AppEnvironment}"
-        - Key: "StackName"
-          Value: 
-            Fn::Sub: "${AWS::StackName}"
 
   DocumentActionsProcessorParameter:
     Type: AWS::SSM::Parameter
@@ -270,12 +255,9 @@ Resources:
       Value: 
         Ref: DocumentActionsProcessor
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
           
   DocumentActionsProcessorLogGroup:
     Type: AWS::Logs::LogGroup
@@ -291,7 +273,7 @@ Resources:
     Properties:
       Handler: com.formkiq.stacks.lambda.s3.DocumentActionsProcessor
       Description: Lambda function to process Document Actions requests
-      Runtime: provided.al2
+      Runtime: provided.al2023
       Timeout: 
         Fn::Sub: "${LambdaTimeout}"
       MemorySize: 
@@ -307,9 +289,11 @@ Resources:
             Ref: Documents
           APP_ENVIRONMENT: 
             Fn::Sub: "${AppEnvironment}"
+          DOCUMENT_EVENTS_BUS:
+            Ref: DocumentEventsBus
           LOG_LEVEL:
             Ref: LogLevelApplication
-          ENABLE_AWS_X_RAY: true  
+          ENABLE_AWS_X_RAY: true
           FormKiQType:
             Ref: FormKiQType
           SNS_DOCUMENT_EVENT: 
@@ -345,10 +329,7 @@ Resources:
       Tags:
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
+        Application: "FormKiQ"
       Events:
         ActionsEvent:
           Type: SQS
@@ -373,7 +354,7 @@ Resources:
     Properties:
       Handler: com.formkiq.stacks.lambda.s3.StagingS3Create
       Description: Lambda function that processes document written to the Staging S3 Bucket
-      Runtime: provided.al2
+      Runtime: provided.al2023
       Timeout: 
         Fn::Sub: "${LambdaTimeout}"
       MemorySize: 
@@ -426,10 +407,7 @@ Resources:
       Tags:
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
+        Application: "FormKiQ"
       Events:
         CreateSQSEvent:
           Type: SQS
@@ -450,12 +428,9 @@ Resources:
       Value: 
         Ref: StagingS3Create
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
 
   DocumentsS3UpdateLogGroup:
     Type: AWS::Logs::LogGroup
@@ -471,7 +446,7 @@ Resources:
     Properties:    
       Handler: com.formkiq.stacks.lambda.s3.DocumentsS3Update
       Description: Lambda function that processes document written to the Documents S3 Bucket
-      Runtime: provided.al2
+      Runtime: provided.al2023
       Timeout: 
         Fn::Sub: "${LambdaTimeout}"
       MemorySize: 
@@ -526,10 +501,7 @@ Resources:
       Tags:
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
+        Application: "FormKiQ"
       Events:
         CreateSQSEvent:
           Type: SQS
@@ -553,14 +525,75 @@ Resources:
             - Arn
       Tags:
           - Key: "Application"
-            Value: 
-              Fn::Sub: "FormKiQ ${FormKiQType}"      
+            Value: "FormKiQ"
           - Key: "AppEnvironment"
             Value: 
               Fn::Sub: "${AppEnvironment}"
-          - Key: "StackName"
-            Value: 
-              Fn::Sub: "${AWS::StackName}"
+
+  DocumentsToActionsProcessorRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service: "pipes.amazonaws.com"
+            Action: "sts:AssumeRole"
+      Policies:
+        - PolicyName: "EventPipePolicy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "dynamodb:DescribeStream"
+                  - "dynamodb:GetRecords"
+                  - "dynamodb:GetShardIterator"
+                  - "dynamodb:ListStreams"
+                Resource:
+                  - Fn::GetAtt:
+                      - DocumentSyncs
+                      - StreamArn
+              - Effect: "Allow"
+                Action:
+                  - "sqs:SendMessage"
+                Resource:
+                  - Fn::GetAtt:
+                      - DocumentActionsQueue
+                      - Arn
+                  - Fn::GetAtt:
+                      - DocumentsDeadLetterQueue
+                      - Arn
+
+  DocumentsToActionsProcessorPipe:
+    Type: "AWS::Pipes::Pipe"
+    Properties:
+      RoleArn:
+        Fn::GetAtt:
+          - DocumentsToActionsProcessorRole
+          - Arn
+      Source:
+        Fn::GetAtt:
+          - DocumentSyncs
+          - StreamArn
+      SourceParameters:
+        FilterCriteria:
+          Filters:
+            - Pattern: '{"eventName": [{"equals-ignore-case": "INSERT"}],"eventSource": [{"equals-ignore-case": "aws:dynamodb"}],"dynamodb.NewImage.service.S": [{"equals-ignore-case": "EVENTBRIDGE"}],"dynamodb.NewImage.status.S": [{"equals-ignore-case": "PENDING"}]}'
+        DynamoDBStreamParameters:
+          StartingPosition: LATEST
+          BatchSize: 1
+          MaximumRetryAttempts: 10
+          DeadLetterConfig:
+            Arn:
+              Fn::GetAtt:
+                - DocumentsDeadLetterQueue
+                - Arn
+      Target:
+        Fn::GetAtt:
+          - DocumentActionsQueue
+          - Arn
 
   DocumentsStagingQueue:
     Type: "AWS::SQS::Queue"
@@ -575,14 +608,10 @@ Resources:
             - Arn
       Tags:
           - Key: "Application"
-            Value: 
-              Fn::Sub: "FormKiQ ${FormKiQType}"      
+            Value: "FormKiQ"
           - Key: "AppEnvironment"
             Value: 
               Fn::Sub: "${AppEnvironment}"
-          - Key: "StackName"
-            Value: 
-              Fn::Sub: "${AWS::StackName}"
 
   DocumentsDeadLetterQueue:
     Type: "AWS::SQS::Queue"
@@ -591,14 +620,10 @@ Resources:
       ReceiveMessageWaitTimeSeconds: 20
       Tags:
           - Key: "Application"
-            Value: 
-              Fn::Sub: "FormKiQ ${FormKiQType}"      
+            Value: "FormKiQ"
           - Key: "AppEnvironment"
             Value: 
               Fn::Sub: "${AppEnvironment}"
-          - Key: "StackName"
-            Value: 
-              Fn::Sub: "${AWS::StackName}"
 
   DocumentsDeadLetterQueueParameter:
     Type: AWS::SSM::Parameter
@@ -612,12 +637,9 @@ Resources:
           - DocumentsDeadLetterQueue
           - Arn
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
           
   DocumentsDeadLetterQueueNameParameter:
     Type: AWS::SSM::Parameter
@@ -631,12 +653,9 @@ Resources:
           - DocumentsDeadLetterQueue
           - QueueName
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
 
   DocumentsUpdateQueue:
     Type: "AWS::SQS::Queue"
@@ -651,14 +670,10 @@ Resources:
             - Arn
       Tags:
           - Key: "Application"
-            Value: 
-              Fn::Sub: "FormKiQ ${FormKiQType}"      
+            Value: "FormKiQ"
           - Key: "AppEnvironment"
             Value: 
               Fn::Sub: "${AppEnvironment}"
-          - Key: "StackName"
-            Value: 
-              Fn::Sub: "${AWS::StackName}"
             
   DocumentsUpdateObjectParameter:
     Type: AWS::SSM::Parameter
@@ -670,12 +685,9 @@ Resources:
       Value: 
         Ref: DocumentsS3Update
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
 
   DocumentActionsQueuePolicy:
     Type: AWS::SQS::QueuePolicy
@@ -776,12 +788,9 @@ Resources:
       Value: 
         Ref: DocumentsUpdateQueue
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
         
   DocumentsUpdateQueueArnParameter:
     Type: AWS::SSM::Parameter
@@ -795,12 +804,9 @@ Resources:
         - DocumentsUpdateQueue
         - Arn
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
         
   DocumentsUpdateObjectPermission:
     DependsOn:
@@ -818,7 +824,7 @@ Resources:
       SourceArn:
         Fn::Join:
         - ''
-        - - Fn::Sub: "arn:${Partition}:s3:::"
+        - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
           - Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-documents-${AWS::AccountId}"
 
   S3LambdaRole:
@@ -826,14 +832,10 @@ Resources:
     Properties:
       Tags:
         - Key: "Application"
-          Value: 
-            Fn::Sub: "FormKiQ ${FormKiQType}"        
+          Value: "FormKiQ"
         - Key: "AppEnvironment"
           Value: 
             Fn::Sub: "${AppEnvironment}"
-        - Key: "StackName"
-          Value: 
-            Fn::Sub: "${AWS::StackName}"
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -845,7 +847,7 @@ Resources:
           - sts:AssumeRole
       Path: /
       ManagedPolicyArns:
-      - Fn::Sub: "arn:${Partition}:iam::aws:policy/AWSXRayDaemonWriteAccess"
+      - Fn::Sub: "arn:${AWS::Partition}:iam::aws:policy/AWSXRayDaemonWriteAccess"
   S3LambdaRolePolicy: 
     Type: "AWS::IAM::Policy"
     Properties: 
@@ -877,11 +879,11 @@ Resources:
             Resource:
             - Fn::Join:
               - ''
-              - - Fn::Sub: "arn:${Partition}:s3:::"
+              - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
                 - Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-documents-${AWS::AccountId}"
             - Fn::Join:
               - ''
-              - - Fn::Sub: "arn:${Partition}:s3:::"
+              - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
                 - Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-staging-${AWS::AccountId}"
           - Effect: Allow
             Action:
@@ -891,19 +893,19 @@ Resources:
             Resource:
             - Fn::Join:
               - ''
-              - - Fn::Sub: "arn:${Partition}:s3:::"
+              - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
                 - Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-documents-${AWS::AccountId}"
                 - '/*'
             - Fn::Join:
               - ''
-              - - Fn::Sub: "arn:${Partition}:s3:::"
+              - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
                 - Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-staging-${AWS::AccountId}"
                 - '/*'
           - Effect: Allow
             Action:
               - dynamodb:GetItem
             Resource:
-              - Fn::Sub: "arn:${Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Cache}"
+              - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Cache}"
           - Effect: Allow
             Action:
             - dynamodb:BatchGetItem
@@ -915,18 +917,20 @@ Resources:
             - dynamodb:UpdateItem
             - dynamodb:DeleteItem
             Resource: 
-            - Fn::Sub: "arn:${Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Documents}"
+            - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Documents}"
           - Effect: Allow
             Action:
             - dynamodb:Query
             - dynamodb:Scan
             Resource:
-            - Fn::Sub: "arn:${Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Documents}/index/*"
+            - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Documents}/index/*"
           - Effect: Allow
             Action:
             - dynamodb:PutItem
+            - dynamodb:BatchWriteItem
+            - dynamodb:UpdateItem
             Resource:
-            - Fn::Sub: "arn:${Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DocumentSyncs}"
+            - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DocumentSyncs}"
           - Effect: Allow
             Action:
             - sqs:ReceiveMessage
@@ -951,13 +955,13 @@ Resources:
             Action:
             - ssm:GetParameter
             Resource: 
-            - Fn::Sub: "arn:${Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/formkiq/*"
+            - Fn::Sub: "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/formkiq/*"
           - Effect: Allow
             Action:
             - execute-api:Invoke
             - execute-api:ManageConnections
             Resource: 
-            - Fn::Sub: "arn:${Partition}:execute-api:*:*:*"            
+            - Fn::Sub: "arn:${AWS::Partition}:execute-api:*:*:*"            
 
   DocumentsParameter:
     Type: AWS::SSM::Parameter
@@ -969,12 +973,9 @@ Resources:
       Value: 
         Ref: Documents
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
 
   DocumentsStreamArnParameter:
     Type: AWS::SSM::Parameter
@@ -988,12 +989,9 @@ Resources:
         - Documents
         - StreamArn
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
           
   Documents:
     Type: AWS::DynamoDB::Table
@@ -1003,15 +1001,14 @@ Resources:
       BillingMode: PAY_PER_REQUEST
       TimeToLiveSpecification:
         AttributeName: TimeToLive
-        Enabled: TRUE            
+        Enabled: TRUE
       StreamSpecification:
         StreamViewType: NEW_AND_OLD_IMAGES
       PointInTimeRecoverySpecification:
         PointInTimeRecoveryEnabled: true
       Tags:
         - Key: "Application"
-          Value: 
-            Fn::Sub: "FormKiQ ${FormKiQType}"
+          Value: "FormKiQ"
         - Key: "AppEnvironment"
           Value: 
             Fn::Sub: "${AppEnvironment}"
@@ -1085,12 +1082,9 @@ Resources:
       Value: 
         Ref: Cache
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
       
   Cache:
     Type: AWS::DynamoDB::Table
@@ -1103,8 +1097,7 @@ Resources:
         Enabled: TRUE
       Tags:
         - Key: "Application"
-          Value: 
-            Fn::Sub: "FormKiQ ${FormKiQType}"
+          Value: "FormKiQ"
         - Key: "AppEnvironment"
           Value: 
             Fn::Sub: "${AppEnvironment}"
@@ -1134,10 +1127,11 @@ Resources:
         Enabled: TRUE
       PointInTimeRecoverySpecification:
         PointInTimeRecoveryEnabled: true
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
       Tags:
         - Key: "Application"
-          Value: 
-            Fn::Sub: "FormKiQ ${FormKiQType}"
+          Value: "FormKiQ"
         - Key: "AppEnvironment"
           Value: 
             Fn::Sub: "${AppEnvironment}"
@@ -1166,12 +1160,9 @@ Resources:
       Value: 
         Ref: DocumentSyncs
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
           
 Outputs:
 

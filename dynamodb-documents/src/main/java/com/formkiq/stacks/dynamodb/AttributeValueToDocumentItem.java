@@ -32,6 +32,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import com.formkiq.aws.dynamodb.AttributeValueToMap;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentMetadata;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -44,9 +46,9 @@ public class AttributeValueToDocumentItem
     implements Function<List<Map<String, AttributeValue>>, DocumentItem> {
 
   /** {@link AttributeValueToDate}. */
-  private AttributeValueToDate toInsertedDate = new AttributeValueToDate("inserteddate");
+  private final AttributeValueToDate toInsertedDate = new AttributeValueToDate("inserteddate");
   /** {@link AttributeValueToDate}. */
-  private AttributeValueToDate toModifiedDate = new AttributeValueToDate("lastModifiedDate");
+  private final AttributeValueToDate toModifiedDate = new AttributeValueToDate("lastModifiedDate");
 
   @Override
   public DocumentItem apply(final List<Map<String, AttributeValue>> items) {
@@ -61,7 +63,7 @@ public class AttributeValueToDocumentItem
 
       List<DocumentItem> documents = new ArrayList<>();
       List<Map<String, AttributeValue>> children =
-          items.stream().filter(i -> !i.equals(r.get())).collect(Collectors.toList());
+          items.stream().filter(i -> !i.equals(r.get())).toList();
 
       for (Map<String, AttributeValue> map : children) {
         documents.add(apply(map));
@@ -79,53 +81,46 @@ public class AttributeValueToDocumentItem
   /**
    * Convert {@link Map} {@link String} {@link AttributeValue} to {@link DocumentItem}.
    * 
-   * @param map {@link Map} {@link String} {@link AttributeValue}
+   * @param attrs {@link Map} {@link String} {@link AttributeValue}
    * @return {@link DocumentItem}
    */
-  public DocumentItem apply(final Map<String, AttributeValue> map) {
+  public DocumentItem apply(final Map<String, AttributeValue> attrs) {
 
-    String id = map.get("documentId").s();
-    String userId = map.containsKey("userId") ? map.get("userId").s() : null;
+    Map<String, Object> map = new AttributeValueToMap().apply(attrs);
+    String id = (String) map.get("documentId");
+    String userId = (String) map.get("userId");
 
-    Date insertedDate = this.toInsertedDate.apply(map);
+    Date insertedDate = this.toInsertedDate.apply(attrs);
 
-    Date lastModifiedDate = this.toModifiedDate.apply(map);
+    Date lastModifiedDate = this.toModifiedDate.apply(attrs);
 
     DocumentItemDynamoDb item = new DocumentItemDynamoDb(id, insertedDate, userId);
     item.setLastModifiedDate(lastModifiedDate != null ? lastModifiedDate : insertedDate);
 
-    item.setPath(getString(map.get("path")));
-    item.setDeepLinkPath(getDeepLinkPath(map));
+    item.setPath((String) map.get("path"));
+    item.setDeepLinkPath(getDeepLinkPath(attrs));
 
-    if (map.containsKey("contentType")) {
-      item.setContentType(map.get("contentType").s());
-    }
+    item.setContentType((String) map.get("contentType"));
 
     if (map.containsKey("contentLength")) {
-      Long contentType = Long.valueOf(map.get("contentLength").n());
-      item.setContentLength(contentType);
+      item.setContentLength(((Double) map.get("contentLength")).longValue());
     }
 
-    if (map.containsKey("checksum")) {
-      item.setChecksum(map.get("checksum").s());
+    item.setChecksum((String) map.get("checksum"));
+    item.setBelongsToDocumentId((String) map.get("belongsToDocumentId"));
+    item.setChecksumType((String) map.get("checksumType"));
+
+    item.setVersion(getString(attrs.get("version")));
+    item.setS3version(getString(attrs.get(DocumentVersionService.S3VERSION_ATTRIBUTE)));
+
+    if (attrs.containsKey("TimeToLive")) {
+      item.setTimeToLive(attrs.get("TimeToLive").n());
     }
 
-    if (map.containsKey("belongsToDocumentId")) {
-      item.setBelongsToDocumentId(map.get("belongsToDocumentId").s());
-    }
+    item.setHeight((String) map.get("height"));
+    item.setWidth((String) map.get("width"));
 
-    if (map.containsKey("checksumType")) {
-      item.setChecksumType(map.get("checksumType").s());
-    }
-
-    item.setVersion(getString(map.get("version")));
-    item.setS3version(getString(map.get(DocumentVersionService.S3VERSION_ATTRIBUTE)));
-
-    if (map.containsKey("TimeToLive")) {
-      item.setTimeToLive(map.get("TimeToLive").n());
-    }
-
-    Collection<DocumentMetadata> metadata = toDocumentMetadata(map);
+    Collection<DocumentMetadata> metadata = toDocumentMetadata(attrs);
     item.setMetadata(metadata);
 
     return item;
@@ -148,13 +143,13 @@ public class AttributeValueToDocumentItem
   private Collection<DocumentMetadata> toDocumentMetadata(final Map<String, AttributeValue> map) {
     Collection<DocumentMetadata> c = null;
 
-    List<String> metadataKeys = map.keySet().stream()
-        .filter(k -> k.startsWith(PREFIX_DOCUMENT_METADATA)).collect(Collectors.toList());
+    List<String> metadataKeys =
+        map.keySet().stream().filter(k -> k.startsWith(PREFIX_DOCUMENT_METADATA)).toList();
 
     if (!metadataKeys.isEmpty()) {
       c = metadataKeys.stream().map(k -> {
 
-        DocumentMetadata meta = null;
+        DocumentMetadata meta;
         AttributeValue av = map.get(k);
 
         String kk = k.substring(PREFIX_DOCUMENT_METADATA.length());
@@ -162,7 +157,7 @@ public class AttributeValueToDocumentItem
         if (av.s() != null) {
           meta = new DocumentMetadata(kk, map.get(k).s());
         } else {
-          List<String> strs = av.l().stream().map(m -> m.s()).collect(Collectors.toList());
+          List<String> strs = av.l().stream().map(AttributeValue::s).collect(Collectors.toList());
           meta = new DocumentMetadata(kk, strs);
         }
 

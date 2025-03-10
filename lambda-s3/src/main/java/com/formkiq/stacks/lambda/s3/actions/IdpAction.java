@@ -29,9 +29,10 @@ import com.formkiq.module.actions.Action;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.stacks.dynamodb.attributes.AttributeDataType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
-import com.formkiq.stacks.dynamodb.attributes.AttributeValidation;
+import com.formkiq.stacks.dynamodb.attributes.AttributeValidationType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
@@ -49,8 +50,10 @@ import com.formkiq.stacks.lambda.s3.text.FuzzyMatcher;
 import com.formkiq.stacks.lambda.s3.text.IdpTextMatcher;
 import com.formkiq.stacks.lambda.s3.text.TextMatch;
 import com.formkiq.stacks.lambda.s3.text.TextMatchAlgorithm;
-import com.formkiq.stacks.lambda.s3.text.TokenGeneratorDefault;
+import com.formkiq.stacks.lambda.s3.text.TokenGeneratorRegex;
 import com.formkiq.stacks.lambda.s3.text.TokenGeneratorKeyValue;
+import com.formkiq.strings.StringFormatter;
+import com.formkiq.strings.StringFormatterAlphaNumeric;
 import com.formkiq.validation.ValidationException;
 
 import java.io.IOException;
@@ -68,6 +71,15 @@ import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
  */
 public class IdpAction implements DocumentAction {
 
+  /** IDP Regex. */
+  public static final String REGEX = "\\s+";
+  /** Idp Action {@link StringFormatter}. */
+  public static final StringFormatter FORMATTER = new StringFormatter() {
+    @Override
+    public String format(final String text) {
+      return new StringFormatterAlphaNumeric().format(text.toLowerCase());
+    }
+  };
   /** {@link MappingService}. */
   private final MappingService mappingService;
   /** {@link DocumentContentFunction}. */
@@ -149,8 +161,13 @@ public class IdpAction implements DocumentAction {
 
     List<String> labelTexts = mappingAttribute.getLabelTexts();
     TextMatchAlgorithm alg = getTextMatchAlgorithm(mappingAttribute);
-    TextMatch match =
-        matcher.findMatch(null, labelTexts, new TokenGeneratorKeyValue(contentKeyValues), alg);
+    TextMatch match = matcher.findMatch(null, labelTexts,
+        new TokenGeneratorKeyValue(contentKeyValues), alg, null, new StringFormatter() {
+          @Override
+          public String format(final String text) {
+            return text;
+          }
+        });
 
     if (match != null) {
       Optional<List<String>> o = contentKeyValues.stream()
@@ -193,31 +210,37 @@ public class IdpAction implements DocumentAction {
       final MappingAttribute mappingAttribute, final List<String> matchValues)
       throws ValidationException {
 
-    if (!notNull(matchValues).isEmpty()) {
+    String attributeKey = mappingAttribute.getAttributeKey();
+    AttributeRecord attribute = this.attributeService.getAttribute(siteId, attributeKey);
 
-      String attributeKey = mappingAttribute.getAttributeKey();
+    List<DocumentAttributeRecord> records = notNull(matchValues).stream()
+        .map(val -> createDocumentAttribute(siteId, documentId, attribute, attributeKey, val))
+        .toList();
 
-      List<DocumentAttributeRecord> records = matchValues.stream()
-          .map(val -> createDocumentAttribute(siteId, documentId, attributeKey, val)).toList();
+    if (records.isEmpty() && AttributeDataType.KEY_ONLY.equals(attribute.getDataType())) {
+      records = List.of(createDocumentAttribute(siteId, documentId, attribute, attributeKey, null));
+    }
 
+    if (!records.isEmpty()) {
       this.documentService.saveDocumentAttributes(siteId, documentId, records,
-          AttributeValidation.FULL, AttributeValidationAccess.ADMIN_UPDATE);
+          AttributeValidationType.FULL, AttributeValidationAccess.ADMIN_UPDATE);
     }
   }
 
   private DocumentAttributeRecord createDocumentAttribute(final String siteId,
-      final String documentId, final String attributeKey, final String matchValue) {
+      final String documentId, final AttributeRecord attribute, final String attributeKey,
+      final String matchValue) {
 
     DocumentAttributeRecord r = new DocumentAttributeRecord().setDocumentId(documentId)
         .setKey(attributeKey).setUserId("System");
 
-    AttributeRecord attribute = this.attributeService.getAttribute(siteId, attributeKey);
     switch (attribute.getDataType()) {
       case STRING -> r.setValueType(DocumentAttributeValueType.STRING).setStringValue(matchValue);
       case NUMBER -> r.setValueType(DocumentAttributeValueType.NUMBER)
           .setNumberValue(Double.valueOf(matchValue));
       case BOOLEAN -> r.setValueType(DocumentAttributeValueType.BOOLEAN)
           .setBooleanValue(Boolean.valueOf(matchValue));
+      case KEY_ONLY -> r.setValueType(DocumentAttributeValueType.KEY_ONLY);
       default ->
         throw new IllegalArgumentException("Unsupported data type: " + attribute.getDataType());
     }
@@ -228,7 +251,9 @@ public class IdpAction implements DocumentAction {
       final TextMatchAlgorithm alg, final String text) {
 
     List<String> labelTexts = mappingAttribute.getLabelTexts();
-    TextMatch match = matcher.findMatch(text, labelTexts, new TokenGeneratorDefault(), alg);
+
+    TextMatch match = matcher.findMatch(text, labelTexts, new TokenGeneratorRegex(REGEX, FORMATTER),
+        alg, REGEX, FORMATTER);
 
     String value;
 

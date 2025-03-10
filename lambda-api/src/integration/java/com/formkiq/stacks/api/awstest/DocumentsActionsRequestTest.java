@@ -83,7 +83,7 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
    */
   @Test
   @Timeout(value = TEST_TIMEOUT)
-  public void testaddDocumentActions01() throws Exception {
+  public void testAddDocumentActions01() throws Exception {
     // given
     List<ApiClient> clients = getApiClients(null);
     ApiClient client = clients.get(0);
@@ -123,8 +123,9 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
     ApiClient client = clients.get(0);
 
     String content = "this is a test";
-    List<AddAction> actions = List.of(new AddAction().type(DocumentActionType.EVENTBRIDGE)
-        .parameters(new AddActionParameters().eventBusName(testeventbridgename)));
+    AddAction addAction = new AddAction().type(DocumentActionType.EVENTBRIDGE)
+        .parameters(new AddActionParameters().eventBusName(testeventbridgename));
+    List<AddAction> actions = List.of(addAction, addAction);
 
     // when
     String documentId = addDocument(client, siteId, "test.txt", content, "text/plain", actions);
@@ -132,11 +133,12 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
     // then
     GetDocumentActionsResponse response = waitForActionsComplete(client, siteId, documentId);
     List<DocumentAction> docActions = notNull(response.getActions());
-    assertEquals(1, docActions.size());
+    assertEquals(2, docActions.size());
     assertEquals(DocumentActionStatus.COMPLETE, docActions.get(0).getStatus());
     assertNotNull(docActions.get(0).getStartDate());
     assertNotNull(docActions.get(0).getInsertedDate());
     assertNotNull(docActions.get(0).getCompletedDate());
+    assertEquals(DocumentActionStatus.COMPLETE, docActions.get(1).getStatus());
   }
 
   /**

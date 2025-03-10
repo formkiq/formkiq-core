@@ -27,6 +27,7 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
+import static com.formkiq.aws.dynamodb.model.DocumentSyncServiceType.EVENTBRIDGE;
 import static com.formkiq.aws.dynamodb.model.DocumentSyncServiceType.FORMKIQ_CLI;
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
 import static com.formkiq.stacks.lambda.s3.StagingS3Create.FORMKIQ_B64_EXT;
@@ -49,7 +50,9 @@ import static org.mockserver.model.HttpRequest.request;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -67,6 +70,10 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.model.DocumentSyncRecord;
+import com.formkiq.aws.s3.S3PresignerService;
+import com.formkiq.aws.s3.S3PresignerServiceExtension;
+import com.formkiq.module.http.HttpServiceJdk11;
 import com.formkiq.module.lambdaservices.logger.LoggerRecorder;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -85,7 +92,6 @@ import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentMetadata;
-import com.formkiq.aws.dynamodb.model.DocumentSync;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
 import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
 import com.formkiq.aws.dynamodb.model.DocumentSyncType;
@@ -175,6 +181,8 @@ public class StagingS3CreateTest implements DbKeys {
   private static final int PORT = 8888;
   /** {@link S3Service}. */
   private static S3Service s3;
+  /** {@link S3PresignerService}. */
+  private static S3PresignerService presignerService;
   /** {@link DocumentService}. */
   private static DocumentService service;
   /** {@link AttributeService}. */
@@ -212,7 +220,6 @@ public class StagingS3CreateTest implements DbKeys {
   /** {@link StagingS3Create}. */
   private static StagingS3Create handler;
 
-
   /**
    * After Class.
    *
@@ -247,8 +254,10 @@ public class StagingS3CreateTest implements DbKeys {
     handler = new StagingS3Create(awsServices);
 
     awsServices.register(SqsService.class, new SqsServiceExtension());
+    awsServices.register(S3PresignerService.class, new S3PresignerServiceExtension());
 
     s3 = awsServices.getExtension(S3Service.class);
+    presignerService = awsServices.getExtension(S3PresignerService.class);
     syncService = awsServices.getExtension(DocumentSyncService.class);
     sqsService = awsServices.getExtension(SqsService.class);
     actionsService = awsServices.getExtension(ActionsService.class);
@@ -814,6 +823,57 @@ public class StagingS3CreateTest implements DbKeys {
     try (InputStream zipContent = s3.getContentAsInputStream(STAGING_BUCKET, zipKey)) {
       DocumentCompressorTest.validateZipContent(zipContent, expectedChecksums);
     }
+  }
+
+  /**
+   * Tests document event callback.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  void testDocumentEventCallback() throws Exception {
+    // given
+    for (String siteId : List.of(DEFAULT_SITE_ID, ID.uuid())) {
+
+      String queueUrl = sqsService.createQueue("sqssnsCreate1" + ID.uuid()).queueUrl();
+      String sqsQueueArn = sqsService.getQueueArn(queueUrl);
+      snsService.subscribe(snsDocumentEvent, "sqs", sqsQueueArn);
+
+      String documentId = ID.uuid();
+      String s3Key = "tempfiles/eventcallback/" + siteId + "/" + documentId;
+      URL url = presignerService.presignPutUrl(STAGING_BUCKET, s3Key, Duration.ofDays(1), null,
+          null, Optional.empty(), Map.of());
+      new HttpServiceJdk11().put(url.toString(), Optional.empty(), Optional.empty(), "");
+
+      // when
+      Map<String, Object> map = loadFileAsMap(this, "/documents-compress-event.json",
+          "tempfiles/665f0228-4fbc-4511-912b-6cb6f566e1c0.json", s3Key);
+      this.handleRequest(map);
+
+      // then
+      assertTrue(s3.getObjectMetadata(STAGING_BUCKET, s3Key, null).isObjectExists());
+      ReceiveMessageResponse response = getReceiveMessageResponse(queueUrl);
+      assertEquals(1, response.messages().size());
+      Message msg = response.messages().get(0);
+      Map<String, Object> json = GSON.fromJson(msg.body(), Map.class);
+      json = GSON.fromJson((String) json.get("Message"), Map.class);
+      assertEquals(siteId, json.get("siteId"));
+      assertEquals(documentId, json.get("documentId"));
+      assertEquals("actions", json.get("type"));
+    }
+  }
+
+  private ReceiveMessageResponse getReceiveMessageResponse(final String sqsQueueUrl)
+      throws InterruptedException {
+    ReceiveMessageResponse response = sqsService.receiveMessages(sqsQueueUrl);
+    while (response.messages().isEmpty()) {
+      TimeUnit.SECONDS.sleep(1);
+      response = sqsService.receiveMessages(sqsQueueUrl);
+    }
+
+    response.messages().forEach(m -> sqsService.deleteMessage(sqsQueueUrl, m.receiptHandle()));
+    return response;
   }
 
   /**
@@ -1777,10 +1837,12 @@ public class StagingS3CreateTest implements DbKeys {
 
   private void verifyCliSyncs(final String siteId, final String documentId) {
     int i = 0;
-    PaginationResults<DocumentSync> syncs =
+    PaginationResults<DocumentSyncRecord> syncs =
         syncService.getSyncs(siteId, documentId, null, MAX_RESULTS);
-    List<DocumentSync> results = syncs.getResults();
-    assertEquals(2, results.size());
+
+    final int expected = 4;
+    List<DocumentSyncRecord> results = syncs.getResults();
+    assertEquals(expected, results.size());
 
     assertEquals(documentId, results.get(i).getDocumentId());
     assertEquals(FORMKIQ_CLI, results.get(i).getService());
@@ -1790,11 +1852,25 @@ public class StagingS3CreateTest implements DbKeys {
     assertNotNull(results.get(i++).getSyncDate());
 
     assertEquals(documentId, results.get(i).getDocumentId());
+    assertEquals(EVENTBRIDGE, results.get(i).getService());
+    assertEquals(DocumentSyncStatus.PENDING, results.get(i).getStatus());
+    assertEquals(DocumentSyncType.METADATA, results.get(i).getType());
+    assertEquals("updated Document Metadata", results.get(i).getMessage());
+    assertNull(results.get(i++).getSyncDate());
+
+    assertEquals(documentId, results.get(i).getDocumentId());
     assertEquals(FORMKIQ_CLI, results.get(i).getService());
     assertEquals(DocumentSyncStatus.COMPLETE, results.get(i).getStatus());
     assertEquals(DocumentSyncType.CONTENT, results.get(i).getType());
     assertEquals("added Document Content", results.get(i).getMessage());
-    assertNotNull(results.get(i).getSyncDate());
+    assertNotNull(results.get(i++).getSyncDate());
+
+    assertEquals(documentId, results.get(i).getDocumentId());
+    assertEquals(EVENTBRIDGE, results.get(i).getService());
+    assertEquals(DocumentSyncStatus.PENDING, results.get(i).getStatus());
+    assertEquals(DocumentSyncType.METADATA, results.get(i).getType());
+    assertEquals("added Document Metadata", results.get(i).getMessage());
+    assertNull(results.get(i).getSyncDate());
   }
 
   private void verifyS3Metadata(final String siteId, final DocumentItem item) {

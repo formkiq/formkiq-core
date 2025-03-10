@@ -29,12 +29,6 @@ Parameters:
 
   FormKiQType:
     Description: The type of FormKiQ installation
-    Default: "core"
-    Type: String
-    AllowedValues: ["core", "enterprise"]
-
-  Partition:
-    Description: The partition in which the resource is located. A partition is a group of AWS Regions
     Type: String
 
   LogRetentionInDays:
@@ -74,12 +68,9 @@ Resources:
       ProtocolType: WEBSOCKET
       RouteSelectionExpression: "$request.body.action"
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"      
 
   ConnectRoute:
     Type: AWS::ApiGatewayV2::Route
@@ -119,7 +110,7 @@ Resources:
       IntegrationMethod: POST
       IntegrationUri: 
         Fn::Sub:
-            arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ApiFunction.Arn}/invocations
+            arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ApiFunction.Arn}/invocations
 
   Deployment:
     Type: AWS::ApiGatewayV2::Deployment
@@ -129,11 +120,18 @@ Resources:
     Properties:
       ApiId: 
         Ref: WebSocketApi
-        
+
+  ApiGatewayLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays:
+        Ref: LogRetentionInDays
+
   Stage:
     Type: AWS::ApiGatewayV2::Stage
     DependsOn:
       - WebSocketApi
+      - ApiGatewayLogGroup
     Properties:
       StageName: 
         Ref: StageName
@@ -142,13 +140,21 @@ Resources:
         Ref: Deployment
       ApiId: 
         Ref: WebSocketApi
+      AccessLogSettings:
+        DestinationArn:
+          Fn::GetAtt:
+            - ApiGatewayLogGroup
+            - Arn
+        Format: >-
+          {"requestId":"$context.requestId", "ip": "$context.identity.sourceIp",
+          "caller":"$context.identity.caller",
+          "user":"$context.identity.user","requestTime":"$context.requestTime",
+          "eventType":"$context.eventType","routeKey":"$context.routeKey",
+          "status":"$context.status","connectionId":"$context.connectionId"}
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}" 
         
   OnConnectPermission:
     Type: AWS::Lambda::Permission
@@ -169,14 +175,10 @@ Resources:
           Fn::Sub: '{{resolve:ssm:/formkiq/${AppEnvironment}/sqs/DocumentsDeadLetterQueueArn}}'
       Tags:
         - Key: "Application"
-          Value: 
-            Fn::Sub: "FormKiQ ${FormKiQType}"
+          Value: "FormKiQ"
         - Key: "AppEnvironment"
           Value: 
             Fn::Sub: "${AppEnvironment}"
-        - Key: StackName
-          Value: 
-            Fn::Sub: "${AWS::StackName}"
 
   SqsQueueUrlParameter:
     Type: AWS::SSM::Parameter
@@ -188,12 +190,9 @@ Resources:
       Value: 
         Ref: SqsQueue
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
 
   SqsQueueArnParameter:
     Type: AWS::SSM::Parameter
@@ -207,12 +206,9 @@ Resources:
         - SqsQueue
         - Arn
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
                 
   WebsocketApiUrlParameter:
     Type: AWS::SSM::Parameter
@@ -224,12 +220,9 @@ Resources:
       Value: 
         Fn::Sub: "wss://${WebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}"
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
 
   ApiFunctionLogGroup:
     Type: AWS::Logs::LogGroup
@@ -283,8 +276,7 @@ Resources:
           - Ref: LogLevelSystem
           - Ref: AWS::NoValue
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
       Events:
@@ -302,14 +294,10 @@ Resources:
     Properties:
       Tags:
         - Key: "Application"
-          Value: 
-            Fn::Sub: "FormKiQ ${FormKiQType}"
+          Value: "FormKiQ"
         - Key: "AppEnvironment"
           Value: 
             Fn::Sub: "${AppEnvironment}"
-        - Key: StackName
-          Value: 
-            Fn::Sub: "${AWS::StackName}"
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -345,7 +333,7 @@ Resources:
               Action:
               - execute-api:ManageConnections
               Resource:
-              - Fn::Sub: "arn:${Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/${StageName}/POST/@connections/{connectionId}"
+              - Fn::Sub: "arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/${StageName}/POST/@connections/{connectionId}"
             - Effect: Allow
               Action:
               - dynamodb:BatchGetItem
@@ -356,8 +344,8 @@ Resources:
               - dynamodb:PutItem
               - dynamodb:DeleteItem
               Resource: 
-              - Fn::Sub: "arn:${Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${WebConnections}"
-              - Fn::Sub: "arn:${Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${WebConnections}/index/*"
+              - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${WebConnections}"
+              - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${WebConnections}/index/*"
 
   WebConnectionsParameter:
     Type: AWS::SSM::Parameter
@@ -369,12 +357,9 @@ Resources:
       Value: 
         Ref: WebConnections
       Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+        Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
 
   WebConnections:
     Type: AWS::DynamoDB::Table
@@ -389,8 +374,7 @@ Resources:
         StreamViewType: NEW_IMAGE
       Tags:
         - Key: "Application"
-          Value: 
-            Fn::Sub: "FormKiQ ${FormKiQType}"
+          Value: "FormKiQ"
         - Key: "AppEnvironment"
           Value: 
             Fn::Sub: "${AppEnvironment}"

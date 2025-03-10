@@ -34,12 +34,16 @@ import java.net.http.HttpRequest.Builder;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Executor;
+
 import com.formkiq.module.http.HttpHeaders;
 import com.formkiq.module.http.HttpService;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
@@ -48,9 +52,10 @@ import software.amazon.awssdk.auth.signer.params.Aws4SignerParams;
 import software.amazon.awssdk.http.SdkHttpFullRequest;
 import software.amazon.awssdk.http.SdkHttpMethod;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.utils.IoUtils;
 
 /**
- * 
+ *
  * SigV4 implementation of {@link HttpService}.
  *
  */
@@ -66,19 +71,23 @@ public final class HttpServiceSigv4 implements HttpService {
   private final AwsCredentials signingCredentials;
   /** {@link Region}. */
   private final Region signingRegion;
+  /** Sigv4 Signing Name. */
+  private final String signingName;
 
   /**
    * constructor.
-   * 
+   *
    * @param httpClient {@link HttpClient}
    * @param region {@link Region}
    * @param awsCredentials {@link AwsCredentials}
+   * @param serviceName {@link String}
    */
   private HttpServiceSigv4(final HttpClient httpClient, final Region region,
-      final AwsCredentials awsCredentials) {
+      final AwsCredentials awsCredentials, final String serviceName) {
     this.client = httpClient;
     this.signingRegion = region;
     this.signingCredentials = awsCredentials;
+    this.signingName = serviceName;
 
     if (region == null || awsCredentials == null) {
       throw new IllegalArgumentException();
@@ -87,29 +96,32 @@ public final class HttpServiceSigv4 implements HttpService {
 
   /**
    * constructor.
-   * 
+   *
    * @param region {@link Region}
    * @param awsCredentials {@link AwsCredentials}
+   * @param serviceName {@link String}
    */
-  public HttpServiceSigv4(final Region region, final AwsCredentials awsCredentials) {
-    this(HttpClient.newHttpClient(), region, awsCredentials);
+  public HttpServiceSigv4(final Region region, final AwsCredentials awsCredentials,
+      final String serviceName) {
+    this(HttpClient.newHttpClient(), region, awsCredentials, serviceName);
   }
 
   /**
    * constructor.
-   * 
+   *
    * @param region {@link Region}
    * @param awsCredentials {@link AwsCredentials}
+   * @param serviceName {@link String}
    * @param executor {@link Executor}
    */
   public HttpServiceSigv4(final Region region, final AwsCredentials awsCredentials,
-      final Executor executor) {
-    this(HttpClient.newBuilder().executor(executor).build(), region, awsCredentials);
+      final String serviceName, final Executor executor) {
+    this(HttpClient.newBuilder().executor(executor).build(), region, awsCredentials, serviceName);
   }
 
   /**
    * Build a {@link SdkHttpFullRequest.Builder}.
-   * 
+   *
    * @param uri URI
    * @param method {@link SdkHttpMethod}
    * @param headers {@link HttpHeaders}
@@ -157,11 +169,10 @@ public final class HttpServiceSigv4 implements HttpService {
 
   /**
    * Execute {@link SdkHttpFullRequest}.
-   * 
+   *
    * @param request {@link SdkHttpFullRequest}
    * @return {@link HttpResponse}
    * @throws IOException IOException
-   * @throws InterruptedException InterruptedException
    */
   private HttpResponse<String> execute(final SdkHttpFullRequest request) throws IOException {
 
@@ -176,21 +187,14 @@ public final class HttpServiceSigv4 implements HttpService {
       }
     }
 
-    switch (request.method()) {
-      case GET:
-        builder = builder.GET();
-        break;
-      case POST:
-      case PUT:
-      case PATCH:
-        InputStream is = request.contentStreamProvider().get().newStream();
-        builder = builder.method(request.method().name(), BodyPublishers.ofInputStream(() -> is));
-        break;
-      case DELETE:
-        builder = builder.DELETE();
-        break;
-      default:
-        builder = builder.method(request.method().name(), HttpRequest.BodyPublishers.noBody());
+    if (request.contentStreamProvider().isPresent()) {
+      try (InputStream is = request.contentStreamProvider().get().newStream()) {
+        byte[] data = IoUtils.toByteArray(is);
+        builder.method(request.method().name(), BodyPublishers.ofByteArray(data));
+        builder.header("x-amz-content-sha256", sha256Hex(data));
+      }
+    } else {
+      builder.method(request.method().name(), BodyPublishers.noBody());
     }
 
     try {
@@ -210,9 +214,17 @@ public final class HttpServiceSigv4 implements HttpService {
   }
 
   @Override
+  public HttpResponse<String> get(final String url, final Optional<HttpHeaders> headers,
+      final Optional<Map<String, String>> parameters, final String payload) throws IOException {
+    SdkHttpFullRequest.Builder request =
+        buildRequest(url, SdkHttpMethod.GET, headers, parameters, Optional.of(payload));
+    SdkHttpFullRequest req = sign(request);
+    return execute(req);
+  }
+
+  @Override
   public HttpResponse<InputStream> getAsInputStream(final String url,
-      final Optional<HttpHeaders> headers, final Optional<Map<String, String>> parameters)
-      throws IOException {
+      final Optional<HttpHeaders> headers, final Optional<Map<String, String>> parameters) {
     throw new UnsupportedOperationException();
   }
 
@@ -251,7 +263,7 @@ public final class HttpServiceSigv4 implements HttpService {
 
   /**
    * AWS Signature Version 4 signing.
-   * 
+   *
    * @param request {@link SdkHttpFullRequest.Builder}
    * @return {@link SdkHttpFullRequest}
    */
@@ -259,7 +271,7 @@ public final class HttpServiceSigv4 implements HttpService {
 
     SdkHttpFullRequest req = request.build();
 
-    Aws4SignerParams params = Aws4SignerParams.builder().signingName("execute-api")
+    Aws4SignerParams params = Aws4SignerParams.builder().signingName(signingName)
         .signingRegion(this.signingRegion).awsCredentials(this.signingCredentials).build();
 
     Aws4Signer signer = Aws4Signer.create();
@@ -271,7 +283,7 @@ public final class HttpServiceSigv4 implements HttpService {
 
   /**
    * Convert {@link String} to {@link URI}.
-   * 
+   *
    * @param uri {@link String}
    * @return {@link URI}
    * @throws IOException IOException
@@ -281,6 +293,16 @@ public final class HttpServiceSigv4 implements HttpService {
       return new URI(uri);
     } catch (URISyntaxException e) {
       throw new IOException(e);
+    }
+  }
+
+  private static String sha256Hex(final byte[] data) {
+    try {
+      MessageDigest md = MessageDigest.getInstance("SHA-256");
+      byte[] digest = md.digest(data);
+      return HexFormat.of().formatHex(digest);
+    } catch (NoSuchAlgorithmException e) {
+      throw new IllegalStateException(e);
     }
   }
 }

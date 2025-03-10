@@ -32,7 +32,7 @@
               - OAuth(JWT)
               - AWS IAM
               - API Key
-          version: 1.16.1
+          version: 1.17.0
         tags:
         - name: documents
           description: API for the add, updating and fetching of documents
@@ -97,9 +97,6 @@
         - name: webhooks
           description: Webhooks API
           x-displayName: Webhooks
-        - name: onlyoffice
-          description: Onlyoffice API
-          x-displayName: Onlyoffice
         - name: e-signature
           description: E-Signature API
           x-displayName: E-Signature
@@ -433,6 +430,7 @@
               - Schemas
               parameters:
               - $ref: '#/components/parameters/siteIdPathParam'
+              - $ref: '#/components/parameters/localeQueryParam'
               responses:
                 "200":
                   description: 200 OK
@@ -499,6 +497,7 @@
               parameters:
               - $ref: '#/components/parameters/siteIdPathParam'
               - $ref: '#/components/parameters/keyParam'
+              - $ref: '#/components/parameters/localeQueryParam'
               responses:
                 "200":
                   description: 200 OK
@@ -594,6 +593,7 @@
               parameters:
               - $ref: '#/components/parameters/siteIdPathParam'
               - $ref: '#/components/parameters/classificationIdParam'
+              - $ref: '#/components/parameters/localeQueryParam'
               responses:
                 "200":
                   description: 200 OK
@@ -689,6 +689,7 @@
               - $ref: '#/components/parameters/siteIdPathParam'
               - $ref: '#/components/parameters/classificationIdParam'
               - $ref: '#/components/parameters/keyParam'
+              - $ref: '#/components/parameters/localeQueryParam'
               responses:
                 "200":
                   description: 200 OK
@@ -1008,6 +1009,249 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+          /sites/{siteId}/locales:
+            get:
+              operationId: GetLocales
+              description: Returns a list of locale(s) in a specified site
+              summary: Get Locales
+              tags:
+              - System Management
+              parameters:
+              - $ref: '#/components/parameters/siteIdPathParam'
+              - $ref: '#/components/parameters/nextParam'
+              - $ref: '#/components/parameters/limitParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetLocalesResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+            post:
+              operationId: AddLocale
+              description: Adds a new locale to the specified site
+              summary: Add Locale
+              tags:
+              - System Management
+              parameters:
+              - $ref: '#/components/parameters/siteIdPathParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/AddLocaleRequest'
+              responses:
+                "201":
+                  description: 201 CREATED
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/AddResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+          /sites/{siteId}/locales/{locale}:
+            delete:
+              operationId: DeleteLocale
+              summary: Delete Locale
+              description: Delete Locale
+              tags:
+              - System Management
+              parameters:
+              - $ref: '#/components/parameters/siteIdPathParam'
+              - $ref: '#/components/parameters/localeParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DeleteResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+          /sites/{siteId}/locales/{locale}/resourceItems:
+            get:
+              operationId: GetLocaleResourceItems
+              description: Returns the list resource items
+              summary: Get Resource Items by Locale
+              tags:
+              - System Management
+              parameters:
+              - $ref: '#/components/parameters/siteIdPathParam'
+              - $ref: '#/components/parameters/localeParam'
+              - $ref: '#/components/parameters/nextParam'
+              - $ref: '#/components/parameters/limitParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetLocaleResourceItemsResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+            post:
+              operationId: AddLocaleResourceItem
+              description: Adds a new localized resource item for a given locale
+              summary: Add Locale Resource Item
+              tags:
+              - System Management
+              parameters:
+              - $ref: '#/components/parameters/siteIdPathParam'
+              - $ref: '#/components/parameters/localeParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/AddLocaleResourceItemRequest'
+              responses:
+                "200":
+                  description: 201 CREATED
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/AddLocaleResourceItemResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+          /sites/{siteId}/locales/{locale}/resourceItems/{itemKey}:
+            get:
+              operationId: GetLocaleResourceItem
+              description: Returns the resource item
+              summary: Get Resource Item by Locale
+              tags:
+              - System Management
+              parameters:
+              - $ref: '#/components/parameters/siteIdPathParam'
+              - $ref: '#/components/parameters/localeParam'
+              - $ref: '#/components/parameters/itemKeyParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetLocaleResourceItemResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+            put:
+              operationId: SetLocaleResourceItem
+              description: Set a new Locale Resource Item
+              summary: Set Locale Resource Item
+              tags:
+              - System Management
+              parameters:
+              - $ref: '#/components/parameters/siteIdPathParam'
+              - $ref: '#/components/parameters/localeParam'
+              - $ref: '#/components/parameters/itemKeyParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/SetLocaleResourceItemRequest'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/SetResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+            delete:
+              operationId: DeleteLocaleResourceItem
+              summary: Delete Local Resource Item
+              description: Delete Local Resource Item
+              tags:
+              - System Management
+              parameters:
+              - $ref: '#/components/parameters/siteIdPathParam'
+              - $ref: '#/components/parameters/localeParam'
+              - $ref: '#/components/parameters/itemKeyParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DeleteResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /documents:
             get:
               operationId: GetDocuments
@@ -1072,7 +1316,9 @@
             post:
               operationId: AddDocument
               description: |-
-                Creates a new document; body may include document content if less than 5 MB
+                Creates a new document; body may include document content if less than 5 MB.
+
+                Returns a unique **documentId** used in subsequent operations.
 
                 See POST /documents/{documentId}/tags for adding tags to document schema
 
@@ -1270,16 +1516,28 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+          /documents/{documentId}/purge:
+            delete:
+              operationId: PurgeDocument
+              summary: Purge document
+              description: Remove all objects from the S3 bucket, including previous versions and current version, and should remove all metadata as well, so that no trace of the document exists outside of the audit logs and any backups. Can only be called be ADMIN.
+              tags:
+              - Documents
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              responses:
+                "200":
+                  $ref: '#/components/responses/200CorsDeleteResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /documents/{documentId}/content:
             get:
               operationId: GetDocumentContent
               summary: Get document's contents
-              description: |
-                Retrieves the content of the document with the specified `documentId`.
-                - If the content is plain text and under 6 MB, the content will be returned directly.
-                - If the content is plain text but exceeds 6 MB, an error will be returned.
-                - For documents not in plain text format, pre-signed S3 URLs will be returned to download the content from S3.
-                It is recommended to use the `/documents/{documentId}/url` endpoint to retrieve pre-signed S3 URLs for downloading the content.
+              description: "Retrieves the content of the document with the specified `documentId`.\n- If the content is plain text and under 6 MB, the content will be returned directly.\n- If the content is plain text but exceeds 6 MB, an error will be returned.\n- For documents not in plain text format, pre-signed S3 URLs will be returned to download the content from S3.\nIt is recommended to use the `/documents/{documentId}/url` endpoint to retrieve pre-signed S3 URLs for downloading the content.\n\nIf the document has a Content-Type of text/, application/json, application/x-www-form-urlencoded the content field will be returned. \nAll other Content-Type, the contentUrl field will be returned, which is a S3 Presigned url.\n"
               tags:
               - Documents
               parameters:
@@ -1767,6 +2025,12 @@
                 schema:
                   type: boolean
                   default: false
+              - name: bypassWatermark
+                in: query
+                description: Allow the by pass of watermark (only allowed by GOVERN / ADMIN permissions)
+                schema:
+                  type: boolean
+                  default: false
               responses:
                 "200":
                   description: 200 OK
@@ -1825,7 +2089,7 @@
             post:
               operationId: AddDocumentUpload
               summary: Add large document
-              description: Returns a URL that can be used to upload document content and create a new document, while allowing metadata to also be sent; this endpoint (whether GET or POST) is required in order to add content that is larger than 5 MB
+              description: Returns a URL that can be used to upload document content and create a new document, while allowing metadata to also be sent; this endpoint (whether GET or POST) is required in order to add content that is larger than 5 MB. The POST endpoint allow the adding of document metadata at the same time as the document is created.
               tags:
               - Documents
               parameters:
@@ -4028,99 +4292,6 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
-          /onlyoffice/{documentId}/edit:
-            post:
-              operationId: OnlyOfficeDocumentEdit
-              summary: Edit onlyoffice document
-              description: Provide ONLYOFFICE integration for editing documents; available as an Add-On Module
-              tags:
-              - Onlyoffice
-              parameters:
-              - $ref: '#/components/parameters/siteIdParam'
-              - $ref: '#/components/parameters/documentIdParam'
-              requestBody:
-                required: true
-                content:
-                  application/json:
-                    schema:
-                      $ref: '#/components/schemas/OnlyOfficeDocumentEditRequest'
-              responses:
-                "200":
-                  description: 200 OK
-                  headers:
-                    Access-Control-Allow-Origin:
-                      $ref: '#/components/headers/AccessControlAllowOrigin'
-                    Access-Control-Allow-Methods:
-                      $ref: '#/components/headers/AccessControlAllowMethods'
-                    Access-Control-Allow-Headers:
-                      $ref: '#/components/headers/AccessControlAllowHeaders'
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/OnlyOfficeDocumentResponse'
-              security:
-              - ApiAuthorization: []
-              x-amazon-apigateway-integration:
-                $ref: '#/components/x-amazon-apigateway-integrations/onlyOfficeLambdaApi200'
-          /onlyoffice/new:
-            post:
-              operationId: OnlyOfficeDocumentNew
-              summary: Create onlyoffice document
-              description: Provide ONLYOFFICE integration for the creation of new documents; available as an Add-On Module
-              tags:
-              - Onlyoffice
-              parameters:
-              - $ref: '#/components/parameters/siteIdParam'
-              requestBody:
-                required: true
-                content:
-                  application/json:
-                    schema:
-                      $ref: '#/components/schemas/OnlyOfficeDocumentNewRequest'
-              responses:
-                "200":
-                  description: 200 OK
-                  headers:
-                    Access-Control-Allow-Origin:
-                      $ref: '#/components/headers/AccessControlAllowOrigin'
-                    Access-Control-Allow-Methods:
-                      $ref: '#/components/headers/AccessControlAllowMethods'
-                    Access-Control-Allow-Headers:
-                      $ref: '#/components/headers/AccessControlAllowHeaders'
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/OnlyOfficeDocumentResponse'
-              security:
-              - ApiAuthorization: []
-              x-amazon-apigateway-integration:
-                $ref: '#/components/x-amazon-apigateway-integrations/onlyOfficeLambdaApi200'
-          /onlyoffice/{documentId}/save:
-            post:
-              operationId: OnlyOfficeDocumentSave
-              summary: Save onlyoffice document
-              description: Save an updated document for ONLYOFFICE integration. available as an Add-On Module
-              tags:
-              - Onlyoffice
-              parameters:
-              - $ref: '#/components/parameters/siteIdParam'
-              - $ref: '#/components/parameters/documentIdParam'
-              responses:
-                "200":
-                  description: 200 OK
-                  headers:
-                    Access-Control-Allow-Origin:
-                      $ref: '#/components/headers/AccessControlAllowOrigin'
-                    Access-Control-Allow-Methods:
-                      $ref: '#/components/headers/AccessControlAllowMethods'
-                    Access-Control-Allow-Headers:
-                      $ref: '#/components/headers/AccessControlAllowHeaders'
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/OnlyOfficeDocumentSaveResponse'
-              x-amazon-apigateway-integration:
-                $ref: '#/components/x-amazon-apigateway-integrations/onlyOfficeLambdaApi200'
           /indices/{indexType}/move:
             post:
               operationId: IndexFolderMove
@@ -6272,6 +6443,27 @@
               required: true
               schema:
                 type: string
+            localeParam:
+              name: locale
+              in: path
+              description: Site Locale (ISO 639 / ISO 3166)
+              required: true
+              schema:
+                type: string
+            localeQueryParam:
+              name: locale
+              in: query
+              description: Site Locale (ISO 639 / ISO 3166)
+              required: false
+              schema:
+                type: string
+            itemKeyParam:
+              name: itemKey
+              in: path
+              description: Item Key (MUST be URL‑encoded)
+              required: true
+              schema:
+                type: string
             idParam:
               name: id
               in: path
@@ -6983,6 +7175,12 @@
                 path:
                   type: string
                   description: Path or Name of document
+                width:
+                  type: string
+                  description: Document Content Width property
+                height:
+                  type: string
+                  description: Document Content Height property
                 deepLinkPath:
                   type: string
                   description: Path or Name of deep link
@@ -7033,6 +7231,12 @@
                 path:
                   type: string
                   description: Path or Name of document
+                width:
+                  type: string
+                  description: Document Content Width property
+                height:
+                  type: string
+                  description: Document Content Height property
                 deepLinkPath:
                   type: string
                   description: Path or Name of deep link
@@ -7318,6 +7522,12 @@
                 contentType:
                   type: string
                   description: Document media type
+                width:
+                  type: string
+                  description: Document Content Width property
+                height:
+                  type: string
+                  description: Document Content Height property
                 deepLinkPath:
                   type: string
                   description: Path or Name of deep link
@@ -7363,6 +7573,12 @@
                 checksum:
                   type: string
                   description: The checksum value to validate the file against
+                width:
+                  type: string
+                  description: Document Content Width property
+                height:
+                  type: string
+                  description: Document Content Height property
                 deepLinkPath:
                   type: string
                   description: Path or Name of deep link
@@ -7406,6 +7622,12 @@
                 path:
                   type: string
                   description: Path or Name of document
+                width:
+                  type: string
+                  description: Document Content Width property
+                height:
+                  type: string
+                  description: Document Content Height property
                 deepLinkPath:
                   type: string
                   description: Path or Name of deep link
@@ -7710,6 +7932,12 @@
                 path:
                   type: string
                   description: Path or Name of document
+                width:
+                  type: string
+                  description: Document Content Width property
+                height:
+                  type: string
+                  description: Document Content Height property
                 deepLinkPath:
                   type: string
                   description: Path or Name of deep link
@@ -7906,6 +8134,12 @@
                 contentType:
                   type: string
                   description: Document Content-Type
+                width:
+                  type: string
+                  description: Document Content Width property
+                height:
+                  type: string
+                  description: Document Content Height property
                 deepLinkPath:
                   type: string
                   description: Path or Name of deep link
@@ -7953,6 +8187,7 @@
               - CLASSIFICATION
               - COMPOSITE_STRING
               - RELATIONSHIPS
+              - WATERMARK
             FulltextAttribute:
               type: object
               properties:
@@ -7986,6 +8221,12 @@
                 path:
                   type: string
                   description: Path or Name of document
+                width:
+                  type: string
+                  description: Document Content Width property
+                height:
+                  type: string
+                  description: Document Content Height property
                 deepLinkPath:
                   type: string
                   description: Path or Name of deep link
@@ -8031,27 +8272,30 @@
                   type: array
                   description: List of document syncs
                   items:
-                    $ref: '#/components/schemas/GetDocumentSync'
+                    $ref: '#/components/schemas/DocumentSync'
             DocumentSyncService:
               type: string
               description: Service of Document Sync
               enum:
               - TYPESENSE
               - OPENSEARCH
+              - EVENTBRIDGE
             DocumentSyncStatus:
               type: string
               description: Status of Document Sync
               enum:
               - COMPLETE
               - FAILED
+              - PENDING
             DocumentSyncType:
               type: string
               description: Type of Document Sync
               enum:
               - METADATA
-              - TAG
               - CONTENT
-            GetDocumentSync:
+              - SOFT_DELETE
+              - DELETE
+            DocumentSync:
               type: object
               properties:
                 service:
@@ -8060,6 +8304,9 @@
                   $ref: '#/components/schemas/DocumentSyncStatus'
                 type:
                   $ref: '#/components/schemas/DocumentSyncType'
+                insertedDate:
+                  type: string
+                  description: Inserted Timestamp
                 syncDate:
                   type: string
                   description: Timestamp of synchronization
@@ -8169,6 +8416,12 @@
                 path:
                   type: string
                   description: Path or Name of document
+                width:
+                  type: string
+                  description: Document Content Width property
+                height:
+                  type: string
+                  description: Document Content Height property
                 deepLinkPath:
                   type: string
                   description: Path or Name of deep link
@@ -8235,6 +8488,12 @@
                 path:
                   type: string
                   description: Path or Name of document
+                width:
+                  type: string
+                  description: Document Content Width property
+                height:
+                  type: string
+                  description: Document Content Height property
                 deepLinkPath:
                   type: string
                   description: Path or Name of deep link
@@ -9145,15 +9404,6 @@
                   type: string
                   description: The default JSON object path for the data object
                   default: data
-            Locale:
-              type: object
-              properties:
-                language:
-                  type: string
-                  description: 'ISO 639-1 language code (eg: en (English), fr (French), de (German))'
-                country:
-                  type: string
-                  description: 'ISO 3166-1 country code (eg: US, CA, DE, FR)'
             DocumentGenerateOutputType:
               type: string
               description: Document Generate Output Type
@@ -9317,6 +9567,10 @@
                   description: Attribute's allowed values
                   items:
                     type: string
+                localizedAllowedValues:
+                  type: object
+                  additionalProperties:
+                    type: string
             GetAttributeResponse:
               type: object
               properties:
@@ -9343,6 +9597,57 @@
                   description: Attribute Key
                 dataType:
                   $ref: '#/components/schemas/AttributeDataType'
+                watermark:
+                  $ref: '#/components/schemas/Watermark'
+            Watermark:
+              type: object
+              properties:
+                text:
+                  type: string
+                  description: Watermark text
+                rotation:
+                  type: number
+                  description: Watermark Rotation
+                imageDocumentId:
+                  type: string
+                  description: Watermark Image Document Id
+                scale:
+                  $ref: '#/components/schemas/WatermarkScale'
+                position:
+                  $ref: '#/components/schemas/WatermarkPosition'
+            WatermarkPosition:
+              type: object
+              properties:
+                xAnchor:
+                  $ref: '#/components/schemas/WatermarkPositionXAnchor'
+                yAnchor:
+                  $ref: '#/components/schemas/WatermarkPositionYAnchor'
+                xOffset:
+                  type: number
+                  description: X offset
+                yOffset:
+                  type: number
+                  description: Y offset
+            WatermarkScale:
+              type: string
+              description: Watermark Scale
+              enum:
+              - FIT_BEST
+              - ORIGINAL
+            WatermarkPositionXAnchor:
+              type: string
+              description: Watermark X Position Anchor
+              enum:
+              - LEFT
+              - RIGHT
+              - CENTER
+            WatermarkPositionYAnchor:
+              type: string
+              description: Watermark Y Position Anchor
+              enum:
+              - TOP
+              - BOTTOM
+              - CENTER
             AttributeType:
               type: string
               description: Type of Attribute
@@ -9360,6 +9665,7 @@
               - BOOLEAN
               - KEY_ONLY
               - PUBLICATION
+              - WATERMARK
             AddAttributeRequest:
               required:
               - attribute
@@ -9379,6 +9685,8 @@
                   $ref: '#/components/schemas/AttributeDataType'
                 type:
                   $ref: '#/components/schemas/AttributeType'
+                watermark:
+                  $ref: '#/components/schemas/Watermark'
             AddAttributeResponse:
               type: object
               properties:
@@ -9676,6 +9984,12 @@
                 path:
                   type: string
                   description: Path or Name of document
+                width:
+                  type: string
+                  description: Document Content Width property
+                height:
+                  type: string
+                  description: Document Content Height property
                 deepLinkPath:
                   type: string
                   description: Path or Name of deep link
@@ -9715,6 +10029,12 @@
                 path:
                   type: string
                   description: Path or Name of document
+                width:
+                  type: string
+                  description: Document Content Width property
+                height:
+                  type: string
+                  description: Document Content Height property
                 deepLinkPath:
                   type: string
                   description: Path or Name of deep link
@@ -9754,6 +10074,12 @@
                 path:
                   type: string
                   description: Path or Name of document
+                width:
+                  type: string
+                  description: Document Content Width property
+                height:
+                  type: string
+                  description: Document Content Height property
                 deepLinkPath:
                   type: string
                   description: Path or Name of deep link
@@ -9955,6 +10281,152 @@
                 message:
                   type: string
                   description: Result message
+            AddResourceItem:
+              oneOf:
+              - $ref: '#/components/schemas/AddLocaleResourceInterfaceItem'
+              - $ref: '#/components/schemas/AddLocaleResourceSchemaItem'
+              - $ref: '#/components/schemas/AddLocaleResourceClassificationItem'
+            ResourceItem:
+              properties:
+                itemType:
+                  $ref: '#/components/schemas/LocaleResourceType'
+                localizedValue:
+                  type: string
+                  description: Localized Value
+                interfaceKey:
+                  type: string
+                  description: Interface Key
+                itemKey:
+                  type: string
+                  description: Item Key
+                attributeKey:
+                  type: string
+                  description: Attribute Key
+                allowedValue:
+                  type: string
+                  description: Resource value
+                classificationId:
+                  type: string
+                  description: Classification Id
+            LocaleResourceType:
+              type: string
+              description: Type of Locale Resource
+              enum:
+              - INTERFACE
+              - SCHEMA
+              - CLASSIFICATION
+            SetLocaleResourceItemRequest:
+              type: object
+              properties:
+                resourceItem:
+                  $ref: '#/components/schemas/AddResourceItem'
+            AddLocaleResourceItemRequest:
+              type: object
+              properties:
+                resourceItem:
+                  $ref: '#/components/schemas/AddResourceItem'
+            AddLocaleResourceInterfaceItem:
+              type: object
+              required:
+              - itemType
+              - interfaceKey
+              - localizedValue
+              properties:
+                itemType:
+                  $ref: '#/components/schemas/LocaleResourceType'
+                localizedValue:
+                  type: string
+                  description: Localized Value
+                interfaceKey:
+                  type: string
+                  description: Interface Key
+            AddLocaleResourceSchemaItem:
+              type: object
+              required:
+              - itemType
+              - attributeKey
+              - allowedValue
+              - localizedValue
+              properties:
+                itemType:
+                  $ref: '#/components/schemas/LocaleResourceType'
+                attributeKey:
+                  type: string
+                  description: Attribute Key
+                allowedValue:
+                  type: string
+                  description: Resource value
+                localizedValue:
+                  type: string
+                  description: Localized Value
+            AddLocaleResourceClassificationItem:
+              type: object
+              required:
+              - itemType
+              - attributeKey
+              - allowedValue
+              - localizedValue
+              - classificationId
+              properties:
+                itemType:
+                  $ref: '#/components/schemas/LocaleResourceType'
+                classificationId:
+                  type: string
+                  description: Classification Id
+                attributeKey:
+                  type: string
+                  description: Attribute Key
+                allowedValue:
+                  type: string
+                  description: Resource value
+                localizedValue:
+                  type: string
+                  description: Localized Value
+            AddLocaleResourceItemResponse:
+              type: object
+              properties:
+                itemKey:
+                  type: string
+                  description: Item Key of resource
+            Locale:
+              type: object
+              properties:
+                locale:
+                  type: string
+                  description: Name of Locale
+            AddLocaleRequest:
+              type: object
+              properties:
+                locale:
+                  type: string
+                  description: Name of Locale
+            GetLocalesResponse:
+              type: object
+              properties:
+                next:
+                  type: string
+                  description: Next page of results token
+                locales:
+                  type: array
+                  description: List of Locale
+                  items:
+                    $ref: '#/components/schemas/Locale'
+            GetLocaleResourceItemsResponse:
+              type: object
+              properties:
+                next:
+                  type: string
+                  description: Next page of results token
+                resourceItems:
+                  type: array
+                  description: List of permissions
+                  items:
+                    $ref: '#/components/schemas/ResourceItem'
+            GetLocaleResourceItemResponse:
+              type: object
+              properties:
+                resourceItem:
+                  $ref: '#/components/schemas/ResourceItem'
             AddApiKeyRequest:
               type: object
               properties:
@@ -10886,7 +11358,7 @@
                   description: Name of Classification
                   type: string
                 attributes:
-                  $ref: '#/components/schemas/SchemaAttributes'
+                  $ref: '#/components/schemas/SetSchemaAttributes'
             SetClassificationRequest:
               type: object
               properties:
@@ -10948,7 +11420,28 @@
                   description: Name of schema
                   type: string
                 attributes:
-                  $ref: '#/components/schemas/SchemaAttributes'
+                  $ref: '#/components/schemas/SetSchemaAttributes'
+            SetSchemaAttributes:
+              type: object
+              properties:
+                compositeKeys:
+                  type: array
+                  description: List of Composite Keys
+                  items:
+                    $ref: '#/components/schemas/AttributeSchemaCompositeKey'
+                required:
+                  type: array
+                  description: List of Required Attributes
+                  items:
+                    $ref: '#/components/schemas/AddAttributeSchemaRequired'
+                optional:
+                  type: array
+                  description: List of Optional Attribute
+                  items:
+                    $ref: '#/components/schemas/AddAttributeSchemaOptional'
+                allowAdditionalAttributes:
+                  type: boolean
+                  default: true
             SchemaAttributes:
               type: object
               properties:
@@ -10977,9 +11470,15 @@
                   type: array
                   items:
                     type: string
-            AttributeSchemaRequired:
+            AddAttributeSchemaRequired:
               type: object
               properties:
+                minNumberOfValues:
+                  type: number
+                  description: The minimum number of attribute values
+                maxNumberOfValues:
+                  type: number
+                  description: The maximum number of attribute values
                 attributeKey:
                   type: string
                 defaultValue:
@@ -10995,9 +11494,43 @@
                   description: Only valid string values
                   items:
                     type: string
-            AttributeSchemaOptional:
+            AttributeSchemaRequired:
               type: object
               properties:
+                attributeKey:
+                  type: string
+                minNumberOfValues:
+                  type: number
+                  description: The minimum number of attribute values
+                maxNumberOfValues:
+                  type: number
+                  description: The maximum number of attribute values
+                defaultValue:
+                  type: string
+                  description: Default value
+                defaultValues:
+                  type: array
+                  description: Default values
+                  items:
+                    type: string
+                allowedValues:
+                  type: array
+                  description: Only valid string values
+                  items:
+                    type: string
+                localizedAllowedValues:
+                  type: object
+                  additionalProperties:
+                    type: string
+            AddAttributeSchemaOptional:
+              type: object
+              properties:
+                minNumberOfValues:
+                  type: number
+                  description: The minimum number of attribute values
+                maxNumberOfValues:
+                  type: number
+                  description: The maximum number of attribute values
                 attributeKey:
                   type: string
                 allowedValues:
@@ -11005,63 +11538,26 @@
                   description: Only valid string values
                   items:
                     type: string
-            OnlyOfficeDocumentNewRequest:
-              description: ONLYOFFICE New Document Request
-              properties:
-                extension:
-                  type: string
-                  enum:
-                  - DOCX
-                  - XLSX
-                  - PPTX
-            OnlyOfficeDocumentEditRequest:
-              description: ONLYOFFICE Edit Document Request
-            OnlyOfficeDocumentResponse:
+            AttributeSchemaOptional:
               type: object
               properties:
-                config:
-                  $ref: '#/components/schemas/OnlyOfficeConfig'
-            OnlyOfficeConfig:
-              type: object
-              properties:
-                onlyOfficeUrl:
-                  description: URL of the ONLYOFFICE application
+                minNumberOfValues:
+                  type: number
+                  description: The minimum number of attribute values
+                maxNumberOfValues:
+                  type: number
+                  description: The maximum number of attribute values
+                attributeKey:
                   type: string
-                token:
-                  description: ONLYOFFICE security token
-                  type: string
-                documentType:
-                  description: Type of document (https://api.onlyoffice.com/editors/config/)
-                  type: string
-                editorConfig:
-                  $ref: '#/components/schemas/OnlyOfficeEditorConfig'
-                document:
-                  $ref: '#/components/schemas/OnlyOfficeConfigDocument'
-            OnlyOfficeEditorConfig:
-              type: object
-              properties:
-                callbackUrl:
-                  type: string
-            OnlyOfficeConfigDocument:
-              type: object
-              properties:
-                url:
-                  description: Defines the absolute URL where the source viewed or edited document is stored
-                  type: string
-                title:
-                  description: Defines the desired file name for the viewed or edited document
-                  type: string
-                key:
-                  description: Defines the unique document identifier used by the service to recognize the document
-                  type: string
-                fileType:
-                  description: Defines the type of the file for the source viewed or edited document
-                  type: string
-            OnlyOfficeDocumentSaveResponse:
-              type: object
-              properties:
-                message:
-                  type: string
+                allowedValues:
+                  type: array
+                  description: Only valid string values
+                  items:
+                    type: string
+                localizedAllowedValues:
+                  type: object
+                  additionalProperties:
+                    type: string
             DocusignEnvironment:
               type: string
               description: Docusign Environment
@@ -11270,7 +11766,7 @@
               x-amazon-apigateway-authorizer:
                 identitySource: $request.header.Authorization
                 authorizerUri:
-                  Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ApiKeyAuthorizer.Arn}/invocations
+                  Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ApiKeyAuthorizer.Arn}/invocations
                 authorizerResultTtlInSeconds: 300
                 authorizerPayloadFormatVersion: "2.0"
                 enableSimpleResponses: true
@@ -11278,7 +11774,7 @@
           x-amazon-apigateway-integrations:
             lambdaApi200:
               uri:
-                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
+                Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
               responses:
                 default:
                   statusCode: "200"
@@ -11292,7 +11788,7 @@
               payloadFormatVersion: "1.0"
             ocrLambdaApi200:
               uri:
-                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
+                Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
               responses:
                 default:
                   statusCode: "200"
@@ -11306,7 +11802,7 @@
               payloadFormatVersion: "1.0"
             antivirusLambdaApi200:
               uri:
-                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
+                Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
               responses:
                 default:
                   statusCode: "200"
@@ -11320,7 +11816,7 @@
               payloadFormatVersion: "1.0"
             searchLambdaApi200:
               uri:
-                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
+                Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
               responses:
                 default:
                   statusCode: "200"
@@ -11334,7 +11830,7 @@
               payloadFormatVersion: "1.0"
             fulltextLambdaApi200:
               uri:
-                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
+                Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
               responses:
                 default:
                   statusCode: "200"
@@ -11348,21 +11844,7 @@
               payloadFormatVersion: "1.0"
             ocrObjectsLambdaApi200:
               uri:
-                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${OcrApiRequestsArn}/invocations
-              responses:
-                default:
-                  statusCode: "200"
-                  responseParameters:
-                    method.response.header.Access-Control-Allow-Methods: '''*'''
-                    method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key'''
-                    method.response.header.Access-Control-Allow-Origin: '''*'''
-              passthroughBehavior: when_no_templates
-              httpMethod: POST
-              type: aws_proxy
-              payloadFormatVersion: "1.0"
-            onlyOfficeLambdaApi200:
-              uri:
-                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
+                Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${OcrApiRequestsArn}/invocations
               responses:
                 default:
                   statusCode: "200"
@@ -11376,7 +11858,7 @@
               payloadFormatVersion: "1.0"
             esignatureLambdaApi200:
               uri:
-                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
+                Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
               responses:
                 default:
                   statusCode: "200"
@@ -11390,7 +11872,7 @@
               payloadFormatVersion: "1.0"
             caseManagementLambdaApi200:
               uri:
-                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
+                Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
               responses:
                 default:
                   statusCode: "200"
@@ -11404,7 +11886,7 @@
               payloadFormatVersion: "1.0"
             googleLambdaApi201:
               uri:
-                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
+                Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
               responses:
                 default:
                   statusCode: "201"
@@ -11418,7 +11900,7 @@
               payloadFormatVersion: "1.0"
             documentGenerationLambdaApi201:
               uri:
-                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
+                Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
               responses:
                 default:
                   statusCode: "201"
@@ -11432,7 +11914,7 @@
               payloadFormatVersion: "1.0"
             lambdaApi201:
               uri:
-                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
+                Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
               responses:
                 default:
                   statusCode: "201"
