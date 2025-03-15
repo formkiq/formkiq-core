@@ -39,6 +39,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /** Unit Tests for request /login, /changePassword, /resetPassword, /confirmRegistration. */
 public class CognitoAuthRequestTest extends AbstractApiClientRequestTest {
@@ -112,10 +113,10 @@ public class CognitoAuthRequestTest extends AbstractApiClientRequestTest {
 
     // then
     assertEquals("200", String.valueOf(post.statusCode()));
-    assertEquals(
-        "{\"authenticationResult\":{\"accessToken\":\"ABC\"},"
-            + "\"sessionName\":\"AYABeCHQdmWZNwl7Egjpk\",\"challengeName\":\"MFA_SETUP\"}",
-        post.body());
+    Map<String, String> map = GSON.fromJson(post.body(), Map.class);
+    assertNull(map.get("authenticationResult"));
+    assertEquals("AYABeCHQdmWZNwl7Egjpk", map.get("session"));
+    assertEquals("MFA_SETUP", map.get("challengeName"));
 
     // given
     url = server.getBasePath() + "/mfa/challenge";
@@ -127,7 +128,7 @@ public class CognitoAuthRequestTest extends AbstractApiClientRequestTest {
     // then
     assertEquals("200", String.valueOf(post.statusCode()));
 
-    Map<String, String> map = GSON.fromJson(post.body(), Map.class);
+    map = GSON.fromJson(post.body(), Map.class);
     assertEquals("abcdef", map.get("session"));
     assertEquals("12345", map.get("secretCode"));
 
