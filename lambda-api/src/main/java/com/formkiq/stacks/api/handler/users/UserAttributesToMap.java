@@ -30,7 +30,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.formkiq.aws.cognito.CognitoIdentityProviderService.COGNITO_USER_ATTRIBUTES;
+import static com.formkiq.aws.cognito.CognitoIdentityProviderServiceImpl.COGNITO_USER_ATTRIBUTES;
 
 /**
  * Function to Convert {@link List} {@link AttributeType} to {@link Map}.

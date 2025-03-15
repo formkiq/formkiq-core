@@ -23,289 +23,29 @@
  */
 package com.formkiq.aws.cognito;
 
-
-import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminAddUserToGroupRequest;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminConfirmSignUpRequest;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminConfirmSignUpResponse;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminCreateUserRequest;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminCreateUserResponse;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminDeleteUserRequest;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminDisableUserRequest;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminEnableUserRequest;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserResponse;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminInitiateAuthRequest;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminInitiateAuthResponse;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminListGroupsForUserRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminListGroupsForUserResponse;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminRemoveUserFromGroupRequest;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminResetUserPasswordRequest;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminRespondToAuthChallengeRequest;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminRespondToAuthChallengeResponse;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminSetUserPasswordRequest;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminSetUserPasswordResponse;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminUpdateUserAttributesRequest;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminUpdateUserAttributesResponse;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.AttributeType;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthFlowType;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AssociateSoftwareTokenResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthenticationResultType;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.ChallengeNameType;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.ChangePasswordRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ChangePasswordResponse;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.ConfirmForgotPasswordRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ConfirmForgotPasswordResponse;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.CreateGroupRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.CreateGroupResponse;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.DeleteGroupRequest;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.ForgotPasswordRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ForgotPasswordResponse;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.GetGroupRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.GetGroupResponse;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.GetUserRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.GetUserResponse;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.InitiateAuthRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.InitiateAuthResponse;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.ListGroupsRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ListGroupsResponse;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersInGroupRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersInGroupResponse;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UserType;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.VerifySoftwareTokenResponse;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
- * 
- * Cognito Services.
- *
+ * Cognito Identity Provier Service.
  */
-public class CognitoIdentityProviderService {
-
-  /** Cognito User Attributes. */
-  public static final Map<String, String> COGNITO_USER_ATTRIBUTES = initCognitoAttributes();
-
-  private static Map<String, String> initCognitoAttributes() {
-    Map<String, String> map = new HashMap<>();
-    map.put("address", "address");
-    map.put("birthdate", "birthdate");
-    map.put("familyName", "family_name");
-    map.put("family_name", "familyName");
-    map.put("gender", "gender");
-    map.put("givenName", "given_name");
-    map.put("given_name", "givenName");
-    map.put("locale", "locale");
-    map.put("middleName", "middle_name");
-    map.put("middle_name", "middleName");
-    map.put("name", "name");
-    map.put("nickname", "nickname");
-    map.put("phoneNumber", "phone_number");
-    map.put("phone_number", "phoneNumber");
-    map.put("picture", "picture");
-    map.put("preferredUsername", "preferred_username");
-    map.put("preferred_username", "preferredUsername");
-    map.put("profile", "profile");
-    map.put("zoneinfo", "zoneinfo");
-    map.put("updatedAt", "updated_at");
-    map.put("updated_at", "updatedAt");
-    map.put("website", "website");
-
-    return map;
-  }
-
-  /** {@link String}. */
-  private final String clientId;
-  /** {@link CognitoIdentityProviderClient}. */
-  private final CognitoIdentityProviderClient cognitoProvider;
-  /** {@link String}. */
-  private final String userPoolId;
-
-  /**
-   * Constructor.
-   * 
-   * @param builder {@link CognitoIdentityProviderConnectionBuilder}
-   */
-  public CognitoIdentityProviderService(final CognitoIdentityProviderConnectionBuilder builder) {
-    this.cognitoProvider = builder.build();
-
-    this.clientId = builder.getClientId();
-    this.userPoolId = builder.getUserPoolId();
-  }
-
-  /**
-   * Add Cognito Group.
-   * 
-   * @param groupName {@link String}
-   * @param groupDescription {@link String}
-   * @return {@link CreateGroupResponse}
-   */
-  public CreateGroupResponse addGroup(final String groupName, final String groupDescription) {
-    CreateGroupRequest req = CreateGroupRequest.builder().userPoolId(this.userPoolId)
-        .groupName(groupName).description(groupDescription).build();
-    return this.cognitoProvider.createGroup(req);
-  }
-
-  /**
-   * Add Cognito User.
-   *
-   * @param username {@link String}
-   * @param userAttributes {@link Map}
-   * @param emailVerified boolean
-   * @return {@link UserType}
-   */
-  public UserType addUser(final String username, final Map<String, String> userAttributes,
-      final boolean emailVerified) {
-    return addUser(username, null, userAttributes, emailVerified);
-  }
-
-  /**
-   * Add Cognito User.
-   * 
-   * @param username {@link String}
-   * @param temporaryPassword {@link String}
-   * @param userAttributes {@link Map}
-   * @param emailVerified boolean
-   * @return {@link UserType}
-   */
-  public UserType addUser(final String username, final String temporaryPassword,
-      final Map<String, String> userAttributes, final boolean emailVerified) {
-
-    List<AttributeType> attributes = new ArrayList<>();
-
-    attributes.add(AttributeType.builder().name("email").value(username).build());
-    attributes.add(AttributeType.builder().name("email_verified")
-        .value(String.valueOf(emailVerified)).build());
-
-    if (userAttributes != null) {
-      for (Map.Entry<String, String> e : userAttributes.entrySet()) {
-
-        if (COGNITO_USER_ATTRIBUTES.containsKey(e.getKey())) {
-          attributes.add(AttributeType.builder().name(COGNITO_USER_ATTRIBUTES.get(e.getKey()))
-              .value(e.getValue()).build());
-        }
-      }
-    }
-
-    AdminCreateUserRequest cognitoRequest =
-        AdminCreateUserRequest.builder().userPoolId(this.userPoolId).username(username)
-            .temporaryPassword(temporaryPassword).userAttributes(attributes).build();
-
-    AdminCreateUserResponse createUserResult = this.cognitoProvider.adminCreateUser(cognitoRequest);
-    return createUserResult.user();
-  }
-
-  /**
-   * Add Cognito User to Cognito Group.
-   * 
-   * @param email {@link String}
-   * @param groupname {@link String}
-   */
-  public void addUserToGroup(final String email, final String groupname) {
-
-    AdminAddUserToGroupRequest addUserToGroupRequest = AdminAddUserToGroupRequest.builder()
-        .groupName(groupname).userPoolId(this.userPoolId).username(email).build();
-
-    this.cognitoProvider.adminAddUserToGroup(addUserToGroupRequest);
-  }
-
-  /**
-   * Confirm User Signup.
-   * 
-   * @param username {@link String}
-   * @return {@link AdminConfirmSignUpResponse}
-   */
-  public AdminConfirmSignUpResponse confirmSignUp(final String username) {
-    AdminConfirmSignUpRequest req =
-        AdminConfirmSignUpRequest.builder().userPoolId(this.userPoolId).username(username).build();
-    return this.cognitoProvider.adminConfirmSignUp(req);
-  }
-
-  /**
-   * Delete Group.
-   * 
-   * @param groupName {@link String}
-   */
-  public void deleteGroup(final String groupName) {
-    DeleteGroupRequest req =
-        DeleteGroupRequest.builder().userPoolId(this.userPoolId).groupName(groupName).build();
-    this.cognitoProvider.deleteGroup(req);
-  }
-
-  public void deleteUser(final String username) {
-    AdminDeleteUserRequest req =
-        AdminDeleteUserRequest.builder().userPoolId(this.userPoolId).username(username).build();
-    this.cognitoProvider.adminDeleteUser(req);
-  }
-
-  /**
-   * Disable Username.
-   * 
-   * @param username {@link String}
-   */
-  public void disableUser(final String username) {
-    AdminDisableUserRequest req =
-        AdminDisableUserRequest.builder().userPoolId(this.userPoolId).username(username).build();
-    this.cognitoProvider.adminDisableUser(req);
-  }
-
-  /**
-   * Enable Username.
-   * 
-   * @param username {@link String}
-   */
-  public void enableUser(final String username) {
-    AdminEnableUserRequest req =
-        AdminEnableUserRequest.builder().userPoolId(this.userPoolId).username(username).build();
-    this.cognitoProvider.adminEnableUser(req);
-  }
-
-  /**
-   * Finds User by Email.
-   *
-   * @param email {@link String}
-   * @return {@link ListUsersResponse}
-   */
-  public ListUsersResponse findUserByEmail(final String email) {
-
-    final String emailQuery = "email=\"" + email + "\"";
-    ListUsersRequest usersRequest = ListUsersRequest.builder().userPoolId(this.userPoolId)
-        .attributesToGet("email").filter(emailQuery).build();
-
-    return this.cognitoProvider.listUsers(usersRequest);
-  }
-
-  /**
-   * Sends Forgot Password Reset.
-   *
-   * @param username {@link String}
-   * @return ForgotPasswordResponse
-   */
-  public ForgotPasswordResponse forgotPassword(final String username) {
-    ForgotPasswordRequest request =
-        ForgotPasswordRequest.builder().clientId(this.clientId).username(username).build();
-    return this.cognitoProvider.forgotPassword(request);
-  }
-
-  /**
-   * Confirms Forgot Password Reset.
-   *
-   * @param username {@link String}
-   * @param code {@link String}
-   * @param password {@link String}
-   * @return ForgotPasswordResponse
-   */
-  public ConfirmForgotPasswordResponse forgotPasswordConfirm(final String username,
-      final String code, final String password) {
-    ConfirmForgotPasswordRequest request =
-        ConfirmForgotPasswordRequest.builder().clientId(this.clientId).username(username)
-            .confirmationCode(code).password(password).build();
-    return this.cognitoProvider.confirmForgotPassword(request);
-  }
+public interface CognitoIdentityProviderService {
 
   /**
    * Get Group.
@@ -313,70 +53,48 @@ public class CognitoIdentityProviderService {
    * @param groupName {@link String}.
    * @return {@link GetGroupResponse}
    */
-  public GetGroupResponse getGroup(final String groupName) {
-    GetGroupRequest req =
-        GetGroupRequest.builder().userPoolId(this.userPoolId).groupName(groupName).build();
-    return this.cognitoProvider.getGroup(req);
-  }
+  GetGroupResponse getGroup(String groupName);
 
   /**
-   * Get User.
-   * 
-   * @param token {@link AuthenticationResultType}.
-   * @return {@link GetUserResponse}
-   */
-  public GetUserResponse getUser(final AuthenticationResultType token) {
-    GetUserRequest req = GetUserRequest.builder().accessToken(token.accessToken()).build();
-    return this.cognitoProvider.getUser(req);
-  }
-
-  /**
-   * Get User.
-   * 
+   * Disable Username.
+   *
    * @param username {@link String}
-   * @return {@link AdminGetUserResponse}
    */
-  public AdminGetUserResponse getUser(final String username) {
-    return this.cognitoProvider.adminGetUser(
-        AdminGetUserRequest.builder().userPoolId(this.userPoolId).username(username).build());
-  }
+  void disableUser(final String username);
 
   /**
-   * Login User.
-   * 
+   * Enable Username.
+   *
    * @param username {@link String}
-   * @param password {@link String}
-   * @return InitiateAuthResponse
    */
-  public InitiateAuthResponse initiateAuth(final String username, final String password) {
-    AuthFlowType authFlow = AuthFlowType.USER_PASSWORD_AUTH;
-    Map<String, String> authMap = Map.of("USERNAME", username, "PASSWORD", password);
-    InitiateAuthRequest req =
-        InitiateAuthRequest.builder().authFlow(authFlow).authParameters(authMap).build();
-    return this.cognitoProvider.initiateAuth(req);
-  }
+  void enableUser(String username);
 
   /**
-   * Does Cognito User Exist.
-   * 
-   * @param email {@link String}
-   * @return boolean
+   * Reset Password for Username.
+   *
+   * @param username {@link String}
    */
-  public boolean isUserExists(final String email) {
-    return !findUserByEmail(email).users().isEmpty();
-  }
+  void resetUserPassword(String username);
+
+  /**
+   * Change User Password.
+   *
+   * @param accessToken {@link String}
+   * @param previousPassword {@link String}
+   * @param proposedPassword {@link String}
+   * @return ChangePasswordResponse
+   */
+  ChangePasswordResponse setChangePassword(String accessToken, String previousPassword,
+      String proposedPassword);
 
   /**
    * List Cognito Groups.
-   * 
+   *
    * @param token {@link String}
    * @param limit {@link Integer}
    * @return {@link ListGroupsResponse}
    */
-  public ListGroupsResponse listGroups(final String token, final Integer limit) {
-    return this.cognitoProvider.listGroups(ListGroupsRequest.builder().userPoolId(this.userPoolId)
-        .nextToken(token).limit(limit).build());
-  }
+  ListGroupsResponse listGroups(String token, Integer limit);
 
   /**
    * List Groups for a user.
@@ -386,39 +104,15 @@ public class CognitoIdentityProviderService {
    * @param limit {@link Integer}
    * @return AdminListGroupsForUserResponse
    */
-  public AdminListGroupsForUserResponse listGroups(final String username, final String token,
-      final Integer limit) {
-    AdminListGroupsForUserRequest req = AdminListGroupsForUserRequest.builder()
-        .userPoolId(this.userPoolId).username(username).nextToken(token).limit(limit).build();
-    return this.cognitoProvider.adminListGroupsForUser(req);
-  }
+  AdminListGroupsForUserResponse listGroups(String username, String token, Integer limit);
 
   /**
-   * List Users.
+   * Sends Forgot Password Reset.
    *
-   * @param paginationToken {@link String}
-   * @param limit {@link Integer}
-   * @return {@link ListUsersResponse}
+   * @param username {@link String}
+   * @return ForgotPasswordResponse
    */
-  public ListUsersResponse listUsers(final String paginationToken, final Integer limit) {
-    ListUsersRequest usersRequest = ListUsersRequest.builder().userPoolId(this.userPoolId)
-        .paginationToken(paginationToken).limit(limit).build();
-    return this.cognitoProvider.listUsers(usersRequest);
-  }
-
-  /**
-   * List Users in Cognito Groups.
-   * 
-   * @param groupName {@link String}
-   * @param token {@link String}
-   * @param limit {@link Integer}
-   * @return {@link ListUsersInGroupResponse}
-   */
-  public ListUsersInGroupResponse listUsersInGroup(final String groupName, final String token,
-      final Integer limit) {
-    return this.cognitoProvider.listUsersInGroup(ListUsersInGroupRequest.builder()
-        .userPoolId(this.userPoolId).groupName(groupName).nextToken(token).limit(limit).build());
-  }
+  ForgotPasswordResponse forgotPassword(final String username);
 
   /**
    * Login User using User Password Auth.
@@ -427,80 +121,46 @@ public class CognitoIdentityProviderService {
    * @param password {@link String}
    * @return {@link AuthenticationResultType}
    */
-  public InitiateAuthResponse loginUserPasswordAuth(final String email, final String password) {
-    Map<String, String> authParams = Map.of("USERNAME", email, "PASSWORD", password);
-    InitiateAuthRequest auth =
-        InitiateAuthRequest.builder().authFlow(AuthFlowType.USER_PASSWORD_AUTH)
-            .authParameters(authParams).clientId(this.clientId).build();
-    return this.cognitoProvider.initiateAuth(auth);
-  }
+  InitiateAuthResponse loginUserPasswordAuth(final String email, final String password);
 
   /**
-   * Login User using Admin Flow.
+   * Confirms Forgot Password Reset.
    *
-   * @param email {@link String}
+   * @param username {@link String}
+   * @param code {@link String}
    * @param password {@link String}
-   * @return {@link AuthenticationResultType}
+   * @return ForgotPasswordResponse
    */
-  public AuthenticationResultType loginAdminFlow(final String email, final String password) {
-    AdminInitiateAuthResponse authResult = loginInternal(email, password);
-    return authResult.authenticationResult();
-  }
+  ConfirmForgotPasswordResponse forgotPasswordConfirm(String username, String code,
+      String password);
 
   /**
-   * Internal Cognito Login Method.
-   * 
-   * @param email {@link String}
-   * @param password {@link String}
-   * @return {@link AdminInitiateAuthResponse}
+   * Add Cognito Group.
+   *
+   * @param groupName {@link String}
+   * @param groupDescription {@link String}
+   * @return {@link CreateGroupResponse}
    */
-  private AdminInitiateAuthResponse loginInternal(final String email, final String password) {
-    Map<String, String> authParams = Map.of("USERNAME", email, "PASSWORD", password);
-
-    AdminInitiateAuthRequest authRequest =
-        AdminInitiateAuthRequest.builder().authFlow(AuthFlowType.ADMIN_NO_SRP_AUTH)
-            .userPoolId(this.userPoolId).clientId(this.clientId).authParameters(authParams).build();
-
-    return this.cognitoProvider.adminInitiateAuth(authRequest);
-  }
+  CreateGroupResponse addGroup(String groupName, String groupDescription);
 
   /**
-   * Login User in NEW_PASSWORD_REQUIRED status.
-   * 
-   * @param email {@link String}
-   * @param password {@link String}
-   * @param newpassword {@link String}
-   * @return {@link AuthenticationResultType}
+   * List Users.
+   *
+   * @param paginationToken {@link String}
+   * @param limit {@link Integer}
+   * @return {@link ListUsersResponse}
    */
-  public AuthenticationResultType loginWithNewPassword(final String email, final String password,
-      final String newpassword) {
+  ListUsersResponse listUsers(String paginationToken, Integer limit);
 
-    AuthenticationResultType authentication;
-    final AdminInitiateAuthResponse authResult = loginInternal(email, password);
-
-    if ("NEW_PASSWORD_REQUIRED".equals(authResult.challengeName().name())) {
-
-      final Map<String, String> challengeResponses = new HashMap<>();
-      challengeResponses.put("USERNAME", email);
-      challengeResponses.put("PASSWORD", password);
-      challengeResponses.put("NEW_PASSWORD", newpassword);
-
-      // populate the challenge response
-      AdminRespondToAuthChallengeRequest request = AdminRespondToAuthChallengeRequest.builder()
-          .challengeName(ChallengeNameType.NEW_PASSWORD_REQUIRED)
-          .challengeResponses(challengeResponses).clientId(this.clientId)
-          .userPoolId(this.userPoolId).session(authResult.session()).build();
-
-      AdminRespondToAuthChallengeResponse resultChallenge =
-          this.cognitoProvider.adminRespondToAuthChallenge(request);
-      authentication = resultChallenge.authenticationResult();
-
-    } else {
-      authentication = authResult.authenticationResult();
-    }
-
-    return authentication;
-  }
+  /**
+   * Add Cognito User.
+   *
+   * @param username {@link String}
+   * @param userAttributes {@link Map}
+   * @param emailVerified boolean
+   * @return {@link UserType}
+   */
+  UserType addUser(String username, Map<String, String> userAttributes, boolean emailVerified);
 
   /**
    * Remove Cognito User from Cognito Group.
@@ -508,65 +168,82 @@ public class CognitoIdentityProviderService {
    * @param username {@link String}
    * @param groupname {@link String}
    */
-  public void removeUserFromGroup(final String username, final String groupname) {
-
-    AdminRemoveUserFromGroupRequest removeUserFromGroupRequest = AdminRemoveUserFromGroupRequest
-        .builder().groupName(groupname).userPoolId(this.userPoolId).username(username).build();
-    this.cognitoProvider.adminRemoveUserFromGroup(removeUserFromGroupRequest);
-  }
+  void removeUserFromGroup(String username, String groupname);
 
   /**
-   * Reset Password for Username.
+   * List Users in Cognito Groups.
+   *
+   * @param groupName {@link String}
+   * @param token {@link String}
+   * @param limit {@link Integer}
+   * @return {@link ListUsersInGroupResponse}
+   */
+  ListUsersInGroupResponse listUsersInGroup(String groupName, String token, Integer limit);
+
+  /**
+   * Add Cognito User to Cognito Group.
+   *
+   * @param email {@link String}
+   * @param groupname {@link String}
+   */
+  void addUserToGroup(String email, String groupname);
+
+  /**
+   * Get User.
+   *
+   * @param token {@link AuthenticationResultType}.
+   * @return {@link GetUserResponse}
+   */
+  GetUserResponse getUser(AuthenticationResultType token);
+
+  /**
+   * Get User.
+   *
+   * @param username {@link String}
+   * @return {@link AdminGetUserResponse}
+   */
+  AdminGetUserResponse getUser(String username);
+
+  /**
+   * Delete User.
    * 
    * @param username {@link String}
    */
-  public void resetUserPassword(final String username) {
-    AdminResetUserPasswordRequest req = AdminResetUserPasswordRequest.builder()
-        .userPoolId(this.userPoolId).username(username).build();
-    this.cognitoProvider.adminResetUserPassword(req);
-  }
+  void deleteUser(String username);
 
   /**
-   * Change User Password.
-   * 
-   * @param accessToken {@link String}
-   * @param previousPassword {@link String}
-   * @param proposedPassword {@link String}
-   * @return ChangePasswordResponse
+   * Delete Group.
+   *
+   * @param groupName {@link String}
    */
-  public ChangePasswordResponse setChangePassword(final String accessToken,
-      final String previousPassword, final String proposedPassword) {
-    ChangePasswordRequest request = ChangePasswordRequest.builder().accessToken(accessToken)
-        .previousPassword(previousPassword).proposedPassword(proposedPassword).build();
-    return this.cognitoProvider.changePassword(request);
-  }
+  void deleteGroup(String groupName);
 
   /**
-   * Sets User Password.
-   * 
+   * Login User.
+   *
    * @param username {@link String}
    * @param password {@link String}
-   * @param permanent <code>True</code> if the password is permanent, <code>False</code> if it is
-   *        temporary.
-   * @return {@link AdminSetUserPasswordResponse}
+   * @return InitiateAuthResponse
    */
-  public AdminSetUserPasswordResponse setUserPassword(final String username, final String password,
-      final boolean permanent) {
-    return this.cognitoProvider
-        .adminSetUserPassword(AdminSetUserPasswordRequest.builder().userPoolId(this.userPoolId)
-            .username(username).password(password).permanent(permanent).build());
-  }
+  InitiateAuthResponse initiateAuth(String username, String password);
 
   /**
-   * Update User Attributes.
-   * 
-   * @param username {@link String}
-   * @param userAttributes {@link Collection} {@link AttributeType}
-   * @return {@link AdminUpdateUserAttributesResponse}
+   * Begins setup of time-based one-time password (TOTP) multi-factor authentication (MFA) for a
+   * user.
+   *
+   * @param session {@link String}
+   * @return AssociateSoftwareTokenResponse
    */
-  public AdminUpdateUserAttributesResponse updateUserAttributes(final String username,
-      final Collection<AttributeType> userAttributes) {
-    return this.cognitoProvider.adminUpdateUserAttributes(AdminUpdateUserAttributesRequest.builder()
-        .userPoolId(this.userPoolId).username(username).userAttributes(userAttributes).build());
-  }
+  AssociateSoftwareTokenResponse associateSoftwareToken(String session);
+
+  /**
+   * Verify Software Token.
+   *
+   * @param session {@link String}
+   * @param userCode {@link String}
+   * @param deviceName {@link String}
+   * @return VerifySoftwareTokenResponse
+   */
+  VerifySoftwareTokenResponse verifySoftwareToken(String session, String userCode,
+      String deviceName);
 }

@@ -23,9 +23,11 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import com.formkiq.aws.services.lambda.GsonUtil;
 import com.formkiq.module.http.HttpService;
 import com.formkiq.module.http.HttpServiceJdk11;
 import com.formkiq.module.httpsigv4.HttpServiceSigv4;
+import com.google.gson.Gson;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -33,6 +35,7 @@ import software.amazon.awssdk.regions.Region;
 
 import java.io.IOException;
 import java.net.http.HttpResponse;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -40,6 +43,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /** Unit Tests for request /login, /changePassword, /resetPassword, /confirmRegistration. */
 public class CognitoAuthRequestTest extends AbstractApiClientRequestTest {
 
+  /** {@link Gson}. */
+  private static final Gson GSON = GsonUtil.getInstance();
   /** {@link HttpService}. */
   private final HttpService http = new HttpServiceJdk11();
   /** {@link HttpService}. */
@@ -48,6 +53,98 @@ public class CognitoAuthRequestTest extends AbstractApiClientRequestTest {
           Region.US_EAST_2, StaticCredentialsProvider
               .create(AwsBasicCredentials.create("123", "123")).resolveCredentials(),
           "execute-api");
+
+  /**
+   * POST /login missing parameters.
+   *
+   */
+  @Test
+  public void testLogin01() throws IOException {
+    // given
+    String url = server.getBasePath() + "/login";
+
+    // when
+    HttpResponse<String> post = http.post(url, Optional.empty(), Optional.empty(), "");
+
+    // then
+    assertEquals("400", String.valueOf(post.statusCode()));
+    assertEquals("{\"message\":\"request body is required\"}", post.body());
+
+    // when
+    post = http.post(url, Optional.empty(), Optional.empty(), "{}");
+
+    // then
+    assertEquals("400", String.valueOf(post.statusCode()));
+    assertEquals("{\"errors\":[{\"error\":\"'username' and 'password' are required\"}]}",
+        post.body());
+  }
+
+  /**
+   * POST /login.
+   *
+   */
+  @Test
+  public void testLogin02() throws IOException {
+    // given
+    String url = server.getBasePath() + "/login";
+    String body = "{\"username\":\"test\",\"password\":\"test\"}";
+
+    // when
+    HttpResponse<String> post = http.post(url, Optional.empty(), Optional.empty(), body);
+
+    // then
+    assertEquals("200", String.valueOf(post.statusCode()));
+    assertEquals("{\"authenticationResult\":{\"accessToken\":\"ABC\"}}", post.body());
+  }
+
+  /**
+   * POST /login MFA Setup.
+   *
+   */
+  @Test
+  public void testLogin03() throws IOException {
+    // given
+    String url = server.getBasePath() + "/login";
+    String body = "{\"username\":\"mfa\",\"password\":\"test\"}";
+
+    // when
+    HttpResponse<String> post = http.post(url, Optional.empty(), Optional.empty(), body);
+
+    // then
+    assertEquals("200", String.valueOf(post.statusCode()));
+    assertEquals(
+        "{\"authenticationResult\":{\"accessToken\":\"ABC\"},"
+            + "\"sessionName\":\"AYABeCHQdmWZNwl7Egjpk\",\"challengeName\":\"MFA_SETUP\"}",
+        post.body());
+
+    // given
+    url = server.getBasePath() + "/mfa/challenge";
+    body = "{\"session\":\"mf1231312a\"}";
+
+    // when
+    post = http.post(url, Optional.empty(), Optional.empty(), body);
+
+    // then
+    assertEquals("200", String.valueOf(post.statusCode()));
+
+    Map<String, String> map = GSON.fromJson(post.body(), Map.class);
+    assertEquals("abcdef", map.get("session"));
+    assertEquals("12345", map.get("secretCode"));
+
+    // given
+    url = server.getBasePath() + "/mfa/verify";
+    body = "{\"session\":\"3454\",\"userCode\":\"25345\"}";
+
+    // when
+    post = http.post(url, Optional.empty(), Optional.empty(), body);
+
+    // then
+    assertEquals("200", String.valueOf(post.statusCode()));
+
+    map = GSON.fromJson(post.body(), Map.class);
+    assertEquals("9873432", map.get("session"));
+    assertEquals("SUCCESS", map.get("status"));
+  }
 
   /**
    * POST /changePassword missing parameters.

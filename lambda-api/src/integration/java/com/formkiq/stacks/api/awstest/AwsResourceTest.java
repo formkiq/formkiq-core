@@ -48,7 +48,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import com.formkiq.aws.cognito.CognitoIdentityConnectionBuilder;
 import com.formkiq.aws.cognito.CognitoIdentityProviderConnectionBuilder;
-import com.formkiq.aws.cognito.CognitoIdentityProviderService;
+import com.formkiq.aws.cognito.CognitoIdentityProviderServiceImpl;
 import com.formkiq.aws.cognito.CognitoIdentityService;
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.invoker.ApiClient;
@@ -145,8 +145,8 @@ public class AwsResourceTest extends AbstractAwsIntegrationTest {
         new CognitoIdentityProviderConnectionBuilder(cognitoClientId, cognitoUserPoolId)
             .setRegion(getAwsregion()).setCredentials(StaticCredentialsProvider.create(basic));
 
-    CognitoIdentityProviderService userCognitoService =
-        new CognitoIdentityProviderService(userBuilder);
+    CognitoIdentityProviderServiceImpl userCognitoService =
+        new CognitoIdentityProviderServiceImpl(userBuilder);
 
     // when
     userCognitoService.addUser(email, USER_TEMP_PASSWORD, null, Boolean.TRUE);

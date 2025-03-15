@@ -23,6 +23,8 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import com.formkiq.aws.cognito.CognitoIdentityProviderService;
+import com.formkiq.aws.cognito.CognitoIdentityProviderServiceExtension;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.sns.SnsAwsServiceRegistry;
@@ -63,6 +65,8 @@ public class TestCoreRequestHandler extends AbstractCoreRequestHandler {
             .build();
 
     initialize(this.serviceCache);
+    this.serviceCache.register(CognitoIdentityProviderService.class,
+        new CognitoIdentityProviderServiceExtension(new CognitoIdentityProviderServiceMock()));
   }
 
   @Override
