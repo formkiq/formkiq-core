@@ -421,14 +421,28 @@ public class CognitoIdentityProviderService {
   }
 
   /**
-   * Login User.
+   * Login User using User Password Auth.
    *
    * @param email {@link String}
    * @param password {@link String}
    * @return {@link AuthenticationResultType}
    */
-  public AuthenticationResultType login(final String email, final String password) {
+  public InitiateAuthResponse loginUserPasswordAuth(final String email, final String password) {
+    Map<String, String> authParams = Map.of("USERNAME", email, "PASSWORD", password);
+    InitiateAuthRequest auth =
+        InitiateAuthRequest.builder().authFlow(AuthFlowType.USER_PASSWORD_AUTH)
+            .authParameters(authParams).clientId(this.clientId).build();
+    return this.cognitoProvider.initiateAuth(auth);
+  }
 
+  /**
+   * Login User using Admin Flow.
+   *
+   * @param email {@link String}
+   * @param password {@link String}
+   * @return {@link AuthenticationResultType}
+   */
+  public AuthenticationResultType loginAdminFlow(final String email, final String password) {
     AdminInitiateAuthResponse authResult = loginInternal(email, password);
     return authResult.authenticationResult();
   }
@@ -441,9 +455,7 @@ public class CognitoIdentityProviderService {
    * @return {@link AdminInitiateAuthResponse}
    */
   private AdminInitiateAuthResponse loginInternal(final String email, final String password) {
-    HashMap<String, String> authParams = new HashMap<>();
-    authParams.put("USERNAME", email);
-    authParams.put("PASSWORD", password);
+    Map<String, String> authParams = Map.of("USERNAME", email, "PASSWORD", password);
 
     AdminInitiateAuthRequest authRequest =
         AdminInitiateAuthRequest.builder().authFlow(AuthFlowType.ADMIN_NO_SRP_AUTH)

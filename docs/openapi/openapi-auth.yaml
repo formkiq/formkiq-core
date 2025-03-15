@@ -48,41 +48,35 @@
                       schema:
                         type: object
                         properties:
-                          ChallengeParameters:
-                            type: object
-                            description: Empty object for challenge parameters.
-                            example: {}
-                          AuthenticationResult:
+                          challengeName:
+                            type: string
+                            description: The name of the challenge that you are responding to
+                          sessionName:
+                            type: string
+                            description: The session identifier that maintains the state of authentication requests and challenge responses
+                          authenticationResult:
                             type: object
                             properties:
-                              AccessToken:
+                              accessToken:
                                 type: string
                                 description: JWT access token.
                                 example: eyJraWQiOiJ0W...
-                              ExpiresIn:
+                              expiresIn:
                                 type: integer
                                 description: Time in seconds until the token expires.
                                 example: 86400
-                              TokenType:
+                              tokenType:
                                 type: string
                                 description: Type of token.
                                 example: Bearer
-                              RefreshToken:
+                              refreshToken:
                                 type: string
                                 description: Refresh token for obtaining new access tokens.
                                 example: eyJjdHkiO...
-                              IdToken:
+                              idToken:
                                 type: string
                                 description: JWT id token.
                                 example: eyJraWQiOiI5YUpvb...
-                        example:
-                          ChallengeParameters: {}
-                          AuthenticationResult:
-                            AccessToken: eyJraWQiOiJ0W...
-                            ExpiresIn: 86400
-                            TokenType: Bearer
-                            RefreshToken: eyJjdHkiO...
-                            IdToken: eyJraWQiOiI5YUpvb...
                 "401":
                   description: Invalid credentials provided.
                   content:
@@ -93,6 +87,79 @@
                           error:
                             type: string
                             example: Invalid username or password.
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+          /mfa/challenge:
+            post:
+              summary: User MFA Challenge
+              description: Begins setup of time-based one-time password (TOTP) multi-factor authentication (MFA) for a user.
+              requestBody:
+                description: User MFA Challenge request
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      type: object
+                      required:
+                      - session
+                      properties:
+                        session:
+                          type: string
+                          description: The session identifier that maintains the state of authentication requests and challenge responses
+              responses:
+                "200":
+                  description: Login successful. Returns authentication details similar to AWS Cognito.
+                  content:
+                    application/json:
+                      schema:
+                        type: object
+                        properties:
+                          secretCode:
+                            type: string
+                            description: A unique generated shared secret code that is used by the TOTP algorithm to generate a one-time code
+                          sessionName:
+                            type: string
+                            description: The session identifier that maintains the state of authentication requests and challenge responses
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+          /mfa/verify:
+            post:
+              summary: Registers authenticator with a code
+              description: Registers the current user's time-based one-time password (TOTP) authenticator with a code generated in their authenticator app
+              requestBody:
+                description: Registers authenticator with a code request
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      type: object
+                      required:
+                      - session
+                      - userCode
+                      properties:
+                        session:
+                          type: string
+                          description: The session identifier that maintains the state of authentication requests and challenge responses
+                        userCode:
+                          type: string
+                          description: A TOTP that the user generated in their configured authenticator app
+                        deviceName:
+                          type: string
+                          description: A friendly name for the device that's running the TOTP authenticator
+              responses:
+                "200":
+                  description: Login successful. Returns authentication details similar to AWS Cognito.
+                  content:
+                    application/json:
+                      schema:
+                        type: object
+                        properties:
+                          status:
+                            type: string
+                            description: This response parameter indicates the success of TOTP verification
+                          sessionName:
+                            type: string
+                            description: The session identifier that maintains the state of authentication requests and challenge responses
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /changePassword:

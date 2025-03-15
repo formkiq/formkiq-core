@@ -186,7 +186,7 @@ public class FkqCognitoService {
    * @return {@link AuthenticationResultType}
    */
   public AuthenticationResultType login(final String email, final String password) {
-    return this.service.login(email, password);
+    return this.service.loginAdminFlow(email, password);
   }
 
   /**

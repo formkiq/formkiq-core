@@ -34,6 +34,7 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthenticationResultType;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.InitiateAuthResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.NotAuthorizedException;
 
 import java.util.HashMap;
@@ -72,24 +73,34 @@ public class UserLoginRequestHandler
         awsservice.getExtension(CognitoIdentityProviderService.class);
 
     try {
-      AuthenticationResultType login =
-          service.login((String) map.get("username"), (String) map.get("password"));
+      InitiateAuthResponse login =
+          service.loginUserPasswordAuth((String) map.get("username"), (String) map.get("password"));
       Map<String, Object> data = transform(login);
       return ApiRequestHandlerResponse.builder().ok().body(data).build();
-
     } catch (NotAuthorizedException e) {
       throw new BadException("Incorrect username or password");
     }
   }
 
-  private Map<String, Object> transform(final AuthenticationResultType login) {
-    Map<String, Object> authenticationResult = new HashMap<>();
-    authenticationResult.put("AccessToken", login.accessToken());
-    authenticationResult.put("IdToken", login.idToken());
-    authenticationResult.put("RefreshToken", login.refreshToken());
-    authenticationResult.put("TokenType", login.tokenType());
-    authenticationResult.put("ExpiresIn", login.expiresIn());
-    return Map.of("AuthenticationResult", authenticationResult);
+  private Map<String, Object> transform(final InitiateAuthResponse response) {
+
+    Map<String, Object> result = new HashMap<>();
+
+    result.put("challengeName", response.challengeName());
+    result.put("sessionName", response.session());
+
+    AuthenticationResultType login = response.authenticationResult();
+    if (login != null) {
+      Map<String, Object> authenticationResult = new HashMap<>();
+      authenticationResult.put("accessToken", login.accessToken());
+      authenticationResult.put("idToken", login.idToken());
+      authenticationResult.put("refreshToken", login.refreshToken());
+      authenticationResult.put("tokenType", login.tokenType());
+      authenticationResult.put("expiresIn", login.expiresIn());
+      result.put("authenticationResult", authenticationResult);
+    }
+
+    return result;
   }
 
   private void validate(final Map<String, Object> map) throws ValidationException {
