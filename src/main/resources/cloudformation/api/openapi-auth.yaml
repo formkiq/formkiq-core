@@ -64,7 +64,7 @@ Resources:
                           challengeName:
                             type: string
                             description: "The name of the challenge that you are responding to"
-                          sessionName:
+                          session:
                             type: string
                             description: "The session identifier that maintains the state of authentication requests and challenge responses"
                           authenticationResult:
@@ -130,7 +130,7 @@ Resources:
                           secretCode:
                             type: string
                             description: "A unique generated shared secret code that is used by the TOTP algorithm to generate a one-time code"
-                          sessionName:
+                          session:
                             type: string
                             description: "The session identifier that maintains the state of authentication requests and challenge responses"
               x-amazon-apigateway-integration:

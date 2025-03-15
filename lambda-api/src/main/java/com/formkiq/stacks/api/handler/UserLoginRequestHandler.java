@@ -87,7 +87,7 @@ public class UserLoginRequestHandler
     Map<String, Object> result = new HashMap<>();
 
     result.put("challengeName", response.challengeName());
-    result.put("sessionName", response.session());
+    result.put("session", response.session());
 
     AuthenticationResultType login = response.authenticationResult();
     if (login != null) {
