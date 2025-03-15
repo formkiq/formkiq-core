@@ -31,7 +31,7 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 
 /**
  * 
- * {@link AwsServiceExtension} for {@link CognitoIdentityProviderService}.
+ * {@link AwsServiceExtension} for {@link CognitoIdentityProviderServiceImpl}.
  *
  */
 public class CognitoIdentityProviderServiceExtension
@@ -44,6 +44,16 @@ public class CognitoIdentityProviderServiceExtension
    * constructor.
    */
   public CognitoIdentityProviderServiceExtension() {}
+
+  /**
+   * constructor.
+   * 
+   * @param providerService {@link CognitoIdentityProviderService}
+   */
+  public CognitoIdentityProviderServiceExtension(
+      final CognitoIdentityProviderService providerService) {
+    this.service = providerService;
+  }
 
   @Override
   public CognitoIdentityProviderService loadService(final AwsServiceCache serviceCache) {
@@ -60,7 +70,7 @@ public class CognitoIdentityProviderServiceExtension
           new CognitoIdentityProviderConnectionBuilder(cognitoClientId, cognitoUserPoolId)
               .setRegion(serviceCache.region()).setCredentials(cred);
 
-      this.service = new CognitoIdentityProviderService(connection);
+      this.service = new CognitoIdentityProviderServiceImpl(connection);
     }
 
     return this.service;

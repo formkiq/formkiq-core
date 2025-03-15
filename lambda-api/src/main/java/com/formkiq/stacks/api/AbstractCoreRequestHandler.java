@@ -118,6 +118,8 @@ import com.formkiq.stacks.api.handler.UserConfirmRegistrationRequestHandler;
 import com.formkiq.stacks.api.handler.UserForgotPasswordConfirmRequestHandler;
 import com.formkiq.stacks.api.handler.UserGroupsRequestHandler;
 import com.formkiq.stacks.api.handler.UserLoginRequestHandler;
+import com.formkiq.stacks.api.handler.UserMfaChallengeRequestHandler;
+import com.formkiq.stacks.api.handler.UserMfaVerifyRequestHandler;
 import com.formkiq.stacks.api.handler.UserOperationRequestHandler;
 import com.formkiq.stacks.api.handler.UserRequestHandler;
 import com.formkiq.stacks.api.handler.UserForgotPasswordRequestHandler;
@@ -326,6 +328,8 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new UserForgotPasswordRequestHandler());
     addRequestHandler(new UserForgotPasswordConfirmRequestHandler());
     addRequestHandler(new UserConfirmRegistrationRequestHandler());
+    addRequestHandler(new UserMfaChallengeRequestHandler());
+    addRequestHandler(new UserMfaVerifyRequestHandler());
   }
 
   private static void addDocumentAttributeEndpoints() {

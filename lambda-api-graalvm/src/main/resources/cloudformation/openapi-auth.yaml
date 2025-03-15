@@ -170,7 +170,7 @@ Resources:
                           status:
                             type: string
                             description: "This response parameter indicates the success of TOTP verification"
-                          sessionName:
+                          session:
                             type: string
                             description: "The session identifier that maintains the state of authentication requests and challenge responses"
               x-amazon-apigateway-integration:

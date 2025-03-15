@@ -24,7 +24,7 @@
 package com.formkiq.testutils.aws;
 
 import com.formkiq.aws.cognito.CognitoIdentityProviderConnectionBuilder;
-import com.formkiq.aws.cognito.CognitoIdentityProviderService;
+import com.formkiq.aws.cognito.CognitoIdentityProviderServiceImpl;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthenticationResultType;
@@ -45,8 +45,8 @@ public class FkqCognitoService {
   private final String rootJwtUrl;
   /** FormKiQ Key Api Url. */
   private final String rootKeyUrl;
-  /** {@link CognitoIdentityProviderService}. */
-  private final CognitoIdentityProviderService service;
+  /** {@link CognitoIdentityProviderServiceImpl}. */
+  private final CognitoIdentityProviderServiceImpl service;
 
   /**
    * constructor.
@@ -77,7 +77,7 @@ public class FkqCognitoService {
         new CognitoIdentityProviderConnectionBuilder(cognitoClientId, cognitoUserPoolId)
             .setCredentials(awsProfile).setRegion(awsRegion);
 
-    this.service = new CognitoIdentityProviderService(builder);
+    this.service = new CognitoIdentityProviderServiceImpl(builder);
   }
 
   /**
