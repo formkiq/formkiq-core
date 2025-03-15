@@ -60,7 +60,7 @@ public interface CognitoIdentityProviderService {
    *
    * @param username {@link String}
    */
-  void disableUser(final String username);
+  void disableUser(String username);
 
   /**
    * Enable Username.
@@ -112,7 +112,7 @@ public interface CognitoIdentityProviderService {
    * @param username {@link String}
    * @return ForgotPasswordResponse
    */
-  ForgotPasswordResponse forgotPassword(final String username);
+  ForgotPasswordResponse forgotPassword(String username);
 
   /**
    * Login User using User Password Auth.
@@ -121,7 +121,7 @@ public interface CognitoIdentityProviderService {
    * @param password {@link String}
    * @return {@link AuthenticationResultType}
    */
-  InitiateAuthResponse loginUserPasswordAuth(final String email, final String password);
+  InitiateAuthResponse loginUserPasswordAuth(String email, String password);
 
   /**
    * Confirms Forgot Password Reset.
