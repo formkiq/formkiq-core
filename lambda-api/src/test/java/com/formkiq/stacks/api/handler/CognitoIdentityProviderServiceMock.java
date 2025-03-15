@@ -93,12 +93,10 @@ public class CognitoIdentityProviderServiceMock implements CognitoIdentityProvid
   public InitiateAuthResponse loginUserPasswordAuth(final String username, final String password) {
     InitiateAuthResponse.Builder b = InitiateAuthResponse.builder();
     switch (username) {
-      case "mfa": {
-        b.challengeName("MFA_SETUP").session("AYABeCHQdmWZNwl7Egjpk");
-      }
-      default: {
+      case "mfa" -> b.challengeName("MFA_SETUP").session("AYABeCHQdmWZNwl7Egjpk");
+
+      default ->
         b.authenticationResult(AuthenticationResultType.builder().accessToken("ABC").build());
-      }
     }
 
     return b.build();
@@ -168,7 +166,7 @@ public class CognitoIdentityProviderServiceMock implements CognitoIdentityProvid
   }
 
   @Override
-  public AssociateSoftwareTokenResponse associateSoftwareToken(String session) {
+  public AssociateSoftwareTokenResponse associateSoftwareToken(final String session) {
     return AssociateSoftwareTokenResponse.builder().secretCode("12345").session("abcdef").build();
   }
 

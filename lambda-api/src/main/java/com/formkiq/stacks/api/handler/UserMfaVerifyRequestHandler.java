@@ -34,12 +34,9 @@ import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthenticationResultType;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.InitiateAuthResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.NotAuthorizedException;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.VerifySoftwareTokenResponse;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
