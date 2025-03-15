@@ -620,12 +620,12 @@ Outputs:
       Fn::GetAtt: 
       - CoreApi
       - Outputs.DocumentsHttpApiUrl
-#!  AuthApiUrl:
-#!    Description: "The endpoint url for the Auth API"
-#!    Value:
-#!      Fn::GetAtt:
-#!        - CoreApi
-#!        - Outputs.AuthApiUrl
+  AuthApiUrl:
+    Description: "The endpoint url for the Auth API"
+    Value:
+      Fn::GetAtt:
+        - CoreApi
+        - Outputs.AuthApiUrl
   ConsoleUrl:
     Description: The URL for the FormKiQ Console
     Value: 
