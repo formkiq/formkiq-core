@@ -145,6 +145,36 @@ public class CognitoAuthRequestTest extends AbstractApiClientRequestTest {
     map = GSON.fromJson(post.body(), Map.class);
     assertEquals("9873432", map.get("session"));
     assertEquals("SUCCESS", map.get("status"));
+
+    // given
+    url = server.getBasePath() + "/login/mfa";
+    body = "{\"username\":\"adasdads\",\"session\":\"3454\",\"softwareTokenMfaCode\":\"25345\"}";
+
+    // when
+    post = http.post(url, Optional.empty(), Optional.empty(), body);
+
+    // then
+    assertEquals("200", String.valueOf(post.statusCode()));
+    assertEquals("{\"authenticationResult\":{\"accessToken\":\"ABC\"}}", post.body());
+  }
+
+  /**
+   * POST /login/mfa.
+   *
+   */
+  @Test
+  public void testLoginMfa01() throws IOException {
+    // given
+    String url = server.getBasePath() + "/login/mfa";
+    String body = "{}";
+
+    // when
+    HttpResponse<String> post = http.post(url, Optional.empty(), Optional.empty(), body);
+
+    // then
+    assertEquals("400", String.valueOf(post.statusCode()));
+    assertEquals("{\"errors\":[{\"error\":\"'username', 'session' "
+        + "and 'softwareTokenMfaCode' are required\"}]}", post.body());
   }
 
   /**

@@ -37,6 +37,7 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.InitiateAut
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ListGroupsResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersInGroupResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersResponse;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.RespondToAuthChallengeResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UserType;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.VerifySoftwareTokenResponse;
 
@@ -246,4 +247,15 @@ public interface CognitoIdentityProviderService {
    */
   VerifySoftwareTokenResponse verifySoftwareToken(String session, String userCode,
       String deviceName);
+
+  /**
+   * Allows the answer to that challenge, like a code or a secure remote password (SRP).
+   * 
+   * @param session {@link String}
+   * @param challengeName {@link String}
+   * @param challengeResponses {@link Map}
+   * @return RespondToAuthChallengeResponse
+   */
+  RespondToAuthChallengeResponse responseToAuthChallenge(String session, String challengeName,
+      Map<String, String> challengeResponses);
 }

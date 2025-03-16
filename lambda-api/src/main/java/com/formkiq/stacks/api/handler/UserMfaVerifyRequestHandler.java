@@ -34,8 +34,8 @@ import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.NotAuthorizedException;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.VerifySoftwareTokenResponse;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.VerifySoftwareTokenResponseType;
 
 import java.util.List;
 import java.util.Map;
@@ -61,16 +61,30 @@ public class UserMfaVerifyRequestHandler
     CognitoIdentityProviderService service =
         awsservice.getExtension(CognitoIdentityProviderService.class);
 
+    VerifySoftwareTokenResponse response = verifySoftwareToken(service, map);
+
+    Map<String, Object> data = Map.of("status", response.status(), "session", response.session());
+    ApiMapResponse resp = new ApiMapResponse(data);
+    return new ApiRequestHandlerResponse(SC_OK, resp);
+  }
+
+  private VerifySoftwareTokenResponse verifySoftwareToken(
+      final CognitoIdentityProviderService service, final Map<String, Object> map)
+      throws BadException {
     try {
+
       VerifySoftwareTokenResponse response =
           service.verifySoftwareToken((String) map.get("session"), (String) map.get("userCode"),
               (String) map.get("deviceName"));
-      Map<String, Object> data = Map.of("status", response.status(), "session", response.session());
-      ApiMapResponse resp = new ApiMapResponse(data);
-      return new ApiRequestHandlerResponse(SC_OK, resp);
 
-    } catch (NotAuthorizedException e) {
-      throw new BadException("Incorrect username or password");
+      if (!VerifySoftwareTokenResponseType.SUCCESS.equals(response.status())) {
+        throw new BadException("Invalid request");
+      }
+
+      return response;
+
+    } catch (RuntimeException e) {
+      throw new BadException(e.getMessage());
     }
   }
 

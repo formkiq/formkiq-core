@@ -36,8 +36,8 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthenticationResultType;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.InitiateAuthResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.NotAuthorizedException;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.RespondToAuthChallengeResponse;
 
 import java.util.HashMap;
 import java.util.List;
@@ -47,12 +47,12 @@ import java.util.Optional;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import static com.formkiq.strings.Strings.isEmpty;
 
-/** {@link ApiGatewayRequestHandler} for "/login". */
-public class UserLoginRequestHandler
+/** {@link ApiGatewayRequestHandler} for "/login/mfa". */
+public class UserMfaLoginRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
-  /** {@link UserLoginRequestHandler} URL. */
-  public static final String URL = "/login";
+  /** {@link UserMfaLoginRequestHandler} URL. */
+  public static final String URL = "/login/mfa";
 
   @Override
   public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
@@ -65,10 +65,15 @@ public class UserLoginRequestHandler
         awsservice.getExtension(CognitoIdentityProviderService.class);
 
     try {
-      InitiateAuthResponse login =
-          service.loginUserPasswordAuth((String) map.get("username"), (String) map.get("password"));
+      String username = (String) map.get("username");
+      String session = (String) map.get("session");
+      String softwareTokenMfaCode = (String) map.get("softwareTokenMfaCode");
 
-      Map<String, Object> data = transform(login);
+      RespondToAuthChallengeResponse response =
+          service.responseToAuthChallenge(session, "SOFTWARE_TOKEN_MFA",
+              Map.of("USERNAME", username, "SOFTWARE_TOKEN_MFA_CODE", softwareTokenMfaCode));
+
+      Map<String, Object> data = transform(response);
       ApiMapResponse resp = new ApiMapResponse(data);
       return new ApiRequestHandlerResponse(SC_OK, resp);
 
@@ -77,12 +82,9 @@ public class UserLoginRequestHandler
     }
   }
 
-  private Map<String, Object> transform(final InitiateAuthResponse response) {
+  private Map<String, Object> transform(final RespondToAuthChallengeResponse response) {
 
     Map<String, Object> result = new HashMap<>();
-
-    result.put("challengeName", response.challengeName());
-    result.put("session", response.session());
 
     AuthenticationResultType login = response.authenticationResult();
     Map<String, Object> authenticationResult = new AuthenticationResultTypeToMap().apply(login);
@@ -96,11 +98,12 @@ public class UserLoginRequestHandler
 
   private void validate(final Map<String, Object> map) throws ValidationException {
     String username = (String) map.get("username");
-    String password = (String) map.get("password");
+    String session = (String) map.get("session");
+    String softwareTokenMfaCode = (String) map.get("softwareTokenMfaCode");
 
-    if (isEmpty(username) || isEmpty(password)) {
-      throw new ValidationException(
-          List.of(new ValidationErrorImpl().error("'username' and 'password' are required")));
+    if (isEmpty(username) || isEmpty(session) || isEmpty(softwareTokenMfaCode)) {
+      throw new ValidationException(List.of(new ValidationErrorImpl()
+          .error("'username', 'session' and 'softwareTokenMfaCode' are required")));
     }
   }
 

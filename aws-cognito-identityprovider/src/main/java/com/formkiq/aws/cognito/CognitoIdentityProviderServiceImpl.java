@@ -74,6 +74,8 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersIn
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersInGroupResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersResponse;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.RespondToAuthChallengeRequest;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.RespondToAuthChallengeResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UserType;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.VerifySoftwareTokenRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.VerifySoftwareTokenResponse;
@@ -381,6 +383,15 @@ public class CognitoIdentityProviderServiceImpl implements CognitoIdentityProvid
     VerifySoftwareTokenRequest req = VerifySoftwareTokenRequest.builder().session(session)
         .userCode(userCode).friendlyDeviceName(deviceName).build();
     return this.cognitoProvider.verifySoftwareToken(req);
+  }
+
+  @Override
+  public RespondToAuthChallengeResponse responseToAuthChallenge(final String session,
+      final String challengeName, final Map<String, String> challengeResponses) {
+    RespondToAuthChallengeRequest req =
+        RespondToAuthChallengeRequest.builder().clientId(this.clientId).challengeName(challengeName)
+            .session(session).challengeResponses(challengeResponses).build();
+    return this.cognitoProvider.respondToAuthChallenge(req);
   }
 
   /**

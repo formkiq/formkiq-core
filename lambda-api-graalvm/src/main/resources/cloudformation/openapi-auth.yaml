@@ -42,54 +42,44 @@ Resources:
                 content:
                   application/json:
                     schema:
-                      type: object
-                      required:
-                        - username
-                        - password
-                      properties:
-                        username:
-                          type: string
-                          example: "john_doe"
-                        password:
-                          type: string
-                          example: "secret123"
+                      $ref: '#/components/schemas/UserLoginRequest'
               responses:
                 '200':
                   description: Login successful. Returns authentication details similar to AWS Cognito.
                   content:
                     application/json:
                       schema:
+                        $ref: "#/components/schemas/UserLoginResponse"
+                '401':
+                  description: Invalid credentials provided.
+                  content:
+                    application/json:
+                      schema:
                         type: object
                         properties:
-                          challengeName:
+                          error:
                             type: string
-                            description: "The name of the challenge that you are responding to"
-                          session:
-                            type: string
-                            description: "The session identifier that maintains the state of authentication requests and challenge responses"
-                          authenticationResult:
-                            type: object
-                            properties:
-                              accessToken:
-                                type: string
-                                description: "JWT access token."
-                                example: "eyJraWQiOiJ0W..."
-                              expiresIn:
-                                type: integer
-                                description: "Time in seconds until the token expires."
-                                example: 86400
-                              tokenType:
-                                type: string
-                                description: "Type of token."
-                                example: "Bearer"
-                              refreshToken:
-                                type: string
-                                description: "Refresh token for obtaining new access tokens."
-                                example: "eyJjdHkiO..."
-                              idToken:
-                                type: string
-                                description: "JWT id token."
-                                example: "eyJraWQiOiI5YUpvb..."
+                            example: "Invalid username or password."
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /login/mfa:
+            post:
+              summary: User MFA Login
+              description: Authenticate a user with a username and MFA code.
+              requestBody:
+                description: User credentials for MFA login.
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/UserMfaLoginRequest'
+              responses:
+                '200':
+                  description: Login successful. Returns authentication details similar to AWS Cognito.
+                  content:
+                    application/json:
+                      schema:
+                        $ref: "#/components/schemas/UserMfaLoginResponse"
                 '401':
                   description: Invalid credentials provided.
                   content:
@@ -356,3 +346,77 @@ Resources:
               httpMethod: "POST"
               type: "aws_proxy"
               payloadFormatVersion: "1.0"
+          schemas:
+            UserLoginRequest:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+            UserLoginResponse:
+              type: object
+              properties:
+                challengeName:
+                  type: string
+                  description: "The name of the challenge that you are responding to"
+                session:
+                  type: string
+                  description: "The session identifier that maintains the state of authentication requests and challenge responses"
+                authenticationResult:
+                  type: object
+                  properties:
+                    accessToken:
+                      type: string
+                      description: "JWT access token."
+                    expiresIn:
+                      type: integer
+                      description: "Time in seconds until the token expires."
+                    tokenType:
+                      type: string
+                      description: "Type of token."
+                    refreshToken:
+                      type: string
+                      description: "Refresh token for obtaining new access tokens."
+                    idToken:
+                      type: string
+                      description: "JWT id token."
+            UserMfaLoginRequest:
+              type: object
+              required:
+                - username
+                - session
+                - softwareTokenMfaCode
+              properties:
+                username:
+                  type: string
+                softwareTokenMfaCode:
+                  type: string
+                  example: "Software Token MFA Code"
+                session:
+                  type: string
+                  description: "The session identifier that maintains the state of authentication requests and challenge responses"
+            UserMfaLoginResponse:
+              type: object
+              properties:
+                authenticationResult:
+                  type: object
+                  properties:
+                    accessToken:
+                      type: string
+                      description: "JWT access token."
+                    expiresIn:
+                      type: integer
+                      description: "Time in seconds until the token expires."
+                    tokenType:
+                      type: string
+                      description: "Type of token."
+                    refreshToken:
+                      type: string
+                      description: "Refresh token for obtaining new access tokens."
+                    idToken:
+                      type: string
+                      description: "JWT id token."
