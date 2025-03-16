@@ -38,6 +38,7 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.InitiateAut
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ListGroupsResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersInGroupResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersResponse;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.RespondToAuthChallengeResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UserType;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.VerifySoftwareTokenResponse;
 
@@ -174,5 +175,12 @@ public class CognitoIdentityProviderServiceMock implements CognitoIdentityProvid
   public VerifySoftwareTokenResponse verifySoftwareToken(final String session,
       final String userCode, final String deviceName) {
     return VerifySoftwareTokenResponse.builder().session("9873432").status("SUCCESS").build();
+  }
+
+  @Override
+  public RespondToAuthChallengeResponse responseToAuthChallenge(final String session,
+      final String challengeName, final Map<String, String> challengeResponses) {
+    AuthenticationResultType type = AuthenticationResultType.builder().accessToken("ABC").build();
+    return RespondToAuthChallengeResponse.builder().authenticationResult(type).build();
   }
 }

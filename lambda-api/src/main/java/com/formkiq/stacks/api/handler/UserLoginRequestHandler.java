@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api.handler;
 
 import com.formkiq.aws.cognito.CognitoIdentityProviderService;
+import com.formkiq.aws.cognito.transformers.AuthenticationResultTypeToMap;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -90,13 +91,9 @@ public class UserLoginRequestHandler
     result.put("session", response.session());
 
     AuthenticationResultType login = response.authenticationResult();
-    if (login != null) {
-      Map<String, Object> authenticationResult = new HashMap<>();
-      authenticationResult.put("accessToken", login.accessToken());
-      authenticationResult.put("idToken", login.idToken());
-      authenticationResult.put("refreshToken", login.refreshToken());
-      authenticationResult.put("tokenType", login.tokenType());
-      authenticationResult.put("expiresIn", login.expiresIn());
+    Map<String, Object> authenticationResult = new AuthenticationResultTypeToMap().apply(login);
+
+    if (!authenticationResult.isEmpty()) {
       result.put("authenticationResult", authenticationResult);
     }
 
