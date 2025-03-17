@@ -62,8 +62,8 @@ public class HttpRequestToApiHttpRequest implements Function<HttpRequest, ApiHtt
   }
 
   private boolean isPublicEndpoint(final String url) {
-    List<String> publicUrls = List.of("/login", "/forgotPassword", "/confirmRegistration",
-        "/changePassword", "/mfa/challenge", "/mfa/verify");
+    List<String> publicUrls = List.of("/login", "/forgotPassword", "/challenge", "/changePassword",
+        "/mfa/challenge", "/mfa/verify");
     return publicUrls.stream().anyMatch(url::contains);
   }
 

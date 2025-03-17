@@ -159,6 +159,39 @@ public class CognitoAuthRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * POST /login NEW_PASSWORD_REQUIRED.
+   *
+   */
+  @Test
+  public void testLogin04() throws IOException {
+    // given
+    String url = server.getBasePath() + "/login";
+    String body = "{\"username\":\"newPasswordRequired\",\"password\":\"test\"}";
+
+    // when
+    HttpResponse<String> post = http.post(url, Optional.empty(), Optional.empty(), body);
+
+    // then
+    assertEquals("200", String.valueOf(post.statusCode()));
+    Map<String, String> map = GSON.fromJson(post.body(), Map.class);
+    assertNull(map.get("authenticationResult"));
+    assertEquals("SJFNSDKFNJDSF", map.get("session"));
+    assertEquals("NEW_PASSWORD_REQUIRED", map.get("challengeName"));
+
+    // given
+    url = server.getBasePath() + "/challenge";
+    body = "{\"username\":\"newPasswordRequired\",\"newPassword\":\"1j3klqwe\","
+        + "\"challengeName\":\"NEW_PASSWORD_REQUIRED\",\"session\":\"mf1231312a\"}";
+
+    // when
+    post = http.post(url, Optional.empty(), Optional.empty(), body);
+
+    // then
+    assertEquals("200", String.valueOf(post.statusCode()));
+    assertEquals("{\"authenticationResult\":{\"accessToken\":\"ABC\"}}", post.body());
+  }
+
+  /**
    * POST /login/mfa.
    *
    */
