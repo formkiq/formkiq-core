@@ -29,54 +29,44 @@
                 content:
                   application/json:
                     schema:
-                      type: object
-                      required:
-                      - username
-                      - password
-                      properties:
-                        username:
-                          type: string
-                          example: john_doe
-                        password:
-                          type: string
-                          example: secret123
+                      $ref: '#/components/schemas/UserLoginRequest'
               responses:
                 "200":
                   description: Login successful. Returns authentication details similar to AWS Cognito.
                   content:
                     application/json:
                       schema:
+                        $ref: '#/components/schemas/UserLoginResponse'
+                "401":
+                  description: Invalid credentials provided.
+                  content:
+                    application/json:
+                      schema:
                         type: object
                         properties:
-                          challengeName:
+                          error:
                             type: string
-                            description: The name of the challenge that you are responding to
-                          sessionName:
-                            type: string
-                            description: The session identifier that maintains the state of authentication requests and challenge responses
-                          authenticationResult:
-                            type: object
-                            properties:
-                              accessToken:
-                                type: string
-                                description: JWT access token.
-                                example: eyJraWQiOiJ0W...
-                              expiresIn:
-                                type: integer
-                                description: Time in seconds until the token expires.
-                                example: 86400
-                              tokenType:
-                                type: string
-                                description: Type of token.
-                                example: Bearer
-                              refreshToken:
-                                type: string
-                                description: Refresh token for obtaining new access tokens.
-                                example: eyJjdHkiO...
-                              idToken:
-                                type: string
-                                description: JWT id token.
-                                example: eyJraWQiOiI5YUpvb...
+                            example: Invalid username or password.
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+          /login/mfa:
+            post:
+              summary: User MFA Login
+              description: Authenticate a user with a username and MFA code.
+              requestBody:
+                description: User credentials for MFA login.
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/UserMfaLoginRequest'
+              responses:
+                "200":
+                  description: Login successful. Returns authentication details similar to AWS Cognito.
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/UserMfaLoginResponse'
                 "401":
                   description: Invalid credentials provided.
                   content:
@@ -99,27 +89,14 @@
                 content:
                   application/json:
                     schema:
-                      type: object
-                      required:
-                      - session
-                      properties:
-                        session:
-                          type: string
-                          description: The session identifier that maintains the state of authentication requests and challenge responses
+                      $ref: '#/components/schemas/UserMfaChallengeRequest'
               responses:
                 "200":
                   description: Login successful. Returns authentication details similar to AWS Cognito.
                   content:
                     application/json:
                       schema:
-                        type: object
-                        properties:
-                          secretCode:
-                            type: string
-                            description: A unique generated shared secret code that is used by the TOTP algorithm to generate a one-time code
-                          sessionName:
-                            type: string
-                            description: The session identifier that maintains the state of authentication requests and challenge responses
+                        $ref: '#/components/schemas/UserMfaChallengeResponse'
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /mfa/verify:
@@ -132,34 +109,34 @@
                 content:
                   application/json:
                     schema:
-                      type: object
-                      required:
-                      - session
-                      - userCode
-                      properties:
-                        session:
-                          type: string
-                          description: The session identifier that maintains the state of authentication requests and challenge responses
-                        userCode:
-                          type: string
-                          description: A TOTP that the user generated in their configured authenticator app
-                        deviceName:
-                          type: string
-                          description: A friendly name for the device that's running the TOTP authenticator
+                      $ref: '#/components/schemas/UserMfaVerifyRequest'
               responses:
                 "200":
                   description: Login successful. Returns authentication details similar to AWS Cognito.
                   content:
                     application/json:
                       schema:
-                        type: object
-                        properties:
-                          status:
-                            type: string
-                            description: This response parameter indicates the success of TOTP verification
-                          sessionName:
-                            type: string
-                            description: The session identifier that maintains the state of authentication requests and challenge responses
+                        $ref: '#/components/schemas/UserMfaVerifyResponse'
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+          /challenge:
+            post:
+              summary: An API to provide the answer to that challenge
+              description: An API to provide the answer to that challenge
+              requestBody:
+                description: User Challenge request
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/UserChallengeRequest'
+              responses:
+                "200":
+                  description: A successful challenge.
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/UserChallengeResponse'
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /changePassword:
@@ -175,28 +152,14 @@
                 content:
                   application/json:
                     schema:
-                      type: object
-                      required:
-                      - oldPassword
-                      - newPassword
-                      properties:
-                        oldPassword:
-                          type: string
-                          example: oldSecret123
-                        newPassword:
-                          type: string
-                          example: newSecret456
+                      $ref: '#/components/schemas/ChangePasswordRequest'
               responses:
                 "200":
                   description: Password changed successfully.
                   content:
                     application/json:
                       schema:
-                        type: object
-                        properties:
-                          message:
-                            type: string
-                            example: Password updated successfully
+                        $ref: '#/components/schemas/ChangePasswordResponse'
                 "400":
                   description: Invalid input provided.
                   content:
@@ -220,23 +183,14 @@
                 content:
                   application/json:
                     schema:
-                      type: object
-                      required:
-                      - username
-                      properties:
-                        username:
-                          type: string
+                      $ref: '#/components/schemas/ForgotPasswordRequest'
               responses:
                 "200":
                   description: Password reset instructions sent.
                   content:
                     application/json:
                       schema:
-                        type: object
-                        properties:
-                          message:
-                            type: string
-                            example: Password reset sent
+                        $ref: '#/components/schemas/ForgotPasswordResponse'
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /forgotPasswordConfirm:
@@ -250,64 +204,14 @@
                 content:
                   application/json:
                     schema:
-                      type: object
-                      required:
-                      - username
-                      - code
-                      - password
-                      properties:
-                        username:
-                          type: string
-                        code:
-                          type: string
-                        password:
-                          type: string
+                      $ref: '#/components/schemas/ForgotPasswordConfirmRequest'
               responses:
                 "200":
                   description: Confirms Password reset.
                   content:
                     application/json:
                       schema:
-                        type: object
-                        properties:
-                          message:
-                            type: string
-                            example: Password set
-              x-amazon-apigateway-integration:
-                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
-          /confirmRegistration:
-            post:
-              summary: Confirm Registration
-              description: |
-                Confirm a new user's registration using a confirmation code.  The request body must contain the user's username and the confirmation code.
-              requestBody:
-                description: Username and confirmation code for registration confirmation.
-                required: true
-                content:
-                  application/json:
-                    schema:
-                      type: object
-                      required:
-                      - username
-                      - code
-                      properties:
-                        username:
-                          type: string
-                        code:
-                          type: string
-              responses:
-                "200":
-                  description: Registration confirmed successfully.
-                  content:
-                    application/json:
-                      schema:
-                        type: object
-                        properties:
-                          message:
-                            type: string
-                            example: User registration confirmed successfully
-                          challengeName:
-                            type: string
+                        $ref: '#/components/schemas/ForgotPasswordConfirmResponse'
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
         components:
@@ -338,3 +242,197 @@
               httpMethod: POST
               type: aws_proxy
               payloadFormatVersion: "1.0"
+          schemas:
+            UserLoginRequest:
+              type: object
+              required:
+              - username
+              - password
+              properties:
+                username:
+                  type: string
+                  description: The name of the user that you want to query or modify
+                password:
+                  type: string
+            UserLoginResponse:
+              type: object
+              properties:
+                challengeName:
+                  type: string
+                  description: The name of the challenge that you are responding to
+                session:
+                  type: string
+                  description: The session identifier that maintains the state of authentication requests and challenge responses
+                authenticationResult:
+                  type: object
+                  properties:
+                    accessToken:
+                      type: string
+                      description: JWT access token.
+                    expiresIn:
+                      type: integer
+                      description: Time in seconds until the token expires.
+                    tokenType:
+                      type: string
+                      description: Type of token.
+                    refreshToken:
+                      type: string
+                      description: Refresh token for obtaining new access tokens.
+                    idToken:
+                      type: string
+                      description: JWT id token.
+            UserMfaLoginRequest:
+              type: object
+              required:
+              - username
+              - session
+              - softwareTokenMfaCode
+              properties:
+                username:
+                  type: string
+                  description: The name of the user that you want to query or modify
+                softwareTokenMfaCode:
+                  type: string
+                  example: Software Token MFA Code
+                session:
+                  type: string
+                  description: The session identifier that maintains the state of authentication requests and challenge responses
+            UserMfaLoginResponse:
+              type: object
+              properties:
+                authenticationResult:
+                  type: object
+                  properties:
+                    accessToken:
+                      type: string
+                      description: JWT access token.
+                    expiresIn:
+                      type: integer
+                      description: Time in seconds until the token expires.
+                    tokenType:
+                      type: string
+                      description: Type of token.
+                    refreshToken:
+                      type: string
+                      description: Refresh token for obtaining new access tokens.
+                    idToken:
+                      type: string
+                      description: JWT id token.
+            UserMfaChallengeRequest:
+              type: object
+              required:
+              - session
+              properties:
+                session:
+                  type: string
+                  description: The session identifier that maintains the state of authentication requests and challenge responses
+            UserMfaChallengeResponse:
+              type: object
+              properties:
+                secretCode:
+                  type: string
+                  description: A unique generated shared secret code that is used by the TOTP algorithm to generate a one-time code
+                session:
+                  type: string
+                  description: The session identifier that maintains the state of authentication requests and challenge responses
+            UserChallengeRequest:
+              type: object
+              required:
+              - session
+              - challengeName
+              - username
+              properties:
+                username:
+                  type: string
+                  description: The name of the user that you want to query or modify
+                challengeName:
+                  type: string
+                  description: The name of the next challenge that you must respond to
+                session:
+                  type: string
+                  description: The session identifier that maintains the state of authentication requests and challenge responses
+                newPassword:
+                  type: string
+                  description: User's New Password
+            UserChallengeResponse:
+              type: object
+              properties:
+                challengeName:
+                  type: string
+                  description: The name of the next challenge that you must respond to
+                session:
+                  type: string
+                  description: The session identifier that maintains the state of authentication requests and challenge responses
+            ChangePasswordRequest:
+              type: object
+              required:
+              - oldPassword
+              - newPassword
+              properties:
+                oldPassword:
+                  type: string
+                  description: User's Old Password
+                newPassword:
+                  type: string
+                  description: User's New Password
+            ChangePasswordResponse:
+              type: object
+              properties:
+                message:
+                  type: string
+            ForgotPasswordRequest:
+              type: object
+              required:
+              - username
+              properties:
+                username:
+                  type: string
+                  description: The name of the user that you want to query or modify
+            ForgotPasswordResponse:
+              type: object
+              properties:
+                message:
+                  type: string
+            ForgotPasswordConfirmRequest:
+              type: object
+              required:
+              - username
+              - code
+              - password
+              properties:
+                username:
+                  type: string
+                  description: The name of the user that you want to query or modify
+                code:
+                  type: string
+                password:
+                  type: string
+            ForgotPasswordConfirmResponse:
+              type: object
+              properties:
+                message:
+                  type: string
+            UserMfaVerifyRequest:
+              type: object
+              required:
+              - session
+              - userCode
+              properties:
+                session:
+                  type: string
+                  description: The session identifier that maintains the state of authentication requests and challenge responses
+                userCode:
+                  type: string
+                  description: A TOTP that the user generated in their configured authenticator app
+                deviceName:
+                  type: string
+                  description: A friendly name for the device that's running the TOTP authenticator
+            UserMfaVerifyResponse:
+              type: object
+              properties:
+                status:
+                  type: string
+                  description: This response parameter indicates the success of TOTP verification
+                session:
+                  type: string
+                  description: The session identifier that maintains the state of authentication requests and challenge responses

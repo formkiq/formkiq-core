@@ -103,6 +103,9 @@ public class UserChallengeRequestHandler
 
     Map<String, Object> result = new HashMap<>();
 
+    result.put("challengeName", response.challengeName());
+    result.put("session", response.session());
+
     AuthenticationResultType login = response.authenticationResult();
     Map<String, Object> authenticationResult = new AuthenticationResultTypeToMap().apply(login);
 
