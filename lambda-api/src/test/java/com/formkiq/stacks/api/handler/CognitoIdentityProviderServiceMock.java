@@ -95,7 +95,8 @@ public class CognitoIdentityProviderServiceMock implements CognitoIdentityProvid
     InitiateAuthResponse.Builder b = InitiateAuthResponse.builder();
     switch (username) {
       case "mfa" -> b.challengeName("MFA_SETUP").session("AYABeCHQdmWZNwl7Egjpk");
-
+      case "newPasswordRequired" ->
+        b.challengeName("NEW_PASSWORD_REQUIRED").session("SJFNSDKFNJDSF");
       default ->
         b.authenticationResult(AuthenticationResultType.builder().accessToken("ABC").build());
     }
@@ -180,7 +181,9 @@ public class CognitoIdentityProviderServiceMock implements CognitoIdentityProvid
   @Override
   public RespondToAuthChallengeResponse responseToAuthChallenge(final String session,
       final String challengeName, final Map<String, String> challengeResponses) {
-    AuthenticationResultType type = AuthenticationResultType.builder().accessToken("ABC").build();
-    return RespondToAuthChallengeResponse.builder().authenticationResult(type).build();
+    return RespondToAuthChallengeResponse.builder()
+        .authenticationResult(AuthenticationResultType.builder().accessToken("ABC").build())
+        .build();
+
   }
 }
