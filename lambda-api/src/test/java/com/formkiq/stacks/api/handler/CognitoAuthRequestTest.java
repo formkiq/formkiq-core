@@ -211,6 +211,78 @@ public class CognitoAuthRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * POST /challenge.
+   *
+   */
+  @Test
+  public void testChallenge01() throws IOException {
+    // given
+    String url = server.getBasePath() + "/challenge";
+    String body = "{}";
+
+    // when
+    HttpResponse<String> post = http.post(url, Optional.empty(), Optional.empty(), body);
+
+    // then
+    assertEquals("400", String.valueOf(post.statusCode()));
+    assertEquals("{\"errors\":[{\"error\":\"'challengeName' is required\"}]}", post.body());
+  }
+
+  /**
+   * POST /challenge unknown challengeName.
+   */
+  @Test
+  public void testChallenge02() throws IOException {
+    // given
+    String url = server.getBasePath() + "/challenge";
+    String body = "{\"challengeName\":\"ABC\"}";
+
+    // when
+    HttpResponse<String> post = http.post(url, Optional.empty(), Optional.empty(), body);
+
+    // then
+    assertEquals("400", String.valueOf(post.statusCode()));
+    assertEquals("{\"errors\":[{\"error\":\"Unsupported challengeName 'ABC'\"}]}", post.body());
+  }
+
+  /**
+   * POST /challenge challengeName = SOFTWARE_TOKEN_MFA.
+   */
+  @Test
+  public void testChallenge03() throws IOException {
+    // given
+    String url = server.getBasePath() + "/challenge";
+    String body = "{\"challengeName\":\"SOFTWARE_TOKEN_MFA\"}";
+
+    // when
+    HttpResponse<String> post = http.post(url, Optional.empty(), Optional.empty(), body);
+
+    // then
+    assertEquals("400", String.valueOf(post.statusCode()));
+    assertEquals("{\"errors\":[{\"error\":\"'username', 'session' and "
+        + "'softwareTokenMfaCode' are required\"}]}", post.body());
+  }
+
+  /**
+   * POST /challenge challengeName = NEW_PASSWORD_REQUIRED.
+   */
+  @Test
+  public void testChallenge04() throws IOException {
+    // given
+    String url = server.getBasePath() + "/challenge";
+    String body = "{\"challengeName\":\"NEW_PASSWORD_REQUIRED\"}";
+
+    // when
+    HttpResponse<String> post = http.post(url, Optional.empty(), Optional.empty(), body);
+
+    // then
+    assertEquals("400", String.valueOf(post.statusCode()));
+    assertEquals(
+        "{\"errors\":[{\"error\":\"'username', 'session' and 'newPassword' are required\"}]}",
+        post.body());
+  }
+
+  /**
    * POST /changePassword missing parameters.
    *
    */
