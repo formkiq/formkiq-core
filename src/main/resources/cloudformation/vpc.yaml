@@ -120,21 +120,6 @@ Conditions:
     Fn::Equals:
       - Ref: EnableVpcLinks
       - 'true'
-
-  UseTwoSubnets: 
-    Fn::Equals:
-      - Ref: "AWS::Region"
-      - "ca-central-1"
-
-  UseThreePrivateSubnets:
-    Fn::Not:
-      - Condition: UseTwoSubnets
-
-  UseThreePublicSubnets:
-    Fn::And:
-      - Fn::Not:
-        - Condition: UseTwoSubnets
-      - !Condition HasPublic
     
 Resources:
 
@@ -170,10 +155,7 @@ Resources:
       SubnetIds:
         - Ref: PrivateSubnet1
         - Ref: PrivateSubnet2
-        - Fn::If: 
-          - UseTwoSubnets
-          - Ref: "AWS::NoValue"
-          - Ref: PrivateSubnet3
+        - Ref: PrivateSubnet3
 
   VpcLinkSecurityGroup:
     Condition: IsEnableVpcLinks
@@ -241,7 +223,6 @@ Resources:
           Value: FormKiQ
 
   PublicSubnet3:
-    Condition: UseThreePublicSubnets
     Type: AWS::EC2::Subnet
     Properties:
       VpcId:
@@ -301,7 +282,6 @@ Resources:
             
   PrivateSubnet3:
     Type: AWS::EC2::Subnet
-    Condition: UseThreePrivateSubnets
     Properties:
       VpcId: 
         Ref: Vpc
@@ -349,7 +329,6 @@ Resources:
         Ref: PublicRouteTable
         
   PubliceSubnet3RouteTableAssociation:
-    Condition: UseThreePublicSubnets
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId:
@@ -399,7 +378,6 @@ Resources:
         Ref: PrivateRouteTable
         
   PrivateSubnet3RouteTableAssociation:
-    Condition: UseThreePrivateSubnets
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: 
@@ -610,7 +588,6 @@ Outputs:
       Name:
         Fn::Sub: "${AWS::StackName}-PublicSubnet2"
   PublicSubnet3:
-    Condition: UseThreePublicSubnets
     Description: "Public Subnet 3"
     Value:
       Ref: PublicSubnet3
@@ -632,7 +609,6 @@ Outputs:
       Name:
         Fn::Sub: "${AWS::StackName}-PrivateSubnet2"
   PrivateSubnet3:
-    Condition: UseThreePrivateSubnets
     Description: "Private Subnet 3"
     Value:
       Ref: PrivateSubnet3
@@ -651,34 +627,22 @@ Outputs:
     Condition: HasPublic
     Description: "VPC Public Subnets"
     Value: 
-      Fn::If:
-        - UseThreePublicSubnets
-        - Fn::Join:
-          - ","
-          - - Ref: PublicSubnet1
-            - Ref: PublicSubnet2
-            - Ref: PublicSubnet3
-        - Fn::Join:
-          - ","
-          - - Ref: PublicSubnet1
-            - Ref: PublicSubnet2
+      Fn::Join:
+        - ","
+        - - Ref: PublicSubnet1
+          - Ref: PublicSubnet2
+          - Ref: PublicSubnet3
     Export:
       Name:
         Fn::Sub: "${AWS::StackName}-PublicSubnets"
   PrivateSubnets:
     Description: "VPC Private Subnets"
     Value: 
-      Fn::If:
-        - UseThreePrivateSubnets
-        - Fn::Join:
-          - ","
-          - - Ref: PrivateSubnet1
-            - Ref: PrivateSubnet2
-            - Ref: PrivateSubnet3
-        - Fn::Join:
-          - ","
-          - - Ref: PrivateSubnet1
-            - Ref: PrivateSubnet2
+      Fn::Join:
+        - ","
+        - - Ref: PrivateSubnet1
+          - Ref: PrivateSubnet2
+          - Ref: PrivateSubnet3
     Export:
       Name:
         Fn::Sub: "${AWS::StackName}-PrivateSubnets"
