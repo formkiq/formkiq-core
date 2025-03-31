@@ -566,10 +566,15 @@ class OcrTesseractProcessorTest {
       String ocrS3Key = ocrService.getS3Key(siteId, documentId, jobId);
       String text = s3.getContentAsString(OCR_BUCKET_NAME, ocrS3Key, null);
 
-      assertTrue(text.contains("Your Company"));
+      String match = "Weekly sales report creation";
+      assertTrue(text.contains(match));
       assertTrue(text.contains("2/9"));
       assertFalse(text.contains("3/9"));
       assertFalse(text.contains("Current process"));
+
+      // ensure no duplicate text
+      int pos = text.indexOf(match);
+      assertFalse(text.substring(pos + match.length()).contains(match));
 
       actions = actionsService.getActions(siteId, documentId);
       assertEquals(ActionStatus.COMPLETE, actions.get(0).status());

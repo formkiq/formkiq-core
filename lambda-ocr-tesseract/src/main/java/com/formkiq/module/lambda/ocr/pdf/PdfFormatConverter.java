@@ -80,10 +80,6 @@ public class PdfFormatConverter implements FormatConverter {
             }
           }
         }
-
-      } else {
-
-        sb.append(pdfTextStripper.getText(document));
       }
 
       String text = sb.toString();
