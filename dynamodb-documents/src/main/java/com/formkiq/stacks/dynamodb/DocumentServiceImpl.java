@@ -51,6 +51,11 @@ import com.formkiq.aws.dynamodb.model.TimeToLiveBuilder;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.objects.Strings;
+import com.formkiq.module.lambdaservices.logger.LogLevel;
+import com.formkiq.module.lambdaservices.logger.LogType;
+import com.formkiq.module.lambdaservices.logger.Logger;
+import com.formkiq.module.lambdaservices.logger.LoggerImpl;
+import com.formkiq.module.lambdaservices.timer.MethodTimer;
 import com.formkiq.stacks.dynamodb.attributes.AttributeDataType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeKeyReserved;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
@@ -834,10 +839,16 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
   private Map<String, AttributeValue> getDocumentRecord(final String siteId,
       final String documentId) {
+
     GetItemRequest r = GetItemRequest.builder().key(keysDocument(siteId, documentId))
         .tableName(this.documentTableName).consistentRead(Boolean.TRUE).build();
 
-    return this.dbClient.getItem(r).item();
+    Logger log = new LoggerImpl(LogLevel.TRACE, LogType.JSON);
+    MethodTimer mt = MethodTimer.startTimer("GET ITEM");
+    Map<String, AttributeValue> item = this.dbClient.getItem(r).item();
+    mt.stop();
+    mt.logElapsedTime(log);
+    return item;
   }
 
   @Override

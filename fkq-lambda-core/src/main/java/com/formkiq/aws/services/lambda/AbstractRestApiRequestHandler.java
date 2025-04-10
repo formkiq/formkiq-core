@@ -60,6 +60,7 @@ import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.logger.LogLevel;
 import com.formkiq.module.lambdaservices.logger.Logger;
+import com.formkiq.module.lambdaservices.timer.MethodTimer;
 import com.formkiq.validation.ValidationException;
 import com.google.gson.Gson;
 import software.amazon.awssdk.utils.IoUtils;
@@ -139,6 +140,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final ApiGatewayRequestHandler handler) throws Exception {
 
+    MethodTimer m = new MethodTimer().start("call handler method");
     ApiRequestHandlerResponse response = null;
     AwsServiceCache awsServices = getAwsServices();
 
@@ -180,6 +182,8 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
         break;
     }
 
+    m.stop();
+    m.logElapsedTime(awsServices.getLogger());
     return response;
   }
 
@@ -325,6 +329,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
   public void handleRequest(final InputStream input, final OutputStream output,
       final Context context) throws IOException {
 
+    MethodTimer p = new MethodTimer().start("process request");
     AwsServiceCache awsServices = getAwsServices();
 
     String str = IoUtils.toUtf8String(input);
@@ -351,6 +356,8 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
         handleOtherRequest(context, str);
       }
     }
+    p.stop();
+    p.logElapsedTime(awsServices.getLogger());
   }
 
   /**

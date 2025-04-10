@@ -45,7 +45,7 @@ public class MethodTimer {
 
   /**
    * Start Timer.
-   * 
+   *
    * @param name {@link String}
    * @return MethodTimer
    */
@@ -101,6 +101,22 @@ public class MethodTimer {
     if (logger.isLogged(LogLevel.TRACE)) {
       logger.trace(
           String.format("%s: elapsed time in milliseconds: %d", this.timerName, getElapsedTime()));
+    }
+  }
+
+  /**
+   * Measures and prints the execution time of the provided code block.
+   *
+   * @param logger {@link Logger}
+   * @param timerName {@link String}
+   * @param task The code to run encapsulated as a Runnable.
+   */
+  public static void timer(final Logger logger, final String timerName, final Runnable task) {
+    if (logger.isLogged(LogLevel.TRACE)) {
+      MethodTimer methodTimer = startTimer(timerName);
+      task.run();
+      methodTimer.stop();
+      methodTimer.logElapsedTime(logger);
     }
   }
 }

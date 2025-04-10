@@ -32,6 +32,8 @@ import com.formkiq.aws.ssm.SsmAwsServiceRegistry;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
+import com.formkiq.module.lambdaservices.logger.Logger;
+import com.formkiq.module.lambdaservices.timer.MethodTimer;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 
 import java.util.Map;
@@ -45,13 +47,23 @@ public class CoreRequestHandler extends AbstractCoreRequestHandler {
 
   static {
 
-    SERVICE_CACHE = new AwsServiceCacheBuilder(System.getenv(), Map.of(),
-        EnvironmentVariableCredentialsProvider.create())
-        .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
-            new SnsAwsServiceRegistry(), new SqsAwsServiceRegistry(), new SsmAwsServiceRegistry())
-        .build();
+    AwsServiceCacheBuilder builder = new AwsServiceCacheBuilder(System.getenv(), Map.of(),
+        EnvironmentVariableCredentialsProvider.create());
+    Logger logger = builder.build().getLogger();
 
-    initialize(SERVICE_CACHE);
+    MethodTimer.timer(logger, "Dynamodb", () -> builder.addService(new DynamoDbAwsServiceRegistry()));
+
+    MethodTimer.timer(logger, "S3", () -> builder.addService(new S3AwsServiceRegistry()));
+
+    MethodTimer.timer(logger, "SNS", () -> builder.addService(new SnsAwsServiceRegistry()));
+
+    MethodTimer.timer(logger, "SQS", () -> builder.addService(new SqsAwsServiceRegistry()));
+
+    MethodTimer.timer(logger, "SSM", () -> builder.addService(new SsmAwsServiceRegistry()));
+
+    SERVICE_CACHE = builder.build();
+
+    MethodTimer.timer(logger, "Initialize", () -> initialize(SERVICE_CACHE));
   }
 
   @Override
