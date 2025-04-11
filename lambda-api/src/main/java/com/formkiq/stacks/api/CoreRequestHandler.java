@@ -51,7 +51,8 @@ public class CoreRequestHandler extends AbstractCoreRequestHandler {
         EnvironmentVariableCredentialsProvider.create());
     Logger logger = builder.build().getLogger();
 
-    MethodTimer.timer(logger, "Dynamodb", () -> builder.addService(new DynamoDbAwsServiceRegistry()));
+    MethodTimer.timer(logger, "Dynamodb",
+        () -> builder.addService(new DynamoDbAwsServiceRegistry()));
 
     MethodTimer.timer(logger, "S3", () -> builder.addService(new S3AwsServiceRegistry()));
 
