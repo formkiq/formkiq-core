@@ -10,13 +10,15 @@
 		<allow pkg="com.formkiq.aws.dynamodb" />
 		<allow pkg="com.formkiq.graalvm.annotations" />
 		<allow pkg="com.formkiq.module.lambdaservices" />
-		
+
 		<allow pkg="java.io" />
 		<allow pkg="java.net" />
 		<allow pkg="java.text" />
 		<allow pkg="java.time" />
 		<allow pkg="java.util" />
-		
+
+		<allow pkg="software.amazon.awssdk.http" />
+		<allow pkg="software.amazon.awssdk.http.urlconnection" />
 		<allow pkg="software.amazon.awssdk.auth.credentials" />
 		<allow pkg="software.amazon.awssdk.core.client.config" />
 		<allow pkg="software.amazon.awssdk.regions" />
