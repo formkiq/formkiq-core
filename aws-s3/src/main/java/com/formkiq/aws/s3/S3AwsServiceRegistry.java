@@ -44,8 +44,7 @@ public class S3AwsServiceRegistry implements AwsServiceRegistry {
         new S3ConnectionBuilder(serviceCache.enableXray()).setRegion(serviceCache.region())
             .setCredentials(credentialsProvider).setEndpointOverride(awsServiceEndpoints.get("s3"));
 
-    serviceCache.register(S3ConnectionBuilder.class,
-        new ClassServiceExtension<S3ConnectionBuilder>(s3));
+    serviceCache.register(S3ConnectionBuilder.class, new ClassServiceExtension<>(s3));
 
     S3PresignerConnectionBuilder s3Presigner = new S3PresignerConnectionBuilder()
         .setRegion(serviceCache.region()).setCredentials(credentialsProvider)

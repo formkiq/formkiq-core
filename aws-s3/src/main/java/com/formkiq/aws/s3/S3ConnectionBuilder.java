@@ -28,6 +28,7 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
+import software.amazon.awssdk.http.SdkHttpClient;
 import software.amazon.awssdk.http.urlconnection.UrlConnectionHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -53,18 +54,16 @@ public class S3ConnectionBuilder {
    * @param enableAwsXray Enable AWS X-Ray
    */
   public S3ConnectionBuilder(final boolean enableAwsXray) {
-    System.setProperty("software.amazon.awssdk.http.service.impl",
-        "software.amazon.awssdk.http.urlconnection.UrlConnectionSdkHttpService");
     System.setProperty("aws.s3UseUsEast1RegionalEndpoint", "regional");
 
     ClientOverrideConfiguration.Builder clientConfig = ClientOverrideConfiguration.builder();
+    SdkHttpClient c = UrlConnectionHttpClient.builder().build();
 
     // if (enableAwsXray) {
     // clientConfig.addExecutionInterceptor(new TracingInterceptor());
     // }
 
-    this.builder = S3Client.builder().overrideConfiguration(clientConfig.build())
-        .httpClientBuilder(UrlConnectionHttpClient.builder())
+    this.builder = S3Client.builder().overrideConfiguration(clientConfig.build()).httpClient(c)
         .credentialsProvider(EnvironmentVariableCredentialsProvider.create());
   }
 
