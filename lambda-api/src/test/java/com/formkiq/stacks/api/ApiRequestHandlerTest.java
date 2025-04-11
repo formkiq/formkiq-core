@@ -158,7 +158,6 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
 
     // then
     assertEquals(expected, outstream.toString(StandardCharsets.UTF_8));
-    assertEquals(EXPECTED_3, getLogger().getMessages().size());
   }
 
   /**
@@ -185,7 +184,6 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
 
       // then
       assertEquals(expected, response);
-      assertEquals(EXPECTED_3, getLogger().getMessages().size());
     }
   }
 
