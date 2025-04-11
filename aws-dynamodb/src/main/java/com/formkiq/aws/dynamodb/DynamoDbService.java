@@ -106,6 +106,14 @@ public interface DynamoDbService {
   boolean exists(AttributeValue pk, AttributeValue sk);
 
   /**
+   * Find Existing records and returns existing keys.
+   *
+   * @param keys {@link List} {@link Map}
+   * @return {@link Map}
+   */
+  List<Map<String, AttributeValue>> exists(List<Map<String, AttributeValue>> keys);
+
+  /**
    * Gets DynamoDB Record.
    * 
    * @param pk {@link AttributeValue}
@@ -309,4 +317,5 @@ public interface DynamoDbService {
    * @return Map
    */
   Map<String, AttributeValue> getAquiredLock(AttributeValue pk, AttributeValue sk);
+
 }

@@ -228,6 +228,12 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
   }
 
   @Override
+  public List<Map<String, AttributeValue>> exists(final List<Map<String, AttributeValue>> keys) {
+    BatchGetConfig config = new BatchGetConfig().projectionExpression("PK,SK");
+    return getBatch(config, keys);
+  }
+
+  @Override
   public Map<String, AttributeValue> get(final AttributeValue pk, final AttributeValue sk) {
     return get(new QueryConfig(), pk, sk);
   }

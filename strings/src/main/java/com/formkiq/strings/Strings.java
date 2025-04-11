@@ -24,8 +24,11 @@
 package com.formkiq.strings;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
 /**
  * Strings Helper.
@@ -227,5 +230,18 @@ public class Strings {
     }
 
     return null;
+  }
+
+  /**
+   * Returns a list containing the elements in list1 but not in list2.
+   *
+   * @param <T> Type of {@link List}
+   * @param list1 the list from which to retain only elements not present in list2
+   * @param list2 the list whose elements should be excluded
+   * @return a list of elements that are in list2 but not in list1
+   */
+  public static <T> Collection<T> complement(final Collection<T> list1, final Collection<T> list2) {
+    Collection<T> set1 = new HashSet<>(list2);
+    return list1.stream().filter(element -> !set1.contains(element)).collect(Collectors.toList());
   }
 }

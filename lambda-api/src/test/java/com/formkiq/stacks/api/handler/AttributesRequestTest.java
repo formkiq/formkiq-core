@@ -387,7 +387,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       assertNotNull(watermark);
       assertEquals(text, watermark.getText());
       assertEquals(WatermarkScale.ORIGINAL, watermark.getScale());
-      assertEquals("123.0", watermark.getRotation().toString());
+      assertEquals("123.0", String.valueOf(watermark.getRotation()));
       WatermarkPosition position = watermark.getPosition();
       assertNotNull(position);
       assertEquals("2.0", String.valueOf(position.getxOffset()));
@@ -975,6 +975,41 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       assertEquals("joesmith", response.getUserId());
 
       assertEmptyTags(siteId, documentId);
+    }
+  }
+
+  /**
+   * POST /documents with Relationships with missing document.
+   *
+   */
+  @Test
+  public void testAddDocumentAttribute14() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+
+      setBearerToken(siteId);
+      String documentId0 = addDocument(siteId);
+      String documentId1 = ID.uuid();
+
+      AddDocumentAttributeRelationship o0 = new AddDocumentAttributeRelationship()
+          .documentId(documentId0).relationship(DocumentRelationshipType.PRIMARY);
+      AddDocumentAttributeRelationship o1 = new AddDocumentAttributeRelationship()
+          .documentId(documentId1).relationship(DocumentRelationshipType.PRIMARY);
+
+      AddDocumentRequest docReq =
+          new AddDocumentRequest().content("test").addAttributesItem(new AddDocumentAttribute(o0))
+              .addAttributesItem(new AddDocumentAttribute(o1));
+
+      // when
+      try {
+        this.documentsApi.addDocument(docReq, siteId, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"errors\":[{\"key\":\"" + documentId1 + "\",\"error\":\"document '"
+            + documentId1 + "' does not exist\"}]}", e.getResponseBody());
+      }
     }
   }
 
