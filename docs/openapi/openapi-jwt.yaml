@@ -1143,6 +1143,31 @@
                   application/json:
                     schema:
                       $ref: '#/components/schemas/AddLocaleResourceItemRequest'
+                    examples:
+                      interfaceResourceItem:
+                        summary: Interface Resource Item Example
+                        value:
+                          resourceItem:
+                            itemType: INTERFACE
+                            interfaceKey: mainMenuTitle
+                            localizedValue: Main Menu
+                      schemaResourceItem:
+                        summary: Schema Resource Item Example
+                        value:
+                          resourceItem:
+                            itemType: SCHEMA
+                            attributeKey: documentCategory
+                            allowedValue: invoice
+                            localizedValue: Facture
+                      classificationResourceItem:
+                        summary: Classification Resource Item Example
+                        value:
+                          resourceItem:
+                            itemType: CLASSIFICATION
+                            attributeKey: usageRegistrariat
+                            allowedValue: ID
+                            localizedValue: Gestion identitaire
+                            classificationId: 219a7dd6-5fb2-4556-ad71-0ab4312fe577
               responses:
                 "200":
                   description: 201 CREATED
