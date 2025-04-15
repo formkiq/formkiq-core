@@ -134,7 +134,15 @@ Parameters:
       The level of logging for the AWS Platform System logs. Only used when LogFormat is JSON
     Default: "INFO"
     AllowedValues: ["DEBUG", "INFO", "WARN"]
-      
+
+  EnableDeletionProtection:
+    Description: "Enable deletion protection on AWS Services that support the feature"
+    Type: String
+    Default: "false"
+    AllowedValues:
+      - "true"
+      - "false"
+
 Conditions:
 
   HasTypesenseApiKey:
@@ -209,6 +217,8 @@ Resources:
     Properties:
       Location: storage/template.yaml
       Parameters:
+        EnableDeletionProtection:
+          Ref: EnableDeletionProtection
         TypesenseApiKey:
           Ref: TypesenseApiKey
         LogRetentionInDays:
@@ -510,6 +520,8 @@ Resources:
       Parameters:
         AppEnvironment: 
           Ref: AppEnvironment
+        EnableDeletionProtection:
+          Ref: EnableDeletionProtection
         FormKiQType:
           Fn::GetAtt:
             - Config
