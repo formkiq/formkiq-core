@@ -353,6 +353,8 @@ Resources:
     Properties:
       Location: cognito/template.yaml
       Parameters:
+        EnableDeletionProtection:
+          Ref: EnableDeletionProtection
         UserPoolName: 
           Fn::Sub: "${AWS::StackName}-${AppEnvironment}"
         AllowAdminCreateUserOnly: "true"
