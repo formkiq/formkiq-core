@@ -224,8 +224,8 @@ Resources:
     - ApiFunctionRole
     Properties:
       Handler: index.handler
-      Runtime: nodejs18.x
-      Timeout: 600
+      Runtime: nodejs22.x
+      Timeout: 60
       MemorySize: 512
       Description: Lambda function that processes Web-socket requests
       CodeUri: ./websocket-api.zip
