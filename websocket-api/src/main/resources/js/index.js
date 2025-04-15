@@ -197,11 +197,20 @@ async function disconnect(event) {
 }
 
 async function verifyToken(event) {
-  var authentication = event.headers.Authentication;
-  if (authentication == null) {
+  // Check if headers exist before accessing the "Authentication" property.
+  let authentication = event.headers && event.headers.Authentication;
+
+  // Fallback: If authentication is not in headers, check query parameters.
+  if (!authentication && event.queryStringParameters) {
     authentication = event.queryStringParameters.Authentication;
   }
 
+  // If still not found, throw an error or handle it appropriately.
+  if (!authentication) {
+    throw new Error('Authentication token is missing from headers and query parameters.');
+  }
+
+  // Attempt to verify using the id token verifier. On failure, try the access token verifier.
   return verifierId.verify(authentication).catch((err) => {
     return verifierAccess.verify(authentication);
   });

@@ -60,7 +60,7 @@ import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 public class WebsocketTest extends AbstractAwsIntegrationTest {
 
   /** {@link Gson}. */
-  private Gson gson = new GsonBuilder().create();
+  private final Gson gson = new GsonBuilder().create();
   /** {@link DynamoDbConnectionBuilder}. */
   private static DynamoDbConnectionBuilder dbConnection;
   /** Cognito Group. */
@@ -157,9 +157,9 @@ public class WebsocketTest extends AbstractAwsIntegrationTest {
     for (Boolean useHeader : Arrays.asList(Boolean.TRUE, Boolean.FALSE)) {
       // given
       final int sleep = 500;
-      WebSocketClientImpl client = null;
+      WebSocketClientImpl client;
 
-      if (useHeader.booleanValue()) {
+      if (useHeader) {
         client = new WebSocketClientImpl(new URI(websocketUrl));
         client.addHeader("Authentication", token.idToken());
       } else {
@@ -220,7 +220,6 @@ public class WebsocketTest extends AbstractAwsIntegrationTest {
    */
   @Test
   @Timeout(unit = TimeUnit.SECONDS, value = TIMEOUT)
-  @SuppressWarnings("unchecked")
   public void testWebNotify01() throws Exception {
     // given
     String siteId = GROUP;
