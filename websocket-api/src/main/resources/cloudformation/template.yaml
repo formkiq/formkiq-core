@@ -50,6 +50,10 @@ Parameters:
     Description: >
       The level of logging for the AWS Platform System logs.
 
+  EnableDeletionProtection:
+    Description: "Enable deletion protection on AWS Services that support the feature"
+    Type: String
+
 Conditions:
   IsLogFormatJSON: 
     Fn::Equals:
@@ -352,6 +356,8 @@ Resources:
   WebConnections:
     Type: AWS::DynamoDB::Table
     Properties:
+      DeletionProtectionEnabled:
+        Ref: EnableDeletionProtection
       TableName: 
         Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-webconnections"
       BillingMode: PAY_PER_REQUEST
