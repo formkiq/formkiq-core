@@ -3833,7 +3833,7 @@
             post:
               operationId: AddDocumentFulltext
               summary: Add document's full-text
-              description: Adde a document to OpenSearch; available as an Add-On Module
+              description: Add a document to OpenSearch; available as an Add-On Module
               tags:
               - Advanced Document Search
               parameters:
@@ -3961,6 +3961,39 @@
                     application/json:
                       schema:
                         $ref: '#/components/schemas/GetDocumentSyncResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+            post:
+              operationId: AddDocumentSync
+              summary: Add document sync to service
+              description: Add a document to a service
+              tags:
+              - Documents
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              requestBody:
+                required: false
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/AddDocumentSyncRequest'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/AddResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -8287,6 +8320,11 @@
                   type: object
                   additionalProperties:
                     $ref: '#/components/schemas/FulltextAttribute'
+            AddDocumentSyncRequest:
+              type: object
+              properties:
+                sync:
+                  $ref: '#/components/schemas/AddDocumentSync'
             GetDocumentSyncResponse:
               type: object
               properties:
@@ -8320,6 +8358,13 @@
               - CONTENT
               - SOFT_DELETE
               - DELETE
+            AddDocumentSync:
+              type: object
+              properties:
+                service:
+                  $ref: '#/components/schemas/DocumentSyncService'
+                type:
+                  $ref: '#/components/schemas/DocumentSyncType'
             DocumentSync:
               type: object
               properties:
