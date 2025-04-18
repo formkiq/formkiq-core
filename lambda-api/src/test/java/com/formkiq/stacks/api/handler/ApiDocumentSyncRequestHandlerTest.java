@@ -409,8 +409,8 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
         } catch (ApiException e) {
           assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
           assertEquals(
-              "{\"errors\":[{\"key\":\"type\"," +
-                      "\"error\":\"unsupport type 'DELETE' for service 'TYPESENSE'\"}]}",
+              "{\"errors\":[{\"key\":\"type\","
+                  + "\"error\":\"unsupport type 'DELETE' for service 'TYPESENSE'\"}]}",
               e.getResponseBody());
         }
       }
