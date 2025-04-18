@@ -149,8 +149,9 @@ public class DocumentsSyncsRequestHandler
     } else {
       DocumentSyncService service = awsservice.getExtension(DocumentSyncService.class);
 
+      DocumentSyncServiceType serviceType = getService(awsservice, sync.getService());
       Collection<ValidationError> errors =
-          service.addSync(siteId, documentId, sync.getService(), sync.getType());
+          service.addSync(siteId, documentId, serviceType, sync.getType());
       if (!errors.isEmpty()) {
         throw new ValidationException(errors);
       }
@@ -160,8 +161,24 @@ public class DocumentsSyncsRequestHandler
     return new ApiRequestHandlerResponse(SC_OK, resp);
   }
 
-  private boolean isActionService(final DocumentSyncServiceType service) {
-    return DocumentSyncServiceType.TYPESENSE.equals(service)
-        || DocumentSyncServiceType.OPENSEARCH.equals(service);
+  private DocumentSyncServiceType getService(final AwsServiceCache awsservice,
+      final AddDocumentSyncServiceType service) throws BadException {
+    return switch (service) {
+      case FULLTEXT -> {
+        if (awsservice.hasModule("opensearch")) {
+          yield DocumentSyncServiceType.OPENSEARCH;
+        } else if (awsservice.hasModule("typesense")) {
+          yield DocumentSyncServiceType.TYPESENSE;
+        } else {
+          throw new BadException("No fulltext services enabled");
+        }
+      }
+      case EVENTBRIDGE -> DocumentSyncServiceType.EVENTBRIDGE;
+      default -> throw new BadException("Unknown service type: " + service);
+    };
+  }
+
+  private boolean isActionService(final AddDocumentSyncServiceType service) {
+    return AddDocumentSyncServiceType.FULLTEXT.equals(service);
   }
 }
