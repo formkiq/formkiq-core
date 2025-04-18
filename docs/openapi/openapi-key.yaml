@@ -8336,6 +8336,12 @@
                   description: List of document syncs
                   items:
                     $ref: '#/components/schemas/DocumentSync'
+            AddDocumentSyncService:
+              type: string
+              description: Add Document Sync Service
+              enum:
+              - FULLTEXT
+              - EVENTBRIDGE
             DocumentSyncService:
               type: string
               description: Service of Document Sync
@@ -8362,7 +8368,7 @@
               type: object
               properties:
                 service:
-                  $ref: '#/components/schemas/DocumentSyncService'
+                  $ref: '#/components/schemas/AddDocumentSyncService'
                 type:
                   $ref: '#/components/schemas/DocumentSyncType'
             DocumentSync:
