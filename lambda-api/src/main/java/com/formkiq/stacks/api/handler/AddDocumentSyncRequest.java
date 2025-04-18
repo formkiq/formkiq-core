@@ -23,9 +23,12 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import com.formkiq.graalvm.annotations.Reflectable;
+
 /**
  * Add Document Sync Request.
  */
+@Reflectable
 public class AddDocumentSyncRequest {
   /** {@link AddDocumentSync}. */
   private AddDocumentSync sync;
