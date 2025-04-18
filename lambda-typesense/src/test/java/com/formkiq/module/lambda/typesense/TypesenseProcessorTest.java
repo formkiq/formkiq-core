@@ -23,6 +23,7 @@
  */
 package com.formkiq.module.lambda.typesense;
 
+import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENT_SYNCS_TABLE;
 import static com.formkiq.testutils.aws.TypesenseExtension.API_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -113,7 +114,7 @@ class TypesenseProcessorTest {
         new TypeSenseServiceImpl("http://localhost:" + typesenseExtension.getFirstMappedPort(),
             API_KEY, Region.US_EAST_1, cred);
 
-    syncService = new DocumentSyncServiceDynamoDb(db, DOCUMENT_SYNCS_TABLE);
+    syncService = new DocumentSyncServiceDynamoDb(db, DOCUMENTS_TABLE, DOCUMENT_SYNCS_TABLE);
   }
 
   /** {@link Context}. */

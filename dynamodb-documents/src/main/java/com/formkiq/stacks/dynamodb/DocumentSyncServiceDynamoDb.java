@@ -23,15 +23,16 @@
  */
 package com.formkiq.stacks.dynamodb;
 
-import static com.formkiq.aws.dynamodb.DbKeys.PK;
-import static com.formkiq.aws.dynamodb.DbKeys.PREFIX_DOCS;
-import static com.formkiq.aws.dynamodb.DbKeys.SK;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
@@ -45,35 +46,44 @@ import com.formkiq.aws.dynamodb.model.DocumentSyncRecordBuilder;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
 import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
 import com.formkiq.aws.dynamodb.model.DocumentSyncType;
+import com.formkiq.aws.dynamodb.objects.DateUtil;
+import com.formkiq.validation.ValidationError;
+import com.formkiq.validation.ValidationErrorImpl;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
+import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest;
 
 /**
  * 
  * DynamoDb implementation of {@link DocumentSyncService}.
  *
  */
-public final class DocumentSyncServiceDynamoDb implements DocumentSyncService {
+public final class DocumentSyncServiceDynamoDb implements DocumentSyncService, DbKeys {
 
   /** Syncs SK. */
   private static final String SK_SYNCS = "syncs#";
 
   /** {@link DynamoDbService}. */
   private final DynamoDbService db;
+  /** Document Table Name. */
+  private final String documentTableName;
 
   /**
    * constructor.
    * 
    * @param connection {@link DynamoDbConnectionBuilder}
+   * @param documentsTable {@link String}
    * @param syncsTable {@link String}
    */
   public DocumentSyncServiceDynamoDb(final DynamoDbConnectionBuilder connection,
-      final String syncsTable) {
+      final String documentsTable, final String syncsTable) {
 
     if (syncsTable == null) {
       throw new IllegalArgumentException("'syncsTable' is null");
     }
 
+    this.documentTableName = documentsTable;
     this.db = new DynamoDbServiceImpl(connection, syncsTable);
   }
 
@@ -121,6 +131,41 @@ public final class DocumentSyncServiceDynamoDb implements DocumentSyncService {
     Map<String, AttributeValue> updateValues =
         Map.of("status", AttributeValue.fromS(status.name()), "syncDate", attrs.get("syncDate"));
     this.db.updateValues(AttributeValue.fromS(pk), AttributeValue.fromS(sk), updateValues);
+  }
+
+  @Override
+  public Collection<ValidationError> addSync(final String siteId, final String documentId,
+      final DocumentSyncServiceType service, final DocumentSyncType type) {
+
+    Collection<ValidationError> errors = new ArrayList<>();
+
+    switch (service) {
+      case OPENSEARCH, TYPESENSE -> {
+        if (DocumentSyncType.METADATA.equals(type)) {
+          setStreamTriggeredDate(siteId, documentId);
+        } else {
+          errors.add(new ValidationErrorImpl().key("type")
+              .error("unsupport type '" + type + "' for service '" + service + "'"));
+        }
+      }
+      case EVENTBRIDGE ->
+        saveSync(siteId, documentId, service, DocumentSyncStatus.PENDING, type, true);
+      default -> errors
+          .add(new ValidationErrorImpl().key("service").error("invalid service '" + service + "'"));
+    }
+
+    return errors;
+  }
+
+  private void setStreamTriggeredDate(final String siteId, final String documentId) {
+    SimpleDateFormat df = DateUtil.getIsoDateFormatter();
+    AttributeValue val = AttributeValue.fromS(df.format(new Date()));
+    Map<String, AttributeValueUpdate> updateValues =
+        Map.of("streamTriggeredDate", AttributeValueUpdate.builder().value(val).build());
+
+    Map<String, AttributeValue> key = keysDocument(siteId, documentId);
+    this.db.updateItem(UpdateItemRequest.builder().tableName(this.documentTableName).key(key)
+        .attributeUpdates(updateValues).build());
   }
 
   @Override
