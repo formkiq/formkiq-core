@@ -23,7 +23,6 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
 import com.formkiq.aws.dynamodb.model.DocumentSyncType;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.formkiq.stacks.dynamodb.DocumentSyncService;
@@ -33,8 +32,8 @@ import com.formkiq.stacks.dynamodb.DocumentSyncService;
  */
 @Reflectable
 public class AddDocumentSync {
-  /** {@link DocumentSyncServiceType}. */
-  private DocumentSyncServiceType service;
+  /** {@link AddDocumentSyncServiceType}. */
+  private AddDocumentSyncServiceType service;
   /** {@link DocumentSyncType}. */
   private DocumentSyncType type;
 
@@ -48,18 +47,18 @@ public class AddDocumentSync {
   /**
    * Get {@link DocumentSyncService}.
    * 
-   * @return {@link DocumentSyncServiceType}
+   * @return {@link AddDocumentSyncServiceType}
    */
-  public DocumentSyncServiceType getService() {
+  public AddDocumentSyncServiceType getService() {
     return this.service;
   }
 
   /**
    * Set Service.
    * 
-   * @param documentSyncService {@link DocumentSyncServiceType}
+   * @param documentSyncService {@link AddDocumentSyncServiceType}
    */
-  public void setService(final DocumentSyncServiceType documentSyncService) {
+  public void setService(final AddDocumentSyncServiceType documentSyncService) {
     this.service = documentSyncService;
   }
 

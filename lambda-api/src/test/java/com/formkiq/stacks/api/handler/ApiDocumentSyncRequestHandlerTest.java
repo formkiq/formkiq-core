@@ -40,6 +40,7 @@ import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AddDocumentSync;
 import com.formkiq.client.model.AddDocumentSyncRequest;
+import com.formkiq.client.model.AddDocumentSyncService;
 import com.formkiq.client.model.AddResponse;
 import com.formkiq.client.model.DocumentAction;
 import com.formkiq.client.model.DocumentActionType;
@@ -206,8 +207,8 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
     // given
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      List<DocumentSyncService> services = getNotEventBridgeServices();
-      for (DocumentSyncService service : services) {
+      List<AddDocumentSyncService> services = getNotEventBridgeServices();
+      for (AddDocumentSyncService service : services) {
 
         setBearerToken(siteId);
         String documentId = this.documentsApi
@@ -246,7 +247,7 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
 
       AddDocumentSyncRequest req = new AddDocumentSyncRequest();
       req.setSync(new AddDocumentSync().type(DocumentSyncType.CONTENT)
-          .service(DocumentSyncService.EVENTBRIDGE));
+          .service(AddDocumentSyncService.EVENTBRIDGE));
 
       // when
       AddResponse response = this.documentsApi.addDocumentSync(documentId, siteId, req);
@@ -279,7 +280,7 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
 
       AddDocumentSyncRequest req = new AddDocumentSyncRequest();
       req.setSync(new AddDocumentSync().type(DocumentSyncType.CONTENT)
-          .service(DocumentSyncService.EVENTBRIDGE));
+          .service(AddDocumentSyncService.EVENTBRIDGE));
 
       // when
       try {
@@ -302,7 +303,7 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
     // given
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      for (DocumentSyncService service : DocumentSyncService.values()) {
+      for (AddDocumentSyncService service : getAddDocumentSyncServices()) {
 
         setBearerToken(siteId);
         String documentId = this.documentsApi
@@ -319,7 +320,7 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
         assertEquals(0, actions.size());
 
         List<DocumentSync> list = getDocumentSyncs(siteId, documentId);
-        if (DocumentSyncService.EVENTBRIDGE.equals(service)) {
+        if (AddDocumentSyncService.EVENTBRIDGE.equals(service)) {
 
           assertEquals(2, list.size());
 
@@ -336,6 +337,10 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
     }
   }
 
+  private static List<AddDocumentSyncService> getAddDocumentSyncServices() {
+    return List.of(AddDocumentSyncService.FULLTEXT, AddDocumentSyncService.EVENTBRIDGE);
+  }
+
   /**
    * POST /documents/{documentId}/syncs request. Sync Metadata.
    */
@@ -344,7 +349,7 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
     // given
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      for (DocumentSyncService service : DocumentSyncService.values()) {
+      for (AddDocumentSyncService service : getAddDocumentSyncServices()) {
 
         setBearerToken(siteId);
         String documentId = this.documentsApi
@@ -361,7 +366,7 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
         assertEquals(0, actions.size());
 
         List<DocumentSync> list = getDocumentSyncs(siteId, documentId);
-        if (DocumentSyncService.EVENTBRIDGE.equals(service)) {
+        if (AddDocumentSyncService.EVENTBRIDGE.equals(service)) {
 
           assertEquals(2, list.size());
 
@@ -384,11 +389,11 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
   @Test
   public void testAddDocumentSyncs08() throws ApiException {
     // given
-    List<DocumentSyncService> services = getNotEventBridgeServices();
+    List<AddDocumentSyncService> services = getNotEventBridgeServices();
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      for (DocumentSyncService service : services) {
+      for (AddDocumentSyncService service : services) {
 
         setBearerToken(siteId);
         String documentId = this.documentsApi
@@ -404,8 +409,8 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
         } catch (ApiException e) {
           assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
           assertEquals(
-              "{\"errors\":[{\"key\":\"type\",\"error\":\"unsupport type 'DELETE' for service '"
-                  + service + "'\"}]}",
+              "{\"errors\":[{\"key\":\"type\"," +
+                      "\"error\":\"unsupport type 'DELETE' for service 'TYPESENSE'\"}]}",
               e.getResponseBody());
         }
       }
@@ -418,7 +423,7 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
   @Test
   public void testAddDocumentSyncs09() throws ApiException {
     // given
-    DocumentSyncService service = DocumentSyncService.EVENTBRIDGE;
+    AddDocumentSyncService service = AddDocumentSyncService.EVENTBRIDGE;
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       for (DocumentSyncType type : List.of(DocumentSyncType.DELETE, DocumentSyncType.SOFT_DELETE)) {
@@ -443,10 +448,7 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
     }
   }
 
-  private static List<DocumentSyncService> getNotEventBridgeServices() {
-    List<DocumentSyncService> services =
-        new java.util.ArrayList<>(List.of(DocumentSyncService.values()));
-    services.remove(DocumentSyncService.EVENTBRIDGE);
-    return services;
+  private static List<AddDocumentSyncService> getNotEventBridgeServices() {
+    return List.of(AddDocumentSyncService.FULLTEXT);
   }
 }
