@@ -29,7 +29,9 @@ import com.formkiq.aws.dynamodb.model.DocumentSyncRecord;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
 import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
 import com.formkiq.aws.dynamodb.model.DocumentSyncType;
+import com.formkiq.validation.ValidationError;
 
+import java.util.Collection;
 import java.util.Date;
 
 /**
@@ -81,4 +83,16 @@ public interface DocumentSyncService {
    * @param syncDate {@link java.util.Date}
    */
   void update(String pk, String sk, DocumentSyncStatus status, Date syncDate);
+
+  /**
+   * Add Document Sync.
+   *
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param service {@link DocumentSyncServiceType}
+   * @param type {@link DocumentSyncType}
+   * @return Collection {@link ValidationError}
+   */
+  Collection<ValidationError> addSync(String siteId, String documentId,
+      DocumentSyncServiceType service, DocumentSyncType type);
 }

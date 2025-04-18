@@ -230,7 +230,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
     service = new DocumentServiceImpl(dbBuilder, DOCUMENTS_TABLE, DOCUMENT_SYNCS_TABLE,
         new DocumentVersionServiceNoVersioning());
-    syncService = new DocumentSyncServiceDynamoDb(dbBuilder, DOCUMENT_SYNCS_TABLE);
+    syncService = new DocumentSyncServiceDynamoDb(dbBuilder, DOCUMENTS_TABLE, DOCUMENT_SYNCS_TABLE);
     actionsService = new ActionsServiceDynamoDb(dbBuilder, DOCUMENTS_TABLE);
 
     Map<String, String> map = new HashMap<>();

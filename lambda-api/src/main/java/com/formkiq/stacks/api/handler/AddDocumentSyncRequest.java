@@ -21,38 +21,37 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb;
-
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
-import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.module.lambdaservices.AwsServiceExtension;
+package com.formkiq.stacks.api.handler;
 
 /**
- * 
- * {@link AwsServiceExtension} for {@link DocumentSyncService}.
- *
+ * Add Document Sync Request.
  */
-public class DocumentSyncServiceExtension implements AwsServiceExtension<DocumentSyncService> {
-
-  /** {@link DocumentSyncService}. */
-  private DocumentSyncService service;
+public class AddDocumentSyncRequest {
+  /** {@link AddDocumentSync}. */
+  private AddDocumentSync sync;
 
   /**
    * constructor.
    */
-  public DocumentSyncServiceExtension() {}
+  public AddDocumentSyncRequest() {
 
-  @Override
-  public DocumentSyncService loadService(final AwsServiceCache awsServiceCache) {
-    if (this.service == null) {
-      DynamoDbConnectionBuilder connection =
-          awsServiceCache.getExtension(DynamoDbConnectionBuilder.class);
+  }
 
-      this.service = new DocumentSyncServiceDynamoDb(connection,
-          awsServiceCache.environment("DOCUMENTS_TABLE"),
-          awsServiceCache.environment("DOCUMENT_SYNC_TABLE"));
-    }
+  /**
+   * Get {@link AddDocumentSync}.
+   * 
+   * @return {@link AddDocumentSync}
+   */
+  public AddDocumentSync getSync() {
+    return this.sync;
+  }
 
-    return this.service;
+  /**
+   * Set Sync.
+   * 
+   * @param documentSync {@link AddDocumentSync}
+   */
+  public void setSync(final AddDocumentSync documentSync) {
+    this.sync = documentSync;
   }
 }
