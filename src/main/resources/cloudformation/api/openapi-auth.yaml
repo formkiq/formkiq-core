@@ -46,6 +46,13 @@ Resources:
               responses:
                 '200':
                   description: Login successful. Returns authentication details similar to AWS Cognito.
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
                     application/json:
                       schema:
@@ -76,6 +83,13 @@ Resources:
               responses:
                 '200':
                   description: Login successful. Returns authentication details similar to AWS Cognito.
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
                     application/json:
                       schema:
@@ -106,6 +120,13 @@ Resources:
               responses:
                 '200':
                   description: Login successful. Returns authentication details similar to AWS Cognito.
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
                     application/json:
                       schema:
@@ -126,6 +147,13 @@ Resources:
               responses:
                 '200':
                   description: Login successful. Returns authentication details similar to AWS Cognito.
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
                     application/json:
                       schema:
@@ -146,6 +174,13 @@ Resources:
               responses:
                 '200':
                   description: A successful challenge.
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
                     application/json:
                       schema:
@@ -170,6 +205,13 @@ Resources:
               responses:
                 '200':
                   description: Password changed successfully.
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
                     application/json:
                       schema:
@@ -203,6 +245,13 @@ Resources:
               responses:
                 '200':
                   description: Password reset instructions sent.
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
                     application/json:
                       schema:
@@ -224,6 +273,13 @@ Resources:
               responses:
                 '200':
                   description: Confirms Password reset.
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
                   content:
                     application/json:
                       schema:
@@ -231,6 +287,19 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
         components:
+          headers:
+            AccessControlAllowOrigin:
+              schema:
+                type: string
+            AccessControlAllowMethods:
+              schema:
+                type: string
+            AccessControlAllowHeaders:
+              schema:
+                type: string
+            Location:
+              schema:
+                type: string
           securitySchemes:
             ApiAuthorization:
               type: oauth2
