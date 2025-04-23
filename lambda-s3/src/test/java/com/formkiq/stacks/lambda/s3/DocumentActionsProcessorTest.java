@@ -119,10 +119,14 @@ import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.s3.model.S3Object;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 import software.amazon.awssdk.utils.IoUtils;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -400,6 +404,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     CALLBACK.reset();
 
     initProcessor("opensearch", "chatgpt1", null);
+    s3Service.deleteAllFiles(BUCKET_NAME);
   }
 
   /**
@@ -2595,6 +2600,108 @@ public class DocumentActionsProcessorTest implements DbKeys {
       message = getMessage(sqsDocumentQueueUrl2);
       assertSnsMessage(message, "softDelete", siteId);
     }
+  }
+
+  // Test resize with fixed width and height.
+  @Test
+  public void testResizeWithFixedWidthAndHeight() throws IOException, ValidationException {
+    testResizeTemplate("300", 300, "200", 200);
+  }
+
+  // Test resize with fixed width and auto height.
+  @Test
+  public void testResizeWithFixedWidthAndAutoHeight() throws IOException, ValidationException {
+    testResizeTemplate("100", 100, "auto", 75);
+  }
+
+  // Test resize with auto width and fixed height.
+  @Test
+  public void testResizeWithAutoWidthAndFixedHeight() throws IOException, ValidationException {
+    testResizeTemplate("auto", 133, "100", 100);
+  }
+
+  public void testResizeTemplate(final String widthParam, final int expectedWidth,
+      final String heightParam, final int expectedHeight) throws IOException, ValidationException {
+    // given
+    String siteId = ID.uuid();
+    String documentId = setupImageDocument(siteId);
+    String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
+
+    // when
+    Map<String, String> parameters = Map.of("width", widthParam, "height", heightParam);
+    processResizeAction(siteId, documentId, parameters);
+
+    // then
+    verifySuccessfulResize(siteId, documentId, s3Key, expectedWidth, expectedHeight);
+  }
+
+  // Helper method to set up an image document for testing.
+  private String setupImageDocument(final String siteId) throws IOException, ValidationException {
+    String contentType = "image/png";
+    String documentId = ID.uuid();
+
+    // Save test image to S3 bucket
+    String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
+    try (InputStream is = new FileInputStream("src/test/resources/resize.png")) {
+      byte[] imageBytes = IoUtils.toByteArray(is);
+      s3Service.putObject(BUCKET_NAME, s3Key, imageBytes, contentType);
+    }
+
+    // Save document metadata to DynamoDB
+    DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+    item.setContentType(contentType);
+    documentService.saveDocument(siteId, item, null);
+
+    return documentId;
+  }
+
+  // Helper method to create and process a resize action.
+  private void processResizeAction(final String siteId, final String documentId,
+      final Map<String, String> parameters) throws IOException {
+    List<Action> actions = Collections
+        .singletonList(new Action().type(ActionType.RESIZE).userId("joe").parameters(parameters));
+    actionsService.saveNewActions(siteId, documentId, actions);
+
+    Map<String, Object> map =
+        loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
+            documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
+
+    processor.handleRequest(map, null);
+  }
+
+  // Helper method to verify successful resize operation.
+  private void verifySuccessfulResize(final String siteId, final String documentId,
+      final String s3Key, final int expectedWidth, final int expectedHeight) throws IOException {
+    Action action = actionsService.getActions(siteId, documentId).get(0);
+
+    // verify action
+    assertEquals(ActionType.RESIZE, action.type());
+    assertEquals(ActionStatus.COMPLETE, action.status());
+    assertNotNull(action.startDate());
+    assertNotNull(action.insertedDate());
+    assertNotNull(action.completedDate());
+
+    // S3 bucket should contain 2 objects: original and resized
+    List<S3Object> s3Objects = s3Service.listObjects(BUCKET_NAME, null).contents();
+    assertEquals(2, s3Objects.size());
+
+    // find original image key, and make it the first element in the list
+    if (s3Objects.get(1).key().equals(s3Key)) {
+      s3Objects = List.of(s3Objects.get(1), s3Objects.get(0));
+    }
+
+    // verify original image key
+    assertEquals(s3Key, s3Objects.get(0).key());
+
+    // verify resized image
+    String imageKey = s3Objects.get(1).key();
+    assertEquals("image/png",
+        s3Service.getObjectMetadata(BUCKET_NAME, imageKey, null).getContentType());
+    byte[] resizedImage = s3Service.getContentAsBytes(BUCKET_NAME, imageKey);
+    ByteArrayInputStream bais = new ByteArrayInputStream(resizedImage);
+    BufferedImage bufferedImage = ImageIO.read(bais);
+    assertEquals(expectedWidth, bufferedImage.getWidth());
+    assertEquals(expectedHeight, bufferedImage.getHeight());
   }
 
   private Message getMessage(final String sqsDocumentQueueUrl) throws InterruptedException {

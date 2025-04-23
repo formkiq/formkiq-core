@@ -66,6 +66,9 @@
 
 			<subpackage name="actions">
 				<allow pkg="com.formkiq.strings" />
+				<allow class="javax.imageio.ImageIO" />
+				<allow class="java.awt.image.BufferedImage" />
+				<allow class="net.coobird.thumbnailator.Thumbnails" />
 			</subpackage>
 
 			<subpackage name="text">

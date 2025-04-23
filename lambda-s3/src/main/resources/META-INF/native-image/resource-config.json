@@ -1,0 +1,8 @@
+{
+  "resources":{
+  "includes":[]},
+  "bundles":[{
+    "name":"sun.awt.resources.awt",
+    "classNames":["sun.awt.resources.awt"]
+  }]
+}

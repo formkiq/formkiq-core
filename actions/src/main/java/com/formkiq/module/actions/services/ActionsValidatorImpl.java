@@ -182,6 +182,47 @@ public class ActionsValidatorImpl implements ActionsValidator {
     }
   }
 
+  private void validateResize(final Action action, final Collection<ValidationError> errors) {
+    Map<String, String> parameters = getParameters(action);
+
+    String widthParameterName = "width";
+    String heightParameterName = "height";
+
+    if ("auto".equals(parameters.get(widthParameterName))
+        && "auto".equals(parameters.get(heightParameterName))) {
+      errors.add(new ValidationErrorImpl().key("parameters." + widthParameterName)
+          .error("'" + widthParameterName + "' and '" + heightParameterName
+              + "' parameters cannot be both set to auto"));
+    }
+
+    validateDimension(parameters, errors, widthParameterName);
+    validateDimension(parameters, errors, heightParameterName);
+  }
+
+  private void validateDimension(final Map<String, String> parameters,
+      final Collection<ValidationError> errors, final String dimension) {
+    if (!hasValue(parameters, dimension)) {
+      errors.add(new ValidationErrorImpl().key("parameters." + dimension)
+          .error("'" + dimension + "' parameter is required"));
+    } else {
+      String value = parameters.get(dimension);
+
+      if (!isInteger(value) && !value.equals("auto")) {
+        errors.add(new ValidationErrorImpl().key("parameters." + dimension)
+            .error("'" + dimension + "' parameter must be an integer or 'auto'"));
+      }
+    }
+  }
+
+  private static boolean isInteger(final String value) {
+    try {
+      Integer.parseInt(value);
+      return true;
+    } catch (NumberFormatException e) {
+      return false;
+    }
+  }
+
   @Override
   public Collection<ValidationError> validation(final String siteId, final Action action,
       final String chatGptApiKey, final String notificationsEmail) {
@@ -237,6 +278,8 @@ public class ActionsValidatorImpl implements ActionsValidator {
       validateIdp(siteId, action, errors);
     } else if (ActionType.EVENTBRIDGE.equals(action.type())) {
       validateEventBridge(action, errors);
+    } else if (ActionType.RESIZE.equals(action.type())) {
+      validateResize(action, errors);
     }
   }
 }

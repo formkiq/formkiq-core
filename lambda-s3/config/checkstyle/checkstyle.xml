@@ -203,7 +203,7 @@
     <module name="UnusedImports"/>
     <module name="RedundantImport"/>
     <module name="MethodLength">
-      <property name="max" value="52"/>
+      <property name="max" value="56"/>
       <property name="countEmpty" value="false"/>
     </module>
     <module name="ParameterNumber"/>

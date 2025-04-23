@@ -21,39 +21,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.module.actions;
+package com.formkiq.stacks.lambda.s3.actions;
 
-import com.formkiq.graalvm.annotations.Reflectable;
+import net.coobird.thumbnailator.Thumbnails;
 
-/**
- * 
- * Supported Type of Actions.
- *
- */
-@Reflectable
-public enum ActionType {
-  /** AntiVirus. */
-  ANTIVIRUS,
-  /** Document Tagging. */
-  DOCUMENTTAGGING,
-  /** Full Text. */
-  FULLTEXT,
-  /** Intelligent Document Processing. */
-  IDP,
-  /** Notification Action. */
-  NOTIFICATION,
-  /** OCR. */
-  OCR,
-  /** Queue. */
-  QUEUE,
-  /** WebHook. */
-  WEBHOOK,
-  /** Publish. */
-  PUBLISH,
-  /** Pdf Export. */
-  PDFEXPORT,
-  /** Event Bridge. */
-  EVENTBRIDGE,
-  /** Resize. */
-  RESIZE
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+
+class ImageUtils {
+  static BufferedImage bufferedImageFromByteArray(final byte[] imageData) throws IOException {
+    try (ByteArrayInputStream bais = new ByteArrayInputStream(imageData)) {
+      return ImageIO.read(bais);
+    }
+  }
+
+  static byte[] bufferedImageToByteArray(final BufferedImage image) throws IOException {
+    ByteArrayOutputStream imageBaos = new ByteArrayOutputStream();
+    ImageIO.write(image, "png", imageBaos);
+
+    return imageBaos.toByteArray();
+  }
+
+  static BufferedImage resize(final BufferedImage image, final int width, final int height,
+      final boolean isKeepAspectRatio) throws IOException {
+    return Thumbnails.of(image).size(width, height).keepAspectRatio(isKeepAspectRatio)
+        .asBufferedImage();
+  }
 }
