@@ -264,7 +264,13 @@ Resources:
     Properties:
       RetentionInDays:
         Ref: LogRetentionInDays
-      
+      Tags:
+        - Key: AppEnvironment
+          Value:
+            Ref: AppEnvironment
+        - Key: Application
+          Value: "FormKiQ"
+
   DocumentActionsProcessor:
     Type: AWS::Serverless::Function
     DependsOn:
@@ -345,6 +351,12 @@ Resources:
     Properties:
       RetentionInDays:
         Ref: LogRetentionInDays
+      Tags:
+        - Key: AppEnvironment
+          Value:
+            Ref: AppEnvironment
+        - Key: Application
+          Value: "FormKiQ"
       
   StagingS3Create:
     Type: AWS::Serverless::Function
@@ -437,6 +449,12 @@ Resources:
     Properties:
       RetentionInDays:
         Ref: LogRetentionInDays
+      Tags:
+        - Key: AppEnvironment
+          Value:
+            Ref: AppEnvironment
+        - Key: Application
+          Value: "FormKiQ"
 
   DocumentsS3Update:
     Type: AWS::Serverless::Function
@@ -533,6 +551,12 @@ Resources:
   DocumentsToActionsProcessorRole:
     Type: "AWS::IAM::Role"
     Properties:
+      Tags:
+        - Key: "Application"
+          Value: "FormKiQ"
+        - Key: "AppEnvironment"
+          Value:
+            Fn::Sub: "${AppEnvironment}"
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:

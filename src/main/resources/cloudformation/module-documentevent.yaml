@@ -22,7 +22,7 @@ Resources:
       ReceiveMessageWaitTimeSeconds: 20
       Tags:
         - Key: "Application"
-          Value: "FormKiQ DocumentStack"
+          Value: "FormKiQ"
         - Key: "AppEnvironment"
           Value: 
             Fn::Sub: "${AppEnvironment}"
