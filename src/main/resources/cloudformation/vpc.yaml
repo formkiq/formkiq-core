@@ -542,6 +542,9 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       RetentionInDays: !Ref FlowLogsRetentionInDays
+      Tags:
+        - Key: Application
+          Value: "FormKiQ"
 
   VpcFlowLogsCWRole:
     Condition: IsFlowLogToCloudWatchAndEnabled
