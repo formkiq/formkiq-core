@@ -25,7 +25,6 @@ package com.formkiq.module.actions.services;
 
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.Collection;
 import java.util.List;
@@ -45,6 +44,7 @@ import com.formkiq.validation.ValidationError;
 
 @ExtendWith(DynamoDbExtension.class)
 class ActionsValidatorTest {
+  /** Valid Image Formats. */
   private static final List<String> VALID_IMAGE_FORMATS =
       List.of("bmp", "gif", "jpeg", "png", "tif");
 

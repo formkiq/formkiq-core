@@ -56,6 +56,7 @@ public class ActionsValidatorImpl implements ActionsValidator {
   /** {@link DynamoDbService}. */
   private final DynamoDbService db;
 
+  /** Valid image formats for resize action. */
   private static final List<String> VALID_IMAGE_FORMATS =
       List.of("bmp", "gif", "jpeg", "png", "tif");
 
@@ -211,7 +212,7 @@ public class ActionsValidatorImpl implements ActionsValidator {
     } else {
       String value = parameters.get(dimension);
 
-      if (!isGreaterThanZeroInteger(value) && !value.equals("auto")) {
+      if (!isGreaterThanZeroInteger(value) && !"auto".equals(value)) {
         errors.add(new ValidationErrorImpl().key("parameters." + dimension)
             .error("'" + dimension + "' parameter must be an integer > 0 or 'auto'"));
       }
@@ -226,8 +227,8 @@ public class ActionsValidatorImpl implements ActionsValidator {
     }
   }
 
-  private void validateImageFormat(Map<String, String> parameters,
-      Collection<ValidationError> errors) {
+  private void validateImageFormat(final Map<String, String> parameters,
+      final Collection<ValidationError> errors) {
     String outputType = parameters.get("outputType");
 
     if (outputType != null && !VALID_IMAGE_FORMATS.contains(outputType)) {
