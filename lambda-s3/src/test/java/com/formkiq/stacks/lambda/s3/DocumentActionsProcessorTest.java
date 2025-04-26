@@ -226,6 +226,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
   private static SqsService sqsService;
   /** {@link SnsService}. */
   private static SnsService sns;
+  /** Valid image formats. */
+  private static final List<String> VALID_IMAGE_FORMATS =
+      List.of("bmp", "gif", "jpeg", "png", "tif");
 
   /**
    * After Class.
@@ -2602,47 +2605,90 @@ public class DocumentActionsProcessorTest implements DbKeys {
     }
   }
 
-  // Test resize with fixed width and height.
+  @Test
+  public void testPath() throws IOException, ValidationException {
+    Map<String, String> parameters = Map.of("width", "300", "height", "200", "path", "resized.png");
+    testResizeTemplate(parameters, 300, 200, "png");
+  }
+
   @Test
   public void testResizeWithFixedWidthAndHeight() throws IOException, ValidationException {
-    testResizeTemplate("300", 300, "200", 200);
+    Map<String, String> parameters = Map.of("width", "300", "height", "200");
+    testResizeTemplate(parameters, 300, 200, "png");
   }
 
-  // Test resize with fixed width and auto height.
   @Test
   public void testResizeWithFixedWidthAndAutoHeight() throws IOException, ValidationException {
-    testResizeTemplate("100", 100, "auto", 75);
+    Map<String, String> parameters = Map.of("width", "100", "height", "auto");
+    testResizeTemplate(parameters, 100, 75, "png");
   }
 
-  // Test resize with auto width and fixed height.
   @Test
   public void testResizeWithAutoWidthAndFixedHeight() throws IOException, ValidationException {
-    testResizeTemplate("auto", 133, "100", 100);
+    Map<String, String> parameters = Map.of("width", "auto", "height", "100");
+    testResizeTemplate(parameters, 133, 100, "png");
   }
 
-  public void testResizeTemplate(final String widthParam, final int expectedWidth,
-      final String heightParam, final int expectedHeight) throws IOException, ValidationException {
+  @Test
+  public void testResizeBmpToAllFormats() throws IOException, ValidationException {
+    testResizeToAllFormatsTemplate("bmp", VALID_IMAGE_FORMATS);
+  }
+
+  @Test
+  public void testResizeGifToAllFormats() throws IOException, ValidationException {
+    testResizeToAllFormatsTemplate("gif", VALID_IMAGE_FORMATS);
+  }
+
+  @Test
+  public void testResizeJpgToAllFormats() throws IOException, ValidationException {
+    testResizeToAllFormatsTemplate("jpg", VALID_IMAGE_FORMATS);
+  }
+
+  @Test
+  public void testResizePngToAllFormats() throws IOException, ValidationException {
+    testResizeToAllFormatsTemplate("png", VALID_IMAGE_FORMATS);
+  }
+
+  @Test
+  public void testResizeTifToAllFormats() throws IOException, ValidationException {
+    testResizeToAllFormatsTemplate("tif", List.of("gif", "png", "tif"));
+  }
+
+  private void testResizeToAllFormatsTemplate(final String srcImageFormat,
+      final List<String> resImageFormats) throws IOException, ValidationException {
+    for (String resImageFormat : resImageFormats) {
+      Map<String, String> parameters =
+          Map.of("width", "300", "height", "200", "outputType", resImageFormat);
+      testResizeTemplate(parameters, 300, 200, srcImageFormat);
+    }
+  }
+
+  public void testResizeTemplate(final Map<String, String> parameters, final int expectedWidth,
+      final int expectedHeight, final String srcImageFormat)
+      throws IOException, ValidationException {
     // given
     String siteId = ID.uuid();
-    String documentId = setupImageDocument(siteId);
+    String documentId = setupImageDocument(siteId, srcImageFormat);
     String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
 
     // when
-    Map<String, String> parameters = Map.of("width", widthParam, "height", heightParam);
     processResizeAction(siteId, documentId, parameters);
 
     // then
-    verifySuccessfulResize(siteId, documentId, s3Key, expectedWidth, expectedHeight);
+    verifySuccessfulResize(siteId, documentId, s3Key, expectedWidth, expectedHeight, srcImageFormat,
+        parameters);
+    removeAllS3Objects();
   }
 
   // Helper method to set up an image document for testing.
-  private String setupImageDocument(final String siteId) throws IOException, ValidationException {
-    String contentType = "image/png";
+  private String setupImageDocument(final String siteId, final String imageFormat)
+      throws IOException, ValidationException {
+    String contentType = imageFormatToMimeType(imageFormat);
     String documentId = ID.uuid();
 
     // Save test image to S3 bucket
     String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
-    try (InputStream is = new FileInputStream("src/test/resources/resize.png")) {
+    try (InputStream is = new FileInputStream("src/test/resources/resize/input." + imageFormat)) {
       byte[] imageBytes = IoUtils.toByteArray(is);
       s3Service.putObject(BUCKET_NAME, s3Key, imageBytes, contentType);
     }
@@ -2650,9 +2696,14 @@ public class DocumentActionsProcessorTest implements DbKeys {
     // Save document metadata to DynamoDB
     DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
     item.setContentType(contentType);
+    item.setPath("test." + imageFormat);
     documentService.saveDocument(siteId, item, null);
 
     return documentId;
+  }
+
+  private static String imageFormatToMimeType(final String format) {
+    return "image/" + ("tif".equals(format) ? "tiff" : format);
   }
 
   // Helper method to create and process a resize action.
@@ -2671,16 +2722,19 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
   // Helper method to verify successful resize operation.
   private void verifySuccessfulResize(final String siteId, final String documentId,
-      final String s3Key, final int expectedWidth, final int expectedHeight) throws IOException {
-    Action action = actionsService.getActions(siteId, documentId).get(0);
+      final String s3Key, final int expectedWidth, final int expectedHeight,
+      final String srcImageFormat, final Map<String, String> parameters) throws IOException {
+    String imageKey = getResizedImageKey(s3Key);
+    String resImageFormat = parameters.getOrDefault("outputType", srcImageFormat);
+    String path = parameters.getOrDefault("path",
+        "test-" + expectedWidth + "x" + expectedHeight + "." + resImageFormat);
 
-    // verify action
-    assertEquals(ActionType.RESIZE, action.type());
-    assertEquals(ActionStatus.COMPLETE, action.status());
-    assertNotNull(action.startDate());
-    assertNotNull(action.insertedDate());
-    assertNotNull(action.completedDate());
+    verifyAction(siteId, documentId);
+    verifyData(expectedWidth, expectedHeight, imageKey, resImageFormat);
+    verifyMetadata(expectedWidth, expectedHeight, imageKey, path);
+  }
 
+  private static String getResizedImageKey(final String s3Key) {
     // S3 bucket should contain 2 objects: original and resized
     List<S3Object> s3Objects = s3Service.listObjects(BUCKET_NAME, null).contents();
     assertEquals(2, s3Objects.size());
@@ -2693,15 +2747,44 @@ public class DocumentActionsProcessorTest implements DbKeys {
     // verify original image key
     assertEquals(s3Key, s3Objects.get(0).key());
 
-    // verify resized image
-    String imageKey = s3Objects.get(1).key();
-    assertEquals("image/png",
+    return s3Objects.get(1).key();
+  }
+
+  private static void verifyAction(final String siteId, final String documentId) {
+    Action action = actionsService.getActions(siteId, documentId).get(0);
+
+    assertEquals(ActionType.RESIZE, action.type());
+    assertEquals(ActionStatus.COMPLETE, action.status());
+    assertNotNull(action.startDate());
+    assertNotNull(action.insertedDate());
+    assertNotNull(action.completedDate());
+  }
+
+  private static void verifyData(final int expectedWidth, final int expectedHeight,
+      final String imageKey, final String imageFormat) throws IOException {
+    assertEquals(imageFormatToMimeType(imageFormat),
         s3Service.getObjectMetadata(BUCKET_NAME, imageKey, null).getContentType());
+
     byte[] resizedImage = s3Service.getContentAsBytes(BUCKET_NAME, imageKey);
     ByteArrayInputStream bais = new ByteArrayInputStream(resizedImage);
     BufferedImage bufferedImage = ImageIO.read(bais);
+
     assertEquals(expectedWidth, bufferedImage.getWidth());
     assertEquals(expectedHeight, bufferedImage.getHeight());
+  }
+
+  private static void verifyMetadata(final int expectedWidth, final int expectedHeight,
+      final String imageKey, final String path) {
+    String[] splitted = imageKey.split("/");
+    DocumentItem item = documentService.findDocument(splitted[0], splitted[1]);
+
+    assertEquals(path, item.getPath());
+    assertEquals(Integer.toString(expectedWidth), item.getWidth());
+    assertEquals(Integer.toString(expectedHeight), item.getHeight());
+  }
+
+  private void removeAllS3Objects() {
+    s3Service.deleteAllFiles(BUCKET_NAME);
   }
 
   private Message getMessage(final String sqsDocumentQueueUrl) throws InterruptedException {

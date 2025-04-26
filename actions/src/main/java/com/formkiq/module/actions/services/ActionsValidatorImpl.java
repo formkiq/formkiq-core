@@ -56,6 +56,9 @@ public class ActionsValidatorImpl implements ActionsValidator {
   /** {@link DynamoDbService}. */
   private final DynamoDbService db;
 
+  private static final List<String> VALID_IMAGE_FORMATS =
+      List.of("bmp", "gif", "jpeg", "png", "tif");
+
   /**
    * constructor.
    * 
@@ -197,6 +200,7 @@ public class ActionsValidatorImpl implements ActionsValidator {
 
     validateDimension(parameters, errors, widthParameterName);
     validateDimension(parameters, errors, heightParameterName);
+    validateImageFormat(parameters, errors);
   }
 
   private void validateDimension(final Map<String, String> parameters,
@@ -207,19 +211,28 @@ public class ActionsValidatorImpl implements ActionsValidator {
     } else {
       String value = parameters.get(dimension);
 
-      if (!isInteger(value) && !value.equals("auto")) {
+      if (!isGreaterThanZeroInteger(value) && !value.equals("auto")) {
         errors.add(new ValidationErrorImpl().key("parameters." + dimension)
-            .error("'" + dimension + "' parameter must be an integer or 'auto'"));
+            .error("'" + dimension + "' parameter must be an integer > 0 or 'auto'"));
       }
     }
   }
 
-  private static boolean isInteger(final String value) {
+  private static boolean isGreaterThanZeroInteger(final String value) {
     try {
-      Integer.parseInt(value);
-      return true;
+      return Integer.parseInt(value) > 0;
     } catch (NumberFormatException e) {
       return false;
+    }
+  }
+
+  private void validateImageFormat(Map<String, String> parameters,
+      Collection<ValidationError> errors) {
+    String outputType = parameters.get("outputType");
+
+    if (outputType != null && !VALID_IMAGE_FORMATS.contains(outputType)) {
+      errors.add(new ValidationErrorImpl().key("parameters.outputType")
+          .error("'outputType' parameter must be one of " + VALID_IMAGE_FORMATS));
     }
   }
 

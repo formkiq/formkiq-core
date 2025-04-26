@@ -45,6 +45,8 @@ import com.formkiq.validation.ValidationError;
 
 @ExtendWith(DynamoDbExtension.class)
 class ActionsValidatorTest {
+  private static final List<String> VALID_IMAGE_FORMATS =
+      List.of("bmp", "gif", "jpeg", "png", "tif");
 
   /** {@link ActionsValidator}. */
   private static ActionsValidator validator;
@@ -160,13 +162,13 @@ class ActionsValidatorTest {
   @Test
   void testInvalidHeight() {
     testDimensionTemplate(Map.of("width", "auto", "height", "invalidValue"), "parameters.height",
-        "'height' parameter must be an integer or 'auto'");
+        "'height' parameter must be an integer > 0 or 'auto'");
   }
 
   @Test
   void testInvalidWidth() {
     testDimensionTemplate(Map.of("height", "auto", "width", "invalidValue"), "parameters.width",
-        "'width' parameter must be an integer or 'auto'");
+        "'width' parameter must be an integer > 0 or 'auto'");
   }
 
   @Test
@@ -178,5 +180,32 @@ class ActionsValidatorTest {
   void testAutoWidthAndHeight() {
     testDimensionTemplate(Map.of("height", "auto", "width", "auto"), "parameters.width",
         "'width' and 'height' parameters cannot be both set to auto");
+  }
+
+  @Test
+  void testZeroWidth() {
+    testDimensionTemplate(Map.of("height", "100", "width", "0"), "parameters.width",
+        "'width' parameter must be an integer > 0 or 'auto'");
+  }
+
+  @Test
+  void testZeroHeight() {
+    testDimensionTemplate(Map.of("height", "0", "width", "100"), "parameters.height",
+        "'height' parameter must be an integer > 0 or 'auto'");
+  }
+
+  @Test
+  void testValidImageFormats() {
+    for (String format : VALID_IMAGE_FORMATS) {
+      testDimensionTemplate(Map.of("height", "100", "width", "100", "outputType", format), null,
+          null);
+    }
+  }
+
+  @Test
+  void testInvalidImageFormat() {
+    testDimensionTemplate(Map.of("height", "100", "width", "100", "outputType", "invalid"),
+        "parameters.outputType",
+        "'outputType' parameter must be one of [bmp, gif, jpeg, png, tif]");
   }
 }
