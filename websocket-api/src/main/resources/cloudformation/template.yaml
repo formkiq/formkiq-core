@@ -130,6 +130,12 @@ Resources:
     Properties:
       RetentionInDays:
         Ref: LogRetentionInDays
+      Tags:
+        - Key: AppEnvironment
+          Value:
+            Ref: AppEnvironment
+        - Key: Application
+          Value: "FormKiQ"
 
   Stage:
     Type: AWS::ApiGatewayV2::Stage
@@ -233,6 +239,12 @@ Resources:
     Properties:
       RetentionInDays:
         Ref: LogRetentionInDays
+      Tags:
+        - Key: AppEnvironment
+          Value:
+            Ref: AppEnvironment
+        - Key: Application
+          Value: "FormKiQ"
       
   ApiFunction:
     Type: AWS::Serverless::Function

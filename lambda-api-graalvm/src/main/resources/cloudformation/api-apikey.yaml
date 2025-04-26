@@ -75,9 +75,11 @@ Resources:
       RetentionInDays:
         Ref: LogRetentionInDays
       Tags:
-      - Key: AppEnvironment
-        Value:
-          Fn::Sub: ${AppEnvironment}
+        - Key: AppEnvironment
+          Value:
+            Ref: AppEnvironment
+        - Key: Application
+          Value: "FormKiQ"
 
   #@overlay/match missing_ok=True
   ApiKeyAuthorizer:

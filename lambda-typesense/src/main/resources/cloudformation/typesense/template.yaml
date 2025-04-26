@@ -128,6 +128,12 @@ Resources:
     Properties:
       RetentionInDays:
         Ref: LogRetentionInDays
+      Tags:
+        - Key: AppEnvironment
+          Value:
+            Ref: AppEnvironment
+        - Key: Application
+          Value: "FormKiQ"
       
   TypesenseProcessor:
     Type: AWS::Serverless::Function
@@ -565,6 +571,12 @@ Resources:
         Ref: LogRetentionInDays
       LogGroupName:
         Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/TypesenseAccessLogs"
+      Tags:
+        - Key: AppEnvironment
+          Value:
+            Ref: AppEnvironment
+        - Key: Application
+          Value: "FormKiQ"
         
   Stage:
     Type: AWS::ApiGatewayV2::Stage
