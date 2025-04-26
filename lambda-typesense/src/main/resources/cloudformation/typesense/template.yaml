@@ -440,6 +440,12 @@ Resources:
     Type: AWS::IAM::Role
     Condition: CreateResources
     Properties:
+      Tags:
+        - Key: "Application"
+          Value: "FormKiQ"
+        - Key: "AppEnvironment"
+          Value:
+            Fn::Sub: "${AppEnvironment}"
       AssumeRolePolicyDocument:
         Statement:
           - Effect: Allow
@@ -451,6 +457,12 @@ Resources:
     Type: AWS::IAM::Role
     Condition: CreateResources
     Properties:
+      Tags:
+        - Key: "Application"
+          Value: "FormKiQ"
+        - Key: "AppEnvironment"
+          Value:
+            Fn::Sub: "${AppEnvironment}"
       AssumeRolePolicyDocument:
         Statement:
           - Effect: Allow

@@ -48,6 +48,12 @@ Resources:
         Fn::Sub: "FormKiQ-DLQ-${AppEnvironment}-Alert"
       TopicName:
         Fn::Sub: "FormKiQ-DLQ-${AppEnvironment}-Alert"
+      Tags:
+        - Key: "Application"
+          Value: "FormKiQ"
+        - Key: "AppEnvironment"
+          Value:
+            Fn::Sub: "${AppEnvironment}"
   
   DlqAlarmEmailParameter:
     Type: AWS::SSM::Parameter

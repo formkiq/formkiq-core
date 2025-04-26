@@ -555,6 +555,12 @@ Resources:
   DocumentsToActionsProcessorRole:
     Type: "AWS::IAM::Role"
     Properties:
+      Tags:
+        - Key: "Application"
+          Value: "FormKiQ"
+        - Key: "AppEnvironment"
+          Value:
+            Fn::Sub: "${AppEnvironment}"
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
