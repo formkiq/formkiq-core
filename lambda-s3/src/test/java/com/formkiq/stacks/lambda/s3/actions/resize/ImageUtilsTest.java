@@ -39,7 +39,7 @@ public class ImageUtilsTest {
     getImageFormatTemplate("input.gif", "gif");
     getImageFormatTemplate("input.jpg", "jpeg");
     getImageFormatTemplate("input.png", "png");
-    getImageFormatTemplate("input.tiff", "tif");
+    getImageFormatTemplate("input.tif", "tif");
   }
 
   private static void getImageFormatTemplate(final String inputFileName,
