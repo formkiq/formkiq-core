@@ -291,6 +291,12 @@ Resources:
         Ref: LogRetentionInDays
       LogGroupName: 
         Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/APIDocumentsHttpAccessLogs"
+      Tags:
+        - Key: AppEnvironment
+          Value:
+            Ref: AppEnvironment
+        - Key: Application
+          Value: "FormKiQ"
       
   IamDocumentsStageAccessLogs:
     Type: AWS::Logs::LogGroup
@@ -299,6 +305,12 @@ Resources:
         Ref: LogRetentionInDays
       LogGroupName: 
         Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/APIDocumentsIamAccessLogs"
+      Tags:
+        - Key: AppEnvironment
+          Value:
+            Ref: AppEnvironment
+        - Key: Application
+          Value: "FormKiQ"
 
   KeyDocumentsStageAccessLogs:
     Type: AWS::Logs::LogGroup
@@ -307,6 +319,12 @@ Resources:
         Ref: LogRetentionInDays
       LogGroupName: 
         Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/APIDocumentsKeyAccessLogs"
+      Tags:
+        - Key: AppEnvironment
+          Value:
+            Ref: AppEnvironment
+        - Key: Application
+          Value: "FormKiQ"
       
   DocumentsStage:
     Type: AWS::ApiGatewayV2::Stage
@@ -451,6 +469,12 @@ Resources:
 #!        Ref: LogRetentionInDays
 #!      LogGroupName:
 #!        Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/APIAuthAccessLogs"
+#!      Tags:
+#!        - Key: AppEnvironment
+#!          Value:
+#!            Ref: AppEnvironment
+#!        - Key: Application
+#!          Value: "FormKiQ"
 
   DocumentsHttpApiIdParameter:
     Type: AWS::SSM::Parameter

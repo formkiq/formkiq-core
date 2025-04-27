@@ -64,6 +64,12 @@ Resources:
     Properties:
       RetentionInDays:
         Ref: LogRetentionInDays
+      Tags:
+        - Key: AppEnvironment
+          Value:
+            Ref: AppEnvironment
+        - Key: Application
+          Value: "FormKiQ"
 
   TesseractLayer:
     Type: AWS::Serverless::LayerVersion
