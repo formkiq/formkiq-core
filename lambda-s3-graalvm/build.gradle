@@ -50,8 +50,6 @@ task buildTemplate {
 	}
 }
 
-distZip.dependsOn buildTemplate, graalvmNativeImage
-
 tasks.distTar.enabled = false
 
 distZip {
@@ -71,3 +69,70 @@ distributions {
         }
     }
 }
+
+tasks.register('buildZip', Zip) {
+    archiveFileName = "lambda-s3-graalvm.zip"
+    destinationDirectory = layout.buildDirectory.dir('dist')
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    from("${project.projectDir}/lib") {
+        include '**/**'
+    }
+    from("${project.projectDir}/runtime") {
+        include 'bootstrap'
+    }
+    from("${buildDir}/graalvm") {
+        include '**/**'
+    }
+}
+
+task copyRuntimeClasspath(type: Copy) {
+    description = 'Copies all runtime classpath dependencies to build/libs'
+    from configurations.runtimeClasspath
+    into "$buildDir/libs"
+}
+
+jar.dependsOn(copyRuntimeClasspath)
+
+task buildDockerAndCopyServer {
+    description = 'Builds Docker image, creates a container, copies the server ZIP, and removes the container.'
+
+    // Ensure that the Docker commands are executed in order
+    doLast {
+        // Step 1: Build the Docker image
+        println 'Building Docker image: amazonlinux-graalvm:latest'
+        exec {
+            commandLine 'docker', 'build', '-t', 'amazonlinux-graalvm:latest', '.'
+        }
+
+        // Step 2: Create a container from the image
+        println 'Creating Docker container: temp-container'
+        exec {
+            commandLine 'docker', 'create', '--name', 'temp-container', 'amazonlinux-graalvm:latest'
+        }
+
+        // Step 4: Copy the ZIP file from the container to the host
+        println 'Copying /graalvm.zip from Docker container'
+        exec {
+            commandLine 'docker', 'cp', 'temp-container:/graalvm.zip', "$buildDir/graalvm.zip"
+        }
+
+        // Step 5: Remove the temporary container
+        println 'Removing temporary Docker container: temp-container'
+        exec {
+            commandLine 'docker', 'rm', 'temp-container'
+        }
+
+        println 'Docker build and copy process completed successfully.'
+    }
+}
+
+tasks.register('unzipFile', Copy) {
+    from zipTree("$buildDir/graalvm.zip")
+    into "$buildDir/graalvm"
+}
+
+buildDockerAndCopyServer.dependsOn test, jar
+unzipFile.dependsOn buildDockerAndCopyServer
+buildZip.dependsOn unzipFile
+distZip.dependsOn buildZip
