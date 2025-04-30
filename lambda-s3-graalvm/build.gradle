@@ -135,4 +135,4 @@ tasks.register('unzipFile', Copy) {
 buildDockerAndCopyServer.dependsOn test, jar
 unzipFile.dependsOn buildDockerAndCopyServer
 buildZip.dependsOn unzipFile
-distZip.dependsOn buildZip
+distZip.dependsOn buildZip, buildTemplate
