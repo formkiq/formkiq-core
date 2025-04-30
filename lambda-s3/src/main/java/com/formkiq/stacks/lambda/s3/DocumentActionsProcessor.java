@@ -97,6 +97,7 @@ import com.formkiq.stacks.lambda.s3.actions.FullTextAction;
 import com.formkiq.stacks.lambda.s3.actions.IdpAction;
 import com.formkiq.stacks.lambda.s3.actions.NotificationAction;
 import com.formkiq.stacks.lambda.s3.actions.PdfExportAction;
+import com.formkiq.stacks.lambda.s3.actions.resize.ResizeAction;
 import com.formkiq.stacks.lambda.s3.actions.SendHttpRequest;
 import com.formkiq.validation.ValidationException;
 import com.google.gson.Gson;
@@ -339,6 +340,11 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
       case EVENTBRIDGE -> {
         DocumentAction da = new EventBridgeAction(serviceCache);
         da.run(logger, siteId, documentId, actions, action);
+        updateComplete = true;
+      }
+
+      case RESIZE -> {
+        new ResizeAction(serviceCache).run(logger, siteId, documentId, actions, action);
         updateComplete = true;
       }
 

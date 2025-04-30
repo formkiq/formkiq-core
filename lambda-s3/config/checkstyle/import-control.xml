@@ -66,6 +66,12 @@
 
 			<subpackage name="actions">
 				<allow pkg="com.formkiq.strings" />
+
+				<subpackage name="resize">
+					<allow pkg="javax.imageio" />
+					<allow class="java.awt.image.BufferedImage" />
+					<allow class="net.coobird.thumbnailator.Thumbnails" />
+				</subpackage>
 			</subpackage>
 
 			<subpackage name="text">
