@@ -1,0 +1,10 @@
+{
+  "resources":{
+  "includes":[{
+    "pattern":"java.desktop:\\Qsun/java2d/cmm/profiles/sRGB.pf\\E"
+  }]},
+  "bundles":[{
+    "name":"sun.awt.resources.awt",
+    "classNames":["sun.awt.resources.awt"]
+  }]
+}

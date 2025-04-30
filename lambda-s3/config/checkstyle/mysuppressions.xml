@@ -4,6 +4,7 @@
 
 <suppressions>
     <suppress files="\.*Test\.java" checks="ImportControl"/>
+    <suppress files="\.*Test\.java" checks="MagicNumber"/>
     <suppress files="\.*DynamoDbExtension\.java" checks="ImportControl"/>
     <suppress files="\.*DynamoDbTestServices\.java" checks="ImportControl"/>
 </suppressions>

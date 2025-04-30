@@ -36,7 +36,9 @@ dependencies {
 	implementation project(':strings')
 
 	implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.3'
+	
     implementation group: 'com.google.code.gson', name: 'gson', version: '2.13.0'
+	implementation group: 'net.coobird', name: 'thumbnailator', version: '0.4.20'
     
 	implementation group: 'com.formkiq', name: 'lambda-runtime-graalvm', version:'2.5.0'
     implementation group: 'com.formkiq', name: 'graalvm-annotations', version: '1.2.0'

@@ -25,10 +25,10 @@ package com.formkiq.module.actions.services;
 
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -44,6 +44,9 @@ import com.formkiq.validation.ValidationError;
 
 @ExtendWith(DynamoDbExtension.class)
 class ActionsValidatorTest {
+  /** Valid Image Formats. */
+  private static final List<String> VALID_IMAGE_FORMATS =
+      List.of("bmp", "gif", "jpeg", "png", "tif");
 
   /** {@link ActionsValidator}. */
   private static ActionsValidator validator;
@@ -62,46 +65,19 @@ class ActionsValidatorTest {
 
   @Test
   void testValidation01() {
-    // given
-
-    // when
-    Collection<ValidationError> errors = validator.validation(null, (Action) null, null, null);
-
-    // then
-    assertEquals(1, errors.size());
-    ValidationError error = errors.iterator().next();
-    assertNull(error.key());
-    assertEquals("action is required", error.error());
+    testTemplate(null, null, "action is required");
   }
 
   @Test
   void testValidation02() {
-    // given
     Action action = new Action();
-
-    // when
-    Collection<ValidationError> errors = validator.validation(null, action, null, null);
-
-    // then
-    assertEquals(1, errors.size());
-    ValidationError error = errors.iterator().next();
-    assertEquals("type", error.key());
-    assertEquals("action 'type' is required", error.error());
+    testTemplate(action, "type", "action 'type' is required");
   }
 
   @Test
   void testValidation03() {
-    // given
     Action action = new Action().type(ActionType.WEBHOOK).userId("joe");
-
-    // when
-    Collection<ValidationError> errors = validator.validation(null, action, null, null);
-
-    // then
-    assertEquals(1, errors.size());
-    ValidationError error = errors.iterator().next();
-    assertEquals("parameters.url", error.key());
-    assertEquals("action 'url' parameter is required", error.error());
+    testTemplate(action, "parameters.url", "action 'url' parameter is required");
   }
 
   @Test
@@ -124,46 +100,20 @@ class ActionsValidatorTest {
 
   @Test
   void testValidation05() {
-    // given
     Action action = new Action().type(ActionType.OCR).userId("joe");
-
-    // when
-    Collection<ValidationError> errorList = validator.validation(null, action, null, null);
-
-    // then
-    assertEquals(0, errorList.size());
+    testTemplate(action, null, null);
   }
 
   @Test
   void testValidation06() {
-    // given
     Action action = new Action().type(ActionType.QUEUE).userId("joe");
-
-    // when
-    Collection<ValidationError> errors = validator.validation(null, action, null, null);
-
-    // then
-    assertEquals(1, errors.size());
-
-    ValidationError error = errors.iterator().next();
-    assertEquals("queueId", error.key());
-    assertEquals("'queueId' is required", error.error());
+    testTemplate(action, "queueId", "'queueId' is required");
   }
 
   @Test
   void testValidation07() {
-    // given
     Action action = new Action().type(ActionType.QUEUE).queueId("Testqueue").userId("joe");
-
-    // when
-    Collection<ValidationError> errors = validator.validation(null, action, null, null);
-
-    // then
-    assertEquals(1, errors.size());
-
-    ValidationError error = errors.iterator().next();
-    assertEquals("queueId", error.key());
-    assertEquals("'queueId' does not exist", error.error());
+    testTemplate(action, "queueId", "'queueId' does not exist");
   }
 
   /**
@@ -171,16 +121,91 @@ class ActionsValidatorTest {
    */
   @Test
   void testValidation08() {
-    // given
     Action action = new Action().type(ActionType.EVENTBRIDGE).userId("joe");
+    testTemplate(action, "parameters.eventBusName", "'eventBusName' parameter is required");
+  }
 
+  private static void testTemplate(final Action action, final String errorKey,
+      final String errorMessage) {
     // when
     Collection<ValidationError> errors = validator.validation(null, action, null, null);
 
     // then
-    assertEquals(1, errors.size());
-    ValidationError error = errors.iterator().next();
-    assertEquals("parameters.eventBusName", error.key());
-    assertEquals("'eventBusName' parameter is required", error.error());
+    boolean shouldHaveError = errorMessage != null;
+    assertEquals(shouldHaveError ? 1 : 0, errors.size());
+
+    if (shouldHaveError) {
+      ValidationError error = errors.iterator().next();
+      assertEquals(errorKey, error.key());
+      assertEquals(errorMessage, error.error());
+    }
+  }
+
+  private static void testDimensionTemplate(final Map<String, String> parameters,
+      final String errorKey, final String errorMessage) {
+    Action action = new Action().type(ActionType.RESIZE).userId("joe").parameters(parameters);
+    testTemplate(action, errorKey, errorMessage);
+  }
+
+  @Test
+  void testNoHeight() {
+    testDimensionTemplate(Map.of("width", "auto"), "parameters.height",
+        "'height' parameter is required");
+  }
+
+  @Test
+  void testNoWidth() {
+    testDimensionTemplate(Map.of("height", "auto"), "parameters.width",
+        "'width' parameter is required");
+  }
+
+  @Test
+  void testInvalidHeight() {
+    testDimensionTemplate(Map.of("width", "auto", "height", "invalidValue"), "parameters.height",
+        "'height' parameter must be an integer > 0 or 'auto'");
+  }
+
+  @Test
+  void testInvalidWidth() {
+    testDimensionTemplate(Map.of("height", "auto", "width", "invalidValue"), "parameters.width",
+        "'width' parameter must be an integer > 0 or 'auto'");
+  }
+
+  @Test
+  void testNumericWidthAndHeight() {
+    testDimensionTemplate(Map.of("height", "100", "width", "100"), null, null);
+  }
+
+  @Test
+  void testAutoWidthAndHeight() {
+    testDimensionTemplate(Map.of("height", "auto", "width", "auto"), "parameters.width",
+        "'width' and 'height' parameters cannot be both set to auto");
+  }
+
+  @Test
+  void testZeroWidth() {
+    testDimensionTemplate(Map.of("height", "100", "width", "0"), "parameters.width",
+        "'width' parameter must be an integer > 0 or 'auto'");
+  }
+
+  @Test
+  void testZeroHeight() {
+    testDimensionTemplate(Map.of("height", "0", "width", "100"), "parameters.height",
+        "'height' parameter must be an integer > 0 or 'auto'");
+  }
+
+  @Test
+  void testValidImageFormats() {
+    for (String format : VALID_IMAGE_FORMATS) {
+      testDimensionTemplate(Map.of("height", "100", "width", "100", "outputType", format), null,
+          null);
+    }
+  }
+
+  @Test
+  void testInvalidImageFormat() {
+    testDimensionTemplate(Map.of("height", "100", "width", "100", "outputType", "invalid"),
+        "parameters.outputType",
+        "'outputType' parameter must be one of [bmp, gif, jpeg, png, tif]");
   }
 }
