@@ -53,5 +53,7 @@ public enum ActionType {
   /** Pdf Export. */
   PDFEXPORT,
   /** Event Bridge. */
-  EVENTBRIDGE
+  EVENTBRIDGE,
+  /** Resize. */
+  RESIZE
 }

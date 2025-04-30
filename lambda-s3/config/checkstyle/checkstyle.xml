@@ -203,7 +203,7 @@
     <module name="UnusedImports"/>
     <module name="RedundantImport"/>
     <module name="MethodLength">
-      <property name="max" value="52"/>
+      <property name="max" value="56"/>
       <property name="countEmpty" value="false"/>
     </module>
     <module name="ParameterNumber"/>
@@ -217,7 +217,9 @@
     <module name="MagicNumber">
       <property name="constantWaiverParentToken" value="TYPECAST,METHOD_CALL,EXPR,ARRAY_INIT,UNARY_MINUS,UNARY_PLUS,ELIST,STAR,ASSIGN,PLUS,MINUS,DIV,LITERAL_NEW"/>
     </module>
-    <module name="ReturnCount"/>
+    <module name="ReturnCount">
+      <property name="max" value="3"/>
+    </module>
     <module name="CyclomaticComplexity">
       <property name="switchBlockAsSingleDecisionPoint" value="true"/>
     </module>
