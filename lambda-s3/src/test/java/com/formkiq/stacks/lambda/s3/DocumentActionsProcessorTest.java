@@ -2727,12 +2727,23 @@ public class DocumentActionsProcessorTest implements DbKeys {
       final String srcImageFormat, final Map<String, String> parameters) throws IOException {
     String imageKey = getResizedImageKey(s3Key);
     String resImageFormat = parameters.getOrDefault("outputType", srcImageFormat);
-    String path = parameters.getOrDefault("path",
-        "test-" + expectedWidth + "x" + expectedHeight + "." + resImageFormat);
 
     verifyAction(siteId, documentId);
+    verifyDocumentAttributes(siteId, documentId);
     verifyData(expectedWidth, expectedHeight, imageKey, resImageFormat);
+
+    String path = parameters.getOrDefault("path",
+        "test-" + expectedWidth + "x" + expectedHeight + "." + resImageFormat);
     verifyMetadata(expectedWidth, expectedHeight, imageKey, path);
+  }
+
+  private void verifyDocumentAttributes(final String siteId, final String documentId) {
+    List<DocumentAttributeRecord> attributes =
+        documentService.findDocumentAttributes(siteId, documentId, null, 2).getResults();
+    assertEquals(1, attributes.size());
+    DocumentAttributeRecord attribute = attributes.get(0);
+    assertEquals("Relationships", attribute.getKey());
+    assertTrue(attribute.getStringValue().startsWith("RENDITION#"));
   }
 
   private static String getResizedImageKey(final String s3Key) {

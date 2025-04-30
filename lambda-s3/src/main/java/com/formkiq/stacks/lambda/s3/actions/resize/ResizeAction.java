@@ -151,7 +151,7 @@ public class ResizeAction implements DocumentAction {
   }
 
   private void saveResImage(final Image resImage, final String sourceDocumentId)
-      throws ValidationException, IOException {
+      throws ValidationException {
     saveData(resImage);
     saveMetadata(resImage, sourceDocumentId);
   }
@@ -188,7 +188,7 @@ public class ResizeAction implements DocumentAction {
         new DocumentAttributeRecordBuilder().apply(sourceDocumentId, resImage.documentId(),
             DocumentRelationshipType.RENDITION, null, username);
     SaveDocumentOptions options =
-        new SaveDocumentOptions().validationAccess(AttributeValidationAccess.CREATE);
+        new SaveDocumentOptions().validationAccess(AttributeValidationAccess.ADMIN_CREATE);
     documentService.saveDocument(resImage.siteId(), item, null, documentAttributes, options);
   }
 }
