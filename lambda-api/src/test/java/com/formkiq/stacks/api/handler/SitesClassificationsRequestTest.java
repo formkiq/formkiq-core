@@ -60,7 +60,6 @@ import com.formkiq.stacks.dynamodb.attributes.AttributeKeyReserved;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -1131,8 +1130,8 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
         .addAttributesItem(new AddDocumentAttribute(classification)), siteId, null);
   }
 
-  private @Nullable String addDocument(final String siteId,
-      final List<AddDocumentAttribute> attributes) throws ApiException {
+  private String addDocument(final String siteId, final List<AddDocumentAttribute> attributes)
+      throws ApiException {
     AddDocumentRequest areq = new AddDocumentRequest().content("adasd").attributes(attributes);
     return this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
   }

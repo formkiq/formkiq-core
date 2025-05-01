@@ -63,7 +63,7 @@ distributions {
             	include "bootstrap"
             }
             from ("${buildDir}/graalvm") {
-                include("server")
+                include '**/**'
             }
             into '/'
         }

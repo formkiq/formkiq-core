@@ -396,7 +396,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
           processAction(logger, siteId, documentId, actions, action);
 
-        } catch (Exception e) {
+        } catch (Throwable e) {
 
           String stacktrace = Strings.toString(e);
           logger.error(e);
