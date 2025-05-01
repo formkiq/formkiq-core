@@ -10278,6 +10278,27 @@
                 eventBusName:
                   type: string
                   description: The name or ARN of the event bus to receive the event
+                width:
+                  type: string
+                  description: The width of the image to resize (or 'auto')
+                height:
+                  type: string
+                  description: The height of the image to resize (or 'auto')
+                path:
+                  type: string
+                  description: The path to use when creating resized document (optional)
+                outputType:
+                  type: string
+                  description: The output type of the image
+            AddActionResizeOutputType:
+              type: string
+              description: Resize Output Type
+              enum:
+              - BMP
+              - GIF
+              - JPEG
+              - PNG
+              - TIF
             AddDocumentOcrRequest:
               type: object
               example:
