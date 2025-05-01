@@ -242,7 +242,7 @@ public class Strings {
    * @param e {@link Exception}
    * @return {@link String}
    */
-  public static String toString(final Exception e) {
+  public static String toString(final Throwable e) {
     StringWriter sw = new StringWriter();
     PrintWriter pw = new PrintWriter(sw);
     e.printStackTrace(pw);

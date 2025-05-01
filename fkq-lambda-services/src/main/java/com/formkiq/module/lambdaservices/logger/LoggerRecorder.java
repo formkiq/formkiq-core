@@ -47,7 +47,7 @@ public class LoggerRecorder implements Logger {
   }
 
   @Override
-  public void log(final LogLevel level, final Exception ex) {
+  public void log(final LogLevel level, final Throwable ex) {
     log(level, ex.getMessage());
   }
 
