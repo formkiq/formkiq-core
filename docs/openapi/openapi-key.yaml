@@ -1520,7 +1520,7 @@
             delete:
               operationId: PurgeDocument
               summary: Purge document
-              description: Remove all objects from the S3 bucket, including previous versions and current version, and should remove all metadata as well, so that no trace of the document exists outside of the audit logs and any backups. Can only be called be ADMIN.
+              description: Remove all objects from the S3 bucket, including previous versions and current version, and should remove all metadata as well, so that no trace of the document exists outside of the audit logs and any backups. Can only be called be ADMIN or GOVERN.
               tags:
               - Documents
               parameters:
@@ -2600,6 +2600,10 @@
                 | QUEUE    | queueId    | Id of Queue | |
                 | IDP    | mappingId    | Id of Mapping | |
                 | EVENTBRIDGE    | eventBusName    | The name or ARN of the Amazon EventBridge to receive the event. | |
+                | RESIZE    | width    | The width of the image to resize (or 'auto'). | |
+                | RESIZE    | height    | The height of the image to resize (or 'auto'). | |
+                | RESIZE    | outputType    | The output type of the image (optional). | |
+                | RESIZE    | path    | The path to use when creating resized document (optional). | |
               tags:
               - Document Actions
               parameters:
@@ -9820,6 +9824,7 @@
               - PUBLISH
               - PDFEXPORT
               - EVENTBRIDGE
+              - RESIZE
             DocumentAction:
               type: object
               properties:
