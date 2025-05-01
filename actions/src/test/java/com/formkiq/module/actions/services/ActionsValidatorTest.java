@@ -46,7 +46,7 @@ import com.formkiq.validation.ValidationError;
 class ActionsValidatorTest {
   /** Valid Image Formats. */
   private static final List<String> VALID_IMAGE_FORMATS =
-      List.of("bmp", "gif", "jpeg", "png", "tif");
+      List.of("bmp", "gif", "jpeg", "png", "tif", "BmP");
 
   /** {@link ActionsValidator}. */
   private static ActionsValidator validator;

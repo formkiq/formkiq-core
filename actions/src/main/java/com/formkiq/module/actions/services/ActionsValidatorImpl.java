@@ -231,7 +231,7 @@ public class ActionsValidatorImpl implements ActionsValidator {
       final Collection<ValidationError> errors) {
     String outputType = parameters.get("outputType");
 
-    if (outputType != null && !VALID_IMAGE_FORMATS.contains(outputType)) {
+    if (outputType != null && !VALID_IMAGE_FORMATS.contains(outputType.toLowerCase())) {
       errors.add(new ValidationErrorImpl().key("parameters.outputType")
           .error("'outputType' parameter must be one of " + VALID_IMAGE_FORMATS));
     }
