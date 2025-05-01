@@ -67,9 +67,9 @@ public interface Logger {
   /**
    * Error Log.
    *
-   * @param ex {@link Exception}
+   * @param ex {@link Throwable}
    */
-  default void error(final Exception ex) {
+  default void error(final Throwable ex) {
     log(LogLevel.ERROR, ex);
   }
 
@@ -85,9 +85,9 @@ public interface Logger {
    * Log Exception.
    *
    * @param level {@link LogLevel}
-   * @param ex {@link Exception}
+   * @param ex {@link Throwable}
    */
-  void log(LogLevel level, Exception ex);
+  void log(LogLevel level, Throwable ex);
 
   /**
    * Is Current {@link LogLevel} going to be logged.

@@ -52,7 +52,7 @@ public class LoggerImpl implements Logger {
     this.currentLogType = logType;
   }
 
-  public void log(final LogLevel level, final Exception e) {
+  public void log(final LogLevel level, final Throwable e) {
     if (isLogged(level)) {
       if (LogType.JSON.equals(this.currentLogType)) {
         System.out.printf("%s%n", exceptionToJson(level, e));
@@ -79,7 +79,7 @@ public class LoggerImpl implements Logger {
    * @param e {@link Exception}
    * @return {@link String}
    */
-  private String exceptionToString(final Exception e) {
+  private String exceptionToString(final Throwable e) {
     StringWriter sw = new StringWriter();
     PrintWriter pw = new PrintWriter(sw);
     e.printStackTrace(pw);
@@ -93,7 +93,7 @@ public class LoggerImpl implements Logger {
    * @param e The exception to convert.
    * @return A JSON string representing the exception.
    */
-  private String exceptionToJson(final LogLevel logLevel, final Exception e) {
+  private String exceptionToJson(final LogLevel logLevel, final Throwable e) {
     StringBuilder json = new StringBuilder();
     json.append("{");
     json.append("\"level\":\"").append(logLevel.name()).append("\",");
