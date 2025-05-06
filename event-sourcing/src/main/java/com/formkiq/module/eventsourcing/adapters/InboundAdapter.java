@@ -21,20 +21,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb.base64;
+package com.formkiq.module.eventsourcing.adapters;
 
-import com.formkiq.aws.dynamodb.MapToAttributeValue;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import com.formkiq.module.eventsourcing.commands.Command;
 
-import java.util.Map;
 import java.util.function.Function;
 
 /**
- * {@link Function} to convert Pagination {@link String} next token to a DynamoDb StartKey.
+ * Inbound Adapter interface that transforms an inbound transport-specific request into a domain
+ * {@link Command}. This decouples the presentation layer (e.g., HTTP, messaging) from the core
+ * application logic by mapping external inputs into commands.
+ *
+ * @param <T> the type of inbound request
+ * @param <E> the type of {@link Command} object
  */
-public class StringToMapAttributeValue implements Function<String, Map<String, AttributeValue>> {
+public interface InboundAdapter<T, E extends Command> extends Function<T, E> {
+
+  /**
+   * Converts the given inbound request into a domain-level {@link Command}. Implementations should
+   * perform any necessary validation or normalization.
+   *
+   * @param request the inbound request payload to be transformed
+   * @return a {@link Command} instance representing the user's intent
+   */
   @Override
-  public Map<String, AttributeValue> apply(final String nextToken) {
-    return new MapToAttributeValue().apply(new Base64ToMap().apply(nextToken));
-  }
+  E apply(T request);
 }

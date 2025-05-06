@@ -36,6 +36,7 @@ import com.formkiq.aws.s3.S3ServiceExtension;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceExtension;
 import com.formkiq.client.api.CustomIndexApi;
+import com.formkiq.client.api.EntityApi;
 import com.formkiq.client.api.MappingsApi;
 import com.formkiq.client.api.ReindexApi;
 import com.formkiq.client.api.UserManagementApi;
@@ -146,6 +147,8 @@ public abstract class AbstractApiClientRequestTest {
   protected CustomIndexApi indexApi = new CustomIndexApi(this.client);
   /** {@link WebhooksApi}. */
   protected WebhooksApi webhooksApi = new WebhooksApi(this.client);
+  /** {@link EntityApi}. */
+  protected EntityApi entityApi = new EntityApi(this.client);
   /** Sqs Messages. */
   private final List<Map<String, Object>> sqsMessages = new ArrayList<>();
 

@@ -26,8 +26,11 @@ package com.formkiq.aws.dynamodb;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+
+import com.formkiq.aws.dynamodb.eventsourcing.DynamoDbKey;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
+import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.UpdateItemResponse;
@@ -113,6 +116,14 @@ public interface DynamoDbService {
    * @return {@link Map}
    */
   Map<String, AttributeValue> get(AttributeValue pk, AttributeValue sk);
+
+  /**
+   * Gets DynamoDB Record.
+   *
+   * @param key {@link DynamoDbKey}
+   * @return {@link Map}
+   */
+  Map<String, AttributeValue> get(DynamoDbKey key);
 
   /**
    * Gets DynamoDB Record.
@@ -208,6 +219,15 @@ public interface DynamoDbService {
    */
   QueryResponse query(QueryConfig config, AttributeValue pk,
       Map<String, AttributeValue> exclusiveStartKey, int limit);
+
+
+  /**
+   * Query DynamoDB records.
+   * 
+   * @param q {@link QueryRequest}
+   * @return QueryResponse
+   */
+  QueryResponse query(QueryRequest q);
 
   /**
    * Query DynamoDB Records.
