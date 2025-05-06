@@ -109,6 +109,14 @@ public interface DynamoDbService {
   boolean exists(AttributeValue pk, AttributeValue sk);
 
   /**
+   * Whether Database Record Exist.
+   *
+   * @param key {@link DynamoDbKey}
+   * @return boolean
+   */
+  boolean exists(DynamoDbKey key);
+
+  /**
    * Gets DynamoDB Record.
    * 
    * @param pk {@link AttributeValue}

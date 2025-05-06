@@ -54,6 +54,19 @@ public class ValidationBuilder {
   }
 
   /**
+   * Validate Field is required.
+   *
+   * @param key {@link String}
+   * @param value boolean
+   */
+  public void isRequired(final String key, final boolean value) {
+    if (!value) {
+      String error = "'" + key + "' is invalid";
+      errors.add(new ValidationErrorImpl().key(key).error(error));
+    }
+  }
+
+  /**
    * Check Validation.
    */
   public void check() throws ValidationException {

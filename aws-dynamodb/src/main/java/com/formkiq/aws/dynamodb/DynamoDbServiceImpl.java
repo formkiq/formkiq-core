@@ -231,6 +231,15 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
   }
 
   @Override
+  public boolean exists(final DynamoDbKey key) {
+    GetItemRequest r =
+        GetItemRequest.builder().key(Map.of(PK, fromS(key.pk()), SK, fromS(key.sk())))
+            .tableName(this.tableName).projectionExpression("PK").build();
+    GetItemResponse response = this.dbClient.getItem(r);
+    return !response.item().isEmpty();
+  }
+
+  @Override
   public Map<String, AttributeValue> get(final AttributeValue pk, final AttributeValue sk) {
     return get(new QueryConfig(), pk, sk);
   }

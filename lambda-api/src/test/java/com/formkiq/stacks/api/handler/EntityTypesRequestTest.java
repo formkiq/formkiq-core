@@ -235,7 +235,7 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * Get /entityTypes/{entityTypeId} . Invalid entityTypeId.
+   * Get /entityTypes/{entityTypeId}. Invalid entityTypeId.
    *
    */
   @Test
@@ -251,7 +251,7 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
     } catch (ApiException e) {
       // then
       assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
-      assertEquals("{\"message\":\"entity '" + id + "' not found\"}", e.getResponseBody());
+      assertEquals("{\"message\":\"entityType '" + id + "' not found\"}", e.getResponseBody());
     }
   }
 
