@@ -6432,6 +6432,106 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+          /entities/{entityTypeId}:
+            get:
+              operationId: GetEntities
+              tags:
+              - Entity
+              description: Returns a list of entities
+              summary: Get Entities
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/entityTypeIdParam'
+              - $ref: '#/components/parameters/namespaceParam'
+              - $ref: '#/components/parameters/nextParam'
+              - $ref: '#/components/parameters/limitParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetEntitiesResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+            post:
+              operationId: AddEntity
+              description: Creates a Entity
+              summary: Add New Entity
+              tags:
+              - Entity
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/entityTypeIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/AddEntityRequest'
+              responses:
+                "201":
+                  description: 201 CREATED
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/AddEntityResponse'
+                "400":
+                  description: 400 OK
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/ValidationErrorsResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
+          /entities/{entityTypeId}/{entityId}:
+            get:
+              operationId: GetEntity
+              tags:
+              - Entity
+              description: Returns a entity
+              summary: Get Entity
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/entityTypeIdParam'
+              - $ref: '#/components/parameters/entityIdParam'
+              - $ref: '#/components/parameters/namespaceParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetEntityResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
         components:
           headers:
             AccessControlAllowOrigin:
@@ -6574,6 +6674,13 @@
               name: key
               in: path
               description: Key Identifier
+              required: true
+              schema:
+                type: string
+            entityIdParam:
+              name: entityId
+              in: path
+              description: Entity Identifier
               required: true
               schema:
                 type: string
@@ -9516,17 +9623,65 @@
                   description: Rule condition value
                 operation:
                   $ref: '#/components/schemas/RuleConditionOperation'
+            AddEntityResponse:
+              type: object
+              properties:
+                entityId:
+                  type: string
+                  description: Entity Identifier
             AddEntityTypeResponse:
               type: object
               properties:
                 entityTypeId:
                   type: string
                   description: Entity Type Identifier
+            GetEntitiesResponse:
+              type: object
+              properties:
+                next:
+                  type: string
+                  description: Next page of results token
+                entities:
+                  type: array
+                  description: List of Entities
+                  items:
+                    $ref: '#/components/schemas/Entity'
+            GetEntityResponse:
+              type: object
+              properties:
+                entity:
+                  $ref: '#/components/schemas/Entity'
             GetEntityTypeResponse:
               type: object
               properties:
                 entityType:
                   $ref: '#/components/schemas/EntityType'
+            Entity:
+              type: object
+              properties:
+                entityId:
+                  type: string
+                  description: Entity identifier
+                entityTypeId:
+                  type: string
+                  description: Entity Type identifier
+                name:
+                  type: string
+                  description: Entity Name
+                insertedDate:
+                  type: string
+                  description: Inserted Timestamp
+            AddEntityRequest:
+              type: object
+              properties:
+                entity:
+                  $ref: '#/components/schemas/AddEntity'
+            AddEntity:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Entity Type Name
             GetEntityTypesResponse:
               type: object
               properties:

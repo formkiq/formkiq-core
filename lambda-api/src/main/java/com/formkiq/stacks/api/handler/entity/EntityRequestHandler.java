@@ -26,10 +26,8 @@ package com.formkiq.stacks.api.handler.entity;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.AttributeValueToMap;
 import com.formkiq.aws.dynamodb.AttributeValueToMapConfig;
-import com.formkiq.aws.dynamodb.DynamoDbQueryBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
-import com.formkiq.aws.dynamodb.eventsourcing.DynamoDbKey;
-import com.formkiq.aws.dynamodb.eventsourcing.entity.EntityTypeRecord;
+import com.formkiq.aws.dynamodb.eventsourcing.entity.EntityRecord;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -38,26 +36,20 @@ import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.validation.ValidationBuilder;
-import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
-import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 
 import java.util.Map;
 
-import static com.formkiq.aws.dynamodb.DbKeys.GSI1;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
-/** {@link ApiGatewayRequestHandler} for "/entityTypes/{entityTypeId}". */
-public class EntityTypeRequestHandler
-    implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
+/** {@link ApiGatewayRequestHandler} for "/entities/{entityTypeId}/{entityId}". */
+public class EntityRequestHandler implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
   /**
    * constructor.
    *
    */
-  public EntityTypeRequestHandler() {}
+  public EntityRequestHandler() {}
 
   @Override
   public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
@@ -65,58 +57,32 @@ public class EntityTypeRequestHandler
 
     String siteId = authorization.getSiteId();
     String entityTypeId = event.getPathParameter("entityTypeId");
+    String entityId = event.getPathParameter("entityId");
     DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
 
-    EntityTypeRecord.Builder builder =
-        EntityTypeRecord.builder().documentId(entityTypeId).namespace("").name("");
-
     if (!Strings.isUuid(entityTypeId)) {
-      updateBuilderFromEntityName(event, awsservice, builder, siteId);
+      String namespace = event.getQueryStringParameter("namespace");
+      entityTypeId =
+          new EntityTypeNameToId().findEntityTypeId(awsservice, siteId, entityTypeId, namespace);
     }
+
+    EntityRecord.Builder builder =
+        EntityRecord.builder().documentId(entityId).entityTypeId(entityTypeId).name("");
 
     Map<String, AttributeValue> attributes = db.get(builder.buildKey(siteId));
 
     if (attributes.isEmpty()) {
-      throw new NotFoundException("entityType '" + entityTypeId + "' not found");
+      throw new NotFoundException("entity '" + entityId + "' not found");
     }
 
     AttributeValueToMapConfig config = AttributeValueToMapConfig.builder().removeDbKeys(true)
-        .addRenameKeys("documentId", "entityTypeId").build();
+        .addRenameKeys("documentId", "entityId").build();
     Map<String, Object> values = new AttributeValueToMap(config).apply(attributes);
-    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(Map.of("entityType", values)));
-  }
-
-  private void updateBuilderFromEntityName(final ApiGatewayRequestEvent event,
-      final AwsServiceCache awsservice, final EntityTypeRecord.Builder builder, final String siteId)
-      throws ValidationException {
-    String entityTypeId = event.getPathParameter("entityTypeId");
-    String namespace = event.getQueryStringParameter("namespace");
-    validateNamespace(namespace);
-
-    String tableName = awsservice.environment("DOCUMENTS_TABLE");
-    DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
-
-    DynamoDbKey key = builder.name(entityTypeId).namespace(namespace).buildKey(siteId);
-    QueryRequest q = DynamoDbQueryBuilder.builder().indexName(GSI1).pk(key.gsi1Pk())
-        .beginsWith(key.gsi1Sk()).limit("1").build(tableName);
-    QueryResponse response = db.query(q);
-    if (!response.items().isEmpty()) {
-      builder.documentId(response.items().get(0).get("documentId").s());
-    }
-  }
-
-  private void validateNamespace(final String namespace) throws ValidationException {
-
-    ValidationBuilder vb = new ValidationBuilder();
-    vb.isRequired("namespace", namespace);
-    vb.check();
-
-    vb.isEquals("namespace", namespace, "CUSTOM");
-    vb.check();
+    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(Map.of("entity", values)));
   }
 
   @Override
   public String getRequestUrl() {
-    return "/entityTypes/{entityTypeId}";
+    return "/entities/{entityTypeId}/{entityId}";
   }
 }
