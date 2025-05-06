@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.dynamodb.base64;
 
+import com.formkiq.aws.dynamodb.base64.MapToBase64;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.List;
