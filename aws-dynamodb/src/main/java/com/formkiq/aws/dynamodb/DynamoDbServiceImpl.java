@@ -260,8 +260,10 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
 
   @Override
   public boolean exists(final DynamoDbKey key) {
+
     GetItemRequest r = GetItemRequest.builder().key(key.toMap()).tableName(this.tableName)
         .projectionExpression("PK").build();
+
     GetItemResponse response = this.dbClient.getItem(r);
     return !response.item().isEmpty();
   }

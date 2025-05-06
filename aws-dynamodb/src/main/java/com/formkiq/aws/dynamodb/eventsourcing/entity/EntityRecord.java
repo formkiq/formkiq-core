@@ -34,33 +34,33 @@ import java.util.Objects;
 /**
  * Record representing an entity, with its DynamoDB key structure and metadata.
  */
-public record EntityTypeRecord(DynamoDbKey key, String documentId, String namespace, String name,
+public record EntityRecord(DynamoDbKey key, String entityTypeId, String documentId, String name,
     Date insertedDate) {
 
   /**
    * Canonical constructor to enforce non-null properties and defensive copy of Date.
    */
-  public EntityTypeRecord {
+  public EntityRecord {
     Objects.requireNonNull(key, "key must not be null");
     Objects.requireNonNull(documentId, "documentId must not be null");
-    Objects.requireNonNull(namespace, "namespace must not be null");
+    Objects.requireNonNull(entityTypeId, "entityTypeId must not be null");
     Objects.requireNonNull(name, "name must not be null");
     Objects.requireNonNull(insertedDate, "insertedDate must not be null");
     insertedDate = new Date(insertedDate.getTime());
   }
 
   /**
-   * Constructs a {@code EntityTypeRecord} from a map of DynamoDB attributes.
+   * Constructs a {@code EntityRecord} from a map of DynamoDB attributes.
    *
    * @param attributes the map of attribute names to {@link AttributeValue}
-   * @return a new {@code EntityTypeRecord} instance
+   * @return a new {@code EntityRecord} instance
    * @throws NullPointerException if {@code attributes} is null
    */
-  public static EntityTypeRecord fromAttributeMap(final Map<String, AttributeValue> attributes) {
+  public static EntityRecord fromAttributeMap(final Map<String, AttributeValue> attributes) {
     Objects.requireNonNull(attributes, "attributes must not be null");
     DynamoDbKey key = DynamoDbKey.fromAttributeMap(attributes);
-    return new EntityTypeRecord(key, DynamoDbTypes.toString(attributes.get("documentId")),
-        DynamoDbTypes.toString(attributes.get("namespace")),
+    return new EntityRecord(key, DynamoDbTypes.toString(attributes.get("entityTypeId")),
+        DynamoDbTypes.toString(attributes.get("documentId")),
         DynamoDbTypes.toString(attributes.get("name")),
         DynamoDbTypes.toDate(attributes.get("inserteddate")));
   }
@@ -74,13 +74,13 @@ public record EntityTypeRecord(DynamoDbKey key, String documentId, String namesp
    * @return a Map of attribute names to {@link AttributeValue} instances
    */
   public Map<String, AttributeValue> getAttributes() {
-    return key.getAttributesBuilder().withString("documentId", documentId)
-        .withString("namespace", namespace).withString("name", name)
+    return key.getAttributesBuilder().withString("entityTypeId", entityTypeId)
+        .withString("documentId", documentId).withString("name", name)
         .withDate("inserteddate", insertedDate).build();
   }
 
   /**
-   * Creates a new {@link Builder} for {@link EntityTypeRecord}.
+   * Creates a new {@link Builder} for {@link EntityRecord}.
    *
    * @return a Builder instance
    */
@@ -89,17 +89,28 @@ public record EntityTypeRecord(DynamoDbKey key, String documentId, String namesp
   }
 
   /**
-   * Fluent builder for {@link EntityTypeRecord} that computes the DynamoDbKey.
+   * Fluent builder for {@link EntityRecord} that computes the DynamoDbKey.
    */
-  public static class Builder implements DynamoDbEntityBuilder<EntityTypeRecord> {
+  public static class Builder implements DynamoDbEntityBuilder<EntityRecord> {
+    /** Entity Type Id. */
+    private String entityTypeId;
     /** Document Id. */
     private String documentId;
-    /** Namespace. */
-    private String namespace;
     /** Name. */
     private String name;
     /** Inserted Date. */
     private Date insertedDate = new Date();
+
+    /**
+     * Sets the entity type identifier.
+     *
+     * @param entityTypeDocumentId the document ID
+     * @return this Builder
+     */
+    public Builder entityTypeId(final String entityTypeDocumentId) {
+      this.entityTypeId = entityTypeDocumentId;
+      return this;
+    }
 
     /**
      * Sets the document identifier.
@@ -113,61 +124,49 @@ public record EntityTypeRecord(DynamoDbKey key, String documentId, String namesp
     }
 
     /**
-     * Sets the entityTypeNamespace of the document.
+     * Sets the entityName of the document.
      *
-     * @param entityTypeNamespace the entityTypeNamespace
+     * @param entityName the entityName
      * @return this Builder
      */
-    public Builder namespace(final String entityTypeNamespace) {
-      this.namespace = entityTypeNamespace;
-      return this;
-    }
-
-    /**
-     * Sets the entityTypeName of the document.
-     *
-     * @param entityTypeName the entityTypeName
-     * @return this Builder
-     */
-    public Builder name(final String entityTypeName) {
-      this.name = entityTypeName;
+    public Builder name(final String entityName) {
+      this.name = entityName;
       return this;
     }
 
     /**
      * Sets the insertion timestamp with millisecond precision.
      *
-     * @param entityTypeInsertedDate the insertion date
+     * @param entityInsertedDate the insertion date
      * @return this Builder
      */
-    public Builder insertedDate(final Date entityTypeInsertedDate) {
-      this.insertedDate = new Date(entityTypeInsertedDate.getTime());
+    public Builder insertedDate(final Date entityInsertedDate) {
+      this.insertedDate = new Date(entityInsertedDate.getTime());
       return this;
     }
 
     @Override
     public DynamoDbKey buildKey(final String siteId) {
 
-      Objects.requireNonNull(documentId, "documentId must not be null");
-      Objects.requireNonNull(namespace, "namespace must not be null");
+      Objects.requireNonNull(entityTypeId, "entityTypeId must not be null");
       Objects.requireNonNull(name, "name must not be null");
+      Objects.requireNonNull(documentId, "documentId must not be null");
 
-      String pk = "entityType#" + documentId;
-      String sk = "entityType";
-      String gsi1Pk = "entityType#";
-      String gsi1Sk = name.isBlank() ? "entityType#" + namespace + "#"
-          : "entityType#" + namespace + "#" + name + "#";
+      String pk = "entity#" + entityTypeId + "#" + documentId;
+      String sk = "entity";
+      String gsi1Pk = "entity#" + entityTypeId;
+      String gsi1Sk = name.isBlank() ? "entity#" : "entity#" + name + "#" + documentId;
 
       return DynamoDbKey.builder().pk(siteId, pk).sk(sk).gsi1Pk(siteId, gsi1Pk).gsi1Sk(gsi1Sk)
           .build();
     }
 
     @Override
-    public EntityTypeRecord build(final String siteId) {
+    public EntityRecord build(final String siteId) {
       Objects.requireNonNull(insertedDate, "insertedDate must not be null");
 
       DynamoDbKey key = buildKey(siteId);
-      return new EntityTypeRecord(key, documentId, namespace, name, insertedDate);
+      return new EntityRecord(key, entityTypeId, documentId, name, insertedDate);
     }
   }
 }
