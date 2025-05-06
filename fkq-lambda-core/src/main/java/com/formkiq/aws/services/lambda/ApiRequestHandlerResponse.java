@@ -32,12 +32,12 @@ public class ApiRequestHandlerResponse {
   /** HTTP Headers. */
   private Map<String, String> headers = new HashMap<>();
   /** {@link ApiResponseStatus}. */
-  private ApiResponseStatus status;
+  private final ApiResponseStatus status;
   /** {@link ApiResponse}. */
-  private ApiResponse response;
+  private final ApiResponse response;
 
   /**
-   * constructor.
+   * Constructor.
    *
    * @param responseStatus {@link ApiResponseStatus}
    * @param apiResponse {@link ApiResponse}
@@ -49,19 +49,9 @@ public class ApiRequestHandlerResponse {
   }
 
   /**
-   * Add HTTP Headers.
-   * 
-   * @param key {@link String}
-   * @param value {@link String}
-   */
-  public void addHeader(final String key, final String value) {
-    this.headers.put(key, value);
-  }
-
-  /**
    * Get HTTP Headers.
-   * 
-   * @return {@link Map}
+   *
+   * @return headers map
    */
   public Map<String, String> getHeaders() {
     return this.headers;
@@ -77,7 +67,7 @@ public class ApiRequestHandlerResponse {
   }
 
   /**
-   * Get {@link ApiResponse} Status.
+   * Get {@link ApiResponseStatus}.
    *
    * @return {@link ApiResponseStatus}
    */
@@ -86,11 +76,62 @@ public class ApiRequestHandlerResponse {
   }
 
   /**
-   * Set Http Headers.
-   * 
-   * @param map {@link Map}
+   * Replace all HTTP headers.
+   *
+   * @param map new headers map
    */
   public void setHeaders(final Map<String, String> map) {
     this.headers = map;
+  }
+
+  /**
+   * {@link Builder}.
+   * 
+   * @return a new Builder for ApiRequestHandlerResponse
+   */
+  public static Builder builder() {
+    return new Builder();
+  }
+
+  /**
+   * Builder for {@link ApiRequestHandlerResponse}.
+   */
+  public static class Builder {
+    /** {@link ApiResponseStatus}. */
+    private ApiResponseStatus status;
+    /** Data. */
+    private final Map<String, Object> data = new HashMap<>();
+
+    /**
+     * Sets the response responseStatus.
+     *
+     * @param responseStatus the API response responseStatus
+     * @return this builder
+     */
+    public Builder status(final ApiResponseStatus responseStatus) {
+      this.status = responseStatus;
+      return this;
+    }
+
+    /**
+     * Builds a new Data.
+     * 
+     * @param key {@link String}
+     * @param value {@link String}
+     * @return Builder
+     */
+    public Builder data(final String key, final Object value) {
+      this.data.put(key, value);
+      return this;
+    }
+
+    /**
+     * Builds a new {@link ApiRequestHandlerResponse} instance.
+     *
+     * @return built ApiRequestHandlerResponse
+     */
+    public ApiRequestHandlerResponse build() {
+      return new ApiRequestHandlerResponse(this.status, new ApiMapResponse(this.data));
+    }
   }
 }

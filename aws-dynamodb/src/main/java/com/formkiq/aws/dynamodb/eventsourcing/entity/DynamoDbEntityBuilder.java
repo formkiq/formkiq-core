@@ -21,37 +21,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb.base64;
+package com.formkiq.aws.dynamodb.eventsourcing.entity;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Function;
+import com.formkiq.aws.dynamodb.eventsourcing.DynamoDbKey;
 
-import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
+public interface DynamoDbEntityBuilder<T> {
 
-/**
- * Convert Base 64 {@link String} to {@link java.util.Map}.
- */
-public class Base64ToMap implements Function<String, Map<String, Object>> {
-  @Override
-  public Map<String, Object> apply(final String base64) {
-    Map<String, Object> map = null;
+  /**
+   * Build {@link DynamoDbKey}.
+   * 
+   * @param siteId {@link String}
+   * @return DynamoDbKey
+   */
+  DynamoDbKey buildKey(String siteId);
 
-    if (!isEmpty(base64)) {
-      map = new HashMap<>();
-
-      String decodedString = new String(Base64.getDecoder().decode(base64), StandardCharsets.UTF_8);
-      String[] entries = decodedString.split("\n");
-      for (String entry : entries) {
-        if (!entry.isEmpty()) {
-          String[] keyValue = entry.split("=", 2);
-          map.put(keyValue[0], keyValue.length > 1 ? keyValue[1] : "");
-        }
-      }
-    }
-
-    return map;
-  }
+  /**
+   * Builds the {@link T}, computing the DynamoDbKey.
+   *
+   * @param siteId {@link String}
+   * @return a new T
+   */
+  T build(String siteId);
 }

@@ -25,6 +25,7 @@ package com.formkiq.aws.dynamodb;
 
 import static com.formkiq.aws.dynamodb.DbKeys.PK;
 import static com.formkiq.aws.dynamodb.DbKeys.SK;
+import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.fromS;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -37,6 +38,7 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import com.formkiq.aws.dynamodb.eventsourcing.DynamoDbKey;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -44,6 +46,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.DeleteRequest;
+import software.amazon.awssdk.services.dynamodb.model.DynamoDbException;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.GetItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.Put;
@@ -233,6 +236,11 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
   }
 
   @Override
+  public Map<String, AttributeValue> get(final DynamoDbKey key) {
+    return get(new QueryConfig(), fromS(key.pk()), fromS(key.sk()));
+  }
+
+  @Override
   public Map<String, AttributeValue> get(final QueryConfig config, final AttributeValue pk,
       final AttributeValue sk) {
     Map<String, AttributeValue> key = Map.of(PK, pk, SK, sk);
@@ -390,6 +398,27 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
   }
 
   @Override
+  public QueryResponse query(final QueryRequest q) {
+
+    try {
+      QueryResponse response = this.dbClient.query(q);
+
+      if (q.indexName() != null) {
+        List<Map<String, AttributeValue>> keys =
+            response.items().stream().map(i -> Map.of(PK, i.get(PK), SK, i.get(SK))).toList();
+
+        List<Map<String, AttributeValue>> results = getBatch(new BatchGetConfig(), keys);
+        response = QueryResponse.builder().items(results)
+            .lastEvaluatedKey(response.lastEvaluatedKey()).build();
+      }
+
+      return response;
+    } catch (DynamoDbException e) {
+      throw new DynamoDbQueryException(e);
+    }
+  }
+
+  @Override
   public QueryResponse queryBeginsWith(final QueryConfig config, final AttributeValue pk,
       final AttributeValue sk, final Map<String, AttributeValue> exclusiveStartKey,
       final int limit) {
@@ -538,6 +567,6 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
   }
 
   private AttributeValue getLock(final AttributeValue sk) {
-    return AttributeValue.fromS(sk.s() + ".lock");
+    return fromS(sk.s() + ".lock");
   }
 }

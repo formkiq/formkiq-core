@@ -21,22 +21,62 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb.base64;
+package com.formkiq.stacks.api.handler.entity;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-import java.util.Map;
-import java.util.function.Function;
+import com.formkiq.graalvm.annotations.Reflectable;
 
 /**
- * Convert {@link Map} to Base64 {@link String}.
+ * Add Entity Type.
  */
-public class MapToBase64 implements Function<Map<String, String>, String> {
-  @Override
-  public String apply(final Map<String, String> map) {
-    StringBuilder sb = new StringBuilder();
-    map.forEach((key, value) -> sb.append(key).append("=").append(value).append("\n"));
-    byte[] data = sb.toString().getBytes(StandardCharsets.UTF_8);
-    return Base64.getEncoder().encodeToString(data);
+@Reflectable
+public class AddEntityType {
+  /** Entity Name. */
+  private String name;
+  /** Entity Namespace. */
+  private String namespace;
+
+  /**
+   * constructor.
+   */
+  public AddEntityType() {}
+
+  /**
+   * Get Namespace.
+   * 
+   * @return String
+   */
+  public String getNamespace() {
+    return this.namespace;
+  }
+
+  /**
+   * Set Namespace.
+   * 
+   * @param entityTypeNamespace {@link String}
+   * @return AddEntityType
+   */
+  public AddEntityType setNamespace(final String entityTypeNamespace) {
+    this.namespace = entityTypeNamespace;
+    return this;
+  }
+
+  /**
+   * Get Group Name.
+   * 
+   * @return String
+   */
+  public String getName() {
+    return this.name;
+  }
+
+  /**
+   * Set Group Name.
+   * 
+   * @param groupName {@link String}
+   * @return AddEntityType
+   */
+  public AddEntityType setName(final String groupName) {
+    this.name = groupName;
+    return this;
   }
 }
