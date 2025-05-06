@@ -126,6 +126,8 @@ import com.formkiq.stacks.api.handler.VersionRequestHandler;
 import com.formkiq.stacks.api.handler.WebhooksIdRequestHandler;
 import com.formkiq.stacks.api.handler.WebhooksRequestHandler;
 import com.formkiq.stacks.api.handler.WebhooksTagsRequestHandler;
+import com.formkiq.stacks.api.handler.entity.EntityTypeRequestHandler;
+import com.formkiq.stacks.api.handler.entity.EntityTypesRequestHandler;
 import com.formkiq.stacks.dynamodb.ApiKeysService;
 import com.formkiq.stacks.dynamodb.ApiKeysServiceExtension;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
@@ -282,6 +284,12 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
 
     addSchemaEndpoints();
     addReindexEndpoints();
+    addEntityEndpoints();
+  }
+
+  private static void addEntityEndpoints() {
+    addRequestHandler(new EntityTypesRequestHandler());
+    addRequestHandler(new EntityTypeRequestHandler());
   }
 
   private static void addSystemEndpoints() {

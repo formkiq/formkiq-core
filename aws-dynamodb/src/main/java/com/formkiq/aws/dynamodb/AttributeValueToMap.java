@@ -37,6 +37,25 @@ import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 public class AttributeValueToMap
     implements Function<Map<String, AttributeValue>, Map<String, Object>> {
 
+  /** {@link AttributeValueToMapConfig}. */
+  private final AttributeValueToMapConfig config;
+
+  /**
+   * Convert {@link AttributeValue} to {@link Map}.
+   */
+  public AttributeValueToMap() {
+    this(null);
+  }
+
+  /**
+   * Convert {@link AttributeValue} to {@link Map}.
+   * 
+   * @param attributeValueToMapConfig {@link AttributeValueToMapConfig}
+   */
+  public AttributeValueToMap(final AttributeValueToMapConfig attributeValueToMapConfig) {
+    this.config = attributeValueToMapConfig;
+  }
+
   @Override
   public Map<String, Object> apply(final Map<String, AttributeValue> map) {
 
@@ -50,9 +69,30 @@ public class AttributeValueToMap
         Object obj = convert(e.getValue());
         result.put(key, obj);
       }
+
+      removeKeys(result);
+      renameKeys(result);
     }
 
     return result;
+  }
+
+  private void renameKeys(final Map<String, Object> result) {
+    if (this.config != null) {
+      this.config.getRenameKeys().forEach((k, v) -> result.put(v, result.get(k)));
+      this.config.getRenameKeys().forEach((k, v) -> result.remove(k));
+    }
+  }
+
+  private void removeKeys(final Map<String, Object> result) {
+    if (config != null && config.isRemoveDbKeys()) {
+      result.remove(DbKeys.PK);
+      result.remove(DbKeys.SK);
+      result.remove(DbKeys.GSI1_PK);
+      result.remove(DbKeys.GSI1_SK);
+      result.remove(DbKeys.GSI2_PK);
+      result.remove(DbKeys.GSI2_SK);
+    }
   }
 
   private Object convert(final AttributeValue val) {

@@ -48,6 +48,7 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.ApiPermission;
+import com.formkiq.aws.dynamodb.DynamoDbQueryException;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.ConflictException;
 import com.formkiq.aws.services.lambda.exceptions.ForbiddenException;
@@ -477,6 +478,8 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
           setupApiAuthorizationInterceptor(awsServices);
 
       ApiAuthorization authorization = buildApiAuthorization(event, interceptors);
+      // HttpCommand httpCommand =
+      // new ApiGatewayRequestEventToHttpCommandTransformer(authorization).apply(event);
 
       List<ApiRequestHandlerInterceptor> requestInterceptors =
           getApiRequestHandlerInterceptors(awsServices);
@@ -490,9 +493,6 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
       buildResponse(awsServices, output, object.getStatus(), object.getHeaders(),
           object.getResponse());
 
-    } catch (NotFoundException e) {
-      buildResponse(awsServices, output, SC_NOT_FOUND, Collections.emptyMap(),
-          new ApiResponseError(e.getMessage()));
     } catch (ConflictException e) {
       buildResponse(awsServices, output, SC_METHOD_CONFLICT, Collections.emptyMap(),
           new ApiResponseError(e.getMessage()));
@@ -514,14 +514,49 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
       buildResponse(awsServices, output, SC_BAD_REQUEST, Collections.emptyMap(),
           new ApiResponseError(e.errors()));
     } catch (Exception e) {
-      logger.error(e);
 
-      buildResponse(awsServices, output, SC_ERROR, Collections.emptyMap(),
-          new ApiResponseError("Internal Server Error"));
+      ApiResponseStatus status = buildStatus(e);
+      if (SC_ERROR == status) {
+        logger.error(e);
+      }
+
+      String message = buildErrorMessage(e);
+      buildResponse(awsServices, output, status, Collections.emptyMap(),
+          new ApiResponseError(message));
 
     } finally {
       ApiAuthorization.logout();
     }
+  }
+
+  private ApiResponseStatus buildStatus(final Exception e) {
+    return switch (e.getClass().getName()) {
+      case "com.formkiq.aws.dynamodb.DynamoDbQueryException" -> SC_BAD_REQUEST;
+      case "com.formkiq.aws.services.lambda.exceptions.NotFoundException",
+          "com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException" ->
+        SC_NOT_FOUND;
+      default -> SC_ERROR;
+    };
+  }
+
+
+  private String buildErrorMessage(final Exception e) {
+
+    return switch (e.getClass().getName()) {
+      case "com.formkiq.aws.dynamodb.DynamoDbQueryException" -> {
+        if (e instanceof DynamoDbQueryException ee) {
+          yield switch (ee.getError()) {
+            case INVALID_START_KEY -> "Invalid Next token";
+            default -> "Invalid query";
+          };
+        }
+        yield "Unknown error";
+      }
+      case "com.formkiq.aws.services.lambda.exceptions.NotFoundException",
+          "com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException" ->
+        e.getMessage();
+      default -> "Internal Server Error";
+    };
   }
 
   private ApiAuthorization buildApiAuthorization(final ApiGatewayRequestEvent event,

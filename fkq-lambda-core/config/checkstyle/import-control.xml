@@ -39,7 +39,11 @@
 			<allow pkg="java.text" />
 			<allow pkg="software.amazon.awssdk.services.dynamodb" />
 		</subpackage>
-		
+
+		<subpackage name="eventsourcing">
+			<allow pkg="com.formkiq.module.eventsourcing.adapters" />
+			<allow pkg="com.formkiq.module.eventsourcing.commands" />
+		</subpackage>
 	</subpackage>
 	
 </import-control>

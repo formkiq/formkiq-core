@@ -42,6 +42,9 @@ public class DynamoDbQueryBuilder implements DbKeys {
   private String indexName;
   /** Projection Expression. */
   private String projectionExpression;
+
+  bf562eb8 (#372 - Added Entity Types endpoints)
+
   /** {@link Map} of Expression Attribute Names. */
   private final Map<String, String> expressionAttributeNames = new HashMap<>();
   /** {@link Map} of Expression Attribute Values. */
@@ -62,7 +65,7 @@ public class DynamoDbQueryBuilder implements DbKeys {
 
   /**
    * Create a new builder.
-   *
+   * 
    * @return builder instance
    */
   public static DynamoDbQueryBuilder builder() {
@@ -70,8 +73,9 @@ public class DynamoDbQueryBuilder implements DbKeys {
   }
 
   /**
-   * Sets the GSI index name to query; omit for primary index.
+   * Sets the GSI index name to query; omit for primary index. <<<<<<< HEAD
    *
+   * 
    * @param dbIndexName GSI name
    * @return this builder
    */
@@ -91,8 +95,6 @@ public class DynamoDbQueryBuilder implements DbKeys {
     return this;
   }
 
-
-
   private String addName(final String name) {
     String placeholder = "#" + name;
     expressionAttributeNames.put(placeholder, name);
@@ -106,9 +108,10 @@ public class DynamoDbQueryBuilder implements DbKeys {
   }
 
   /**
-   * Adds an equality condition on PK.
+   * Adds an equality condition on PK. <<<<<<< HEAD
    *
    * @param value partition key value
+   * 
    * @return this builder
    */
   public DynamoDbQueryBuilder pk(final String value) {
@@ -133,7 +136,7 @@ public class DynamoDbQueryBuilder implements DbKeys {
 
   /**
    * Adds a BETWEEN condition on SK.
-   *
+   * 
    * @param low lower bound
    * @param high upper bound
    * @return this builder
@@ -159,7 +162,7 @@ public class DynamoDbQueryBuilder implements DbKeys {
 
   /**
    * Set Start Key from Next token.
-   *
+   * 
    * @param exclusiveStartKey {@link Map}
    * @return this builder
    */
@@ -182,14 +185,14 @@ public class DynamoDbQueryBuilder implements DbKeys {
   /**
    * Set Start Key from Next token.
    *
-   * @param resultsLimit {@link String}
+   * @param s {@link String}
    * @return this builder
    */
-  public DynamoDbQueryBuilder limit(final String resultsLimit) {
+  public DynamoDbQueryBuilder limit(final String s) {
 
-    if (resultsLimit != null) {
+    if (s != null) {
       try {
-        this.limit = Integer.parseInt(resultsLimit);
+        this.limit = Integer.parseInt(s);
       } catch (NumberFormatException e) {
         this.limit = MAX_RESULTS;
       }

@@ -31,18 +31,18 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * Unit Test for {@link AttributeValueToMap}.
  */
 public class AttributeValueToMapTest {
 
-  /** {@link AttributeValueToMap}. */
-  private final AttributeValueToMap av = new AttributeValueToMap();
-
   @Test
   void testApply01() {
     // given
+    AttributeValueToMap av = new AttributeValueToMap();
+
     Map<String, AttributeValue> map = Map.of("contentType", AttributeValue.fromS("text/plain"),
         "contentLength", AttributeValue.fromN("38"), "ids",
         AttributeValue.fromL(List.of(AttributeValue.fromS("123"), AttributeValue.fromS("444"))));
@@ -54,6 +54,28 @@ public class AttributeValueToMapTest {
     final int expected = 3;
     assertEquals(expected, result.size());
     assertEquals("text/plain", result.get("contentType"));
+    assertEquals("38", Objects.formatDouble((Double) result.get("contentLength")));
+    assertEquals("[123, 444]", result.get("ids").toString());
+  }
+
+  @Test
+  void testApply02() {
+    // given
+    AttributeValueToMapConfig config =
+        AttributeValueToMapConfig.builder().addRenameKeys("contentType", "contentType2").build();
+    AttributeValueToMap av = new AttributeValueToMap(config);
+    Map<String, AttributeValue> map = Map.of("contentType", AttributeValue.fromS("text/plain"),
+        "contentLength", AttributeValue.fromN("38"), "ids",
+        AttributeValue.fromL(List.of(AttributeValue.fromS("123"), AttributeValue.fromS("444"))));
+
+    // when
+    Map<String, Object> result = av.apply(map);
+
+    // then
+    final int expected = 3;
+    assertEquals(expected, result.size());
+    assertNull(result.get("contentType"));
+    assertEquals("text/plain", result.get("contentType2"));
     assertEquals("38", Objects.formatDouble((Double) result.get("contentLength")));
     assertEquals("[123, 444]", result.get("ids").toString());
   }
