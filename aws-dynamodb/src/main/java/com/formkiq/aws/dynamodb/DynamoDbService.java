@@ -74,6 +74,14 @@ public interface DynamoDbService {
   boolean deleteItem(Map<String, AttributeValue> key);
 
   /**
+   * Delete DynamoDb Record.
+   *
+   * @param key {@link DynamoDbKey}
+   * @return boolean
+   */
+  boolean deleteItem(DynamoDbKey key);
+
+  /**
    * Delete Items.
    * 
    * @param attrs {@link Collection} {@link Map} {@link AttributeValue}
@@ -115,6 +123,14 @@ public interface DynamoDbService {
    * @return boolean
    */
   boolean exists(DynamoDbKey key);
+
+  /**
+   * Whether the {@link QueryRequest} returns a result.
+   *
+   * @param query {@link QueryRequest}
+   * @return boolean
+   */
+  boolean exists(QueryRequest query);
 
   /**
    * Gets DynamoDB Record.

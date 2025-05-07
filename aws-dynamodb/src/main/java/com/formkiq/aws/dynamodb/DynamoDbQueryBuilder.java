@@ -40,6 +40,8 @@ public class DynamoDbQueryBuilder implements DbKeys {
   private static final int MAX_RESULTS = 10;
   /** Index Name. */
   private String indexName;
+  /** Projection Expression. */
+  private String projectionExpression;
   /** {@link Map} of Expression Attribute Names. */
   private final Map<String, String> expressionAttributeNames = new HashMap<>();
   /** {@link Map} of Expression Attribute Values. */
@@ -75,6 +77,19 @@ public class DynamoDbQueryBuilder implements DbKeys {
     this.indexName = dbIndexName;
     return this;
   }
+
+  /**
+   * Sets the GSI index name to query; omit for primary index.
+   *
+   * @param queryProjectionExpression {@link String}
+   * @return this builder
+   */
+  public DynamoDbQueryBuilder projectionExpression(final String queryProjectionExpression) {
+    this.projectionExpression = queryProjectionExpression;
+    return this;
+  }
+
+
 
   private String addName(final String name) {
     String placeholder = "#" + name;
@@ -193,6 +208,7 @@ public class DynamoDbQueryBuilder implements DbKeys {
     QueryRequest.Builder req =
         QueryRequest.builder().tableName(tableName).keyConditionExpression(keyConditions.toString())
             .expressionAttributeNames(expressionAttributeNames)
+            .projectionExpression(projectionExpression)
             .expressionAttributeValues(expressionAttributeValues).exclusiveStartKey(startKey)
             .limit(limit);
 

@@ -152,6 +152,14 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
   }
 
   @Override
+  public boolean deleteItem(final DynamoDbKey key) {
+    Map<String, AttributeValue> sourceKey = Map.of(PK, fromS(key.pk()), SK, fromS(key.sk()));
+    DeleteItemResponse response = this.dbClient.deleteItem(DeleteItemRequest.builder()
+        .tableName(this.tableName).key(sourceKey).returnValues(ReturnValue.ALL_OLD).build());
+    return !response.attributes().isEmpty();
+  }
+
+  @Override
   public boolean deleteItems(final Collection<Map<String, AttributeValue>> attrs) {
 
     boolean deleted = false;
@@ -237,6 +245,12 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
             .tableName(this.tableName).projectionExpression("PK").build();
     GetItemResponse response = this.dbClient.getItem(r);
     return !response.item().isEmpty();
+  }
+
+  @Override
+  public boolean exists(final QueryRequest query) {
+    QueryResponse response = this.dbClient.query(query);
+    return !response.items().isEmpty();
   }
 
   @Override
