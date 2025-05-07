@@ -6432,6 +6432,22 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+            delete:
+              operationId: DeleteEntityType
+              description: Deletes Entity Type
+              summary: Deletes Entity Type
+              tags:
+              - Entity
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/entityTypeIdParam'
+              responses:
+                "200":
+                  $ref: '#/components/responses/200CorsDeleteResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /entities/{entityTypeId}:
             get:
               operationId: GetEntities
@@ -6528,6 +6544,23 @@
                     application/json:
                       schema:
                         $ref: '#/components/schemas/GetEntityResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+            delete:
+              operationId: DeleteEntity
+              description: Deletes Entity
+              summary: Deletes Entity
+              tags:
+              - Entity
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/entityTypeIdParam'
+              - $ref: '#/components/parameters/entityIdParam'
+              responses:
+                "200":
+                  $ref: '#/components/responses/200CorsDeleteResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -12186,18 +12219,16 @@
                   description: The view URL to be navigated to complete DocuSign signing
           securitySchemes:
             ApiAuthorization:
-              type: apiKey
-              name: Authorization
-              in: header
-              x-amazon-apigateway-authtype: Custom API Key
+              type: oauth2
+              flows: {}
               x-amazon-apigateway-authorizer:
+                type: jwt
+                jwtConfiguration:
+                  issuer:
+                    Fn::Sub: https://cognito-idp.${AWS::Region}.amazonaws.com/${CognitoUserPool}
+                  audience:
+                  - Fn::Sub: ${CognitoUserPoolClient}
                 identitySource: $request.header.Authorization
-                authorizerUri:
-                  Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ApiKeyAuthorizer.Arn}/invocations
-                authorizerResultTtlInSeconds: 300
-                authorizerPayloadFormatVersion: "2.0"
-                enableSimpleResponses: true
-                type: request
           x-amazon-apigateway-integrations:
             lambdaApi200:
               uri:

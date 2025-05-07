@@ -72,8 +72,8 @@ public class EntitiesRequestHandler
 
     if (!Strings.isUuid(entityTypeId)) {
       String namespace = event.getQueryStringParameter("namespace");
-      entityTypeId =
-          new EntityTypeNameToId().findEntityTypeId(awsservice, siteId, entityTypeId, namespace);
+      entityTypeId = new EntityTypeNameToIdTransformer().findEntityTypeId(awsservice, siteId,
+          entityTypeId, namespace);
     }
 
     String tableName = awsservice.environment("DOCUMENTS_TABLE");

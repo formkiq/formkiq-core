@@ -27,12 +27,12 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.AttributeValueToMap;
 import com.formkiq.aws.dynamodb.AttributeValueToMapConfig;
 import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.eventsourcing.DynamoDbKey;
 import com.formkiq.aws.dynamodb.eventsourcing.entity.EntityRecord;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -62,8 +62,8 @@ public class EntityRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
 
     if (!Strings.isUuid(entityTypeId)) {
       String namespace = event.getQueryStringParameter("namespace");
-      entityTypeId =
-          new EntityTypeNameToId().findEntityTypeId(awsservice, siteId, entityTypeId, namespace);
+      entityTypeId = new EntityTypeNameToIdTransformer().findEntityTypeId(awsservice, siteId,
+          entityTypeId, namespace);
     }
 
     EntityRecord.Builder builder =
@@ -78,11 +78,31 @@ public class EntityRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
     AttributeValueToMapConfig config = AttributeValueToMapConfig.builder().removeDbKeys(true)
         .addRenameKeys("documentId", "entityId").build();
     Map<String, Object> values = new AttributeValueToMap(config).apply(attributes);
-    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(Map.of("entity", values)));
+    return ApiRequestHandlerResponse.builder().status(SC_OK).data("entity", values).build();
   }
 
   @Override
   public String getRequestUrl() {
     return "/entities/{entityTypeId}/{entityId}";
+  }
+
+  @Override
+  public ApiRequestHandlerResponse delete(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
+
+    String siteId = authorization.getSiteId();
+    String entityTypeId = event.getPathParameter("entityTypeId");
+    String entityId = event.getPathParameter("entityId");
+
+    DynamoDbKey key = EntityRecord.builder().documentId(entityId).entityTypeId(entityTypeId)
+        .name("").build(siteId).key();
+
+    DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
+    if (!db.deleteItem(key)) {
+      throw new NotFoundException("entity '" + entityTypeId + "' not found");
+    }
+
+    return ApiRequestHandlerResponse.builder().status(SC_OK).data("message", "Entity deleted")
+        .build();
   }
 }

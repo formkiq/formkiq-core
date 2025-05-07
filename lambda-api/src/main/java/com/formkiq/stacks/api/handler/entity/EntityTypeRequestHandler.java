@@ -29,12 +29,12 @@ import com.formkiq.aws.dynamodb.AttributeValueToMapConfig;
 import com.formkiq.aws.dynamodb.DynamoDbQueryBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.eventsourcing.DynamoDbKey;
+import com.formkiq.aws.dynamodb.eventsourcing.entity.EntityRecord;
 import com.formkiq.aws.dynamodb.eventsourcing.entity.EntityTypeRecord;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -47,6 +47,7 @@ import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 import java.util.Map;
 
 import static com.formkiq.aws.dynamodb.DbKeys.GSI1;
+import static com.formkiq.aws.dynamodb.DbKeys.PK;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
 /** {@link ApiGatewayRequestHandler} for "/entityTypes/{entityTypeId}". */
@@ -83,7 +84,7 @@ public class EntityTypeRequestHandler
     AttributeValueToMapConfig config = AttributeValueToMapConfig.builder().removeDbKeys(true)
         .addRenameKeys("documentId", "entityTypeId").build();
     Map<String, Object> values = new AttributeValueToMap(config).apply(attributes);
-    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(Map.of("entityType", values)));
+    return ApiRequestHandlerResponse.builder().status(SC_OK).data("entityType", values).build();
   }
 
   private void updateBuilderFromEntityName(final ApiGatewayRequestEvent event,
@@ -118,5 +119,42 @@ public class EntityTypeRequestHandler
   @Override
   public String getRequestUrl() {
     return "/entityTypes/{entityTypeId}";
+  }
+
+  @Override
+  public ApiRequestHandlerResponse delete(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
+
+    String siteId = authorization.getSiteId();
+    String entityTypeId = event.getPathParameter("entityTypeId");
+
+    validateDelete(awsservice, siteId, entityTypeId);
+
+    DynamoDbKey entityTypeKey = EntityTypeRecord.builder().documentId(entityTypeId).namespace("")
+        .name("").build(siteId).key();
+
+    DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
+    if (!db.deleteItem(entityTypeKey)) {
+      throw new NotFoundException("entityType '" + entityTypeId + "' not found");
+    }
+
+    return ApiRequestHandlerResponse.builder().status(SC_OK).data("message", "EntityType deleted")
+        .build();
+  }
+
+  private void validateDelete(final AwsServiceCache awsservice, final String siteId,
+      final String entityTypeId) throws ValidationException {
+    DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
+    EntityRecord entity =
+        EntityRecord.builder().entityTypeId(entityTypeId).documentId("").name("").build(siteId);
+    DynamoDbKey key = entity.key();
+
+    String tableName = awsservice.environment("DOCUMENTS_TABLE");
+    QueryRequest q = DynamoDbQueryBuilder.builder().projectionExpression(PK).indexName(GSI1)
+        .pk(key.gsi1Pk()).beginsWith(key.gsi1Sk()).limit("1").build(tableName);
+
+    ValidationBuilder vb = new ValidationBuilder();
+    vb.isRequired("entityId", !db.exists(q), "Entities attached to Entity type");
+    vb.check();
   }
 }

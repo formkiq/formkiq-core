@@ -26,6 +26,7 @@ package com.formkiq.validation;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * Validation Builder.
@@ -60,9 +61,19 @@ public class ValidationBuilder {
    * @param value boolean
    */
   public void isRequired(final String key, final boolean value) {
+    isRequired(key, value, "'" + key + "' is invalid");
+  }
+
+  /**
+   * Validate Field is required.
+   *
+   * @param key {@link String}
+   * @param value boolean
+   * @param errorMessage {@link String}
+   */
+  public void isRequired(final String key, final boolean value, final String errorMessage) {
     if (!value) {
-      String error = "'" + key + "' is invalid";
-      errors.add(new ValidationErrorImpl().key(key).error(error));
+      errors.add(new ValidationErrorImpl().key(key).error(errorMessage));
     }
   }
 
@@ -83,7 +94,7 @@ public class ValidationBuilder {
    * @param expectedValues {@link List} {@link String}
    */
   public void isEquals(final String key, final String value, final List<String> expectedValues) {
-    if (errors.isEmpty() && !expectedValues.contains(value)) {
+    if (!expectedValues.contains(value)) {
       String error = "'" + key + "' unexpected value '" + value + "' must be one of "
           + String.join(", ", expectedValues);
       errors.add(new ValidationErrorImpl().key(key).error(error));
@@ -98,7 +109,22 @@ public class ValidationBuilder {
    * @param expectedValue {@link String}
    */
   public void isEquals(final String key, final String value, final String expectedValue) {
-    if (errors.isEmpty() && !value.equals(expectedValue)) {
+    if (!value.equals(expectedValue)) {
+      String error = "'" + key + "' unexpected value '" + value + "'";
+      errors.add(new ValidationErrorImpl().key(key).error(error));
+    }
+  }
+
+  /**
+   * Is value valid by regex.
+   * 
+   * @param key {@link String}
+   * @param value {@link String}
+   * @param regex {@link String}
+   */
+  public void isValidByRegex(final String key, final String value, final String regex) {
+    Pattern pattern = Pattern.compile(regex);
+    if (!pattern.matcher(value).matches()) {
       String error = "'" + key + "' unexpected value '" + value + "'";
       errors.add(new ValidationErrorImpl().key(key).error(error));
     }

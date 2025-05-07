@@ -35,7 +35,7 @@ import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 
 import static com.formkiq.aws.dynamodb.DbKeys.GSI1;
 
-public class EntityTypeNameToId {
+public class EntityTypeNameToIdTransformer {
 
   /**
    * Find Entity Type Id.

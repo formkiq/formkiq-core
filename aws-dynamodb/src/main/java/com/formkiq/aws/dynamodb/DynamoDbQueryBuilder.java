@@ -42,9 +42,6 @@ public class DynamoDbQueryBuilder implements DbKeys {
   private String indexName;
   /** Projection Expression. */
   private String projectionExpression;
-
-  bf562eb8 (#372 - Added Entity Types endpoints)
-
   /** {@link Map} of Expression Attribute Names. */
   private final Map<String, String> expressionAttributeNames = new HashMap<>();
   /** {@link Map} of Expression Attribute Values. */
