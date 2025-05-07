@@ -30,6 +30,7 @@ import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddEntityType;
 import com.formkiq.client.model.AddEntityTypeRequest;
 import com.formkiq.client.model.AddEntityTypeResponse;
+import com.formkiq.client.model.DeleteResponse;
 import com.formkiq.client.model.EntityType;
 import com.formkiq.client.model.EntityTypeNamespace;
 import com.formkiq.client.model.GetEntityTypeResponse;
@@ -111,7 +112,7 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
       setBearerToken(new String[] {siteId});
 
       AddEntityTypeRequest req = new AddEntityTypeRequest()
-          .entityType(new AddEntityType().name("myentity").namespace(EntityTypeNamespace.PRESET));
+          .entityType(new AddEntityType().name("Myentity").namespace(EntityTypeNamespace.PRESET));
 
       // when
       try {
@@ -126,7 +127,6 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
     }
   }
 
-
   /**
    * Post /entityTypes CUSTOM.
    *
@@ -139,7 +139,7 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
       setBearerToken(new String[] {siteId});
 
       AddEntityTypeRequest req = new AddEntityTypeRequest()
-          .entityType(new AddEntityType().name("myentity").namespace(EntityTypeNamespace.CUSTOM));
+          .entityType(new AddEntityType().name("Myentity").namespace(EntityTypeNamespace.CUSTOM));
 
       // when
       AddEntityTypeResponse response = this.entityApi.addEntityType(req, siteId);
@@ -150,7 +150,33 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
       GetEntityTypeResponse resp = this.entityApi.getEntityType(response.getEntityTypeId(), siteId,
           EntityTypeNamespace.CUSTOM.name());
       assertNotNull(resp.getEntityType());
-      assertEntityTypeEquals(resp.getEntityType(), "myentity");
+      assertEntityTypeEquals(resp.getEntityType(), "Myentity");
+    }
+  }
+
+  /**
+   * Post /entityTypes with invalid name.
+   *
+   */
+  @Test
+  public void testAddEntityTypes05() {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      setBearerToken(new String[] {siteId});
+
+      AddEntityTypeRequest req = new AddEntityTypeRequest()
+          .entityType(new AddEntityType().name("da entity").namespace(EntityTypeNamespace.CUSTOM));
+
+      // when
+      try {
+        this.entityApi.addEntityType(req, siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"errors\":[{\"key\":\"name\","
+            + "\"error\":\"'name' unexpected value 'da entity'\"}]}", e.getResponseBody());
+      }
     }
   }
 
@@ -168,7 +194,7 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
 
       for (int i = 0; i < count; i++) {
         AddEntityTypeRequest req = new AddEntityTypeRequest().entityType(
-            new AddEntityType().name("myentity_" + i).namespace(EntityTypeNamespace.CUSTOM));
+            new AddEntityType().name("Myentity" + i).namespace(EntityTypeNamespace.CUSTOM));
         this.entityApi.addEntityType(req, siteId);
       }
 
@@ -183,8 +209,8 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
 
       List<EntityType> entityTypes = notNull(response.getEntityTypes());
       assertEquals(2, entityTypes.size());
-      assertEntityTypeEquals(entityTypes.get(0), "myentity_0");
-      assertEntityTypeEquals(entityTypes.get(1), "myentity_1");
+      assertEntityTypeEquals(entityTypes.get(0), "Myentity0");
+      assertEntityTypeEquals(entityTypes.get(1), "Myentity1");
 
       // when
       response = this.entityApi.getEntityTypes(siteId, "CUSTOM", response.getNext(), limit);
@@ -192,8 +218,8 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
       // then
       entityTypes = notNull(response.getEntityTypes());
       assertEquals(2, entityTypes.size());
-      assertEntityTypeEquals(entityTypes.get(0), "myentity_2");
-      assertEntityTypeEquals(entityTypes.get(1), "myentity_3");
+      assertEntityTypeEquals(entityTypes.get(0), "Myentity2");
+      assertEntityTypeEquals(entityTypes.get(1), "Myentity3");
 
       // invalid NEXT token
       try {
@@ -265,16 +291,16 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
     setBearerToken(new String[] {DEFAULT_SITE_ID});
 
     AddEntityTypeRequest req = new AddEntityTypeRequest()
-        .entityType(new AddEntityType().name("company").namespace(EntityTypeNamespace.CUSTOM));
+        .entityType(new AddEntityType().name("Company").namespace(EntityTypeNamespace.CUSTOM));
     this.entityApi.addEntityType(req, null);
 
     // when
     GetEntityTypeResponse entityType =
-        this.entityApi.getEntityType("company", DEFAULT_SITE_ID, EntityTypeNamespace.CUSTOM.name());
+        this.entityApi.getEntityType("Company", DEFAULT_SITE_ID, EntityTypeNamespace.CUSTOM.name());
 
     // then
     assertNotNull(entityType.getEntityType());
-    assertEntityTypeEquals(entityType.getEntityType(), "company");
+    assertEntityTypeEquals(entityType.getEntityType(), "Company");
   }
 
   /**
@@ -307,6 +333,54 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
       assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
       assertEquals("{\"errors\":[{\"key\":\"namespace\","
           + "\"error\":\"'namespace' unexpected value 'adsaf'\"}]}", e.getResponseBody());
+    }
+  }
+
+  /**
+   * DELETE /entityTypes/{entityTypeId}.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testDeleteEntityTypes01() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      setBearerToken(new String[] {siteId});
+
+      AddEntityTypeRequest req = new AddEntityTypeRequest()
+          .entityType(new AddEntityType().name("Myentity").namespace(EntityTypeNamespace.CUSTOM));
+      AddEntityTypeResponse response = this.entityApi.addEntityType(req, siteId);
+      assertNotNull(response.getEntityTypeId());
+
+      // when
+      DeleteResponse deleteResponse =
+          this.entityApi.deleteEntityType(response.getEntityTypeId(), siteId);
+
+      // then
+      assertEquals("EntityType deleted", deleteResponse.getMessage());
+    }
+  }
+
+  /**
+   * DELETE /entityTypes/{entityTypeId} not found.
+   *
+   */
+  @Test
+  public void testDeleteEntityTypes02() {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      setBearerToken(new String[] {siteId});
+      String id = ID.uuid();
+
+      // when
+      try {
+        this.entityApi.deleteEntityType(id, siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
+        assertEquals("{\"message\":\"entityType '" + id + "' not found\"}", e.getResponseBody());
+      }
     }
   }
 

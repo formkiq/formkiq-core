@@ -32,6 +32,7 @@ import com.formkiq.client.model.AddEntityRequest;
 import com.formkiq.client.model.AddEntityResponse;
 import com.formkiq.client.model.AddEntityType;
 import com.formkiq.client.model.AddEntityTypeRequest;
+import com.formkiq.client.model.DeleteResponse;
 import com.formkiq.client.model.Entity;
 import com.formkiq.client.model.EntityTypeNamespace;
 import com.formkiq.client.model.GetEntitiesResponse;
@@ -64,7 +65,7 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
       String entityTypeId =
           this.entityApi.addEntityType(
               new AddEntityTypeRequest().entityType(
-                  new AddEntityType().name("company").namespace(EntityTypeNamespace.CUSTOM)),
+                  new AddEntityType().name("Company").namespace(EntityTypeNamespace.CUSTOM)),
               siteId).getEntityTypeId();
       assertNotNull(entityTypeId);
 
@@ -97,7 +98,7 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
       String entityTypeId =
           this.entityApi.addEntityType(
               new AddEntityTypeRequest().entityType(
-                  new AddEntityType().name("company").namespace(EntityTypeNamespace.CUSTOM)),
+                  new AddEntityType().name("Company").namespace(EntityTypeNamespace.CUSTOM)),
               siteId).getEntityTypeId();
       assertNotNull(entityTypeId);
 
@@ -156,7 +157,7 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
       String entityTypeId =
           this.entityApi.addEntityType(
               new AddEntityTypeRequest().entityType(
-                  new AddEntityType().name("company").namespace(EntityTypeNamespace.CUSTOM)),
+                  new AddEntityType().name("Company").namespace(EntityTypeNamespace.CUSTOM)),
               siteId).getEntityTypeId();
       assertNotNull(entityTypeId);
 
@@ -189,7 +190,7 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
       assertEntityEquals(entityTypes.get(1), "myentity_3");
 
       // when
-      response = this.entityApi.getEntities("company", siteId, "CUSTOM", null, limit);
+      response = this.entityApi.getEntities("Company", siteId, "CUSTOM", null, limit);
 
       // then
       entityTypes = notNull(response.getEntities());
@@ -202,7 +203,7 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
    *
    */
   @Test
-  public void testGetEntityTypes02() {
+  public void testGetEntity02() {
     // given
     String id = ID.uuid();
     setBearerToken(new String[] {DEFAULT_SITE_ID});
@@ -232,7 +233,7 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
       String entityTypeId =
           this.entityApi.addEntityType(
               new AddEntityTypeRequest().entityType(
-                  new AddEntityType().name("company").namespace(EntityTypeNamespace.CUSTOM)),
+                  new AddEntityType().name("Company").namespace(EntityTypeNamespace.CUSTOM)),
               siteId).getEntityTypeId();
       assertNotNull(entityTypeId);
 
@@ -240,7 +241,7 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
       String entityId = this.entityApi.addEntity(entityTypeId, req, siteId).getEntityId();
       assertNotNull(entityId);
 
-      for (String entityType : List.of(entityTypeId, "company")) {
+      for (String entityType : List.of(entityTypeId, "Company")) {
         // when
         GetEntityResponse response =
             this.entityApi.getEntity(entityType, entityId, siteId, "CUSTOM");
@@ -249,6 +250,53 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
         assertNotNull(response.getEntity());
         assertEntityEquals(response.getEntity(), "myentity");
       }
+    }
+  }
+
+  /**
+   * DELETE /entities/{entityTypeId}/{entityId}.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testDeleteEntity01() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      setBearerToken(new String[] {siteId});
+
+      String entityTypeId =
+          this.entityApi.addEntityType(
+              new AddEntityTypeRequest().entityType(
+                  new AddEntityType().name("Company").namespace(EntityTypeNamespace.CUSTOM)),
+              siteId).getEntityTypeId();
+      assertNotNull(entityTypeId);
+
+      AddEntityRequest req = new AddEntityRequest().entity(new AddEntity().name("myentity"));
+      String entityId = this.entityApi.addEntity(entityTypeId, req, siteId).getEntityId();
+      assertNotNull(entityId);
+
+      // when
+      try {
+        this.entityApi.deleteEntityType(entityTypeId, siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"errors\":[{\"key\":\"entityId\","
+            + "\"error\":\"Entities attached to Entity type\"}]}", e.getResponseBody());
+      }
+
+      // when
+      DeleteResponse deleteResponse = this.entityApi.deleteEntity(entityTypeId, entityId, siteId);
+
+      // then
+      assertEquals("Entity deleted", deleteResponse.getMessage());
+
+      // when
+      deleteResponse = this.entityApi.deleteEntityType(entityTypeId, siteId);
+
+      // then
+      assertEquals("EntityType deleted", deleteResponse.getMessage());
     }
   }
 

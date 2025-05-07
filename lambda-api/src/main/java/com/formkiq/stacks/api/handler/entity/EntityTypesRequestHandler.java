@@ -36,7 +36,6 @@ import com.formkiq.aws.dynamodb.eventsourcing.entity.EntityTypeRecord;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -124,8 +123,8 @@ public class EntityTypesRequestHandler
     Map<String, AttributeValue> attributes = entityType.getAttributes();
     awsservice.getExtension(DynamoDbService.class).putItem(attributes);
 
-    return new ApiRequestHandlerResponse(SC_OK,
-        new ApiMapResponse(Map.of("entityTypeId", entityType.documentId())));
+    return ApiRequestHandlerResponse.builder().status(SC_OK)
+        .data("entityTypeId", entityType.documentId()).build();
   }
 
   private void validate(final AddEntityTypeRequest request)
@@ -139,6 +138,7 @@ public class EntityTypesRequestHandler
     vb.isRequired("namespace", request.getEntityType().getNamespace());
     vb.check();
 
+    vb.isValidByRegex("name", request.getEntityType().getName(), "^[A-Z][A-Za-z0-9]+$");
     vb.isEquals("namespace", request.getEntityType().getNamespace(), "CUSTOM");
     vb.check();
   }
