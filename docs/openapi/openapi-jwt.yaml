@@ -6432,6 +6432,22 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+            delete:
+              operationId: DeleteEntityType
+              description: Deletes Entity Type
+              summary: Deletes Entity Type
+              tags:
+              - Entity
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/entityTypeIdParam'
+              responses:
+                "200":
+                  $ref: '#/components/responses/200CorsDeleteResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /entities/{entityTypeId}:
             get:
               operationId: GetEntities
@@ -6528,6 +6544,23 @@
                     application/json:
                       schema:
                         $ref: '#/components/schemas/GetEntityResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+            delete:
+              operationId: DeleteEntity
+              description: Deletes Entity
+              summary: Deletes Entity
+              tags:
+              - Entity
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/entityTypeIdParam'
+              - $ref: '#/components/parameters/entityIdParam'
+              responses:
+                "200":
+                  $ref: '#/components/responses/200CorsDeleteResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
