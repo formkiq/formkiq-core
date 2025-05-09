@@ -21,64 +21,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api.handler.entity;
-
-import com.formkiq.graalvm.annotations.Reflectable;
+package com.formkiq.aws.dynamodb.eventsourcing.entity;
 
 import java.util.List;
+import java.util.function.Function;
 
 /**
- * Add Entity Type.
+ * {@link Function} to transform {@link EntityAttribute} to {@link Object}.
  */
-@Reflectable
-public class AddEntity {
-  /** Entity Name. */
-  private String name;
-  /** {@link List} {@link AddEntityAttribute}. */
-  private List<AddEntityAttribute> attributes;
+public class EntityAttributeToObjectTransformer implements Function<EntityAttribute, Object> {
 
-  /**
-   * constructor.
-   */
-  public AddEntity() {}
+  @Override
+  public Object apply(final EntityAttribute attribute) {
 
-  /**
-   * Get {@link AddEntityAttribute}.
-   * 
-   * @return List {@link AddEntityAttribute}
-   */
-  public List<AddEntityAttribute> getAttributes() {
-    return attributes;
+    Object obj = null;
+
+    if (attribute.getStringValues() != null && !attribute.getStringValues().isEmpty()) {
+      obj = toObject(attribute.getStringValues());
+    } else if (attribute.getNumberValues() != null && !attribute.getNumberValues().isEmpty()) {
+      obj = toObject(attribute.getNumberValues());
+    } else if (attribute.getBooleanValue() != null) {
+      obj = attribute.getBooleanValue();
+    }
+
+    return obj;
   }
 
-  /**
-   * Set {@link AddEntityAttribute}.
-   * 
-   * @param entityAttributes {@link List} {@link AddEntityAttribute}
-   * @return AddEntity
-   */
-  public AddEntity setAttributes(final List<AddEntityAttribute> entityAttributes) {
-    this.attributes = entityAttributes;
-    return this;
-  }
-
-  /**
-   * Get Group Name.
-   * 
-   * @return String
-   */
-  public String getName() {
-    return this.name;
-  }
-
-  /**
-   * Set Group Name.
-   * 
-   * @param groupName {@link String}
-   * @return AddEntityType
-   */
-  public AddEntity setName(final String groupName) {
-    this.name = groupName;
-    return this;
+  private Object toObject(final List<?> list) {
+    return list.size() == 1 ? list.get(0) : list;
   }
 }

@@ -23,50 +23,30 @@
  */
 package com.formkiq.aws.dynamodb;
 
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
- * Convert {@link Map} to {@link AttributeValue} {@link Map}.
- *
+ * {@link Function} that {@link Map} to an Entity {@link Map}.
  */
-public class MapToAttributeValue
-    implements Function<Map<String, Object>, Map<String, AttributeValue>> {
+public class MapToEntityMap implements Function<Map<String, Object>, Map<String, Object>> {
 
-  @Override
-  public Map<String, AttributeValue> apply(final Map<String, Object> map) {
+  /** Key Prefix. */
+  private final String prefix;
 
-    Map<String, AttributeValue> result = null;
-
-    if (map != null) {
-      result = new HashMap<>();
-      for (Map.Entry<String, Object> e : map.entrySet()) {
-        AttributeValue a = convert(e.getValue());
-        result.put(e.getKey(), a);
-      }
-    }
-
-    return result;
+  /**
+   * constructor.
+   * 
+   * @param keyPrefix {@link String}
+   */
+  public MapToEntityMap(final String keyPrefix) {
+    this.prefix = keyPrefix;
   }
 
-  private AttributeValue convert(final Object obj) {
-    AttributeValue o;
-    if (obj instanceof Double d) {
-      o = AttributeValue.fromN(String.valueOf(d));
-    } else if (obj instanceof Long l) {
-      o = AttributeValue.fromN(String.valueOf(l));
-    } else if (obj instanceof String s) {
-      o = AttributeValue.fromS(s);
-    } else if (obj instanceof Collection<?> c) {
-      o = AttributeValue.fromL(c.stream().map(this::convert).toList());
-    } else {
-      throw new IllegalArgumentException("Unsupported data type: " + obj.getClass().getName());
-    }
-
-    return o;
+  @Override
+  public Map<String, Object> apply(final Map<String, Object> map) {
+    return map.entrySet().stream().filter(e -> e.getKey().startsWith(prefix))
+        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 }
