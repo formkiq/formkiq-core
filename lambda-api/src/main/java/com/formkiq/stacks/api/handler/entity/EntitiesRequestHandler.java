@@ -32,6 +32,7 @@ import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.base64.MapAttributeValueToString;
 import com.formkiq.aws.dynamodb.eventsourcing.DynamoDbKey;
+import com.formkiq.aws.dynamodb.eventsourcing.entity.EntityAttribute;
 import com.formkiq.aws.dynamodb.eventsourcing.entity.EntityRecord;
 import com.formkiq.aws.dynamodb.eventsourcing.entity.EntityTypeRecord;
 import com.formkiq.aws.dynamodb.objects.Strings;
@@ -48,9 +49,11 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
 /** {@link ApiGatewayRequestHandler} for "/entities/{entityTypeId}". */
@@ -88,8 +91,12 @@ public class EntitiesRequestHandler
 
     AttributeValueToMapConfig config = AttributeValueToMapConfig.builder().removeDbKeys(true)
         .addRenameKeys("documentId", "entityId").build();
+
     List<Map<String, Object>> items =
         new AttributeValueListToListMap(config).apply(response.items());
+
+    items.forEach(i -> new AddEntityAttributeTransformer().apply(i));
+
     String nextToken = new MapAttributeValueToString().apply(response.lastEvaluatedKey());
 
     return ApiRequestHandlerResponse.builder().status(SC_OK).data("entities", items)
@@ -114,9 +121,11 @@ public class EntitiesRequestHandler
     validate(db, siteId, entityTypeId, request);
 
     AddEntity addEntity = request.getEntity();
+    List<EntityAttribute> entityAttributes =
+        notNull(addEntity.getAttributes()).stream().map(new AddEntityAttributeMapper()).toList();
 
     EntityRecord entity = EntityRecord.builder().documentId(ID.uuid()).name(addEntity.getName())
-        .entityTypeId(entityTypeId).build(siteId);
+        .entityTypeId(entityTypeId).attributes(entityAttributes).build(siteId);
 
     Map<String, AttributeValue> attributes = entity.getAttributes();
     db.putItem(attributes);
@@ -141,6 +150,18 @@ public class EntitiesRequestHandler
         EntityTypeRecord.builder().documentId(entityTypeId).namespace("").name("").build(siteId);
 
     vb.isRequired("entityTypeId", db.exists(entityTypeRecord.key()));
+    vb.check();
+
+    List<AddEntityAttribute> entityAttributes = notNull(request.getEntity().getAttributes());
+    entityAttributes.forEach(a -> {
+      vb.isRequired("key", a.getKey());
+
+      List<Object> values = Arrays.asList(a.getBooleanValue(), a.getNumberValue(),
+          a.getNumberValues(), a.getStringValue(), a.getStringValues());
+
+      vb.isRequiredOnlyOne(null, values, "only 1 attribute value is allowed");
+    });
+
     vb.check();
   }
 }
