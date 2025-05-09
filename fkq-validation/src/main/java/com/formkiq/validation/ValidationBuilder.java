@@ -26,6 +26,7 @@ package com.formkiq.validation;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.regex.Pattern;
 
 /**
@@ -127,6 +128,26 @@ public class ValidationBuilder {
     if (!pattern.matcher(value).matches()) {
       String error = "'" + key + "' unexpected value '" + value + "'";
       errors.add(new ValidationErrorImpl().key(key).error(error));
+    }
+  }
+
+  /**
+   * Is Only of the values not null or not empty if {@link Collection}.
+   *
+   * @param key {@link String}
+   * @param values {@link String}
+   * @param errorMessage {@link String}
+   */
+  public void isRequiredOnlyOne(final String key, final List<Object> values,
+      final String errorMessage) {
+    long objectCount =
+        values.stream().filter(Objects::nonNull).filter(c -> !(c instanceof Collection)).count();
+
+    long listCount = values.stream().filter(Objects::nonNull).filter(c -> c instanceof Collection)
+        .filter(c -> !((Collection<?>) c).isEmpty()).count();
+
+    if (objectCount + listCount != 1) {
+      errors.add(new ValidationErrorImpl().key(key).error(errorMessage));
     }
   }
 }

@@ -23,62 +23,26 @@
  */
 package com.formkiq.stacks.api.handler.entity;
 
-import com.formkiq.graalvm.annotations.Reflectable;
+import com.formkiq.aws.dynamodb.MapToEntityMap;
+import com.formkiq.aws.dynamodb.eventsourcing.entity.MapToEntityAttributeMapTransformer;
 
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 
 /**
- * Add Entity Type.
+ * {@link Function} to convert {@link Map} {@link Object} to Entity Attributes.
  */
-@Reflectable
-public class AddEntity {
-  /** Entity Name. */
-  private String name;
-  /** {@link List} {@link AddEntityAttribute}. */
-  private List<AddEntityAttribute> attributes;
+public class AddEntityAttributeTransformer implements Function<Map<String, Object>, Void> {
+  @Override
+  public Void apply(final Map<String, Object> values) {
+    Map<String, Object> entityMap = new MapToEntityMap("attr#").apply(values);
+    values.keySet().removeAll(entityMap.keySet());
 
-  /**
-   * constructor.
-   */
-  public AddEntity() {}
+    List<Map<String, Object>> attributeList =
+        new MapToEntityAttributeMapTransformer().apply(entityMap);
+    values.put("attributes", attributeList);
 
-  /**
-   * Get {@link AddEntityAttribute}.
-   * 
-   * @return List {@link AddEntityAttribute}
-   */
-  public List<AddEntityAttribute> getAttributes() {
-    return attributes;
-  }
-
-  /**
-   * Set {@link AddEntityAttribute}.
-   * 
-   * @param entityAttributes {@link List} {@link AddEntityAttribute}
-   * @return AddEntity
-   */
-  public AddEntity setAttributes(final List<AddEntityAttribute> entityAttributes) {
-    this.attributes = entityAttributes;
-    return this;
-  }
-
-  /**
-   * Get Group Name.
-   * 
-   * @return String
-   */
-  public String getName() {
-    return this.name;
-  }
-
-  /**
-   * Set Group Name.
-   * 
-   * @param groupName {@link String}
-   * @return AddEntityType
-   */
-  public AddEntity setName(final String groupName) {
-    this.name = groupName;
-    return this;
+    return null;
   }
 }

@@ -77,7 +77,10 @@ public class EntityRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
 
     AttributeValueToMapConfig config = AttributeValueToMapConfig.builder().removeDbKeys(true)
         .addRenameKeys("documentId", "entityId").build();
+
     Map<String, Object> values = new AttributeValueToMap(config).apply(attributes);
+    new AddEntityAttributeTransformer().apply(values);
+
     return ApiRequestHandlerResponse.builder().status(SC_OK).data("entity", values).build();
   }
 
