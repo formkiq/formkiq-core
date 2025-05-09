@@ -9798,6 +9798,11 @@ Resources:
                 insertedDate:
                   type: "string"
                   description: "Inserted Timestamp"
+                attributes:
+                  type: "array"
+                  description: "List of Entity Attributes"
+                  items:
+                    $ref: "#/components/schemas/EntityAttribute"
 
             AddEntityRequest:
               type: "object"
@@ -9810,7 +9815,66 @@ Resources:
               properties:
                 name:
                   type: "string"
-                  description: "Entity Type Name"
+                  description: "Entity Name"
+                attributes:
+                  type: "array"
+                  description: "List of Entity Attributes"
+                  items:
+                    $ref: "#/components/schemas/AddEntityAttribute"
+
+            AddEntityAttribute:
+              type: "object"
+              properties:
+                key:
+                  type: "string"
+                  description: "Attribute key"
+                stringValue:
+                  type: "string"
+                  description: "Attribute with string value"
+                stringValues:
+                  type: "array"
+                  description: "Attribute with string values"
+                  items:
+                    type: "string"
+                numberValue:
+                  type: "number"
+                  description: "Attribute with number value"
+                numberValues:
+                  type: "array"
+                  description: "Attribute with number values"
+                  items:
+                    type: "number"
+                booleanValue:
+                  type: "boolean"
+                  description: "Attribute with boolean value"
+
+            EntityAttribute:
+              type: "object"
+              properties:
+                key:
+                  type: "string"
+                  description: "Attribute key"
+                stringValue:
+                  type: "string"
+                  description: "Attribute with string value"
+                stringValues:
+                  type: "array"
+                  description: "Attribute with string values"
+                  items:
+                    type: "string"
+                numberValue:
+                  type: "number"
+                  description: "Attribute with number value"
+                numberValues:
+                  type: "array"
+                  description: "Attribute with number values"
+                  items:
+                    type: "number"
+                booleanValue:
+                  type: "boolean"
+                  description: "Attribute with boolean value"
+                valueType:
+                  $ref: "#/components/schemas/AttributeValueType"
 
             GetEntityTypesResponse:
               type: "object"

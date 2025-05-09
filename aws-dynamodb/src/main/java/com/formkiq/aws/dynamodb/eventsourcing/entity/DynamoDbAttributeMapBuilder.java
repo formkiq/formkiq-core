@@ -120,5 +120,11 @@ public class DynamoDbAttributeMapBuilder {
 
     return this;
   }
+
+  public void withAttributeValue(final String name, final AttributeValue value) {
+    if (value != null) {
+      attributes.put(name, value);
+    }
+  }
 }
 

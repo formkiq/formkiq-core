@@ -9704,6 +9704,11 @@
                 insertedDate:
                   type: string
                   description: Inserted Timestamp
+                attributes:
+                  type: array
+                  description: List of Entity Attributes
+                  items:
+                    $ref: '#/components/schemas/EntityAttribute'
             AddEntityRequest:
               type: object
               properties:
@@ -9714,7 +9719,64 @@
               properties:
                 name:
                   type: string
-                  description: Entity Type Name
+                  description: Entity Name
+                attributes:
+                  type: array
+                  description: List of Entity Attributes
+                  items:
+                    $ref: '#/components/schemas/AddEntityAttribute'
+            AddEntityAttribute:
+              type: object
+              properties:
+                key:
+                  type: string
+                  description: Attribute key
+                stringValue:
+                  type: string
+                  description: Attribute with string value
+                stringValues:
+                  type: array
+                  description: Attribute with string values
+                  items:
+                    type: string
+                numberValue:
+                  type: number
+                  description: Attribute with number value
+                numberValues:
+                  type: array
+                  description: Attribute with number values
+                  items:
+                    type: number
+                booleanValue:
+                  type: boolean
+                  description: Attribute with boolean value
+            EntityAttribute:
+              type: object
+              properties:
+                key:
+                  type: string
+                  description: Attribute key
+                stringValue:
+                  type: string
+                  description: Attribute with string value
+                stringValues:
+                  type: array
+                  description: Attribute with string values
+                  items:
+                    type: string
+                numberValue:
+                  type: number
+                  description: Attribute with number value
+                numberValues:
+                  type: array
+                  description: Attribute with number values
+                  items:
+                    type: number
+                booleanValue:
+                  type: boolean
+                  description: Attribute with boolean value
+                valueType:
+                  $ref: '#/components/schemas/AttributeValueType'
             GetEntityTypesResponse:
               type: object
               properties:
@@ -12219,16 +12281,18 @@
                   description: The view URL to be navigated to complete DocuSign signing
           securitySchemes:
             ApiAuthorization:
-              type: oauth2
-              flows: {}
+              type: apiKey
+              name: Authorization
+              in: header
+              x-amazon-apigateway-authtype: Custom API Key
               x-amazon-apigateway-authorizer:
-                type: jwt
-                jwtConfiguration:
-                  issuer:
-                    Fn::Sub: https://cognito-idp.${AWS::Region}.amazonaws.com/${CognitoUserPool}
-                  audience:
-                  - Fn::Sub: ${CognitoUserPoolClient}
                 identitySource: $request.header.Authorization
+                authorizerUri:
+                  Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ApiKeyAuthorizer.Arn}/invocations
+                authorizerResultTtlInSeconds: 300
+                authorizerPayloadFormatVersion: "2.0"
+                enableSimpleResponses: true
+                type: request
           x-amazon-apigateway-integrations:
             lambdaApi200:
               uri:

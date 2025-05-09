@@ -23,11 +23,15 @@
  */
 package com.formkiq.aws.dynamodb.eventsourcing.entity;
 
+import com.formkiq.aws.dynamodb.MapToAttributeValue;
 import com.formkiq.aws.dynamodb.eventsourcing.DynamoDbKey;
 import com.formkiq.aws.dynamodb.eventsourcing.DynamoDbTypes;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -35,7 +39,7 @@ import java.util.Objects;
  * Record representing an entity, with its DynamoDB key structure and metadata.
  */
 public record EntityRecord(DynamoDbKey key, String entityTypeId, String documentId, String name,
-    Date insertedDate) {
+    Date insertedDate, Map<String, AttributeValue> attributes) {
 
   /**
    * Canonical constructor to enforce non-null properties and defensive copy of Date.
@@ -59,10 +63,13 @@ public record EntityRecord(DynamoDbKey key, String entityTypeId, String document
   public static EntityRecord fromAttributeMap(final Map<String, AttributeValue> attributes) {
     Objects.requireNonNull(attributes, "attributes must not be null");
     DynamoDbKey key = DynamoDbKey.fromAttributeMap(attributes);
+
+    Map<String, AttributeValue> entityAttributes = Collections.emptyMap();
+
     return new EntityRecord(key, DynamoDbTypes.toString(attributes.get("entityTypeId")),
         DynamoDbTypes.toString(attributes.get("documentId")),
         DynamoDbTypes.toString(attributes.get("name")),
-        DynamoDbTypes.toDate(attributes.get("inserteddate")));
+        DynamoDbTypes.toDate(attributes.get("inserteddate")), entityAttributes);
   }
 
   /**
@@ -74,9 +81,15 @@ public record EntityRecord(DynamoDbKey key, String entityTypeId, String document
    * @return a Map of attribute names to {@link AttributeValue} instances
    */
   public Map<String, AttributeValue> getAttributes() {
-    return key.getAttributesBuilder().withString("entityTypeId", entityTypeId)
-        .withString("documentId", documentId).withString("name", name)
-        .withDate("inserteddate", insertedDate).build();
+    DynamoDbAttributeMapBuilder map = key.getAttributesBuilder()
+        .withString("entityTypeId", entityTypeId).withString("documentId", documentId)
+        .withString("name", name).withDate("inserteddate", insertedDate);
+
+    if (attributes != null) {
+      attributes.forEach(map::withAttributeValue);
+    }
+
+    return map.build();
   }
 
   /**
@@ -100,6 +113,19 @@ public record EntityRecord(DynamoDbKey key, String entityTypeId, String document
     private String name;
     /** Inserted Date. */
     private Date insertedDate = new Date();
+    /** Attributes. */
+    private List<EntityAttribute> attributes = new ArrayList<>();
+
+    /**
+     * Sets the entity attributes.
+     *
+     * @param entityAttributes {@link List} {@link EntityAttribute}
+     * @return this Builder
+     */
+    public Builder attributes(final List<EntityAttribute> entityAttributes) {
+      this.attributes = entityAttributes;
+      return this;
+    }
 
     /**
      * Sets the entity type identifier.
@@ -166,7 +192,11 @@ public record EntityRecord(DynamoDbKey key, String entityTypeId, String document
       Objects.requireNonNull(insertedDate, "insertedDate must not be null");
 
       DynamoDbKey key = buildKey(siteId);
-      return new EntityRecord(key, entityTypeId, documentId, name, insertedDate);
+
+      Map<String, Object> map = new EntityAttributesToMapTransformer().apply(attributes);
+
+      Map<String, AttributeValue> entityAttributes = new MapToAttributeValue().apply(map);
+      return new EntityRecord(key, entityTypeId, documentId, name, insertedDate, entityAttributes);
     }
   }
 }
