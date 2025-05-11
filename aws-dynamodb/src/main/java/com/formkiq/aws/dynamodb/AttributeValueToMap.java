@@ -103,6 +103,7 @@ public class AttributeValueToMap
       case N -> obj = Double.valueOf(val.n());
       case BOOL -> obj = val.bool();
       case L -> obj = val.l().stream().map(this::convert).toList();
+      case NUL -> obj = null;
       default -> throw new IllegalArgumentException(
           "Unsupported attribute value map conversion " + val.type());
     }

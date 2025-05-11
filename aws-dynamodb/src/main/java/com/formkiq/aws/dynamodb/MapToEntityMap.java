@@ -23,9 +23,9 @@
  */
 package com.formkiq.aws.dynamodb;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * {@link Function} that {@link Map} to an Entity {@link Map}.
@@ -46,7 +46,11 @@ public class MapToEntityMap implements Function<Map<String, Object>, Map<String,
 
   @Override
   public Map<String, Object> apply(final Map<String, Object> map) {
-    return map.entrySet().stream().filter(e -> e.getKey().startsWith(prefix))
-        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+    Map<String, Object> results = new HashMap<>();
+    map.entrySet().stream().filter(e -> e.getKey().startsWith(prefix))
+        .forEach(k -> results.put(k.getKey(), map.get(k.getKey())));
+
+    return results;
   }
 }

@@ -1,0 +1,66 @@
+/**
+ * MIT License
+ * 
+ * Copyright (c) 2018 - 2020 FormKiQ
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+package com.formkiq.stacks.api.handler.entity;
+
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.eventsourcing.entity.EntityTypeRecord;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.stacks.api.handler.entity.query.EntityTypeNameToIdQuery;
+
+import java.util.function.Function;
+
+/**
+ * {@link Function} to convert {@link ApiGatewayRequestEvent} to EntityTypeId {@link String}.
+ */
+public class EntityTypeIdTransformer implements Function<ApiGatewayRequestEvent, String> {
+
+  /** Document Table Name. */
+  private final String tableName;
+  /** {@link DynamoDbService}. */
+  private final DynamoDbService db;
+  /** Site. */
+  private final String site;
+
+  /**
+   * constructor.
+   * 
+   * @param awsservice {@link AwsServiceCache}
+   * @param siteId {@link String}
+   */
+  public EntityTypeIdTransformer(final AwsServiceCache awsservice, final String siteId) {
+    this.tableName = awsservice.environment("DOCUMENTS_TABLE");
+    this.db = awsservice.getExtension(DynamoDbService.class);
+    this.site = siteId;
+  }
+
+  @Override
+  public String apply(final ApiGatewayRequestEvent event) {
+    String namespace = event.getQueryStringParameter("namespace", "");
+    String entityTypeId = event.getPathParameter("entityTypeId");
+
+    return new EntityTypeNameToIdQuery().find(db, tableName, site, EntityTypeRecord.builder()
+        .namespace(namespace).documentId(entityTypeId).name("").build(site));
+  }
+}

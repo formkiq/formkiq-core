@@ -396,7 +396,7 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
   @Override
   public Collection<ValidationError> validateFullAttribute(
       final Collection<SchemaAttributes> schemaAttributes, final String siteId,
-      final String documentId, final Collection<DocumentAttributeRecord> documentAttributes,
+      final Collection<DocumentAttributeRecord> documentAttributes,
       final Map<String, AttributeRecord> attributesMap, final AttributeValidationAccess access) {
 
     ValidationBuilder vb = new ValidationBuilder();

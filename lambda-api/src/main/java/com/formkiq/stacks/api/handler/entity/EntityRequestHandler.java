@@ -29,15 +29,12 @@ import com.formkiq.aws.dynamodb.AttributeValueToMapConfig;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.eventsourcing.entity.EntityRecord;
-import com.formkiq.aws.dynamodb.eventsourcing.entity.EntityTypeRecord;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.api.handler.entity.query.EntityTypeNameToIdQuery;
-import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.Map;
@@ -61,7 +58,7 @@ public class EntityRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
     String entityId = event.getPathParameter("entityId");
     DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
 
-    String entityTypeId = getEntityTypeId(event, awsservice, siteId);
+    String entityTypeId = new EntityTypeIdTransformer(awsservice, siteId).apply(event);
 
     EntityRecord.Builder builder =
         EntityRecord.builder().documentId(entityId).entityTypeId(entityTypeId).name("");
@@ -79,18 +76,6 @@ public class EntityRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
     new AddEntityAttributeTransformer().apply(values);
 
     return ApiRequestHandlerResponse.builder().status(SC_OK).data("entity", values).build();
-  }
-
-  private String getEntityTypeId(final ApiGatewayRequestEvent event,
-      final AwsServiceCache awsservice, final String siteId) throws ValidationException {
-    String tableName = awsservice.environment("DOCUMENTS_TABLE");
-    String namespace = event.getQueryStringParameter("namespace", "");
-
-    String entityTypeId = event.getPathParameter("entityTypeId");
-
-    DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
-    return new EntityTypeNameToIdQuery().find(db, tableName, siteId, EntityTypeRecord.builder()
-        .namespace(namespace).documentId(entityTypeId).name("").build(siteId));
   }
 
   @Override

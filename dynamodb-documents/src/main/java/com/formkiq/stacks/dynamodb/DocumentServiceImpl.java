@@ -2494,7 +2494,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       if (errors.isEmpty()) {
         switch (validation.getValidationType()) {
           case FULL -> errors = this.attributeValidator.validateFullAttribute(schemaAttributes,
-              siteId, documentId, documentAttributes, attributeRecordMap, validationAccess);
+              siteId, documentAttributes, attributeRecordMap, validationAccess);
           case PARTIAL ->
             errors = this.attributeValidator.validatePartialAttribute(schemaAttributes, siteId,
                 documentAttributes, attributeRecordMap, validationAccess);

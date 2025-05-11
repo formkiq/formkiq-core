@@ -6549,6 +6549,47 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+            patch:
+              operationId: UpdateEntity
+              description: Updates a Entity
+              summary: Update Entity
+              tags:
+              - Entity
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/entityTypeIdParam'
+              - $ref: '#/components/parameters/entityIdParam'
+              - $ref: '#/components/parameters/namespaceParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/UpdateEntityRequest'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/UpdateResponse'
+                "400":
+                  description: 400 OK
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/ValidationErrorsResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
             delete:
               operationId: DeleteEntity
               description: Deletes Entity
@@ -9735,6 +9776,11 @@
                   items:
                     $ref: '#/components/schemas/EntityAttribute'
             AddEntityRequest:
+              type: object
+              properties:
+                entity:
+                  $ref: '#/components/schemas/AddEntity'
+            UpdateEntityRequest:
               type: object
               properties:
                 entity:
