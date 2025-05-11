@@ -42,14 +42,19 @@ import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.api.handler.entity.query.EntityTypeNameToIdQuery;
+import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
+import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
+import com.formkiq.stacks.dynamodb.attributes.AttributeValidator;
+import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.validation.ValidationBuilder;
+import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 
-import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -74,7 +79,7 @@ public class EntitiesRequestHandler
     String tableName = awsservice.environment("DOCUMENTS_TABLE");
 
     DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
-    String entityTypeId = getEntityTypeId(event, awsservice, siteId);
+    String entityTypeId = new EntityTypeIdTransformer(awsservice, siteId).apply(event);
 
     DynamoDbKey key =
         EntityRecord.builder().documentId("").entityTypeId(entityTypeId).name("").buildKey(siteId);
@@ -99,18 +104,6 @@ public class EntitiesRequestHandler
         .data("next", nextToken).build();
   }
 
-  private String getEntityTypeId(final ApiGatewayRequestEvent event,
-      final AwsServiceCache awsservice, final String siteId) throws ValidationException {
-
-    String tableName = awsservice.environment("DOCUMENTS_TABLE");
-    String namespace = event.getQueryStringParameter("namespace", "");
-    String entityTypeId = event.getPathParameter("entityTypeId");
-
-    DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
-    return new EntityTypeNameToIdQuery().find(db, tableName, siteId, EntityTypeRecord.builder()
-        .namespace(namespace).documentId(entityTypeId).name("").build(siteId));
-  }
-
   @Override
   public String getRequestUrl() {
     return "/entities/{entityTypeId}";
@@ -121,12 +114,12 @@ public class EntitiesRequestHandler
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorization.getSiteId();
-    String entityTypeId = getEntityTypeId(event, awsservice, siteId);
+    String entityTypeId = new EntityTypeIdTransformer(awsservice, siteId).apply(event);
 
     AddEntityRequest request = fromBodyToObject(event, AddEntityRequest.class);
 
     DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
-    validate(db, siteId, entityTypeId, request);
+    validate(awsservice, db, siteId, entityTypeId, request);
 
     AddEntity addEntity = request.getEntity();
     List<EntityAttribute> entityAttributes =
@@ -142,14 +135,64 @@ public class EntitiesRequestHandler
         new ApiMapResponse(Map.of("entityId", entity.documentId())));
   }
 
-  private void validate(final DynamoDbService db, final String siteId, final String entityTypeId,
-      final AddEntityRequest request) throws BadException, ValidationException {
+  private void validate(final AwsServiceCache awsservice, final DynamoDbService db,
+      final String siteId, final String entityTypeId, final AddEntityRequest request)
+      throws BadException, ValidationException {
 
     if (request == null || request.getEntity() == null) {
       throw new BadException("Missing 'entity'");
     }
 
     ValidationBuilder vb = new ValidationBuilder();
+    validateRequired(db, siteId, entityTypeId, request, vb);
+    validateAttributes(awsservice, siteId, notNull(request.getEntity().getAttributes()), vb);
+  }
+
+  private void validateAttributes(final AwsServiceCache awsservice, final String siteId,
+      final List<AddEntityAttribute> attributes, final ValidationBuilder vb) {
+
+    AddEntityAttributeToRecordTransformer transformer = new AddEntityAttributeToRecordTransformer();
+    List<DocumentAttributeRecord> list =
+        attributes.stream().flatMap(a -> transformer.apply(a).stream()).toList();
+
+    AttributeValidator attributeValidator = awsservice.getExtension(AttributeValidator.class);
+    Map<String, AttributeRecord> attributeRecordMap =
+        attributeValidator.getAttributeRecordMap(siteId, list);
+    Collection<ValidationError> errors =
+        attributeValidator.validateFullAttribute(Collections.emptyList(), siteId, list,
+            attributeRecordMap, AttributeValidationAccess.ADMIN_CREATE);
+    vb.addErrors(errors);
+    vb.check();
+
+    // List<String> attributeKeys = attributes.stream().map(AddEntityAttribute::getKey).toList();
+    // Map<String, AttributeRecord> map = attributeService.getAttributes(siteId, attributeKeys);
+    //
+    // validateMissingAttributes(vb, attributeKeys, map);
+    //
+    // attributes.forEach(a -> {
+    //
+    // AttributeRecord record = map.get(a.getKey());
+    //
+    // List<Object> values = Arrays.asList(a.getBooleanValue(), a.getNumberValue(),
+    // a.getNumberValues(), a.getStringValue(), a.getStringValues());
+    //
+    // if (!AttributeDataType.KEY_ONLY.equals(record.getDataType())) {
+    // vb.isRequiredOnlyOne(a.getKey(), values, "only 1 attribute value is allowed");
+    // }
+    // });
+    //
+    // vb.check();
+  }
+
+  private static void validateMissingAttributes(final ValidationBuilder vb,
+      final List<String> attributeKeys, final Map<String, AttributeRecord> map) {
+    List<String> missingKeys = attributeKeys.stream().filter(key -> !map.containsKey(key)).toList();
+    missingKeys.forEach(k -> vb.isRequired(k, (String) null, "missing attribute '" + k + "'"));
+    vb.check();
+  }
+
+  private void validateRequired(final DynamoDbService db, final String siteId,
+      final String entityTypeId, final AddEntityRequest request, final ValidationBuilder vb) {
     vb.isRequired("entityTypeId", entityTypeId);
     vb.isRequired("name", request.getEntity().getName());
     vb.check();
@@ -160,16 +203,6 @@ public class EntitiesRequestHandler
     vb.isRequired("entityTypeId", db.exists(entityTypeRecord.key()));
     vb.check();
 
-    List<AddEntityAttribute> entityAttributes = notNull(request.getEntity().getAttributes());
-    entityAttributes.forEach(a -> {
-      vb.isRequired("key", a.getKey());
-
-      List<Object> values = Arrays.asList(a.getBooleanValue(), a.getNumberValue(),
-          a.getNumberValues(), a.getStringValue(), a.getStringValues());
-
-      vb.isRequiredOnlyOne(null, values, "only 1 attribute value is allowed");
-    });
-
-    vb.check();
+    notNull(request.getEntity().getAttributes()).forEach(a -> vb.isRequired("key", a.getKey()));
   }
 }

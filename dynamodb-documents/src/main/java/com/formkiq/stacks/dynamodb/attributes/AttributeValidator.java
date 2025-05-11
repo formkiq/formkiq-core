@@ -89,14 +89,13 @@ public interface AttributeValidator {
    *
    * @param schemaAttributes {@link SchemaAttributes}
    * @param siteId {@link String}
-   * @param documentId {@link String}
    * @param documentAttributes {@link Collection} {@link DocumentAttributeRecord}
    * @param attributesMap {@link Map}
    * @param access {@link AttributeValidationAccess}
    * @return {@link Collection} {@link ValidationError}
    */
   Collection<ValidationError> validateFullAttribute(Collection<SchemaAttributes> schemaAttributes,
-      String siteId, String documentId, Collection<DocumentAttributeRecord> documentAttributes,
+      String siteId, Collection<DocumentAttributeRecord> documentAttributes,
       Map<String, AttributeRecord> attributesMap, AttributeValidationAccess access);
 
   /**

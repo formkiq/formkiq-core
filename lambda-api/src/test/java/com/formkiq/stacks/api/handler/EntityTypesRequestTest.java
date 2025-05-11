@@ -145,12 +145,15 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
       AddEntityTypeResponse response = this.entityApi.addEntityType(req, siteId);
 
       // then
-      assertNotNull(response.getEntityTypeId());
+      String entityTypeId0 = response.getEntityTypeId();
+      assertNotNull(entityTypeId0);
 
-      GetEntityTypeResponse resp = this.entityApi.getEntityType(response.getEntityTypeId(), siteId,
-          EntityTypeNamespace.CUSTOM.name());
-      assertNotNull(resp.getEntityType());
-      assertEntityTypeEquals(resp.getEntityType(), "Myentity");
+      for (String entityTypeId : Arrays.asList(entityTypeId0, "Myentity")) {
+        GetEntityTypeResponse resp =
+            this.entityApi.getEntityType(entityTypeId, siteId, EntityTypeNamespace.CUSTOM.name());
+        assertNotNull(resp.getEntityType());
+        assertEntityTypeEquals(resp.getEntityType(), "Myentity");
+      }
     }
   }
 
@@ -276,8 +279,9 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
       fail();
     } catch (ApiException e) {
       // then
-      assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
-      assertEquals("{\"message\":\"entityType '" + id + "' not found\"}", e.getResponseBody());
+      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+      assertEquals("{\"errors\":[{\"key\":\"entityTypeId\","
+          + "\"error\":\"'entityTypeId' attribute is not found\"}]}", e.getResponseBody());
     }
   }
 
