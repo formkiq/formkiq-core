@@ -44,13 +44,48 @@ public class ValidationBuilder {
 
   /**
    * Validate Field is required.
-   * 
+   *
    * @param key {@link String}
    * @param value {@link String}
    */
   public void isRequired(final String key, final String value) {
+    isRequired(key, value, null);
+  }
+
+  /**
+   * Validate Field is required.
+   *
+   * @param key {@link String}
+   * @param value {@link String}
+   * @param errorMessage {@link String}
+   */
+  public void isRequired(final String key, final String value, final String errorMessage) {
     if (value == null || value.isEmpty()) {
-      String error = "'" + key + "' is required";
+      String error = errorMessage != null ? errorMessage : "'" + key + "' is required";
+      errors.add(new ValidationErrorImpl().key(key).error(error));
+    }
+  }
+
+  /**
+   * Validate Field is required.
+   *
+   * @param key {@link String}
+   * @param value {@link Double}
+   */
+  public void isRequired(final String key, final Double value) {
+    isRequired(key, value, null);
+  }
+
+  /**
+   * Validate Field is required.
+   *
+   * @param key {@link String}
+   * @param value {@link Double}
+   * @param errorMessage {@link String}
+   */
+  public void isRequired(final String key, final Double value, final String errorMessage) {
+    if (value == null) {
+      String error = errorMessage != null ? errorMessage : "'" + key + "' is required";
       errors.add(new ValidationErrorImpl().key(key).error(error));
     }
   }
@@ -79,12 +114,33 @@ public class ValidationBuilder {
   }
 
   /**
+   * Add Error.
+   *
+   * @param key String
+   * @param message String
+   * @return ValidationBuilder
+   */
+  public ValidationBuilder addError(final String key, final String message) {
+    this.errors.add(new ValidationErrorImpl().key(key).error(message));
+    return this;
+  }
+
+  /**
    * Check Validation.
    */
   public void check() throws ValidationException {
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }
+  }
+
+  /**
+   * Get {@link Collection} {@link ValidationError}.
+   * 
+   * @return {@link Collection} {@link ValidationError}
+   */
+  public Collection<ValidationError> getErrors() {
+    return errors;
   }
 
   /**
@@ -149,5 +205,23 @@ public class ValidationBuilder {
     if (objectCount + listCount != 1) {
       errors.add(new ValidationErrorImpl().key(key).error(errorMessage));
     }
+  }
+
+  /**
+   * Whether there are {@link ValidationError}.
+   * 
+   * @return boolean
+   */
+  public boolean isEmpty() {
+    return errors.isEmpty();
+  }
+
+  /**
+   * Add multiple list.
+   * 
+   * @param list {@link Collection} {@link ValidationError}
+   */
+  public void addErrors(final Collection<ValidationError> list) {
+    this.errors.addAll(list);
   }
 }

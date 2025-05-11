@@ -54,7 +54,7 @@ public class DynamoDbQueryBuilderTest {
 
   @Test
   void testPkAndEqSk() {
-    QueryRequest req = DynamoDbQueryBuilder.builder().pk("p").eqSK("s").build("T");
+    QueryRequest req = DynamoDbQueryBuilder.builder().pk("p").eq("s").build("T");
 
     assertEquals("#PK = :PK AND #SK = :SK", req.keyConditionExpression());
     assertEquals(Map.of("#PK", "PK", "#SK", "SK"), req.expressionAttributeNames());
@@ -99,8 +99,7 @@ public class DynamoDbQueryBuilderTest {
 
   @Test
   void testIndexNameMapping() {
-    QueryRequest req =
-        DynamoDbQueryBuilder.builder().indexName("GSI1").pk("p").eqSK("s").build("T");
+    QueryRequest req = DynamoDbQueryBuilder.builder().indexName("GSI1").pk("p").eq("s").build("T");
 
     assertEquals("GSI1", req.indexName());
     assertEquals("GSI1PK", req.expressionAttributeNames().get("#PK"));

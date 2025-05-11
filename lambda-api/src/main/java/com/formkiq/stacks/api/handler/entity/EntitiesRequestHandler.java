@@ -27,15 +27,14 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.AttributeValueListToListMap;
 import com.formkiq.aws.dynamodb.AttributeValueToMapConfig;
 import com.formkiq.aws.dynamodb.DbKeys;
+import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbQueryBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.base64.MapAttributeValueToString;
-import com.formkiq.aws.dynamodb.eventsourcing.DynamoDbKey;
 import com.formkiq.aws.dynamodb.eventsourcing.entity.EntityAttribute;
 import com.formkiq.aws.dynamodb.eventsourcing.entity.EntityRecord;
 import com.formkiq.aws.dynamodb.eventsourcing.entity.EntityTypeRecord;
-import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -43,6 +42,7 @@ import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.stacks.api.handler.entity.query.EntityTypeNameToIdQuery;
 import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -71,15 +71,11 @@ public class EntitiesRequestHandler
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorization.getSiteId();
-    String entityTypeId = event.getPathParameter("entityTypeId");
-
-    if (!Strings.isUuid(entityTypeId)) {
-      String namespace = event.getQueryStringParameter("namespace");
-      entityTypeId = new EntityTypeNameToIdTransformer().findEntityTypeId(awsservice, siteId,
-          entityTypeId, namespace);
-    }
-
     String tableName = awsservice.environment("DOCUMENTS_TABLE");
+
+    DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
+    String entityTypeId = getEntityTypeId(event, awsservice, siteId);
+
     DynamoDbKey key =
         EntityRecord.builder().documentId("").entityTypeId(entityTypeId).name("").buildKey(siteId);
 
@@ -87,7 +83,7 @@ public class EntitiesRequestHandler
         .beginsWith(key.gsi1Sk()).nextToken(event.getQueryStringParameter("next"))
         .limit(event.getQueryStringParameter("limit")).build(tableName);
 
-    QueryResponse response = awsservice.getExtension(DynamoDbService.class).query(q);
+    QueryResponse response = db.query(q);
 
     AttributeValueToMapConfig config = AttributeValueToMapConfig.builder().removeDbKeys(true)
         .addRenameKeys("documentId", "entityId").build();
@@ -103,6 +99,18 @@ public class EntitiesRequestHandler
         .data("next", nextToken).build();
   }
 
+  private String getEntityTypeId(final ApiGatewayRequestEvent event,
+      final AwsServiceCache awsservice, final String siteId) throws ValidationException {
+
+    String tableName = awsservice.environment("DOCUMENTS_TABLE");
+    String namespace = event.getQueryStringParameter("namespace", "");
+    String entityTypeId = event.getPathParameter("entityTypeId");
+
+    DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
+    return new EntityTypeNameToIdQuery().find(db, tableName, siteId, EntityTypeRecord.builder()
+        .namespace(namespace).documentId(entityTypeId).name("").build(siteId));
+  }
+
   @Override
   public String getRequestUrl() {
     return "/entities/{entityTypeId}";
@@ -113,7 +121,7 @@ public class EntitiesRequestHandler
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorization.getSiteId();
-    String entityTypeId = event.getPathParameter("entityTypeId");
+    String entityTypeId = getEntityTypeId(event, awsservice, siteId);
 
     AddEntityRequest request = fromBodyToObject(event, AddEntityRequest.class);
 

@@ -31,12 +31,17 @@ import com.formkiq.client.model.AddAttributeRequest;
 import com.formkiq.client.model.AddAttributeSchemaOptional;
 import com.formkiq.client.model.AddAttributeSchemaRequired;
 import com.formkiq.client.model.AddDocumentAttribute;
+import com.formkiq.client.model.AddDocumentAttributeEntity;
 import com.formkiq.client.model.AddDocumentAttributeStandard;
 import com.formkiq.client.model.AddDocumentAttributeValue;
 import com.formkiq.client.model.AddDocumentAttributesRequest;
 import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AddDocumentResponse;
 import com.formkiq.client.model.AddDocumentUploadRequest;
+import com.formkiq.client.model.AddEntity;
+import com.formkiq.client.model.AddEntityRequest;
+import com.formkiq.client.model.AddEntityType;
+import com.formkiq.client.model.AddEntityTypeRequest;
 import com.formkiq.client.model.AddResponse;
 import com.formkiq.client.model.AttributeDataType;
 import com.formkiq.client.model.AttributeSchemaCompositeKey;
@@ -49,6 +54,7 @@ import com.formkiq.client.model.DocumentSearchAttribute;
 import com.formkiq.client.model.DocumentSearchRange;
 import com.formkiq.client.model.DocumentSearchRequest;
 import com.formkiq.client.model.DocumentSearchResponse;
+import com.formkiq.client.model.EntityTypeNamespace;
 import com.formkiq.client.model.GetDocumentResponse;
 import com.formkiq.client.model.GetDocumentUrlResponse;
 import com.formkiq.client.model.GetSitesSchemaResponse;
@@ -113,6 +119,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       String documentId = this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
 
       // then
+      assertNotNull(documentId);
       List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
           .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
       assertEquals(1, attributes.size());
@@ -191,6 +198,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       String documentId = this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
 
       // then
+      assertNotNull(documentId);
       List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
           .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
       assertEquals(0, attributes.size());
@@ -213,6 +221,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       AddDocumentRequest areq = new AddDocumentRequest().content("adasd");
       String documentId = this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
+      assertNotNull(documentId);
 
       SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
           .attributes(new SetSchemaAttributes().addRequiredItem(createRequired("strings")));
@@ -253,6 +262,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       AddDocumentRequest areq = new AddDocumentRequest().content("adasd");
       String documentId = this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
+      assertNotNull(documentId);
 
       SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
           .attributes(new SetSchemaAttributes().addRequiredItem(createRequired("strings")));
@@ -297,6 +307,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       AddDocumentRequest areq = new AddDocumentRequest().content("adasd");
       String documentId = this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
+      assertNotNull(documentId);
 
       // when
       AddDocumentAttributesRequest attrReq = new AddDocumentAttributesRequest()
@@ -357,6 +368,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
               new AddDocumentAttributeStandard().key("strings").stringValue("category")));
 
       String documentId = this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
+      assertNotNull(documentId);
 
       // when
       AddDocumentAttributesRequest attrReq =
@@ -392,6 +404,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       AddDocumentRequest areq = new AddDocumentRequest().content("adasd");
       String documentId = this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
+      assertNotNull(documentId);
 
       SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
           .attributes(new SetSchemaAttributes().required(null));
@@ -432,6 +445,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       AddDocumentRequest areq = new AddDocumentRequest().content("adasd");
       String documentId = this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
+      assertNotNull(documentId);
 
       SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
           .attributes(new SetSchemaAttributes().addRequiredItem(strings));
@@ -490,6 +504,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
         AddDocumentRequest areq = new AddDocumentRequest().content("adasd");
         String documentId = this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
+        assertNotNull(documentId);
 
         AddAttributeSchemaRequired strings = createRequired("strings")
             .minNumberOfValues(new BigDecimal("1")).maxNumberOfValues(new BigDecimal(max));
@@ -511,11 +526,191 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
         assertEquals("added attributes to documentId '" + documentId + "'",
             addResponse.getMessage());
 
-        req.getAttributes().getRequired().clear();
+        assertNotNull(req.getAttributes());
+        notNull(req.getAttributes().getRequired()).clear();
         this.schemasApi.setSitesSchema(siteId, req);
       }
     }
   }
+
+  /**
+   * POST /documents/{documentId}/attributes. Add Entity attributes.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddDocumentAttribute08() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+      addAttribute(siteId, "strings", AttributeDataType.ENTITY);
+
+      String entityTypeId0 =
+          this.entityApi.addEntityType(
+              new AddEntityTypeRequest().entityType(
+                  new AddEntityType().namespace(EntityTypeNamespace.CUSTOM).name("Company")),
+              siteId).getEntityTypeId();
+      assertNotNull(entityTypeId0);
+
+      for (String entityTypeId : List.of(entityTypeId0, "Company")) {
+        AddDocumentRequest areq = new AddDocumentRequest().content("adasd");
+        String documentId = this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
+        assertNotNull(documentId);
+
+        String entityId = this.entityApi
+            .addEntity(entityTypeId0,
+                new AddEntityRequest().entity(new AddEntity().name("My Company")), siteId, null)
+            .getEntityId();
+        assertNotNull(entityId);
+
+        AddDocumentAttributeEntity a = new AddDocumentAttributeEntity().key("strings")
+            .entityId(entityId).entityTypeId(entityTypeId).namespace(EntityTypeNamespace.CUSTOM);
+        AddDocumentAttributesRequest attrReq =
+            new AddDocumentAttributesRequest().addAttributesItem(new AddDocumentAttribute(a));
+
+        // when
+        AddResponse addResponse =
+            this.documentAttributesApi.addDocumentAttributes(documentId, attrReq, siteId);
+
+        // then
+        assertEquals("added attributes to documentId '" + documentId + "'",
+            addResponse.getMessage());
+
+        List<DocumentAttribute> documentAttributes = notNull(this.documentAttributesApi
+            .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+        assertEquals(1, documentAttributes.size());
+        assertEquals(AttributeValueType.ENTITY, documentAttributes.get(0).getValueType());
+        String stringValue = entityTypeId0 + "#" + entityId;
+        assertDocumentAttributeEquals(documentAttributes.get(0), "strings", stringValue, null);
+      }
+    }
+  }
+
+  /**
+   * POST /documents/{documentId}/attributes. entityTypeId=name and missing namespace.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddDocumentAttribute09() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+      addAttribute(siteId, "strings", AttributeDataType.ENTITY);
+
+      String entityTypeId = "Company";
+      String entityId = ID.uuid();
+
+      AddDocumentRequest areq = new AddDocumentRequest().content("adasd");
+      String documentId = this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
+      assertNotNull(documentId);
+
+      AddDocumentAttributeEntity a = new AddDocumentAttributeEntity().key("strings")
+          .entityId(entityId).entityTypeId(entityTypeId).namespace(null);
+      AddDocumentAttributesRequest attrReq =
+          new AddDocumentAttributesRequest().addAttributesItem(new AddDocumentAttribute(a));
+
+      // when
+      try {
+        this.documentAttributesApi.addDocumentAttributes(documentId, attrReq, siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"errors\":[{\"key\":\"namespace\",\"error\":\"'namespace' is required\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * POST /documents/{documentId}/attributes. Invalid Entity Id / EntityType Id.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddDocumentAttribute10() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+      addAttribute(siteId, "strings", AttributeDataType.ENTITY);
+
+      AddDocumentRequest areq = new AddDocumentRequest().content("adasd");
+      String documentId = this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
+      assertNotNull(documentId);
+
+      String entityTypeId = ID.uuid();
+      String entityId = ID.uuid();
+
+      AddDocumentAttributeEntity a = new AddDocumentAttributeEntity().key("strings");
+      AddDocumentAttributesRequest attrReq =
+          new AddDocumentAttributesRequest().addAttributesItem(new AddDocumentAttribute(a));
+
+      // when - entityTypeId / enityId missing
+      ApiException e = addDocumentAttributesWithError(siteId, documentId, attrReq);
+
+      // then
+      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"entityTypeId\",\"error\":\"'entityTypeId' is required\"},"
+              + "{\"key\":\"entityId\",\"error\":\"'entityId' is required\"}]}",
+          e.getResponseBody());
+
+      // given
+      a.entityId("").entityTypeId(entityTypeId);
+
+      // when
+      e = addDocumentAttributesWithError(siteId, documentId, attrReq);
+
+      // then
+      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+      assertEquals("{\"errors\":[{\"key\":\"entityId\",\"error\":\"'entityId' is required\"}]}",
+          e.getResponseBody());
+
+      // given
+      a.entityId(entityId).entityTypeId("");
+
+      // when
+      e = addDocumentAttributesWithError(siteId, documentId, attrReq);
+
+      // then
+      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"entityTypeId\",\"error\":\"'entityTypeId' is required\"}]}",
+          e.getResponseBody());
+
+      // given
+      a.entityId(entityId).entityTypeId(entityTypeId);
+
+      // when
+      e = addDocumentAttributesWithError(siteId, documentId, attrReq);
+
+      // then
+      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"entityTypeId\",\"error\":\"EntityTypeId does not exist\"},"
+              + "{\"key\":\"entityId\",\"error\":\"EntityId does not exist\"}]}",
+          e.getResponseBody());
+    }
+  }
+
+  private ApiException addDocumentAttributesWithError(final String siteId, final String documentId,
+      final AddDocumentAttributesRequest req) {
+    ApiException error = null;
+    try {
+      this.documentAttributesApi.addDocumentAttributes(documentId, req, siteId);
+      fail();
+    } catch (ApiException e) {
+      error = e;
+    }
+    return error;
+  }
+
+
+  // TODO adding standard attribute to entity attirbute.
 
   /**
    * POST /documents/upload with site schema required attribute.
@@ -673,6 +868,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // then
       String documentId = response.getDocumentId();
+      assertNotNull(documentId);
       List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
           .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
 
@@ -735,6 +931,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // then
       String documentId = response.getDocumentId();
+      assertNotNull(documentId);
+
       List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
           .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
       final int expected = 4;
@@ -754,11 +952,11 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       } catch (ApiException e) {
         // then
         assertEquals(
-            "{\"errors\":[{\"key\":\"strings\",\"error\":\"invalid attribute value 'strings', "
-                + "only allowed values are 111,222\"},{\"key\":\"flag\","
-                + "\"error\":\"invalid attribute value 'flag', only allowed values are true\"},"
-                + "{\"key\":\"num\",\"error\":\"invalid attribute value 'num', only allowed "
-                + "values are 111.11,222.22\"}]}",
+            "{\"errors\":[{\"key\":\"flag\",\"error\":\"attribute only support boolean value\"},"
+                + "{\"key\":\"strings\",\"error\":\"invalid attribute value 'strings', only"
+                + " allowed values are 111,222\"},{\"key\":\"flag\",\"error\":\"invalid attribute "
+                + "value 'flag', only allowed values are true\"},{\"key\":\"num\",\"error\":"
+                + "\"invalid attribute value 'num', only allowed values are 111.11,222.22\"}]}",
             e.getResponseBody());
       }
     }
@@ -949,6 +1147,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // then
       String documentId = response.getDocumentId();
+      assertNotNull(documentId);
+
       List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
           .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
       assertEquals(2, attributes.size());
@@ -992,8 +1192,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
           .addAttributesItem(new AddDocumentAttribute(
               new AddDocumentAttributeStandard().key("strings").addStringValuesItem("1")));
-      String documentId =
-          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null).getDocumentId();
+      String documentId = addDocumentUpload(siteId, ureq0);
+      assertNotNull(documentId);
 
       // when
       try {
@@ -1022,8 +1222,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       setBearerToken(siteId);
 
       AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt");
-      String documentId =
-          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null).getDocumentId();
+      String documentId = addDocumentUpload(siteId, ureq0);
 
       // when
       try {
@@ -1036,6 +1235,14 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
             e.getResponseBody());
       }
     }
+  }
+
+  private String addDocumentUpload(final String siteId, final AddDocumentUploadRequest request)
+      throws ApiException {
+    String documentId =
+        this.documentsApi.addDocumentUpload(request, siteId, null, null, null).getDocumentId();
+    assertNotNull(documentId);
+    return documentId;
   }
 
   /**
@@ -1055,8 +1262,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
           .addAttributesItem(new AddDocumentAttribute(
               new AddDocumentAttributeStandard().key("strings").addStringValuesItem("111")));
-      String documentId =
-          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null).getDocumentId();
+      String documentId = addDocumentUpload(siteId, ureq0);
 
       // when
       DeleteResponse response =
@@ -1092,8 +1298,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
           .addAttributesItem(new AddDocumentAttribute(
               new AddDocumentAttributeStandard().key("strings").addStringValuesItem("1")));
-      String documentId =
-          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null).getDocumentId();
+      String documentId = addDocumentUpload(siteId, ureq0);
 
       // when
       try {
@@ -1122,8 +1327,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       setBearerToken(siteId);
 
       AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt");
-      String documentId =
-          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null).getDocumentId();
+      String documentId = addDocumentUpload(siteId, ureq0);
 
       // when
       try {
@@ -1156,8 +1360,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
           .addAttributesItem(new AddDocumentAttribute(
               new AddDocumentAttributeStandard().key("strings").addStringValuesItem("111")));
-      String documentId =
-          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null).getDocumentId();
+      String documentId = addDocumentUpload(siteId, ureq0);
 
       // when
       DeleteResponse response = this.documentAttributesApi
@@ -1195,8 +1398,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
           .addAttributesItem(new AddDocumentAttribute(
               new AddDocumentAttributeStandard().key("strings").addStringValuesItem("111")));
-      String documentId =
-          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null).getDocumentId();
+      String documentId = addDocumentUpload(siteId, ureq0);
 
       // when
       DeleteResponse response = this.documentAttributesApi
@@ -1249,8 +1451,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       String attributeKey = "strings";
 
       AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt");
-      String documentId =
-          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null).getDocumentId();
+      String documentId = addDocumentUpload(siteId, ureq0);
 
       SetDocumentAttributeRequest setReq = new SetDocumentAttributeRequest()
           .attribute(new AddDocumentAttributeValue().addStringValuesItem("123"));
@@ -1285,8 +1486,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       addAttribute(siteId, attributeKey, null);
 
       AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt");
-      String documentId =
-          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null).getDocumentId();
+      String documentId = addDocumentUpload(siteId, ureq0);
 
       SetDocumentAttributeRequest setReq = new SetDocumentAttributeRequest()
           .attribute(new AddDocumentAttributeValue().addStringValuesItem("123"));
@@ -1323,8 +1523,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
           .addAttributesItem(new AddDocumentAttribute(
               new AddDocumentAttributeStandard().key("category").stringValue("person")));
-      String documentId =
-          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null).getDocumentId();
+      String documentId = addDocumentUpload(siteId, ureq0);
 
       SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
           .attributes(new SetSchemaAttributes().addRequiredItem(createRequired("strings")));
@@ -1366,8 +1565,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
           .addAttributesItem(new AddDocumentAttribute(
               new AddDocumentAttributeStandard().key("strings").stringValue("person")));
-      String documentId =
-          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null).getDocumentId();
+      String documentId = addDocumentUpload(siteId, ureq0);
 
       SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
           .attributes(new SetSchemaAttributes().addRequiredItem(new AddAttributeSchemaRequired()
@@ -1410,8 +1608,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
           .addAttributesItem(new AddDocumentAttribute(
               new AddDocumentAttributeStandard().key("strings").stringValue("person")));
-      String documentId =
-          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null).getDocumentId();
+      String documentId = addDocumentUpload(siteId, ureq0);
 
       SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
           .attributes(new SetSchemaAttributes().addRequiredItem(new AddAttributeSchemaRequired()
@@ -1951,8 +2148,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
               .stringValues(Arrays.asList("111", "222"))));
 
       // when
-      String documentId0 =
-          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null).getDocumentId();
+      String documentId0 = addDocumentUpload(siteId, ureq0);
 
       // then
       DocumentSearchRequest sreq0 = new DocumentSearchRequest().query(
@@ -2004,8 +2200,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
               .key("customerUUID").stringValue("403cd39862564e36b490738c3c312b38")));
 
       // when
-      String documentId0 =
-          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null).getDocumentId();
+      String documentId0 = addDocumentUpload(siteId, ureq0);
 
       // then
       DocumentSearchRequest sreq0 = new DocumentSearchRequest().query(new DocumentSearch()
@@ -2052,8 +2247,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
               .key("customerUUID").stringValue("403cd39862564e36b490738c3c312b38")));
 
       // when
-      String documentId0 =
-          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null).getDocumentId();
+      String documentId0 = addDocumentUpload(siteId, ureq0);
 
       // then
       DocumentSearchRequest sreq0 = new DocumentSearchRequest().query(new DocumentSearch()
@@ -2099,6 +2293,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       AddDocumentRequest areq = new AddDocumentRequest().content("adasd");
       String documentId = this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
+      assertNotNull(documentId);
 
       SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
           .attributes(new SetSchemaAttributes().addRequiredItem(createRequired("strings")));
@@ -2139,6 +2334,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       AddDocumentRequest areq = new AddDocumentRequest().content("adasd");
       String documentId = this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
+      assertNotNull(documentId);
 
       SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
           .attributes(new SetSchemaAttributes().addRequiredItem(createRequired("strings")));
@@ -2185,6 +2381,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
           .addAttributesItem(createStringsAttribute("strings", List.of("category", "1234")))
           .addAttributesItem(createStringAttribute("documentType", "invoice"));
       String documentId = this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
+      assertNotNull(documentId);
 
       int i = 0;
       final int expected3 = 3;
@@ -2248,6 +2445,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
           .addAttributesItem(createStringsAttribute("strings", List.of("category", "1234")))
           .addAttributesItem(createStringAttribute("documentType", "invoice"));
       String documentId = this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
+      assertNotNull(documentId);
 
       int i = 0;
       final int expected3 = 3;
@@ -2307,6 +2505,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       AddDocumentRequest areq = new AddDocumentRequest().content("adasd")
           .addAttributesItem(createStringsAttribute("category", List.of("other")));
       String documentId = this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
+      assertNotNull(documentId);
 
       int i = 0;
       final int expected = 3;
@@ -2350,6 +2549,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       AddDocumentRequest areq = new AddDocumentRequest().content("adasd")
           .addAttributesItem(createStringAttribute("code", "1"));
       String documentId = this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
+      assertNotNull(documentId);
 
       SetDocumentAttributesRequest setAttr =
           new SetDocumentAttributesRequest().addAttributesItem(createStringAttribute("code", "1"))
@@ -2778,8 +2978,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       addAttribute(siteId, "strings", null);
 
       AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt");
-      String documentId =
-          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null).getDocumentId();
+      String documentId = addDocumentUpload(siteId, ureq0);
 
       SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
           .attributes(new SetSchemaAttributes().addRequiredItem(createRequired("strings")));
@@ -2816,8 +3015,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       addAttribute(siteId, "strings", null);
 
       AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt");
-      String documentId =
-          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null).getDocumentId();
+      String documentId = addDocumentUpload(siteId, ureq0);
 
       SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
           .attributes(new SetSchemaAttributes().addRequiredItem(createRequired("strings")));
@@ -2853,8 +3051,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       addAttribute(siteId, "strings", null);
 
       AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt");
-      String documentId =
-          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null).getDocumentId();
+      String documentId = addDocumentUpload(siteId, ureq0);
 
       SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
           .attributes(new SetSchemaAttributes().addRequiredItem(createRequired("strings")));
@@ -2897,8 +3094,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
           new AddDocumentAttributeStandard().key("category").stringValue("test"));
       AddDocumentUploadRequest ureq0 =
           new AddDocumentUploadRequest().path("sample.txt").addAttributesItem(categoryAttribute);
-      String documentId =
-          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null).getDocumentId();
+      String documentId = addDocumentUpload(siteId, ureq0);
 
       UpdateDocumentRequest updateReq =
           new UpdateDocumentRequest().path("asd.txt").addAttributesItem(new AddDocumentAttribute(
@@ -2928,8 +3124,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       addAttribute(siteId, "strings", null);
 
       AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt");
-      String documentId =
-          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null).getDocumentId();
+      String documentId = addDocumentUpload(siteId, ureq0);
 
       SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
           .attributes(new SetSchemaAttributes().addRequiredItem(createRequired("strings")));

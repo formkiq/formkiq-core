@@ -21,30 +21,35 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb.attributes;
+package com.formkiq.aws.dynamodb;
+
+import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 
 /**
- * Attribute Search Type.
+ * DynamoDb Query Builder.
+ *
+ * @param <T> Type of record
+ * @param <E> Type of Payload
  */
-public enum DocumentAttributeValueType {
-  /** Boolean. */
-  BOOLEAN,
-  /** Composite String. */
-  COMPOSITE_STRING,
-  /** Key Only. */
-  KEY_ONLY,
-  /** Number. */
-  NUMBER,
-  /** String. */
-  STRING,
-  /** Publication. */
-  PUBLICATION,
-  /** Classification. */
-  CLASSIFICATION,
-  /** Relationships. */
-  RELATIONSHIPS,
-  /** Watermark. */
-  WATERMARK,
-  /** Entity. */
-  ENTITY
+public interface DynamoDbFind<T, E> {
+  /**
+   * Builds a {@link QueryRequest}.
+   *
+   * @param tableName DynamoDb Table Name.
+   * @param siteId Site Identifier
+   * @param record Payload Parameter
+   * @return QueryRequest
+   */
+  QueryRequest build(String tableName, String siteId, E record);
+
+  /**
+   * Find the first record to match {@link QueryRequest}.
+   *
+   * @param db {@link DynamoDbService}
+   * @param tableName DynamoDb Table Name.
+   * @param siteId Site Identifier
+   * @param record Payload Parameter
+   * @return record
+   */
+  T find(DynamoDbService db, String tableName, String siteId, E record);
 }
