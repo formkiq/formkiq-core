@@ -70,6 +70,19 @@ public class ValidationBuilder {
    * Validate Field is required.
    *
    * @param key {@link String}
+   * @param value {@link String}
+   * @param errorMessage {@link String}
+   */
+  public void isRequired(final String key, final Object value, final String errorMessage) {
+    if (value == null) {
+      errors.add(new ValidationErrorImpl().key(key).error(errorMessage));
+    }
+  }
+
+  /**
+   * Validate Field is required.
+   *
+   * @param key {@link String}
    * @param value {@link Double}
    */
   public void isRequired(final String key, final Double value) {

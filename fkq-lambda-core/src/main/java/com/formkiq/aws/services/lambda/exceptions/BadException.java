@@ -24,7 +24,7 @@
 package com.formkiq.aws.services.lambda.exceptions;
 
 /** {@link Exception} that will return a 400 error. */
-public class BadException extends Exception {
+public class BadException extends RuntimeException {
 
   /** serialVersionUID. */
   private static final long serialVersionUID = -3307625320614270509L;
