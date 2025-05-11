@@ -10,7 +10,8 @@
 		<allow pkg="com.formkiq.aws.dynamodb" />
 		<allow pkg="com.formkiq.graalvm.annotations" />
 		<allow pkg="com.formkiq.module.lambdaservices" />
-
+		<allow pkg="com.formkiq.validation" />
+		
 		<allow pkg="java.io" />
 		<allow pkg="java.net" />
 		<allow pkg="java.text" />

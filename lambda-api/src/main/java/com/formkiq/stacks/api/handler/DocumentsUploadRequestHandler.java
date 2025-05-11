@@ -171,8 +171,8 @@ public class DocumentsUploadRequestHandler
 
     List<DocumentAttribute> attributes = notNull(request.getAttributes());
 
-    DocumentAttributeToDocumentAttributeRecord tr =
-        new DocumentAttributeToDocumentAttributeRecord(documentId, authorization.getUsername());
+    DocumentAttributeToDocumentAttributeRecord tr = new DocumentAttributeToDocumentAttributeRecord(
+        awsservice, siteId, documentId, authorization.getUsername());
 
     List<DocumentAttributeRecord> documentAttributes =
         attributes.stream().flatMap(a -> tr.apply(a).stream()).toList();

@@ -23,7 +23,7 @@
  */
 package com.formkiq.aws.dynamodb.eventsourcing.entity;
 
-import com.formkiq.aws.dynamodb.eventsourcing.DynamoDbKey;
+import com.formkiq.aws.dynamodb.DynamoDbKey;
 
 public interface DynamoDbEntityBuilder<T> {
 

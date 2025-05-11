@@ -51,10 +51,12 @@ public class AddDocumentSyncRequest {
 
   /**
    * Set Sync.
-   * 
+   *
    * @param documentSync {@link AddDocumentSync}
+   * @return AddDocumentSyncRequest
    */
-  public void setSync(final AddDocumentSync documentSync) {
+  public AddDocumentSyncRequest setSync(final AddDocumentSync documentSync) {
     this.sync = documentSync;
+    return this;
   }
 }
