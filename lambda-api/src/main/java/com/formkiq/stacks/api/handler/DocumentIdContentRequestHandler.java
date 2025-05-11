@@ -89,7 +89,7 @@ public class DocumentIdContentRequestHandler
 
       try {
         response = getPlainTextResponse(awsservice, s3key, versionId, item, documentId);
-      } catch (NotFoundException e) {
+      } catch (DocumentNotFoundException e) {
         throw e;
       } catch (RuntimeException e) {
         response = getApiResponse(awsservice, item, s3key, versionId);
