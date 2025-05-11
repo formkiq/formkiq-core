@@ -156,12 +156,25 @@ public class ApiGatewayRequestEvent {
 
   /**
    * Get Query Parameter.
+   *
+   * @param key {@link String}
+   * @param defaultValue {@link String}
+   * @return {@link String}
+   */
+  public String getQueryStringParameter(final String key, final String defaultValue) {
+    return getQueryStringParameters() != null
+        ? getQueryStringParameters().getOrDefault(key, defaultValue)
+        : null;
+  }
+
+  /**
+   * Get Query Parameter.
    * 
    * @param key {@link String}
    * @return {@link String}
    */
   public String getQueryStringParameter(final String key) {
-    return getQueryStringParameters() != null ? getQueryStringParameters().get(key) : null;
+    return getQueryStringParameter(key, null);
   }
 
   /**

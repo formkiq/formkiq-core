@@ -23,11 +23,17 @@
  */
 package com.formkiq.stacks.api.transformers;
 
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.eventsourcing.entity.EntityTypeRecord;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.handler.DocumentAttribute;
+import com.formkiq.stacks.api.handler.entity.query.EntityTypeNameToIdQuery;
 import com.formkiq.stacks.dynamodb.attributes.AttributeKeyReserved;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecordBuilder;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
+import com.formkiq.validation.ValidationBuilder;
+import com.formkiq.validation.ValidationException;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -46,16 +52,28 @@ public class DocumentAttributeToDocumentAttributeRecord
   private final String user;
   /** Document Id. */
   private final String docId;
+  /** Site Id. */
+  private final String site;
+  /** {@link DynamoDbService}. */
+  private final DynamoDbService db;
+  /** Documents Table Name. */
+  private final String tableName;
 
   /**
    * constructor.
-   * 
+   *
+   * @param serviceCache {@link AwsServiceCache}
+   * @param siteId {@link String}
    * @param documentId {@link String}
    * @param userId {@link String}
    */
-  public DocumentAttributeToDocumentAttributeRecord(final String documentId, final String userId) {
+  public DocumentAttributeToDocumentAttributeRecord(final AwsServiceCache serviceCache,
+      final String siteId, final String documentId, final String userId) {
     this.docId = documentId;
     this.user = userId;
+    this.site = siteId;
+    this.db = serviceCache.getExtension(DynamoDbService.class);
+    this.tableName = serviceCache.environment("DOCUMENTS_TABLE");
   }
 
   @Override
@@ -69,51 +87,60 @@ public class DocumentAttributeToDocumentAttributeRecord
    * @param a {@link DocumentAttribute}
    * @return {@link Collection} {@link DocumentAttributeRecord}
    */
-  private Collection<DocumentAttributeRecord> buildAttributeRecords(final DocumentAttribute a) {
+  private Collection<DocumentAttributeRecord> buildAttributeRecords(final DocumentAttribute a)
+      throws ValidationException {
     Collection<DocumentAttributeRecord> c = new ArrayList<>();
 
     if (a != null) {
       boolean used = false;
       String key = a.getKey();
 
-      if (isRelationship(a)) {
+      if (isEntity(a)) {
+        addEntity(a, c);
+      } else if (isRelationship(a)) {
         addRelationship(a, c);
       } else if (isClassification(a)) {
         addClassification(a, c);
       } else {
-
-        if (!isEmpty(a.getStringValue())) {
-          used = true;
-          addToList(c, DocumentAttributeValueType.STRING, key, a.getStringValue(), null, null);
-        }
-
-        if (a.getNumberValue() != null) {
-          used = true;
-          addToList(c, DocumentAttributeValueType.NUMBER, key, null, null, a.getNumberValue());
-        }
-
-        if (a.getBooleanValue() != null) {
-          used = true;
-          addToList(c, DocumentAttributeValueType.BOOLEAN, key, null, a.getBooleanValue(), null);
-        }
-
-        for (String stringValue : notNull(a.getStringValues())) {
-          used = true;
-          addToList(c, DocumentAttributeValueType.STRING, key, stringValue, null, null);
-        }
-
-        for (Double numberValue : notNull(a.getNumberValues())) {
-          used = true;
-          addToList(c, DocumentAttributeValueType.NUMBER, key, null, null, numberValue);
-        }
-
-        if (!used) {
-          addToList(c, DocumentAttributeValueType.KEY_ONLY, key, null, null, null);
-        }
+        addDefault(a, c, used, key);
       }
     }
 
     return c;
+  }
+
+  private void addDefault(final DocumentAttribute a, final Collection<DocumentAttributeRecord> c,
+      final boolean isUsed, final String key) {
+    boolean used = isUsed;
+    if (!isEmpty(a.getStringValue())) {
+      used = true;
+      addToList(c, DocumentAttributeValueType.STRING, key, a.getStringValue(), null, null);
+    }
+
+    if (a.getNumberValue() != null) {
+      used = true;
+      addToList(c, DocumentAttributeValueType.NUMBER, key, null, null, a.getNumberValue());
+    }
+
+    if (a.getBooleanValue() != null) {
+      used = true;
+      addToList(c, DocumentAttributeValueType.BOOLEAN, key, null, a.getBooleanValue(), null);
+    }
+
+    for (String stringValue : notNull(a.getStringValues())) {
+      used = true;
+      addToList(c, DocumentAttributeValueType.STRING, key, stringValue, null, null);
+    }
+
+    for (Double numberValue : notNull(a.getNumberValues())) {
+      used = true;
+      addToList(c, DocumentAttributeValueType.NUMBER, key, null, null, numberValue);
+    }
+
+    if (!used) {
+      addToList(c, DocumentAttributeValueType.KEY_ONLY, key, null, null, null);
+    }
+
   }
 
   private void addClassification(final DocumentAttribute a,
@@ -135,6 +162,27 @@ public class DocumentAttributeToDocumentAttributeRecord
 
   private static boolean isRelationship(final DocumentAttribute a) {
     return !isEmpty(a.getDocumentId()) && a.getRelationship() != null;
+  }
+
+  private static boolean isEntity(final DocumentAttribute a) {
+    return !isEmpty(a.getEntityTypeId()) || !isEmpty(a.getEntityId());
+  }
+
+  private void addEntity(final DocumentAttribute a, final Collection<DocumentAttributeRecord> c)
+      throws ValidationException {
+
+    ValidationBuilder vb = new ValidationBuilder();
+    vb.isRequired("entityId", a.getEntityId());
+    vb.isRequired("entityTypeId", a.getEntityTypeId());
+    vb.check();
+
+    String namespace = a.getNamespace() != null ? a.getNamespace() : "";
+    String entityTypeId = new EntityTypeNameToIdQuery().find(db, tableName, site, EntityTypeRecord
+        .builder().namespace(namespace).documentId(a.getEntityTypeId()).name("").build(site));
+
+    String stringValue = entityTypeId + "#" + a.getEntityId();
+
+    addToList(c, DocumentAttributeValueType.ENTITY, a.getKey(), stringValue, null, null);
   }
 
   private void addRelationship(final DocumentAttribute a,

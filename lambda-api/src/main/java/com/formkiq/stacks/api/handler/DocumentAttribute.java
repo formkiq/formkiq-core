@@ -47,18 +47,84 @@ public class DocumentAttribute {
   private List<String> stringValues;
   /** {@link String} Classification Id. */
   private String classificationId;
+  /** {@link String} Entity Id. */
+  private String entityId;
+  /** {@link String} Entity Type Id. */
+  private String entityTypeId;
   /** Document Id. */
   private String documentId;
   /** {@link DocumentRelationshipType}. */
   private DocumentRelationshipType relationship;
   /** {@link DocumentRelationshipType}. */
   private DocumentRelationshipType inverseRelationship;
+  /** Namespace. */
+  private String namespace;
 
   /**
    * constructor.
    */
   public DocumentAttribute() {
 
+  }
+
+  /**
+   * Get Namespace.
+   * 
+   * @return String
+   */
+  public String getNamespace() {
+    return namespace;
+  }
+
+  /**
+   * Set Namespace.
+   * 
+   * @param entityNamespace {@link String}
+   * @return DocumentAttribute
+   */
+  public DocumentAttribute setNamespace(final String entityNamespace) {
+    this.namespace = entityNamespace;
+    return this;
+  }
+
+  /**
+   * Get Entity Type Id.
+   * 
+   * @return String
+   */
+  public String getEntityTypeId() {
+    return entityTypeId;
+  }
+
+  /**
+   * Set Entity Type Id.
+   *
+   * @param attributeEntityTypeId {@link String}
+   * @return DocumentAttribute
+   */
+  public DocumentAttribute setEntityTypeId(final String attributeEntityTypeId) {
+    this.entityTypeId = attributeEntityTypeId;
+    return this;
+  }
+
+  /**
+   * Get Entity Id.
+   * 
+   * @return String
+   */
+  public String getEntityId() {
+    return entityId;
+  }
+
+  /**
+   * Set Entity Id.
+   *
+   * @param attributeEntityId {@link String}
+   * @return DocumentAttribute
+   */
+  public DocumentAttribute setEntityId(final String attributeEntityId) {
+    this.entityId = attributeEntityId;
+    return this;
   }
 
   /**

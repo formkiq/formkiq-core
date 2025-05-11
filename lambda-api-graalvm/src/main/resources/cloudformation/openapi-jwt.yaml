@@ -6482,6 +6482,7 @@ Resources:
               parameters:
                 - $ref: '#/components/parameters/siteIdParam'
                 - $ref: '#/components/parameters/entityTypeIdParam'
+                - $ref: '#/components/parameters/namespaceParam'
               requestBody:
                 required: true
                 content:
@@ -6746,6 +6747,9 @@ Resources:
               required: false
               schema:
                 type: string
+                enum:
+                 - PRESET
+                 - CUSTOM
             policyItemIdPathParam:
               name: policyItemId
               in: path
@@ -8161,6 +8165,7 @@ Resources:
                 - $ref: '#/components/schemas/AddDocumentAttributeStandard'
                 - $ref: '#/components/schemas/AddDocumentAttributeClassification'
                 - $ref: '#/components/schemas/AddDocumentAttributeRelationship'
+                - $ref: '#/components/schemas/AddDocumentAttributeEntity'
 
             DocumentRelationshipType:
               type: string
@@ -8226,6 +8231,27 @@ Resources:
                 booleanValue:
                   type: "boolean"
                   description: "Attribute with boolean value"
+
+            AddDocumentAttributeEntity:
+              required:
+                - "key"
+                - "entityTypeId"
+                - "entityId"
+              type: "object"
+              description: "Document Entity Attribute"
+              properties:
+                key:
+                  type: "string"
+                  description: "Attribute key"
+                entityTypeId:
+                  type: "string"
+                  description: "EntityType Identifier or Entity Type Name"
+                entityId:
+                  type: "string"
+                  description: "Entity Identifier"
+                namespace:
+                  $ref: "#/components/schemas/EntityTypeNamespace"
+
             AddDocumentTag:
               required:
                 - "key"
@@ -8509,6 +8535,7 @@ Resources:
                 - COMPOSITE_STRING
                 - RELATIONSHIPS
                 - WATERMARK
+                - ENTITY
             FulltextAttribute:
               type: "object"
               properties:
@@ -10229,6 +10256,7 @@ Resources:
                 - KEY_ONLY
                 - PUBLICATION
                 - WATERMARK
+                - ENTITY
 
             AddAttributeRequest:
               required:

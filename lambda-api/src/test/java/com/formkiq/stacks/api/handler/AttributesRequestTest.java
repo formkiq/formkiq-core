@@ -387,7 +387,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       assertNotNull(watermark);
       assertEquals(text, watermark.getText());
       assertEquals(WatermarkScale.ORIGINAL, watermark.getScale());
-      assertEquals("123.0", watermark.getRotation().toString());
+      assertEquals("123.0", String.valueOf(watermark.getRotation()));
       WatermarkPosition position = watermark.getPosition();
       assertNotNull(position);
       assertEquals("2.0", String.valueOf(position.getxOffset()));
@@ -1508,6 +1508,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
           this.documentsApi.addDocumentUpload(docReq, siteId, null, null, null).getDocumentId();
 
       // then
+      assertNotNull(documentId);
       DocumentSearchAttribute attribute = new DocumentSearchAttribute().key(key).eq("confidential");
       DocumentSearch query = new DocumentSearch().attribute(attribute);
       DocumentSearchRequest searchRequest = new DocumentSearchRequest().query(query);
@@ -2347,6 +2348,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       String documentId =
           this.documentsApi.addDocumentUpload(docReq, siteId, null, null, null).getDocumentId();
+      assertNotNull(documentId);
 
       SetDocumentAttributeRequest req = new SetDocumentAttributeRequest()
           .attribute(new AddDocumentAttributeValue().stringValue("123"));
@@ -2392,6 +2394,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       String documentId =
           this.documentsApi.addDocumentUpload(docReq, siteId, null, null, null).getDocumentId();
+      assertNotNull(documentId);
 
       SetDocumentAttributeRequest req = new SetDocumentAttributeRequest().attribute(
           new AddDocumentAttributeValue().addStringValuesItem("111").addStringValuesItem("222"));
@@ -2447,6 +2450,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       // add document
       String documentId =
           this.documentsApi.addDocumentUpload(docReq, siteId, null, null, null).getDocumentId();
+      assertNotNull(documentId);
       assertEquals("confidental", getDocumentAttribute(siteId, documentId, key).getStringValue());
 
       // when - update document with Attribute Type = STANDARD
@@ -2508,6 +2512,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       // add document
       String documentId =
           this.documentsApi.addDocumentUpload(docReq, siteId, null, null, null).getDocumentId();
+      assertNotNull(documentId);
       assertEquals("confidental", getDocumentAttribute(siteId, documentId, key).getStringValue());
 
       // when - update document with Attribute Type = OPA

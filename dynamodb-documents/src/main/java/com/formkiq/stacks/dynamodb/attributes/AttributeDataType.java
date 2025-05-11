@@ -43,5 +43,7 @@ public enum AttributeDataType {
   /** Watermark. */
   WATERMARK,
   /** Relationship. */
-  RELATIONSHIP;
+  RELATIONSHIP,
+  /** Entity. */
+  ENTITY;
 }

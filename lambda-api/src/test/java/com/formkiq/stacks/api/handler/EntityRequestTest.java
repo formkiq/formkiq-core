@@ -68,25 +68,28 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
 
       setBearerToken(new String[] {siteId});
 
-      String entityTypeId =
+      String entityTypeId0 =
           this.entityApi.addEntityType(
               new AddEntityTypeRequest().entityType(
                   new AddEntityType().name("Company").namespace(EntityTypeNamespace.CUSTOM)),
               siteId).getEntityTypeId();
-      assertNotNull(entityTypeId);
+      assertNotNull(entityTypeId0);
 
       AddEntityRequest req = new AddEntityRequest().entity(new AddEntity().name("Acme Inc"));
 
-      // when
-      AddEntityResponse addEntityResponse = this.entityApi.addEntity(entityTypeId, req, siteId);
+      for (String entityTypeId : List.of(entityTypeId0, "Company")) {
+        // when
+        AddEntityResponse addEntityResponse =
+            this.entityApi.addEntity(entityTypeId, req, siteId, "CUSTOM");
 
-      // then
-      assertNotNull(addEntityResponse.getEntityId());
+        // then
+        assertNotNull(addEntityResponse.getEntityId());
 
-      GetEntityResponse entity =
-          this.entityApi.getEntity(entityTypeId, addEntityResponse.getEntityId(), siteId, null);
-      assertNotNull(entity.getEntity());
-      assertEntityEquals(entity.getEntity(), "Acme Inc");
+        GetEntityResponse entity = this.entityApi.getEntity(entityTypeId,
+            addEntityResponse.getEntityId(), siteId, "CUSTOM");
+        assertNotNull(entity.getEntity());
+        assertEntityEquals(entity.getEntity(), "Acme Inc");
+      }
     }
   }
 
@@ -112,7 +115,7 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.entityApi.addEntity(entityTypeId, req, siteId);
+        this.entityApi.addEntity(entityTypeId, req, siteId, null);
         fail();
       } catch (ApiException e) {
         assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
@@ -137,7 +140,7 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.entityApi.addEntity(entityTypeId, req, siteId);
+        this.entityApi.addEntity(entityTypeId, req, siteId, null);
         fail();
       } catch (ApiException e) {
         assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
@@ -169,7 +172,7 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
 
       for (int i = 0; i < count; i++) {
         AddEntityRequest req = new AddEntityRequest().entity(new AddEntity().name("myentity_" + i));
-        this.entityApi.addEntity(entityTypeId, req, siteId);
+        this.entityApi.addEntity(entityTypeId, req, siteId, null);
       }
 
       String limit = "2";
@@ -244,7 +247,7 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
       assertNotNull(entityTypeId);
 
       AddEntityRequest req = new AddEntityRequest().entity(new AddEntity().name("myentity"));
-      String entityId = this.entityApi.addEntity(entityTypeId, req, siteId).getEntityId();
+      String entityId = this.entityApi.addEntity(entityTypeId, req, siteId, null).getEntityId();
       assertNotNull(entityId);
 
       for (String entityType : List.of(entityTypeId, "Company")) {
@@ -284,7 +287,7 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
             .numberValues(List.of(new BigDecimal("444"), new BigDecimal("555"))))
         .addAttributesItem(new AddEntityAttribute().key("n").numberValue(new BigDecimal("222"))));
 
-    String entityId = this.entityApi.addEntity(entityTypeId, req, siteId).getEntityId();
+    String entityId = this.entityApi.addEntity(entityTypeId, req, siteId, null).getEntityId();
     assertNotNull(entityId);
 
     // when
@@ -358,7 +361,7 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
       assertNotNull(entityTypeId);
 
       AddEntityRequest req = new AddEntityRequest().entity(new AddEntity().name("myentity"));
-      String entityId = this.entityApi.addEntity(entityTypeId, req, siteId).getEntityId();
+      String entityId = this.entityApi.addEntity(entityTypeId, req, siteId, null).getEntityId();
       assertNotNull(entityId);
 
       // when
