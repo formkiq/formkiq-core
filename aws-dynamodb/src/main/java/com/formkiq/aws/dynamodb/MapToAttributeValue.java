@@ -55,12 +55,16 @@ public class MapToAttributeValue
 
   private AttributeValue convert(final Object obj) {
     AttributeValue o;
-    if (obj instanceof Double d) {
+    if (obj == null) {
+      o = AttributeValue.fromNul(true);
+    } else if (obj instanceof Double d) {
       o = AttributeValue.fromN(String.valueOf(d));
     } else if (obj instanceof Long l) {
       o = AttributeValue.fromN(String.valueOf(l));
     } else if (obj instanceof String s) {
       o = AttributeValue.fromS(s);
+    } else if (obj instanceof Boolean b) {
+      o = AttributeValue.fromBool(b);
     } else if (obj instanceof Collection<?> c) {
       o = AttributeValue.fromL(c.stream().map(this::convert).toList());
     } else {

@@ -31,7 +31,6 @@ import com.formkiq.aws.dynamodb.DynamoDbQueryBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.eventsourcing.entity.EntityRecord;
 import com.formkiq.aws.dynamodb.eventsourcing.entity.EntityTypeRecord;
-import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -42,7 +41,6 @@ import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
-import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 
 import java.util.Map;
 
@@ -65,15 +63,11 @@ public class EntityTypeRequestHandler
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorization.getSiteId();
-    String entityTypeId = event.getPathParameter("entityTypeId");
     DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
+    String entityTypeId = new EntityTypeIdTransformer(awsservice, siteId).apply(event);
 
     EntityTypeRecord.Builder builder =
         EntityTypeRecord.builder().documentId(entityTypeId).namespace("").name("");
-
-    if (!Strings.isUuid(entityTypeId)) {
-      updateBuilderFromEntityName(event, awsservice, builder, siteId);
-    }
 
     Map<String, AttributeValue> attributes = db.get(builder.buildKey(siteId));
 
@@ -85,35 +79,6 @@ public class EntityTypeRequestHandler
         .addRenameKeys("documentId", "entityTypeId").build();
     Map<String, Object> values = new AttributeValueToMap(config).apply(attributes);
     return ApiRequestHandlerResponse.builder().status(SC_OK).data("entityType", values).build();
-  }
-
-  private void updateBuilderFromEntityName(final ApiGatewayRequestEvent event,
-      final AwsServiceCache awsservice, final EntityTypeRecord.Builder builder, final String siteId)
-      throws ValidationException {
-    String entityTypeId = event.getPathParameter("entityTypeId");
-    String namespace = event.getQueryStringParameter("namespace");
-    validateNamespace(namespace);
-
-    String tableName = awsservice.environment("DOCUMENTS_TABLE");
-    DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
-
-    DynamoDbKey key = builder.name(entityTypeId).namespace(namespace).buildKey(siteId);
-    QueryRequest q = DynamoDbQueryBuilder.builder().indexName(GSI1).pk(key.gsi1Pk())
-        .beginsWith(key.gsi1Sk()).limit("1").build(tableName);
-    QueryResponse response = db.query(q);
-    if (!response.items().isEmpty()) {
-      builder.documentId(response.items().get(0).get("documentId").s());
-    }
-  }
-
-  private void validateNamespace(final String namespace) throws ValidationException {
-
-    ValidationBuilder vb = new ValidationBuilder();
-    vb.isRequired("namespace", namespace);
-    vb.check();
-
-    vb.isEquals("namespace", namespace, "CUSTOM");
-    vb.check();
   }
 
   @Override

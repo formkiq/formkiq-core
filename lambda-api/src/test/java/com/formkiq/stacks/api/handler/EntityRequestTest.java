@@ -27,12 +27,15 @@ import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.eventsourcing.DynamoDbTypes;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.model.AddAttribute;
+import com.formkiq.client.model.AddAttributeRequest;
 import com.formkiq.client.model.AddEntity;
 import com.formkiq.client.model.AddEntityAttribute;
 import com.formkiq.client.model.AddEntityRequest;
 import com.formkiq.client.model.AddEntityResponse;
 import com.formkiq.client.model.AddEntityType;
 import com.formkiq.client.model.AddEntityTypeRequest;
+import com.formkiq.client.model.AttributeDataType;
 import com.formkiq.client.model.AttributeValueType;
 import com.formkiq.client.model.DeleteResponse;
 import com.formkiq.client.model.Entity;
@@ -52,13 +55,15 @@ import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /** Unit Tests for request /entities. */
 public class EntityRequestTest extends AbstractApiClientRequestTest {
 
   /**
-   * Post /entities.
+   * Post /entities/{entityTypeId}.
    *
    */
   @Test
@@ -94,7 +99,7 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * Post /entities. Invalid Request.
+   * Post /entities/{entityTypeId}. Invalid Request.
    *
    */
   @Test
@@ -125,7 +130,7 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * Post /entities. Invalid EntityTypeId.
+   * Post /entities/{entityTypeId}. Invalid EntityTypeId.
    *
    */
   @Test
@@ -152,7 +157,77 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * Get entities/{entityTypeId}.
+   * Post /entities/{entityTypeId}. Missing attribute.
+   *
+   */
+  @Test
+  public void testAddEntity04() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(new String[] {siteId});
+
+      String entityTypeId =
+          this.entityApi.addEntityType(
+              new AddEntityTypeRequest().entityType(
+                  new AddEntityType().name("Company").namespace(EntityTypeNamespace.CUSTOM)),
+              siteId).getEntityTypeId();
+      assertNotNull(entityTypeId);
+
+      AddEntityRequest req = new AddEntityRequest().entity(new AddEntity().name("Acme Inc")
+          .addAttributesItem(new AddEntityAttribute().key("b").booleanValue(true)));
+
+      // when
+      try {
+        this.entityApi.addEntity(entityTypeId, req, siteId, "CUSTOM");
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"errors\":[{\"key\":\"b\",\"error\":\"attribute 'b' not found\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * Post /entities/{entityTypeId}. Wrong attribute data type.
+   *
+   */
+  @Test
+  public void testAddEntity05() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(new String[] {siteId});
+      addAttribute(siteId, "b", AttributeDataType.STRING);
+
+      String entityTypeId =
+          this.entityApi.addEntityType(
+              new AddEntityTypeRequest().entityType(
+                  new AddEntityType().name("Company").namespace(EntityTypeNamespace.CUSTOM)),
+              siteId).getEntityTypeId();
+      assertNotNull(entityTypeId);
+
+      AddEntityRequest req = new AddEntityRequest().entity(new AddEntity().name("Acme Inc")
+          .addAttributesItem(new AddEntityAttribute().key("b").booleanValue(true)));
+
+      // when
+      try {
+        this.entityApi.addEntity(entityTypeId, req, siteId, "CUSTOM");
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"b\"," + "\"error\":\"attribute only support string value\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * Get /entities/{entityTypeId}.
    *
    * @throws Exception an error has occurred
    */
@@ -273,6 +348,12 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
     String siteId = ID.uuid();
 
     setBearerToken(new String[] {siteId});
+    addAttribute(siteId, "s", AttributeDataType.STRING);
+    addAttribute(siteId, "ss", AttributeDataType.STRING);
+    addAttribute(siteId, "n", AttributeDataType.NUMBER);
+    addAttribute(siteId, "nn", AttributeDataType.NUMBER);
+    addAttribute(siteId, "b", AttributeDataType.BOOLEAN);
+    addAttribute(siteId, "ko", AttributeDataType.KEY_ONLY);
 
     String entityTypeId = this.entityApi
         .addEntityType(new AddEntityTypeRequest().entityType(
@@ -281,7 +362,9 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
     assertNotNull(entityTypeId);
 
     AddEntityRequest req = new AddEntityRequest().entity(new AddEntity().name("myentity")
+        .addAttributesItem(new AddEntityAttribute().key("b").booleanValue(true))
         .addAttributesItem(new AddEntityAttribute().key("s").stringValue("123"))
+        .addAttributesItem(new AddEntityAttribute().key("ko"))
         .addAttributesItem(new AddEntityAttribute().key("ss").stringValues(List.of("1", "2")))
         .addAttributesItem(new AddEntityAttribute().key("nn")
             .numberValues(List.of(new BigDecimal("444"), new BigDecimal("555"))))
@@ -306,15 +389,23 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
 
     for (List<EntityAttribute> attributes : List.of(attributes0, attributes1)) {
 
-      final int expected = 4;
+      final int expected = 6;
       assertEquals(expected, attributes.size());
 
       int i = 0;
+      assertEntityAttributeBoolean(attributes.get(i++));
+      assertEntityAttributeKeyOnly(attributes.get(i++));
       assertEntityAttributeNumber(attributes.get(i++));
       assertEntityAttributeNumbers(attributes.get(i++));
       assertEntityAttributeString(attributes.get(i++));
       assertEntityAttributeStrings(attributes.get(i));
     }
+  }
+
+  private void addAttribute(final String siteId, final String attributeKey,
+      final AttributeDataType dataType) throws ApiException {
+    this.attributesApi.addAttribute(new AddAttributeRequest()
+        .attribute(new AddAttribute().key(attributeKey).dataType(dataType)), siteId);
   }
 
   private void assertEntityAttributeStrings(final EntityAttribute attribute) {
@@ -327,6 +418,22 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
     assertEquals("s", attribute.getKey());
     assertEquals(AttributeValueType.STRING, attribute.getValueType());
     assertEquals("123", attribute.getStringValue());
+  }
+
+  private void assertEntityAttributeKeyOnly(final EntityAttribute attribute) {
+    assertEquals("ko", attribute.getKey());
+    assertEquals(AttributeValueType.KEY_ONLY, attribute.getValueType());
+    assertNull(attribute.getBooleanValue());
+    assertNull(attribute.getStringValue());
+    assertTrue(notNull(attribute.getStringValues()).isEmpty());
+    assertNull(attribute.getNumberValue());
+    assertTrue(notNull(attribute.getNumberValues()).isEmpty());
+  }
+
+  private void assertEntityAttributeBoolean(final EntityAttribute attribute) {
+    assertEquals("b", attribute.getKey());
+    assertEquals(AttributeValueType.BOOLEAN, attribute.getValueType());
+    assertEquals(Boolean.TRUE, attribute.getBooleanValue());
   }
 
   private void assertEntityAttributeNumber(final EntityAttribute attribute) {
