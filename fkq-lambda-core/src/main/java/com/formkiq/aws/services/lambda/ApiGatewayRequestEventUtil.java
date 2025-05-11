@@ -154,11 +154,8 @@ public interface ApiGatewayRequestEventUtil {
    * @param event {@link ApiGatewayRequestEvent}
    * @param classOfT {@link Class}
    * @return T
-   * @throws BadException BadException
-   * @throws IOException IOException
    */
-  default <T> T fromBodyToObject(final ApiGatewayRequestEvent event, final Class<T> classOfT)
-      throws BadException, IOException {
+  default <T> T fromBodyToObject(final ApiGatewayRequestEvent event, final Class<T> classOfT) {
 
     String body = event.getBody();
     if (body == null) {
@@ -174,7 +171,7 @@ public interface ApiGatewayRequestEventUtil {
     try (Reader reader =
         new InputStreamReader(new ByteArrayInputStream(data), StandardCharsets.UTF_8)) {
       return GSON.fromJson(reader, classOfT);
-    } catch (JsonSyntaxException e) {
+    } catch (JsonSyntaxException | IOException e) {
       throw new BadException("invalid JSON body");
     }
   }
