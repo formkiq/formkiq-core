@@ -274,6 +274,17 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
   }
 
   @Override
+  public Map<String, AttributeValue> getByQuery(final QueryRequest query) {
+    Map<String, AttributeValue> attributes = Collections.emptyMap();
+    QueryResponse response = this.dbClient.query(query);
+    if (!response.items().isEmpty()) {
+      attributes = response.items().get(0);
+    }
+
+    return attributes;
+  }
+
+  @Override
   public List<Map<String, AttributeValue>> getBatch(final BatchGetConfig config,
       final List<Map<String, AttributeValue>> attributes) {
 

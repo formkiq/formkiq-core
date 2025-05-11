@@ -151,13 +151,21 @@ public interface DynamoDbService {
 
   /**
    * Gets DynamoDB Record.
-   * 
+   *
    * @param config {@link QueryConfig}
    * @param pk {@link AttributeValue}
    * @param sk {@link AttributeValue}
    * @return {@link Map}
    */
   Map<String, AttributeValue> get(QueryConfig config, AttributeValue pk, AttributeValue sk);
+
+  /**
+   * Get Single Result from a Query.
+   * 
+   * @param query {@link QueryRequest}
+   * @return Map
+   */
+  Map<String, AttributeValue> getByQuery(QueryRequest query);
 
   /**
    * Batch Get a number of Keys.

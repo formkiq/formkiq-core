@@ -133,8 +133,8 @@ public class DocumentAttributeRequestHandler
 
   private Collection<DocumentAttributeRecord> getDocumentAttributesFromRequest(
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final String documentId, final String attributeKey)
-      throws BadException, IOException, ValidationException {
+      final AwsServiceCache awsservice, final String siteId, final String documentId,
+      final String attributeKey) throws BadException, IOException, ValidationException {
 
     DocumentAttributeValueRequest request =
         fromBodyToObject(event, DocumentAttributeValueRequest.class);
@@ -145,8 +145,8 @@ public class DocumentAttributeRequestHandler
 
     request.getAttribute().key(attributeKey);
 
-    return new DocumentAttributeToDocumentAttributeRecord(documentId, authorization.getUsername())
-        .apply(request.getAttribute());
+    return new DocumentAttributeToDocumentAttributeRecord(awsservice, siteId, documentId,
+        authorization.getUsername()).apply(request.getAttribute());
   }
 
   @Override
@@ -166,8 +166,8 @@ public class DocumentAttributeRequestHandler
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
-    Collection<DocumentAttributeRecord> documentAttributes =
-        getDocumentAttributesFromRequest(event, authorization, documentId, attributeKey);
+    Collection<DocumentAttributeRecord> documentAttributes = getDocumentAttributesFromRequest(event,
+        authorization, awsservice, siteId, documentId, attributeKey);
 
     AttributeValidationAccess validationAccess =
         getAttributeValidationAccess(authorization, siteId);

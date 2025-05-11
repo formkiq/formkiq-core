@@ -217,7 +217,8 @@ public class DocumentAttributeRecord
   private String getSkValue(final String sk) {
     String val = sk;
     switch (this.valueType) {
-      case STRING, COMPOSITE_STRING, CLASSIFICATION, RELATIONSHIPS -> val += this.stringValue;
+      case STRING, COMPOSITE_STRING, CLASSIFICATION, RELATIONSHIPS, ENTITY ->
+        val += this.stringValue;
       case BOOLEAN -> val += this.booleanValue;
       case NUMBER -> val += formatDouble(this.numberValue);
       case KEY_ONLY, PUBLICATION, WATERMARK -> {
@@ -231,7 +232,7 @@ public class DocumentAttributeRecord
   public String skGsi1() {
 
     return switch (this.valueType) {
-      case STRING, COMPOSITE_STRING, RELATIONSHIPS -> truncateSk(this.stringValue);
+      case STRING, COMPOSITE_STRING, RELATIONSHIPS, ENTITY -> truncateSk(this.stringValue);
       case NUMBER -> formatDouble(this.numberValue);
       case BOOLEAN -> this.booleanValue.toString();
       case CLASSIFICATION, PUBLICATION -> truncateSk(this.stringValue);
