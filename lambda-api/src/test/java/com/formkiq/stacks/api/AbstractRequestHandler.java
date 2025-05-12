@@ -251,8 +251,6 @@ public abstract class AbstractRequestHandler {
     this.map.put("FORMKIQ_TYPE", "core");
     this.map.put("FORMKIQ_VERSION", "1.1");
     this.map.put("USER_AUTHENTICATION", userAuthentication);
-    this.map.put("WEBSOCKET_SQS_URL",
-        TestServices.getSqsWebsocketQueueUrl(TestServices.getSqsConnection(null)));
     // this.map.put("TYPESENSE_HOST", "http://localhost:" + TypesenseExtension.getMappedPort());
     this.map.put("TYPESENSE_API_KEY", API_KEY);
 

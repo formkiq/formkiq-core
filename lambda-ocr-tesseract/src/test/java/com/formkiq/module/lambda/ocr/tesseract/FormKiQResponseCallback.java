@@ -81,7 +81,6 @@ public class FormKiQResponseCallback extends AbstractFormKiqApiResponseCallback 
       map.put("SQS_DOCUMENT_FORMATS", TestServices.getSqsDocumentFormatsQueueUrl(sqsConn));
       map.put("DISTRIBUTION_BUCKET", "formkiq-distribution-us-east-pro");
       map.put("FORMKIQ_TYPE", "core");
-      map.put("WEBSOCKET_SQS_URL", TestServices.getSqsWebsocketQueueUrl(sqsConn));
       map.put("USER_AUTHENTICATION", "cognito");
       map.put("SNS_DOCUMENT_EVENT", "");
       map.put("PATH_BIN", pathBin);
