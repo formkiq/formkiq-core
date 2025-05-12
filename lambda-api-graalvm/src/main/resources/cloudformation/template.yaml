@@ -686,6 +686,7 @@ Resources:
   ApiGatewayInvokeGroup:
     Type: AWS::IAM::Group
     Properties:
+      Path: "formkiq"
       ManagedPolicyArns:
       - Fn::Sub: "arn:${AWS::Partition}:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess"
 
