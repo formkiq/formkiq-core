@@ -1658,7 +1658,6 @@ Resources:
               parameters:
                 - $ref: '#/components/parameters/siteIdParam'
                 - $ref: '#/components/parameters/documentIdParam'
-                - $ref: '#/components/parameters/wsParam'
               requestBody:
                 required: true
                 content:
@@ -1831,7 +1830,6 @@ Resources:
               parameters:
                 - $ref: '#/components/parameters/siteIdParam'
                 - $ref: '#/components/parameters/documentIdParam'
-                - $ref: '#/components/parameters/wsParam'
               requestBody:
                 required: true
                 content:
@@ -6612,13 +6610,6 @@ Resources:
               description: "Fetch soft deleted documents"
               schema:
                 type: "boolean"
-            wsParam:
-              name: ws
-              in: query
-              description: Whether to enable WebSocket real-time communication with the request
-              required: false
-              schema:
-                type: string
             groupParam:
               name: group
               in: query
