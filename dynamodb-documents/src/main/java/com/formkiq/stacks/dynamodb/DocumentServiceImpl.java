@@ -28,6 +28,7 @@ import com.formkiq.aws.dynamodb.BatchGetConfig;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.DynamodbRecordKeyPredicate;
@@ -2435,13 +2436,15 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     List<String> docIds = relationships.stream()
         .map(r -> r.getStringValue().substring(r.getStringValue().indexOf("#") + 1))
         .filter(d -> !d.equals(documentId)).toList();
-    List<Map<String, AttributeValue>> keys =
-        docIds.stream().map(id -> keysDocument(siteId, id)).toList();
+    List<DynamoDbKey> keys = docIds.stream().map(id -> {
+      Map<String, AttributeValue> val = keysDocument(siteId, id);
+      return new DynamoDbKey(val.get(PK).s(), val.get(SK).s(), "", "", "", "");
+    }).toList();
 
-    List<Map<String, AttributeValue>> exists = this.dbService.exists(keys);
+    Collection<DynamoDbKey> exists = this.dbService.exists(keys);
     if (exists.size() != relationships.size()) {
 
-      List<String> existIds = exists.stream().map(e -> e.get(PK).s())
+      List<String> existIds = exists.stream().map(DynamoDbKey::pk)
           .map(SiteIdKeyGenerator::getDocumentId).map(s -> s.replace(PREFIX_DOCS, "")).toList();
 
       com.formkiq.strings.Strings.complement(docIds, existIds).forEach(id -> {

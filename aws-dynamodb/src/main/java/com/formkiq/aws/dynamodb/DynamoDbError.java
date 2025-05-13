@@ -21,37 +21,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb;
-
-import com.formkiq.aws.dynamodb.DynamoDbService;
-import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.module.lambdaservices.AwsServiceExtension;
+package com.formkiq.aws.dynamodb;
 
 /**
- * 
- * {@link AwsServiceExtension} for {@link DocumentSyncService}.
- *
+ * Enumeration of DynamoDB query error categories.
  */
-public class DocumentSyncServiceExtension implements AwsServiceExtension<DocumentSyncService> {
-
-  /** {@link DocumentSyncService}. */
-  private DocumentSyncService service;
+public enum DynamoDbError {
 
   /**
-   * constructor.
+   * Occurs when an ExclusiveStartKey is invalid or malformed.
    */
-  public DocumentSyncServiceExtension() {}
+  INVALID_START_KEY,
 
-  @Override
-  public DocumentSyncService loadService(final AwsServiceCache awsServiceCache) {
-    if (this.service == null) {
-      DynamoDbService db = awsServiceCache.getExtension(DynamoDbService.class);
-
-      this.service =
-          new DocumentSyncServiceDynamoDb(db, awsServiceCache.environment("DOCUMENTS_TABLE"),
-              awsServiceCache.environment("DOCUMENT_SYNC_TABLE"));
-    }
-
-    return this.service;
-  }
+  /**
+   * Any other error not specifically categorized.
+   */
+  OTHER;
 }

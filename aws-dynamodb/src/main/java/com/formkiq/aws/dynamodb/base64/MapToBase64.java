@@ -21,37 +21,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb;
+package com.formkiq.aws.dynamodb.base64;
 
-import com.formkiq.aws.dynamodb.DynamoDbService;
-import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.module.lambdaservices.AwsServiceExtension;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+import java.util.Map;
+import java.util.function.Function;
 
 /**
- * 
- * {@link AwsServiceExtension} for {@link DocumentSyncService}.
- *
+ * Convert {@link Map} to Base64 {@link String}.
  */
-public class DocumentSyncServiceExtension implements AwsServiceExtension<DocumentSyncService> {
-
-  /** {@link DocumentSyncService}. */
-  private DocumentSyncService service;
-
-  /**
-   * constructor.
-   */
-  public DocumentSyncServiceExtension() {}
-
+public class MapToBase64 implements Function<Map<String, String>, String> {
   @Override
-  public DocumentSyncService loadService(final AwsServiceCache awsServiceCache) {
-    if (this.service == null) {
-      DynamoDbService db = awsServiceCache.getExtension(DynamoDbService.class);
-
-      this.service =
-          new DocumentSyncServiceDynamoDb(db, awsServiceCache.environment("DOCUMENTS_TABLE"),
-              awsServiceCache.environment("DOCUMENT_SYNC_TABLE"));
-    }
-
-    return this.service;
+  public String apply(final Map<String, String> map) {
+    StringBuilder sb = new StringBuilder();
+    map.forEach((key, value) -> sb.append(key).append("=").append(value).append("\n"));
+    byte[] data = sb.toString().getBytes(StandardCharsets.UTF_8);
+    return Base64.getEncoder().encodeToString(data);
   }
 }

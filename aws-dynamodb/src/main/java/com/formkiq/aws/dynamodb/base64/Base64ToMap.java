@@ -21,37 +21,37 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb;
+package com.formkiq.aws.dynamodb.base64;
 
-import com.formkiq.aws.dynamodb.DynamoDbService;
-import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.module.lambdaservices.AwsServiceExtension;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Function;
+
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 
 /**
- * 
- * {@link AwsServiceExtension} for {@link DocumentSyncService}.
- *
+ * Convert Base 64 {@link String} to {@link Map}.
  */
-public class DocumentSyncServiceExtension implements AwsServiceExtension<DocumentSyncService> {
-
-  /** {@link DocumentSyncService}. */
-  private DocumentSyncService service;
-
-  /**
-   * constructor.
-   */
-  public DocumentSyncServiceExtension() {}
-
+public class Base64ToMap implements Function<String, Map<String, Object>> {
   @Override
-  public DocumentSyncService loadService(final AwsServiceCache awsServiceCache) {
-    if (this.service == null) {
-      DynamoDbService db = awsServiceCache.getExtension(DynamoDbService.class);
+  public Map<String, Object> apply(final String base64) {
+    Map<String, Object> map = null;
 
-      this.service =
-          new DocumentSyncServiceDynamoDb(db, awsServiceCache.environment("DOCUMENTS_TABLE"),
-              awsServiceCache.environment("DOCUMENT_SYNC_TABLE"));
+    if (!isEmpty(base64)) {
+      map = new HashMap<>();
+
+      String decodedString = new String(Base64.getDecoder().decode(base64), StandardCharsets.UTF_8);
+      String[] entries = decodedString.split("\n");
+      for (String entry : entries) {
+        if (!entry.isEmpty()) {
+          String[] keyValue = entry.split("=", 2);
+          map.put(keyValue[0], keyValue.length > 1 ? keyValue[1] : "");
+        }
+      }
     }
 
-    return this.service;
+    return map;
   }
 }

@@ -18,6 +18,7 @@
 		<allow pkg="java.util" />
 
 		<allow pkg="software.amazon.awssdk.http" />
+		<allow pkg="software.amazon.awssdk.awscore.exception" />
 		<allow pkg="software.amazon.awssdk.http.urlconnection" />
 		<allow pkg="software.amazon.awssdk.auth.credentials" />
 		<allow pkg="software.amazon.awssdk.core.client.config" />
@@ -28,6 +29,10 @@
 		<subpackage name="objects">
 			<allow pkg="java.time" />
 			<allow pkg="java.security" />
+		</subpackage>
+
+		<subpackage name="base64">
+			<allow pkg="java.nio.charset" />
 		</subpackage>
 	</subpackage>
 	

@@ -25,6 +25,7 @@ package com.formkiq.aws.dynamodb;
 
 import static com.formkiq.aws.dynamodb.DbKeys.PK;
 import static com.formkiq.aws.dynamodb.DbKeys.SK;
+import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.fromS;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -44,6 +45,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.DeleteRequest;
+import software.amazon.awssdk.services.dynamodb.model.DynamoDbException;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.GetItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.Put;
@@ -62,7 +64,7 @@ import software.amazon.awssdk.services.dynamodb.model.UpdateItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 
 /**
- * 
+ *
  * Implementation of {@link DynamoDbService}.
  *
  */
@@ -84,7 +86,7 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
 
   /**
    * constructor.
-   * 
+   *
    * @param client {@link DynamoDbClient}
    * @param dynamoDbTableName {@link String}
    */
@@ -99,7 +101,7 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
 
   /**
    * constructor.
-   * 
+   *
    * @param connection {@link DynamoDbConnectionBuilder}
    * @param dynamoDbTableName {@link String}
    */
@@ -149,6 +151,14 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
   }
 
   @Override
+  public boolean deleteItem(final DynamoDbKey key) {
+    Map<String, AttributeValue> sourceKey = Map.of(PK, fromS(key.pk()), SK, fromS(key.sk()));
+    DeleteItemResponse response = this.dbClient.deleteItem(DeleteItemRequest.builder()
+        .tableName(this.tableName).key(sourceKey).returnValues(ReturnValue.ALL_OLD).build());
+    return !response.attributes().isEmpty();
+  }
+
+  @Override
   public boolean deleteItems(final Collection<Map<String, AttributeValue>> attrs) {
 
     boolean deleted = false;
@@ -160,6 +170,24 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
           .collect(Collectors.toList());
 
       WriteRequestBuilder builder = new WriteRequestBuilder().append(this.tableName, writes);
+      deleted = builder.batchWriteItem(this.dbClient);
+    }
+
+    return deleted;
+  }
+
+  @Override
+  public boolean deleteItems(final String dbTableName, final Collection<DynamoDbKey> keys) {
+    boolean deleted = false;
+
+    if (!keys.isEmpty()) {
+
+      List<WriteRequest> writes = keys.stream()
+          .map(a -> WriteRequest.builder()
+              .deleteRequest(DeleteRequest.builder().key(a.toMap()).build()).build())
+          .collect(Collectors.toList());
+
+      WriteRequestBuilder builder = new WriteRequestBuilder().append(dbTableName, writes);
       deleted = builder.batchWriteItem(this.dbClient);
     }
 
@@ -228,14 +256,36 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
   }
 
   @Override
-  public List<Map<String, AttributeValue>> exists(final List<Map<String, AttributeValue>> keys) {
+  public boolean exists(final DynamoDbKey key) {
+    GetItemRequest r = GetItemRequest.builder().key(key.toMap()).tableName(this.tableName)
+        .projectionExpression("PK").build();
+    GetItemResponse response = this.dbClient.getItem(r);
+    return !response.item().isEmpty();
+  }
+
+  @Override
+  public Collection<DynamoDbKey> exists(final Collection<DynamoDbKey> keys) {
     BatchGetConfig config = new BatchGetConfig().projectionExpression("PK,SK");
-    return getBatch(config, keys);
+    List<Map<String, AttributeValue>> fetchKeys = keys.stream().map(DynamoDbKey::toMap).toList();
+    List<Map<String, AttributeValue>> batch = getBatch(config, fetchKeys);
+    return batch.stream().map(b -> new DynamoDbKey(b.get(PK).s(), b.get(SK).s(), "", "", "", ""))
+        .toList();
+  }
+
+  @Override
+  public boolean exists(final QueryRequest query) {
+    QueryResponse response = this.dbClient.query(query);
+    return !response.items().isEmpty();
   }
 
   @Override
   public Map<String, AttributeValue> get(final AttributeValue pk, final AttributeValue sk) {
     return get(new QueryConfig(), pk, sk);
+  }
+
+  @Override
+  public Map<String, AttributeValue> get(final DynamoDbKey key) {
+    return get(new QueryConfig(), fromS(key.pk()), fromS(key.sk()));
   }
 
   @Override
@@ -246,6 +296,17 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
         .projectionExpression(config.projectionExpression())
         .expressionAttributeNames(config.expressionAttributeNames()).consistentRead(Boolean.TRUE)
         .build()).item();
+  }
+
+  @Override
+  public Map<String, AttributeValue> getByQuery(final QueryRequest query) {
+    Map<String, AttributeValue> attributes = Collections.emptyMap();
+    QueryResponse response = this.dbClient.query(query);
+    if (!response.items().isEmpty()) {
+      attributes = response.items().get(0);
+    }
+
+    return attributes;
   }
 
   @Override
@@ -330,13 +391,8 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
     putItem(this.tableName, attributes);
   }
 
-  /**
-   * Put Item in DynamoDb.
-   * 
-   * @param dynamoDbTable {@link String}
-   * @param attributes {@link Map}
-   */
-  private void putItem(final String dynamoDbTable, final Map<String, AttributeValue> attributes) {
+  @Override
+  public void putItem(final String dynamoDbTable, final Map<String, AttributeValue> attributes) {
     this.dbClient
         .putItem(PutItemRequest.builder().tableName(dynamoDbTable).item(attributes).build());
   }
@@ -396,6 +452,27 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
   }
 
   @Override
+  public QueryResponse query(final QueryRequest q) {
+
+    try {
+      QueryResponse response = this.dbClient.query(q);
+
+      if (q.indexName() != null) {
+        List<Map<String, AttributeValue>> keys =
+            response.items().stream().map(i -> Map.of(PK, i.get(PK), SK, i.get(SK))).toList();
+
+        List<Map<String, AttributeValue>> results = getBatch(new BatchGetConfig(), keys);
+        response = QueryResponse.builder().items(results)
+            .lastEvaluatedKey(response.lastEvaluatedKey()).build();
+      }
+
+      return response;
+    } catch (DynamoDbException e) {
+      throw new DynamoDbQueryException(e);
+    }
+  }
+
+  @Override
   public QueryResponse queryBeginsWith(final QueryConfig config, final AttributeValue pk,
       final AttributeValue sk, final Map<String, AttributeValue> exclusiveStartKey,
       final int limit) {
@@ -439,6 +516,7 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
   public Map<String, AttributeValue> updateItem(final AttributeValue pk, final AttributeValue sk,
       final Map<String, AttributeValueUpdate> updateValues) {
     Map<String, AttributeValue> dbKey = Map.of(PK, pk, SK, sk);
+
     return this.dbClient.updateItem(UpdateItemRequest.builder().tableName(this.tableName).key(dbKey)
         .attributeUpdates(updateValues).build()).attributes();
   }
@@ -457,6 +535,16 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
         (key, value) -> values.put(key, AttributeValueUpdate.builder().value(value).build()));
 
     return updateItem(pk, sk, values);
+  }
+
+  @Override
+  public void updateItems(final String dbTableName, final Collection<DynamoDbKey> keys,
+      final Map<String, AttributeValueUpdate> updateValues) {
+    keys.forEach(k -> {
+      Map<String, AttributeValue> dbKey = Map.of(PK, fromS(k.pk()), SK, fromS(k.sk()));
+      this.dbClient.updateItem(UpdateItemRequest.builder().tableName(dbTableName).key(dbKey)
+          .attributeUpdates(updateValues).build());
+    });
   }
 
   @Override
@@ -544,6 +632,6 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
   }
 
   private AttributeValue getLock(final AttributeValue sk) {
-    return AttributeValue.fromS(sk.s() + ".lock");
+    return fromS(sk.s() + ".lock");
   }
 }

@@ -21,37 +21,42 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb;
+package com.formkiq.aws.dynamodb;
 
-import com.formkiq.aws.dynamodb.DynamoDbService;
-import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.module.lambdaservices.AwsServiceExtension;
+import software.amazon.awssdk.awscore.exception.AwsErrorDetails;
+import software.amazon.awssdk.services.dynamodb.model.DynamoDbException;
 
 /**
- * 
- * {@link AwsServiceExtension} for {@link DocumentSyncService}.
- *
+ * Exception thrown when a DynamoDB Query operation fails.
  */
-public class DocumentSyncServiceExtension implements AwsServiceExtension<DocumentSyncService> {
+public class DynamoDbQueryException extends RuntimeException {
 
-  /** {@link DocumentSyncService}. */
-  private DocumentSyncService service;
+  /** {@link DynamoDbError}. */
+  private DynamoDbError error;
 
   /**
-   * constructor.
+   * Constructs a new exception wrapping the underlying DynamoDbException.
+   *
+   * @param cause original DynamoDbException
    */
-  public DocumentSyncServiceExtension() {}
+  public DynamoDbQueryException(final DynamoDbException cause) {
+    super(cause);
+    AwsErrorDetails awsErrorDetails = cause.awsErrorDetails();
+    this.error = DynamoDbError.OTHER;
 
-  @Override
-  public DocumentSyncService loadService(final AwsServiceCache awsServiceCache) {
-    if (this.service == null) {
-      DynamoDbService db = awsServiceCache.getExtension(DynamoDbService.class);
-
-      this.service =
-          new DocumentSyncServiceDynamoDb(db, awsServiceCache.environment("DOCUMENTS_TABLE"),
-              awsServiceCache.environment("DOCUMENT_SYNC_TABLE"));
+    if (awsErrorDetails != null) {
+      if (awsErrorDetails.errorMessage().contains("starting key")) {
+        this.error = DynamoDbError.INVALID_START_KEY;
+      }
     }
+  }
 
-    return this.service;
+  /**
+   * Get {@link DynamoDbError}.
+   *
+   * @return {@link DynamoDbError}
+   */
+  public DynamoDbError getError() {
+    return error;
   }
 }
