@@ -33,6 +33,8 @@ import java.net.URISyntaxException;
 import java.util.Arrays;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.model.DocumentSyncRecord;
 import org.junit.jupiter.api.BeforeAll;
@@ -60,8 +62,8 @@ public class DocumentSyncServiceDynamoDbTest {
   @BeforeAll
   public static void beforeAll() throws URISyntaxException {
     DynamoDbConnectionBuilder dynamoDbConnection = DynamoDbTestServices.getDynamoDbConnection();
-    syncService =
-        new DocumentSyncServiceDynamoDb(dynamoDbConnection, DOCUMENTS_TABLE, DOCUMENT_SYNCS_TABLE);
+    DynamoDbService db = new DynamoDbServiceImpl(dynamoDbConnection, DOCUMENTS_TABLE);
+    syncService = new DocumentSyncServiceDynamoDb(db, DOCUMENTS_TABLE, DOCUMENT_SYNCS_TABLE);
   }
 
   /**

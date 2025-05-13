@@ -21,37 +21,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb;
+package com.formkiq.aws.dynamodb.base64;
 
-import com.formkiq.aws.dynamodb.DynamoDbService;
-import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.module.lambdaservices.AwsServiceExtension;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
- * 
- * {@link AwsServiceExtension} for {@link DocumentSyncService}.
- *
+ * {@link Function} to convert Pagination {@link String} next token to a DynamoDb StartKey.
  */
-public class DocumentSyncServiceExtension implements AwsServiceExtension<DocumentSyncService> {
-
-  /** {@link DocumentSyncService}. */
-  private DocumentSyncService service;
-
-  /**
-   * constructor.
-   */
-  public DocumentSyncServiceExtension() {}
-
+public class MapAttributeValueToString implements Function<Map<String, AttributeValue>, String> {
   @Override
-  public DocumentSyncService loadService(final AwsServiceCache awsServiceCache) {
-    if (this.service == null) {
-      DynamoDbService db = awsServiceCache.getExtension(DynamoDbService.class);
-
-      this.service =
-          new DocumentSyncServiceDynamoDb(db, awsServiceCache.environment("DOCUMENTS_TABLE"),
-              awsServiceCache.environment("DOCUMENT_SYNC_TABLE"));
-    }
-
-    return this.service;
+  public String apply(final Map<String, AttributeValue> map) {
+    Map<String, String> m =
+        map.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().s()));
+    return new MapToBase64().apply(m);
   }
 }

@@ -57,6 +57,8 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentSyncRecord;
@@ -228,9 +230,10 @@ public class DocumentsS3UpdateTest implements DbKeys {
       schema.createCacheTable(CACHE_TABLE);
     }
 
+    DynamoDbService dbService = new DynamoDbServiceImpl(db, DOCUMENTS_TABLE);
     service = new DocumentServiceImpl(dbBuilder, DOCUMENTS_TABLE, DOCUMENT_SYNCS_TABLE,
         new DocumentVersionServiceNoVersioning());
-    syncService = new DocumentSyncServiceDynamoDb(dbBuilder, DOCUMENTS_TABLE, DOCUMENT_SYNCS_TABLE);
+    syncService = new DocumentSyncServiceDynamoDb(dbService, DOCUMENTS_TABLE, DOCUMENT_SYNCS_TABLE);
     actionsService = new ActionsServiceDynamoDb(dbBuilder, DOCUMENTS_TABLE);
 
     Map<String, String> map = new HashMap<>();

@@ -24,23 +24,35 @@
 package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import com.formkiq.aws.dynamodb.DbKeys;
+import com.formkiq.aws.dynamodb.DynamoDbQueryBuilder;
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.DynamoDbServiceExtension;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.model.AddAttribute;
+import com.formkiq.client.model.AddAttributeRequest;
+import com.formkiq.client.model.AddDocumentAttribute;
+import com.formkiq.client.model.AddDocumentAttributeStandard;
 import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AddDocumentSync;
 import com.formkiq.client.model.AddDocumentSyncRequest;
 import com.formkiq.client.model.AddDocumentSyncService;
+import com.formkiq.client.model.AddDocumentTag;
 import com.formkiq.client.model.AddResponse;
 import com.formkiq.client.model.DocumentAction;
 import com.formkiq.client.model.DocumentActionType;
@@ -55,6 +67,7 @@ import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentSyncServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
+import com.formkiq.testutils.aws.DynamoDbTestServices;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
@@ -62,12 +75,15 @@ import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
+import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 
 /** Unit Tests for request /documents/{documentId}/syncs. */
 @ExtendWith(LocalStackExtension.class)
 @ExtendWith(DynamoDbExtension.class)
-// @Execution(ExecutionMode.CONCURRENT)
-public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestTest {
+public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestTest
+    implements DbKeys {
 
   /**
    * Get /documents/{documentId}/syncs request.
@@ -79,6 +95,7 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
 
     String userId = "joe";
     AwsServiceCache awsServices = getAwsServices();
+    awsServices.register(DynamoDbService.class, new DynamoDbServiceExtension());
     awsServices.register(DocumentService.class, new DocumentServiceExtension());
     awsServices.register(com.formkiq.stacks.dynamodb.DocumentSyncService.class,
         new DocumentSyncServiceExtension());
@@ -296,18 +313,27 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
   }
 
   /**
-   * POST /documents/{documentId}/syncs request. Sync Metadata.
+   * POST /documents/{documentId}/syncs request. Sync Metadata with attributes.
    */
   @Test
-  public void testAddDocumentSyncs06() throws ApiException {
+  public void testAddDocumentSyncs06()
+      throws ApiException, URISyntaxException, InterruptedException {
     // given
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       for (AddDocumentSyncService service : getAddDocumentSyncServices()) {
 
         setBearerToken(siteId);
-        String documentId = this.documentsApi
-            .addDocument(new AddDocumentRequest().content("asd"), siteId, null).getDocumentId();
+        String attributeKey = "myattr_" + ID.uuid();
+        this.attributesApi.addAttribute(
+            new AddAttributeRequest().attribute(new AddAttribute().key(attributeKey)), siteId);
+
+        AddDocumentRequest addReq = new AddDocumentRequest().content("asd")
+            .addAttributesItem(new AddDocumentAttribute(
+                new AddDocumentAttributeStandard().key(attributeKey).stringValue("555")))
+            .addTagsItem(new AddDocumentTag().key("mytag").value("123"));
+
+        String documentId = this.documentsApi.addDocument(addReq, siteId, null).getDocumentId();
 
         // when
         AddDocumentSyncRequest req = new AddDocumentSyncRequest()
@@ -318,6 +344,10 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
         assertEquals("Added Document sync", addResponse.getMessage());
         List<DocumentAction> actions = getDocumentActions(siteId, documentId);
         assertEquals(0, actions.size());
+
+        if (AddDocumentSyncService.FULLTEXT.equals(service)) {
+          verifyStreamTriggeredDate(siteId, documentId);
+        }
 
         List<DocumentSync> list = getDocumentSyncs(siteId, documentId);
         if (AddDocumentSyncService.EVENTBRIDGE.equals(service)) {
@@ -334,6 +364,26 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
           assertDocumentSyncEventBridge(list.get(0), DocumentSyncType.METADATA);
         }
       }
+    }
+  }
+
+  private void verifyStreamTriggeredDate(final String siteId, final String documentId)
+      throws URISyntaxException, InterruptedException {
+    try (DynamoDbClient db = DynamoDbTestServices.getDynamoDbConnection().build()) {
+      String pk = keysDocument(siteId, documentId).get(PK).s();
+      QueryRequest query = DynamoDbQueryBuilder.builder().pk(pk).build(DOCUMENTS_TABLE);
+      QueryResponse response = db.query(query);
+
+      final int expected = 3;
+      assertEquals(expected, response.items().size());
+
+      int i = 0;
+      assertNotNull(response.items().get(i).get("streamTriggeredDate").s());
+      assertTrue(response.items().get(i++).get(SK).s().startsWith("attr#myattr"));
+      assertNotNull(response.items().get(i).get("streamTriggeredDate").s());
+      assertEquals("document", response.items().get(i++).get(SK).s());
+      assertNotNull(response.items().get(i).get("streamTriggeredDate").s());
+      assertEquals("tags#mytag", response.items().get(i).get(SK).s());
     }
   }
 

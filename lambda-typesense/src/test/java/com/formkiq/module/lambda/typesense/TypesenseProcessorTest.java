@@ -36,6 +36,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.model.DocumentSyncRecord;
 import org.junit.jupiter.api.BeforeAll;
@@ -94,12 +96,13 @@ class TypesenseProcessorTest {
   @BeforeAll
   public static void beforeAll() throws Exception {
     AwsBasicCredentials cred = AwsBasicCredentials.create("asd", "asd");
-    DynamoDbConnectionBuilder db = DynamoDbTestServices.getDynamoDbConnection();
+    DynamoDbConnectionBuilder dbConnection = DynamoDbTestServices.getDynamoDbConnection();
+    DynamoDbService db = new DynamoDbServiceImpl(dbConnection, DOCUMENTS_TABLE);
 
-    Map<String, String> map =
-        Map.of("AWS_REGION", "us-east-1", "DOCUMENT_SYNC_TABLE", DOCUMENT_SYNCS_TABLE,
-            "TYPESENSE_HOST", "http://localhost:" + typesenseExtension.getFirstMappedPort(),
-            "TYPESENSE_API_KEY", API_KEY);
+    Map<String, String> map = Map.of("AWS_REGION", "us-east-1", "DOCUMENTS_TABLE", DOCUMENTS_TABLE,
+        "DOCUMENT_SYNC_TABLE", DOCUMENT_SYNCS_TABLE, "TYPESENSE_HOST",
+        "http://localhost:" + typesenseExtension.getFirstMappedPort(), "TYPESENSE_API_KEY",
+        API_KEY);
 
     AwsCredentials creds = AwsBasicCredentials.create("aaa", "bbb");
     StaticCredentialsProvider credentialsProvider = StaticCredentialsProvider.create(creds);
