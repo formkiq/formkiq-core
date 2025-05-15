@@ -113,3 +113,21 @@ jobs:
         aws s3 cp vpc.yaml s3://formkiq-core-distribution-ap-southeast-1/${formKiQVersion}/vpc.yaml
         aws s3 cp vpc-import.yaml s3://formkiq-core-distribution-ap-southeast-1/${formKiQVersion}/vpc-import.yaml
         aws s3 cp opensearch-bastion.yaml s3://formkiq-core-distribution-ap-southeast-1/${formKiQVersion}/opensearch-bastion.yaml
+
+        sam package --s3-prefix ${formKiQVersion} --s3-bucket formkiq-core-distribution-eu-west-2 --template-file template.yaml --region eu-west-2 --output-template-file template-${formKiQVersion}.yaml
+        aws s3 cp template-${formKiQVersion}.yaml s3://formkiq-core-distribution-eu-west-2/${formKiQVersion}/template.yaml
+        aws s3 cp vpc.yaml s3://formkiq-core-distribution-eu-west-2/${formKiQVersion}/vpc.yaml
+        aws s3 cp vpc-import.yaml s3://formkiq-core-distribution-eu-west-2/${formKiQVersion}/vpc-import.yaml
+        aws s3 cp opensearch-bastion.yaml s3://formkiq-core-distribution-eu-west-2/${formKiQVersion}/opensearch-bastion.yaml
+
+        sam package --s3-prefix ${formKiQVersion} --s3-bucket formkiq-core-distribution-eu-north-1 --template-file template.yaml --region eu-north-1 --output-template-file template-${formKiQVersion}.yaml
+        aws s3 cp template-${formKiQVersion}.yaml s3://formkiq-core-distribution-eu-north-1/${formKiQVersion}/template.yaml
+        aws s3 cp vpc.yaml s3://formkiq-core-distribution-eu-north-1/${formKiQVersion}/vpc.yaml
+        aws s3 cp vpc-import.yaml s3://formkiq-core-distribution-eu-north-1/${formKiQVersion}/vpc-import.yaml
+        aws s3 cp opensearch-bastion.yaml s3://formkiq-core-distribution-eu-north-1/${formKiQVersion}/opensearch-bastion.yaml
+
+        sam package --s3-prefix ${formKiQVersion} --s3-bucket formkiq-core-distribution-eu-south-1 --template-file template.yaml --region eu-south-1 --output-template-file template-${formKiQVersion}.yaml
+        aws s3 cp template-${formKiQVersion}.yaml s3://formkiq-core-distribution-eu-south-1/${formKiQVersion}/template.yaml
+        aws s3 cp vpc.yaml s3://formkiq-core-distribution-eu-south-1/${formKiQVersion}/vpc.yaml
+        aws s3 cp vpc-import.yaml s3://formkiq-core-distribution-eu-south-1/${formKiQVersion}/vpc-import.yaml
+        aws s3 cp opensearch-bastion.yaml s3://formkiq-core-distribution-eu-south-1/${formKiQVersion}/opensearch-bastion.yaml
