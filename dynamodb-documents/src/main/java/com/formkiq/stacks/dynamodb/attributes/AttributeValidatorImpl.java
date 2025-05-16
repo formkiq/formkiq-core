@@ -215,7 +215,7 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
     boolean restrictedType = AttributeType.OPA.equals(attribute.getType())
         || AttributeType.GOVERNANCE.equals(attribute.getType());
 
-    if (restrictedType && !access.isCreate()) {
+    if (restrictedType) {
       vb.isRequired(attribute.getKey(), access.isAdminOrGovernRole(),
           "attribute can only be changed by GOVERN or ADMIN role");
     }
