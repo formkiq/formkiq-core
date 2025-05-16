@@ -52,7 +52,6 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiMessageResponse;
 import com.formkiq.aws.services.lambda.ApiPagination;
-import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
@@ -301,10 +300,7 @@ public class DocumentIdRequestHandler
 
   private AttributeValidationAccess getAttributeValidationAccess(
       final ApiAuthorization authorization, final String siteId) {
-
-    Collection<ApiPermission> permissions = authorization.getPermissions(siteId);
-    boolean isAdmin =
-        permissions.contains(ApiPermission.ADMIN) || permissions.contains(ApiPermission.GOVERN);
+    boolean isAdmin = authorization.isAdminOrGovern(siteId);
     return isAdmin ? AttributeValidationAccess.ADMIN_UPDATE : AttributeValidationAccess.UPDATE;
   }
 }

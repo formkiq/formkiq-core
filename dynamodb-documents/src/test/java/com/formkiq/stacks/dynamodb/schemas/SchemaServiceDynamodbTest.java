@@ -32,6 +32,7 @@ import com.formkiq.stacks.dynamodb.attributes.AttributeDataType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeServiceDynamodb;
 import com.formkiq.stacks.dynamodb.attributes.AttributeType;
+import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.formkiq.validation.ValidationError;
@@ -106,8 +107,8 @@ public class SchemaServiceDynamodbTest {
   }
 
   private static void addAttribute(final String siteId, final String attributeKey) {
-    attributeService.addAttribute(siteId, attributeKey, AttributeDataType.STRING,
-        AttributeType.STANDARD);
+    attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, attributeKey,
+        AttributeDataType.STRING, AttributeType.STANDARD);
   }
 
   /**

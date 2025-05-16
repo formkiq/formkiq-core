@@ -37,27 +37,27 @@ public interface AttributeService {
   /**
    * Add Attribute.
    *
+   * @param validationAccess {@link AttributeValidationAccess}
    * @param siteId {@link String}
    * @param key {@link String}
    * @param dataType {@link AttributeDataType}
    * @param type {@link AttributeType}
-   * @return {@link Collection} {@link ValidationError}
    */
-  Collection<ValidationError> addAttribute(String siteId, String key, AttributeDataType dataType,
-      AttributeType type);
+  void addAttribute(AttributeValidationAccess validationAccess, String siteId, String key,
+      AttributeDataType dataType, AttributeType type);
 
   /**
    * Add Attribute.
-   * 
+   *
+   * @param validationAccess {@link AttributeValidationAccess}
    * @param siteId {@link String}
    * @param key {@link String}
    * @param dataType {@link AttributeDataType}
    * @param type {@link AttributeType}
    * @param allowReservedAttributeKey boolean
-   * @return {@link Collection} {@link ValidationError}
    */
-  Collection<ValidationError> addAttribute(String siteId, String key, AttributeDataType dataType,
-      AttributeType type, boolean allowReservedAttributeKey);
+  void addAttribute(AttributeValidationAccess validationAccess, String siteId, String key,
+      AttributeDataType dataType, AttributeType type, boolean allowReservedAttributeKey);
 
   /**
    * Add Watermark Attribute.
@@ -65,18 +65,19 @@ public interface AttributeService {
    * @param siteId {@link String}
    * @param key {@link String}
    * @param watermark {@link Watermark}
-   * @return {@link Collection} {@link ValidationError}
    */
-  Collection<ValidationError> addWatermarkAttribute(String siteId, String key, Watermark watermark);
+  void addWatermarkAttribute(String siteId, String key, Watermark watermark);
 
   /**
    * Delete Attribute.
-   * 
+   *
+   * @param validationAccess {@link AttributeValidationAccess}
    * @param siteId {@link String}
    * @param key {@link String}
    * @return {@link Collection} {@link ValidationError}
    */
-  Collection<ValidationError> deleteAttribute(String siteId, String key);
+  Collection<ValidationError> deleteAttribute(AttributeValidationAccess validationAccess,
+      String siteId, String key);
 
   /**
    * Find {@link AttributeRecord}.
@@ -118,10 +119,12 @@ public interface AttributeService {
 
   /**
    * Set {@link AttributeType}.
-   * 
+   *
+   * @param validationAccess {@link AttributeValidationAccess}
    * @param siteId {@link String}
    * @param key {@link String}
    * @param type {@link AttributeType}
    */
-  void setAttributeType(String siteId, String key, AttributeType type);
+  void setAttributeType(AttributeValidationAccess validationAccess, String siteId, String key,
+      AttributeType type);
 }

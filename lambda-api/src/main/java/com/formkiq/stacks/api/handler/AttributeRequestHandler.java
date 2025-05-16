@@ -38,6 +38,7 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.transformers.AttributeRecordToMap;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
+import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
 
@@ -75,7 +76,10 @@ public class AttributeRequestHandler
     String siteId = authorizer.getSiteId();
     String key = event.getPathParameters().get("key");
 
-    Collection<ValidationError> errors = service.deleteAttribute(siteId, key);
+    AttributeValidationAccess validationAccess =
+        authorizer.isAdminOrGovern(siteId) ? AttributeValidationAccess.ADMIN_DELETE
+            : AttributeValidationAccess.DELETE;
+    Collection<ValidationError> errors = service.deleteAttribute(validationAccess, siteId, key);
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }

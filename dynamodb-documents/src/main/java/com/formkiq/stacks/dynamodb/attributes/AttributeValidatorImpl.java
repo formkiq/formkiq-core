@@ -25,7 +25,7 @@ package com.formkiq.stacks.dynamodb.attributes;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
-import java.util.ArrayList;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -45,7 +45,6 @@ import com.formkiq.stacks.dynamodb.schemas.SchemaAttributesOptional;
 import com.formkiq.stacks.dynamodb.schemas.SchemaAttributesRequired;
 import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationError;
-import com.formkiq.validation.ValidationErrorImpl;
 
 /**
  * {@link AttributeValidator} implementation.
@@ -189,14 +188,10 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
 
           if (reserved != null) {
 
-            Collection<ValidationError> elist = attributeService.addAttribute(siteId, da.getKey(),
-                AttributeDataType.STRING, AttributeType.STANDARD, true);
+            attributeService.addAttribute(access, siteId, da.getKey(), AttributeDataType.STRING,
+                AttributeType.STANDARD, true);
 
-            if (elist.isEmpty()) {
-              savedReservedKeys.add(da.getKey());
-            }
-
-            vb.addErrors(elist);
+            savedReservedKeys.add(da.getKey());
 
           } else {
             String errorMsg = "attribute '" + da.getKey() + "' not found";
@@ -209,16 +204,20 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
           AttributeDataType dataType = attribute.getDataType();
           validateDataType(siteId, da, dataType, vb);
 
-          if (AttributeType.OPA.equals(attribute.getType())) {
-            if (isUpdateDeleteOrSet(access)) {
-
-              String errorMsg = "attribute '" + da.getKey()
-                  + "' is an access attribute, can only be changed by Admin";
-              vb.addError(da.getKey(), errorMsg);
-            }
-          }
+          validateAttributeTypeOpaOrGoverance(attribute, access, vb);
         }
       }
+    }
+  }
+
+  private void validateAttributeTypeOpaOrGoverance(final AttributeRecord attribute,
+      final AttributeValidationAccess access, final ValidationBuilder vb) {
+    boolean restrictedType = AttributeType.OPA.equals(attribute.getType())
+        || AttributeType.GOVERNANCE.equals(attribute.getType());
+
+    if (restrictedType && !access.isCreate()) {
+      vb.isRequired(attribute.getKey(), access.isAdminOrGovernRole(),
+          "attribute can only be changed by GOVERN or ADMIN role");
     }
   }
 
@@ -287,28 +286,25 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
       final Map<String, AttributeRecord> attributeRecordMap,
       final AttributeValidationAccess validationAccess) {
 
-    Collection<ValidationError> errors = new ArrayList<>();
+    ValidationBuilder vb = new ValidationBuilder();
 
     for (String attributeKey : attributeKeys) {
 
-      if (Strings.isEmpty(attributeKey)) {
+      vb.isRequired("key", attributeKey);
 
-        errors.add(new ValidationErrorImpl().key("key").error("'key' is required"));
-
-      } else {
-
+      if (vb.isEmpty()) {
         AttributeRecord attributeRecord = attributeRecordMap.get(attributeKey);
-        validateOpaAttribute(attributeRecord, validationAccess, errors);
+        validateAttributeTypeOpaOrGoverance(attributeRecord, validationAccess, vb);
 
-        if (errors.isEmpty()) {
+        if (vb.isEmpty()) {
           for (SchemaAttributes schemaAttribute : schemaAttributes) {
-            validateRequiredAttribute(schemaAttribute, attributeKey, errors);
+            validateRequiredAttribute(schemaAttribute, attributeKey, vb);
           }
         }
       }
     }
 
-    return errors;
+    return vb.getErrors();
   }
 
   @Override
@@ -316,35 +312,33 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
       final String siteId, final String attributeKey,
       final AttributeValidationAccess validationAccess) {
 
-    Collection<ValidationError> errors = new ArrayList<>();
+    ValidationBuilder vb = new ValidationBuilder();
 
-    if (Strings.isEmpty(attributeKey)) {
+    vb.isRequired("key", attributeKey);
 
-      errors.add(new ValidationErrorImpl().key("key").error("'key' is required"));
+    if (vb.isEmpty()) {
+      validateOpaGoveranceAttribute(siteId, attributeKey, validationAccess, vb);
 
-    } else {
-
-      validateOpaAttribute(siteId, attributeKey, validationAccess, errors);
-
-      if (errors.isEmpty() && schema != null) {
-        validateRequiredAttribute(schema.getAttributes(), attributeKey, errors);
+      if (vb.isEmpty() && schema != null) {
+        validateRequiredAttribute(schema.getAttributes(), attributeKey, vb);
       }
     }
 
-    return errors;
+    return vb.getErrors();
   }
 
-  private void validateOpaAttribute(final String siteId, final String attributeKey,
-      final AttributeValidationAccess validationAccess, final Collection<ValidationError> errors) {
+  private void validateOpaGoveranceAttribute(final String siteId, final String attributeKey,
+      final AttributeValidationAccess validationAccess, final ValidationBuilder vb) {
 
     if (AttributeValidationAccess.DELETE.equals(validationAccess)) {
       AttributeRecord attribute = this.attributeService.getAttribute(siteId, attributeKey);
-      validateOpaAttribute(attribute, validationAccess, errors);
+      validateOpaGoveranceAttribute(attribute, validationAccess, vb);
     }
   }
 
-  private void validateOpaAttribute(final AttributeRecord attribute,
-      final AttributeValidationAccess validationAccess, final Collection<ValidationError> errors) {
+  @Deprecated
+  private void validateOpaGoveranceAttribute(final AttributeRecord attribute,
+      final AttributeValidationAccess validationAccess, final ValidationBuilder vb) {
 
     if (isUpdateDeleteOrSet(validationAccess)) {
 
@@ -352,7 +346,7 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
         String attributeKey = attribute.getKey();
         String errorMsg =
             "attribute '" + attributeKey + "' is an access attribute, can only be changed by Admin";
-        errors.add(new ValidationErrorImpl().key(attributeKey).error(errorMsg));
+        vb.addError(attributeKey, errorMsg);
       }
     }
   }
@@ -369,28 +363,19 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
       final String siteId, final String attributeKey, final String attributeValue,
       final AttributeValidationAccess validationAccess) {
 
-    Collection<ValidationError> errors = new ArrayList<>();
+    ValidationBuilder vb = new ValidationBuilder();
+    vb.isRequired("key", attributeKey);
+    vb.isRequired("key", attributeValue);
 
-    if (attributeKey == null || attributeValue == null) {
+    if (vb.isEmpty()) {
+      validateOpaGoveranceAttribute(siteId, attributeKey, validationAccess, vb);
 
-      if (attributeKey == null) {
-        errors.add(new ValidationErrorImpl().key("key").error("'key' is empty"));
-      }
-
-      if (attributeValue == null) {
-        errors.add(new ValidationErrorImpl().key("value").error("'value' is empty"));
-      }
-
-    } else {
-
-      validateOpaAttribute(siteId, attributeKey, validationAccess, errors);
-
-      if (errors.isEmpty() && schema != null) {
-        validateRequiredAttribute(schema.getAttributes(), attributeKey, errors);
+      if (vb.isEmpty() && schema != null) {
+        validateRequiredAttribute(schema.getAttributes(), attributeKey, vb);
       }
     }
 
-    return errors;
+    return vb.getErrors();
   }
 
   @Override
@@ -477,15 +462,12 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
   }
 
   private void validateRequiredAttribute(final SchemaAttributes attributes,
-      final String attributeKey, final Collection<ValidationError> errors) {
+      final String attributeKey, final ValidationBuilder vb) {
 
     Optional<SchemaAttributesRequired> o = notNull(attributes.getRequired()).stream()
         .filter(r -> r.getAttributeKey().equals(attributeKey)).findAny();
 
-    if (o.isPresent()) {
-      errors.add(new ValidationErrorImpl().key(attributeKey)
-          .error("'" + attributeKey + "' is a required attribute"));
-    }
+    vb.isRequired(attributeKey, o.isEmpty(), "'" + attributeKey + "' is a required attribute");
   }
 
   private void validateRequiredAttributes(final String siteId, final SchemaAttributes attributes,

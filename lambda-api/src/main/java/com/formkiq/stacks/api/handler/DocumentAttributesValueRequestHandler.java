@@ -30,15 +30,12 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMessageResponse;
-import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
-
-import java.util.Collection;
 
 /**
  * {@link ApiGatewayRequestHandler} for
@@ -57,9 +54,7 @@ public class DocumentAttributesValueRequestHandler
   private AttributeValidationAccess getAttributeValidationAccessDelete(
       final ApiAuthorization authorization, final String siteId) {
 
-    Collection<ApiPermission> permissions = authorization.getPermissions(siteId);
-    boolean isAdmin =
-        permissions.contains(ApiPermission.ADMIN) || permissions.contains(ApiPermission.GOVERN);
+    boolean isAdmin = authorization.isAdminOrGovern(siteId);
     return isAdmin ? AttributeValidationAccess.ADMIN_DELETE : AttributeValidationAccess.DELETE;
   }
 

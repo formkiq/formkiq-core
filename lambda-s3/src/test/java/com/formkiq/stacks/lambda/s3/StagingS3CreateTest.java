@@ -75,6 +75,7 @@ import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.aws.s3.S3PresignerServiceExtension;
 import com.formkiq.module.http.HttpServiceJdk11;
 import com.formkiq.module.lambdaservices.logger.LoggerRecorder;
+import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -1641,8 +1642,8 @@ public class StagingS3CreateTest implements DbKeys {
     final int limit = 10;
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      attributeService.addAttribute(siteId, "security", AttributeDataType.STRING,
-          AttributeType.STANDARD);
+      attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "security",
+          AttributeDataType.STRING, AttributeType.STANDARD);
 
       String documentId = ID.uuid();
       String json =
