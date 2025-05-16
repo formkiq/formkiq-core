@@ -24,7 +24,7 @@
 package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-import java.util.Collection;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -44,8 +44,7 @@ import com.formkiq.stacks.dynamodb.attributes.AttributeDataType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeType;
-import com.formkiq.validation.ValidationError;
-import com.formkiq.validation.ValidationException;
+import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 
 /** {@link ApiGatewayRequestHandler} for "/attributes". */
 public class AttributesRequestHandler
@@ -99,13 +98,14 @@ public class AttributesRequestHandler
     String key = attribute.getKey();
     AttributeDataType dataType = attribute.getDataType();
     AttributeType type = attribute.getType();
+    AttributeValidationAccess access =
+        authorizer.isAdminOrGovern(siteId) ? AttributeValidationAccess.ADMIN_CREATE
+            : AttributeValidationAccess.CREATE;
 
-    Collection<ValidationError> errors = isWatermark(attribute)
-        ? service.addWatermarkAttribute(siteId, key, attribute.getWatermark())
-        : service.addAttribute(siteId, key, dataType, type);
-
-    if (!errors.isEmpty()) {
-      throw new ValidationException(errors);
+    if (isWatermark(attribute)) {
+      service.addWatermarkAttribute(siteId, key, attribute.getWatermark());
+    } else {
+      service.addAttribute(access, siteId, key, dataType, type);
     }
 
     return new ApiRequestHandlerResponse(SC_OK,

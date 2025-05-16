@@ -33,14 +33,12 @@ import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.aws.dynamodb.objects.Strings;
@@ -114,11 +112,9 @@ public class DocumentIdUrlRequestHandler
 
     boolean isBypassWatermark = "true".equals(getParameter(event, "bypassWatermark"));
 
-    Collection<ApiPermission> permissions = authorization.getPermissions(siteId);
     if (isBypassWatermark) {
 
-      if (!permissions.contains(ApiPermission.ADMIN)
-          && !permissions.contains(ApiPermission.GOVERN)) {
+      if (!authorization.isAdminOrGovern(siteId)) {
         throw new ValidationException(List
             .of(new ValidationErrorImpl().error("user requires 'admin' or 'govern' permission")));
       }

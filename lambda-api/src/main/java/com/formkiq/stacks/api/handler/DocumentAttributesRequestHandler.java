@@ -26,7 +26,7 @@ package com.formkiq.stacks.api.handler;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_CREATED;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-import java.io.IOException;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -42,7 +42,6 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiMessageResponse;
 import com.formkiq.aws.services.lambda.ApiPagination;
-import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
@@ -110,7 +109,7 @@ public class DocumentAttributesRequestHandler
   private List<DocumentAttributeRecord> getDocumentAttributesFromRequest(
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice, final String siteId, final String documentId)
-      throws BadException, IOException, ValidationException {
+      throws BadException, ValidationException {
 
     DocumentAttributesRequest request = fromBodyToObject(event, DocumentAttributesRequest.class);
     if (request.getAttributes() == null) {
@@ -162,11 +161,7 @@ public class DocumentAttributesRequestHandler
   private AttributeValidationAccess getAttributeValidationAccess(
       final ApiAuthorization authorization, final String siteId,
       final AttributeValidationAccess admin, final AttributeValidationAccess regular) {
-
-    Collection<ApiPermission> permissions = authorization.getPermissions(siteId);
-    boolean isAdmin =
-        permissions.contains(ApiPermission.ADMIN) || permissions.contains(ApiPermission.GOVERN);
-    return isAdmin ? admin : regular;
+    return authorization.isAdminOrGovern(siteId) ? admin : regular;
   }
 
   @Override
@@ -193,7 +188,7 @@ public class DocumentAttributesRequestHandler
   }
 
   private void verifyDocument(final AwsServiceCache awsservice, final String siteId,
-      final String documentId) throws Exception {
+      final String documentId) {
     DocumentService ds = awsservice.getExtension(DocumentService.class);
     if (!ds.exists(siteId, documentId)) {
       throw new DocumentNotFoundException(documentId);

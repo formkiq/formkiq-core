@@ -68,6 +68,7 @@ import com.formkiq.module.typesense.TypeSenseService;
 import com.formkiq.module.typesense.TypeSenseServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentSyncService;
 import com.formkiq.stacks.dynamodb.DocumentSyncServiceDynamoDb;
+import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.config.ConfigServiceDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
@@ -1540,7 +1541,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
         String text = IoUtils.toUtf8String(is);
         String documentId = addTextToBucket(siteId, text);
 
-        attributeService.addAttribute(siteId, "invoice", null, null);
+        attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "invoice", null,
+            null);
 
         Mapping mapping =
             createMapping("invoice", "P.O. Number", MappingAttributeLabelMatchingType.FUZZY,
@@ -1605,7 +1607,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
         String text = IoUtils.toUtf8String(is);
         String documentId = addTextToBucket(siteId, text);
 
-        attributeService.addAttribute(siteId, "invoice", AttributeDataType.NUMBER, null);
+        attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "invoice",
+            AttributeDataType.NUMBER, null);
 
         Mapping mapping =
             createMapping("invoice", "P.O. Number", MappingAttributeLabelMatchingType.FUZZY,
@@ -1651,7 +1654,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
         String text = IoUtils.toUtf8String(is);
         String documentId = addTextToBucket(siteId, text);
 
-        attributeService.addAttribute(siteId, "invoice", AttributeDataType.NUMBER, null);
+        attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "invoice",
+            AttributeDataType.NUMBER, null);
 
         Mapping mapping =
             createMapping("invoice", "abcdef", MappingAttributeLabelMatchingType.EXACT,
@@ -1693,7 +1697,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
         String text = IoUtils.toUtf8String(is);
         String documentId = addTextToBucket(siteId, text);
 
-        attributeService.addAttribute(siteId, "invoice", AttributeDataType.STRING, null);
+        attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "invoice",
+            AttributeDataType.STRING, null);
 
         Mapping mapping =
             createMapping("invoice", "abcdef", MappingAttributeLabelMatchingType.EXACT,
@@ -1736,7 +1741,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
         String text = IoUtils.toUtf8String(is);
         String documentId = addTextToBucket(siteId, text);
 
-        attributeService.addAttribute(siteId, "invoice", AttributeDataType.STRING, null);
+        attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "invoice",
+            AttributeDataType.STRING, null);
 
         Mapping mapping =
             createMapping("invoice", "abcdef", MappingAttributeLabelMatchingType.EXACT,
@@ -1787,7 +1793,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
         String text = IoUtils.toUtf8String(is);
         String documentId = addTextToBucket(siteId, text);
 
-        attributeService.addAttribute(siteId, "invoice", null, null);
+        attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "invoice", null,
+            null);
 
         Mapping mapping =
             createMapping("invoice", "P.O. NO.:", MappingAttributeLabelMatchingType.CONTAINS,
@@ -1830,7 +1837,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
         String text = IoUtils.toUtf8String(is);
         String documentId = addTextToBucket(siteId, text);
 
-        attributeService.addAttribute(siteId, "path", null, null);
+        attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "path", null, null);
 
         Mapping mapping = createMapping("path", "j", MappingAttributeLabelMatchingType.BEGINS_WITH,
             MappingAttributeSourceType.METADATA, null, null,
@@ -1875,11 +1882,12 @@ public class DocumentActionsProcessorTest implements DbKeys {
           Invoice Number INV-3337
           123 Somewhere Street Your City AZ 12345 admin@slicedinvoices.com""";
 
+      attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "invoice", null,
+          null);
+
       for (String validationRegex : Arrays.asList(null, "INV-\\d+")) {
 
         String documentId = addTextToBucket(siteId, text);
-
-        attributeService.addAttribute(siteId, "invoice", null, null);
 
         Mapping mapping =
             createMapping("invoice", "invoice", MappingAttributeLabelMatchingType.FUZZY,
@@ -1927,7 +1935,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
         String text = IoUtils.toUtf8String(is);
         String documentId = addTextToBucket(siteId, text);
 
-        attributeService.addAttribute(siteId, "certificate_number", null, null);
+        attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId,
+            "certificate_number", null, null);
 
         Mapping mapping = createMapping("certificate_number", "Customer certificate",
             MappingAttributeLabelMatchingType.FUZZY, MappingAttributeSourceType.CONTENT, null, null,
@@ -1969,7 +1978,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
       // given
       String documentId = addPdfToBucket(siteId);
 
-      attributeService.addAttribute(siteId, "certificate_number", null, null);
+      attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "certificate_number",
+          null, null);
 
       Mapping mapping = createMapping("certificate_number", "Customer certificate",
           MappingAttributeLabelMatchingType.FUZZY, MappingAttributeSourceType.CONTENT_KEY_VALUE,
@@ -2012,7 +2022,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
       // given
       String documentId = addPdfToBucket(siteId);
 
-      attributeService.addAttribute(siteId, "certificate_number", null, null);
+      attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "certificate_number",
+          null, null);
 
       Mapping mapping =
           createMapping("certificate_number", "Age", MappingAttributeLabelMatchingType.EXACT,
@@ -2052,7 +2063,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
       // given
       String documentId = addPdfToBucket(siteId);
 
-      attributeService.addAttribute(siteId, "certificate_number", null, null);
+      attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "certificate_number",
+          null, null);
 
       Mapping mapping = createMapping("certificate_number", "Customer certificate",
           MappingAttributeLabelMatchingType.EXACT, MappingAttributeSourceType.CONTENT_KEY_VALUE,
@@ -2089,7 +2101,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
       // given
       String documentId = addPdfToBucket(siteId);
 
-      attributeService.addAttribute(siteId, "certificate_number", null, null);
+      attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "certificate_number",
+          null, null);
 
       Mapping mapping = createMapping("certificate_number", null, null,
           MappingAttributeSourceType.MANUAL, "123", List.of("111", "222"), null);
@@ -2140,7 +2153,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
       // given
       String documentId = addPdfToBucket(siteId);
 
-      attributeService.addAttribute(siteId, "certificate_number", AttributeDataType.KEY_ONLY, null);
+      attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "certificate_number",
+          AttributeDataType.KEY_ONLY, null);
 
       Mapping mapping = createMapping("certificate_number", null, null,
           MappingAttributeSourceType.MANUAL, null, null, null);
@@ -2392,8 +2406,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
     String eventBusName = createEventBus(sqsQueueArn);
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
-      attributeService.addAttribute(siteId, "category", AttributeDataType.STRING,
-          AttributeType.STANDARD);
+      attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "category",
+          AttributeDataType.STRING, AttributeType.STANDARD);
 
       String documentId = ID.uuid();
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");

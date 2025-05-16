@@ -416,9 +416,8 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
         fail();
       } catch (ApiException e) {
         // then
-        assertEquals(
-            "{\"errors\":[{\"key\":\"watermark\"," + "\"error\":\"'watermark' is required\"}]}",
-            e.getResponseBody());
+        assertEquals("{\"errors\":[{\"key\":\"watermark\",\"error\":\"'watermark.text' "
+            + "or 'watermark.imageDocumentId' is required\"}]}", e.getResponseBody());
       }
     }
   }
@@ -534,7 +533,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
         // then
         assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
         assertEquals(
-            "{\"errors\":[" + "{\"key\":\"key\",\"error\":\"attribute 'wm1' already exists\"},"
+            "{\"errors\":[{\"key\":\"key\",\"error\":\"attribute 'wm1' already exists\"},"
                 + "{\"key\":\"watermark.imageDocumentId\","
                 + "\"error\":\"watermark.imageDocumentId' does not exist\"}]}",
             e.getResponseBody());
@@ -546,6 +545,55 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
         assertEquals(1, list.size());
         assertEquals("wm1", list.get(0).getKey());
       }
+    }
+  }
+
+  /**
+   * POST /attributes GOVERNANCE without ADMIN permission.
+   *
+   */
+  @Test
+  public void testAddAttributes09() {
+    // given
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+
+      setBearerToken(siteId);
+
+      AddAttributeRequest req = new AddAttributeRequest()
+          .attribute(new AddAttribute().key("gov").type(AttributeType.GOVERNANCE));
+
+      // when
+      try {
+        this.attributesApi.addAttribute(req, siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals("{\"errors\":[{\"key\":\"gov\",\"error\":\"Access denied to attribute\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * POST /attributes GOVERNANCE with GOVERN permission.
+   *
+   */
+  @Test
+  public void testAddAttributes10() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, SITE_ID)) {
+
+      setBearerToken(siteId + "_govern");
+
+      String key = "gov_" + ID.uuid();
+      AddAttributeRequest req = new AddAttributeRequest()
+          .attribute(new AddAttribute().key(key).type(AttributeType.GOVERNANCE));
+
+      // when
+      AddAttributeResponse response = this.attributesApi.addAttribute(req, siteId);
+
+      // then
+      assertEquals("Attribute '" + key + "' created", response.getMessage());
     }
   }
 
@@ -1642,7 +1690,8 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       } catch (ApiException e) {
         // then
         assertEquals(
-            "{\"errors\":[{\"error\":\"attribute '" + key + "' is in use, cannot be deleted\"}]}",
+            "{\"errors\":[{\"key\":\"security\","
+                + "\"error\":\"attribute 'security' is in use, cannot be deleted\"}]}",
             e.getResponseBody());
       }
     }
@@ -1678,8 +1727,9 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       } catch (ApiException e) {
         // then
         assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
-        assertEquals("{\"errors\":[{\"error\":\"attribute '" + key + "' is used in a Schema "
-            + "/ Classification, cannot be deleted\"}]}", e.getResponseBody());
+        assertEquals("{\"errors\":[{\"key\":\"category\","
+            + "\"error\":\"attribute 'category' is used in a Schema / "
+            + "Classification, cannot be deleted\"}]}", e.getResponseBody());
       }
     }
   }
@@ -1714,8 +1764,50 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       } catch (ApiException e) {
         // then
         assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
-        assertEquals("{\"errors\":[{\"error\":\"attribute '" + key + "' is used in a Schema "
-            + "/ Classification, cannot be deleted\"}]}", e.getResponseBody());
+        assertEquals("{\"errors\":[{\"key\":\"category\","
+            + "\"error\":\"attribute 'category' is used in a Schema / Classification, "
+            + "cannot be deleted\"}]}", e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * DELETE /attributes OPA / GOVERNANCE attribute.
+   *
+   */
+  @Test
+  public void testDeleteAttributes06() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, SITE_ID)) {
+
+      for (AttributeType type : List.of(AttributeType.GOVERNANCE, AttributeType.OPA)) {
+
+        setBearerToken(new String[] {siteId, "admins"});
+
+        AddAttributeRequest req =
+            new AddAttributeRequest().attribute(new AddAttribute().key("gov").type(type));
+        this.attributesApi.addAttribute(req, siteId);
+
+        setBearerToken(siteId);
+
+        // when
+        try {
+          this.attributesApi.deleteAttribute("gov", siteId);
+          fail();
+        } catch (ApiException e) {
+          // then
+          assertEquals("{\"errors\":[{\"key\":\"gov\",\"error\":\"Access denied to attribute\"}]}",
+              e.getResponseBody());
+        }
+
+        // given
+        setBearerToken(new String[] {siteId, "admins"});
+
+        // when
+        DeleteResponse deleteResponse = this.attributesApi.deleteAttribute("gov", siteId);
+
+        // then
+        assertEquals("Attribute 'gov' deleted", deleteResponse.getMessage());
       }
     }
   }
@@ -1796,10 +1888,10 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     // given
     for (String siteId : Arrays.asList(null, SITE_ID)) {
 
-      setBearerToken(siteId);
-
+      setBearerToken("Admins");
       addAttribute(siteId, "security", null, AttributeType.OPA);
 
+      setBearerToken(siteId);
       String documentId = addDocumentAttribute(siteId, "security", "confidential", null, null);
 
       // when
@@ -1866,12 +1958,12 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testDeleteDocumentAttributeValue01() throws ApiException {
     // given
-    for (String siteId : Arrays.asList(null, SITE_ID)) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, SITE_ID)) {
 
-      setBearerToken(siteId);
-
+      setBearerToken(siteId + "_govern");
       addAttribute(siteId, "security", null, AttributeType.OPA);
 
+      setBearerToken(siteId);
       String documentId = addDocumentAttribute(siteId, "security", "confidential", null, null);
 
       // when
@@ -2208,11 +2300,12 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testPutDocumentAttribute02() throws ApiException {
     // given
-    for (String siteId : Arrays.asList(null, SITE_ID)) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, SITE_ID)) {
+
+      setBearerToken(siteId + "_govern");
+      addAttribute(siteId, "security", null, AttributeType.OPA);
 
       setBearerToken(siteId);
-
-      addAttribute(siteId, "security", null, AttributeType.OPA);
       addAttribute(siteId, "strings", null, null);
 
       String documentId = addDocumentAttribute(siteId, "security", "confidential", null, null);
@@ -2229,9 +2322,10 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
         fail();
       } catch (ApiException e) {
         // then
-        assertEquals("{\"errors\":[{\"key\":\"security\","
-            + "\"error\":\"attribute 'security' is an access attribute, "
-            + "can only be changed by Admin\"}]}", e.getResponseBody());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"security\","
+                + "\"error\":\"attribute can only be changed by GOVERN or ADMIN role\"}]}",
+            e.getResponseBody());
       }
 
       // given
@@ -2300,10 +2394,11 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     // given
     for (String siteId : Arrays.asList(null, SITE_ID)) {
 
-      setBearerToken(siteId);
+      setBearerToken("Admins");
 
       addAttribute(siteId, "security", null, AttributeType.OPA);
 
+      setBearerToken(siteId);
       String documentId = addDocumentAttribute(siteId, "security", "confidential", null, null);
 
       SetDocumentAttributeRequest sreq = new SetDocumentAttributeRequest()
@@ -2316,8 +2411,8 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       } catch (ApiException e) {
         // then
         assertEquals(
-            "{\"errors\":[{\"key\":\"security\",\"error\":\"attribute "
-                + "'security' is an access attribute, can only be changed by Admin\"}]}",
+            "{\"errors\":[{\"key\":\"security\","
+                + "\"error\":\"attribute can only be changed by GOVERN or ADMIN role\"}]}",
             e.getResponseBody());
       }
 
@@ -2535,12 +2630,12 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     // given
     final String key = "security";
 
-    for (String siteId : Arrays.asList(null, SITE_ID)) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, SITE_ID)) {
 
-      setBearerToken(siteId);
-
+      setBearerToken(siteId + "_govern");
       addAttribute(siteId, key, AttributeDataType.STRING, AttributeType.OPA);
 
+      setBearerToken(siteId);
       AddDocumentUploadRequest docReq = new AddDocumentUploadRequest()
           .addAttributesItem(createStringAttribute(key, "confidental"));
 
@@ -2571,12 +2666,13 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testUpdateDocumentAttribute01() throws ApiException {
     // given
-    for (String siteId : Arrays.asList(null, SITE_ID)) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, SITE_ID)) {
 
-      setBearerToken(siteId);
+      setBearerToken(siteId + "_govern");
 
       addAttribute(siteId, "security", null, AttributeType.OPA);
 
+      setBearerToken(siteId);
       String documentId = addDocumentAttribute(siteId, "security", "confidential", null, null);
 
       List<SearchResultDocument> documents = notNull(
@@ -2595,8 +2691,8 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
         // then
         assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
         assertEquals(
-            "{\"errors\":[{\"key\":\"security\",\"error\":\"attribute "
-                + "'security' is an access attribute, can only be changed by Admin\"}]}",
+            "{\"errors\":[{\"key\":\"security\","
+                + "\"error\":\"attribute can only be changed by GOVERN or ADMIN role\"}]}",
             e.getResponseBody());
 
         documents = notNull(

@@ -24,7 +24,7 @@
 package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-import java.io.IOException;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -37,7 +37,6 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiMessageResponse;
-import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
@@ -116,25 +115,20 @@ public class DocumentAttributeRequestHandler
   private AttributeValidationAccess getAttributeValidationAccess(
       final ApiAuthorization authorization, final String siteId) {
 
-    Collection<ApiPermission> permissions = authorization.getPermissions(siteId);
-    boolean isAdmin =
-        permissions.contains(ApiPermission.ADMIN) || permissions.contains(ApiPermission.GOVERN);
+    boolean isAdmin = authorization.isAdminOrGovern(siteId);
     return isAdmin ? AttributeValidationAccess.ADMIN_SET_ITEM : AttributeValidationAccess.SET_ITEM;
   }
 
   private AttributeValidationAccess getAttributeValidationAccessDelete(
       final ApiAuthorization authorization, final String siteId) {
-
-    Collection<ApiPermission> permissions = authorization.getPermissions(siteId);
-    boolean isAdmin =
-        permissions.contains(ApiPermission.ADMIN) || permissions.contains(ApiPermission.GOVERN);
+    boolean isAdmin = authorization.isAdminOrGovern(siteId);
     return isAdmin ? AttributeValidationAccess.ADMIN_DELETE : AttributeValidationAccess.DELETE;
   }
 
   private Collection<DocumentAttributeRecord> getDocumentAttributesFromRequest(
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice, final String siteId, final String documentId,
-      final String attributeKey) throws BadException, IOException, ValidationException {
+      final String attributeKey) throws BadException, ValidationException {
 
     DocumentAttributeValueRequest request =
         fromBodyToObject(event, DocumentAttributeValueRequest.class);
@@ -189,7 +183,7 @@ public class DocumentAttributeRequestHandler
   }
 
   private void verifyDocument(final AwsServiceCache awsservice, final String siteId,
-      final String documentId) throws Exception {
+      final String documentId) {
     DocumentService ds = awsservice.getExtension(DocumentService.class);
     if (!ds.exists(siteId, documentId)) {
       throw new DocumentNotFoundException(documentId);
