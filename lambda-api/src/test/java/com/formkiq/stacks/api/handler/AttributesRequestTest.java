@@ -1891,8 +1891,8 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       setBearerToken("Admins");
       addAttribute(siteId, "security", null, AttributeType.OPA);
 
-      setBearerToken(siteId);
       String documentId = addDocumentAttribute(siteId, "security", "confidential", null, null);
+      setBearerToken(siteId);
 
       // when
       try {
@@ -1963,8 +1963,8 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       setBearerToken(siteId + "_govern");
       addAttribute(siteId, "security", null, AttributeType.OPA);
 
-      setBearerToken(siteId);
       String documentId = addDocumentAttribute(siteId, "security", "confidential", null, null);
+      setBearerToken(siteId);
 
       // when
       try {
@@ -2305,10 +2305,10 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       setBearerToken(siteId + "_govern");
       addAttribute(siteId, "security", null, AttributeType.OPA);
 
-      setBearerToken(siteId);
       addAttribute(siteId, "strings", null, null);
 
       String documentId = addDocumentAttribute(siteId, "security", "confidential", null, null);
+      setBearerToken(siteId);
 
       AddDocumentAttribute strings = createStringsAttribute("strings", Arrays.asList("abc", "xyz"));
       addDocumentAttribute(siteId, documentId, strings);
@@ -2392,15 +2392,14 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testPutDocumentAttributeValue01() throws ApiException {
     // given
-    for (String siteId : Arrays.asList(null, SITE_ID)) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, SITE_ID)) {
 
-      setBearerToken("Admins");
-
+      setBearerToken(siteId + "_govern");
       addAttribute(siteId, "security", null, AttributeType.OPA);
 
-      setBearerToken(siteId);
       String documentId = addDocumentAttribute(siteId, "security", "confidential", null, null);
 
+      setBearerToken(siteId);
       SetDocumentAttributeRequest sreq = new SetDocumentAttributeRequest()
           .attribute(new AddDocumentAttributeValue().stringValue("123"));
 
@@ -2635,7 +2634,6 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       setBearerToken(siteId + "_govern");
       addAttribute(siteId, key, AttributeDataType.STRING, AttributeType.OPA);
 
-      setBearerToken(siteId);
       AddDocumentUploadRequest docReq = new AddDocumentUploadRequest()
           .addAttributesItem(createStringAttribute(key, "confidental"));
 
@@ -2644,6 +2642,8 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
           this.documentsApi.addDocumentUpload(docReq, siteId, null, null, null).getDocumentId();
       assertNotNull(documentId);
       assertEquals("confidental", getDocumentAttribute(siteId, documentId, key).getStringValue());
+
+      setBearerToken(siteId);
 
       // when - update document with Attribute Type = OPA
       try {
@@ -2672,8 +2672,8 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       addAttribute(siteId, "security", null, AttributeType.OPA);
 
-      setBearerToken(siteId);
       String documentId = addDocumentAttribute(siteId, "security", "confidential", null, null);
+      setBearerToken(siteId);
 
       List<SearchResultDocument> documents = notNull(
           foldersApi.getFolderDocuments(siteId, null, null, null, null, null).getDocuments());
