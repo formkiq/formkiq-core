@@ -33,5 +33,7 @@ public enum AttributeType {
   /** OPA. */
   OPA,
   /** Standard. */
-  STANDARD;
+  STANDARD,
+  /** GOVERNANCE. */
+  GOVERNANCE
 }
