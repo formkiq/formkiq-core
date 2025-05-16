@@ -46,6 +46,7 @@ import com.formkiq.client.model.AddResponse;
 import com.formkiq.client.model.AttributeDataType;
 import com.formkiq.client.model.AttributeSchemaCompositeKey;
 import com.formkiq.client.model.AttributeSchemaRequired;
+import com.formkiq.client.model.AttributeType;
 import com.formkiq.client.model.AttributeValueType;
 import com.formkiq.client.model.DeleteResponse;
 import com.formkiq.client.model.DocumentAttribute;
@@ -129,9 +130,14 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
   private void addAttribute(final String siteId, final String key,
       final AttributeDataType dataType) {
+    addAttribute(siteId, key, dataType, null);
+  }
+
+  private void addAttribute(final String siteId, final String key, final AttributeDataType dataType,
+      final AttributeType type) {
     try {
-      AddAttributeRequest req =
-          new AddAttributeRequest().attribute(new AddAttribute().key(key).dataType(dataType));
+      AddAttributeRequest req = new AddAttributeRequest()
+          .attribute(new AddAttribute().key(key).dataType(dataType).type(type));
       this.attributesApi.addAttribute(req, siteId);
     } catch (ApiException e) {
       throw new RuntimeException(e);
@@ -697,6 +703,54 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
     }
   }
 
+  /**
+   * POST /documents/{documentId}/attributes. Attribute GOVERNANCE.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddDocumentAttribute11() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId + "_govern");
+      addAttribute(siteId, "strings", AttributeDataType.STRING, AttributeType.GOVERNANCE);
+
+      setBearerToken(siteId);
+      AddDocumentRequest areq = new AddDocumentRequest().content("adasd");
+      String documentId = this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
+      assertNotNull(documentId);
+
+      AddDocumentAttributeStandard a =
+          new AddDocumentAttributeStandard().key("strings").stringValue("123123");
+      AddDocumentAttributesRequest attrReq =
+          new AddDocumentAttributesRequest().addAttributesItem(new AddDocumentAttribute(a));
+
+      // when
+      try {
+        this.documentAttributesApi.addDocumentAttributes(documentId, attrReq, siteId, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"strings\","
+                + "\"error\":\"attribute can only be changed by GOVERN or ADMIN role\"}]}",
+            e.getResponseBody());
+      }
+
+      // given
+      setBearerToken(siteId + "_govern");
+
+      // when
+      AddResponse addResponse =
+          this.documentAttributesApi.addDocumentAttributes(documentId, attrReq, siteId, null);
+
+      // then
+      assertEquals("added attributes to documentId '" + documentId + "'", addResponse.getMessage());
+    }
+  }
+
   private ApiException addDocumentAttributesWithError(final String siteId, final String documentId,
       final AddDocumentAttributesRequest req) {
     ApiException error = null;
@@ -708,9 +762,6 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
     }
     return error;
   }
-
-
-  // TODO adding standard attribute to entity attirbute.
 
   /**
    * POST /documents/upload with site schema required attribute.
