@@ -71,6 +71,7 @@ import com.formkiq.stacks.dynamodb.attributes.AttributeDataType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeServiceDynamodb;
 import com.formkiq.stacks.dynamodb.attributes.AttributeType;
+import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
 import com.formkiq.stacks.dynamodb.attributes.Watermark;
@@ -987,11 +988,10 @@ public class DocumentServiceImplTest implements DbKeys {
 
   /**
    * Find Documents by date with document that has child documents.
-   * 
-   * @throws Exception Exception
+   *
    */
   @Test
-  public void testFindDocumentsByDate05() throws Exception {
+  public void testFindDocumentsByDate05() {
     // given
     Date now = new Date();
     DynamicDocumentItem doc = createSubDocuments(now);
@@ -2272,11 +2272,10 @@ public class DocumentServiceImplTest implements DbKeys {
 
   /**
    * Test Saving same document multiple times.
-   * 
-   * @throws Exception Exception
+   *
    */
   @Test
-  public void testSaveFolders04() throws Exception {
+  public void testSaveFolders04() {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String path = "a/test.txt";
@@ -2342,8 +2341,8 @@ public class DocumentServiceImplTest implements DbKeys {
     // given
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      attributeService.addAttribute(siteId, "key", AttributeDataType.STRING,
-          AttributeType.STANDARD);
+      attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "key",
+          AttributeDataType.STRING, AttributeType.STANDARD);
       attributeService.addWatermarkAttribute(siteId, "wm1", new Watermark().setText("watermark1"));
       attributeService.addWatermarkAttribute(siteId, "wm2", new Watermark().setText("watermark2"));
 

@@ -42,23 +42,35 @@ import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
  */
 public class ApiAuthorization {
 
-  /** {@link ThreadLocal}. */
+  /**
+   * {@link ThreadLocal}.
+   */
   private static final ThreadLocal<ApiAuthorization> CURRENT_AUTHORIZATION = new ThreadLocal<>();
 
-  /** {@link Object} Cache. */
+  /**
+   * {@link Object} Cache.
+   */
   private final Map<String, Object> cache = new HashMap<>();
-  /** Get Default SiteId. */
+  /**
+   * Get Default SiteId.
+   */
   private String defaultSiteId;
-  /** {@link ApiPermission} by SiteId. */
+  /**
+   * {@link ApiPermission} by SiteId.
+   */
   private Map<String, Collection<ApiPermission>> permissionsBySiteId = new HashMap<>();
-  /** Authorization Roles. */
+  /**
+   * Authorization Roles.
+   */
   private Collection<String> roles;
-  /** {@link String}. */
+  /**
+   * {@link String}.
+   */
   private String username;
 
   /**
    * Login user.
-   * 
+   *
    * @param authorization {@link ApiAuthorization}
    */
   public static void login(final ApiAuthorization authorization) {
@@ -67,7 +79,7 @@ public class ApiAuthorization {
 
   /**
    * Get Current User.
-   * 
+   *
    * @return ApiAuthorization
    */
   public static ApiAuthorization getAuthorization() {
@@ -87,7 +99,7 @@ public class ApiAuthorization {
 
   /**
    * Add Object to Cache.
-   * 
+   *
    * @param key {@link String}
    * @param o {@link Object}
    * @return {@link ApiAuthorization}
@@ -95,6 +107,17 @@ public class ApiAuthorization {
   public ApiAuthorization addCacheObject(final String key, final Object o) {
     this.cache.put(key, o);
     return this;
+  }
+
+  /**
+   * Returns whether the user has Admin or Govern permission.
+   * 
+   * @param siteId {@link String}
+   * @return boolean
+   */
+  public boolean isAdminOrGovern(final String siteId) {
+    Collection<ApiPermission> permissions = getPermissions(siteId);
+    return permissions.contains(ApiPermission.ADMIN) || permissions.contains(ApiPermission.GOVERN);
   }
 
   /**

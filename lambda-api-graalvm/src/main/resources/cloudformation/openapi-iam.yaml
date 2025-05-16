@@ -10368,6 +10368,7 @@ Resources:
               enum:
                 - STANDARD
                 - OPA
+                - GOVERNANCE
 
             AttributeDataType:
               type: string

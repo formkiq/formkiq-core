@@ -10226,6 +10226,7 @@
               enum:
               - STANDARD
               - OPA
+              - GOVERNANCE
             AttributeDataType:
               type: string
               description: Data Type of Attribute

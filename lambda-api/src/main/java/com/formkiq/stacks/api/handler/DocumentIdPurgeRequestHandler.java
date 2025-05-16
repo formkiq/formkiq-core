@@ -24,7 +24,6 @@
 package com.formkiq.stacks.api.handler;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
-import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -100,8 +99,8 @@ public class DocumentIdPurgeRequestHandler
   @Override
   public Optional<Boolean> isAuthorized(final AwsServiceCache awsservice, final String method,
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
-    boolean access = authorization.getPermissions().contains(ApiPermission.ADMIN)
-        || authorization.getPermissions().contains(ApiPermission.GOVERN);
+    String siteId = authorization.getSiteId();
+    boolean access = authorization.isAdminOrGovern(siteId);
     return Optional.of(access);
   }
 }

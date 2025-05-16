@@ -23,7 +23,6 @@
  */
 package com.formkiq.stacks.dynamodb.attributes;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -37,8 +36,8 @@ import com.formkiq.aws.dynamodb.PaginationToAttributeValue;
 import com.formkiq.aws.dynamodb.QueryConfig;
 import com.formkiq.aws.dynamodb.QueryResponseToPagination;
 import com.formkiq.stacks.dynamodb.schemas.SchemaAttributeKeyRecord;
+import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationError;
-import com.formkiq.validation.ValidationErrorImpl;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
@@ -66,46 +65,40 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
   }
 
   @Override
-  public Collection<ValidationError> addAttribute(final String siteId, final String key,
-      final AttributeDataType dataType, final AttributeType type) {
-    return addAttribute(siteId, key, dataType, type, false);
+  public void addAttribute(final AttributeValidationAccess validationAccess, final String siteId,
+      final String key, final AttributeDataType dataType, final AttributeType type) {
+    addAttribute(validationAccess, siteId, key, dataType, type, false);
   }
 
   @Override
-  public Collection<ValidationError> addAttribute(final String siteId, final String key,
-      final AttributeDataType dataType, final AttributeType type,
+  public void addAttribute(final AttributeValidationAccess validationAccess, final String siteId,
+      final String key, final AttributeDataType dataType, final AttributeType type,
       final boolean allowReservedAttributeKey) {
-    return addAttribute(siteId, key, dataType, type, allowReservedAttributeKey, null);
+    addAttribute(validationAccess, siteId, key, dataType, type, allowReservedAttributeKey, null);
   }
 
-  private Collection<ValidationError> addAttribute(final String siteId, final String key,
-      final AttributeDataType dataType, final AttributeType type,
+  private void addAttribute(final AttributeValidationAccess validationAccess, final String siteId,
+      final String key, final AttributeDataType dataType, final AttributeType type,
       final boolean allowReservedAttributeKey, final Watermark watermark) {
 
-    Collection<ValidationError> errors =
-        validate(siteId, key, dataType, allowReservedAttributeKey, watermark);
+    WatermarkPosition position = watermark != null ? watermark.getPosition() : null;
 
-    if (errors.isEmpty()) {
+    AttributeRecord a = new AttributeRecord().documentId(key).key(key)
+        .type(type != null ? type : AttributeType.STANDARD)
+        .setWatermarkText(watermark != null ? watermark.getText() : null)
+        .setWatermarkImageDocumentId(watermark != null ? watermark.getImageDocumentId() : null)
+        .setWatermarkRotation(watermark != null ? watermark.getRotation() : null)
+        .setWatermarkScale(watermark != null ? watermark.getScale() : null)
+        .dataType(dataType != null ? dataType : AttributeDataType.STRING);
 
-      WatermarkPosition position = watermark != null ? watermark.getPosition() : null;
-
-      AttributeRecord a = new AttributeRecord().documentId(key).key(key)
-          .type(type != null ? type : AttributeType.STANDARD)
-          .setWatermarkText(watermark != null ? watermark.getText() : null)
-          .setWatermarkImageDocumentId(watermark != null ? watermark.getImageDocumentId() : null)
-          .setWatermarkRotation(watermark != null ? watermark.getRotation() : null)
-          .setWatermarkScale(watermark != null ? watermark.getScale() : null)
-          .dataType(dataType != null ? dataType : AttributeDataType.STRING);
-
-      if (position != null) {
-        updateWatermarkPosition(a, position);
-      }
-
-      Map<String, AttributeValue> attrs = a.getAttributes(siteId);
-      this.db.putItem(attrs);
+    if (position != null) {
+      updateWatermarkPosition(a, position);
     }
 
-    return errors;
+    validate(validationAccess, siteId, allowReservedAttributeKey, a);
+
+    Map<String, AttributeValue> attrs = a.getAttributes(siteId);
+    this.db.putItem(attrs);
   }
 
   private void updateWatermarkPosition(final AttributeRecord a, final WatermarkPosition position) {
@@ -120,88 +113,116 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
   }
 
   @Override
-  public Collection<ValidationError> addWatermarkAttribute(final String siteId, final String key,
+  public void addWatermarkAttribute(final String siteId, final String key,
       final Watermark watermark) {
-    return addAttribute(siteId, key, AttributeDataType.WATERMARK, AttributeType.STANDARD, false,
-        watermark);
+    addAttribute(AttributeValidationAccess.CREATE, siteId, key, AttributeDataType.WATERMARK,
+        AttributeType.STANDARD, false, watermark);
   }
 
-  private Collection<ValidationError> validate(final String siteId, final String key,
-      final AttributeDataType dataType, final boolean allowReservedAttributeKey,
-      final Watermark watermark) {
+  private void validate(final AttributeValidationAccess validationAccess, final String siteId,
+      final boolean allowReservedAttributeKey, final AttributeRecord a) {
 
-    Collection<ValidationError> errors = new ArrayList<>();
+    String key = a.getKey();
+    ValidationBuilder vb = new ValidationBuilder();
+    vb.isRequired("key", key);
+    vb.check();
 
-    if (isEmpty(key)) {
-      errors.add(new ValidationErrorImpl().key("key").error("'key' is required"));
-    } else if (!allowReservedAttributeKey) {
-
+    if (!allowReservedAttributeKey) {
       AttributeKeyReserved r = AttributeKeyReserved.find(key);
-      if (r != null) {
-        errors.add(new ValidationErrorImpl().key("key")
-            .error("'" + key + "' is a reserved attribute name"));
-      }
+      vb.isRequired("key", r == null, "'" + key + "' is a reserved attribute name");
     }
 
-    if (errors.isEmpty()) {
-      AttributeRecord attribute = getAttribute(siteId, key);
-      if (attribute != null) {
-        errors.add(
-            new ValidationErrorImpl().key("key").error("attribute '" + key + "' already exists"));
-      }
-    }
+    AttributeRecord attribute = getAttribute(siteId, key);
+    vb.isRequired("key", attribute == null, "attribute '" + key + "' already exists");
 
-    validateWatermark(siteId, dataType, watermark, errors);
+    validateWatermark(siteId, a, vb);
+    validateAttributeType(validationAccess, a, vb);
 
-    return errors;
+    vb.check();
   }
 
-  private void validateWatermark(final String siteId, final AttributeDataType dataType,
-      final Watermark watermark, final Collection<ValidationError> errors) {
-    if (AttributeDataType.WATERMARK.equals(dataType)) {
+  private void validateWatermark(final String siteId, final AttributeRecord a,
+      final ValidationBuilder vb) {
 
-      if (watermark == null) {
-        errors.add(new ValidationErrorImpl().key("watermark").error("'watermark' is required"));
-      } else if (isEmpty(watermark.getText()) && isEmpty(watermark.getImageDocumentId())) {
-        errors.add(new ValidationErrorImpl().key("watermark")
-            .error("'watermark.text' or 'watermark.imageDocumentId' is required"));
-      } else if (!isEmpty(watermark.getImageDocumentId())) {
+    boolean hasWatermark =
+        !isEmpty(a.getWatermarkText()) || !isEmpty(a.getWatermarkImageDocumentId());
 
-        Map<String, AttributeValue> keys = keysDocument(siteId, watermark.getImageDocumentId());
+    if (AttributeDataType.WATERMARK.equals(a.getDataType())) {
+
+      String watermarkImageDocumentId = a.getWatermarkImageDocumentId();
+      if (isEmpty(a.getWatermarkText()) && isEmpty(watermarkImageDocumentId)) {
+        vb.addError("watermark", "'watermark.text' or 'watermark.imageDocumentId' is required");
+      } else if (!isEmpty(watermarkImageDocumentId)) {
+
+        Map<String, AttributeValue> keys = keysDocument(siteId, watermarkImageDocumentId);
         if (!this.db.exists(keys.get(PK), keys.get(SK))) {
-          errors.add(new ValidationErrorImpl().key("watermark.imageDocumentId")
-              .error("watermark.imageDocumentId' does not exist"));
+          vb.addError("watermark.imageDocumentId", "watermark.imageDocumentId' does not exist");
         }
       }
 
-    } else if (watermark != null) {
-      errors.add(new ValidationErrorImpl().key("watermark.text")
-          .error("'watermark' only allowed on dataType 'WATERMARK'"));
+    } else if (hasWatermark) {
+      vb.addError("watermark.text", "'watermark' only allowed on dataType 'WATERMARK'");
     }
   }
 
   @Override
-  public Collection<ValidationError> deleteAttribute(final String siteId, final String key) {
+  public Collection<ValidationError> deleteAttribute(
+      final AttributeValidationAccess validationAccess, final String siteId, final String key) {
 
     boolean deleted = false;
-    Collection<ValidationError> errors = validateDeleteAttribute(siteId, key);
+    ValidationBuilder vb = new ValidationBuilder();
+    validateDeleteAttribute(siteId, key, vb);
 
-    if (errors.isEmpty()) {
+    if (vb.isEmpty()) {
 
       AttributeRecord r = new AttributeRecord().documentId(key);
-      deleted = this.db.deleteItem(Map.of(PK, r.fromS(r.pk(siteId)), SK, r.fromS(r.sk())));
+
+      validateAttributeType(validationAccess, siteId, key, vb);
+
+      if (vb.isEmpty()) {
+        deleted = this.db.deleteItem(Map.of(PK, r.fromS(r.pk(siteId)), SK, r.fromS(r.sk())));
+      }
     }
 
-    if (!deleted && errors.isEmpty()) {
-      errors.add(new ValidationErrorImpl().key("key").error("attribute 'key' not found"));
+    if (!deleted && vb.isEmpty()) {
+      vb.addError("key", "attribute 'key' not found");
     }
 
-    return errors;
+    return vb.getErrors();
   }
 
-  private Collection<ValidationError> validateDeleteAttribute(final String siteId,
-      final String key) {
-    Collection<ValidationError> errors = new ArrayList<>();
+  private void validateAttributeType(final AttributeValidationAccess validationAccess,
+      final String siteId, final String key, final ValidationBuilder vb) {
+
+    if (!validationAccess.isAdminOrGovernRole()) {
+
+      AttributeRecord r = new AttributeRecord().documentId(key);
+      Map<String, AttributeValue> attrs = this.db.get(r.fromS(r.pk(siteId)), r.fromS(r.sk()));
+      if (!attrs.isEmpty()) {
+        r = r.getFromAttributes(siteId, attrs);
+      }
+
+      validateAttributeType(validationAccess, r, vb);
+    }
+  }
+
+  private void validateAttributeType(final AttributeValidationAccess validationAccess,
+      final AttributeRecord r, final ValidationBuilder vb) {
+
+    if (!validationAccess.isAdminOrGovernRole()) {
+
+      final AttributeType attributeType = r != null && r.getType() != null ? r.getType() : null;
+
+      if (attributeType != null) {
+        Collection<AttributeType> types = List.of(AttributeType.GOVERNANCE, AttributeType.OPA);
+        types.forEach(type -> vb.isRequired(r.getKey(), !type.equals(attributeType),
+            "Access denied to attribute"));
+      }
+    }
+  }
+
+  private void validateDeleteAttribute(final String siteId, final String key,
+      final ValidationBuilder vb) {
 
     QueryConfig config = new QueryConfig().indexName(GSI1);
 
@@ -210,8 +231,8 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
     AttributeValue pk = r.fromS(r.pkGsi1(siteId));
     QueryResponse response = this.db.queryBeginsWith(config, pk, null, null, 1);
     if (!response.items().isEmpty()) {
-      errors.add(new ValidationErrorImpl().error(
-          "attribute '" + key + "' is used in a Schema / Classification, cannot be deleted"));
+      vb.addError(key,
+          "attribute '" + key + "' is used in a Schema / Classification, cannot be deleted");
     }
 
     // check for DocumentAttributeRecords
@@ -220,11 +241,8 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
     response = this.db.queryBeginsWith(config, pk, null, null, 1);
 
     if (!response.items().isEmpty()) {
-      errors.add(
-          new ValidationErrorImpl().error("attribute '" + key + "' is in use, cannot be deleted"));
+      vb.addError(key, "attribute '" + key + "' is in use, cannot be deleted");
     }
-
-    return errors;
   }
 
   @Override
@@ -283,8 +301,14 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
   }
 
   @Override
-  public void setAttributeType(final String siteId, final String key, final AttributeType type) {
-    AttributeRecord r = new AttributeRecord().key(key).documentId(key);
+  public void setAttributeType(final AttributeValidationAccess validationAccess,
+      final String siteId, final String key, final AttributeType type) {
+
+    AttributeRecord r = new AttributeRecord().key(key).documentId(key).type(type);
+
+    ValidationBuilder vb = new ValidationBuilder();
+    validateAttributeType(validationAccess, r, vb);
+    vb.check();
 
     Map<String, AttributeValueUpdate> attributes = Map.of("type",
         AttributeValueUpdate.builder().value(AttributeValue.fromS(type.name())).build());

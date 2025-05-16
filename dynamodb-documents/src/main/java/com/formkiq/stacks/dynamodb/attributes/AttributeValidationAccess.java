@@ -29,25 +29,43 @@ package com.formkiq.stacks.dynamodb.attributes;
 public enum AttributeValidationAccess {
 
   /** Admin Create Access. */
-  ADMIN_CREATE,
+  ADMIN_CREATE(true, true),
   /** Admin Delete Access. */
-  ADMIN_DELETE,
+  ADMIN_DELETE(true, false),
   /** Admin Set Access. */
-  ADMIN_SET,
+  ADMIN_SET(true, false),
   /** Admin Update Access. */
-  ADMIN_UPDATE,
+  ADMIN_UPDATE(true, false),
   /** Create Access. */
-  CREATE,
+  CREATE(false, true),
   /** Delete Access. */
-  DELETE,
+  DELETE(false, false),
   /** None Access. */
-  NONE,
+  NONE(false, false),
   /** Set Access. */
-  SET,
+  SET(false, false),
   /** Update Access. */
-  UPDATE,
+  UPDATE(false, false),
   /** Admin Set Item. */
-  ADMIN_SET_ITEM,
+  ADMIN_SET_ITEM(true, false),
   /** Set Item. */
-  SET_ITEM
+  SET_ITEM(false, false);
+
+  /** Is Access ADMIN or Govern Role. */
+  private final boolean adminOrGovernRole;
+  /** Is Create. */
+  private final boolean create;
+
+  AttributeValidationAccess(final boolean isAdminOrGovernRole, final boolean isCreate) {
+    this.adminOrGovernRole = isAdminOrGovernRole;
+    this.create = isCreate;
+  }
+
+  public boolean isAdminOrGovernRole() {
+    return adminOrGovernRole;
+  }
+
+  public boolean isCreate() {
+    return create;
+  }
 }
