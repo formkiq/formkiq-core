@@ -196,10 +196,13 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
       // then
       String documentId = response.getDocumentId();
+      assertNotNull(documentId);
       assertNull(response.getUploadUrl());
 
       GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
       assertEquals("https://google.com", document.getDeepLinkPath());
+      assertNull(document.getLastModifiedDate());
+      assertNull(document.getContentLength());
     }
   }
 
@@ -228,6 +231,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
       // then
       assertNotNull(response.getUploadUrl());
+      assertNotNull(response.getDocumentId());
 
       List<AddChildDocumentResponse> documents = notNull(response.getDocuments());
       assertEquals(1, documents.size());
@@ -235,6 +239,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
       String documentId = response.getDocumentId();
       String childDocumentId = documents.get(0).getDocumentId();
+      assertNotNull(childDocumentId);
 
       List<ChildDocument> documents1 =
           notNull(this.documentsApi.getDocument(documentId, siteId, null).getDocuments());
@@ -284,6 +289,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
       // then
       String documentId = response.getDocumentId();
+      assertNotNull(documentId);
 
       GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
       assertNotNull(document);
@@ -334,6 +340,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
 
       // then
+      assertNotNull(documentId);
       List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
           .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
 
@@ -512,6 +519,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
         // then
         assertNull(response.getUploadUrl());
         String documentId = response.getDocumentId();
+        assertNotNull(documentId);
 
         GetDocumentResponse doc = this.documentsApi.getDocument(documentId, siteId, null);
         assertEquals(e.getValue(), doc.getContentType());
@@ -523,6 +531,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
         documentId = this.documentsApi.addDocument(req, null, null).getDocumentId();
 
         // then
+        assertNotNull(documentId);
         doc = this.documentsApi.getDocument(documentId, siteId, null);
         assertEquals("application/pdf", doc.getContentType());
       }
@@ -584,6 +593,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       // then
       assertNull(response.getUploadUrl());
       String documentId = response.getDocumentId();
+      assertNotNull(documentId);
 
       GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
       assertEquals(deepLink, document.getDeepLinkPath());
@@ -761,6 +771,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
 
       // then
+      assertNotNull(documentId);
       List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
           .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
 
@@ -874,6 +885,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       AddDocumentRequest req =
           new AddDocumentRequest().path(path).content(content0).contentType("text/plain");
       String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+      assertNotNull(documentId);
 
       // when
       try {
@@ -906,6 +918,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       AddDocumentRequest req =
           new AddDocumentRequest().path(path).content(content0).contentType("text/plain");
       String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+      assertNotNull(documentId);
 
       AwsServiceCache awsServices = getAwsServices();
       awsServices.register(S3Service.class, new S3ServiceExtension());
