@@ -24,6 +24,8 @@
 package com.formkiq.stacks.dynamodb;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -73,6 +75,11 @@ public class DocumentItemToDynamicDocumentItem
     map.put("belongsToDocumentId", item.getBelongsToDocumentId());
     map.put("TimeToLive", item.getTimeToLive());
     map.put("metadata", item.getMetadata());
+
+    if (!isEmpty(item.getDeepLinkPath())) {
+      map.remove("lastModifiedDate");
+      map.remove("contentLength");
+    }
 
     return new DynamicDocumentItem(map);
   }
