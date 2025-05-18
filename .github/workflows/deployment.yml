@@ -131,3 +131,15 @@ jobs:
         aws s3 cp vpc.yaml s3://formkiq-core-distribution-eu-south-1/${formKiQVersion}/vpc.yaml
         aws s3 cp vpc-import.yaml s3://formkiq-core-distribution-eu-south-1/${formKiQVersion}/vpc-import.yaml
         aws s3 cp opensearch-bastion.yaml s3://formkiq-core-distribution-eu-south-1/${formKiQVersion}/opensearch-bastion.yaml
+
+        sam package --s3-prefix 1.17.0 --s3-bucket formkiq-core-distribution-af-south-1 --template-file template.yaml --region af-south-1 --output-template-file template-1.17.0.yaml
+        aws s3 cp template-1.17.0.yaml s3://formkiq-core-distribution-af-south-1/1.17.0/template.yaml
+        aws s3 cp vpc.yaml s3://formkiq-core-distribution-af-south-1/1.17.0/vpc.yaml
+        aws s3 cp vpc-import.yaml s3://formkiq-core-distribution-af-south-1/1.17.0/vpc-import.yaml
+        aws s3 cp opensearch-bastion.yaml s3://formkiq-core-distribution-af-south-1/1.17.0/opensearch-bastion.yaml
+
+        sam package --s3-prefix 1.17.0 --s3-bucket formkiq-core-distribution-ap-northeast-1 --template-file template.yaml --region ap-northeast-1 --output-template-file template-1.17.0.yaml
+        aws s3 cp template-1.17.0.yaml s3://formkiq-core-distribution-ap-northeast-1/1.17.0/template.yaml
+        aws s3 cp vpc.yaml s3://formkiq-core-distribution-ap-northeast-1/1.17.0/vpc.yaml
+        aws s3 cp vpc-import.yaml s3://formkiq-core-distribution-ap-northeast-1/1.17.0/vpc-import.yaml
+        aws s3 cp opensearch-bastion.yaml s3://formkiq-core-distribution-ap-northeast-1/1.17.0/opensearch-bastion.yaml
