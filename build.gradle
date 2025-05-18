@@ -71,6 +71,9 @@ subprojects {
     maven {
       url "https://central.sonatype.com/repository/maven-snapshots/"
     }
+    maven {
+      url "https://central.sonatype.com/repository/maven-snapshots/"
+    }
   }
   
   compileJava.dependsOn 'spotlessCheck'

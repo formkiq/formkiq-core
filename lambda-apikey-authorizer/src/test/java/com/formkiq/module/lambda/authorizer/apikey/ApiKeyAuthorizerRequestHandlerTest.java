@@ -25,16 +25,14 @@ package com.formkiq.module.lambda.authorizer.apikey;
 
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.amazonaws.services.lambda.runtime.events.APIGatewayV2CustomAuthorizerEvent;
 import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -49,8 +47,6 @@ import com.formkiq.stacks.dynamodb.ApiKeysService;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LambdaContextRecorder;
 import com.formkiq.testutils.aws.TestServices;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -66,8 +62,6 @@ class ApiKeyAuthorizerRequestHandlerTest {
 
   /** {@link ApiKeysService}. */
   private static ApiKeysService apiKeysService;
-  /** {@link Gson}. */
-  private static final Gson GSON = new GsonBuilder().create();
   /** {@link ApiKeyAuthorizerRequestHandler}. */
   private static ApiKeyAuthorizerRequestHandler processor;
 
@@ -96,51 +90,41 @@ class ApiKeyAuthorizerRequestHandlerTest {
   /** {@link Context}. */
   private final Context context = new LambdaContextRecorder();
 
-  private InputStream getInput(final String apiKey) {
+  private APIGatewayV2CustomAuthorizerEvent getInput(final String apiKey) {
     List<String> identitySource = apiKey != null ? List.of(apiKey) : Collections.emptyList();
-    String json = GSON.toJson(Map.of("type", "REQUEST", "identitySource", identitySource));
-
-    return new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8));
+    return APIGatewayV2CustomAuthorizerEvent.builder().withType("REQUEST")
+        .withIdentitySource(identitySource).build();
   }
 
   /**
    * Test Invalid API Key.
-   * 
-   * @throws Exception Exception
+   *
    */
-  @SuppressWarnings("unchecked")
   @Test
-  void testHandleRequest01() throws Exception {
+  void testHandleRequest01() {
     // given
     String apiKey = ID.uuid();
 
-    try (InputStream is = getInput(apiKey)) {
+    APIGatewayV2CustomAuthorizerEvent is = getInput(apiKey);
 
-      ByteArrayOutputStream os = new ByteArrayOutputStream();
+    // when
+    Map<String, Object> map = processor.handleRequest(is, this.context);
 
-      // when
-      processor.handleRequest(is, os, this.context);
-
-      // then
-      String response = os.toString(StandardCharsets.UTF_8);
-      Map<String, Object> map = GSON.fromJson(response, Map.class);
-      assertEquals(Boolean.FALSE, map.get("isAuthorized"));
-      Map<String, Object> ctx = (Map<String, Object>) map.get("context");
-      Map<String, Object> claims = (Map<String, Object>) ctx.get("apiKeyClaims");
-      assertEquals("[]", claims.get("cognito:groups"));
-      assertEquals("", claims.get("cognito:username"));
-      assertEquals("", claims.get("permissions"));
-    }
+    // then
+    assertEquals(Boolean.FALSE, map.get("isAuthorized"));
+    Map<String, Object> ctx = (Map<String, Object>) map.get("context");
+    Map<String, Object> claims = (Map<String, Object>) ctx.get("apiKeyClaims");
+    assertEquals("[]", claims.get("cognito:groups"));
+    assertEquals("", claims.get("cognito:username"));
+    assertEquals("", claims.get("permissions"));
   }
 
   /**
    * Test VALID API Key.
-   * 
-   * @throws Exception Exception
+   *
    */
-  @SuppressWarnings("unchecked")
   @Test
-  void testHandleRequest02() throws Exception {
+  void testHandleRequest02() {
     // given
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
@@ -150,90 +134,71 @@ class ApiKeyAuthorizerRequestHandlerTest {
           Arrays.asList(ApiKeyPermission.READ, ApiKeyPermission.WRITE, ApiKeyPermission.DELETE),
           "joe");
 
-      try (InputStream is = getInput(apiKey)) {
+      APIGatewayV2CustomAuthorizerEvent is = getInput(apiKey);
 
-        ByteArrayOutputStream os = new ByteArrayOutputStream();
+      // when
+      Map<String, Object> map = processor.handleRequest(is, this.context);
 
-        // when
-        processor.handleRequest(is, os, this.context);
+      // then
+      assertEquals(Boolean.TRUE, map.get("isAuthorized"));
 
-        // then
-        String response = os.toString(StandardCharsets.UTF_8);
-        Map<String, Object> map = GSON.fromJson(response, Map.class);
-        assertEquals(Boolean.TRUE, map.get("isAuthorized"));
+      Map<String, Object> ctx = (Map<String, Object>) map.get("context");
+      Map<String, Object> claims = (Map<String, Object>) ctx.get("apiKeyClaims");
 
-        Map<String, Object> ctx = (Map<String, Object>) map.get("context");
-        Map<String, Object> claims = (Map<String, Object>) ctx.get("apiKeyClaims");
-
-        if (siteId != null) {
-          assertEquals("[" + siteId + "]", claims.get("cognito:groups"));
-        } else {
-          assertEquals("[default]", claims.get("cognito:groups"));
-        }
-
-        assertEquals(name, claims.get("cognito:username"));
-        assertEquals("DELETE,READ,WRITE", claims.get("permissions"));
+      if (siteId != null) {
+        assertEquals("[" + siteId + "]", claims.get("cognito:groups"));
+      } else {
+        assertEquals("[default]", claims.get("cognito:groups"));
       }
+
+      assertEquals(name, claims.get("cognito:username"));
+      assertEquals("DELETE,READ,WRITE", claims.get("permissions"));
     }
   }
 
   /**
    * Test missing API Key.
-   * 
-   * @throws Exception Exception
+   *
    */
-  @SuppressWarnings("unchecked")
   @Test
-  void testHandleRequest03() throws Exception {
+  void testHandleRequest03() {
     // given
-    try (InputStream is = getInput(null)) {
+    APIGatewayV2CustomAuthorizerEvent is = getInput(null);
 
-      ByteArrayOutputStream os = new ByteArrayOutputStream();
+    // when
+    Map<String, Object> map = processor.handleRequest(is, this.context);
 
-      // when
-      processor.handleRequest(is, os, this.context);
+    // then
+    assertEquals(Boolean.FALSE, map.get("isAuthorized"));
 
-      // then
-      String response = os.toString(StandardCharsets.UTF_8);
-      Map<String, Object> map = GSON.fromJson(response, Map.class);
-      assertEquals(Boolean.FALSE, map.get("isAuthorized"));
-
-      Map<String, Object> ctx = (Map<String, Object>) map.get("context");
-      Map<String, Object> claims = (Map<String, Object>) ctx.get("apiKeyClaims");
-      assertEquals("[]", claims.get("cognito:groups"));
-      assertEquals("", claims.get("cognito:username"));
-      assertEquals("", claims.get("permissions"));
-    }
+    Map<String, Object> ctx = (Map<String, Object>) map.get("context");
+    Map<String, Object> claims = (Map<String, Object>) ctx.get("apiKeyClaims");
+    assertEquals("[]", claims.get("cognito:groups"));
+    assertEquals("", claims.get("cognito:username"));
+    assertEquals("", claims.get("permissions"));
   }
 
   /**
    * Test Invalid very long API Key.
-   * 
-   * @throws Exception Exception
+   *
    */
-  @SuppressWarnings("unchecked")
   @Test
-  void testHandleRequest04() throws Exception {
+  void testHandleRequest04() {
     // given
     final int len = 2000;
     String apiKey = Strings.generateRandomString(len);
 
-    try (InputStream is = getInput(apiKey)) {
+    APIGatewayV2CustomAuthorizerEvent is = getInput(apiKey);
 
-      ByteArrayOutputStream os = new ByteArrayOutputStream();
+    // when
+    Map<String, Object> map = processor.handleRequest(is, this.context);
 
-      // when
-      processor.handleRequest(is, os, this.context);
-
-      // then
-      String response = os.toString(StandardCharsets.UTF_8);
-      Map<String, Object> map = GSON.fromJson(response, Map.class);
-      assertEquals(Boolean.FALSE, map.get("isAuthorized"));
-      Map<String, Object> ctx = (Map<String, Object>) map.get("context");
-      Map<String, Object> claims = (Map<String, Object>) ctx.get("apiKeyClaims");
-      assertEquals("[]", claims.get("cognito:groups"));
-      assertEquals("", claims.get("cognito:username"));
-      assertEquals("", claims.get("permissions"));
-    }
+    // then
+    assertEquals(Boolean.FALSE, map.get("isAuthorized"));
+    Map<String, Object> ctx = (Map<String, Object>) map.get("context");
+    Map<String, Object> claims = (Map<String, Object>) ctx.get("apiKeyClaims");
+    assertEquals("[]", claims.get("cognito:groups"));
+    assertEquals("", claims.get("cognito:username"));
+    assertEquals("", claims.get("permissions"));
   }
 }

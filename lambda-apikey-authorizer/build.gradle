@@ -13,10 +13,12 @@ dependencies {
 	implementation project(':fkq-lambda-services')
 	
 	implementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.17'
+
+    implementation("com.amazonaws:aws-lambda-java-events:3.15.0")
 	implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.3'
 	implementation group: 'com.google.code.gson', name: 'gson', version: '2.13.0'
 
-    implementation group: 'com.formkiq', name: 'lambda-runtime-graalvm', version:'2.5.0'
+    implementation group: 'com.formkiq', name: 'lambda-runtime-graalvm', version:'2.6.0-SNAPSHOT'
     implementation group: 'com.formkiq', name: 'graalvm-annotations', version: '1.2.0'
 	
 	testImplementation project(':fkq-test-utils')
