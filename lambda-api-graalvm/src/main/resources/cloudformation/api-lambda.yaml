@@ -338,9 +338,15 @@ Resources:
               - dynamodb:BatchGetItem
               - dynamodb:BatchWriteItem
               - dynamodb:Get*
+              - dynamodb:UpdateItem
               - dynamodb:Query
               Resource:
               - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentSyncsTableName}}"
+            - Effect: Allow
+              Action:
+                - dynamodb:Query
+              Resource:
+                - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentSyncsTableName}}/index/*"
             - Effect: Allow
               Action:
               - sns:Publish
