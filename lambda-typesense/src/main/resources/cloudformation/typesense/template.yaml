@@ -302,9 +302,15 @@ Resources:
             - dynamodb:PutItem
             - dynamodb:Query
             - dynamodb:DeleteItem
+            - dynamodb:UpdateItem
             Resource:
             - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentSyncsTableName}}" 
-            
+          - Effect: Allow
+            Action:
+              - dynamodb:Query
+            Resource:
+              - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentSyncsTableName}}/index/*"
+
   TypesenseTableStream:
     Type: AWS::Lambda::EventSourceMapping
     Condition: CreateResources
