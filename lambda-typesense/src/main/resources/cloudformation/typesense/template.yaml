@@ -160,6 +160,8 @@ Resources:
           ENABLE_AWS_X_RAY: true
           FormKiQType:
             Ref: FormKiQType
+          DOCUMENTS_TABLE:
+            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"
           DOCUMENT_SYNC_TABLE: 
             Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentSyncsTableName}}"
           TYPESENSE_HOST:
