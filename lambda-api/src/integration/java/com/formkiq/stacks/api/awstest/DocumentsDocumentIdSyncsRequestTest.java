@@ -42,6 +42,7 @@ import com.formkiq.client.model.AddDocumentSync;
 import com.formkiq.client.model.AddDocumentSyncRequest;
 import com.formkiq.client.model.AddDocumentSyncService;
 import com.formkiq.client.model.AddResponse;
+import com.formkiq.client.model.Document;
 import com.formkiq.client.model.DocumentSyncService;
 import com.formkiq.client.model.DocumentSyncStatus;
 import com.formkiq.client.model.DocumentSyncType;
@@ -111,6 +112,10 @@ public class DocumentsDocumentIdSyncsRequestTest extends AbstractAwsIntegrationT
         final int expectedCount = 5;
         GetDocumentSyncResponse syncs = getDocumentSyncs(api, siteId, documentId, expectedCount);
         assertEquals(expectedCount, notNull(syncs.getSyncs()).size());
+
+        List<Document> docs = notNull(api.getDocuments(siteId, null, "FULLTEXT_METADATA_FAILED",
+            null, null, null, null, null, null).getDocuments());
+        assertEquals(0, docs.size());
       }
     }
   }

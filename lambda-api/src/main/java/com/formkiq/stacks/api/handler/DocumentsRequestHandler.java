@@ -183,9 +183,9 @@ public class DocumentsRequestHandler
         awsservice.hasModule("opensearch") ? DocumentSyncServiceType.OPENSEARCH
             : DocumentSyncServiceType.TYPESENSE;
 
-    if ("FULLTEXT_METADATA_FAILED".equals(syncStatus)) {
+    if ("FULLTEXT_METADATA_FAILED".equalsIgnoreCase(syncStatus)) {
       syncType = DocumentSyncType.METADATA;
-    } else if ("FULLTEXT_CONTENT_FAILED".equals(syncStatus)) {
+    } else if ("FULLTEXT_CONTENT_FAILED".equalsIgnoreCase(syncStatus)) {
       syncType = DocumentSyncType.CONTENT;
     } else {
       throw new BadException("Unknown 'syncStatus'");
