@@ -21,21 +21,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.dynamodb.model;
+package com.formkiq.aws.dynamodb;
+
+import java.util.List;
+import java.util.Map;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
- * 
- * Supported Document Sync Status.
- *
+ * Represents the result of a DynamoDB query, including the list of items and the key to start the
+ * next page of results.
  */
-public enum DocumentSyncStatus {
-
-  /** Completed. */
-  COMPLETE,
-  /** FAILED. */
-  FAILED,
-  /** FAILED. */
-  FAILED_RETRY,
-  /** Pending. */
-  PENDING
+public record QueryResult(List<Map<String, AttributeValue>> items,
+    Map<String, AttributeValue> lastEvaluatedKey) {
 }

@@ -41,6 +41,7 @@ import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.PaginationToAttributeValue;
 import com.formkiq.aws.dynamodb.QueryResponseToPagination;
+import com.formkiq.aws.dynamodb.QueryResult;
 import com.formkiq.aws.dynamodb.model.DocumentSyncRecord;
 import com.formkiq.aws.dynamodb.model.DocumentSyncRecordBuilder;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
@@ -49,10 +50,12 @@ import com.formkiq.aws.dynamodb.model.DocumentSyncType;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
+import software.amazon.awssdk.services.dynamodb.model.AttributeAction;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
+import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest;
 
 /**
  * 
@@ -147,7 +150,7 @@ public final class DocumentSyncServiceDynamoDb implements DocumentSyncService, D
     switch (service) {
       case OPENSEARCH, TYPESENSE -> {
         if (DocumentSyncType.METADATA.equals(type)) {
-          setStreamTriggeredDate(siteId, documentId);
+          setStreamTriggeredDate(siteId, documentId, service, type);
         } else {
           errors.add(new ValidationErrorImpl().key("type")
               .error("unsupport type '" + type + "' for service '" + service + "'"));
@@ -162,27 +165,10 @@ public final class DocumentSyncServiceDynamoDb implements DocumentSyncService, D
     return errors;
   }
 
-  private void setStreamTriggeredDate(final String siteId, final String documentId) {
+  private void setStreamTriggeredDate(final String siteId, final String documentId,
+      final DocumentSyncServiceType service, final DocumentSyncType type) {
 
-    Map<String, AttributeValue> key = keysDocument(siteId, documentId);
-
-    String pk = key.get(PK).s();
-    DynamoDbKey docKey = new DynamoDbKey(pk, key.get(SK).s(), "", "", "", "");
-
-    DynamoDbQueryBuilder tags =
-        DynamoDbQueryBuilder.builder().pk(pk).projectionExpression("PK,SK").beginsWith("tags#");
-    QueryResponse responseTags = this.db.query(tags.build(this.documentTableName));
-
-    DynamoDbQueryBuilder attrs =
-        DynamoDbQueryBuilder.builder().pk(pk).projectionExpression("PK,SK").beginsWith("attr#");
-    QueryResponse responseAttrs = this.db.query(attrs.build(this.documentTableName));
-
-    Collection<DynamoDbKey> keys = new ArrayList<>();
-    keys.add(docKey);
-    responseTags.items().forEach(
-        item -> keys.add(new DynamoDbKey(item.get(PK).s(), item.get(SK).s(), "", "", "", "")));
-    responseAttrs.items().forEach(
-        item -> keys.add(new DynamoDbKey(item.get(PK).s(), item.get(SK).s(), "", "", "", "")));
+    Collection<DynamoDbKey> keys = getDocumentKeys(siteId, documentId);
 
     SimpleDateFormat df = DateUtil.getIsoDateFormatter();
     AttributeValue val = fromS(df.format(new Date()));
@@ -190,6 +176,50 @@ public final class DocumentSyncServiceDynamoDb implements DocumentSyncService, D
     Map<String, AttributeValueUpdate> updateValues =
         Map.of("streamTriggeredDate", AttributeValueUpdate.builder().value(val).build());
     this.db.updateItems(this.documentTableName, keys, updateValues);
+
+    // update FAILED Document Sync records
+    final int limit = 100;
+    QueryResult result = new DocumentSyncStatusQuery(service, DocumentSyncStatus.FAILED, type)
+        .query(db, this.syncTableName, siteId, null, limit);
+
+    keys = result.items().stream()
+        .map(r -> new DynamoDbKey(r.get(PK).s(), r.get(SK).s(), "", "", "", "")).toList();
+
+    keys.forEach(key -> {
+      UpdateItemRequest updateReq =
+          UpdateItemRequest.builder().tableName(this.syncTableName).key(key.toMap())
+              .attributeUpdates(Map.of("GSI1PK",
+                  AttributeValueUpdate.builder().action(AttributeAction.DELETE).build(), "GSI1SK",
+                  AttributeValueUpdate.builder().action(AttributeAction.DELETE).build(), "status",
+                  AttributeValueUpdate.builder()
+                      .value(fromS(DocumentSyncStatus.FAILED_RETRY.name())).build()))
+              .build();
+      this.db.updateItem(updateReq);
+    });
+  }
+
+  private Collection<DynamoDbKey> getDocumentKeys(final String siteId, final String documentId) {
+
+    final int limit = 100;
+
+    Collection<DynamoDbKey> keys = new ArrayList<>();
+
+    Map<String, AttributeValue> key = keysDocument(siteId, documentId);
+    String pk = key.get(PK).s();
+    DynamoDbKey docKey = new DynamoDbKey(pk, key.get(SK).s(), "", "", "", "");
+    keys.add(docKey);
+
+    QueryResult tagResults = new DocumentAllTagsQuery(documentId).query(this.db,
+        this.documentTableName, siteId, null, limit);
+    tagResults.items().forEach(
+        item -> keys.add(new DynamoDbKey(item.get(PK).s(), item.get(SK).s(), "", "", "", "")));
+
+    QueryResult attrsResults = new DocumentAllAttributesQuery(documentId).query(this.db,
+        this.documentTableName, siteId, null, limit);
+    attrsResults.items().forEach(
+        item -> keys.add(new DynamoDbKey(item.get(PK).s(), item.get(SK).s(), "", "", "", "")));
+
+    return keys;
   }
 
   @Override

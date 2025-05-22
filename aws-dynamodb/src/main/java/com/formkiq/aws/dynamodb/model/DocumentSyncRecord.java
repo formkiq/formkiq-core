@@ -23,7 +23,6 @@
  */
 package com.formkiq.aws.dynamodb.model;
 
-import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamodbRecord;
 import com.formkiq.graalvm.annotations.Reflectable;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -39,6 +38,9 @@ import static com.formkiq.aws.dynamodb.AttributeValueHelper.addStringIfNotEmpty;
 import static com.formkiq.aws.dynamodb.AttributeValueHelper.toDateValue;
 import static com.formkiq.aws.dynamodb.AttributeValueHelper.toEnumValue;
 import static com.formkiq.aws.dynamodb.AttributeValueHelper.toStringValue;
+import static com.formkiq.aws.dynamodb.DbKeys.GSI1_PK;
+import static com.formkiq.aws.dynamodb.DbKeys.GSI1_SK;
+import static com.formkiq.aws.dynamodb.DbKeys.PK;
 import static com.formkiq.aws.dynamodb.DbKeys.PREFIX_DOCS;
 import static com.formkiq.aws.dynamodb.DbKeys.SK;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
@@ -50,7 +52,7 @@ import static com.formkiq.aws.dynamodb.objects.DateUtil.getInIso8601Format;
 @Reflectable
 public class DocumentSyncRecord implements DynamodbRecord<DocumentSyncRecord> {
   /** Syncs SK. */
-  private static final String SK_SYNCS = "syncs#";
+  public static final String SK_SYNCS = "syncs#";
   /** Document Id. */
   private String documentId;
   /** Record Sync date. */
@@ -255,8 +257,13 @@ public class DocumentSyncRecord implements DynamodbRecord<DocumentSyncRecord> {
   public Map<String, AttributeValue> getAttributes(final String siteId) {
     Map<String, AttributeValue> map = getDataAttributes();
 
-    map.put(DbKeys.PK, fromS(pk(siteId)));
+    map.put(PK, fromS(pk(siteId)));
     map.put(SK, fromS(sk()));
+
+    if (DocumentSyncStatus.FAILED.equals(status)) {
+      map.put(GSI1_PK, fromS(pkGsi1(siteId)));
+      map.put(GSI1_SK, fromS(skGsi1()));
+    }
 
     return map;
   }
@@ -323,7 +330,10 @@ public class DocumentSyncRecord implements DynamodbRecord<DocumentSyncRecord> {
 
   @Override
   public String pkGsi1(final String siteId) {
-    return null;
+    if (this.service == null || this.status == null) {
+      throw new IllegalArgumentException("'service', 'status' is required");
+    }
+    return createDatabaseKey(siteId, "doc#syncs#" + this.service + "#" + this.status);
   }
 
   @Override
@@ -342,7 +352,8 @@ public class DocumentSyncRecord implements DynamodbRecord<DocumentSyncRecord> {
 
   @Override
   public String skGsi1() {
-    return null;
+    return SK_SYNCS + this.type + "#" + getInIso8601Format(this.insertedDate) + "#"
+        + this.documentId;
   }
 
   @Override

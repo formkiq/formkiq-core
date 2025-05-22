@@ -45,9 +45,9 @@ import software.amazon.awssdk.services.dynamodb.model.StreamViewType;
 public class DocumentSchema {
 
   /** DynamoDb Capacity. */
-  private final Long capacity = Long.valueOf(100);
+  private final Long capacity = 100L;
   /** {@link DynamoDbClient}. */
-  private DynamoDbClient db;
+  private final DynamoDbClient db;
 
   /**
    * constructor.
@@ -175,9 +175,26 @@ public class DocumentSchema {
       AttributeDefinition a2 = AttributeDefinition.builder().attributeName("SK")
           .attributeType(ScalarAttributeType.S).build();
 
+      AttributeDefinition a3 = AttributeDefinition.builder().attributeName("GSI1PK")
+          .attributeType(ScalarAttributeType.S).build();
+
+      AttributeDefinition a4 = AttributeDefinition.builder().attributeName("GSI1SK")
+          .attributeType(ScalarAttributeType.S).build();
+
+      GlobalSecondaryIndex si1 = GlobalSecondaryIndex.builder().indexName("GSI1")
+          .keySchema(
+              KeySchemaElement.builder().attributeName("GSI1PK").keyType(KeyType.HASH).build(),
+              KeySchemaElement.builder().attributeName("GSI1SK").keyType(KeyType.RANGE).build())
+          .projection(Projection.builder().projectionType(ProjectionType.INCLUDE)
+              .nonKeyAttributes("inserteddate", "documentId").build())
+          .provisionedThroughput(ProvisionedThroughput.builder().writeCapacityUnits(this.capacity)
+              .readCapacityUnits(this.capacity).build())
+          .build();
+
       CreateTableRequest table =
           CreateTableRequest.builder().tableName(tableName).keySchema(pk, sk)
-              .attributeDefinitions(a1, a2)
+              .attributeDefinitions(a1, a2).attributeDefinitions(a1, a2, a3, a4)
+              .globalSecondaryIndexes(si1)
               .provisionedThroughput(ProvisionedThroughput.builder()
                   .writeCapacityUnits(this.capacity).readCapacityUnits(this.capacity).build())
               .build();

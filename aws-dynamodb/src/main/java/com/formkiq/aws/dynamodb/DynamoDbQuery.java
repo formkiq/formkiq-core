@@ -21,21 +21,41 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.dynamodb.model;
+package com.formkiq.aws.dynamodb;
+
+import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
+import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 
 /**
- * 
- * Supported Document Sync Status.
+ * DynamoDb Query Builder.
  *
  */
-public enum DocumentSyncStatus {
+public interface DynamoDbQuery {
+  /**
+   * Builds a {@link QueryRequest}.
+   *
+   * @param tableName DynamoDb Table Name.
+   * @param siteId Site Identifier
+   * @param nextToken Next Token
+   * @param limit int
+   * @return QueryRequest
+   */
+  QueryRequest build(String tableName, String siteId, String nextToken, int limit);
 
-  /** Completed. */
-  COMPLETE,
-  /** FAILED. */
-  FAILED,
-  /** FAILED. */
-  FAILED_RETRY,
-  /** Pending. */
-  PENDING
+  /**
+   * Find the first record to match {@link QueryRequest}.
+   *
+   * @param db {@link DynamoDbService}
+   * @param tableName DynamoDb Table Name.
+   * @param siteId Site Identifier
+   * @param nextToken Next Token
+   * @param limit int
+   * @return QueryResult
+   */
+  default QueryResult query(DynamoDbService db, String tableName, String siteId, String nextToken,
+      int limit) {
+    QueryRequest queryRequest = build(tableName, siteId, nextToken, limit);
+    QueryResponse response = db.query(queryRequest);
+    return new QueryResult(response.items(), response.lastEvaluatedKey());
+  }
 }

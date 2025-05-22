@@ -25,6 +25,7 @@ package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
+import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENT_SYNCS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -32,16 +33,22 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.net.URISyntaxException;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import com.formkiq.aws.dynamodb.DbKeys;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbQueryBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceExtension;
+import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.model.DocumentSyncRecord;
+import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAttribute;
@@ -54,6 +61,7 @@ import com.formkiq.client.model.AddDocumentSyncRequest;
 import com.formkiq.client.model.AddDocumentSyncService;
 import com.formkiq.client.model.AddDocumentTag;
 import com.formkiq.client.model.AddResponse;
+import com.formkiq.client.model.Document;
 import com.formkiq.client.model.DocumentAction;
 import com.formkiq.client.model.DocumentActionType;
 import com.formkiq.client.model.DocumentSync;
@@ -129,24 +137,24 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
       // then
       final int expected = 3;
       assertEquals(expected, list.size());
+      assertDocumentSync(list.get(0), com.formkiq.client.model.DocumentSyncService.TYPESENSE,
+          com.formkiq.client.model.DocumentSyncStatus.FAILED, DocumentSyncType.METADATA);
+      assertDocumentSync(list.get(1), com.formkiq.client.model.DocumentSyncService.OPENSEARCH,
+          DocumentSyncStatus.COMPLETE, DocumentSyncType.METADATA);
+      assertDocumentSync(list.get(2), com.formkiq.client.model.DocumentSyncService.EVENTBRIDGE,
+          DocumentSyncStatus.PENDING, DocumentSyncType.METADATA);
+    }
+  }
 
-      assertEquals(com.formkiq.client.model.DocumentSyncService.TYPESENSE,
-          list.get(0).getService());
-      assertEquals(com.formkiq.client.model.DocumentSyncStatus.FAILED, list.get(0).getStatus());
-      assertEquals(DocumentSyncType.METADATA, list.get(0).getType());
-      assertNotNull(list.get(0).getSyncDate());
-
-      assertEquals(com.formkiq.client.model.DocumentSyncService.OPENSEARCH,
-          list.get(1).getService());
-      assertEquals(com.formkiq.client.model.DocumentSyncStatus.COMPLETE, list.get(1).getStatus());
-      assertEquals(com.formkiq.client.model.DocumentSyncType.METADATA, list.get(1).getType());
-      assertNotNull(list.get(1).getSyncDate());
-
-      assertEquals(com.formkiq.client.model.DocumentSyncService.EVENTBRIDGE,
-          list.get(2).getService());
-      assertEquals(com.formkiq.client.model.DocumentSyncStatus.PENDING, list.get(2).getStatus());
-      assertEquals(com.formkiq.client.model.DocumentSyncType.METADATA, list.get(2).getType());
-      assertNull(list.get(2).getSyncDate());
+  private void assertDocumentSync(final DocumentSync sync, final DocumentSyncService service,
+      final DocumentSyncStatus status, final DocumentSyncType type) {
+    assertEquals(service, sync.getService());
+    assertEquals(status, sync.getStatus());
+    assertEquals(type, sync.getType());
+    if (DocumentSyncStatus.PENDING.equals(status)) {
+      assertNull(sync.getSyncDate());
+    } else {
+      assertNotNull(sync.getSyncDate());
     }
   }
 
@@ -230,6 +238,7 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
         setBearerToken(siteId);
         String documentId = this.documentsApi
             .addDocument(new AddDocumentRequest().content("asd"), siteId, null).getDocumentId();
+        assertNotNull(documentId);
 
         // when
         AddDocumentSyncRequest req = new AddDocumentSyncRequest()
@@ -261,6 +270,7 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
       setBearerToken(siteId);
       String documentId = this.documentsApi
           .addDocument(new AddDocumentRequest().content("asd"), siteId, null).getDocumentId();
+      assertNotNull(documentId);
 
       AddDocumentSyncRequest req = new AddDocumentSyncRequest();
       req.setSync(new AddDocumentSync().type(DocumentSyncType.CONTENT)
@@ -316,8 +326,7 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
    * POST /documents/{documentId}/syncs request. Sync Metadata with attributes.
    */
   @Test
-  public void testAddDocumentSyncs06()
-      throws ApiException, URISyntaxException, InterruptedException {
+  public void testAddDocumentSyncs06() throws ApiException, URISyntaxException {
     // given
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
@@ -334,6 +343,7 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
             .addTagsItem(new AddDocumentTag().key("mytag").value("123"));
 
         String documentId = this.documentsApi.addDocument(addReq, siteId, null).getDocumentId();
+        assertNotNull(documentId);
 
         // when
         AddDocumentSyncRequest req = new AddDocumentSyncRequest()
@@ -368,7 +378,7 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
   }
 
   private void verifyStreamTriggeredDate(final String siteId, final String documentId)
-      throws URISyntaxException, InterruptedException {
+      throws URISyntaxException {
     try (DynamoDbClient db = DynamoDbTestServices.getDynamoDbConnection().build()) {
       String pk = keysDocument(siteId, documentId).get(PK).s();
       QueryRequest query = DynamoDbQueryBuilder.builder().pk(pk).build(DOCUMENTS_TABLE);
@@ -404,6 +414,7 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
         setBearerToken(siteId);
         String documentId = this.documentsApi
             .addDocument(new AddDocumentRequest().content("asd"), siteId, null).getDocumentId();
+        assertNotNull(documentId);
 
         // when
         AddDocumentSyncRequest req = new AddDocumentSyncRequest()
@@ -448,6 +459,7 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
         setBearerToken(siteId);
         String documentId = this.documentsApi
             .addDocument(new AddDocumentRequest().content("asd"), siteId, null).getDocumentId();
+        assertNotNull(documentId);
 
         AddDocumentSyncRequest req = new AddDocumentSyncRequest()
             .sync(new AddDocumentSync().service(service).type(DocumentSyncType.DELETE));
@@ -481,6 +493,7 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
         setBearerToken(siteId);
         String documentId = this.documentsApi
             .addDocument(new AddDocumentRequest().content("asd"), siteId, null).getDocumentId();
+        assertNotNull(documentId);
 
         AddDocumentSyncRequest req =
             new AddDocumentSyncRequest().sync(new AddDocumentSync().service(service).type(type));
@@ -496,6 +509,96 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
         assertDocumentSyncEventBridge(syncs.get(0), type);
       }
     }
+  }
+
+  /**
+   * Test Add Document Syncs retry.
+   * 
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testAddDocumentSyncs10() throws ApiException, InterruptedException {
+    // given
+    AwsServiceCache awsServices = getAwsServices();
+    DynamoDbConnectionBuilder connection =
+        awsServices.getExtension(DynamoDbConnectionBuilder.class);
+    DynamoDbService db = new DynamoDbServiceImpl(connection, DOCUMENT_SYNCS_TABLE);
+
+    setBearerToken((String) null);
+
+    String documentId = this.documentsApi
+        .addDocument(new AddDocumentRequest().content("test"), null, null).getDocumentId();
+    assertNotNull(documentId);
+
+    createSyncRecords(db, documentId);
+
+    // when
+    List<DocumentSync> syncs =
+        notNull(this.documentsApi.getDocumentSyncs(documentId, null, null, null).getSyncs());
+
+    // then
+    final int expected = 3;
+    assertEquals(expected, syncs.size());
+    assertDocumentSync(syncs.get(0), DocumentSyncService.TYPESENSE, DocumentSyncStatus.FAILED,
+        DocumentSyncType.METADATA);
+    assertDocumentSync(syncs.get(1), DocumentSyncService.TYPESENSE, DocumentSyncStatus.COMPLETE,
+        DocumentSyncType.METADATA);
+    assertDocumentSync(syncs.get(2), DocumentSyncService.EVENTBRIDGE, DocumentSyncStatus.PENDING,
+        DocumentSyncType.METADATA);
+
+    List<Document> docs = notNull(this.documentsApi
+        .getDocuments(null, null, "FULLTEXT_METADATA_FAILED", null, null, null, null, null, null)
+        .getDocuments());
+    assertEquals(1, docs.size());
+    assertEquals(documentId, docs.get(0).getDocumentId());
+
+    // when
+    AddResponse addResponse = this.documentsApi.addDocumentSync(documentId, null,
+        new AddDocumentSyncRequest().sync(new AddDocumentSync().type(DocumentSyncType.METADATA)
+            .service(AddDocumentSyncService.FULLTEXT)));
+
+    // then
+    assertEquals("Added Document sync", addResponse.getMessage());
+
+    syncs = notNull(this.documentsApi.getDocumentSyncs(documentId, null, null, null).getSyncs());
+    assertEquals(expected, syncs.size());
+
+    assertDocumentSync(syncs.get(0), DocumentSyncService.TYPESENSE, DocumentSyncStatus.FAILED_RETRY,
+        DocumentSyncType.METADATA);
+    assertDocumentSync(syncs.get(1), DocumentSyncService.TYPESENSE, DocumentSyncStatus.COMPLETE,
+        DocumentSyncType.METADATA);
+    assertDocumentSync(syncs.get(2), DocumentSyncService.EVENTBRIDGE, DocumentSyncStatus.PENDING,
+        DocumentSyncType.METADATA);
+
+    docs = notNull(this.documentsApi
+        .getDocuments(null, null, "FULLTEXT_METADATA_FAILED", null, null, null, null, null, null)
+        .getDocuments());
+    assertEquals(0, docs.size());
+  }
+
+  private void createSyncRecords(final DynamoDbService db, final String documentId) {
+    LocalDate date = LocalDate.now();
+
+    final int days = 3;
+    List<DocumentSyncRecord> records = List.of(
+        createSyncRecord(documentId, DocumentSyncServiceType.TYPESENSE,
+            com.formkiq.aws.dynamodb.model.DocumentSyncStatus.FAILED,
+            com.formkiq.aws.dynamodb.model.DocumentSyncType.METADATA, date.plusDays(days)),
+        createSyncRecord(documentId, DocumentSyncServiceType.TYPESENSE,
+            com.formkiq.aws.dynamodb.model.DocumentSyncStatus.COMPLETE,
+            com.formkiq.aws.dynamodb.model.DocumentSyncType.METADATA, date.plusDays(days - 1)));
+
+    db.putItems(records.stream().map(r -> r.getAttributes(null)).toList());
+  }
+
+  private DocumentSyncRecord createSyncRecord(final String documentId,
+      final DocumentSyncServiceType service,
+      final com.formkiq.aws.dynamodb.model.DocumentSyncStatus status,
+      final com.formkiq.aws.dynamodb.model.DocumentSyncType type, final LocalDate localDate) {
+    ZoneId zone = ZoneId.of("UTC");
+    Date date = Date.from(localDate.atStartOfDay(zone).toInstant());
+    return new DocumentSyncRecord().setDocumentId(documentId).setService(service).setStatus(status)
+        .setInsertedDate(date).setType(type).setSyncDate(date);
   }
 
   private static List<AddDocumentSyncService> getNotEventBridgeServices() {

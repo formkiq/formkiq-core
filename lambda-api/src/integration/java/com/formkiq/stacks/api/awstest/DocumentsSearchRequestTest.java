@@ -184,7 +184,7 @@ public class DocumentsSearchRequestTest extends AbstractAwsIntegrationTest {
       AddDocumentTagsRequest addTagReq = new AddDocumentTagsRequest()
           .addTagsItem(new AddDocumentTag().key("test").value("somevalue"));
 
-      tagApi.addDocumentTags(documentId, addTagReq, siteId, null);
+      tagApi.addDocumentTags(documentId, addTagReq, siteId);
 
       DocumentSearchRequest req =
           new DocumentSearchRequest().responseFields(new SearchResponseFields().addTagsItem("test"))
@@ -238,7 +238,7 @@ public class DocumentsSearchRequestTest extends AbstractAwsIntegrationTest {
       AddDocumentTagsRequest addTagReq = new AddDocumentTagsRequest()
           .addTagsItem(new AddDocumentTag().key("test").value("somevalue"));
 
-      tagApi.addDocumentTags(documentId, addTagReq, siteId, null);
+      tagApi.addDocumentTags(documentId, addTagReq, siteId);
 
       DocumentSearchApi api = new DocumentSearchApi(client);
 
@@ -290,7 +290,7 @@ public class DocumentsSearchRequestTest extends AbstractAwsIntegrationTest {
 
       AddDocumentTagsRequest addReq = new AddDocumentTagsRequest()
           .addTagsItem(new AddDocumentTag().key(tagKey).value("somevalue"));
-      tagApi.addDocumentTags(documentId, addReq, siteId, null);
+      tagApi.addDocumentTags(documentId, addReq, siteId);
 
       DocumentSearchRequest req = new DocumentSearchRequest().query(
           new DocumentSearch().tag(new DocumentSearchTag().key(tagKey).addEqOrItem("somevalue")));

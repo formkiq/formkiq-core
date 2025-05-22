@@ -182,7 +182,7 @@ public class DocumentIdUrlRequestHandler
 
     String siteId = authorization.getSiteId();
 
-    awsservice.getLogger().debug(
+    awsservice.getLogger().trace(
         "Finding S3 Url for document '" + item.getDocumentId() + "' version = '" + versionId + "'");
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);

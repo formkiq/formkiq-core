@@ -276,7 +276,6 @@ public interface DynamoDbService {
   QueryResponse query(QueryConfig config, AttributeValue pk,
       Map<String, AttributeValue> exclusiveStartKey, int limit);
 
-
   /**
    * Query DynamoDB records.
    *
@@ -284,6 +283,15 @@ public interface DynamoDbService {
    * @return QueryResponse
    */
   QueryResponse query(QueryRequest q);
+
+  /**
+   * Query DynamoDB records.
+   *
+   * @param q {@link QueryRequest}
+   * @param fetchAllAttributes If using index, fetch all attributes from non-index
+   * @return QueryResponse
+   */
+  QueryResponse query(QueryRequest q, boolean fetchAllAttributes);
 
   /**
    * Query DynamoDB Records.

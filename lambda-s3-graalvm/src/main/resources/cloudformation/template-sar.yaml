@@ -1183,6 +1183,27 @@ Resources:
         - 
           AttributeName: "SK"
           AttributeType: "S"
+        -
+          AttributeName: "GSI1PK"
+          AttributeType: "S"
+        -
+          AttributeName: "GSI1SK"
+          AttributeType: "S"
+      GlobalSecondaryIndexes:
+        -
+          IndexName: "GSI1"
+          KeySchema:
+            -
+              AttributeName: "GSI1PK"
+              KeyType: "HASH"
+            -
+              AttributeName: "GSI1SK"
+              KeyType: "RANGE"
+          Projection:
+            ProjectionType: "INCLUDE"
+            NonKeyAttributes:
+              - inserteddate
+              - documentId
 
   DocumentSyncsParameter:
     Type: AWS::SSM::Parameter

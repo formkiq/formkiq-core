@@ -94,17 +94,20 @@ public class DocumentsSyncsRequestHandler
 
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
-    verifyDocument(awsservice, siteId, documentId);
 
     DocumentSyncService sync = awsservice.getExtension(DocumentSyncService.class);
     PaginationResults<DocumentSyncRecord> syncs = sync.getSyncs(siteId, documentId, token, limit);
 
-    ApiPagination current =
-        createPagination(cacheService, event, pagination, syncs.getToken(), limit);
-
     syncs.getResults().forEach(s -> s.setDocumentId(null));
     List<Map<String, Object>> list =
         syncs.getResults().stream().map(new DynamodbRecordToMap()).toList();
+
+    if (list.isEmpty()) {
+      verifyDocument(awsservice, siteId, documentId);
+    }
+
+    ApiPagination current =
+        createPagination(cacheService, event, pagination, syncs.getToken(), limit);
 
     Map<String, Object> map = new HashMap<>();
     map.put("syncs", list);

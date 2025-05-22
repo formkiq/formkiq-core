@@ -211,7 +211,7 @@ public class DocumentAttributesRequestTest extends AbstractAwsIntegrationTest {
         AddDocumentAttributesRequest req = addAttributeToDocument(key1, value);
 
         // when
-        AddResponse response = api.addDocumentAttributes(documentId, req, siteId, null);
+        AddResponse response = api.addDocumentAttributes(documentId, req, siteId);
 
         // then
         assertEquals("added attributes to documentId '" + documentId + "'", response.getMessage());
@@ -289,7 +289,7 @@ public class DocumentAttributesRequestTest extends AbstractAwsIntegrationTest {
 
     // when
     api.addDocumentAttributes(documentId, new AddDocumentAttributesRequest()
-        .addAttributesItem(new AddDocumentAttribute(classification)), siteId, null);
+        .addAttributesItem(new AddDocumentAttribute(classification)), siteId);
 
     // then
     documentAttributes = getDocumentAttributes(apiClient, siteId, documentId);
@@ -340,7 +340,7 @@ public class DocumentAttributesRequestTest extends AbstractAwsIntegrationTest {
               new AddDocumentAttributeStandard().key(key2).addStringValuesItem(value2)));
 
       // when
-      AddResponse response = api.addDocumentAttributes(documentId, req, siteId, null);
+      AddResponse response = api.addDocumentAttributes(documentId, req, siteId);
 
       // then
       assertEquals("added attributes to documentId '" + documentId + "'", response.getMessage());
@@ -426,7 +426,7 @@ public class DocumentAttributesRequestTest extends AbstractAwsIntegrationTest {
 
       DocumentAttributesApi api = new DocumentAttributesApi(apiClients.get(0));
       AddDocumentAttributesRequest req = addAttributeToDocument(key, value);
-      api.addDocumentAttributes(documentId, req, siteId, null);
+      api.addDocumentAttributes(documentId, req, siteId);
 
       for (ApiClient apiClient : apiClients) {
 

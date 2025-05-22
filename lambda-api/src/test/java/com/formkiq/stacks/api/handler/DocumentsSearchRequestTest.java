@@ -342,7 +342,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
         for (String v : Arrays.asList("", "!")) {
           if (v.isEmpty()) {
             this.tagsApi.addDocumentTags(documentId, new AddDocumentTagsRequest()
-                .addTagsItem(new AddDocumentTag().key(tagKey).value(tagvalue)), siteId, null);
+                .addTagsItem(new AddDocumentTag().key(tagKey).value(tagvalue)), siteId);
           } else {
             addDocument(siteId, tagKey, tagvalue + v, null);
           }

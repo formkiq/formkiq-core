@@ -178,7 +178,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       final AddDocumentAttribute attribute) throws ApiException {
     AddDocumentAttributesRequest req =
         new AddDocumentAttributesRequest().addAttributesItem(attribute);
-    this.documentAttributesApi.addDocumentAttributes(documentId, req, siteId, null);
+    this.documentAttributesApi.addDocumentAttributes(documentId, req, siteId);
   }
 
   private String addDocumentAttribute(final String siteId, final String key,
@@ -655,7 +655,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentAttributesApi.addDocumentAttributes(documentId, req, siteId, null);
+        this.documentAttributesApi.addDocumentAttributes(documentId, req, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -667,7 +667,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentAttributesApi.addDocumentAttributes(documentId, req, siteId, null);
+        this.documentAttributesApi.addDocumentAttributes(documentId, req, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -695,7 +695,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       try {
         AddDocumentAttributesRequest req =
             new AddDocumentAttributesRequest().addAttributesItem(new AddDocumentAttribute());
-        this.documentAttributesApi.addDocumentAttributes(documentId, req, siteId, null);
+        this.documentAttributesApi.addDocumentAttributes(documentId, req, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -1021,7 +1021,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
     AddDocumentAttributesRequest req =
         new AddDocumentAttributesRequest().addAttributesItem(new AddDocumentAttribute(o));
-    this.documentAttributesApi.addDocumentAttributes(d0, req, siteId, null);
+    this.documentAttributesApi.addDocumentAttributes(d0, req, siteId);
   }
 
   /**
@@ -2018,23 +2018,23 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       AddDocumentAttributesRequest req = new AddDocumentAttributesRequest()
           .addAttributesItem(createNumberAttribute("other", new BigDecimal("100")));
-      this.documentAttributesApi.addDocumentAttributes(documentId, req, siteId, null);
+      this.documentAttributesApi.addDocumentAttributes(documentId, req, siteId);
 
       req = new AddDocumentAttributesRequest().addAttributesItem(new AddDocumentAttribute(
           new AddDocumentAttributeStandard().key("flag").booleanValue(Boolean.TRUE)));
-      this.documentAttributesApi.addDocumentAttributes(documentId, req, siteId, null);
+      this.documentAttributesApi.addDocumentAttributes(documentId, req, siteId);
 
       req = new AddDocumentAttributesRequest().addAttributesItem(
           new AddDocumentAttribute(new AddDocumentAttributeStandard().key("keyonly")));
-      this.documentAttributesApi.addDocumentAttributes(documentId, req, siteId, null);
+      this.documentAttributesApi.addDocumentAttributes(documentId, req, siteId);
 
       req = new AddDocumentAttributesRequest()
           .addAttributesItem(createStringsAttribute("strings", Arrays.asList("abc", "xyz", "123")));
-      this.documentAttributesApi.addDocumentAttributes(documentId, req, siteId, null);
+      this.documentAttributesApi.addDocumentAttributes(documentId, req, siteId);
 
       req = new AddDocumentAttributesRequest().addAttributesItem(createNumbersAttribute("nums",
           Arrays.asList(new BigDecimal("100"), new BigDecimal("200"), new BigDecimal("123"))));
-      this.documentAttributesApi.addDocumentAttributes(documentId, req, siteId, null);
+      this.documentAttributesApi.addDocumentAttributes(documentId, req, siteId);
 
       // when
       GetDocumentAttributesResponse response =
@@ -2081,7 +2081,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       AddDocumentAttributesRequest req = new AddDocumentAttributesRequest()
           .addAttributesItem(createStringsAttribute(key, Arrays.asList("abc", "xyz", "123")));
-      this.documentAttributesApi.addDocumentAttributes(documentId, req, siteId, null);
+      this.documentAttributesApi.addDocumentAttributes(documentId, req, siteId);
 
       // when
       GetDocumentAttributesResponse response =
@@ -2139,7 +2139,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       try {
         // when
-        this.documentAttributesApi.addDocumentAttributes(documentId, req, siteId, null);
+        this.documentAttributesApi.addDocumentAttributes(documentId, req, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -2498,7 +2498,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentAttributesApi.addDocumentAttributes(documentId, addReq, siteId, null);
+        this.documentAttributesApi.addDocumentAttributes(documentId, addReq, siteId);
         fail();
       } catch (ApiException e) {
         // then

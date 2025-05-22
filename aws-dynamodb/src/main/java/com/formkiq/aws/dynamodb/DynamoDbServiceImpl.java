@@ -312,6 +312,11 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
   @Override
   public List<Map<String, AttributeValue>> getBatch(final BatchGetConfig config,
       final List<Map<String, AttributeValue>> attributes) {
+    return getBatch(this.tableName, config, attributes);
+  }
+
+  private List<Map<String, AttributeValue>> getBatch(final String dbTableName,
+      final BatchGetConfig config, final List<Map<String, AttributeValue>> attributes) {
 
     List<Map<String, AttributeValue>> keys =
         attributes.stream().map(a -> Map.of(PK, a.get(PK), SK, a.get(SK))).toList();
@@ -321,12 +326,12 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
     if (!keys.isEmpty()) {
 
       ReadRequestBuilder builder = new ReadRequestBuilder();
-      builder.append(this.tableName, keys);
+      builder.append(dbTableName, keys);
 
       Map<String, List<Map<String, AttributeValue>>> batchReadItems =
           builder.batchReadItems(this.dbClient, config);
 
-      list = batchReadItems.get(this.tableName);
+      list = batchReadItems.get(dbTableName);
 
       Map<String, Map<String, AttributeValue>> data =
           list.stream().collect(Collectors.toMap(this::getKey, l -> l));
@@ -453,15 +458,21 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
 
   @Override
   public QueryResponse query(final QueryRequest q) {
+    return query(q, true);
+  }
+
+  @Override
+  public QueryResponse query(final QueryRequest q, final boolean fetchAllAttributes) {
 
     try {
       QueryResponse response = this.dbClient.query(q);
 
-      if (q.indexName() != null) {
-        List<Map<String, AttributeValue>> keys =
+      if (q.indexName() != null && fetchAllAttributes) {
+        List<Map<String, AttributeValue>> results =
             response.items().stream().map(i -> Map.of(PK, i.get(PK), SK, i.get(SK))).toList();
 
-        List<Map<String, AttributeValue>> results = getBatch(new BatchGetConfig(), keys);
+        results = getBatch(q.tableName(), new BatchGetConfig(), results);
+
         response = QueryResponse.builder().items(results)
             .lastEvaluatedKey(response.lastEvaluatedKey()).build();
       }

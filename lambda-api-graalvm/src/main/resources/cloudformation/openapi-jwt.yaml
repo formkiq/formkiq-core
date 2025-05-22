@@ -1314,6 +1314,14 @@ Resources:
                       - RUNNING
                       - SKIPPED
                       - FAILED_RETRY
+                - name: "syncStatus"
+                  in: "query"
+                  description: "Fetch documents with an sync status"
+                  schema:
+                    type: "string"
+                    enum:
+                      - FULLTEXT_METADATA_FAILED
+                      - FULLTEXT_CONTENT_FAILED
                 - $ref: '#/components/parameters/documentSearchDeleted'
                 - name: "date"
                   in: "query"
@@ -8406,6 +8414,7 @@ Resources:
               enum:
                 - COMPLETE
                 - FAILED
+                - FAILED_RETRY
                 - PENDING
             DocumentSyncType:
               type: string

@@ -137,7 +137,7 @@ public class DocumentsIdPurgeRequestTest extends AbstractApiClientRequestTest {
   }
 
   private List<Document> getDocuments(final String siteId) throws ApiException {
-    return notNull(this.documentsApi.getDocuments(siteId, null, null, null, null, null, null, null)
-        .getDocuments());
+    return notNull(this.documentsApi
+        .getDocuments(siteId, null, null, null, null, null, null, null, null).getDocuments());
   }
 }

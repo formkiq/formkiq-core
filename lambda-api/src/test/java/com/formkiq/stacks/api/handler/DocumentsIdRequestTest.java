@@ -216,8 +216,8 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
   }
 
   private List<Document> getDocuments(final String siteId) throws ApiException {
-    return notNull(this.documentsApi.getDocuments(siteId, null, null, null, null, null, null, null)
-        .getDocuments());
+    return notNull(this.documentsApi
+        .getDocuments(siteId, null, null, null, null, null, null, null, null).getDocuments());
   }
 
   private List<Document> getDocuments(final String siteId, final int expected)
@@ -233,7 +233,8 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
   private List<Document> getSoftDeletedDocuments(final String siteId) throws ApiException {
     return notNull(this.documentsApi
-        .getDocuments(siteId, null, Boolean.TRUE, null, null, null, null, null).getDocuments());
+        .getDocuments(siteId, null, null, Boolean.TRUE, null, null, null, null, null)
+        .getDocuments());
   }
 
 

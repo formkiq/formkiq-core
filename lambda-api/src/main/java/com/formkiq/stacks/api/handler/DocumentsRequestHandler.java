@@ -42,10 +42,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.PaginationToAttributeValue;
+import com.formkiq.aws.dynamodb.QueryResult;
+import com.formkiq.aws.dynamodb.base64.MapAttributeValueToString;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
+import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
+import com.formkiq.aws.dynamodb.model.DocumentSyncType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.dynamodb.objects.Strings;
@@ -66,6 +72,7 @@ import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.stacks.api.transformers.PresignedUrlsToS3Bucket;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.stacks.dynamodb.DocumentSyncStatusQuery;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
@@ -90,7 +97,7 @@ public class DocumentsRequestHandler
 
     String siteId = authorization.getSiteId();
 
-    ApiPagination current;
+    ApiPagination current = null;
     Map<String, Object> map = new HashMap<>();
 
     if (isSoftDelete(event)) {
@@ -101,12 +108,19 @@ public class DocumentsRequestHandler
 
       current = getActionStatus(event, awsservice, siteId, actionStatus, map);
 
+    } else if (isSyncStatus(event)) {
+
+      map = getSyncStatus(event, awsservice, siteId);
+
     } else {
 
       current = getDocuments(event, awsservice, siteId, map);
     }
 
-    map.put("next", current.hasNext() ? current.getNext() : null);
+    if (current != null) {
+      map.put("next", current.hasNext() ? current.getNext() : null);
+    }
+
     return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
   }
 
@@ -158,6 +172,39 @@ public class DocumentsRequestHandler
 
     map.put("documents", documents);
     return current;
+  }
+
+  private Map<String, Object> getSyncStatus(final ApiGatewayRequestEvent event,
+      final AwsServiceCache awsservice, final String siteId) throws BadException {
+
+    DocumentSyncType syncType;
+    String syncStatus = event.getQueryStringParameter("syncStatus").toUpperCase();
+    DocumentSyncServiceType service =
+        awsservice.hasModule("opensearch") ? DocumentSyncServiceType.OPENSEARCH
+            : DocumentSyncServiceType.TYPESENSE;
+
+    if ("FULLTEXT_METADATA_FAILED".equals(syncStatus)) {
+      syncType = DocumentSyncType.METADATA;
+    } else if ("FULLTEXT_CONTENT_FAILED".equals(syncStatus)) {
+      syncType = DocumentSyncType.CONTENT;
+    } else {
+      throw new BadException("Unknown 'syncStatus'");
+    }
+
+    int limit = getLimit(awsservice.getLogger(), event);
+    DocumentSyncStatus status = DocumentSyncStatus.FAILED;
+    String documentSyncTable = awsservice.environment("DOCUMENT_SYNC_TABLE");
+
+    DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
+    String nextToken = event.getQueryStringParameter("next");
+    QueryResult result = new DocumentSyncStatusQuery(service, status, syncType).query(db,
+        documentSyncTable, siteId, nextToken, limit);
+
+    nextToken = new MapAttributeValueToString().apply(result.lastEvaluatedKey());
+    List<Map<String, String>> documents =
+        result.items().stream().map(rr -> Map.of("documentId", rr.get("documentId").s())).toList();
+
+    return Map.of("next", nextToken, "documents", documents);
   }
 
   private ApiPagination getDocuments(final ApiGatewayRequestEvent event,
@@ -233,6 +280,10 @@ public class DocumentsRequestHandler
 
   private boolean isSoftDelete(final ApiGatewayRequestEvent event) {
     return "true".equals(event.getQueryStringParameter("deleted"));
+  }
+
+  private boolean isSyncStatus(final ApiGatewayRequestEvent event) {
+    return !Strings.isEmpty(event.getQueryStringParameter("syncStatus"));
   }
 
   @Override
