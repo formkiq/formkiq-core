@@ -36,8 +36,10 @@ import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.transformers.AttributeRecordToMap;
+import com.formkiq.stacks.dynamodb.attributes.AttributeDataType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
+import com.formkiq.stacks.dynamodb.attributes.AttributeType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
@@ -65,6 +67,29 @@ public class AttributeRequestHandler
   @Override
   public String getRequestUrl() {
     return "/attributes/{key}";
+  }
+
+  @Override
+  public ApiRequestHandlerResponse patch(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorizer, final AwsServiceCache awsServices) throws Exception {
+
+    AttributeService service = awsServices.getExtension(AttributeService.class);
+
+    String siteId = authorizer.getSiteId();
+    String key = event.getPathParameters().get("key");
+
+    AddAttributeRequest addAttribute = fromBodyToObject(event, AddAttributeRequest.class);
+    AddAttribute attribute = addAttribute.getAttribute();
+
+    AttributeType type = attribute.getType();
+    AttributeValidationAccess access =
+        authorizer.isAdminOrGovern(siteId) ? AttributeValidationAccess.ADMIN_CREATE
+            : AttributeValidationAccess.CREATE;
+
+    service.updateAttribute(access, siteId, key, type, attribute.getWatermark());
+
+    return new ApiRequestHandlerResponse(SC_OK,
+        new ApiMapResponse(Map.of("message", "Attribute '" + key + "' updated")));
   }
 
   @Override

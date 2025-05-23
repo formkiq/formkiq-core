@@ -2321,7 +2321,7 @@
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/AddAttributeResponse'
+                        $ref: '#/components/schemas/AddResponse'
                 "400":
                   description: 400 OK
                   content:
@@ -2356,6 +2356,45 @@
                     application/json:
                       schema:
                         $ref: '#/components/schemas/GetAttributeResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+            patch:
+              operationId: UpdateAttribute
+              description: Updates existing attribute
+              summary: Update existing attribute
+              tags:
+              - Attributes
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/keyParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/UpdateAttributeRequest'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/UpdateResponse'
+                "400":
+                  description: 400 OK
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/ValidationErrorsResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -10239,6 +10278,20 @@
               - PUBLICATION
               - WATERMARK
               - ENTITY
+            UpdateAttributeRequest:
+              required:
+              - attribute
+              type: object
+              properties:
+                attribute:
+                  $ref: '#/components/schemas/UpdateAttribute'
+            UpdateAttribute:
+              type: object
+              properties:
+                type:
+                  $ref: '#/components/schemas/AttributeType'
+                watermark:
+                  $ref: '#/components/schemas/Watermark'
             AddAttributeRequest:
               required:
               - attribute
@@ -10260,12 +10313,6 @@
                   $ref: '#/components/schemas/AttributeType'
                 watermark:
                   $ref: '#/components/schemas/Watermark'
-            AddAttributeResponse:
-              type: object
-              properties:
-                message:
-                  type: string
-                  description: Response Message
             GetDocumentsResponse:
               type: object
               properties:
