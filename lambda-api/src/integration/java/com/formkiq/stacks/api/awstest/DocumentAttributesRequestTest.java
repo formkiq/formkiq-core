@@ -67,7 +67,6 @@ import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAttribute;
 import com.formkiq.client.model.AddAttributeRequest;
-import com.formkiq.client.model.AddAttributeResponse;
 import com.formkiq.client.model.AddDocumentAttribute;
 import com.formkiq.client.model.AddDocumentAttributeValue;
 import com.formkiq.client.model.AddDocumentAttributesRequest;
@@ -95,7 +94,7 @@ public class DocumentAttributesRequestTest extends AbstractAwsIntegrationTest {
 
   private void addAttribute(final AttributesApi attributeApi, final String siteId, final String key)
       throws ApiException {
-    AddAttributeResponse addAttrResponse = attributeApi
+    AddResponse addAttrResponse = attributeApi
         .addAttribute(new AddAttributeRequest().attribute(new AddAttribute().key(key)), siteId);
     assertEquals("Attribute '" + key + "' created", addAttrResponse.getMessage());
   }

@@ -24,6 +24,7 @@
 package com.formkiq.stacks.dynamodb.attributes;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -313,5 +314,52 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
     Map<String, AttributeValueUpdate> attributes = Map.of("type",
         AttributeValueUpdate.builder().value(AttributeValue.fromS(type.name())).build());
     this.db.updateItem(r.fromS(r.pk(siteId)), r.fromS(r.sk()), attributes);
+  }
+
+  @Override
+  public void updateAttribute(final AttributeValidationAccess validationAccess, final String siteId,
+      final String key, final AttributeType type, final Watermark watermark) {
+
+    ValidationBuilder vb = new ValidationBuilder();
+
+    AttributeRecord r = new AttributeRecord().key(key).documentId(key);
+    Map<String, AttributeValue> attributes = this.db.get(r.fromS(r.pk(siteId)), r.fromS(r.sk()));
+    vb.isRequired(null, !attributes.isEmpty(), "Attribute not found");
+    vb.check();
+
+    vb.isRequired(null, !(type == null && watermark == null),
+        "Attribute Type or Watermark is required");
+    vb.isRequired(null, !(type != null && !validationAccess.isAdminOrGovernRole()),
+        "Access denied to attribute");
+    vb.check();
+
+    r = r.getFromAttributes(siteId, attributes);
+    validateWatermark(siteId, r, vb);
+    vb.check();
+
+    if (type != null) {
+      r.type(type);
+    }
+
+    if (watermark != null) {
+      updateWatermark(r, watermark);
+    }
+
+    this.db.putItem(r.getAttributes(siteId));
+  }
+
+  private void updateWatermark(final AttributeRecord record, final Watermark watermark) {
+    record.setWatermarkScale(watermark.getScale());
+    record.setWatermarkRotation(watermark.getRotation());
+    record.setWatermarkText(watermark.getText());
+    record.setWatermarkxAnchor(
+        watermark.getPosition() != null ? watermark.getPosition().getxAnchor() : null);
+    record.setWatermarkxOffset(
+        watermark.getPosition() != null ? watermark.getPosition().getxOffset() : null);
+    record.setWatermarkyOffset(
+        watermark.getPosition() != null ? watermark.getPosition().getyOffset() : null);
+    record.setWatermarkyAnchor(
+        watermark.getPosition() != null ? watermark.getPosition().getyAnchor() : null);
+    record.setWatermarkImageDocumentId(watermark.getImageDocumentId());
   }
 }
