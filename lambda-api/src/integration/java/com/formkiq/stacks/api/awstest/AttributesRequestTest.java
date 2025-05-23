@@ -29,7 +29,7 @@ import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAttribute;
 import com.formkiq.client.model.AddAttributeRequest;
-import com.formkiq.client.model.AddAttributeResponse;
+import com.formkiq.client.model.AddResponse;
 import com.formkiq.client.model.Attribute;
 import com.formkiq.client.model.AttributeDataType;
 import com.formkiq.client.model.AttributeType;
@@ -119,7 +119,7 @@ public class AttributesRequestTest extends AbstractAwsIntegrationTest {
         AddAttribute attribute = new AddAttribute().key(key);
 
         // when
-        AddAttributeResponse response =
+        AddResponse response =
             attributesApi.addAttribute(new AddAttributeRequest().attribute(attribute), siteId);
 
         // then
@@ -167,7 +167,7 @@ public class AttributesRequestTest extends AbstractAwsIntegrationTest {
             new AddAttribute().key(key).type(AttributeType.OPA).dataType(AttributeDataType.NUMBER);
 
         // when
-        AddAttributeResponse response =
+        AddResponse response =
             attributesApi.addAttribute(new AddAttributeRequest().attribute(attribute), siteId);
 
         // then

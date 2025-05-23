@@ -127,4 +127,17 @@ public interface AttributeService {
    */
   void setAttributeType(AttributeValidationAccess validationAccess, String siteId, String key,
       AttributeType type);
+
+  /**
+   * Update {@link AttributeRecord}. Supports updating the {@link AttributeType} or
+   * {@link Watermark}.
+   *
+   * @param access {@link AttributeValidationAccess}
+   * @param siteId {@link String}
+   * @param key {@link String}
+   * @param type {@link AttributeType}
+   * @param watermark {@link Watermark}
+   */
+  void updateAttribute(AttributeValidationAccess access, String siteId, String key,
+      AttributeType type, Watermark watermark);
 }
