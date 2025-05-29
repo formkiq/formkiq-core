@@ -139,6 +139,8 @@ public class EntityTypesRequestHandler
     vb.isRequired("namespace", request.getEntityType().getNamespace());
     vb.check();
 
+    request.getEntityType().setNamespace(request.getEntityType().getNamespace().toUpperCase());
+
     vb.isValidByRegex("name", request.getEntityType().getName(), "^[A-Z][A-Za-z0-9]+$");
     vb.isEquals("namespace", request.getEntityType().getNamespace(), "CUSTOM");
     vb.check();

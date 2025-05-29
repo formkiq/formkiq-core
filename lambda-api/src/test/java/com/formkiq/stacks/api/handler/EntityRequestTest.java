@@ -82,7 +82,7 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
       for (String entityTypeId : List.of(entityTypeId0, "Company")) {
         // when
         AddEntityResponse addEntityResponse =
-            this.entityApi.addEntity(entityTypeId, req, siteId, "CUSTOM");
+            this.entityApi.addEntity(entityTypeId, req, siteId, "custom");
 
         // then
         assertNotNull(addEntityResponse.getEntityId());
