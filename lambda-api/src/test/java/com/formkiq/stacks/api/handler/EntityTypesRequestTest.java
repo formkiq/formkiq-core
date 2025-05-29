@@ -336,7 +336,7 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
       // then
       assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
       assertEquals("{\"errors\":[{\"key\":\"namespace\","
-          + "\"error\":\"'namespace' unexpected value 'adsaf'\"}]}", e.getResponseBody());
+          + "\"error\":\"'namespace' unexpected value 'ADSAF'\"}]}", e.getResponseBody());
     }
   }
 
