@@ -42,6 +42,7 @@ import com.formkiq.aws.dynamodb.objects.Strings;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
+import software.amazon.awssdk.services.dynamodb.model.Delete;
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.DeleteRequest;
@@ -54,6 +55,7 @@ import software.amazon.awssdk.services.dynamodb.model.PutRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 import software.amazon.awssdk.services.dynamodb.model.ReturnValue;
+import software.amazon.awssdk.services.dynamodb.model.ReturnValuesOnConditionCheckFailure;
 import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
 import software.amazon.awssdk.services.dynamodb.model.TransactWriteItem;
@@ -559,15 +561,14 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
   }
 
   @Override
-  public boolean acquireLock(final AttributeValue pk, final AttributeValue sk,
-      final long aquireLockTimeoutInMs, final long lockExpirationInMs) {
+  public boolean acquireLock(final DynamoDbKey key, final long aquireLockTimeoutInMs,
+      final long lockExpirationInMs) {
 
     boolean lock = false;
     long expirationTime = Instant.now().getEpochSecond() + lockExpirationInMs / TS;
 
-    Map<String, AttributeValue> item = new HashMap<>();
-    item.put(PK, pk);
-    item.put(SK, getLock(sk));
+    Map<String, AttributeValue> item = new HashMap<>(key.toMap());
+    item.put(SK, getLock(fromS(key.sk())));
     item.put("ExpirationTime", AttributeValue.builder().n(Long.toString(expirationTime)).build());
 
     long ttl = Instant.now().getEpochSecond() + TIME_TO_LIVE_IN_SECONDS;
@@ -610,8 +611,31 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
   }
 
   @Override
-  public boolean releaseLock(final AttributeValue pk, final AttributeValue sk) {
-    return deleteItem(pk, getLock(sk));
+  public boolean releaseLock(final DynamoDbKey key) {
+
+    DynamoDbKey k = new DynamoDbKey(key.pk(), getLock(fromS(key.sk())).s(), null, null, null, null);
+    Delete deleteOp = Delete.builder().tableName(this.tableName).key(k.toMap())
+        .returnValuesOnConditionCheckFailure(ReturnValuesOnConditionCheckFailure.ALL_OLD)
+        .conditionExpression("attribute_exists(PK) AND attribute_exists(SK)").build();
+
+    TransactWriteItemsRequest txn = TransactWriteItemsRequest.builder()
+        .transactItems(TransactWriteItem.builder().delete(deleteOp).build()).build();
+
+    boolean released;
+    try {
+      dbClient.transactWriteItems(txn);
+      released = true;
+    } catch (TransactionCanceledException tce) {
+      boolean conditionFailed = tce.cancellationReasons().stream()
+          .anyMatch(r -> "ConditionalCheckFailed".equals(r.code()));
+      if (conditionFailed) {
+        released = false;
+      } else {
+        throw tce;
+      }
+    }
+
+    return released;
   }
 
   @Override
@@ -637,9 +661,8 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
   }
 
   @Override
-  public Map<String, AttributeValue> getAquiredLock(final AttributeValue pk,
-      final AttributeValue sk) {
-    return get(pk, getLock(sk));
+  public Map<String, AttributeValue> getAquiredLock(final DynamoDbKey key) {
+    return get(fromS(key.pk()), getLock(fromS(key.sk())));
   }
 
   private AttributeValue getLock(final AttributeValue sk) {

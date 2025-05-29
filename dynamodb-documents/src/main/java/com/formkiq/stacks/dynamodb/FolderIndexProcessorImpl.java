@@ -46,6 +46,7 @@ import com.formkiq.aws.dynamodb.AttributeValueToDynamicObject;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.ID;
@@ -157,8 +158,9 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
 
     AttributeValue pk = fromS(record.pk(siteId));
     AttributeValue sk = fromS(record.sk());
+    DynamoDbKey key = new DynamoDbKey(pk.s(), sk.s(), null, null, null, null);
 
-    Map<String, AttributeValue> attrs = this.db.get(pk, sk);
+    Map<String, AttributeValue> attrs = this.db.get(key);
     if (!attrs.isEmpty()) {
 
       record = record.getFromAttributes(siteId, attrs);
@@ -168,10 +170,9 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
       boolean acquireLock = false;
 
       try {
-        acquireLock =
-            this.db.acquireLock(pk, sk, LOCK_ACQUIRE_TIMEOUT_IN_MS, LOCK_EXPIRATION_IN_MS);
+        acquireLock = this.db.acquireLock(key, LOCK_ACQUIRE_TIMEOUT_IN_MS, LOCK_EXPIRATION_IN_MS);
 
-        attrs = this.db.get(pk, sk);
+        attrs = this.db.get(key);
 
         if (!attrs.isEmpty()) {
 
@@ -192,7 +193,7 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
       } finally {
 
         if (acquireLock) {
-          this.db.releaseLock(pk, sk);
+          this.db.releaseLock(key);
         }
       }
     }

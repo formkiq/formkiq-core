@@ -361,23 +361,20 @@ public interface DynamoDbService {
   /**
    * Aquire Lock.
    *
-   * @param pk {@link AttributeValue}
-   * @param sk {@link AttributeValue}
+   * @param key {@link DynamoDbKey}
    * @param aquireLockTimeoutInMs long
    * @param lockExpirationInMs long
    * @return boolean
    */
-  boolean acquireLock(AttributeValue pk, AttributeValue sk, long aquireLockTimeoutInMs,
-      long lockExpirationInMs);
+  boolean acquireLock(DynamoDbKey key, long aquireLockTimeoutInMs, long lockExpirationInMs);
 
   /**
    * Release Lock.
    *
-   * @param pk {@link AttributeValue}
-   * @param sk {@link AttributeValue}
+   * @param key {@link DynamoDbKey}
    * @return boolean
    */
-  boolean releaseLock(AttributeValue pk, AttributeValue sk);
+  boolean releaseLock(DynamoDbKey key);
 
   /**
    * Put in transaction.
@@ -398,9 +395,8 @@ public interface DynamoDbService {
   /**
    * Get Lock.
    *
-   * @param pk {@link AttributeValue}
-   * @param sk {@link AttributeValue}
+   * @param key {@link DynamoDbKey}
    * @return Map
    */
-  Map<String, AttributeValue> getAquiredLock(AttributeValue pk, AttributeValue sk);
+  Map<String, AttributeValue> getAquiredLock(DynamoDbKey key);
 }

@@ -69,25 +69,24 @@ public class DynamoDbServiceTest {
     // given
     final long timeout = 2000;
     final long lockExpiry = 10000;
-    AttributeValue pk = AttributeValue.fromS("test");
-    AttributeValue sk = AttributeValue.fromS("test1");
+    DynamoDbKey key = new DynamoDbKey("test", "test1", null, null, null, null);
 
     // when
-    boolean locked = this.service.acquireLock(pk, sk, timeout, lockExpiry);
+    boolean locked = this.service.acquireLock(key, timeout, lockExpiry);
 
     // then
     assertTrue(locked);
 
-    Map<String, AttributeValue> aquiredLock = this.service.getAquiredLock(pk, sk);
+    Map<String, AttributeValue> aquiredLock = this.service.getAquiredLock(key);
     assertNotNull(aquiredLock.get("TimeToLive"));
-    assertTrue(this.service.releaseLock(pk, sk));
+    assertTrue(this.service.releaseLock(key));
 
     // when
-    locked = this.service.acquireLock(pk, sk, timeout, lockExpiry);
+    locked = this.service.acquireLock(key, timeout, lockExpiry);
 
     // then
     assertTrue(locked);
-    assertTrue(this.service.releaseLock(pk, sk));
+    assertTrue(this.service.releaseLock(key));
   }
 
   /**
@@ -99,12 +98,11 @@ public class DynamoDbServiceTest {
     // given
     final long timeout = 2000;
     final long lockExpiry = 10000;
-    AttributeValue pk = AttributeValue.fromS("test");
-    AttributeValue sk = AttributeValue.fromS("test1");
+    DynamoDbKey key = new DynamoDbKey("test", "test1", null, null, null, null);
 
     // when
-    boolean lock1 = this.service.acquireLock(pk, sk, timeout, lockExpiry);
-    boolean lock2 = this.service.acquireLock(pk, sk, timeout, lockExpiry);
+    boolean lock1 = this.service.acquireLock(key, timeout, lockExpiry);
+    boolean lock2 = this.service.acquireLock(key, timeout, lockExpiry);
 
     // then
     assertFalse(lock2);
@@ -120,15 +118,30 @@ public class DynamoDbServiceTest {
     // given
     final long timeout = 5000;
     final long lockExpiry = 1000;
-    AttributeValue pk = AttributeValue.fromS("test");
-    AttributeValue sk = AttributeValue.fromS("test1");
+    DynamoDbKey key = new DynamoDbKey("test", "test1", null, null, null, null);
 
     // when
-    boolean lock1 = this.service.acquireLock(pk, sk, timeout, lockExpiry);
-    boolean lock2 = this.service.acquireLock(pk, sk, timeout, lockExpiry);
+    boolean lock1 = this.service.acquireLock(key, timeout, lockExpiry);
+    boolean lock2 = this.service.acquireLock(key, timeout, lockExpiry);
 
     // then
     assertTrue(lock1);
     assertTrue(lock2);
+  }
+
+  /**
+   * Test release lock before acquire.
+   */
+  @Test
+  @Timeout(TIMEOUT)
+  public void testReleaseLock01() {
+    // given
+    DynamoDbKey key = new DynamoDbKey("test", "test1", null, null, null, null);
+
+    // when
+    boolean lock = this.service.releaseLock(key);
+
+    // then
+    assertFalse(lock);
   }
 }
