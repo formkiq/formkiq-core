@@ -119,7 +119,7 @@ public record EntityTypeRecord(DynamoDbKey key, String documentId, String namesp
      * @return this Builder
      */
     public Builder namespace(final String entityTypeNamespace) {
-      this.namespace = entityTypeNamespace;
+      this.namespace = entityTypeNamespace != null ? entityTypeNamespace.toUpperCase() : null;
       return this;
     }
 
