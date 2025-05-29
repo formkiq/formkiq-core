@@ -48,6 +48,7 @@ import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 import java.util.List;
 import java.util.Map;
 
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_CREATED;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
 /** {@link ApiGatewayRequestHandler} for "/entityTypes". */
@@ -123,7 +124,7 @@ public class EntityTypesRequestHandler
     Map<String, AttributeValue> attributes = entityType.getAttributes();
     awsservice.getExtension(DynamoDbService.class).putItem(attributes);
 
-    return ApiRequestHandlerResponse.builder().status(SC_OK)
+    return ApiRequestHandlerResponse.builder().status(SC_CREATED)
         .data("entityTypeId", entityType.documentId()).build();
   }
 
