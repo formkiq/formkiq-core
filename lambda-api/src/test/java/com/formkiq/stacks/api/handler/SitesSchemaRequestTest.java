@@ -1003,8 +1003,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       } catch (ApiException e) {
         // then
         assertEquals(
-            "{\"errors\":[{\"key\":\"flag\",\"error\":\"attribute only support boolean value\"},"
-                + "{\"key\":\"strings\",\"error\":\"invalid attribute value 'strings', only"
+            "{\"errors\":[{\"key\":\"strings\",\"error\":\"invalid attribute value 'strings', only"
                 + " allowed values are 111,222\"},{\"key\":\"flag\",\"error\":\"invalid attribute "
                 + "value 'flag', only allowed values are true\"},{\"key\":\"num\",\"error\":"
                 + "\"invalid attribute value 'num', only allowed values are 111.11,222.22\"}]}",

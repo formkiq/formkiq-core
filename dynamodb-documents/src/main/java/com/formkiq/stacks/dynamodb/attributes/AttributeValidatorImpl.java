@@ -240,9 +240,8 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
       case ENTITY -> validateEntity(siteId, a, vb);
       case NUMBER ->
         vb.isRequired(a.getKey(), a.getNumberValue(), "attribute only support number value");
-      case BOOLEAN ->
-        vb.isRequired(a.getKey(), a.getBooleanValue() != null ? a.getBooleanValue() : false,
-            "attribute only support boolean value");
+      case BOOLEAN -> vb.isRequired(a.getKey(), a.getBooleanValue() != null,
+          "attribute only support boolean value");
       case KEY_ONLY -> {
         if (!isKeyOnlyValues(a)) {
           String errorMsg = "attribute does not support a value";
