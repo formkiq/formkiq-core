@@ -90,6 +90,7 @@ import static com.formkiq.testutils.aws.FkqAttributeService.createNumbersAttribu
 import static com.formkiq.testutils.aws.FkqAttributeService.createStringAttribute;
 import static com.formkiq.testutils.aws.FkqAttributeService.createStringsAttribute;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -156,12 +157,12 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
   }
 
   private String addDocument(final String siteId, final String key, final String stringValue,
-      final BigDecimal numberValue) throws ApiException {
+      final BigDecimal numberValue, final Boolean booleanValue) throws ApiException {
 
     AddDocumentRequest docReq = new AddDocumentRequest().content("test");
 
     AddDocumentAttributeStandard o = new AddDocumentAttributeStandard().stringValue(stringValue)
-        .booleanValue(null).numberValue(numberValue);
+        .booleanValue(booleanValue).numberValue(numberValue);
 
     if (key != null) {
       o.key(key);
@@ -706,10 +707,9 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
   /**
    * PATCH /attributes/{key} missing.
    *
-   * @throws ApiException an error has occurred
    */
   @Test
-  public void testUpdateAttributes04() throws ApiException {
+  public void testUpdateAttributes04() {
     for (String siteId : Arrays.asList(null, SITE_ID)) {
 
       // given
@@ -821,7 +821,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       addAttribute(siteId, key, null, null);
 
       // when
-      String documentId = addDocument(siteId, key, "confidential", null);
+      String documentId = addDocument(siteId, key, "confidential", null, null);
 
       // then
       DocumentAttribute response = getDocumentAttribute(siteId, documentId, key);
@@ -855,7 +855,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        addDocument(siteId, null, "confidential", null);
+        addDocument(siteId, null, "confidential", null, null);
         fail();
       } catch (ApiException e) {
         // then
@@ -881,7 +881,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        addDocument(siteId, key, "confidential", null);
+        addDocument(siteId, key, "confidential", null, null);
         fail();
       } catch (ApiException e) {
         // then
@@ -978,7 +978,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        addDocument(siteId, key, null, new BigDecimal("100"));
+        addDocument(siteId, key, null, new BigDecimal("100"), null);
         fail();
       } catch (ApiException e) {
         // then
@@ -1005,7 +1005,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        addDocument(siteId, key, "asd", null);
+        addDocument(siteId, key, "asd", null, null);
         fail();
       } catch (ApiException e) {
         // then
@@ -1032,7 +1032,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        addDocument(siteId, key, "asd", null);
+        addDocument(siteId, key, "asd", null, null);
         fail();
       } catch (ApiException e) {
         // then
@@ -1059,7 +1059,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        addDocument(siteId, key, "asd", null);
+        addDocument(siteId, key, "asd", null, null);
         fail();
       } catch (ApiException e) {
         // then
@@ -1222,7 +1222,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       this.attributesApi.addAttribute(req, siteId);
 
       // when
-      String documentId = addDocument(siteId, key, null, null);
+      String documentId = addDocument(siteId, key, null, null, null);
 
       // then
       DocumentAttribute response = getDocumentAttribute(siteId, documentId, key);
@@ -1233,6 +1233,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       assertEmptyTags(siteId, documentId);
     }
   }
+
 
   /**
    * POST /documents with Relationships with missing document.
@@ -1266,6 +1267,31 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
         assertEquals("{\"errors\":[{\"key\":\"" + documentId1 + "\",\"error\":\"document '"
             + documentId1 + "' does not exist\"}]}", e.getResponseBody());
       }
+    }
+  }
+
+  /**
+   * POST /documents with Boolean = FALSE.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testAddDocumentAttribute15() throws ApiException {
+    // given
+    final String key1 = "flag1";
+
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+
+      setBearerToken(siteId);
+      addAttribute(siteId, key1, AttributeDataType.BOOLEAN, null);
+
+      // when
+      String documentId = addDocument(siteId, key1, null, null, Boolean.FALSE);
+
+      // then
+      DocumentAttribute response = getDocumentAttribute(siteId, documentId, key1);
+      assertNotNull(response.getBooleanValue());
+      assertFalse(response.getBooleanValue());
     }
   }
 
