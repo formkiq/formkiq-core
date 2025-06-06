@@ -154,6 +154,16 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
         assertNotNull(resp.getEntityType());
         assertEntityTypeEquals(resp.getEntityType(), "Myentity");
       }
+
+      // when - add same entity
+      try {
+        this.entityApi.addEntityType(req, siteId);
+        fail();
+      } catch (ApiException e) {
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"errors\":[{\"key\":\"name\",\"error\":\"'name' already exists\"}]}",
+            e.getResponseBody());
+      }
     }
   }
 

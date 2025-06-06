@@ -39,6 +39,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.stacks.api.handler.entity.query.EntityTypeNameToIdQuery;
 import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -121,11 +122,29 @@ public class EntityTypesRequestHandler
     EntityTypeRecord entityType = EntityTypeRecord.builder().documentId(ID.uuid())
         .name(addEntityType.getName()).namespace(addEntityType.getNamespace()).build(siteId);
 
+    DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
     Map<String, AttributeValue> attributes = entityType.getAttributes();
-    awsservice.getExtension(DynamoDbService.class).putItem(attributes);
+    validateExist(awsservice, db, siteId, addEntityType.getName(), addEntityType.getNamespace());
+
+    db.putItem(attributes);
 
     return ApiRequestHandlerResponse.builder().status(SC_CREATED)
         .data("entityTypeId", entityType.documentId()).build();
+  }
+
+  private void validateExist(final AwsServiceCache awsservice, final DynamoDbService db,
+      final String siteId, final String name, final String namespace) {
+    ValidationBuilder vb = new ValidationBuilder();
+
+    String documentsTable = awsservice.environment("DOCUMENTS_TABLE");
+
+    EntityTypeRecord entityType =
+        EntityTypeRecord.builder().name("").documentId(name).namespace(namespace).build(siteId);
+
+    QueryRequest req = new EntityTypeNameToIdQuery().build(documentsTable, siteId, entityType);
+    vb.isRequired("name", !db.exists(req), "'name' already exists");
+
+    vb.check();
   }
 
   private void validate(final AddEntityTypeRequest request)
