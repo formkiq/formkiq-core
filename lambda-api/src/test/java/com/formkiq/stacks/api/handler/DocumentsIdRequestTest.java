@@ -46,11 +46,13 @@ import com.formkiq.client.model.AddAttributeRequest;
 import com.formkiq.client.model.AddAttributeSchemaOptional;
 import com.formkiq.client.model.AddDocumentAttribute;
 import com.formkiq.client.model.AddDocumentAttributeStandard;
+import com.formkiq.client.model.AttributeDataType;
 import com.formkiq.client.model.AttributeSchemaCompositeKey;
 import com.formkiq.client.model.ChecksumType;
 import com.formkiq.client.model.DocumentAction;
 import com.formkiq.client.model.DocumentAttribute;
 import com.formkiq.client.model.DocumentSearch;
+import com.formkiq.client.model.DocumentSearchAttribute;
 import com.formkiq.client.model.DocumentSearchMeta;
 import com.formkiq.client.model.DocumentSearchRequest;
 import com.formkiq.client.model.DocumentSync;
@@ -100,10 +102,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       setBearerToken(siteId);
 
       AddDocumentUploadRequest req = new AddDocumentUploadRequest().path("test.txt");
-      GetDocumentUrlResponse response =
-          this.documentsApi.addDocumentUpload(req, siteId, null, null, null);
-
-      String documentId = response.getDocumentId();
+      String documentId = addDocumentUpload(siteId, req);
 
       // when
       this.documentsApi.deleteDocument(documentId, siteId, Boolean.FALSE);
@@ -115,6 +114,14 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       List<Document> documents = getDocuments(siteId);
       assertEquals(0, documents.size());
     }
+  }
+
+  private String addDocumentUpload(final String siteId, final AddDocumentUploadRequest req)
+      throws ApiException {
+    GetDocumentUrlResponse response =
+        this.documentsApi.addDocumentUpload(req, siteId, null, null, null);
+    assertNotNull(response.getDocumentId());
+    return response.getDocumentId();
   }
 
   /**
@@ -131,10 +138,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       AddDocumentUploadRequest req =
           new AddDocumentUploadRequest().deepLinkPath("https://www.google.com");
-      GetDocumentUrlResponse response =
-          this.documentsApi.addDocumentUpload(req, siteId, null, null, null);
-
-      String documentId = response.getDocumentId();
+      String documentId = addDocumentUpload(siteId, req);
 
       // when
       this.documentsApi.deleteDocument(documentId, siteId, Boolean.FALSE);
@@ -162,10 +166,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       AddDocumentUploadRequest req =
           new AddDocumentUploadRequest().deepLinkPath("https://www.google.com");
-      GetDocumentUrlResponse response =
-          this.documentsApi.addDocumentUpload(req, siteId, null, null, null);
-
-      String documentId = response.getDocumentId();
+      String documentId = addDocumentUpload(siteId, req);
 
       // when
       this.documentsApi.deleteDocument(documentId, siteId, Boolean.TRUE);
@@ -215,6 +216,67 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
     }
   }
 
+  /**
+   * DELETE /documents/{documentId} soft delete with attributes.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testDocumentDelete05() throws Exception {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      String attributeKey = "category";
+
+      this.attributesApi.addAttribute(new AddAttributeRequest().attribute(
+          new AddAttribute().key(attributeKey).dataType(AttributeDataType.STRING)), siteId);
+      AddDocumentUploadRequest req0 = new AddDocumentUploadRequest().path("test.txt")
+          .addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key(attributeKey).stringValue("111")));
+      final String documentId0 = addDocumentUpload(siteId, req0);
+
+      AddDocumentUploadRequest req1 = new AddDocumentUploadRequest().path("test.txt")
+          .addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key(attributeKey).stringValue("222")));
+      final String documentId1 = addDocumentUpload(siteId, req1);
+
+      List<SearchResultDocument> docs = searchDocumentAttribute(siteId, attributeKey, "2");
+      assertEquals(2, docs.size());
+      assertNotNull(docs.get(0).getDocumentId());
+      assertNotNull(docs.get(1).getDocumentId());
+
+      // when
+      this.documentsApi.deleteDocument(documentId0, siteId, Boolean.TRUE);
+
+      // then
+      List<Document> softDeletedDocuments = getSoftDeletedDocuments(siteId);
+      assertEquals(1, softDeletedDocuments.size());
+
+      List<Document> documents = getDocuments(siteId);
+      assertEquals(1, documents.size());
+
+      docs = searchDocumentAttribute(siteId, attributeKey, "1");
+      assertEquals(1, docs.size());
+      assertEquals(documentId1, docs.get(0).getDocumentId());
+
+      // when - restore document
+      this.documentsApi.setDocumentRestore(documentId0, siteId);
+
+      // then
+      docs = searchDocumentAttribute(siteId, attributeKey, "2");
+      assertEquals(2, docs.size());
+    }
+  }
+
+  private List<SearchResultDocument> searchDocumentAttribute(final String siteId,
+      final String attributeKey, final String limit) throws ApiException {
+    DocumentSearchRequest sreq = new DocumentSearchRequest().query(
+        new DocumentSearch().addAttributesItem(new DocumentSearchAttribute().key(attributeKey)));
+    return notNull(this.searchApi.documentSearch(sreq, siteId, limit, null, null).getDocuments());
+  }
+
   private List<Document> getDocuments(final String siteId) throws ApiException {
     return notNull(this.documentsApi
         .getDocuments(siteId, null, null, null, null, null, null, null, null).getDocuments());
@@ -253,10 +315,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       String path = ID.uuid() + ".txt";
       AddDocumentUploadRequest req = new AddDocumentUploadRequest().path(path);
-      GetDocumentUrlResponse response =
-          this.documentsApi.addDocumentUpload(req, siteId, null, null, null);
-
-      String documentId = response.getDocumentId();
+      String documentId = addDocumentUpload(siteId, req);
 
       // when
       this.documentsApi.deleteDocument(documentId, siteId, Boolean.TRUE);
@@ -327,9 +386,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       setBearerToken(siteId);
 
       AddDocumentUploadRequest req = new AddDocumentUploadRequest().deepLinkPath("s3://test.txt");
-      GetDocumentUrlResponse response =
-          this.documentsApi.addDocumentUpload(req, siteId, null, null, null);
-      String documentId = response.getDocumentId();
+      String documentId = addDocumentUpload(siteId, req);
 
       // when
       GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
@@ -353,9 +410,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       String deepLink = "https://docs.google.com/document/d/sdflhsdfjeiwrwr";
       AddDocumentUploadRequest req = new AddDocumentUploadRequest().deepLinkPath(deepLink);
-      GetDocumentUrlResponse response =
-          this.documentsApi.addDocumentUpload(req, siteId, null, null, null);
-      String documentId = response.getDocumentId();
+      String documentId = addDocumentUpload(siteId, req);
 
       // when
       GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
@@ -381,9 +436,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       String deepLink = "https://docs.google.com/document/d/sdflhsdfjeiwrwr";
       AddDocumentUploadRequest req =
           new AddDocumentUploadRequest().deepLinkPath(deepLink).path("apath.txt");
-      GetDocumentUrlResponse response =
-          this.documentsApi.addDocumentUpload(req, siteId, null, null, null);
-      String documentId = response.getDocumentId();
+      String documentId = addDocumentUpload(siteId, req);
 
       // when
       GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
@@ -415,6 +468,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       // then
       assertNull(response.getUploadUrl());
+      assertNotNull(response.getDocumentId());
       String documentId = response.getDocumentId();
       GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
       assertEquals("sample.pdf", document.getPath());
@@ -471,6 +525,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       // then
       String documentId = response.getDocumentId();
+      assertNotNull(documentId);
       assertEquals(content0,
           this.documentsApi.getDocumentContent(documentId, siteId, null, null).getContent());
 
@@ -515,6 +570,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       // then
       String documentId = response.getDocumentId();
+      assertNotNull(documentId);
       assertEquals(content0,
           this.documentsApi.getDocumentContent(documentId, siteId, null, null).getContent());
 
@@ -553,6 +609,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       // then
       String documentId = response.getDocumentId();
+      assertNotNull(documentId);
 
       // given
       UpdateDocumentRequest updateReq = new UpdateDocumentRequest().addActionsItem(new AddAction());
@@ -587,6 +644,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       AddDocumentRequest req = new AddDocumentRequest().content(content0);
       String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+      assertNotNull(documentId);
 
       UpdateDocumentRequest updateReq = new UpdateDocumentRequest().addAttributesItem(
           new AddDocumentAttribute(new AddDocumentAttributeStandard().key(attributeKey)));
@@ -631,6 +689,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       AddDocumentRequest req = new AddDocumentRequest().content(content0);
       String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+      assertNotNull(documentId);
 
       UpdateDocumentRequest updateReq =
           new UpdateDocumentRequest().addAttributesItem(new AddDocumentAttribute(
@@ -670,6 +729,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       AddDocumentRequest req = new AddDocumentRequest().content(content0);
       String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+      assertNotNull(documentId);
 
       UpdateDocumentRequest updateReq = new UpdateDocumentRequest()
           .addAttributesItem(new AddDocumentAttribute(
@@ -745,6 +805,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
           new AddDocumentRequest().content(content0).addAttributesItem(new AddDocumentAttribute(
               new AddDocumentAttributeStandard().key(attributeKey0).stringValue("person")));
       String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+      assertNotNull(documentId);
 
       UpdateDocumentRequest updateReq = new UpdateDocumentRequest()
           .addAttributesItem(new AddDocumentAttribute(
@@ -796,6 +857,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       AddDocumentRequest req = new AddDocumentRequest().deepLinkPath("https://www.google.com");
 
       String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+      assertNotNull(documentId);
 
       // when
       UpdateDocumentRequest updateReq =
@@ -830,6 +892,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       AddDocumentRequest req = new AddDocumentRequest().deepLinkPath("https://www.google.com");
 
       String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+      assertNotNull(documentId);
 
       // when
       UpdateDocumentRequest updateReq =
@@ -999,6 +1062,8 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       String doc1 = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
 
       // then
+      assertNotNull(doc0);
+      assertNotNull(doc1);
       assertNotEquals(doc0, doc1);
       assertEquals(path, this.documentsApi.getDocument(doc0, siteId, null).getPath());
       assertNotEquals(path, this.documentsApi.getDocument(doc1, siteId, null).getPath());
@@ -1047,6 +1112,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       String doc0 = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
 
       // then
+      assertNotNull(doc0);
       assertEquals(path0, this.documentsApi.getDocument(doc0, siteId, null).getPath());
 
       List<SearchResultDocument> docs = search(siteId, sreq);
