@@ -21,7 +21,7 @@ tasks.processIntegrationResources {
 
 dependencies {
 
-	annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.4.2'
+	annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.5.0'
 
 	api project(':strings')
 	api project(':document-events')
