@@ -117,14 +117,14 @@ public class EntityTypesRequestHandler
     AddEntityTypeRequest request = fromBodyToObject(event, AddEntityTypeRequest.class);
     validate(request);
 
-    AddEntityType addEntityType = request.getEntityType();
+    AddEntityType addEntityType = request.entityType();
 
     EntityTypeRecord entityType = EntityTypeRecord.builder().documentId(ID.uuid())
-        .name(addEntityType.getName()).namespace(addEntityType.getNamespace()).build(siteId);
+        .name(addEntityType.name()).namespace(addEntityType.namespace()).build(siteId);
 
     DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
     Map<String, AttributeValue> attributes = entityType.getAttributes();
-    validateExist(awsservice, db, siteId, addEntityType.getName(), addEntityType.getNamespace());
+    validateExist(awsservice, db, siteId, addEntityType.name(), addEntityType.namespace());
 
     db.putItem(attributes);
 
@@ -149,19 +149,19 @@ public class EntityTypesRequestHandler
 
   private void validate(final AddEntityTypeRequest request)
       throws BadException, ValidationException {
-    if (request == null || request.getEntityType() == null) {
+    if (request == null || request.entityType() == null) {
       throw new BadException("Missing required parameter 'entityType'");
     }
 
     ValidationBuilder vb = new ValidationBuilder();
-    vb.isRequired("name", request.getEntityType().getName());
-    vb.isRequired("namespace", request.getEntityType().getNamespace());
+    vb.isRequired("name", request.entityType().name());
+    vb.isRequired("namespace", request.entityType().namespace());
     vb.check();
 
-    request.getEntityType().setNamespace(request.getEntityType().getNamespace().toUpperCase());
+    // request.entityType().namespace(request.entityType().namespace().toUpperCase());
 
-    vb.isValidByRegex("name", request.getEntityType().getName(), "^[A-Z][A-Za-z0-9]+$");
-    vb.isEquals("namespace", request.getEntityType().getNamespace(), "CUSTOM");
+    vb.isValidByRegex("name", request.entityType().name(), "^[A-Z][A-Za-z0-9]+$");
+    vb.isEquals("namespace", request.entityType().namespace(), "CUSTOM");
     vb.check();
   }
 }

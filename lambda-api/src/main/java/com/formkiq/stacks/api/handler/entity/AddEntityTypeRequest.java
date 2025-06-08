@@ -29,30 +29,5 @@ import com.formkiq.graalvm.annotations.Reflectable;
  * Add Entity Type Request.
  */
 @Reflectable
-public class AddEntityTypeRequest {
-  /** {@link AddEntityType} . */
-  private AddEntityType entityType;
-
-  /**
-   * constructor.
-   */
-  public AddEntityTypeRequest() {}
-
-  /**
-   * Add {@link AddEntityType}.
-   * 
-   * @return {@link AddEntityType}
-   */
-  public AddEntityType getEntityType() {
-    return this.entityType;
-  }
-
-  /**
-   * Set {@link AddEntityType}.
-   * 
-   * @param addEntityType {@link AddEntityType}
-   */
-  public void setEntityType(final AddEntityType addEntityType) {
-    this.entityType = addEntityType;
-  }
+public record AddEntityTypeRequest(AddEntityType entityType) {
 }

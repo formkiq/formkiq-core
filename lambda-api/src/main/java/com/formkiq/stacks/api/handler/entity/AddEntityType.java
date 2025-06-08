@@ -29,54 +29,8 @@ import com.formkiq.graalvm.annotations.Reflectable;
  * Add Entity Type.
  */
 @Reflectable
-public class AddEntityType {
-  /** Entity Name. */
-  private String name;
-  /** Entity Namespace. */
-  private String namespace;
-
-  /**
-   * constructor.
-   */
-  public AddEntityType() {}
-
-  /**
-   * Get Namespace.
-   * 
-   * @return String
-   */
-  public String getNamespace() {
-    return this.namespace;
-  }
-
-  /**
-   * Set Namespace.
-   * 
-   * @param entityTypeNamespace {@link String}
-   * @return AddEntityType
-   */
-  public AddEntityType setNamespace(final String entityTypeNamespace) {
-    this.namespace = entityTypeNamespace;
-    return this;
-  }
-
-  /**
-   * Get Group Name.
-   * 
-   * @return String
-   */
-  public String getName() {
-    return this.name;
-  }
-
-  /**
-   * Set Group Name.
-   * 
-   * @param groupName {@link String}
-   * @return AddEntityType
-   */
-  public AddEntityType setName(final String groupName) {
-    this.name = groupName;
-    return this;
+record AddEntityType(String name, String namespace) {
+  public AddEntityType {
+    namespace = namespace != null ? namespace.toUpperCase() : null;
   }
 }
