@@ -21,10 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api.transformers;
+package com.formkiq.stacks.api.handler.users;
 
 import com.formkiq.aws.dynamodb.objects.DateUtil;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AttributeType;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UserType;
 
@@ -36,21 +35,20 @@ import java.util.Map;
 import java.util.function.Function;
 
 /**
- * Function to Convert {@link AdminGetUserResponse} to {@link Map}.
+ * Function to Convert {@link UserType} to {@link Map}.
  */
-public class AdminGetUserResponseToMap
-    implements Function<AdminGetUserResponse, Map<String, Object>> {
+public class UsersResponseToMap implements Function<UserType, Map<String, Object>> {
 
 
   /** {@link SimpleDateFormat}. */
   private final SimpleDateFormat df = DateUtil.getIsoDateFormatter();
 
   @Override
-  public Map<String, Object> apply(final AdminGetUserResponse ut) {
+  public Map<String, Object> apply(final UserType ut) {
 
-    String email = getEmail(ut.userAttributes());
+    String email = getEmail(ut.attributes());
 
-    Map<String, Object> attributes = new UserAttributesToMap().apply(ut.userAttributes());
+    Map<String, Object> attributes = new UserAttributesToMap().apply(ut.attributes());
 
     return Map.of("username", ut.username(), "email", email, "userStatus", ut.userStatus().name(),
         "enabled", ut.enabled(), "insertedDate", toString(ut.userCreateDate()), "lastModifiedDate",

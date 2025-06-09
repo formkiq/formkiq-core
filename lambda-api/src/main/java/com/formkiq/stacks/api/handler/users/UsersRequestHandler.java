@@ -33,8 +33,6 @@ import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.api.transformers.UserTypeComparator;
-import com.formkiq.stacks.api.transformers.UsersResponseToMap;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.InvalidParameterException;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersResponse;
 
