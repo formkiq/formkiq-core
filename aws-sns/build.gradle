@@ -2,8 +2,8 @@
 description = "AWS SNS"
 
 dependencies {
-    api 'software.amazon.awssdk:sns:2.31.25'
-    implementation group: 'software.amazon.awssdk', name: 'url-connection-client', version: '2.31.25'
+    api 'software.amazon.awssdk:sns:2.31.59'
+    implementation group: 'software.amazon.awssdk', name: 'url-connection-client', version: '2.31.59'
 	//implementation project(':aws-xray')
 	implementation project(':fkq-lambda-services')
 	

@@ -17,7 +17,7 @@ configurations {
 
 dependencies {
 
-	annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.4.2'
+	annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.5.0'
 
     implementation project(':strings')
     implementation project(':aws-s3')
@@ -26,7 +26,7 @@ dependencies {
 	implementation project(':fkq-validation')
 	implementation project(':fkq-lambda-services')
     implementation group: 'com.formkiq', name: 'graalvm-annotations', version: '1.2.0'
-    implementation group: 'com.google.code.gson', name: 'gson', version: '2.13.0'
+    implementation group: 'com.google.code.gson', name: 'gson', version: '2.13.1'
     	
 	testImplementation project(':aws-ssm')
 	testImplementation project(':fkq-test-utils')
@@ -35,8 +35,8 @@ dependencies {
 	testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.17'
 	
 	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.11.4'
-    testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.20.6'
-	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.20.6'
+    testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.21.1'
+	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.21.1'
 	
 	configurations.all {
    		exclude group: 'software.amazon.awssdk', module: 'apache-client'
