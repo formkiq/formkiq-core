@@ -23,10 +23,10 @@ compileJava {
 nativeImage {
 	outputFileName = "server"
 	mainClassName = "com.formkiq.lambda.runtime.graalvm.LambdaRuntime"
-	dockerImage = "ghcr.io/graalvm/graalvm-ce:ol9-java17-22.3.3"
+	dockerImage = "ghcr.io/graalvm/native-image-community:24"
     enableHttp = true
     enableHttps = true
-    enableStatic = true
+	buildOptions = "-Os"
 	systemProperty = ["java.net.preferIPv4Stack=true"]
 }
 
@@ -82,7 +82,7 @@ task buildTemplate {
 
 task downloadOpenApiGenerator(type: Download) {
 	dependsOn check
-    src "https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/7.12.0/openapi-generator-cli-7.12.0.jar"
+    src "https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/7.13.0/openapi-generator-cli-7.13.0.jar"
     dest buildDir
     overwrite false
 }
@@ -121,7 +121,7 @@ task assembleOpenApiTemplate {
 			javaexec { 
     			main="-jar";
     			args = [
-            		"${buildDir}/openapi-generator-cli-7.12.0.jar",
+            		"${buildDir}/openapi-generator-cli-7.13.0.jar",
             		"generate",
             		"-i", "${buildDir}/../../docs/openapi/${fileName}.yaml",
             		"-g", "asciidoc", 
@@ -132,6 +132,8 @@ task assembleOpenApiTemplate {
 	}
 }
 
+graalvmNativeImage.dependsOn(downloadOpenApiGenerator)
+buildTemplate.dependsOn(graalvmNativeImage)
 distZip.dependsOn buildTemplate, assembleOpenApiTemplate, graalvmNativeImage
 
 tasks.distTar.enabled = false
@@ -146,7 +148,7 @@ distributions {
             from("runtime/") {
             	include "bootstrap"
             }
-            from ("${buildDir}/graalvm") {
+            from ("${buildDir}/graalvm/output") {
                 include("server")
             }
             into '/'
