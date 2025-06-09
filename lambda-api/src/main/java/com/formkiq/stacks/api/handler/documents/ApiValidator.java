@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api.validators;
+package com.formkiq.stacks.api.handler.documents;
 
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.module.actions.Action;
