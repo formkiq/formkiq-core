@@ -70,9 +70,10 @@ public class EntityRequestTest extends AbstractAwsIntegrationTest {
     String siteId = ID.uuid();
     for (ApiClient apiClient : getApiClients(siteId)) {
 
+      String name = "Company" + ID.uuid().replaceAll("-", "");
       EntityApi entityApi = new EntityApi(apiClient);
       AddEntityTypeRequest req = new AddEntityTypeRequest()
-          .entityType(new AddEntityType().name("Company").namespace(EntityTypeNamespace.CUSTOM));
+          .entityType(new AddEntityType().name(name).namespace(EntityTypeNamespace.CUSTOM));
 
       // when
       AddEntityTypeResponse response = entityApi.addEntityType(req, siteId);
@@ -94,7 +95,7 @@ public class EntityRequestTest extends AbstractAwsIntegrationTest {
       assertNotNull(entityId);
 
       GetEntityTypeResponse entityType = entityApi.getEntityType(entityTypeId, siteId, null);
-      assertEntityType(entityType.getEntityType());
+      assertEntityType(entityType.getEntityType(), name);
 
       GetEntityResponse entity = entityApi.getEntity(entityTypeId, entityId, siteId, null);
       assertEntity(entity.getEntity());
@@ -109,11 +110,11 @@ public class EntityRequestTest extends AbstractAwsIntegrationTest {
     assertEquals("Acme Inc", entity.getName());
   }
 
-  private void assertEntityType(final EntityType entityType) {
+  private void assertEntityType(final EntityType entityType, final String name) {
     assertNotNull(entityType);
     assertNotNull(entityType.getEntityTypeId());
     assertNotNull(entityType.getInsertedDate());
-    assertEquals("Company", entityType.getName());
+    assertEquals(name, entityType.getName());
     assertEquals(EntityTypeNamespace.CUSTOM, entityType.getNamespace());
   }
 }
