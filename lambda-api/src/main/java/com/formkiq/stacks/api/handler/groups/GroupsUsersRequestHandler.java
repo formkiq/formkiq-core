@@ -33,8 +33,8 @@ import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.handler.users.AddUserRequest;
-import com.formkiq.stacks.api.transformers.UserTypeComparator;
-import com.formkiq.stacks.api.transformers.UsersResponseToMap;
+import com.formkiq.stacks.api.handler.users.UserTypeComparator;
+import com.formkiq.stacks.api.handler.users.UsersResponseToMap;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersInGroupResponse;
 
 import java.util.HashMap;

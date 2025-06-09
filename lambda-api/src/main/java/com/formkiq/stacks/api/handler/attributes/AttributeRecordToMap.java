@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api.transformers;
+package com.formkiq.stacks.api.handler.attributes;
 
 import java.util.HashMap;
 import java.util.List;
