@@ -23,7 +23,7 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import static com.formkiq.stacks.api.handler.UpdateDocumentMatchingRequestHandler.FORMKIQ_DOC_EXT;
+import static com.formkiq.stacks.api.handler.documents.UpdateDocumentMatchingRequestHandler.FORMKIQ_DOC_EXT;
 import static com.formkiq.testutils.aws.TestServices.STAGE_BUCKET_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
