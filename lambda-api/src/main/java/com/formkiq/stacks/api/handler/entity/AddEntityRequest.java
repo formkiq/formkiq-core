@@ -29,30 +29,5 @@ import com.formkiq.graalvm.annotations.Reflectable;
  * Add Entity Request.
  */
 @Reflectable
-public class AddEntityRequest {
-  /** {@link AddEntity} . */
-  private AddEntity entity;
-
-  /**
-   * constructor.
-   */
-  public AddEntityRequest() {}
-
-  /**
-   * Add {@link AddEntity}.
-   * 
-   * @return {@link AddEntity}
-   */
-  public AddEntity getEntity() {
-    return this.entity;
-  }
-
-  /**
-   * Set {@link AddEntity}.
-   * 
-   * @param addEntity {@link AddEntity}
-   */
-  public void setEntity(final AddEntity addEntity) {
-    this.entity = addEntity;
-  }
+public record AddEntityRequest(AddEntity entity) {
 }

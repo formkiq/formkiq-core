@@ -34,8 +34,8 @@ public class AddEntityAttributeMapper implements Function<AddEntityAttribute, En
 
   @Override
   public EntityAttribute apply(final AddEntityAttribute a) {
-    return EntityAttribute.builder().key(a.getKey()).addStringValue(a.getStringValue())
-        .stringValues(a.getStringValues()).addNumberValue(a.getNumberValue())
-        .numberValues(a.getNumberValues()).booleanValue(a.getBooleanValue()).build();
+    return EntityAttribute.builder().key(a.key()).addStringValue(a.stringValue())
+        .stringValues(a.stringValues()).addNumberValue(a.numberValue())
+        .numberValues(a.numberValues()).booleanValue(a.booleanValue()).build();
   }
 }
