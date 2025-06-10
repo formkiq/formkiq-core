@@ -31,54 +31,5 @@ import java.util.List;
  * Add Entity Type.
  */
 @Reflectable
-public class AddEntity {
-  /** Entity Name. */
-  private String name;
-  /** {@link List} {@link AddEntityAttribute}. */
-  private List<AddEntityAttribute> attributes;
-
-  /**
-   * constructor.
-   */
-  public AddEntity() {}
-
-  /**
-   * Get {@link AddEntityAttribute}.
-   * 
-   * @return List {@link AddEntityAttribute}
-   */
-  public List<AddEntityAttribute> getAttributes() {
-    return attributes;
-  }
-
-  /**
-   * Set {@link AddEntityAttribute}.
-   * 
-   * @param entityAttributes {@link List} {@link AddEntityAttribute}
-   * @return AddEntity
-   */
-  public AddEntity setAttributes(final List<AddEntityAttribute> entityAttributes) {
-    this.attributes = entityAttributes;
-    return this;
-  }
-
-  /**
-   * Get Group Name.
-   * 
-   * @return String
-   */
-  public String getName() {
-    return this.name;
-  }
-
-  /**
-   * Set Group Name.
-   * 
-   * @param groupName {@link String}
-   * @return AddEntityType
-   */
-  public AddEntity setName(final String groupName) {
-    this.name = groupName;
-    return this;
-  }
+public record AddEntity(String name, List<AddEntityAttribute> attributes) {
 }

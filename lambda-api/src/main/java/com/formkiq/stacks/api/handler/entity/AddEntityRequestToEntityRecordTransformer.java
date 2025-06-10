@@ -87,11 +87,11 @@ public class AddEntityRequestToEntityRecordTransformer
 
     validate(entityTypeId, request);
 
-    AddEntity addEntity = request.getEntity();
+    AddEntity addEntity = request.entity();
     List<EntityAttribute> entityAttributes =
-        notNull(addEntity.getAttributes()).stream().map(new AddEntityAttributeMapper()).toList();
+        notNull(addEntity.attributes()).stream().map(new AddEntityAttributeMapper()).toList();
 
-    EntityRecord entity = EntityRecord.builder().documentId(entityId).name(addEntity.getName())
+    EntityRecord entity = EntityRecord.builder().documentId(entityId).name(addEntity.name())
         .entityTypeId(entityTypeId).attributes(entityAttributes).build(siteId);
 
     Map<String, AttributeValue> attributes = entity.getAttributes();
@@ -118,8 +118,9 @@ public class AddEntityRequestToEntityRecordTransformer
         throw new NotFoundException("Entity '" + entityId + "' not found");
       }
 
-      if (req != null && req.getEntity() != null && isEmpty(req.getEntity().getName())) {
-        req.getEntity().setName(attributes.get("name").s());
+      if (req != null && req.entity() != null && isEmpty(req.entity().name())) {
+        AddEntity entity = new AddEntity(attributes.get("name").s(), req.entity().attributes());
+        req = new AddEntityRequest(entity);
       }
     }
 
@@ -132,12 +133,12 @@ public class AddEntityRequestToEntityRecordTransformer
     vb.isRequired(null, request, "Missing 'entity'");
     vb.check();
 
-    vb.isRequired(null, request.getEntity(), "Missing 'entity'");
+    vb.isRequired(null, request.entity(), "Missing 'entity'");
     vb.check();
 
     DynamoDbService db = this.awsServices.getExtension(DynamoDbService.class);
     validateRequired(db, entityTypeId, request, vb);
-    validateAttributes(notNull(request.getEntity().getAttributes()), vb);
+    validateAttributes(notNull(request.entity().attributes()), vb);
   }
 
   private void validateAttributes(final List<AddEntityAttribute> attributes,
@@ -160,7 +161,7 @@ public class AddEntityRequestToEntityRecordTransformer
   private void validateRequired(final DynamoDbService db, final String entityTypeId,
       final AddEntityRequest request, final ValidationBuilder vb) {
     vb.isRequired("entityTypeId", entityTypeId);
-    vb.isRequired("name", request.getEntity().getName());
+    vb.isRequired("name", request.entity().name());
     vb.check();
 
     EntityTypeRecord entityTypeRecord =
@@ -169,6 +170,6 @@ public class AddEntityRequestToEntityRecordTransformer
     vb.isRequired("entityTypeId", db.exists(entityTypeRecord.key()));
     vb.check();
 
-    notNull(request.getEntity().getAttributes()).forEach(a -> vb.isRequired("key", a.getKey()));
+    notNull(request.entity().attributes()).forEach(a -> vb.isRequired("key", a.key()));
   }
 }
