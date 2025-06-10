@@ -238,8 +238,8 @@ public class DocumentIdUrlRequestHandler
     if (isEmpty(contentType)) {
 
       String path = !isEmpty(item.getDeepLinkPath()) ? item.getDeepLinkPath() : item.getPath();
-      String ext = Strings.getExtension(path);
-      MimeType mimeType = MimeType.fromExtension(ext);
+
+      MimeType mimeType = MimeType.findByPath(path);
       contentType = mimeType.getContentType();
     }
 

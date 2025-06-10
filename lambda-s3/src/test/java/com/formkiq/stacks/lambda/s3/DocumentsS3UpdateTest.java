@@ -61,12 +61,14 @@ import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.PaginationResults;
+import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.model.DocumentSyncRecord;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
 import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
 import com.formkiq.aws.dynamodb.model.DocumentSyncType;
 import com.formkiq.stacks.dynamodb.DocumentSyncService;
 import com.formkiq.stacks.dynamodb.DocumentSyncServiceDynamoDb;
+import com.formkiq.validation.ValidationException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -86,9 +88,6 @@ import com.formkiq.aws.sns.SnsAwsServiceRegistry;
 import com.formkiq.aws.sns.SnsConnectionBuilder;
 import com.formkiq.aws.sns.SnsService;
 import com.formkiq.aws.sqs.SqsAwsServiceRegistry;
-import com.formkiq.aws.sqs.SqsConnectionBuilder;
-import com.formkiq.aws.sqs.SqsService;
-import com.formkiq.aws.sqs.SqsServiceImpl;
 import com.formkiq.aws.ssm.SsmAwsServiceRegistry;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.module.actions.Action;
@@ -149,10 +148,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
   private static DynamoDbHelper dbHelper;
 
   /**
-   * SQS Error Queue.
-   */
-  private static final String ERROR_SQS_QUEUE = "sqserror";
-  /**
    * {@link DocumentsS3Update}.
    */
   private static DocumentsS3Update handler;
@@ -205,13 +200,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
     dbBuilder = DynamoDbTestServices.getDynamoDbConnection();
     db = dbBuilder.build();
     dbHelper = DynamoDbTestServices.getDynamoDbHelper();
-
-    SqsConnectionBuilder sqsBuilder = TestServices.getSqsConnection(null);
-    SqsService sqsService = new SqsServiceImpl(sqsBuilder);
-
-    if (!sqsService.exists(ERROR_SQS_QUEUE)) {
-      sqsService.createQueue(ERROR_SQS_QUEUE);
-    }
 
     S3ConnectionBuilder s3Builder = TestServices.getS3Connection(null);
     s3service = new S3Service(s3Builder);
@@ -428,18 +416,13 @@ public class DocumentsS3UpdateTest implements DbKeys {
     // given
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       String key = createDatabaseKey(siteId, BUCKET_KEY);
-      final Map<String, Object> map =
-          loadFileAsMap(this, "/objectcreate-event1.json", BUCKET_KEY, key);
 
-      DynamicDocumentItem doc = new DynamicDocumentItem(Map.of());
-      doc.setInsertedDate(new Date());
-      doc.setDocumentId(BUCKET_KEY);
-      doc.setUserId("joe");
-      doc.setPath("test.txt");
-      service.saveDocumentItemWithTag(siteId, doc);
+      DynamicDocumentItem doc = createDocument(siteId, BUCKET_KEY, "test.txt", null);
 
       String content = "testdata";
       addS3File(key, "text/plain", false, content);
+
+      Map<String, Object> map = createS3Map(siteId, doc);
 
       // when
       DocumentItem item = handleRequest(siteId, BUCKET_KEY, map);
@@ -615,7 +598,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
    * @throws Exception Exception
    */
   @Test
-  // @Timeout(value = TEST_TIMEOUT)
   public void testHandleRequest05() throws Exception {
 
     // given
@@ -744,12 +726,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       final Map<String, Object> map =
           loadFileAsMap(this, "/objectcreate-event1.json", BUCKET_KEY, key);
 
-      DynamicDocumentItem doc = new DynamicDocumentItem(Map.of());
-      doc.setInsertedDate(new Date());
-      doc.setDocumentId(documentId);
-      doc.setUserId("joe");
-      doc.setPath("test.txt");
-      service.saveDocumentItemWithTag(siteId, doc);
+      createDocument(siteId, documentId, "test.txt", null);
 
       addS3File(key, "text/plain", false, "testdata");
 
@@ -778,12 +755,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       final Map<String, Object> map =
           loadFileAsMap(this, "/objectcreate-event1.json", BUCKET_KEY, key);
 
-      DynamicDocumentItem doc = new DynamicDocumentItem(Map.of());
-      doc.setInsertedDate(new Date());
-      doc.setDocumentId(documentId);
-      doc.setUserId("joe");
-      doc.setPath("test.txt");
-      service.saveDocumentItemWithTag(siteId, doc);
+      createDocument(siteId, documentId, "test.txt", null);
 
       String content = loadFile(this, "/256kb-text.txt");
       addS3File(key, "text/plain", false, content);
@@ -814,12 +786,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       final Map<String, Object> map =
           loadFileAsMap(this, "/objectcreate-event1.json", BUCKET_KEY, key);
 
-      DynamicDocumentItem doc = new DynamicDocumentItem(Map.of());
-      doc.setInsertedDate(new Date());
-      doc.setDocumentId(documentId);
-      doc.setUserId("joe");
-      doc.setPath("test.txt");
-      service.saveDocumentItemWithTag(siteId, doc);
+      createDocument(siteId, documentId, "test.txt", null);
 
       String content = loadFile(this, "/255kb-text.txt");
       addS3File(key, "text/plain", false, content);
@@ -889,12 +856,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       final Map<String, Object> map =
           loadFileAsMap(this, "/objectcreate-event1.json", BUCKET_KEY, key);
 
-      DynamicDocumentItem doc = new DynamicDocumentItem(Map.of());
-      doc.setInsertedDate(new Date());
-      doc.setDocumentId(BUCKET_KEY);
-      doc.setUserId("joe");
-      doc.setPath("test.txt");
-      service.saveDocumentItemWithTag(siteId, doc);
+      DynamicDocumentItem doc = createDocument(siteId, BUCKET_KEY, "test.txt", null);
       actionsService.saveNewActions(siteId, doc.getDocumentId(), Collections.singletonList(
           new Action().type(ActionType.OCR).userId("joe").status(ActionStatus.COMPLETE)));
 
@@ -986,23 +948,19 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String key = createDatabaseKey(siteId, BUCKET_KEY);
-      final Map<String, Object> map =
-          loadFileAsMap(this, "/objectcreate-event1.json", BUCKET_KEY, key);
+      String documentId = ID.uuid();
+      String key = createDatabaseKey(siteId, documentId);
 
-      DynamicDocumentItem doc = new DynamicDocumentItem(Map.of());
-      doc.setInsertedDate(new Date());
-      doc.setDocumentId(BUCKET_KEY);
-      doc.setUserId("joe");
-      doc.setPath("test.txt");
-      service.saveDocumentItemWithTag(siteId, doc);
+      DynamicDocumentItem doc = createDocument(siteId, documentId, "test.txt", null);
       actionsService.saveNewActions(siteId, doc.getDocumentId(), Collections.singletonList(
           new Action().type(ActionType.OCR).userId("joe").status(ActionStatus.RUNNING)));
 
       addS3File(key, "pdf", false, "testdata");
 
+      Map<String, Object> map = createS3Map(siteId, doc);
+
       // when
-      handleRequest(siteId, BUCKET_KEY, map);
+      handleRequest(siteId, documentId, map);
 
       // then
       List<Action> actions = actionsService.getActions(siteId, doc.getDocumentId());
@@ -1010,6 +968,61 @@ public class DocumentsS3UpdateTest implements DbKeys {
       assertEquals(ActionStatus.RUNNING, actions.get(0).status());
       assertEquals(ActionType.OCR, actions.get(0).type());
     }
+  }
+
+  /**
+   * Create Document Request without contentType.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  public void ttestHandleRequest15() throws Exception {
+    assertHandleContentType(ID.uuid(), null, null, "application/octet-stream");
+    assertHandleContentType(ID.uuid(), null, "application/pdf", "application/pdf");
+    assertHandleContentType(ID.uuid(), "application/pdf", null, "application/pdf");
+    assertHandleContentType("test.pdf", null, null, "application/pdf");
+  }
+
+  private void assertHandleContentType(final String path, final String contentType,
+      final String s3ContenType, final String expectedContentType) throws ValidationException {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      String documentId = ID.uuid();
+      String key = createDatabaseKey(siteId, documentId);
+
+      DynamicDocumentItem doc = createDocument(siteId, documentId, path, contentType);
+      addS3File(key, s3ContenType, false, "testdata");
+
+      Map<String, Object> map = createS3Map(siteId, doc);
+
+      // when
+      DocumentItem item = handleRequest(siteId, documentId, map);
+
+      // then
+      assertEquals(expectedContentType, item.getContentType());
+    }
+  }
+
+  private static Map<String, Object> createS3Map(final String siteId,
+      final DynamicDocumentItem doc) {
+    String s3Key = SiteIdKeyGenerator.createS3Key(siteId, doc.getDocumentId());
+    return new S3EventJsonBuilder()
+        .addRecord(new S3EventJsonBuilder.RecordBuilder().withEventName("ObjectCreated:Put").withS3(
+            new S3EventJsonBuilder.S3Builder().withBucket("example-bucket").withObject(s3Key)))
+        .build();
+  }
+
+  private DynamicDocumentItem createDocument(final String siteId, final String documentId,
+      final String path, final String contentType) throws ValidationException {
+    DynamicDocumentItem doc = new DynamicDocumentItem(Map.of());
+    doc.setInsertedDate(new Date());
+    doc.setDocumentId(documentId);
+    doc.setUserId("joe");
+    doc.setContentType(contentType);
+    doc.setPath(path);
+    service.saveDocumentItemWithTag(siteId, doc);
+    return doc;
   }
 
   /**
