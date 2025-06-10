@@ -43,23 +43,23 @@ public class AddEntityAttributeToRecordTransformer
   @Override
   public Collection<DocumentAttributeRecord> apply(final AddEntityAttribute attr) {
     List<DocumentAttributeRecord> strings =
-        notNull(attr.getStringValues()).stream().map(s -> convert(attr, s)).toList();
+        notNull(attr.stringValues()).stream().map(s -> convert(attr, s)).toList();
     List<DocumentAttributeRecord> numbers =
-        notNull(attr.getNumberValues()).stream().map(s -> convert(attr, s)).toList();
+        notNull(attr.numberValues()).stream().map(s -> convert(attr, s)).toList();
 
     List<DocumentAttributeRecord> list =
         new ArrayList<>(Stream.concat(strings.stream(), numbers.stream()).toList());
 
-    if (!isEmpty(attr.getStringValue())) {
-      list.add(convert(attr, attr.getStringValue()));
+    if (!isEmpty(attr.stringValue())) {
+      list.add(convert(attr, attr.stringValue()));
     }
 
-    if (attr.getNumberValue() != null) {
-      list.add(convert(attr, attr.getNumberValue()));
+    if (attr.numberValue() != null) {
+      list.add(convert(attr, attr.numberValue()));
     }
 
-    if (attr.getBooleanValue() != null) {
-      list.add(convert(attr, attr.getBooleanValue()));
+    if (attr.booleanValue() != null) {
+      list.add(convert(attr, attr.booleanValue()));
     }
 
     return list;
@@ -67,7 +67,7 @@ public class AddEntityAttributeToRecordTransformer
 
   private DocumentAttributeRecord.Builder convert(final AddEntityAttribute attr) {
     String username = ApiAuthorization.getAuthorization().getUsername();
-    return DocumentAttributeRecord.builder().key(attr.getKey()).userId(username);
+    return DocumentAttributeRecord.builder().key(attr.key()).userId(username);
   }
 
   private DocumentAttributeRecord convert(final AddEntityAttribute attr, final String stringValue) {
