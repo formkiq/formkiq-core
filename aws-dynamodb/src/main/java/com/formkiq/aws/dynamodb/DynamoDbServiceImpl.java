@@ -626,13 +626,7 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
       dbClient.transactWriteItems(txn);
       released = true;
     } catch (TransactionCanceledException tce) {
-      boolean conditionFailed = tce.cancellationReasons().stream()
-          .anyMatch(r -> "ConditionalCheckFailed".equals(r.code()));
-      if (conditionFailed) {
-        released = false;
-      } else {
-        throw tce;
-      }
+      released = false;
     }
 
     return released;
