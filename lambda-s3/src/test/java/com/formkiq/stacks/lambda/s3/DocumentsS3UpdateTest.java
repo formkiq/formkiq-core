@@ -976,11 +976,13 @@ public class DocumentsS3UpdateTest implements DbKeys {
    * @throws Exception Exception
    */
   @Test
-  public void ttestHandleRequest15() throws Exception {
+  public void testHandleRequest15() throws Exception {
     assertHandleContentType(ID.uuid(), null, null, "application/octet-stream");
     assertHandleContentType(ID.uuid(), null, "application/pdf", "application/pdf");
     assertHandleContentType(ID.uuid(), "application/pdf", null, "application/pdf");
     assertHandleContentType("test.pdf", null, null, "application/pdf");
+    assertHandleContentType("test.txt", "text/plain", "binary/octet-stream", "text/plain");
+    assertHandleContentType("test.txt", null, "binary/octet-stream", "text/plain");
   }
 
   private void assertHandleContentType(final String path, final String contentType,

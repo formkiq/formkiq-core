@@ -570,7 +570,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
   private String findContentType(final DocumentItem item, final String contentType) {
 
     MimeType mimeType = MimeType.fromContentType(contentType);
-    if (MimeType.MIME_OCTET_STREAM.equals(mimeType)) {
+    if (contentType != null && contentType.endsWith("/octet-stream")) {
 
       if (!com.formkiq.strings.Strings.isEmpty(item.getContentType())) {
         mimeType = MimeType.fromContentType(item.getContentType());
