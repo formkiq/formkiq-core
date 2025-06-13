@@ -21,22 +21,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.dynamodb.base64;
+package com.formkiq.stacks.api.handler;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-import java.util.Map;
+import com.formkiq.aws.dynamodb.base64.StringToBase66Decoder;
+import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
+
 import java.util.function.Function;
 
 /**
- * Convert {@link Map} to Base64 {@link String}.
+ * {@link Function} to convert Base64 {@link String}.
  */
-public class MapToBase64 implements Function<Map<String, String>, String> {
+public class IndexKeyToString implements Function<String, String> {
   @Override
-  public String apply(final Map<String, String> map) {
-    StringBuilder sb = new StringBuilder();
-    map.forEach((key, value) -> sb.append(key).append("=").append(value).append("\n"));
-    byte[] data = sb.toString().getBytes(StandardCharsets.UTF_8);
-    return Base64.getEncoder().withoutPadding().encodeToString(data);
+  public String apply(final String indexKey) {
+    String s = indexKey;
+    if (indexKey != null && !indexKey.contains("/")) {
+      try {
+        s = new StringToBase66Decoder().apply(indexKey);
+      } catch (IllegalArgumentException e) {
+        throw new NotFoundException("invalid indexKey '" + indexKey + "'");
+      }
+    }
+
+    return s;
   }
 }

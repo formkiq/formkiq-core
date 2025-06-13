@@ -23,20 +23,29 @@
  */
 package com.formkiq.aws.dynamodb.base64;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
+import org.junit.jupiter.api.Test;
+
 import java.util.Map;
-import java.util.function.Function;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
- * Convert {@link Map} to Base64 {@link String}.
+ * Unit Test for {@link MapToBase64}.
  */
-public class MapToBase64 implements Function<Map<String, String>, String> {
-  @Override
-  public String apply(final Map<String, String> map) {
-    StringBuilder sb = new StringBuilder();
-    map.forEach((key, value) -> sb.append(key).append("=").append(value).append("\n"));
-    byte[] data = sb.toString().getBytes(StandardCharsets.UTF_8);
-    return Base64.getEncoder().withoutPadding().encodeToString(data);
+public class MapToBase64Test {
+  /** {@link MapToBase64}. */
+  private final MapToBase64 converter = new MapToBase64();
+
+  @Test
+  void testApply01() {
+    String result = converter.apply(Map.of());
+    assertEquals("", result, "Expected empty string for empty map");
+  }
+
+  @Test
+  void testApply02() {
+    String result = converter.apply(Map.of("foo", "bar"));
+    assertEquals("Zm9vPWJhcgo", result);
   }
 }
+

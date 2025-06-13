@@ -25,18 +25,15 @@ package com.formkiq.aws.dynamodb.base64;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
-import java.util.Map;
 import java.util.function.Function;
 
 /**
- * Convert {@link Map} to Base64 {@link String}.
+ * Convert {@link String} to Base 64 {@link String}.
  */
-public class MapToBase64 implements Function<Map<String, String>, String> {
+public class StringToBase66Decoder implements Function<String, String> {
   @Override
-  public String apply(final Map<String, String> map) {
-    StringBuilder sb = new StringBuilder();
-    map.forEach((key, value) -> sb.append(key).append("=").append(value).append("\n"));
-    byte[] data = sb.toString().getBytes(StandardCharsets.UTF_8);
-    return Base64.getEncoder().withoutPadding().encodeToString(data);
+  public String apply(final String s) {
+    byte[] decode = Base64.getDecoder().decode(s);
+    return new String(decode, StandardCharsets.UTF_8);
   }
 }

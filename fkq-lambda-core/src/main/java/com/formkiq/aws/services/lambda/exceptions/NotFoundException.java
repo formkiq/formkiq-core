@@ -24,7 +24,7 @@
 package com.formkiq.aws.services.lambda.exceptions;
 
 /** {@link Exception} that will return a 404 error. */
-public class NotFoundException extends Exception {
+public class NotFoundException extends RuntimeException {
 
   /** serialVersionUID. */
   private static final long serialVersionUID = -3307625920614270509L;

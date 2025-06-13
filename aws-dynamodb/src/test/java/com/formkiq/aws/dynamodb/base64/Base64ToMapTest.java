@@ -23,20 +23,46 @@
  */
 package com.formkiq.aws.dynamodb.base64;
 
+import org.junit.jupiter.api.Test;
+
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Map;
-import java.util.function.Function;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
- * Convert {@link Map} to Base64 {@link String}.
+ * Unit Tests for {@link Base64ToMap}.
  */
-public class MapToBase64 implements Function<Map<String, String>, String> {
-  @Override
-  public String apply(final Map<String, String> map) {
-    StringBuilder sb = new StringBuilder();
-    map.forEach((key, value) -> sb.append(key).append("=").append(value).append("\n"));
-    byte[] data = sb.toString().getBytes(StandardCharsets.UTF_8);
-    return Base64.getEncoder().withoutPadding().encodeToString(data);
+public class Base64ToMapTest {
+  /** {@link Base64ToMap}. */
+  private final Base64ToMap converter = new Base64ToMap();
+
+  /**
+   * Null input.
+   */
+  @Test
+  void testApply01() {
+    assertNull(converter.apply(null), "Expected null map for null input");
+    assertNull(converter.apply(""), "Expected null map for null input");
+  }
+
+  /**
+   * Convert base64 string.
+   */
+  @Test
+  void testApply02() {
+    // given
+    String text = "key1=value1\nkey2=value2\n";
+    String encoded = Base64.getEncoder().encodeToString(text.getBytes(StandardCharsets.UTF_8));
+
+    // when
+    Map<String, Object> result = converter.apply(encoded);
+
+    // then
+    assertEquals(2, result.size());
+    assertEquals("value1", result.get("key1"));
+    assertEquals("value2", result.get("key2"));
   }
 }

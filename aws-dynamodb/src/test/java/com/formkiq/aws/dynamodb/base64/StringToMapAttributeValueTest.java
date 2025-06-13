@@ -21,67 +21,49 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb;
+package com.formkiq.aws.dynamodb.base64;
 
-
-import com.formkiq.aws.dynamodb.DbKeys;
-import com.formkiq.aws.dynamodb.base64.StringToBase66Decoder;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
-import java.util.Collections;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
- * Unit Tests for {@link AttributeValueToGlobalMetaFolder}.
+ * Unit Test for {@link StringToMapAttributeValue}.
  */
-public class AttributeValueToGlobalMetaFolderTest {
-
-  /** {@link AttributeValueToGlobalMetaFolder}. */
-  private final AttributeValueToGlobalMetaFolder avg = new AttributeValueToGlobalMetaFolder();
+public class StringToMapAttributeValueTest {
+  /** {@link StringToMapAttributeValue}. */
+  private final StringToMapAttributeValue converter = new StringToMapAttributeValue();
 
   /**
-   * Empty Map.
+   * Empty String.
    */
   @Test
   void testApply01() {
-    // given
-    Map<String, AttributeValue> map = Collections.emptyMap();
-
-    // when
-    Map<String, Object> results = avg.apply(map);
-
-    // then
-    assertEquals(0, results.size());
+    assertNull(converter.apply(null), "Expected null AttributeValue map for empty string");
+    assertNull(converter.apply(""), "Expected null AttributeValue map for empty string");
   }
 
   /**
-   * Not Empty.
+   * Convert Base64 {@link String} to {@link Map}.
    */
   @Test
   void testApply02() {
     // given
-    Map<String, AttributeValue> map = Map.of(DbKeys.PK, AttributeValue.fromS("alkdjsad"));
+    Map<String, AttributeValue> original =
+        Map.of("alpha", AttributeValue.builder().s("one").build(), "beta",
+            AttributeValue.builder().s("two").build());
+    String encoded = new MapAttributeValueToString().apply(original);
 
     // when
-    Map<String, Object> results = avg.apply(map);
+    Map<String, AttributeValue> result = converter.apply(encoded);
 
     // then
-    final int expected = 6;
-    assertEquals(expected, results.size());
-    assertEquals("path,insertedDate,lastModifiedDate,indexKey,documentId,userId",
-        String.join(",", results.keySet().stream().toList()));
-    assertNull(results.get("path"));
-    assertNull(results.get("insertedDate"));
-    assertNull(results.get("lastModifiedDate"));
-
-    String indexKey = results.get("indexKey").toString();
-    assertEquals("YWxrZGpzYWQjbnVsbA", indexKey);
-    assertEquals("alkdjsad#null", new StringToBase66Decoder().apply(indexKey));
-    assertNull(results.get("documentId"));
-    assertNull(results.get("userId"));
+    assertEquals(original.size(), result.size());
+    original.forEach((k, v) -> assertEquals(v.s(), result.get(k).s()));
   }
 }
+

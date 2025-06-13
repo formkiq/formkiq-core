@@ -297,7 +297,7 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
     List<SearchResultDocument> docs = notNull(
         foldersApi.getFolderDocuments(siteId, null, null, "200", null, null).getDocuments());
     assertEquals(1, docs.size());
-    assertEquals(docs.get(0).getFolder(), TRUE);
+    assertEquals(TRUE, docs.get(0).getFolder());
     assertEquals("Chicago", docs.get(0).getPath());
 
     docs = notNull(
@@ -381,7 +381,7 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
         fail();
       } catch (ApiException e) {
         // then
-        assertEquals("{\"message\":\"directory not found\"}", e.getResponseBody());
+        assertEquals("{\"message\":\"invalid indexKey '" + indexKey + "'\"}", e.getResponseBody());
       }
     }
   }
@@ -409,6 +409,8 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
       assertEquals("e0647979-13f3-4c46-9f29-4b3984ef6bca", docs0.get(0).getPath());
 
       String indexKey = addFolderResponse.getIndexKey();
+      assertNotNull(indexKey);
+
       List<SearchResultDocument> docs1 =
           getSearchResultDocuments(siteId, docs0.get(0).getIndexKey());
       assertEquals(1, docs1.size());
@@ -455,6 +457,8 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
       assertEquals("e0647979-13f3-4c46-9f29-4b3984ef6bca", docs0.get(0).getPath());
 
       String indexKey = addFolderResponse.getIndexKey();
+      assertNotNull(indexKey);
+
       List<SearchResultDocument> docs1 =
           getSearchResultDocuments(siteId, docs0.get(0).getIndexKey());
       assertEquals(1, docs1.size());

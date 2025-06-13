@@ -33,6 +33,7 @@ import java.util.Map;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
+import com.formkiq.aws.dynamodb.base64.StringToBase64Encoder;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.objects.Strings;
@@ -45,6 +46,7 @@ import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.dynamodb.cache.CacheService;
+import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
 import com.formkiq.stacks.dynamodb.FolderIndexProcessor;
@@ -79,8 +81,9 @@ public class FoldersRequestHandler implements ApiGatewayRequestHandler, ApiGatew
     List<FolderIndexRecord> record =
         indexProcessor.createFolders(siteId, path, authorization.getUsername());
 
+    StringToBase64Encoder encoder = new StringToBase64Encoder();
     List<Map<String, String>> list = record.stream().map(r -> {
-      String indexKey = r.createIndexKey(siteId);
+      String indexKey = encoder.apply(r.createIndexKey(siteId));
       return Map.of("folder", r.path(), "indexKey", indexKey);
     }).toList();
 
@@ -123,10 +126,10 @@ public class FoldersRequestHandler implements ApiGatewayRequestHandler, ApiGatew
   }
 
   private String getIndexKey(final ApiGatewayRequestEvent event, final AwsServiceCache awsservice,
-      final String siteId) {
+      final String siteId) throws NotFoundException {
 
-    String indexKey = event.getQueryStringParameter("indexKey");
     String path = event.getQueryStringParameter("path");
+    String indexKey = new IndexKeyToString().apply(event.getQueryStringParameter("indexKey"));
 
     if (!Strings.isEmpty(path)) {
       FolderIndexProcessor indexProcessor = awsservice.getExtension(FolderIndexProcessor.class);

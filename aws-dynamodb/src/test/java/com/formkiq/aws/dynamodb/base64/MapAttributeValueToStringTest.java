@@ -23,20 +23,41 @@
  */
 package com.formkiq.aws.dynamodb.base64;
 
+import org.junit.jupiter.api.Test;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Map;
-import java.util.function.Function;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Convert {@link Map} to Base64 {@link String}.
+ * Unit Test for {@link MapAttributeValueToString}.
  */
-public class MapToBase64 implements Function<Map<String, String>, String> {
-  @Override
-  public String apply(final Map<String, String> map) {
-    StringBuilder sb = new StringBuilder();
-    map.forEach((key, value) -> sb.append(key).append("=").append(value).append("\n"));
-    byte[] data = sb.toString().getBytes(StandardCharsets.UTF_8);
-    return Base64.getEncoder().withoutPadding().encodeToString(data);
+public class MapAttributeValueToStringTest {
+  /** {@link MapAttributeValueToString}. */
+  private final MapAttributeValueToString converter = new MapAttributeValueToString();
+
+  @Test
+  void testApply01() {
+    assertEquals("", converter.apply(Map.of()),
+        "Expected empty string for empty AttributeValue map");
+  }
+
+  @Test
+  void testApply02() {
+    // given
+    Map<String, AttributeValue> input = Map.of("k1", AttributeValue.builder().s("v1").build(), "k2",
+        AttributeValue.builder().s("v2").build());
+    String result = converter.apply(input);
+
+    // when
+    String decoded = new String(Base64.getDecoder().decode(result), StandardCharsets.UTF_8);
+
+    // then
+    assertTrue(decoded.contains("k1=v1"));
+    assertTrue(decoded.contains("k2=v2"));
   }
 }

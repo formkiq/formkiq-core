@@ -66,6 +66,7 @@ public class DocumentIdContentGetRequestHandlerTest extends AbstractApiClientReq
 
       AddDocumentRequest req = new AddDocumentRequest().content("test");
       String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+      assertNotNull(documentId);
 
       // when
       GetDocumentContentResponse response =
@@ -158,6 +159,7 @@ public class DocumentIdContentGetRequestHandlerTest extends AbstractApiClientReq
 
       AddDocumentRequest req = new AddDocumentRequest().content("test").contentType("text/plain");
       String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+      assertNotNull(documentId);
 
       S3Service s3 = getAwsServices().getExtension(S3Service.class);
       s3.deleteObject(BUCKET_NAME, SiteIdKeyGenerator.createS3Key(siteId, documentId), null);
@@ -193,6 +195,7 @@ public class DocumentIdContentGetRequestHandlerTest extends AbstractApiClientReq
       AddDocumentRequest req = new AddDocumentRequest().content(content).isBase64(Boolean.TRUE)
           .contentType("text/plain");
       String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+      assertNotNull(documentId);
 
       // when
       GetDocumentContentResponse response =
@@ -223,6 +226,7 @@ public class DocumentIdContentGetRequestHandlerTest extends AbstractApiClientReq
       String content = "a".repeat(sixMb);
       AddDocumentRequest req = new AddDocumentRequest().content(content).contentType("text/plain");
       String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+      assertNotNull(documentId);
 
       // when
       try {
@@ -251,6 +255,7 @@ public class DocumentIdContentGetRequestHandlerTest extends AbstractApiClientReq
       String content = "this is a test";
       AddDocumentRequest req = new AddDocumentRequest().content(content).contentType(contentType);
       String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+      assertNotNull(documentId);
 
       // when
       GetDocumentContentResponse response =
