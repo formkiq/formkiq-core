@@ -148,7 +148,6 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.model.DocumentSyncRecordBuilder.MESSAGE_ADDED_METADATA;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
-import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFileAsMap;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_VERSION_TABLE;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENT_SYNCS_TABLE;
@@ -414,11 +413,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
   /**
    * Handle documentTagging ChatApt Action missing GptKey.
-   * 
-   * @throws Exception Exception
+   *
    */
   @Test
-  public void testDocumentTaggingAction01() throws Exception {
+  public void testDocumentTaggingAction01() {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = ID.uuid();
@@ -428,8 +426,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
-          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
-              documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
+          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -444,11 +441,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
   /**
    * Handle documentTagging ChatApt Action.
-   * 
-   * @throws Exception Exception
+   *
    */
   @Test
-  public void testDocumentTaggingAction02() throws Exception {
+  public void testDocumentTaggingAction02() {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
@@ -476,8 +472,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
-          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
-              documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
+          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -515,11 +510,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
   /**
    * Handle documentTagging invalid engine.
-   * 
-   * @throws Exception Exception
+   *
    */
   @Test
-  public void testDocumentTaggingAction03() throws Exception {
+  public void testDocumentTaggingAction03() {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = ID.uuid();
@@ -529,8 +523,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
-          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
-              documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
+          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -545,11 +538,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
   /**
    * Handle documentTagging ChatApt Action with a non JSON repsonse from ChatGPT.
-   * 
-   * @throws Exception Exception
+   *
    */
   @Test
-  public void testDocumentTaggingAction04() throws Exception {
+  public void testDocumentTaggingAction04() {
 
     initProcessor("opensearch", "chatgpt2", null);
 
@@ -579,8 +571,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
-          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
-              documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
+          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -621,11 +612,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
   /**
    * Handle documentTagging ChatApt Action with a non JSON repsonse from ChatGPT.
-   * 
-   * @throws Exception Exception
+   *
    */
   @Test
-  public void testDocumentTaggingAction05() throws Exception {
+  public void testDocumentTaggingAction05() {
 
     initProcessor("opensearch", "chatgpt3", null);
 
@@ -655,8 +645,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
-          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
-              documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
+          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -695,11 +684,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
   /**
    * Handle documentTagging ChatApt Action extra quotes.
-   * 
-   * @throws Exception Exception
+   *
    */
   @Test
-  public void testDocumentTaggingAction06() throws Exception {
+  public void testDocumentTaggingAction06() {
 
     initProcessor("opensearch", "chatgpt4", null);
 
@@ -729,8 +717,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
-          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
-              documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
+          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -765,11 +752,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
   /**
    * Handle documentTagging ChatApt Action extra quotes.
-   * 
-   * @throws Exception Exception
+   *
    */
   @Test
-  public void testDocumentTaggingAction07() throws Exception {
+  public void testDocumentTaggingAction07() {
 
     initProcessor("opensearch", "chatgpt5", null);
 
@@ -799,8 +785,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
-          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
-              documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
+          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -841,11 +826,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
   /**
    * Handle documentTagging ChatApt Action with a gpt-3.5-turbo-instruct model response.
-   * 
-   * @throws Exception Exception
+   *
    */
   @Test
-  public void testDocumentTaggingAction08() throws Exception {
+  public void testDocumentTaggingAction08() {
 
     initProcessor("opensearch", "chatgpt6", null);
 
@@ -875,8 +859,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
-          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
-              documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
+          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -930,11 +913,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
   /**
    * Handle OCR Action.
-   * 
-   * @throws IOException IOException
+   *
    */
   @Test
-  public void testHandle01() throws IOException {
+  public void testHandle01() {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = ID.uuid();
@@ -944,8 +926,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
-          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
-              documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
+          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -970,11 +951,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
   /**
    * Handle Fulltext(Opensearch) plain/text document.
    * 
-   * @throws IOException IOException
    * @throws ValidationException ValidationException
    */
   @Test
-  public void testHandle02() throws IOException, ValidationException {
+  public void testHandle02() throws ValidationException {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = ID.uuid();
@@ -988,8 +968,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
-          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
-              documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
+          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -1011,11 +990,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
   /**
    * Handle Fulltext application/pdf document.
    * 
-   * @throws IOException IOException
    * @throws ValidationException ValidationException
    */
   @Test
-  public void testHandle03() throws IOException, ValidationException {
+  public void testHandle03() throws ValidationException {
 
     // given
     String documentId = DOCUMENT_ID_OCR;
@@ -1031,8 +1009,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
-          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
-              documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
+          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -1053,11 +1030,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
   /**
    * Handle Fulltext missing document failed Actionstatus.
-   * 
-   * @throws IOException IOException
+   *
    */
   @Test
-  public void testHandle04() throws IOException {
+  public void testHandle04() {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = ID.uuid();
@@ -1066,8 +1042,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
-          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
-              documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
+          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -1088,11 +1063,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
   /**
    * Handle WEBHOOK Action.
    * 
-   * @throws IOException IOException
    * @throws ValidationException ValidationException
    */
   @Test
-  public void testHandle05() throws IOException, ValidationException {
+  public void testHandle05() throws ValidationException {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = ID.uuid();
@@ -1106,8 +1080,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
-          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
-              documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
+          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -1145,11 +1118,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
   /**
    * Handle WEBHOOK + ANTIVIRUS Action.
    * 
-   * @throws IOException IOException
    * @throws ValidationException ValidationException
    */
   @Test
-  public void testHandle06() throws IOException, ValidationException {
+  public void testHandle06() throws ValidationException {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = ID.uuid();
@@ -1169,8 +1141,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
-          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
-              documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
+          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -1232,8 +1203,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
-          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
-              documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
+          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -1257,11 +1227,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
   /**
    * Handle RUNNING action in progress.
    * 
-   * @throws IOException IOException
    * @throws ValidationException ValidationException
    */
   @Test
-  public void testHandle08() throws IOException, ValidationException {
+  public void testHandle08() throws ValidationException {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = ID.uuid();
@@ -1278,8 +1247,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
-          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
-              documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
+          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -1298,11 +1266,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
   /**
    * Handle FAILED and PENDING action.
    * 
-   * @throws IOException IOException
    * @throws ValidationException ValidationException
    */
   @Test
-  public void testHandle09() throws IOException, ValidationException {
+  public void testHandle09() throws ValidationException {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = ID.uuid();
@@ -1319,8 +1286,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
-          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
-              documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
+          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -1348,11 +1314,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
   /**
    * Handle Fulltext that needs OCR Action.
    * 
-   * @throws IOException IOException
    * @throws ValidationException ValidationException
    */
   @Test
-  public void testHandleFulltext01() throws IOException, ValidationException {
+  public void testHandleFulltext01() throws ValidationException {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = ID.uuid();
@@ -1366,8 +1331,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
-          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
-              documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
+          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -1386,11 +1350,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
   /**
    * Handle Fulltext that needs OCR Action.
    * 
-   * @throws IOException IOException
    * @throws ValidationException ValidationException
    */
   @Test
-  public void testHandleFulltext02() throws IOException, ValidationException {
+  public void testHandleFulltext02() throws ValidationException {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = ID.uuid();
@@ -1405,8 +1368,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
-          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
-              documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
+          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -1428,11 +1390,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
   /**
    * Handle Fulltext(Opensearch) plain/text PATCH document not found 404, POST works.
    * 
-   * @throws IOException IOException
    * @throws ValidationException ValidationException
    */
   @Test
-  public void testHandleFulltext03() throws IOException, ValidationException {
+  public void testHandleFulltext03() throws ValidationException {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = DOCUMENT_ID_404;
@@ -1446,8 +1407,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
-          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
-              documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
+          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -1483,11 +1443,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
   /**
    * Handle Queue Action.
-   * 
-   * @throws Exception Exception
+   *
    */
   @Test
-  public void testQueueAction01() throws Exception {
+  public void testQueueAction01() {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = ID.uuid();
@@ -1498,8 +1457,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
-          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
-              documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
+          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -1870,11 +1828,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
   /**
    * Handle Idp with Mapping Action text/plain, Attribute STRING_VALUE.
    *
-   * @throws IOException IOException
    * @throws ValidationException ValidationException
    */
   @Test
-  public void testIdp08() throws IOException, ValidationException {
+  public void testIdp08() throws ValidationException {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String text = """
@@ -1971,11 +1928,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
   /**
    * Handle Idp with Mapping Action application/pdf and CONTENT_KEY_VALUE FUZZY.
    *
-   * @throws IOException IOException
    * @throws ValidationException ValidationException
    */
   @Test
-  public void testIdp10() throws IOException, ValidationException {
+  public void testIdp10() throws ValidationException {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = addPdfToBucket(siteId);
@@ -2015,11 +1971,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
   /**
    * Handle Idp with Mapping Action application/pdf and CONTENT_KEY_VALUE EXACT.
    *
-   * @throws IOException IOException
    * @throws ValidationException ValidationException
    */
   @Test
-  public void testIdp11() throws IOException, ValidationException {
+  public void testIdp11() throws ValidationException {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = addPdfToBucket(siteId);
@@ -2056,11 +2011,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
   /**
    * Handle Idp with Mapping Action application/pdf and CONTENT_KEY_VALUE, EXACT missing.
    *
-   * @throws IOException IOException
    * @throws ValidationException ValidationException
    */
   @Test
-  public void testIdp12() throws IOException, ValidationException {
+  public void testIdp12() throws ValidationException {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = addPdfToBucket(siteId);
@@ -2094,11 +2048,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
   /**
    * Handle Idp with Mapping Action application/pdf and SourceType MANUAL.
    *
-   * @throws IOException IOException
    * @throws ValidationException ValidationException
    */
   @Test
-  public void testIdp13() throws IOException, ValidationException {
+  public void testIdp13() throws ValidationException {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = addPdfToBucket(siteId);
@@ -2146,11 +2099,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
   /**
    * Handle Idp with Mapping Action application/pdf and SourceType MANUAL and dataonly attribute.
    *
-   * @throws IOException IOException
    * @throws ValidationException ValidationException
    */
   @Test
-  public void testIdp14() throws IOException, ValidationException {
+  public void testIdp14() throws ValidationException {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = addPdfToBucket(siteId);
@@ -2186,8 +2138,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
   }
 
   private void processIdpRequest(final String siteId, final String documentId,
-      final String contentType, final MappingRecord mappingRecord)
-      throws ValidationException, IOException {
+      final String contentType, final MappingRecord mappingRecord) throws ValidationException {
     DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
     item.setContentType(contentType);
     documentService.saveDocument(siteId, item, null);
@@ -2197,8 +2148,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     actionsService.saveNewActions(siteId, documentId, actions);
 
     Map<String, Object> map =
-        loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
-            documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
+        SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
     // when
     processor.handleRequest(map, null);
@@ -2221,10 +2171,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
   /**
    * Handle Publish Action.
    *
-   * @throws Exception Exception
    */
   @Test
-  public void testPublishAction01() throws Exception {
+  public void testPublishAction01() {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = ID.uuid();
@@ -2242,8 +2191,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
-          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
-              documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
+          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -2276,10 +2224,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
   /**
    * Handle Pdf Export Action Google not configured.
    *
-   * @throws Exception Exception
    */
   @Test
-  public void testPdfExportAction01() throws Exception {
+  public void testPdfExportAction01() {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = ID.uuid();
@@ -2292,8 +2239,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
-          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
-              documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
+          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -2309,10 +2255,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
   /**
    * Handle Pdf Export on non Google Deeplink Action.
    *
-   * @throws Exception Exception
    */
   @Test
-  public void testPdfExportAction02() throws Exception {
+  public void testPdfExportAction02() {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       SiteConfiguration siteConfig = new SiteConfiguration();
@@ -2330,8 +2275,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
-          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
-              documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
+          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -2347,10 +2291,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
   /**
    * Handle Pdf Export Action.
    *
-   * @throws Exception Exception
    */
   @Test
-  public void testPdfExportAction03() throws Exception {
+  public void testPdfExportAction03() {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       SiteConfiguration siteConfig = new SiteConfiguration();
@@ -2369,8 +2312,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
-          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
-              documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
+          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -2428,8 +2370,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
-          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
-              documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
+          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -2724,14 +2665,13 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
   // Helper method to create and process a resize action.
   private void processResizeAction(final String siteId, final String documentId,
-      final Map<String, String> parameters) throws IOException {
+      final Map<String, String> parameters) {
     List<Action> actions = Collections
         .singletonList(new Action().type(ActionType.RESIZE).userId("joe").parameters(parameters));
     actionsService.saveNewActions(siteId, documentId, actions);
 
     Map<String, Object> map =
-        loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
-            documentId, DEFAULT_SITE_ID, siteId != null ? siteId : DEFAULT_SITE_ID);
+        SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
     processor.handleRequest(map, null);
   }
@@ -2886,15 +2826,15 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
   }
 
-  private void handleDynamodb(final String siteId, final String documentId) throws IOException {
+  private void handleDynamodb(final String siteId, final String documentId) {
     List<DocumentSyncRecord> syncs = getDocumentSyncs(siteId, documentId);
 
     for (DocumentSyncRecord sync : syncs) {
       String pk = SiteIdKeyGenerator.createDatabaseKey(siteId, "docs#" + documentId);
-      Map<String, Object> map =
-          loadFileAsMap(this, "/event-dynamodb01.json", "docs#7e4a43d6-b74a-4fb8-a751-e724cff5c3de",
-              pk, "7e4a43d6-b74a-4fb8-a751-e724cff5c3de", documentId,
-              "syncs#2025-01-22T15:53:12.342Z", sync.sk(), "METADATA", sync.getType().name());
+
+      Map<String, Object> map = DynamoDbStreamEventBuilder.builder().pk(pk).sk(sync.sk())
+          .documentId(documentId).type(sync.getType().name()).build();
+
       processor.handleRequest(map, null);
     }
   }
