@@ -72,11 +72,11 @@ public class DocumentIdPurgeRequestHandler
       String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
       int deletedTotal = s3Service.deleteAllVersionsOfFile(documentBucket, s3Key);
 
-      if (deletedTotal == 0) {
+      boolean deleted = service.deleteDocument(siteId, documentId, false);
+
+      if (deletedTotal == 0 && !deleted) {
         throw new NotFoundException("Document " + documentId + " not found.");
       }
-
-      service.deleteDocument(siteId, documentId, false);
 
       ApiResponse resp = new ApiMessageResponse("'" + documentId + "' object deleted all versions");
       return new ApiRequestHandlerResponse(SC_OK, resp);
