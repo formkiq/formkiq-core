@@ -33,6 +33,8 @@ public enum MimeType {
 
   /** image/bmp. */
   MIME_BMP("image/bmp", "bmp"),
+  /** image/heic. */
+  MIME_HEIC("image/heic", "heic"),
   /** application/msword. */
   MIME_DOC("application/msword", "doc"),
   /** application/vnd.openxmlformats-officedocument.wordprocessingml.document. */
