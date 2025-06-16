@@ -305,6 +305,7 @@ Resources:
             - dynamodb:Query
             - dynamodb:DeleteItem
             - dynamodb:UpdateItem
+            - dynamodb:BatchWriteItem
             Resource:
             - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentSyncsTableName}}" 
           - Effect: Allow
