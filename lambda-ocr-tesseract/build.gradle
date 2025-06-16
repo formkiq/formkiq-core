@@ -40,7 +40,7 @@ test {
 }
 
 task downloadZipFile(type: Download) {
-    src 'https://github.com/bweigel/aws-lambda-tesseract-layer/releases/download/v5.3.1/tesseract-al2-x86.zip'
+    src 'https://github.com/bweigel/aws-lambda-tesseract-layer/releases/download/v5.3.9/tesseract-al2-x86.zip'
     dest new File(buildDir, 'tesseract-al2-x86.zip')
     overwrite false
 }
