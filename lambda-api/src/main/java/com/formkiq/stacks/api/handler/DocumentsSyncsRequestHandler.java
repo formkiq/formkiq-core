@@ -25,6 +25,8 @@ package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
+
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,17 +37,25 @@ import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.model.DocumentSyncRecord;
+import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
+import com.formkiq.aws.dynamodb.model.DocumentSyncType;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.dynamodb.cache.CacheService;
+import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.ActionType;
+import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentSyncService;
+import com.formkiq.validation.ValidationError;
+import com.formkiq.validation.ValidationException;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/syncs". */
 public class DocumentsSyncsRequestHandler
@@ -56,6 +66,20 @@ public class DocumentsSyncsRequestHandler
    *
    */
   public DocumentsSyncsRequestHandler() {}
+
+  private static void validate(final AddDocumentSync sync) throws BadException {
+    if (sync == null) {
+      throw new BadException("Invalid request");
+    }
+
+    if (sync.getService() == null) {
+      throw new BadException("Invalid Sync Service");
+    }
+
+    if (sync.getType() == null) {
+      throw new BadException("Invalid Sync Type");
+    }
+  }
 
   @Override
   public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
@@ -70,17 +94,20 @@ public class DocumentsSyncsRequestHandler
 
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
-    verifyDocument(awsservice, siteId, documentId);
 
     DocumentSyncService sync = awsservice.getExtension(DocumentSyncService.class);
     PaginationResults<DocumentSyncRecord> syncs = sync.getSyncs(siteId, documentId, token, limit);
 
-    ApiPagination current =
-        createPagination(cacheService, event, pagination, syncs.getToken(), limit);
-
     syncs.getResults().forEach(s -> s.setDocumentId(null));
     List<Map<String, Object>> list =
         syncs.getResults().stream().map(new DynamodbRecordToMap()).toList();
+
+    if (list.isEmpty()) {
+      verifyDocument(awsservice, siteId, documentId);
+    }
+
+    ApiPagination current =
+        createPagination(cacheService, event, pagination, syncs.getToken(), limit);
 
     Map<String, Object> map = new HashMap<>();
     map.put("syncs", list);
@@ -101,5 +128,60 @@ public class DocumentsSyncsRequestHandler
     DocumentService ds = awsservice.getExtension(DocumentService.class);
     DocumentItem item = ds.findDocument(siteId, documentId);
     throwIfNull(item, new DocumentNotFoundException(documentId));
+  }
+
+  @Override
+  public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
+
+    AddDocumentSyncRequest req = fromBodyToObject(event, AddDocumentSyncRequest.class);
+    AddDocumentSync sync = req.getSync();
+    validate(sync);
+
+    String siteId = authorization.getSiteId();
+    String documentId = event.getPathParameters().get("documentId");
+    verifyDocument(awsservice, siteId, documentId);
+
+    ActionsService actionsService = awsservice.getExtension(ActionsService.class);
+
+    if (DocumentSyncType.CONTENT.equals(sync.getType()) && isActionService(sync.getService())) {
+
+      actionsService.saveNewActions(siteId, documentId, List.of(new Action().documentId(documentId)
+          .type(ActionType.FULLTEXT).userId(authorization.getUsername())));
+
+    } else {
+      DocumentSyncService service = awsservice.getExtension(DocumentSyncService.class);
+
+      DocumentSyncServiceType serviceType = getService(awsservice, sync.getService());
+      Collection<ValidationError> errors =
+          service.addSync(siteId, documentId, serviceType, sync.getType());
+      if (!errors.isEmpty()) {
+        throw new ValidationException(errors);
+      }
+    }
+
+    ApiMapResponse resp = new ApiMapResponse(Map.of("message", "Added Document sync"));
+    return new ApiRequestHandlerResponse(SC_OK, resp);
+  }
+
+  private DocumentSyncServiceType getService(final AwsServiceCache awsservice,
+      final AddDocumentSyncServiceType service) throws BadException {
+    return switch (service) {
+      case FULLTEXT -> {
+        if (awsservice.hasModule("opensearch")) {
+          yield DocumentSyncServiceType.OPENSEARCH;
+        } else if (awsservice.hasModule("typesense")) {
+          yield DocumentSyncServiceType.TYPESENSE;
+        } else {
+          throw new BadException("No fulltext services enabled");
+        }
+      }
+      case EVENTBRIDGE -> DocumentSyncServiceType.EVENTBRIDGE;
+      default -> throw new BadException("Unknown service type: " + service);
+    };
+  }
+
+  private boolean isActionService(final AddDocumentSyncServiceType service) {
+    return AddDocumentSyncServiceType.FULLTEXT.equals(service);
   }
 }

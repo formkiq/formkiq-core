@@ -128,7 +128,6 @@ public class ConsoleInstallHandlerTest {
     map.put("API_IAM_URL", "https://auth.execute-api.us-east-1.amazonaws.com/iam/");
     map.put("API_KEY_URL", "https://auth.execute-api.us-east-1.amazonaws.com/key/");
     map.put("API_AUTH_URL", "https://auth.execute-api.us-east-1.amazonaws.com/prod/");
-    map.put("API_WEBSOCKET_URL", "wss://me.execute-api.us-east-1.amazonaws.com/prod/");
     map.put("BRAND", "24hourcharts");
     map.put("ALLOW_ADMIN_CREATE_USER_ONLY", "false");
     map.put("COGNITO_HOSTED_UI", "https://test2111111111111111.auth.us-east-2.amazoncognito.com");

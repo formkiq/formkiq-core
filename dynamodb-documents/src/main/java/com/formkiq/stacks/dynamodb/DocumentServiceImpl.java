@@ -28,6 +28,7 @@ import com.formkiq.aws.dynamodb.BatchGetConfig;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.DynamodbRecordKeyPredicate;
@@ -39,6 +40,7 @@ import com.formkiq.aws.dynamodb.PaginationToAttributeValue;
 import com.formkiq.aws.dynamodb.QueryConfig;
 import com.formkiq.aws.dynamodb.QueryResponseToPagination;
 import com.formkiq.aws.dynamodb.ReadRequestBuilder;
+import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.WriteRequestBuilder;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentSyncRecord;
@@ -447,7 +449,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     boolean deleted;
     if (softDelete) {
 
-      deleted = deleteDocumentSoft(siteId, documentId, pk, list);
+      deleted = deleteDocumentSoft(siteId, documentId, list);
 
     } else {
 
@@ -472,7 +474,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   private boolean deleteDocumentSoft(final String siteId, final String documentId,
-      final AttributeValue pk, final List<Map<String, AttributeValue>> list) {
+      final List<Map<String, AttributeValue>> list) {
     boolean deleted =
         this.dbService.moveItems(list, new DocumentDeleteMoveAttributeFunction(siteId, documentId));
 
@@ -2424,12 +2426,41 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     }
   }
 
+  private void validateDocumentRelationships(final String siteId, final String documentId,
+      final Collection<DocumentAttributeRecord> documentAttributes,
+      final Collection<ValidationError> errors) {
+
+    List<DocumentAttributeRecord> relationships = documentAttributes.stream()
+        .filter(a -> AttributeKeyReserved.RELATIONSHIPS.getKey().equals(a.getKey())).toList();
+
+    List<String> docIds = relationships.stream()
+        .map(r -> r.getStringValue().substring(r.getStringValue().indexOf("#") + 1))
+        .filter(d -> !d.equals(documentId)).toList();
+    List<DynamoDbKey> keys = docIds.stream().map(id -> {
+      Map<String, AttributeValue> val = keysDocument(siteId, id);
+      return new DynamoDbKey(val.get(PK).s(), val.get(SK).s(), "", "", "", "");
+    }).toList();
+
+    Collection<DynamoDbKey> exists = this.dbService.exists(keys);
+    if (exists.size() != relationships.size()) {
+
+      List<String> existIds = exists.stream().map(DynamoDbKey::pk)
+          .map(SiteIdKeyGenerator::getDocumentId).map(s -> s.replace(PREFIX_DOCS, "")).toList();
+
+      com.formkiq.strings.Strings.complement(docIds, existIds).forEach(id -> {
+        errors.add(new ValidationErrorImpl().key(id).error("document '" + id + "' does not exist"));
+      });
+    }
+  }
+
   private void validateDocumentAttributes(final String siteId, final String documentId,
       final Collection<DocumentAttributeRecord> documentAttributes,
       final AttributeValidationAccess validationAccess, final Collection<ValidationError> errors) {
 
     validateDocumentAttributesExist(siteId, documentId, documentAttributes, validationAccess,
         errors);
+
+    validateDocumentRelationships(siteId, documentId, documentAttributes, errors);
   }
 
   private void validateDocumentAttributes(final List<SchemaAttributes> schemaAttributes,

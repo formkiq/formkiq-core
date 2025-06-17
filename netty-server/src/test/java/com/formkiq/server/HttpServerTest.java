@@ -142,8 +142,8 @@ public class HttpServerTest {
   void testGetDocument01() throws Exception {
     // given
     // when
-    GetDocumentsResponse documents =
-        this.documentsApi.getDocuments(null, null, null, "2020-05-20", null, null, null, null);
+    GetDocumentsResponse documents = this.documentsApi.getDocuments(null, null, null, null,
+        "2020-05-20", null, null, null, null);
 
     // then
     assertEquals(0, documents.getDocuments().size());

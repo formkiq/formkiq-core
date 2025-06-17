@@ -23,7 +23,7 @@
  */
 package com.formkiq.stacks.dynamodb;
 
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceExtension;
 
@@ -45,11 +45,11 @@ public class DocumentSyncServiceExtension implements AwsServiceExtension<Documen
   @Override
   public DocumentSyncService loadService(final AwsServiceCache awsServiceCache) {
     if (this.service == null) {
-      DynamoDbConnectionBuilder connection =
-          awsServiceCache.getExtension(DynamoDbConnectionBuilder.class);
+      DynamoDbService db = awsServiceCache.getExtension(DynamoDbService.class);
 
-      this.service = new DocumentSyncServiceDynamoDb(connection,
-          awsServiceCache.environment("DOCUMENT_SYNC_TABLE"));
+      this.service =
+          new DocumentSyncServiceDynamoDb(db, awsServiceCache.environment("DOCUMENTS_TABLE"),
+              awsServiceCache.environment("DOCUMENT_SYNC_TABLE"));
     }
 
     return this.service;

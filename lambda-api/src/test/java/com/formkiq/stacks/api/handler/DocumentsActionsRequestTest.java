@@ -42,6 +42,7 @@ import com.formkiq.client.model.AddAttribute;
 import com.formkiq.client.model.AddAttributeRequest;
 import com.formkiq.client.model.AddMapping;
 import com.formkiq.client.model.AddMappingRequest;
+import com.formkiq.client.model.Document;
 import com.formkiq.client.model.MappingAttribute;
 import com.formkiq.client.model.MappingAttributeLabelMatchingType;
 import com.formkiq.client.model.MappingAttributeSourceType;
@@ -593,6 +594,8 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       this.service.saveNewActions(siteId, documentId,
           Collections.singletonList(new Action().userId("joe").status(ActionStatus.COMPLETE)
               .parameters(Map.of("test", "this")).type(ActionType.OCR)));
+      List<Document> failed = getFailedActionDocuments(siteId);
+      assertEquals(0, failed.size());
 
       // when
       AddDocumentActionsRetryResponse retry =
@@ -612,6 +615,11 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
     }
   }
 
+  private List<Document> getFailedActionDocuments(final String siteId) throws ApiException {
+    return notNull(this.documentsApi
+        .getDocuments(siteId, "FAILED", null, null, null, null, null, null, null).getDocuments());
+  }
+
   /**
    * POST /documents/{documentId}/actions/retry request. Failed
    *
@@ -625,9 +633,22 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       setBearerToken(siteId);
       String documentId = saveDocument(siteId);
 
+      // when
       this.service.saveNewActions(siteId, documentId,
           Collections.singletonList(new Action().userId("joe").status(ActionStatus.FAILED)
               .message("some message").parameters(Map.of("test", "this")).type(ActionType.OCR)));
+
+      List<Document> failed = getFailedActionDocuments(siteId);
+      assertEquals(1, failed.size());
+      assertEquals(documentId, failed.get(0).getDocumentId());
+
+      // then
+      GetDocumentActionsResponse response =
+          this.documentActionsApi.getDocumentActions(documentId, siteId, null, null, null);
+      List<DocumentAction> actions = notNull(response.getActions());
+      assertEquals(1, actions.size());
+      assertDocumentAction(actions.get(0), DocumentActionType.OCR, DocumentActionStatus.FAILED,
+          "some message");
 
       // when
       AddDocumentActionsRetryResponse retry =
@@ -636,18 +657,14 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       // then
       assertEquals("Actions retrying", retry.getMessage());
 
-      GetDocumentActionsResponse response =
-          this.documentActionsApi.getDocumentActions(documentId, siteId, null, null, null);
+      response = this.documentActionsApi.getDocumentActions(documentId, siteId, null, null, null);
 
-      List<DocumentAction> actions = notNull(response.getActions());
+      actions = notNull(response.getActions());
       assertEquals(2, actions.size());
-      assertEquals(DocumentActionType.OCR, actions.get(0).getType());
-      assertEquals(DocumentActionStatus.FAILED_RETRY, actions.get(0).getStatus());
-      assertEquals("some message", actions.get(0).getMessage());
-
-      assertEquals(DocumentActionType.OCR, actions.get(1).getType());
-      assertEquals(DocumentActionStatus.PENDING, actions.get(1).getStatus());
-      assertNull(actions.get(1).getMessage());
+      assertDocumentAction(actions.get(0), DocumentActionType.OCR,
+          DocumentActionStatus.FAILED_RETRY, "some message");
+      assertDocumentAction(actions.get(1), DocumentActionType.OCR, DocumentActionStatus.PENDING,
+          null);
 
       // when - 2nd time
       this.documentActionsApi.addDocumentRetryAction(documentId, siteId);
@@ -656,7 +673,23 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       response = this.documentActionsApi.getDocumentActions(documentId, siteId, null, null, null);
       actions = notNull(response.getActions());
       assertEquals(2, actions.size());
+      assertDocumentAction(actions.get(0), DocumentActionType.OCR,
+          DocumentActionStatus.FAILED_RETRY, "some message");
+      assertDocumentAction(actions.get(1), DocumentActionType.OCR, DocumentActionStatus.PENDING,
+          null);
     }
+  }
+
+  private void assertDocumentAction(final DocumentAction action, final DocumentActionType type,
+      final DocumentActionStatus status, final String message) {
+    assertEquals(type, action.getType());
+    assertEquals(status, action.getStatus());
+    if (message != null) {
+      assertEquals(message, action.getMessage());
+    } else {
+      assertNull(action.getMessage());
+    }
+
   }
 
   /**

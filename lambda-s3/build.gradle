@@ -36,25 +36,25 @@ dependencies {
 	implementation project(':strings')
 
 	implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.3'
-    implementation group: 'com.google.code.gson', name: 'gson', version: '2.11.0'
+    implementation group: 'com.google.code.gson', name: 'gson', version: '2.13.0'
     
 	implementation group: 'com.formkiq', name: 'lambda-runtime-graalvm', version:'2.5.0'
     implementation group: 'com.formkiq', name: 'graalvm-annotations', version: '1.2.0'
     
-	implementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.7'
+	implementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.17'
 	
 	testImplementation project(':aws-sqs')	
 	testImplementation project(':fkq-test-utils')
 	testImplementation project(':fkq-validation')
     testImplementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.17.0'
 
-	testImplementation group: 'software.amazon.awssdk', name: 'dynamodb', version: '2.29.51'
-	testImplementation group: 'software.amazon.awssdk', name: 's3', version: '2.29.51'
+	testImplementation group: 'software.amazon.awssdk', name: 'dynamodb', version: '2.31.25'
+	testImplementation group: 'software.amazon.awssdk', name: 's3', version: '2.31.25'
 
 	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.11.4'
-    testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.20.4'
-	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.20.4'
-    testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.20.4'
+    testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.20.6'
+	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.20.6'
+    testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.20.6'
 	testImplementation group: 'org.mock-server', name: 'mockserver-netty', version: '5.15.0'
 }
 

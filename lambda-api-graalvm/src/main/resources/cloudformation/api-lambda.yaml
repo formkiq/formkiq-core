@@ -44,11 +44,6 @@ Parameters:
     Description: The Cognito User Pool Client Id
     AllowedPattern: ".+"
 
-  WebsocketSqsQueueUrl:
-    Type: String
-    Description: "SQS URL for processing Websocket Messages"
-    AllowedPattern: ".+"
-   
   UserAuthentication:
     Description: How are the users authenticating
     AllowedPattern: ".+"
@@ -182,8 +177,6 @@ Resources:
             Ref: FormKiQType
           FORMKIQ_VERSION:
             Ref: FormKiQVersion
-          WEBSOCKET_SQS_URL: 
-            Ref: WebsocketSqsQueueUrl
           USER_AUTHENTICATION:
             Ref: UserAuthentication
           DOCUMENT_VERSIONS_PLUGIN: "com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning"
@@ -340,15 +333,20 @@ Resources:
               Resource:
               - Fn::Sub: "arn:${AWS::Partition}:sqs:${AWS::Region}:${AWS::AccountId}:formkiq*"
               - Fn::Sub: "${OcrQueueArn}"
-              - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/sqs/WebsocketArn}}"
             - Effect: Allow
               Action:
               - dynamodb:BatchGetItem
               - dynamodb:BatchWriteItem
               - dynamodb:Get*
+              - dynamodb:UpdateItem
               - dynamodb:Query
               Resource:
               - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentSyncsTableName}}"
+            - Effect: Allow
+              Action:
+                - dynamodb:Query
+              Resource:
+                - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentSyncsTableName}}/index/*"
             - Effect: Allow
               Action:
               - sns:Publish

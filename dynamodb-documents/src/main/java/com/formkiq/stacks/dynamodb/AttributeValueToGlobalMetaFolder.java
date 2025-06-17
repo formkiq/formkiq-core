@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 import com.formkiq.aws.dynamodb.DbKeys;
+import com.formkiq.aws.dynamodb.base64.StringToBase64Encoder;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
@@ -45,6 +46,8 @@ public class AttributeValueToGlobalMetaFolder
   /** {@link AttributeValueToDate}. */
   private final AttributeValueToDate toLastModifiedDate =
       new AttributeValueToDate("lastModifiedDate");
+  /** {@link StringToBase64Encoder}. */
+  private final StringToBase64Encoder encoder = new StringToBase64Encoder();
 
   /**
    * constructor.
@@ -75,7 +78,7 @@ public class AttributeValueToGlobalMetaFolder
       }
 
       String parent = pk.substring(pk.lastIndexOf(TAG_DELIMINATOR) + 1);
-      String key = parent + TAG_DELIMINATOR + path;
+      String key = encoder.apply(parent + TAG_DELIMINATOR + path);
       result.put("indexKey", key);
 
       Date insertedDate = this.toInsertedDateDate.apply(map);

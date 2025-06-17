@@ -32,7 +32,7 @@
               - OAuth(JWT)
               - AWS IAM
               - API Key
-          version: 1.17.0
+          version: 1.17.1
         tags:
         - name: documents
           description: API for the add, updating and fetching of documents
@@ -1143,6 +1143,31 @@
                   application/json:
                     schema:
                       $ref: '#/components/schemas/AddLocaleResourceItemRequest'
+                    examples:
+                      interfaceResourceItem:
+                        summary: Interface Resource Item Example
+                        value:
+                          resourceItem:
+                            itemType: INTERFACE
+                            interfaceKey: mainMenuTitle
+                            localizedValue: Main Menu
+                      schemaResourceItem:
+                        summary: Schema Resource Item Example
+                        value:
+                          resourceItem:
+                            itemType: SCHEMA
+                            attributeKey: documentCategory
+                            allowedValue: invoice
+                            localizedValue: Facture
+                      classificationResourceItem:
+                        summary: Classification Resource Item Example
+                        value:
+                          resourceItem:
+                            itemType: CLASSIFICATION
+                            attributeKey: usageRegistrariat
+                            allowedValue: ID
+                            localizedValue: Gestion identitaire
+                            classificationId: 219a7dd6-5fb2-4556-ad71-0ab4312fe577
               responses:
                 "200":
                   description: 201 CREATED
@@ -1273,6 +1298,14 @@
                   - RUNNING
                   - SKIPPED
                   - FAILED_RETRY
+              - name: syncStatus
+                in: query
+                description: Fetch documents with an sync status
+                schema:
+                  type: string
+                  enum:
+                  - FULLTEXT_METADATA_FAILED
+                  - FULLTEXT_CONTENT_FAILED
               - $ref: '#/components/parameters/documentSearchDeleted'
               - name: date
                 in: query
@@ -1520,7 +1553,7 @@
             delete:
               operationId: PurgeDocument
               summary: Purge document
-              description: Remove all objects from the S3 bucket, including previous versions and current version, and should remove all metadata as well, so that no trace of the document exists outside of the audit logs and any backups. Can only be called be ADMIN.
+              description: Remove all objects from the S3 bucket, including previous versions and current version, and should remove all metadata as well, so that no trace of the document exists outside of the audit logs and any backups. Can only be called be ADMIN or GOVERN.
               tags:
               - Documents
               parameters:
@@ -1604,7 +1637,6 @@
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
-              - $ref: '#/components/parameters/wsParam'
               requestBody:
                 required: true
                 content:
@@ -1777,7 +1809,6 @@
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
-              - $ref: '#/components/parameters/wsParam'
               requestBody:
                 required: true
                 content:
@@ -3808,7 +3839,7 @@
             post:
               operationId: AddDocumentFulltext
               summary: Add document's full-text
-              description: Adde a document to OpenSearch; available as an Add-On Module
+              description: Add a document to OpenSearch; available as an Add-On Module
               tags:
               - Advanced Document Search
               parameters:
@@ -3936,6 +3967,39 @@
                     application/json:
                       schema:
                         $ref: '#/components/schemas/GetDocumentSyncResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+            post:
+              operationId: AddDocumentSync
+              summary: Add document sync to service
+              description: Add a document to a service
+              tags:
+              - Documents
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              requestBody:
+                required: false
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/AddDocumentSyncRequest'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/AddResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -6498,13 +6562,6 @@
               description: Fetch soft deleted documents
               schema:
                 type: boolean
-            wsParam:
-              name: ws
-              in: query
-              description: Whether to enable WebSocket real-time communication with the request
-              required: false
-              schema:
-                type: string
             groupParam:
               name: group
               in: query
@@ -8262,6 +8319,11 @@
                   type: object
                   additionalProperties:
                     $ref: '#/components/schemas/FulltextAttribute'
+            AddDocumentSyncRequest:
+              type: object
+              properties:
+                sync:
+                  $ref: '#/components/schemas/AddDocumentSync'
             GetDocumentSyncResponse:
               type: object
               properties:
@@ -8273,6 +8335,12 @@
                   description: List of document syncs
                   items:
                     $ref: '#/components/schemas/DocumentSync'
+            AddDocumentSyncService:
+              type: string
+              description: Add Document Sync Service
+              enum:
+              - FULLTEXT
+              - EVENTBRIDGE
             DocumentSyncService:
               type: string
               description: Service of Document Sync
@@ -8286,6 +8354,7 @@
               enum:
               - COMPLETE
               - FAILED
+              - FAILED_RETRY
               - PENDING
             DocumentSyncType:
               type: string
@@ -8295,6 +8364,13 @@
               - CONTENT
               - SOFT_DELETE
               - DELETE
+            AddDocumentSync:
+              type: object
+              properties:
+                service:
+                  $ref: '#/components/schemas/AddDocumentSyncService'
+                type:
+                  $ref: '#/components/schemas/DocumentSyncType'
             DocumentSync:
               type: object
               properties:

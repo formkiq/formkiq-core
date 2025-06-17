@@ -43,12 +43,12 @@ dependencies {
 	api project(':http-sigv4')
 	
 	api group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.3'
-    api group: 'com.google.code.gson', name: 'gson', version: '2.11.0'
+    api group: 'com.google.code.gson', name: 'gson', version: '2.13.0'
     
     api group: 'com.formkiq', name: 'lambda-runtime-graalvm', version:'2.5.0'
     api group: 'com.formkiq', name: 'graalvm-annotations', version: '1.2.0'
     
-	api group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.7'
+	api group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.17'
 	
     testImplementation project(':aws-cognito-identity')
     testImplementation project(':aws-cognito-identityprovider')
@@ -57,18 +57,15 @@ dependencies {
 	testImplementation project(':fkq-test-utils')
 	testImplementation project(':lambda-typesense')
 	
-	testImplementation group: 'software.amazon.awssdk', name: 'apigateway', version: '2.29.51'
-	testImplementation group: 'software.amazon.awssdk', name: 'sts', version: '2.29.51'
+	testImplementation group: 'software.amazon.awssdk', name: 'apigateway', version: '2.31.25'
+	testImplementation group: 'software.amazon.awssdk', name: 'sts', version: '2.31.25'
 
-	testImplementation group: 'commons-codec', name: 'commons-codec', version: '1.17.2'
+	testImplementation group: 'commons-codec', name: 'commons-codec', version: '1.18.0'
     testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.11.4'
-    testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.20.4'
-	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.20.4'
-	testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.20.4'
+    testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.20.6'
+	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.20.6'
+	testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.20.6'
 	testImplementation group: 'org.mock-server', name: 'mockserver-netty', version: '5.15.0'
-	
-	// TODO remove
-	testImplementation group: 'com.formkiq.stacks', name: 'client', version:'1.11.0'
 }
 
 compileJava {

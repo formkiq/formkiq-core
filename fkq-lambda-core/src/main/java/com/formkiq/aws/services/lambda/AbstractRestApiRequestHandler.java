@@ -23,7 +23,6 @@
  */
 package com.formkiq.aws.services.lambda;
 
-import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_BAD_REQUEST;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_ERROR;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_FOUND;
@@ -56,7 +55,6 @@ import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.aws.services.lambda.exceptions.NotImplementedException;
 import com.formkiq.aws.services.lambda.exceptions.TooManyRequestsException;
 import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
-import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.logger.LogLevel;
 import com.formkiq.module.lambdaservices.logger.Logger;
@@ -294,17 +292,6 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
   public abstract AwsServiceCache getAwsServices();
 
   /**
-   * Get {@link ApiGatewayRequestEvent} body as {@link String}.
-   * 
-   * @param event {@link ApiGatewayRequestEvent}
-   * @return {@link String}
-   * @throws BadException BadException
-   */
-  private String getBodyAsString(final ApiGatewayRequestEvent event) throws BadException {
-    return ApiGatewayRequestEventUtil.getBodyAsString(event);
-  }
-
-  /**
    * Get URL Map.
    * 
    * @return {@link Map}
@@ -500,8 +487,6 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
       executeResponseInterceptors(requestInterceptors, event, authorization, object);
 
-      sendWebNotify(authorization, event, object);
-
       buildResponse(awsServices, output, object.getStatus(), object.getHeaders(),
           object.getResponse());
 
@@ -581,50 +566,6 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
     }
 
     return callHandlerMethod(method, event, authorization, handler);
-  }
-
-  /**
-   * Processes the Response.
-   * 
-   * @param authorization {@link ApiAuthorization}
-   * @param event {@link ApiGatewayRequestEvent}
-   * @param resp {@link ApiRequestHandlerResponse}
-   * @throws BadException BadException
-   */
-  private void sendWebNotify(final ApiAuthorization authorization,
-      final ApiGatewayRequestEvent event, final ApiRequestHandlerResponse resp)
-      throws BadException {
-
-    String websocket = event.getQueryStringParameter("ws");
-
-    if ("true".equals(websocket)) {
-
-      AwsServiceCache aws = getAwsServices();
-      switch (resp.getStatus()) {
-        case SC_OK:
-        case SC_CREATED:
-        case SC_ACCEPTED:
-          String siteId = authorization.getSiteId();
-          String body = getBodyAsString(event);
-          String documentId = event.getPathParameters().get("documentId");
-
-          if (documentId != null) {
-
-            Map<String, String> m = new HashMap<>();
-            m.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
-            m.put("documentId", documentId);
-            m.put("message", body);
-
-            String json = this.gson.toJson(m);
-            SqsService sqsService = aws.getExtension(SqsService.class);
-            sqsService.sendMessage(aws.environment("WEBSOCKET_SQS_URL"), json);
-          }
-          break;
-
-        default:
-          break;
-      }
-    }
   }
 
   private List<ApiAuthorizationInterceptor> setupApiAuthorizationInterceptor(

@@ -46,7 +46,7 @@ import com.formkiq.stacks.dynamodb.FolderIndexProcessor;
 import com.formkiq.stacks.dynamodb.GlobalIndexService;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
-/** {@link ApiGatewayRequestHandler} for "/indices/{type}/{key}". */
+/** {@link ApiGatewayRequestHandler} for "/indices/{type}/{indexKey}". */
 public class IndicesRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil, DbKeys {
 
@@ -77,6 +77,7 @@ public class IndicesRequestHandler
 
       FolderIndexProcessor ip = awsServices.getExtension(FolderIndexProcessor.class);
 
+      indexKey = new IndexKeyToString().apply(indexKey);
       int pos = indexKey.indexOf(TAG_DELIMINATOR);
       if (pos > -1) {
 

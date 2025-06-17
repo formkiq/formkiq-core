@@ -66,7 +66,7 @@ import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.formkiq.testutils.aws.LocalStackExtension;
 
-/** Unit Tests for request /indices/{type}/{key}. */
+/** Unit Tests for request /indices/{type}/{indexKey}. */
 @ExtendWith(DynamoDbExtension.class)
 @ExtendWith(LocalStackExtension.class)
 public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
@@ -90,7 +90,7 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * DELETE /indices/{type}/{key} request.
+   * DELETE /indices/{type}/{indexKey} request.
    *
    * @throws Exception an error has occurred
    */
@@ -125,7 +125,7 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * DELETE /indices/{type}/{key} request, folder not empty.
+   * DELETE /indices/{type}/{indexKey} request, folder not empty.
    *
    * @throws Exception an error has occurred
    */
@@ -163,7 +163,7 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * DELETE /indices/{type}/{key} request, invalid key.
+   * DELETE /indices/{type}/{indexKey} request, invalid key.
    *
    */
   @Test
@@ -186,7 +186,7 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * DELETE /indices/{type}/{key} request, TAGS type.
+   * DELETE /indices/{type}/{indexKey} request, TAGS type.
    *
    * @throws Exception an error has occurred
    */
@@ -224,7 +224,7 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
 
 
   /**
-   * DELETE /indices/{type}/{key} request, invalid type.
+   * DELETE /indices/{type}/{indexKey} request, invalid type.
    *
    */
   @Test
@@ -247,7 +247,7 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * DELETE /indices/{type}/{key} with invalid siteId.
+   * DELETE /indices/{type}/{indexKey} with invalid siteId.
    *
    * @throws Exception an error has occurred
    */
@@ -285,7 +285,7 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * DELETE /indices/{type}/{key} with folder.
+   * DELETE /indices/{type}/{indexKey} with folder.
    *
    * @throws Exception an error has occurred
    */
@@ -316,10 +316,11 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
 
       // then
       assertEquals(1, docs.size());
-      assertNotNull(docs.get(0).getIndexKey());
-      assertEquals("test", docs.get(0).getPath());
-      assertEquals(Boolean.TRUE, docs.get(0).getFolder());
-      assertNotNull(docs.get(0).getDocumentId());
+      SearchResultDocument doc = docs.get(0);
+      assertNotNull(doc.getIndexKey());
+      assertEquals("test", doc.getPath());
+      assertEquals(Boolean.TRUE, doc.getFolder());
+      assertNotNull(doc.getDocumentId());
 
       // given
       meta.folder("test");
@@ -329,13 +330,14 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
 
       // then
       assertEquals(1, docs.size());
-      assertEquals(Boolean.TRUE, docs.get(0).getFolder());
-      assertEquals("4000007025   text .pdf", docs.get(0).getPath());
-      assertNotNull(docs.get(0).getIndexKey());
+      doc = docs.get(0);
+      assertEquals(Boolean.TRUE, doc.getFolder());
+      assertEquals("4000007025   text .pdf", doc.getPath());
+      assertNotNull(doc.getIndexKey());
 
       // when
       DeleteIndicesResponse response =
-          this.indexApi.deleteIndex(docs.get(0).getIndexKey(), "folder", siteId);
+          this.indexApi.deleteIndex(doc.getIndexKey(), "folder", siteId);
 
       // then
       assertEquals("Folder deleted", response.getMessage());
@@ -345,7 +347,7 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * DELETE /indices/{type}/{key} with invalid key.
+   * DELETE /indices/{type}/{indexKey} with invalid key.
    *
    */
   @Test
@@ -369,7 +371,7 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * DELETE /indices/{type}/{key} with file.
+   * DELETE /indices/{type}/{indexKey} with file.
    *
    * @throws Exception an error has occurred
    */

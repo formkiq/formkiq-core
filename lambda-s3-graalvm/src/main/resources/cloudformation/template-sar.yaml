@@ -59,6 +59,10 @@ Parameters:
     Description: >
       The level of logging for the AWS Platform System logs.
 
+  EnableDeletionProtection:
+    Description: "Enable deletion protection on AWS Services that support the feature"
+    Type: String
+
 Conditions:
         
   HasVpcStackName:
@@ -1020,6 +1024,8 @@ Resources:
   Documents:
     Type: AWS::DynamoDB::Table
     Properties:
+      DeletionProtectionEnabled:
+        Ref: EnableDeletionProtection
       TableName: 
         Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-documents"
       BillingMode: PAY_PER_REQUEST
@@ -1113,6 +1119,8 @@ Resources:
   Cache:
     Type: AWS::DynamoDB::Table
     Properties:
+      DeletionProtectionEnabled:
+        Ref: EnableDeletionProtection
       TableName: 
         Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-cache"
       BillingMode: PAY_PER_REQUEST
@@ -1143,6 +1151,8 @@ Resources:
   DocumentSyncs:
     Type: AWS::DynamoDB::Table
     Properties:
+      DeletionProtectionEnabled:
+        Ref: EnableDeletionProtection
       TableName: 
         Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-documentsyncs"
       BillingMode: PAY_PER_REQUEST
@@ -1173,6 +1183,27 @@ Resources:
         - 
           AttributeName: "SK"
           AttributeType: "S"
+        -
+          AttributeName: "GSI1PK"
+          AttributeType: "S"
+        -
+          AttributeName: "GSI1SK"
+          AttributeType: "S"
+      GlobalSecondaryIndexes:
+        -
+          IndexName: "GSI1"
+          KeySchema:
+            -
+              AttributeName: "GSI1PK"
+              KeyType: "HASH"
+            -
+              AttributeName: "GSI1SK"
+              KeyType: "RANGE"
+          Projection:
+            ProjectionType: "INCLUDE"
+            NonKeyAttributes:
+              - inserteddate
+              - documentId
 
   DocumentSyncsParameter:
     Type: AWS::SSM::Parameter

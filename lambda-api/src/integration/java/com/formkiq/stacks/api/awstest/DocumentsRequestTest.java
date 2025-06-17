@@ -236,7 +236,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
 
       // when
       GetDocumentsResponse response =
-          api.getDocuments(null, null, null, date, null, null, null, null);
+          api.getDocuments(null, null, null, null, date, null, null, null, null);
 
       // then
       assertNotNull(response.getDocuments());
@@ -260,14 +260,14 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
 
     // when
     GetDocumentsResponse responseNoSiteId =
-        api.getDocuments(null, null, null, null, null, null, null, null);
+        api.getDocuments(null, null, null, null, null, null, null, null, null);
 
     // then
     assertNotNull(responseNoSiteId.getDocuments());
 
     // when
     try {
-      api.getDocuments(siteId, null, null, null, null, null, null, null);
+      api.getDocuments(siteId, null, null, null, null, null, null, null, null);
       fail();
     } catch (ApiException e) {
       // then
@@ -294,14 +294,14 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
 
     // when
     GetDocumentsResponse responseNoSiteId =
-        api.getDocuments(null, null, null, date, null, null, null, null);
+        api.getDocuments(null, null, null, null, date, null, null, null, null);
 
     // then
     assertNotNull(responseNoSiteId.getDocuments());
 
     // when
     try {
-      api.getDocuments(siteId, null, null, date, null, null, null, null);
+      api.getDocuments(siteId, null, null, null, date, null, null, null, null);
     } catch (ApiException e) {
       assertEquals(SC_UNAUTHORIZED.getStatusCode(), e.getCode());
       assertEquals("{\"message\":\"fkq access denied to siteId (finance)\"}", e.getResponseBody());
@@ -325,9 +325,9 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
 
     // when
     GetDocumentsResponse responseNoSiteId =
-        api.getDocuments(null, null, null, date, null, null, null, null);
+        api.getDocuments(null, null, null, null, date, null, null, null, null);
     GetDocumentsResponse responseSiteId =
-        api.getDocuments(siteId, null, null, date, null, null, null, null);
+        api.getDocuments(siteId, null, null, null, date, null, null, null, null);
 
     // then
     assertNotNull(responseNoSiteId.getDocuments());
@@ -350,9 +350,9 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
 
     // when
     GetDocumentsResponse results0 =
-        api.getDocuments(null, null, null, date, null, null, null, null);
+        api.getDocuments(null, null, null, null, date, null, null, null, null);
     GetDocumentsResponse results1 =
-        api.getDocuments(GROUP_FINANCE, null, null, date, null, null, null, null);
+        api.getDocuments(GROUP_FINANCE, null, null, null, date, null, null, null, null);
 
     // then
     assertNotNull(results0.getDocuments());

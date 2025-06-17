@@ -60,7 +60,6 @@ import com.formkiq.stacks.dynamodb.attributes.AttributeKeyReserved;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -321,6 +320,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
           this.schemasApi.addClassification(siteId, req).getClassificationId();
 
       // then
+      assertNotNull(classificationId);
       assertNotNull(this.schemasApi.getClassification(siteId, classificationId, null));
     }
   }
@@ -1122,17 +1122,17 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   private void addDocumentAttributes(final String siteId, final String documentId,
       final List<AddDocumentAttribute> attributes) throws ApiException {
     AddDocumentAttributesRequest req = new AddDocumentAttributesRequest().attributes(attributes);
-    this.documentAttributesApi.addDocumentAttributes(documentId, req, siteId, null);
+    this.documentAttributesApi.addDocumentAttributes(documentId, req, siteId);
   }
 
   private void addDocumentClassification(final String siteId, final String documentId,
       final AddDocumentAttributeClassification classification) throws ApiException {
     this.documentAttributesApi.addDocumentAttributes(documentId, new AddDocumentAttributesRequest()
-        .addAttributesItem(new AddDocumentAttribute(classification)), siteId, null);
+        .addAttributesItem(new AddDocumentAttribute(classification)), siteId);
   }
 
-  private @Nullable String addDocument(final String siteId,
-      final List<AddDocumentAttribute> attributes) throws ApiException {
+  private String addDocument(final String siteId, final List<AddDocumentAttribute> attributes)
+      throws ApiException {
     AddDocumentRequest areq = new AddDocumentRequest().content("adasd").attributes(attributes);
     return this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
   }
@@ -1289,6 +1289,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
           .addAttributesItem(createAttribute("test2", "333"));
 
       String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+      assertNotNull(documentId);
 
       // when
       List<DocumentAttribute> documentAttributes = notNull(this.documentAttributesApi

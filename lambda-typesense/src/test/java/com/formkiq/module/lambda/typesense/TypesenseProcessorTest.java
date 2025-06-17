@@ -23,6 +23,7 @@
  */
 package com.formkiq.module.lambda.typesense;
 
+import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENT_SYNCS_TABLE;
 import static com.formkiq.testutils.aws.TypesenseExtension.API_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -35,6 +36,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.model.DocumentSyncRecord;
 import org.junit.jupiter.api.BeforeAll;
@@ -93,12 +96,13 @@ class TypesenseProcessorTest {
   @BeforeAll
   public static void beforeAll() throws Exception {
     AwsBasicCredentials cred = AwsBasicCredentials.create("asd", "asd");
-    DynamoDbConnectionBuilder db = DynamoDbTestServices.getDynamoDbConnection();
+    DynamoDbConnectionBuilder dbConnection = DynamoDbTestServices.getDynamoDbConnection();
+    DynamoDbService db = new DynamoDbServiceImpl(dbConnection, DOCUMENTS_TABLE);
 
-    Map<String, String> map =
-        Map.of("AWS_REGION", "us-east-1", "DOCUMENT_SYNC_TABLE", DOCUMENT_SYNCS_TABLE,
-            "TYPESENSE_HOST", "http://localhost:" + typesenseExtension.getFirstMappedPort(),
-            "TYPESENSE_API_KEY", API_KEY);
+    Map<String, String> map = Map.of("AWS_REGION", "us-east-1", "DOCUMENTS_TABLE", DOCUMENTS_TABLE,
+        "DOCUMENT_SYNC_TABLE", DOCUMENT_SYNCS_TABLE, "TYPESENSE_HOST",
+        "http://localhost:" + typesenseExtension.getFirstMappedPort(), "TYPESENSE_API_KEY",
+        API_KEY);
 
     AwsCredentials creds = AwsBasicCredentials.create("aaa", "bbb");
     StaticCredentialsProvider credentialsProvider = StaticCredentialsProvider.create(creds);
@@ -113,7 +117,7 @@ class TypesenseProcessorTest {
         new TypeSenseServiceImpl("http://localhost:" + typesenseExtension.getFirstMappedPort(),
             API_KEY, Region.US_EAST_1, cred);
 
-    syncService = new DocumentSyncServiceDynamoDb(db, DOCUMENT_SYNCS_TABLE);
+    syncService = new DocumentSyncServiceDynamoDb(db, DOCUMENTS_TABLE, DOCUMENT_SYNCS_TABLE);
   }
 
   /** {@link Context}. */

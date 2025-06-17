@@ -205,7 +205,7 @@ public class FkqDocumentService {
     DocumentTagsApi api = new DocumentTagsApi(apiClient);
     AddDocumentTagsRequest req = new AddDocumentTagsRequest()
         .addTagsItem(new com.formkiq.client.model.AddDocumentTag().key(key).value(value));
-    api.addDocumentTags(documentId, req, siteId, "true");
+    api.addDocumentTags(documentId, req, siteId);
   }
 
   /**
@@ -248,7 +248,7 @@ public class FkqDocumentService {
       final String documentId, final List<AddDocumentAttribute> attributes) throws ApiException {
     DocumentAttributesApi api = new DocumentAttributesApi(apiClient);
     AddDocumentAttributesRequest req = new AddDocumentAttributesRequest().attributes(attributes);
-    api.addDocumentAttributes(documentId, req, siteId, null);
+    api.addDocumentAttributes(documentId, req, siteId);
   }
 
   /**

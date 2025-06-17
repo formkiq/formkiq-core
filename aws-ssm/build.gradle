@@ -2,8 +2,8 @@
 description = "AWS SSM"
 
 dependencies {
-	api group: 'software.amazon.awssdk', name: 'ssm', version: '2.29.51'
-    implementation group: 'software.amazon.awssdk', name: 'url-connection-client', version: '2.29.51'
+	api group: 'software.amazon.awssdk', name: 'ssm', version: '2.31.25'
+    implementation group: 'software.amazon.awssdk', name: 'url-connection-client', version: '2.31.25'
     //implementation project(':aws-xray')
 	implementation project(':fkq-lambda-services')
 		
@@ -12,9 +12,9 @@ dependencies {
    		exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
 	}
 	
-	testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.7'
+	testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.17'
 	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.11.4'
-	testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.20.4'
+	testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.20.6'
 }
 
 test {

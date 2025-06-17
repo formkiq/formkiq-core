@@ -34,6 +34,8 @@ public enum DocumentSyncStatus {
   COMPLETE,
   /** FAILED. */
   FAILED,
+  /** FAILED. */
+  FAILED_RETRY,
   /** Pending. */
   PENDING
 }

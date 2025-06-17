@@ -182,7 +182,7 @@ public class DocumentIdUrlRequestHandler
 
     String siteId = authorization.getSiteId();
 
-    awsservice.getLogger().debug(
+    awsservice.getLogger().trace(
         "Finding S3 Url for document '" + item.getDocumentId() + "' version = '" + versionId + "'");
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
@@ -238,8 +238,8 @@ public class DocumentIdUrlRequestHandler
     if (isEmpty(contentType)) {
 
       String path = !isEmpty(item.getDeepLinkPath()) ? item.getDeepLinkPath() : item.getPath();
-      String ext = Strings.getExtension(path);
-      MimeType mimeType = MimeType.fromExtension(ext);
+
+      MimeType mimeType = MimeType.findByPath(path);
       contentType = mimeType.getContentType();
     }
 

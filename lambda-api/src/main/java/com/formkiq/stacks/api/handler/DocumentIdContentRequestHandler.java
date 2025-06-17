@@ -27,7 +27,6 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
-import java.io.IOException;
 import java.net.URL;
 import java.time.Duration;
 import java.util.Map;
@@ -46,6 +45,7 @@ import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
+import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.useractivity.UserActivityPlugin;
 import com.formkiq.stacks.dynamodb.DocumentService;
@@ -86,6 +86,8 @@ public class DocumentIdContentRequestHandler
 
       try {
         response = getPlainTextResponse(awsservice, s3key, versionId, item, documentId);
+      } catch (NotFoundException e) {
+        throw e;
       } catch (RuntimeException e) {
         response = getApiResponse(awsservice, item, s3key, versionId);
       }
@@ -121,7 +123,7 @@ public class DocumentIdContentRequestHandler
 
   private static ApiResponse getPlainTextResponse(final AwsServiceCache awsservice,
       final String s3key, final String versionId, final DocumentItem item, final String documentId)
-      throws DocumentNotFoundException, IOException {
+      throws DocumentNotFoundException {
 
     S3Service s3Service = awsservice.getExtension(S3Service.class);
 

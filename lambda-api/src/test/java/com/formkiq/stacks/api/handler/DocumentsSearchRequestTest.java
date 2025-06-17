@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api.handler;
 
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.ID;
@@ -342,7 +343,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
         for (String v : Arrays.asList("", "!")) {
           if (v.isEmpty()) {
             this.tagsApi.addDocumentTags(documentId, new AddDocumentTagsRequest()
-                .addTagsItem(new AddDocumentTag().key(tagKey).value(tagvalue)), siteId, null);
+                .addTagsItem(new AddDocumentTag().key(tagKey).value(tagvalue)), siteId);
           } else {
             addDocument(siteId, tagKey, tagvalue + v, null);
           }
@@ -1231,7 +1232,8 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
       List<FolderIndexRecord> folders = indexProcessor.createFolders(siteId, path, "joe");
       FolderIndexRecord a = folders.get(1);
       final int timeout = 10000;
-      assertTrue(db.acquireLock(a.fromS(a.pk(siteId)), a.fromS(a.sk()), timeout, timeout));
+      DynamoDbKey key = new DynamoDbKey(a.pk(siteId), a.sk(), null, null, null, null);
+      assertTrue(db.acquireLock(key, timeout, timeout));
 
       // when
       List<SearchResultDocument> documents =

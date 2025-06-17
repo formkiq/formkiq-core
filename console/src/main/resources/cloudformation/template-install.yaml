@@ -36,10 +36,6 @@ Parameters:
     Type: String
     Description: Key API URL
 
-  WebsocketApiUrl:
-    Type: String
-    Description: WebSocket URL
-
   AuthApiUrl:
     Type: String
     Description: Auth Api URL
@@ -199,8 +195,6 @@ Resources:
             Ref: IamApiUrl
           API_KEY_URL:
             Ref: KeyApiUrl
-          API_WEBSOCKET_URL:
-            Fn::Sub: "${WebsocketApiUrl}"
           API_AUTH_URL:
             Ref: AuthApiUrl
           BRAND:

@@ -31,7 +31,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeAll;
-import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.aws.ssm.SsmService;
@@ -71,8 +70,6 @@ public abstract class AbstractAwsIntegrationTest {
   private static FkqCognitoService cognito;
   /** {@link S3Service}. */
   private static S3Service s3;
-  /** {@link S3PresignerService}. */
-  private static S3PresignerService s3Presigner;
   /** Site Id. */
   public static final String SITE_ID = "8ab6a050-1fc4-11ed-861d-0242ac120002";
   /** {@link SqsService}. */
@@ -256,15 +253,6 @@ public abstract class AbstractAwsIntegrationTest {
   }
 
   /**
-   * Get {@link S3PresignerService}.
-   * 
-   * @return {@link S3PresignerService}
-   */
-  public static S3PresignerService getS3Presigner() {
-    return s3Presigner;
-  }
-
-  /**
    * Get {@link SqsService}.
    * 
    * @return {@link SqsService}
@@ -292,7 +280,6 @@ public abstract class AbstractAwsIntegrationTest {
     ssm = new FkqSsmService(awsprofile, awsregion);
     sqs = new FkqSqsService(awsprofile, awsregion);
     s3 = new FkqS3Service(awsprofile, awsregion);
-    s3Presigner = new FkqS3PresignerService(awsprofile, awsregion);
   }
 
   /**

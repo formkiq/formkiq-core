@@ -145,9 +145,9 @@ public enum MimeType {
   }
 
   /** Content Type. */
-  private String contentType;
+  private final String contentType;
   /** Extension. */
-  private String extension;
+  private final String extension;
 
   /**
    * constructor.
@@ -159,6 +159,17 @@ public enum MimeType {
 
     this.contentType = type;
     this.extension = ext;
+  }
+
+  /**
+   * Find {@link MimeType} by Path.
+   * 
+   * @param path {@link String}
+   * @return MimeType
+   */
+  public static MimeType findByPath(final String path) {
+    String ext = Strings.getExtension(path);
+    return MimeType.fromExtension(ext);
   }
 
   /**

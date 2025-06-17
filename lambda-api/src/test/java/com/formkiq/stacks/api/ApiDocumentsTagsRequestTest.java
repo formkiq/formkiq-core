@@ -26,7 +26,6 @@ package com.formkiq.stacks.api;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
-import static com.formkiq.testutils.aws.TestServices.getSqsWebsocketQueueUrl;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -45,7 +44,6 @@ import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.module.lambdaservices.logger.LoggerRecorder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamicObject;
@@ -60,7 +58,6 @@ import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventBuilder;
 import com.formkiq.aws.services.lambda.ApiMessageResponse;
-import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentTagToAttributeValueMap;
@@ -68,15 +65,11 @@ import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 
 /** Unit Tests for request /documents/{documentId}/tags. */
 @ExtendWith(LocalStackExtension.class)
 @ExtendWith(DynamoDbExtension.class)
 public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
-
-  /** Test Timeout. */
-  private static final long TEST_TIMEOUT = 20;
 
   /** {@link SimpleDateFormat} in ISO Standard format. */
   private final SimpleDateFormat df = DateUtil.getIsoDateFormatter();
@@ -940,68 +933,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertEquals(tagname, tags.getResults().get(0).getKey());
       assertEquals(tagvalue, tags.getResults().get(0).getValue());
       assertEquals("joesmith", tags.getResults().get(0).getUserId());
-    }
-  }
-
-  /**
-   * POST /documents/{documentId}/tags tags request. Add Tag non Base 64 and add 'webnotify=true'
-   * parameter
-   *
-   * @throws Exception an error has occurred
-   */
-  @Test
-  @Timeout(value = TEST_TIMEOUT)
-  public void testHandlePostDocumentTags03() throws Exception {
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-      // given
-      final long sleep = 500L;
-      final String documentId = "test" + ID.uuid() + ".pdf";
-      final String tagname = "category";
-      final String tagvalue = "job";
-
-      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-      getDocumentService().saveDocument(siteId, item, null);
-
-      ApiGatewayRequestEvent event =
-          toRequestEvent("/request-post-documents-documentid-tags02.json");
-      addParameter(event, "siteId", siteId);
-      addParameter(event, "ws", "true");
-      setPathParameter(event, "documentId", documentId);
-
-      String expected = "{" + getHeaders() + ",\"body\":\""
-          + "{\\\"message\\\":\\\"Created Tag 'category'.\\\"}\",\"statusCode\":201}";
-
-      // when
-      String response = handleRequest(event);
-
-      // then
-      assertEquals(expected, response);
-
-      PaginationResults<DocumentTag> tags =
-          getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
-      assertEquals(1, tags.getResults().size());
-      assertEquals(tagname, tags.getResults().get(0).getKey());
-      assertEquals(tagvalue, tags.getResults().get(0).getValue());
-
-      SqsService sqsService = getAwsServices().getExtension(SqsService.class);
-      ReceiveMessageResponse msgs = sqsService.receiveMessages(getSqsWebsocketQueueUrl(null));
-      while (msgs.messages().isEmpty()) {
-        msgs = sqsService.receiveMessages(getSqsWebsocketQueueUrl(null));
-        Thread.sleep(sleep);
-      }
-
-      assertEquals(1, msgs.messages().size());
-      if (siteId != null) {
-        assertEquals(
-            "{\"siteId\":\"" + siteId + "\",\"documentId\":\"" + documentId
-                + "\",\"message\":\"{\\\"key\\\": \\\"category\\\",\\\"value\\\": \\\"job\\\"}\"}",
-            msgs.messages().get(0).body());
-      } else {
-        assertEquals(
-            "{\"siteId\":\"default\",\"documentId\":\"" + documentId
-                + "\",\"message\":\"{\\\"key\\\": \\\"category\\\",\\\"value\\\": \\\"job\\\"}\"}",
-            msgs.messages().get(0).body());
-      }
     }
   }
 

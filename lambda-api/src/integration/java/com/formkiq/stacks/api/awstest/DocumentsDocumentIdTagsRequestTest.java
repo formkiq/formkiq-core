@@ -103,7 +103,7 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractAwsIntegrationTe
 
       try {
         // when
-        api.addDocumentTags(documentId, req, siteId, null);
+        api.addDocumentTags(documentId, req, siteId);
 
         // when
         GetDocumentTagsResponse response =
@@ -145,7 +145,7 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractAwsIntegrationTe
 
       try {
         // when
-        api.addDocumentTags(documentId, req, siteId, null);
+        api.addDocumentTags(documentId, req, siteId);
 
         // given
         // when
@@ -190,7 +190,7 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractAwsIntegrationTe
 
       try {
         // when
-        api.addDocumentTags(documentId, req, siteId, null);
+        api.addDocumentTags(documentId, req, siteId);
 
         // then
         GetDocumentTagResponse response = api.getDocumentTag(documentId, "category", siteId, null);
@@ -245,7 +245,7 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractAwsIntegrationTe
 
       try {
         // when
-        api.addDocumentTags(documentId, req, siteId, null);
+        api.addDocumentTags(documentId, req, siteId);
 
         // then
         GetDocumentTagResponse response = api.getDocumentTag(documentId, "category", siteId, null);
@@ -303,7 +303,7 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractAwsIntegrationTe
 
       try {
         // when
-        api.addDocumentTags(documentId, req, siteId, null);
+        api.addDocumentTags(documentId, req, siteId);
 
         // then
         GetDocumentTagResponse response = api.getDocumentTag(documentId, "category", siteId, null);
@@ -346,7 +346,7 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractAwsIntegrationTe
           .addTagsItem(new AddDocumentTag().key("test3").values(Arrays.asList("abc", "xyz")));
 
       // when
-      api.addDocumentTags(documentId, req, siteId, null);
+      api.addDocumentTags(documentId, req, siteId);
 
       // then
       GetDocumentTagsResponse response =

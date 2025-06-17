@@ -50,6 +50,7 @@ import com.formkiq.aws.dynamodb.cache.CacheServiceExtension;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
+import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.s3.S3ObjectMetadata;
@@ -533,6 +534,8 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
     if (item != null) {
 
+      contentType = findContentType(item, contentType);
+
       if (logger.isLogged(LogLevel.TRACE)) {
         logger.trace("metadata: " + resp.getMetadata());
         logger.trace("item checksum: " + resp.getChecksum());
@@ -562,6 +565,21 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     } else {
       logger.error("Cannot find document " + documentId + " in site " + siteId);
     }
+  }
+
+  private String findContentType(final DocumentItem item, final String contentType) {
+
+    MimeType mimeType = MimeType.fromContentType(contentType);
+    if (contentType != null && contentType.endsWith("/octet-stream")) {
+
+      if (!com.formkiq.strings.Strings.isEmpty(item.getContentType())) {
+        mimeType = MimeType.fromContentType(item.getContentType());
+      } else if (!com.formkiq.strings.Strings.isEmpty(item.getPath())) {
+        mimeType = MimeType.findByPath(item.getPath());
+      }
+    }
+
+    return MimeType.MIME_UNKNOWN.equals(mimeType) ? contentType : mimeType.getContentType();
   }
 
   private static Map<String, AttributeValue> buildAttributes(final S3ObjectMetadata resp,

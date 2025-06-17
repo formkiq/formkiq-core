@@ -86,11 +86,6 @@ Parameters:
     Description: The Cognito User Pool Client Id
     AllowedPattern: ".+"
 
-  WebsocketSqsQueueUrl:
-    Type: String
-    Description: "SQS URL for processing Websocket Messages"
-    AllowedPattern: ".+"
-   
   UserAuthentication:
     Description: How are the users authenticating
     AllowedPattern: ".+"
@@ -171,8 +166,6 @@ Resources:
           Ref: CognitoUserPool
         CognitoUserPoolClient:
           Ref: CognitoUserPoolClient
-        WebsocketSqsQueueUrl:
-          Ref: WebsocketSqsQueueUrl
         UserAuthentication:
           Ref: UserAuthentication
         TypesenseApiKey:
@@ -686,6 +679,7 @@ Resources:
   ApiGatewayInvokeGroup:
     Type: AWS::IAM::Group
     Properties:
+      Path: "/formkiq/"
       ManagedPolicyArns:
       - Fn::Sub: "arn:${AWS::Partition}:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess"
 

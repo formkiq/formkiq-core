@@ -25,6 +25,7 @@ package com.formkiq.stacks.dynamodb;
 
 
 import com.formkiq.aws.dynamodb.DbKeys;
+import com.formkiq.aws.dynamodb.base64.StringToBase66Decoder;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
@@ -76,7 +77,10 @@ public class AttributeValueToGlobalMetaFolderTest {
     assertNull(results.get("path"));
     assertNull(results.get("insertedDate"));
     assertNull(results.get("lastModifiedDate"));
-    assertEquals("alkdjsad#null", results.get("indexKey"));
+
+    String indexKey = results.get("indexKey").toString();
+    assertEquals("YWxrZGpzYWQjbnVsbA", indexKey);
+    assertEquals("alkdjsad#null", new StringToBase66Decoder().apply(indexKey));
     assertNull(results.get("documentId"));
     assertNull(results.get("userId"));
   }

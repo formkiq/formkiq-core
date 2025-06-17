@@ -36,9 +36,9 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 public class DocumentDeleteMoveAttributeFunction implements MoveAttributeFunction, DbKeys {
 
   /** Site Id. */
-  private String siteId;
+  private final String siteId;
   /** Document Id. */
-  private String documentId;
+  private final String documentId;
 
   /**
    * constructor.
@@ -69,6 +69,16 @@ public class DocumentDeleteMoveAttributeFunction implements MoveAttributeFunctio
 
       a.put(PK, AttributeValue.fromS(SOFT_DELETE + pk));
       a.put(SK, AttributeValue.fromS(SOFT_DELETE + sk));
+
+      if (a.containsKey(GSI1_PK)) {
+        a.put(GSI1_PK, AttributeValue.fromS(SOFT_DELETE + a.get(GSI1_PK).s()));
+        a.put(GSI1_SK, AttributeValue.fromS(a.get(GSI1_SK).s()));
+      }
+
+      if (a.containsKey(GSI2_PK)) {
+        a.put(GSI2_PK, AttributeValue.fromS(SOFT_DELETE + a.get(GSI2_PK).s()));
+        a.put(GSI2_SK, AttributeValue.fromS(a.get(GSI2_SK).s()));
+      }
     }
 
     return a;

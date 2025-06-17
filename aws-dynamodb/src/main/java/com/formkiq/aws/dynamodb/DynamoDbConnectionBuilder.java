@@ -28,6 +28,8 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration.Builder;
+import software.amazon.awssdk.http.SdkHttpClient;
+import software.amazon.awssdk.http.urlconnection.UrlConnectionHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClientBuilder;
@@ -50,15 +52,10 @@ public class DynamoDbConnectionBuilder {
    * @param enableAwsXray Enables AWS X-Ray
    */
   public DynamoDbConnectionBuilder(final boolean enableAwsXray) {
-    System.setProperty("software.amazon.awssdk.http.service.impl",
-        "software.amazon.awssdk.http.urlconnection.UrlConnectionSdkHttpService");
     Builder clientConfig = ClientOverrideConfiguration.builder();
-
-    // if (enableAwsXray) {
-    // clientConfig.addExecutionInterceptor(new TracingInterceptor());
-    // }
-
-    this.builder = DynamoDbClient.builder().overrideConfiguration(clientConfig.build());
+    SdkHttpClient c = UrlConnectionHttpClient.builder().build();
+    this.builder =
+        DynamoDbClient.builder().httpClient(c).overrideConfiguration(clientConfig.build());
   }
 
   /**

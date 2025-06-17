@@ -40,6 +40,8 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.DynamoDbServiceExtension;
 import com.formkiq.aws.dynamodb.model.DocumentMapToDocument;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
 import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
@@ -84,6 +86,7 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
   public static void initialize(final AwsServiceCache awsServices) {
 
     awsServices.register(TypeSenseService.class, new TypeSenseServiceExtension());
+    awsServices.register(DynamoDbService.class, new DynamoDbServiceExtension());
     awsServices.register(DocumentSyncService.class, new DocumentSyncServiceExtension());
     serviceCache = awsServices;
   }

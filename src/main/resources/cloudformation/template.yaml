@@ -134,7 +134,15 @@ Parameters:
       The level of logging for the AWS Platform System logs. Only used when LogFormat is JSON
     Default: "INFO"
     AllowedValues: ["DEBUG", "INFO", "WARN"]
-      
+
+  EnableDeletionProtection:
+    Description: "Enable deletion protection on AWS Services that support the feature"
+    Type: String
+    Default: "false"
+    AllowedValues:
+      - "true"
+      - "false"
+
 Conditions:
 
   HasTypesenseApiKey:
@@ -209,6 +217,8 @@ Resources:
     Properties:
       Location: storage/template.yaml
       Parameters:
+        EnableDeletionProtection:
+          Ref: EnableDeletionProtection
         TypesenseApiKey:
           Ref: TypesenseApiKey
         LogRetentionInDays:
@@ -298,10 +308,6 @@ Resources:
           Fn::GetAtt:
             - CoreApi
             - Outputs.DocumentsKeyApiUrl
-        WebsocketApiUrl: 
-          Fn::GetAtt: 
-          - WebsocketApi
-          - Outputs.WebsocketApiUrl
         AuthApiUrl: 
           Fn::GetAtt: 
           - Cognito
@@ -343,6 +349,8 @@ Resources:
     Properties:
       Location: cognito/template.yaml
       Parameters:
+        EnableDeletionProtection:
+          Ref: EnableDeletionProtection
         UserPoolName: 
           Fn::Sub: "${AWS::StackName}-${AppEnvironment}"
         AllowAdminCreateUserOnly: "true"
@@ -405,7 +413,6 @@ Resources:
     Type: AWS::Serverless::Application
     DependsOn:
       - Cognito
-      - WebsocketApi
       - TypeSenseService
     Properties:
       Location: api/template.yaml
@@ -440,11 +447,7 @@ Resources:
           Fn::GetAtt: 
           - Cognito
           - Outputs.CognitoUserPoolClientId
-        WebsocketSqsQueueUrl: 
-          Fn::GetAtt: 
-          - WebsocketApi
-          - Outputs.SqsQueueUrl
-        TypesenseApiKey: 
+        TypesenseApiKey:
           Ref: TypesenseApiKey
         TypesenseApiEndpoint:
           Fn::GetAtt:
@@ -496,37 +499,6 @@ Resources:
           - Cognito
           - Outputs.CognitoIdentityPoolId
         CognitoUserPoolClient: 
-          Fn::GetAtt: 
-          - Cognito
-          - Outputs.CognitoUserPoolClientId
-          
-  WebsocketApi:
-    Type: AWS::Serverless::Application
-    DependsOn:
-      - Cognito
-      - CoreStorage
-    Properties:
-      Location: websocket-api/template.yaml
-      Parameters:
-        AppEnvironment: 
-          Ref: AppEnvironment
-        FormKiQType:
-          Fn::GetAtt:
-            - Config
-            - Outputs.FormKiQType
-        LogRetentionInDays:
-          Ref: LogRetentionInDays
-        LogFormat:
-          Ref: LogFormat
-        LogLevelApplication:
-          Ref: LogLevelApplication
-        LogLevelSystem:
-          Ref: LogLevelSystem
-        CognitoUserPoolId: 
-          Fn::GetAtt: 
-          - Cognito
-          - Outputs.CognitoUserPoolId
-        CognitoUserPoolClientId: 
           Fn::GetAtt: 
           - Cognito
           - Outputs.CognitoUserPoolClientId
@@ -651,12 +623,6 @@ Outputs:
 #!      Fn::GetAtt:
 #!        - CoreApi
 #!        - Outputs.AuthApiUrl
-  WebsocketApiUrl:
-    Description: "The URL for the Websocket API endpoint"
-    Value: 
-      Fn::GetAtt: 
-      - WebsocketApi
-      - Outputs.WebsocketApiUrl    
   ConsoleUrl:
     Description: The URL for the FormKiQ Console
     Value: 
