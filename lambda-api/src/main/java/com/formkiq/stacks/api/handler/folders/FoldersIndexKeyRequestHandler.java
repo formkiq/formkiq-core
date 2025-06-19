@@ -36,6 +36,7 @@ import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.stacks.api.handler.IndexKeyToString;
 import com.formkiq.stacks.dynamodb.FolderIndexProcessor;
 
 /** {@link ApiGatewayRequestHandler} for "/folders/{indexKey}". */
