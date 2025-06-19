@@ -728,7 +728,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentAttributesApi.addDocumentAttributes(documentId, attrReq, siteId, null);
+        this.documentAttributesApi.addDocumentAttributes(documentId, attrReq, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -744,7 +744,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // when
       AddResponse addResponse =
-          this.documentAttributesApi.addDocumentAttributes(documentId, attrReq, siteId, null);
+          this.documentAttributesApi.addDocumentAttributes(documentId, attrReq, siteId);
 
       // then
       assertEquals("added attributes to documentId '" + documentId + "'", addResponse.getMessage());
