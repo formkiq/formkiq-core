@@ -226,7 +226,7 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
 
       if (isEmpty(awsservice.environment("TYPESENSE_HOST"))
           || isEmpty(awsservice.environment("TYPESENSE_API_KEY"))) {
-        throw new BadException("Fulltext search is not Enabled");
+        throw new BadException("Typesense Fulltext search is not Enabled");
       }
 
       Region region = Region.of(awsservice.environment("AWS_REGION"));
