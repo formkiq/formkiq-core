@@ -4,7 +4,7 @@ plugins {
   id 'checkstyle'
   id 'distribution'
   id 'com.github.spotbugs'  version '6.1.13'
-  id 'com.diffplug.spotless' version '7.0.4'
+  id 'com.diffplug.spotless' version '7.0.3'
   id 'com.github.ben-manes.versions' version '0.52.0'
   id 'com.formkiq.gradle.graalvm-native-plugin' version '1.7.0'
   id 'de.undercouch.download' version '5.6.0'
@@ -59,8 +59,6 @@ allprojects {
         maxWarnings = 0
         maxErrors = 0
     }
-
-	spotlessJavaCheck.dependsOn 'spotlessJavaApply'
 }
 
 subprojects {
@@ -72,8 +70,6 @@ subprojects {
       url "https://central.sonatype.com/repository/maven-snapshots/"
     }
   }
-  
-  compileJava.dependsOn 'spotlessCheck'
 
   tasks.withType(Test) {
     systemProperties['testregion'] = project.getProperty('testregion')
