@@ -32,16 +32,13 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMessageResponse;
 import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
-import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.dynamodb.cache.CacheService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.ApiDocumentTagItemResponse;
-import com.formkiq.stacks.api.ApiDocumentTagsItemResponse;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentTagValidatorImpl;
 import com.formkiq.stacks.dynamodb.DocumentTags;
@@ -56,8 +53,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_CREATED;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/tags". */
 public class DocumentTagsRequestHandler
@@ -109,12 +104,9 @@ public class DocumentTagsRequestHandler
       return r;
     }).collect(Collectors.toList());
 
-    ApiDocumentTagsItemResponse resp = new ApiDocumentTagsItemResponse();
-    resp.setTags(list);
-    resp.setPrevious(current.getPrevious());
-    resp.setNext(current.hasNext() ? current.getNext() : null);
-
-    return new ApiRequestHandlerResponse(SC_OK, resp);
+    return ApiRequestHandlerResponse.builder().ok().body("tags", list)
+        .body("next", current.hasNext() ? current.getNext() : null)
+        .body("previous", current.getPrevious()).build();
   }
 
   @Override
@@ -142,8 +134,8 @@ public class DocumentTagsRequestHandler
     List<DocumentTag> list =
         tags != null && tags.getTags() != null ? tags.getTags() : Collections.emptyList();
     return !list.isEmpty()
-        ? !list.stream().map(t -> Boolean.valueOf(isValid(t))).filter(b -> b.equals(Boolean.FALSE))
-            .findFirst().isPresent()
+        ? !list.stream().map(t -> isValid(t)).filter(b -> b.equals(Boolean.FALSE)).findFirst()
+            .isPresent()
         : false;
   }
 
@@ -166,7 +158,7 @@ public class DocumentTagsRequestHandler
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
     documentService.addTags(siteId, documentId, tags.getTags(), null);
 
-    return new ApiRequestHandlerResponse(SC_OK, new ApiMessageResponse("Updated Tags"));
+    return ApiRequestHandlerResponse.builder().ok().body("message", "Updated Tags").build();
   }
 
   @Override
@@ -209,10 +201,9 @@ public class DocumentTagsRequestHandler
 
     documentService.addTags(siteId, documentId, allTags, null);
 
-    ApiResponse resp = tagsValid ? new ApiMessageResponse("Created Tags.")
-        : new ApiMessageResponse("Created Tag '" + tag.getKey() + "'.");
-
-    return new ApiRequestHandlerResponse(SC_CREATED, resp);
+    return ApiRequestHandlerResponse.builder().created()
+        .body("message", tagsValid ? "Created Tags." : "Created Tag '" + tag.getKey() + "'.")
+        .build();
   }
 
   @Override
@@ -236,7 +227,7 @@ public class DocumentTagsRequestHandler
 
     documentService.addTags(siteId, documentId, tags.getTags(), null);
 
-    return new ApiRequestHandlerResponse(SC_OK, new ApiMessageResponse("Set Tags"));
+    return ApiRequestHandlerResponse.builder().ok().body("message", "Set Tags").build();
   }
 
   /**

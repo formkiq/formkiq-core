@@ -27,7 +27,6 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -39,7 +38,6 @@ import java.util.List;
 import java.util.Map;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
 /** {@link ApiGatewayRequestHandler} for "/attributes/{key}/allowedValues". */
 public class AttributeAllowedValuesRequestHandler
@@ -70,7 +68,7 @@ public class AttributeAllowedValuesRequestHandler
 
     Map<String, Object> map =
         Map.of("allowedValues", allowedValues, "localizedAllowedValues", localization);
-    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
+    return ApiRequestHandlerResponse.builder().ok().body(map).build();
   }
 
   @Override

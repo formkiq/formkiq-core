@@ -24,7 +24,6 @@
 package com.formkiq.stacks.api.handler.documents;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -42,7 +41,6 @@ import com.formkiq.aws.dynamodb.model.DocumentSyncType;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
@@ -117,8 +115,7 @@ public class DocumentsSyncsRequestHandler
     map.put("previous", current.getPrevious());
     map.put("next", current.hasNext() ? current.getNext() : null);
 
-    ApiMapResponse resp = new ApiMapResponse(map);
-    return new ApiRequestHandlerResponse(SC_OK, resp);
+    return ApiRequestHandlerResponse.builder().ok().body(map).build();
   }
 
   @Override
@@ -163,8 +160,8 @@ public class DocumentsSyncsRequestHandler
       }
     }
 
-    ApiMapResponse resp = new ApiMapResponse(Map.of("message", "Added Document sync"));
-    return new ApiRequestHandlerResponse(SC_OK, resp);
+    return ApiRequestHandlerResponse.builder().created().body("message", "Added Document sync")
+        .build();
   }
 
   private DocumentSyncServiceType getService(final AwsServiceCache awsservice,

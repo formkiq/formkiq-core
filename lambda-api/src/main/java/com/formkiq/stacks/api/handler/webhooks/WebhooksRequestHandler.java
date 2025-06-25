@@ -26,8 +26,7 @@ package com.formkiq.stacks.api.handler.webhooks;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.isDefaultSiteId;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_CREATED;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
+
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Collection;
@@ -42,7 +41,6 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.TooManyRequestsException;
@@ -81,8 +79,8 @@ public class WebhooksRequestHandler
       return new DynamicObjectToMap(siteId, u).apply(m);
     }).toList();
 
-    return new ApiRequestHandlerResponse(SC_OK,
-        new ApiMapResponse(Map.of("webhooks", webhooks), list.getNextToken()));
+    return ApiRequestHandlerResponse.builder().ok().body("webhooks", webhooks)
+        .next(list.getNextToken()).build();
   }
 
   private String getUrl(final DynamicObject m, final String url, final String siteId) {
@@ -156,9 +154,9 @@ public class WebhooksRequestHandler
 
     String id = saveWebhook(authorization, awsservice, config, siteId, o);
 
-    ApiMapResponse resp = new ApiMapResponse(
-        Map.of("webhookId", id, "siteId", isDefaultSiteId(siteId) ? DEFAULT_SITE_ID : siteId));
-    return new ApiRequestHandlerResponse(SC_CREATED, resp);
+    return ApiRequestHandlerResponse.builder().created()
+        .body(Map.of("webhookId", id, "siteId", isDefaultSiteId(siteId) ? DEFAULT_SITE_ID : siteId))
+        .build();
   }
 
   private String saveWebhook(final ApiAuthorization authorization, final AwsServiceCache awsservice,

@@ -23,8 +23,6 @@
  */
 package com.formkiq.stacks.api.handler.attributes;
 
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -34,7 +32,6 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.dynamodb.cache.CacheService;
@@ -74,7 +71,7 @@ public class AttributesRequestHandler
       map.put("next", current.getNext());
     }
 
-    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
+    return ApiRequestHandlerResponse.builder().ok().body(map).build();
   }
 
   @Override
@@ -107,8 +104,8 @@ public class AttributesRequestHandler
       service.addAttribute(access, siteId, key, dataType, type);
     }
 
-    return new ApiRequestHandlerResponse(SC_OK,
-        new ApiMapResponse(Map.of("message", "Attribute '" + key + "' created")));
+    return ApiRequestHandlerResponse.builder().ok()
+        .body("message", "Attribute '" + key + "' created").build();
   }
 
   private boolean isWatermark(final AddAttribute attribute) {

@@ -194,7 +194,6 @@ public class HttpServerTest {
    * 
    * @throws Exception Exception
    */
-  @SuppressWarnings("unchecked")
   @Test
   @Timeout(value = TEST_TIME)
   void testLoginOk() throws Exception {
@@ -223,7 +222,6 @@ public class HttpServerTest {
    * 
    * @throws Exception Exception
    */
-  @SuppressWarnings("unchecked")
   @Test
   @Timeout(value = TEST_TIME)
   void testSites() throws Exception {
@@ -267,7 +265,6 @@ public class HttpServerTest {
    * 
    * @throws Exception Exception
    */
-  @SuppressWarnings("unchecked")
   @Test
   @Timeout(value = TEST_TIME)
   void testVersions() throws Exception {

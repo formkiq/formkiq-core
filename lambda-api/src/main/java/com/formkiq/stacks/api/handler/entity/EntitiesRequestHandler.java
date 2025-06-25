@@ -35,7 +35,6 @@ import com.formkiq.aws.dynamodb.eventsourcing.entity.EntityRecord;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
@@ -44,7 +43,6 @@ import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 import java.util.List;
 import java.util.Map;
 
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_CREATED;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
 /** {@link ApiGatewayRequestHandler} for "/entities/{entityTypeId}". */
@@ -86,8 +84,8 @@ public class EntitiesRequestHandler
 
     String nextToken = new MapAttributeValueToString().apply(response.lastEvaluatedKey());
 
-    return ApiRequestHandlerResponse.builder().status(SC_OK).data("entities", items)
-        .data("next", nextToken).build();
+    return ApiRequestHandlerResponse.builder().status(SC_OK).body("entities", items)
+        .body("next", nextToken).build();
   }
 
   @Override
@@ -103,7 +101,7 @@ public class EntitiesRequestHandler
         new AddEntityRequestToEntityRecordTransformer(awsservice, authorization, false)
             .apply(event);
 
-    return new ApiRequestHandlerResponse(SC_CREATED,
-        new ApiMapResponse(Map.of("entityId", entity.documentId())));
+    return ApiRequestHandlerResponse.builder().created().body("entityId", entity.documentId())
+        .build();
   }
 }

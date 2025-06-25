@@ -23,7 +23,6 @@
  */
 package com.formkiq.stacks.api.handler.indices;
 
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,7 +33,6 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -94,9 +92,7 @@ public class IndicesFolderMoveRequestHandler
       throw new BadException(e.getMessage());
     }
 
-    ApiMapResponse resp = new ApiMapResponse();
-    resp.setMap(Map.of("message", "Folder moved"));
-    return new ApiRequestHandlerResponse(SC_OK, resp);
+    return ApiRequestHandlerResponse.builder().ok().body("message", "Folder moved").build();
   }
 
   @Override

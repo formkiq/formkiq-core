@@ -24,8 +24,6 @@
 package com.formkiq.stacks.api.handler.documents;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_CREATED;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -39,11 +37,8 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
-import com.formkiq.aws.services.lambda.ApiMessageResponse;
 import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
-import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.dynamodb.cache.CacheService;
@@ -92,8 +87,6 @@ public class DocumentAttributesRequestHandler
     ApiPagination current =
         createPagination(cacheService, event, pagination, results.getToken(), limit);
 
-    ApiMapResponse resp = new ApiMapResponse();
-
     Map<String, Object> m = new HashMap<>();
     m.put("attributes", list);
 
@@ -101,8 +94,7 @@ public class DocumentAttributesRequestHandler
       m.put("next", current.getNext());
     }
 
-    resp.setMap(m);
-    return new ApiRequestHandlerResponse(SC_OK, resp);
+    return ApiRequestHandlerResponse.builder().ok().body(m).build();
   }
 
   private List<DocumentAttributeRecord> getDocumentAttributesFromRequest(
@@ -152,9 +144,8 @@ public class DocumentAttributesRequestHandler
     documentService.saveDocumentAttributes(siteId, documentId, attributes,
         AttributeValidationType.FULL, validationAccess);
 
-    ApiResponse resp =
-        new ApiMessageResponse("added attributes to documentId '" + documentId + "'");
-    return new ApiRequestHandlerResponse(SC_CREATED, resp);
+    return ApiRequestHandlerResponse.builder().created()
+        .body("message", "added attributes to documentId '" + documentId + "'").build();
   }
 
   private AttributeValidationAccess getAttributeValidationAccess(
@@ -182,8 +173,8 @@ public class DocumentAttributesRequestHandler
     documentService.saveDocumentAttributes(siteId, documentId, attributes,
         AttributeValidationType.FULL, validationAccess);
 
-    ApiResponse resp = new ApiMessageResponse("set attributes on documentId '" + documentId + "'");
-    return new ApiRequestHandlerResponse(SC_CREATED, resp);
+    return ApiRequestHandlerResponse.builder().created()
+        .body("message", "set attributes on documentId '" + documentId + "'").build();
   }
 
   private void verifyDocument(final AwsServiceCache awsservice, final String siteId,

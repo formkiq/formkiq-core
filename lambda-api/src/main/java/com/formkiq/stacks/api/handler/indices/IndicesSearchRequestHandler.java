@@ -23,7 +23,6 @@
  */
 package com.formkiq.stacks.api.handler.indices;
 
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -40,7 +39,6 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
@@ -108,8 +106,7 @@ public class IndicesSearchRequestHandler
     map.put("previous", current.getPrevious());
     map.put("next", current.hasNext() ? current.getNext() : null);
 
-    ApiMapResponse resp = new ApiMapResponse(map);
-    return new ApiRequestHandlerResponse(SC_OK, resp);
+    return ApiRequestHandlerResponse.builder().ok().body(map).build();
   }
 
   private void validatePost(final Map<String, Object> q) throws ValidationException {

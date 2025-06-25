@@ -24,7 +24,6 @@
 package com.formkiq.stacks.api.handler.indices;
 
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import static com.formkiq.stacks.dynamodb.folders.FolderIndexRecord.INDEX_FILE_SK;
 
 import java.io.IOException;
@@ -37,7 +36,6 @@ import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
@@ -120,9 +118,7 @@ public class IndicesRequestHandler
       throw new NotFoundException("invalid indexKey '" + indexKey + "'");
     }
 
-    ApiMapResponse resp = new ApiMapResponse();
-    resp.setMap(Map.of("message", message));
-    return new ApiRequestHandlerResponse(SC_OK, resp);
+    return ApiRequestHandlerResponse.builder().ok().body("message", message).build();
   }
 
   private void initIndexService(final AwsServiceCache awsServiceCache) {

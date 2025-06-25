@@ -24,7 +24,6 @@
 package com.formkiq.stacks.api.handler.sites;
 
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -36,10 +35,9 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.dynamodb.ApiPermission;
-import com.formkiq.aws.services.lambda.ApiObjectResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.GsonUtil;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
 import com.formkiq.aws.ses.SesAwsServiceRegistry;
@@ -54,6 +52,7 @@ import com.formkiq.stacks.dynamodb.config.SiteConfigurationGoogle;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
+import com.google.gson.Gson;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -109,7 +108,11 @@ public class ConfigurationRequestHandler
       docusign.setRsaPrivateKey(mask(docusign.getRsaPrivateKey(), RSA_PRIVATE_KEY_MASK));
     }
 
-    return new ApiRequestHandlerResponse(SC_OK, new ApiObjectResponse(obj, null, null));
+    Gson gson = GsonUtil.getInstance();
+    String json = gson.toJson(obj);
+    Map<String, Object> map = gson.fromJson(json, Map.class);
+
+    return ApiRequestHandlerResponse.builder().ok().body(map).build();
   }
 
   @Override
@@ -156,8 +159,7 @@ public class ConfigurationRequestHandler
     ConfigService configService = awsservice.getExtension(ConfigService.class);
     if (configService.save(siteId, config)) {
 
-      return new ApiRequestHandlerResponse(SC_OK,
-          new ApiMapResponse(Map.of("message", "Config saved")));
+      return ApiRequestHandlerResponse.builder().ok().body("message", "Config saved").build();
     }
 
     throw new BadException("missing required body parameters");

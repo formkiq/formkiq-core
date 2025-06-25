@@ -85,8 +85,8 @@ public class EntityTypesRequestHandler
         new AttributeValueListToListMap(config).apply(response.items());
     String nextToken = new MapAttributeValueToString().apply(response.lastEvaluatedKey());
 
-    return ApiRequestHandlerResponse.builder().status(SC_OK).data("entityTypes", items)
-        .data("next", nextToken).build();
+    return ApiRequestHandlerResponse.builder().status(SC_OK).body("entityTypes", items)
+        .body("next", nextToken).build();
   }
 
   private String getNamespace(final ApiGatewayRequestEvent event) throws ValidationException {
@@ -129,7 +129,7 @@ public class EntityTypesRequestHandler
     db.putItem(attributes);
 
     return ApiRequestHandlerResponse.builder().status(SC_CREATED)
-        .data("entityTypeId", entityType.documentId()).build();
+        .body("entityTypeId", entityType.documentId()).build();
   }
 
   private void validateExist(final AwsServiceCache awsservice, final DynamoDbService db,

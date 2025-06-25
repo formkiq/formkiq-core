@@ -29,9 +29,7 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMessageResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
-import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
@@ -50,7 +48,6 @@ import java.util.List;
 import java.util.Map;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/tags/{tagKey}". */
 public class DocumentTagRequestHandler
@@ -85,10 +82,8 @@ public class DocumentTagRequestHandler
 
     documentService.removeTags(siteId, documentId, tags);
 
-    ApiResponse resp =
-        new ApiMessageResponse("Removed '" + tagKey + "' from document '" + documentId + "'.");
-
-    return new ApiRequestHandlerResponse(SC_OK, resp);
+    return ApiRequestHandlerResponse.builder().ok()
+        .body("message", "Removed '" + tagKey + "' from document '" + documentId + "'.").build();
   }
 
   @Override
@@ -123,7 +118,7 @@ public class DocumentTagRequestHandler
     resp.setType(tag.getType() != null ? tag.getType().name().toLowerCase() : null);
     resp.setDocumentId(tag.getDocumentId());
 
-    return new ApiRequestHandlerResponse(SC_OK, resp);
+    return ApiRequestHandlerResponse.builder().ok().body(resp).build();
   }
 
   @Override
@@ -190,10 +185,8 @@ public class DocumentTagRequestHandler
 
     documentService.addTags(siteId, documentId, tags, null);
 
-    ApiResponse resp =
-        new ApiMessageResponse("Updated tag '" + tagKey + "' on document '" + documentId + "'.");
-
-    return new ApiRequestHandlerResponse(SC_OK, resp);
+    return ApiRequestHandlerResponse.builder().ok()
+        .body("message", "Updated tag '" + tagKey + "' on document '" + documentId + "'.").build();
   }
 
   /**

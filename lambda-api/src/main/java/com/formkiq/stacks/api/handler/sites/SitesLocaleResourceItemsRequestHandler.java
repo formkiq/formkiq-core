@@ -27,7 +27,6 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -40,9 +39,6 @@ import com.formkiq.validation.ValidationException;
 
 import java.util.List;
 import java.util.Map;
-
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_CREATED;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
 /** {@link ApiGatewayRequestHandler} for "/sites/{siteId}/locales/{locale}/resourceItems". */
 public class SitesLocaleResourceItemsRequestHandler
@@ -77,8 +73,7 @@ public class SitesLocaleResourceItemsRequestHandler
       throw new ValidationException(errors);
     }
 
-    return new ApiRequestHandlerResponse(SC_CREATED,
-        new ApiMapResponse(Map.of("itemKey", item.getItemKey())));
+    return ApiRequestHandlerResponse.builder().created().body("itemKey", item.getItemKey()).build();
   }
 
   @Override
@@ -95,8 +90,8 @@ public class SitesLocaleResourceItemsRequestHandler
     List<Map<String, Object>> list =
         results.getResults().stream().map(new LocaleRecordToMap()).toList();
 
-    return new ApiRequestHandlerResponse(SC_OK,
-        new ApiMapResponse(Map.of("resourceItems", list), results.getNextToken()));
+    return ApiRequestHandlerResponse.builder().ok().body("resourceItems", list)
+        .next(results.getNextToken()).build();
   }
 
   @Override
