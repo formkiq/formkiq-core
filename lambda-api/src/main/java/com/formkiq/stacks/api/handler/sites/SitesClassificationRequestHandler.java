@@ -30,7 +30,6 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.dynamodb.cache.CacheService;
@@ -43,8 +42,6 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
 /** {@link ApiGatewayRequestHandler} for "/sites/{siteId}/classifications". */
 public class SitesClassificationRequestHandler
@@ -82,7 +79,7 @@ public class SitesClassificationRequestHandler
       m.put("next", current.getNext());
     }
 
-    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(m));
+    return ApiRequestHandlerResponse.builder().ok().body(m).build();
   }
 
   @Override
@@ -103,7 +100,7 @@ public class SitesClassificationRequestHandler
     ClassificationRecord classification =
         service.setClassification(siteId, null, schema.getName(), schema, authorizer.getUsername());
 
-    return new ApiRequestHandlerResponse(SC_OK,
-        new ApiMapResponse(Map.of("classificationId", classification.getDocumentId())));
+    return ApiRequestHandlerResponse.builder().ok()
+        .body("classificationId", classification.getDocumentId()).build();
   }
 }

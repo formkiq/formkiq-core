@@ -23,7 +23,6 @@
  */
 package com.formkiq.stacks.api.handler.sites;
 
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -37,7 +36,6 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
@@ -93,7 +91,7 @@ public class ConfigurationApiKeysRequestHandler
     Pagination<ApiKey> list = apiKeysService.list(siteId, nextToken, limit);
 
     Map<String, Object> map = Map.of("apiKeys", list.getResults());
-    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map, list.getNextToken()));
+    return ApiRequestHandlerResponse.builder().ok().body(map).next(list.getNextToken()).build();
   }
 
   @Override
@@ -126,7 +124,7 @@ public class ConfigurationApiKeysRequestHandler
     String userId = authorization.getUsername();
     String apiKey = apiKeysService.createApiKey(siteId, name, permissions, userId);
 
-    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(Map.of("apiKey", apiKey)));
+    return ApiRequestHandlerResponse.builder().ok().body("apiKey", apiKey).build();
   }
 
   /**

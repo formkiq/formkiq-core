@@ -23,9 +23,6 @@
  */
 package com.formkiq.stacks.api.handler.webhooks;
 
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_CREATED;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -39,10 +36,7 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
-import com.formkiq.aws.services.lambda.ApiMessageResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
-import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -79,7 +73,7 @@ public class WebhooksTagsRequestHandler
       return map;
     }).toList();
 
-    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(Map.of("tags", tags)));
+    return ApiRequestHandlerResponse.builder().ok().body("tags", tags).build();
   }
 
   @Override
@@ -120,7 +114,7 @@ public class WebhooksTagsRequestHandler
 
     webhooksService.addTags(siteId, id, List.of(tag), ttl);
 
-    ApiResponse resp = new ApiMessageResponse("Created Tag '" + tag.getKey() + "'.");
-    return new ApiRequestHandlerResponse(SC_CREATED, resp);
+    return ApiRequestHandlerResponse.builder().created()
+        .body("message", "Created Tag '" + tag.getKey() + "'.").build();
   }
 }

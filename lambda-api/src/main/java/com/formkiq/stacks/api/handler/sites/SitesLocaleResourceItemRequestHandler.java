@@ -27,7 +27,6 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -38,9 +37,6 @@ import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
 
 import java.util.List;
-import java.util.Map;
-
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
 /**
  * {@link ApiGatewayRequestHandler} for "/sites/{siteId}/locales/{locale}/resourceItems/{itemKey}".
@@ -77,8 +73,8 @@ public class SitesLocaleResourceItemRequestHandler
       throw new ValidationException(errors);
     }
 
-    return new ApiRequestHandlerResponse(SC_OK,
-        new ApiMapResponse(Map.of("message", "set item '" + item.getItemKey() + "' successfully")));
+    return ApiRequestHandlerResponse.builder().ok()
+        .body("message", "set item '" + item.getItemKey() + "' successfully").build();
   }
 
   @Override
@@ -96,8 +92,8 @@ public class SitesLocaleResourceItemRequestHandler
       throw new NotFoundException("ItemKey '" + itemKey + "' not found");
     }
 
-    return new ApiRequestHandlerResponse(SC_OK,
-        new ApiMapResponse(Map.of("resourceItem", new LocaleRecordToMap().apply(item))));
+    return ApiRequestHandlerResponse.builder().ok()
+        .body("resourceItem", new LocaleRecordToMap().apply(item)).build();
   }
 
   @Override
@@ -115,8 +111,8 @@ public class SitesLocaleResourceItemRequestHandler
       throw new NotFoundException("ItemKey '" + itemKey + "' not found");
     }
 
-    return new ApiRequestHandlerResponse(SC_OK,
-        new ApiMapResponse(Map.of("message", "ItemKey '" + itemKey + "' successfully deleted")));
+    return ApiRequestHandlerResponse.builder().ok()
+        .body("message", "ItemKey '" + itemKey + "' successfully deleted").build();
   }
 
   @Override

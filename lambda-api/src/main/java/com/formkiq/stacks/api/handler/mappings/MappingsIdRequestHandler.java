@@ -27,7 +27,6 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -36,8 +35,6 @@ import com.formkiq.aws.dynamodb.model.MappingRecord;
 import com.formkiq.stacks.dynamodb.mappings.MappingService;
 
 import java.util.Map;
-
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
 /** {@link ApiGatewayRequestHandler} for "/mappings/{mappingId}". */
 public class MappingsIdRequestHandler
@@ -58,7 +55,7 @@ public class MappingsIdRequestHandler
     }
 
     Map<String, Object> map = Map.of("mapping", new MappingRecordToMap(service).apply(mapping));
-    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
+    return ApiRequestHandlerResponse.builder().ok().body(map).build();
   }
 
   @Override
@@ -79,8 +76,8 @@ public class MappingsIdRequestHandler
       throw new NotFoundException("Mapping '" + mappingId + "' not found");
     }
 
-    return new ApiRequestHandlerResponse(SC_OK,
-        new ApiMapResponse(Map.of("message", "Mapping '" + mappingId + "' deleted")));
+    return ApiRequestHandlerResponse.builder().ok()
+        .body("message", "Mapping '" + mappingId + "' deleted").build();
   }
 
   @Override
@@ -95,7 +92,6 @@ public class MappingsIdRequestHandler
     AddMappingRequest req = fromBodyToObject(event, AddMappingRequest.class);
     service.saveMapping(siteId, mappingId, req.getMapping());
 
-    return new ApiRequestHandlerResponse(SC_OK,
-        new ApiMapResponse(Map.of("message", "Mapping set")));
+    return ApiRequestHandlerResponse.builder().ok().body("message", "Mapping set").build();
   }
 }

@@ -28,9 +28,7 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMessageResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
-import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -39,7 +37,6 @@ import com.formkiq.stacks.dynamodb.DocumentService;
 import java.util.Map;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/tags/{tagKey}/{tagValue}". */
 public class DocumentTagValueRequestHandler
@@ -71,9 +68,8 @@ public class DocumentTagValueRequestHandler
       throw new NotFoundException("Tag/Value combination not found.");
     }
 
-    ApiResponse resp = new ApiMessageResponse("Removed Tag from document '" + documentId + "'.");
-
-    return new ApiRequestHandlerResponse(SC_OK, resp);
+    return ApiRequestHandlerResponse.builder().ok()
+        .body("message", "Removed Tag from document '" + documentId + "'.").build();
   }
 
   @Override

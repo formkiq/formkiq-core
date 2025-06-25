@@ -28,7 +28,6 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
@@ -38,8 +37,6 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.UserNotFoun
 
 import java.util.Map;
 import java.util.Optional;
-
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
 /** {@link ApiGatewayRequestHandler} for "/users/{username}". */
 public class UserRequestHandler implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
@@ -62,8 +59,7 @@ public class UserRequestHandler implements ApiGatewayRequestHandler, ApiGatewayR
       AdminGetUserResponseToMap func = new AdminGetUserResponseToMap();
       Map<String, Object> data = func.apply(user);
 
-      ApiMapResponse resp = new ApiMapResponse(Map.of("user", data));
-      return new ApiRequestHandlerResponse(SC_OK, resp);
+      return ApiRequestHandlerResponse.builder().ok().body("user", data).build();
 
     } catch (UserNotFoundException e) {
       throw new NotFoundException("username '" + username + "' not found");
@@ -80,9 +76,8 @@ public class UserRequestHandler implements ApiGatewayRequestHandler, ApiGatewayR
     String username = event.getPathParameters().get("username");
     service.deleteUser(username);
 
-    ApiMapResponse resp =
-        new ApiMapResponse(Map.of("message", "user '" + username + "' has been deleted"));
-    return new ApiRequestHandlerResponse(SC_OK, resp);
+    return ApiRequestHandlerResponse.builder().ok()
+        .body("message", "user '" + username + "' has been deleted").build();
   }
 
   @Override

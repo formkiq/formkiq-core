@@ -31,10 +31,7 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
-import com.formkiq.aws.services.lambda.ApiMessageResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
-import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -45,8 +42,6 @@ import com.formkiq.stacks.dynamodb.schemas.Schema;
 import com.formkiq.stacks.dynamodb.schemas.SchemaService;
 
 import java.util.Map;
-
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
 /** {@link ApiGatewayRequestHandler} for "/sites/{siteId}/classifications/{classificationId}". */
 public class SitesClassificationIdRequestHandler
@@ -71,8 +66,9 @@ public class SitesClassificationIdRequestHandler
     String locale = event.getQueryStringParameter("locale");
     service.updateLocalization(siteId, classificationId, schema.getAttributes(), locale);
 
-    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(
-        Map.of("classification", Map.of("name", name, "attributes", schema.getAttributes()))));
+    return ApiRequestHandlerResponse.builder().ok()
+        .body(Map.of("classification", Map.of("name", name, "attributes", schema.getAttributes())))
+        .build();
   }
 
   @Override
@@ -94,8 +90,7 @@ public class SitesClassificationIdRequestHandler
     service.setClassification(siteId, classificationId, schema.getName(), schema,
         authorizer.getUsername());
 
-    return new ApiRequestHandlerResponse(SC_OK,
-        new ApiMapResponse(Map.of("message", "Set Classification")));
+    return ApiRequestHandlerResponse.builder().ok().body("message", "Set Classification").build();
   }
 
   @Override
@@ -119,8 +114,7 @@ public class SitesClassificationIdRequestHandler
       throw new NotFoundException("Classification '" + classificationId + "' not found");
     }
 
-    ApiResponse resp = new ApiMessageResponse("Classification '" + classificationId + "' deleted");
-
-    return new ApiRequestHandlerResponse(SC_OK, resp);
+    return ApiRequestHandlerResponse.builder().ok()
+        .body("message", "Classification '" + classificationId + "' deleted").build();
   }
 }

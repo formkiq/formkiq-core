@@ -23,115 +23,311 @@
  */
 package com.formkiq.aws.services.lambda;
 
+import com.formkiq.aws.dynamodb.DynamoDbQueryException;
+import com.formkiq.aws.services.lambda.exceptions.BadException;
+import com.formkiq.aws.services.lambda.exceptions.ConflictException;
+import com.formkiq.aws.services.lambda.exceptions.ForbiddenException;
+import com.formkiq.aws.services.lambda.exceptions.NotImplementedException;
+import com.formkiq.aws.services.lambda.exceptions.TooManyRequestsException;
+import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
+import com.formkiq.validation.ValidationException;
+import com.google.gson.Gson;
+
+import java.time.DateTimeException;
 import java.util.HashMap;
 import java.util.Map;
 
-/** {@link ApiResponse} for Api Request Handler. */
-public class ApiRequestHandlerResponse {
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.MOVED_PERMANENTLY;
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_BAD_REQUEST;
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_CREATED;
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_ERROR;
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_METHOD_CONFLICT;
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_FOUND;
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_IMPLEMENTED;
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_TEMPORARY_REDIRECT;
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_TOO_MANY_REQUESTS;
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_UNAUTHORIZED;
 
-  /** HTTP Headers. */
-  private Map<String, String> headers = new HashMap<>();
-  /** {@link ApiResponseStatus}. */
-  private final ApiResponseStatus status;
-  /** {@link ApiResponse}. */
-  private final ApiResponse response;
-
-  /**
-   * Constructor.
-   *
-   * @param responseStatus {@link ApiResponseStatus}
-   * @param apiResponse {@link ApiResponse}
-   */
-  public ApiRequestHandlerResponse(final ApiResponseStatus responseStatus,
-      final ApiResponse apiResponse) {
-    this.status = responseStatus;
-    this.response = apiResponse;
-  }
-
-  /**
-   * Get HTTP Headers.
-   *
-   * @return headers map
-   */
-  public Map<String, String> getHeaders() {
-    return this.headers;
-  }
+/**
+ * Immutable HTTP‐style response holder.
+ */
+public final class ApiRequestHandlerResponse {
+  /** Http Status Code. */
+  private final int statusCode;
+  /** Http Headers. */
+  private final Map<String, String> headers;
+  /** Http Body. */
+  private final String body;
 
   /**
-   * Get {@link ApiResponse}.
-   *
-   * @return {@link ApiResponse}
-   */
-  public ApiResponse getResponse() {
-    return this.response;
-  }
-
-  /**
-   * Get {@link ApiResponseStatus}.
-   *
-   * @return {@link ApiResponseStatus}
-   */
-  public ApiResponseStatus getStatus() {
-    return this.status;
-  }
-
-  /**
-   * Replace all HTTP headers.
-   *
-   * @param map new headers map
-   */
-  public void setHeaders(final Map<String, String> map) {
-    this.headers = map;
-  }
-
-  /**
-   * {@link Builder}.
+   * constructor.
    * 
-   * @return a new Builder for ApiRequestHandlerResponse
+   * @param responseStatusCode int
+   * @param responseHeaders {@link Map}
+   * @param responseBody {@link String}
    */
+  private ApiRequestHandlerResponse(final int responseStatusCode,
+      final Map<String, String> responseHeaders, final String responseBody) {
+    this.statusCode = responseStatusCode;
+    this.headers = responseHeaders;
+    this.body = responseBody;
+  }
+
   public static Builder builder() {
     return new Builder();
   }
 
+  public int getStatusCode() {
+    return statusCode;
+  }
+
+  public Map<String, String> getHeaders() {
+    return headers;
+  }
+
   /**
-   * Builder for {@link ApiRequestHandlerResponse}.
+   * Get Http Body.
+   * 
+   * @return String
    */
-  public static class Builder {
-    /** {@link ApiResponseStatus}. */
-    private ApiResponseStatus status;
-    /** Data. */
-    private final Map<String, Object> data = new HashMap<>();
+  public String getBody() {
+    return body;
+  }
+
+  /**
+   * Convert To {@link Map}.
+   * 
+   * @return Map
+   */
+  public Map<String, Object> toMap() {
+    Map<String, Object> m = new HashMap<>();
+    m.put("statusCode", statusCode);
+    if (!headers.isEmpty()) {
+      m.put("headers", headers);
+    }
+
+    if (body != null) {
+      m.put("body", body);
+    }
+
+    return m;
+  }
+
+  public static final class Builder {
+    /** {@link Gson}. */
+    private final Gson gson = GsonUtil.getInstance();
+    /** Status Code. */
+    private int statusCode = -1;
+    /** Http Headers. */
+    private final Map<String, String> headers = new HashMap<>();
+    /** Http Body. */
+    private final Map<String, Object> body = new HashMap<>();
+    /** {@link Object}. */
+    private Object object;
 
     /**
-     * Sets the response responseStatus.
-     *
-     * @param responseStatus the API response responseStatus
-     * @return this builder
+     * Set Status.
+     * 
+     * @param status {@link ApiResponseStatus}
+     * @return Builder
      */
-    public Builder status(final ApiResponseStatus responseStatus) {
-      this.status = responseStatus;
+    public Builder status(final ApiResponseStatus status) {
+      this.statusCode = status.getStatusCode();
       return this;
     }
 
     /**
-     * Builds a new Data.
+     * Set Status.
      * 
-     * @param key {@link String}
+     * @param status int
+     * @return Builder
+     */
+    public Builder status(final int status) {
+      this.statusCode = status;
+      return this;
+    }
+
+    /**
+     * Add Header.
+     * 
+     * @param name {@link String}
      * @param value {@link String}
      * @return Builder
      */
-    public Builder data(final String key, final Object value) {
-      this.data.put(key, value);
+    public Builder header(final String name, final String value) {
+      headers.put(name, value);
       return this;
     }
 
     /**
-     * Builds a new {@link ApiRequestHandlerResponse} instance.
-     *
-     * @return built ApiRequestHandlerResponse
+     * HTTP 200 OK.
+     * 
+     * @return Builder
+     */
+    public Builder ok() {
+      return status(SC_OK.getStatusCode());
+    }
+
+    /**
+     * HTTP 201 Created.
+     * 
+     * @return Builder
+     */
+    public Builder created() {
+      return status(SC_CREATED.getStatusCode());
+    }
+
+    /**
+     * HTTP 400 Bad Request.
+     * 
+     * @return Builder
+     */
+    public Builder badRequest() {
+      return status(SC_BAD_REQUEST.getStatusCode());
+    }
+
+    /**
+     * Http Body.
+     * 
+     * @param key {@link String}
+     * @param value {@link Object}
+     * @return Builder
+     */
+    public Builder body(final String key, final Object value) {
+      this.body.put(key, value);
+      return this;
+    }
+
+    /**
+     * Http Body.
+     * 
+     * @param map {@link Map}
+     * @return Builder
+     */
+    public Builder body(final Map<String, Object> map) {
+      this.body.putAll(map);
+      return this;
+    }
+
+    /**
+     * Http Body.
+     * 
+     * @param obj {@link Object}
+     * @return Builder
+     */
+    public Builder body(final Object obj) {
+      this.object = obj;
+      return this;
+    }
+
+    /**
+     * Next Token.
+     * 
+     * @param nextToken {@link String}
+     * @return Builder
+     */
+    public Builder next(final String nextToken) {
+      this.body.put("next", nextToken);
+      return this;
+    }
+
+    /**
+     * Build with {@link Exception}.
+     * 
+     * @param exception {@link Exception}
+     * @return Builder
+     */
+    public Builder exception(final Exception exception) {
+
+      this.body.put("message", exception.getMessage());
+
+      if (exception instanceof ConflictException) {
+        this.statusCode = SC_METHOD_CONFLICT.getStatusCode();
+      } else if (exception instanceof TooManyRequestsException) {
+        this.statusCode = SC_TOO_MANY_REQUESTS.getStatusCode();
+      } else if (exception instanceof ValidationException e) {
+        this.body.remove("message");
+        this.statusCode = SC_BAD_REQUEST.getStatusCode();
+        this.body.put("errors", e.errors());
+      } else if (isBadRequestException(exception)) {
+        this.statusCode = SC_BAD_REQUEST.getStatusCode();
+      } else if (exception instanceof ForbiddenException
+          || exception instanceof UnauthorizedException) {
+        this.statusCode = SC_UNAUTHORIZED.getStatusCode();
+      } else if (exception instanceof NotImplementedException) {
+        this.statusCode = SC_NOT_IMPLEMENTED.getStatusCode();
+      } else {
+        this.statusCode = buildStatus(exception).getStatusCode();
+        this.body.put("message", buildErrorMessage(exception));
+      }
+
+      return this;
+    }
+
+    private String buildErrorMessage(final Exception e) {
+
+      return switch (e.getClass().getName()) {
+        case "com.formkiq.aws.dynamodb.DynamoDbQueryException" -> {
+          if (e instanceof DynamoDbQueryException ee) {
+            yield switch (ee.getError()) {
+              case INVALID_START_KEY -> "Invalid Next token";
+              default -> "Invalid query";
+            };
+          }
+          yield "Unknown error";
+        }
+        case "com.formkiq.aws.services.lambda.exceptions.NotFoundException",
+            "com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException" ->
+          e.getMessage();
+        default -> "Internal Server Error";
+      };
+    }
+
+    private ApiResponseStatus buildStatus(final Exception e) {
+      return switch (e.getClass().getName()) {
+        case "com.formkiq.aws.dynamodb.DynamoDbQueryException" -> SC_BAD_REQUEST;
+        case "com.formkiq.aws.services.lambda.exceptions.NotFoundException",
+            "com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException" ->
+          SC_NOT_FOUND;
+        default -> SC_ERROR;
+      };
+    }
+
+    /**
+     * Is Bad Request Exception (Http Status 400).
+     * 
+     * @param exception {@link Exception}
+     * @return boolean
+     */
+    private static boolean isBadRequestException(final Exception exception) {
+      return exception instanceof BadException || exception instanceof IllegalArgumentException
+          || exception instanceof DateTimeException;
+    }
+
+    private Map<String, String> createJsonHeaders() {
+      return Map.of("Access-Control-Allow-Headers",
+          "Content-Type,X-Amz-Date,Authorization,X-Api-Key", "Access-Control-Allow-Methods", "*",
+          "Access-Control-Allow-Origin", "*", "Content-Type", "application/json");
+    }
+
+    /**
+     * Builder {@link ApiRequestHandlerResponse}.
+     * 
+     * @return ApiRequestHandlerResponse
      */
     public ApiRequestHandlerResponse build() {
-      return new ApiRequestHandlerResponse(this.status, new ApiMapResponse(this.data));
+      Map<String, String> allHeaders = new HashMap<>(headers);
+
+      if (statusCode != MOVED_PERMANENTLY.getStatusCode()
+          && statusCode != SC_TEMPORARY_REDIRECT.getStatusCode()) {
+        allHeaders.putAll(createJsonHeaders());
+      }
+
+      String s = this.object != null || !this.body.isEmpty()
+          ? this.gson.toJson(this.object != null ? this.object : this.body)
+          : null;
+      return new ApiRequestHandlerResponse(statusCode, allHeaders, s);
     }
   }
 }

@@ -24,7 +24,7 @@
 package com.formkiq.stacks.api.handler.webhooks;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
+
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Date;
@@ -36,8 +36,6 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
-import com.formkiq.aws.services.lambda.ApiMessageResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.aws.ssm.SsmService;
@@ -62,8 +60,8 @@ public class WebhooksIdRequestHandler
     }
     webhooksService.deleteWebhook(siteId, id);
 
-    return new ApiRequestHandlerResponse(SC_OK,
-        new ApiMessageResponse("'" + id + "' object deleted"));
+    return ApiRequestHandlerResponse.builder().ok().body("message", "'" + id + "' object deleted")
+        .build();
   }
 
   @Override
@@ -83,7 +81,7 @@ public class WebhooksIdRequestHandler
     String url = getUrl(awsServices, siteId, m);
     Map<String, Object> map = new DynamicObjectToMap(siteId, url).apply(m);
 
-    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
+    return ApiRequestHandlerResponse.builder().ok().body(map).build();
   }
 
   private String getUrl(final AwsServiceCache awsServices, final String siteId,
@@ -146,7 +144,7 @@ public class WebhooksIdRequestHandler
       webhooksService.updateTimeToLive(siteId, id, ttlDate);
     }
 
-    return new ApiRequestHandlerResponse(SC_OK,
-        new ApiMessageResponse("'" + id + "' object updated"));
+    return ApiRequestHandlerResponse.builder().ok().body("message", "'" + id + "' object updated")
+        .build();
   }
 }

@@ -28,7 +28,6 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.ssm.SsmService;
@@ -46,7 +45,6 @@ import java.util.Random;
 import java.util.stream.Collectors;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
 /** {@link ApiGatewayRequestHandler} for "/sites". */
 public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
@@ -103,8 +101,8 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
 
     String userId = authorization.getUsername();
 
-    return new ApiRequestHandlerResponse(SC_OK,
-        new ApiMapResponse(Map.of("username", userId, "sites", sites)));
+    return ApiRequestHandlerResponse.builder().ok().body(Map.of("username", userId, "sites", sites))
+        .build();
   }
 
   private void addConfig(final AwsServiceCache awsservice, final String siteId,
@@ -217,7 +215,7 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
     SsmService ssmService = getSsmService(awsservice);
     String mailDomain = ssmService != null ? getMailDomain(awsservice) : null;
 
-    if (mailDomain != null && ssmService != null) {
+    if (mailDomain != null) {
 
       List<String> writeSiteIds = authorization.getSiteIds().stream()
           .filter(s -> authorization.getPermissions(s).contains(ApiPermission.WRITE)).toList();

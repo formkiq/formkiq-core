@@ -24,18 +24,16 @@
 package com.formkiq.stacks.api.handler.documents;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
+
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.module.actions.Action;
@@ -106,8 +104,6 @@ public class DocumentsActionsRetryRequestHandler
         awsservice.getExtension(ActionsNotificationService.class);
     notificationService.publishNextActionEvent(actions, siteId, documentId);
 
-    ApiMapResponse resp = new ApiMapResponse();
-    resp.setMap(Map.of("message", "Actions retrying"));
-    return new ApiRequestHandlerResponse(SC_OK, resp);
+    return ApiRequestHandlerResponse.builder().ok().body("message", "Actions retrying").build();
   }
 }

@@ -100,7 +100,6 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
    *
    * @throws Exception an error has occurred
    */
-  // @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetApiKeys01() throws Exception {
     // given

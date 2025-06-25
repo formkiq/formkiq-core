@@ -23,15 +23,12 @@
  */
 package com.formkiq.stacks.api.handler.documents;
 
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.api.ApiEmptyResponse;
 
 /** {@link ApiGatewayRequestHandler} for OPTIONS request handler. */
 public class DocumentsOptionsRequestHandler
@@ -40,7 +37,7 @@ public class DocumentsOptionsRequestHandler
   @Override
   public ApiRequestHandlerResponse options(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
-    return new ApiRequestHandlerResponse(SC_OK, new ApiEmptyResponse());
+    return ApiRequestHandlerResponse.builder().ok().build();
   }
 
   @Override

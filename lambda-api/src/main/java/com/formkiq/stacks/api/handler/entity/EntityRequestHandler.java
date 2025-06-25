@@ -32,7 +32,6 @@ import com.formkiq.aws.dynamodb.eventsourcing.entity.EntityRecord;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -76,7 +75,7 @@ public class EntityRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
     Map<String, Object> values = new AttributeValueToMap(config).apply(attributes);
     new AddEntityAttributeTransformer().apply(values);
 
-    return ApiRequestHandlerResponse.builder().status(SC_OK).data("entity", values).build();
+    return ApiRequestHandlerResponse.builder().status(SC_OK).body("entity", values).build();
   }
 
   @Override
@@ -90,8 +89,7 @@ public class EntityRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
 
     new AddEntityRequestToEntityRecordTransformer(awsservice, authorization, true).apply(event);
 
-    return new ApiRequestHandlerResponse(SC_OK,
-        new ApiMapResponse(Map.of("message", "Entity updated")));
+    return ApiRequestHandlerResponse.builder().ok().body("message", "Entity updated").build();
   }
 
   @Override
@@ -110,7 +108,7 @@ public class EntityRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
       throw new NotFoundException("entity '" + entityTypeId + "' not found");
     }
 
-    return ApiRequestHandlerResponse.builder().status(SC_OK).data("message", "Entity deleted")
+    return ApiRequestHandlerResponse.builder().status(SC_OK).body("message", "Entity deleted")
         .build();
   }
 }

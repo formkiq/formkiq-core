@@ -46,7 +46,6 @@ import java.util.Map;
 
 import static com.formkiq.aws.dynamodb.DbKeys.GSI1;
 import static com.formkiq.aws.dynamodb.DbKeys.PK;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
 /** {@link ApiGatewayRequestHandler} for "/entityTypes/{entityTypeId}". */
 public class EntityTypeRequestHandler
@@ -78,7 +77,7 @@ public class EntityTypeRequestHandler
     AttributeValueToMapConfig config = AttributeValueToMapConfig.builder().removeDbKeys(true)
         .addRenameKeys("documentId", "entityTypeId").build();
     Map<String, Object> values = new AttributeValueToMap(config).apply(attributes);
-    return ApiRequestHandlerResponse.builder().status(SC_OK).data("entityType", values).build();
+    return ApiRequestHandlerResponse.builder().ok().body("entityType", values).build();
   }
 
   @Override
@@ -103,8 +102,7 @@ public class EntityTypeRequestHandler
       throw new NotFoundException("entityType '" + entityTypeId + "' not found");
     }
 
-    return ApiRequestHandlerResponse.builder().status(SC_OK).data("message", "EntityType deleted")
-        .build();
+    return ApiRequestHandlerResponse.builder().ok().body("message", "EntityType deleted").build();
   }
 
   private void validateDelete(final AwsServiceCache awsservice, final String siteId,

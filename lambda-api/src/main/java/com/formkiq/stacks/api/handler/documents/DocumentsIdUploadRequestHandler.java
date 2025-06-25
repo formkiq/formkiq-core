@@ -29,7 +29,6 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -45,7 +44,6 @@ import java.util.Optional;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/upload". */
 public class DocumentsIdUploadRequestHandler
@@ -85,7 +83,7 @@ public class DocumentsIdUploadRequestHandler
     item.setChecksumType(o.getChecksumType());
     service.saveDocument(siteId, item, null);
 
-    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(uploadUrls));
+    return ApiRequestHandlerResponse.builder().ok().body(uploadUrls).build();
   }
 
   @Override

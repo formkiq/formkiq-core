@@ -28,16 +28,12 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 
-import java.util.Map;
 import java.util.Optional;
-
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
 /** {@link ApiGatewayRequestHandler} for "/users/{username}/{userOperation}". */
 public class UserOperationRequestHandler
@@ -75,8 +71,7 @@ public class UserOperationRequestHandler
       throw new BadException("Invalid operation '" + operation + "'");
     }
 
-    ApiMapResponse resp = new ApiMapResponse(Map.of("message", msg));
-    return new ApiRequestHandlerResponse(SC_OK, resp);
+    return ApiRequestHandlerResponse.builder().ok().body("message", msg).build();
   }
 
   @Override

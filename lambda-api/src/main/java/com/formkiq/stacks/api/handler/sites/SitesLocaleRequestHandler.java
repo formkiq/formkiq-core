@@ -27,7 +27,6 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.locale.LocaleService;
@@ -35,9 +34,6 @@ import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
 
 import java.util.List;
-import java.util.Map;
-
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
 /** {@link ApiGatewayRequestHandler} for "/sites/{siteId}/locales/{locale}. */
 public class SitesLocaleRequestHandler
@@ -61,8 +57,8 @@ public class SitesLocaleRequestHandler
       throw new ValidationException(errors);
     }
 
-    return new ApiRequestHandlerResponse(SC_OK,
-        new ApiMapResponse(Map.of("message", "deleted locale '" + locale + "'")));
+    return ApiRequestHandlerResponse.builder().ok()
+        .body("message", "deleted locale '" + locale + "'").build();
   }
 
   @Override

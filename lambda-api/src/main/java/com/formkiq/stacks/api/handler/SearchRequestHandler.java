@@ -35,7 +35,6 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
@@ -64,7 +63,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import static software.amazon.awssdk.utils.StringUtils.isEmpty;
 
 /** {@link ApiGatewayRequestHandler} for "/search". */
@@ -196,8 +194,7 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
     map.put("previous", current.getPrevious());
     map.put("next", current.hasNext() ? current.getNext() : null);
 
-    ApiMapResponse resp = new ApiMapResponse(map);
-    return new ApiRequestHandlerResponse(SC_OK, resp);
+    return ApiRequestHandlerResponse.builder().ok().body(map).build();
   }
 
   /**

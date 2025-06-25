@@ -23,7 +23,6 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -32,7 +31,6 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 
@@ -55,10 +53,11 @@ public class VersionRequestHandler implements ApiGatewayRequestHandler, ApiGatew
           return key.replaceAll("MODULE_", "");
         }).collect(Collectors.toList());
 
-    return new ApiRequestHandlerResponse(SC_OK,
-        new ApiMapResponse(Map.of("version", awsservice.environment("FORMKIQ_VERSION"), "type",
+    return ApiRequestHandlerResponse.builder().ok()
+        .body(Map.of("version", awsservice.environment("FORMKIQ_VERSION"), "type",
             awsservice.environment("FORMKIQ_TYPE"), "appEnvironment",
-            awsservice.environment("APP_ENVIRONMENT"), "modules", modules)));
+            awsservice.environment("APP_ENVIRONMENT"), "modules", modules))
+        .build();
   }
 
   @Override

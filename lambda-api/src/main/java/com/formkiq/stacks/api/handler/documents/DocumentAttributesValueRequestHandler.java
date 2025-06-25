@@ -23,15 +23,11 @@
  */
 package com.formkiq.stacks.api.handler.documents;
 
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMessageResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
-import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentService;
@@ -77,10 +73,10 @@ public class DocumentAttributesValueRequestHandler
           "attribute '" + attributeKey + "' not found on document ' " + documentId + "'");
     }
 
-    ApiResponse resp = new ApiMessageResponse("attribute value '" + attributeValue
-        + "' removed from attribute '" + attributeKey + "', document '" + documentId + "'");
-
-    return new ApiRequestHandlerResponse(SC_OK, resp);
+    return ApiRequestHandlerResponse
+        .builder().ok().body("message", "attribute value '" + attributeValue
+            + "' removed from attribute '" + attributeKey + "', document '" + documentId + "'")
+        .build();
   }
 
   @Override

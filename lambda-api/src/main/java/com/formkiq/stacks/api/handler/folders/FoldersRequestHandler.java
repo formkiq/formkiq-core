@@ -23,8 +23,6 @@
  */
 package com.formkiq.stacks.api.handler.folders;
 
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -41,7 +39,6 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
@@ -88,9 +85,9 @@ public class FoldersRequestHandler implements ApiGatewayRequestHandler, ApiGatew
       return Map.of("folder", r.path(), "indexKey", indexKey);
     }).toList();
 
-    ApiMapResponse resp = new ApiMapResponse(
-        Map.of("message", "created folder", "indexKey", list.get(list.size() - 1).get("indexKey")));
-    return new ApiRequestHandlerResponse(SC_OK, resp);
+    Map<String, Object> map =
+        Map.of("message", "created folder", "indexKey", list.get(list.size() - 1).get("indexKey"));
+    return ApiRequestHandlerResponse.builder().ok().body(map).build();
   }
 
   @Override
@@ -122,8 +119,7 @@ public class FoldersRequestHandler implements ApiGatewayRequestHandler, ApiGatew
     map.put("previous", current.getPrevious());
     map.put("next", current.hasNext() ? current.getNext() : null);
 
-    ApiMapResponse resp = new ApiMapResponse(map);
-    return new ApiRequestHandlerResponse(SC_OK, resp);
+    return ApiRequestHandlerResponse.builder().ok().body(map).build();
   }
 
   private String getIndexKey(final ApiGatewayRequestEvent event, final AwsServiceCache awsservice,

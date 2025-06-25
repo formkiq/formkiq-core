@@ -23,7 +23,6 @@
  */
 package com.formkiq.stacks.api.handler.attributes;
 
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.util.Collection;
 import java.util.Map;
 
@@ -31,7 +30,6 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -59,7 +57,7 @@ public class AttributeRequestHandler
     }
 
     Map<String, Object> map = Map.of("attribute", new AttributeRecordToMap().apply(attribute));
-    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
+    return ApiRequestHandlerResponse.builder().ok().body(map).build();
   }
 
   @Override
@@ -86,8 +84,8 @@ public class AttributeRequestHandler
 
     service.updateAttribute(access, siteId, key, type, attribute.getWatermark());
 
-    return new ApiRequestHandlerResponse(SC_OK,
-        new ApiMapResponse(Map.of("message", "Attribute '" + key + "' updated")));
+    return ApiRequestHandlerResponse.builder().ok()
+        .body(Map.of("message", "Attribute '" + key + "' updated")).build();
   }
 
   @Override
@@ -107,7 +105,7 @@ public class AttributeRequestHandler
       throw new ValidationException(errors);
     }
 
-    return new ApiRequestHandlerResponse(SC_OK,
-        new ApiMapResponse(Map.of("message", "Attribute '" + key + "' deleted")));
+    return ApiRequestHandlerResponse.builder().ok()
+        .body("message", "Attribute '" + key + "' deleted").build();
   }
 }

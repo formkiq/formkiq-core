@@ -28,7 +28,6 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -37,8 +36,6 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.GetGroupRes
 
 import java.util.Map;
 import java.util.Optional;
-
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
 /** {@link ApiGatewayRequestHandler} for "/groups/{groupName}". */
 public class GroupRequestHandler implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
@@ -57,8 +54,7 @@ public class GroupRequestHandler implements ApiGatewayRequestHandler, ApiGateway
     GetGroupResponse response = service.getGroup(groupName);
 
     Map<String, Object> group = new GroupsResponseToMap().apply(response.group());
-    ApiMapResponse resp = new ApiMapResponse(Map.of("group", group));
-    return new ApiRequestHandlerResponse(SC_OK, resp);
+    return ApiRequestHandlerResponse.builder().ok().body("group", group).build();
   }
 
   @Override
@@ -82,7 +78,7 @@ public class GroupRequestHandler implements ApiGatewayRequestHandler, ApiGateway
         awsservice.getExtension(CognitoIdentityProviderService.class);
     service.deleteGroup(groupName);
 
-    ApiMapResponse resp = new ApiMapResponse(Map.of("message", "Group " + groupName + " deleted"));
-    return new ApiRequestHandlerResponse(SC_OK, resp);
+    return ApiRequestHandlerResponse.builder().ok()
+        .body("message", "Group " + groupName + " deleted").build();
   }
 }
