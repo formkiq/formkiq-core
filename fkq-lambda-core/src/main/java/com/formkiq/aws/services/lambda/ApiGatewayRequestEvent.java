@@ -68,7 +68,7 @@ public class ApiGatewayRequestEvent {
 
   /**
    * Add HTTP Header.
-   * 
+   *
    * @param key {@link String}
    * @param value {@link String}
    */
@@ -82,7 +82,7 @@ public class ApiGatewayRequestEvent {
 
   /**
    * Get Request Body.
-   * 
+   *
    * @return {@link String}
    */
   public String getBody() {
@@ -91,7 +91,7 @@ public class ApiGatewayRequestEvent {
 
   /**
    * Get Request Headers.
-   * 
+   *
    * @return {@link Map}
    */
   public Map<String, String> getHeaders() {
@@ -100,7 +100,7 @@ public class ApiGatewayRequestEvent {
 
   /**
    * Get Http Method.
-   * 
+   *
    * @return {@link String}
    */
   public String getHttpMethod() {
@@ -109,7 +109,7 @@ public class ApiGatewayRequestEvent {
 
   /**
    * Is Request Base64 Encoded.
-   * 
+   *
    * @return {@link Boolean}
    */
   public Boolean getIsBase64Encoded() {
@@ -118,7 +118,7 @@ public class ApiGatewayRequestEvent {
 
   /**
    * Get Request Path.
-   * 
+   *
    * @return {@link String}
    */
   public String getPath() {
@@ -127,7 +127,7 @@ public class ApiGatewayRequestEvent {
 
   /**
    * Get Path Parameters.
-   * 
+   *
    * @return {@link Map}
    */
   public Map<String, String> getPathParameters() {
@@ -136,7 +136,7 @@ public class ApiGatewayRequestEvent {
 
   /**
    * Get Path Parameter.
-   * 
+   *
    * @param key {@link String}
    * @return String
    */
@@ -169,7 +169,7 @@ public class ApiGatewayRequestEvent {
 
   /**
    * Get Query Parameter.
-   * 
+   *
    * @param key {@link String}
    * @return {@link String}
    */
@@ -179,7 +179,7 @@ public class ApiGatewayRequestEvent {
 
   /**
    * Get Query String Parameters.
-   * 
+   *
    * @return {@link Map}
    */
   public Map<String, String> getQueryStringParameters() {
@@ -188,7 +188,7 @@ public class ApiGatewayRequestEvent {
 
   /**
    * Get Request Context.
-   * 
+   *
    * @return {@link ApiGatewayRequestContext}
    */
   public ApiGatewayRequestContext getRequestContext() {
@@ -197,7 +197,7 @@ public class ApiGatewayRequestEvent {
 
   /**
    * Get Request Resource.
-   * 
+   *
    * @return {@link String}
    */
   public String getResource() {
@@ -206,7 +206,7 @@ public class ApiGatewayRequestEvent {
 
   /**
    * Set Request Body.
-   * 
+   *
    * @param requestBody {@link String}
    */
   public void setBody(final String requestBody) {
@@ -215,7 +215,7 @@ public class ApiGatewayRequestEvent {
 
   /**
    * Set Request Headers.
-   * 
+   *
    * @param map {@link Map}
    */
   public void setHeaders(final Map<String, String> map) {
@@ -224,7 +224,7 @@ public class ApiGatewayRequestEvent {
 
   /**
    * Set Http Method.
-   * 
+   *
    * @param method {@link String}
    */
   public void setHttpMethod(final String method) {
@@ -233,7 +233,7 @@ public class ApiGatewayRequestEvent {
 
   /**
    * Set Request Base64 Encoded.
-   * 
+   *
    * @param isBase64 {@link Boolean}
    */
   public void setIsBase64Encoded(final Boolean isBase64) {
@@ -242,7 +242,7 @@ public class ApiGatewayRequestEvent {
 
   /**
    * Set Request Path.
-   * 
+   *
    * @param requestPath {@link String}
    */
   public void setPath(final String requestPath) {
@@ -251,7 +251,7 @@ public class ApiGatewayRequestEvent {
 
   /**
    * Set Path Parameters.
-   * 
+   *
    * @param map {@link Map}
    */
   public void setPathParameters(final Map<String, String> map) {
@@ -260,7 +260,7 @@ public class ApiGatewayRequestEvent {
 
   /**
    * Set Query String Parameters.
-   * 
+   *
    * @param map {@link Map}
    */
   public void setQueryStringParameters(final Map<String, String> map) {
@@ -269,7 +269,7 @@ public class ApiGatewayRequestEvent {
 
   /**
    * Set Request Context.
-   * 
+   *
    * @param context {@link ApiGatewayRequestContext}
    */
   public void setRequestContext(final ApiGatewayRequestContext context) {
@@ -278,7 +278,7 @@ public class ApiGatewayRequestEvent {
 
   /**
    * Set Resource.
-   * 
+   *
    * @param requestResource {@link String}
    */
   public void setResource(final String requestResource) {
