@@ -23,6 +23,7 @@
  */
 package com.formkiq.aws.services.lambda;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_BAD_REQUEST;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_ERROR;
 import java.io.IOException;
@@ -44,6 +45,9 @@ import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.logger.LogLevel;
 import com.formkiq.module.lambdaservices.logger.Logger;
+import com.formkiq.plugins.useractivity.UserActivity;
+import com.formkiq.plugins.useractivity.UserActivityContext;
+import com.formkiq.plugins.useractivity.UserActivityPlugin;
 import com.google.gson.Gson;
 import software.amazon.awssdk.utils.IoUtils;
 
@@ -394,14 +398,20 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
   private void processApiGatewayRequest(final Logger logger, final ApiGatewayRequestEvent event,
       final AwsServiceCache awsServices, final OutputStream output) throws IOException {
 
+    UserActivity.Builder ua = null;
     ApiRequestHandlerResponse response;
+    ApiAuthorization authorization = null;
 
     try {
+
+      resetThreadLocal();
 
       List<ApiAuthorizationInterceptor> interceptors =
           setupApiAuthorizationInterceptor(awsServices);
 
-      ApiAuthorization authorization = buildApiAuthorization(event, interceptors);
+      authorization = buildApiAuthorization(event, interceptors);
+      ua = new ApiGatewayRequestToUserActivityFunction().apply(event);
+
       // HttpCommand httpCommand =
       // new ApiGatewayRequestEventToHttpCommandTransformer(authorization).apply(event);
 
@@ -414,25 +424,51 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
       executeResponseInterceptors(requestInterceptors, event, authorization, response);
 
+      ua.status(response.getStatusCode());
+      writeJson(awsServices, output, response.toMap());
+      writeUserActivity(awsServices, authorization, ua);
+
     } catch (Exception e) {
 
+      e.printStackTrace();
       response = ApiRequestHandlerResponse.builder().exception(e).build();
+
+      if (ua == null) {
+        ua = UserActivity.builder();
+      }
+
+      ua.status(response.getStatusCode());
 
       if (SC_ERROR.getStatusCode() == response.getStatusCode()) {
         logger.error(e);
       }
 
-    } finally {
-      ApiAuthorization.logout();
-    }
+      writeJson(awsServices, output, response.toMap());
+      writeUserActivity(awsServices, authorization, ua);
 
-    writeJson(awsServices, output, response.toMap());
+    } finally {
+      resetThreadLocal();
+    }
+  }
+
+  private void writeUserActivity(final AwsServiceCache awsServices,
+      final ApiAuthorization authorization, final UserActivity.Builder ua) {
+    if (awsServices.containsExtension(UserActivityPlugin.class)) {
+      String siteId = authorization != null ? authorization.getSiteId() : DEFAULT_SITE_ID;
+      ua.userId(authorization != null ? authorization.getUsername() : "System");
+
+      UserActivityPlugin plugin = awsServices.getExtension(UserActivityPlugin.class);
+      plugin.addUserActivity(siteId, ua.build());
+    }
+  }
+
+  private static void resetThreadLocal() {
+    ApiAuthorization.logout();
+    UserActivityContext.clear();
   }
 
   private ApiAuthorization buildApiAuthorization(final ApiGatewayRequestEvent event,
       final List<ApiAuthorizationInterceptor> interceptors) throws Exception {
-
-    ApiAuthorization.logout();
 
     ApiAuthorization authorization =
         new ApiAuthorizationBuilder().interceptors(interceptors).build(event);

@@ -26,6 +26,7 @@ package com.formkiq.stacks.api;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 import com.formkiq.aws.dynamodb.ID;
@@ -48,7 +49,6 @@ public class IndicesFolderMoveRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandlePost01() throws Exception {
 
@@ -69,12 +69,12 @@ public class IndicesFolderMoveRequestTest extends AbstractRequestHandler {
       String response = handleRequest(event);
 
       // then
-      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+      Map<String, Object> m = GsonUtil.getInstance().fromJson(response, Map.class);
 
       final int mapsize = 3;
       assertEquals(mapsize, m.size());
       assertEquals("200.0", String.valueOf(m.get("statusCode")));
-      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+      assertCorsHeaders((Map<String, Object>) m.get("headers"));
       assertEquals("{\"message\":\"Folder moved\"}", m.get("body"));
 
       assertEquals("a/b/c/test.pdf",
@@ -87,7 +87,6 @@ public class IndicesFolderMoveRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandlePost02() throws Exception {
 
@@ -102,12 +101,12 @@ public class IndicesFolderMoveRequestTest extends AbstractRequestHandler {
       String response = handleRequest(event);
 
       // then
-      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+      Map<String, Object> m = GsonUtil.getInstance().fromJson(response, Map.class);
 
       final int mapsize = 3;
       assertEquals(mapsize, m.size());
       assertEquals("400.0", String.valueOf(m.get("statusCode")));
-      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+      assertCorsHeaders((Map<String, Object>) m.get("headers"));
       assertEquals("{\"errors\":[{\"error\":\"invalid body\"}]}", m.get("body"));
     }
   }
@@ -117,7 +116,6 @@ public class IndicesFolderMoveRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandlePost03() throws Exception {
 
@@ -132,12 +130,12 @@ public class IndicesFolderMoveRequestTest extends AbstractRequestHandler {
       String response = handleRequest(event);
 
       // then
-      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+      Map<String, Object> m = GsonUtil.getInstance().fromJson(response, Map.class);
 
       final int mapsize = 3;
       assertEquals(mapsize, m.size());
       assertEquals("400.0", String.valueOf(m.get("statusCode")));
-      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+      assertCorsHeaders((Map<String, Object>) m.get("headers"));
       assertEquals("{\"errors\":[{\"key\":\"source\",\"error\":\"attribute is required\"},"
           + "{\"key\":\"target\",\"error\":\"attribute is required\"}]}", m.get("body"));
     }
@@ -148,7 +146,6 @@ public class IndicesFolderMoveRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandlePost04() throws Exception {
 
@@ -166,12 +163,12 @@ public class IndicesFolderMoveRequestTest extends AbstractRequestHandler {
       String response = handleRequest(event);
 
       // then
-      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+      Map<String, Object> m = GsonUtil.getInstance().fromJson(response, Map.class);
 
       final int mapsize = 3;
       assertEquals(mapsize, m.size());
       assertEquals("400.0", String.valueOf(m.get("statusCode")));
-      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+      assertCorsHeaders((Map<String, Object>) m.get("headers"));
       assertEquals("{\"message\":\"folder '" + path + "' does not exist\"}", m.get("body"));
     }
   }
@@ -181,13 +178,12 @@ public class IndicesFolderMoveRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandlePost05() throws Exception {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      for (String target : Arrays.asList("/")) {
+      for (String target : List.of("/")) {
 
         String documentId = ID.uuid();
         DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
@@ -204,13 +200,12 @@ public class IndicesFolderMoveRequestTest extends AbstractRequestHandler {
         String response = handleRequest(event);
 
         // then
-        Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+        Map<String, Object> m = GsonUtil.getInstance().fromJson(response, Map.class);
 
         final int mapsize = 3;
         assertEquals(mapsize, m.size());
         assertEquals("200.0", String.valueOf(m.get("statusCode")));
-        assertEquals(getHeaders(),
-            "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+        assertCorsHeaders((Map<String, Object>) m.get("headers"));
         assertEquals("{\"message\":\"Folder moved\"}", m.get("body"));
 
         assertEquals("test.pdf", getDocumentService().findDocument(siteId, documentId).getPath());

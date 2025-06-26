@@ -322,18 +322,6 @@ public abstract class AbstractRequestHandler {
   }
 
   /**
-   * Get Response Headers.
-   *
-   * @return {@link String}
-   */
-  public String getHeaders() {
-    return "\"headers\":{" + "\"Access-Control-Allow-Origin\":\"*\","
-        + "\"Access-Control-Allow-Methods\":\"*\"," + "\"Access-Control-Allow-Headers\":"
-        + "\"Content-Type,X-Amz-Date,Authorization,X-Api-Key\","
-        + "\"Content-Type\":\"application/json\"}";
-  }
-
-  /**
    * Get {@link Logger}.
    *
    * @return {@link LoggerRecorder}
@@ -659,5 +647,20 @@ public abstract class AbstractRequestHandler {
     in.close();
 
     return instream;
+  }
+
+  /**
+   * Assert CORS headers.
+   * 
+   * @param headers {@link Map}
+   */
+  public static void assertCorsHeaders(final Map<String, Object> headers) {
+    final int expectedHeadersSize = 4;
+    assertEquals(expectedHeadersSize, headers.size());
+    assertEquals("*", headers.get("Access-Control-Allow-Origin"));
+    assertEquals("*", headers.get("Access-Control-Allow-Methods"));
+    assertEquals("Content-Type,X-Amz-Date,Authorization,X-Api-Key",
+        headers.get("Access-Control-Allow-Headers"));
+    assertEquals("application/json", headers.get("Content-Type"));
   }
 }

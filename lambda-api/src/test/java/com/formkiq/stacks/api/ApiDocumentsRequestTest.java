@@ -165,12 +165,12 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       String response = handleRequest(event);
 
       // then
-      Map<String, String> m = fromJson(response, Map.class);
+      Map<String, Object> m = fromJson(response, Map.class);
 
       final int mapsize = 3;
       assertEquals(mapsize, m.size());
       assertEquals("200.0", String.valueOf(m.get("statusCode")));
-      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+      assertCorsHeaders((Map<String, Object>) m.get("headers"));
 
       assertFalse(getS3().getObjectMetadata(BUCKET_NAME, s3Key, null).isObjectExists());
       assertNull(getDocumentService().findDocument(siteId, documentId));
@@ -226,12 +226,12 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       String response = handleRequest(event);
 
       // then
-      Map<String, String> m = fromJson(response, Map.class);
+      Map<String, Object> m = fromJson(response, Map.class);
 
       final int mapsize = 3;
       assertEquals(mapsize, m.size());
       assertEquals("404.0", String.valueOf(m.get("statusCode")));
-      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+      assertCorsHeaders((Map<String, Object>) m.get("headers"));
     }
   }
 
@@ -260,13 +260,13 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       String response = handleRequest(event);
 
       // then
-      Map<String, String> m = fromJson(response, Map.class);
+      Map<String, Object> m = fromJson(response, Map.class);
 
       final int mapsize = 3;
       assertEquals(mapsize, m.size());
       assertEquals("200.0", String.valueOf(m.get("statusCode")));
-      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-      DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+      assertCorsHeaders((Map<String, Object>) m.get("headers"));
+      DynamicObject resp = new DynamicObject(fromJson((String) m.get("body"), Map.class));
 
       List<DynamicObject> documents = resp.getList("documents");
       assertEquals(1, documents.size());
@@ -302,14 +302,13 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
 
         // then
         String response = outstream.toString(StandardCharsets.UTF_8);
-        Map<String, String> m = fromJson(response, Map.class);
+        Map<String, Object> m = fromJson(response, Map.class);
 
         final int mapsize = 3;
         assertEquals(mapsize, m.size());
         assertEquals("200.0", String.valueOf(m.get("statusCode")));
-        assertEquals(getHeaders(),
-            "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-        DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+        assertCorsHeaders((Map<String, Object>) m.get("headers"));
+        DynamicObject resp = new DynamicObject(fromJson((String) m.get("body"), Map.class));
 
         List<DynamicObject> documents = resp.getList("documents");
         assertEquals(DocumentService.MAX_RESULTS, documents.size());
@@ -344,14 +343,13 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
 
         // then
         String response = outstream.toString(StandardCharsets.UTF_8);
-        Map<String, String> m = fromJson(response, Map.class);
+        Map<String, Object> m = fromJson(response, Map.class);
 
         final int mapsize = 3;
         assertEquals(mapsize, m.size());
         assertEquals("200.0", String.valueOf(m.get("statusCode")));
-        assertEquals(getHeaders(),
-            "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-        DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+        assertCorsHeaders((Map<String, Object>) m.get("headers"));
+        DynamicObject resp = new DynamicObject(fromJson((String) m.get("body"), Map.class));
 
         List<DynamicObject> documents = resp.getList("documents");
         assertEquals(DocumentService.MAX_RESULTS, documents.size());
@@ -384,13 +382,13 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       String response = handleRequest(event);
 
       // then
-      Map<String, String> m = fromJson(response, Map.class);
+      Map<String, Object> m = fromJson(response, Map.class);
 
       final int mapsize = 3;
       assertEquals(mapsize, m.size());
       assertEquals("200.0", String.valueOf(m.get("statusCode")));
-      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-      DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+      assertCorsHeaders((Map<String, Object>) m.get("headers"));
+      DynamicObject resp = new DynamicObject(fromJson((String) m.get("body"), Map.class));
 
       List<DynamicObject> documents = resp.getList("documents");
       assertEquals(0, documents.size());
@@ -420,13 +418,13 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       String response = handleRequest(event);
 
       // then
-      Map<String, String> m = fromJson(response, Map.class);
+      Map<String, Object> m = fromJson(response, Map.class);
 
       final int mapsize = 3;
       assertEquals(mapsize, m.size());
       assertEquals("200.0", String.valueOf(m.get("statusCode")));
-      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-      DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+      assertCorsHeaders((Map<String, Object>) m.get("headers"));
+      DynamicObject resp = new DynamicObject(fromJson((String) m.get("body"), Map.class));
 
       List<DynamicObject> documents = resp.getList("documents");
       assertEquals(1, documents.size());
@@ -460,13 +458,13 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       String response = handleRequest(event);
 
       // then
-      Map<String, String> m = fromJson(response, Map.class);
+      Map<String, Object> m = fromJson(response, Map.class);
 
       final int mapsize = 3;
       assertEquals(mapsize, m.size());
       assertEquals("200.0", String.valueOf(m.get("statusCode")));
-      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-      DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+      assertCorsHeaders((Map<String, Object>) m.get("headers"));
+      DynamicObject resp = new DynamicObject(fromJson((String) m.get("body"), Map.class));
 
       List<DynamicObject> documents = resp.getList("documents");
       assertEquals(1, documents.size());
@@ -510,11 +508,11 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
 
       // then
       final int mapsize = 3;
-      Map<String, String> m = fromJson(response, Map.class);
+      Map<String, Object> m = fromJson(response, Map.class);
       assertEquals(mapsize, m.size());
       assertEquals("200.0", String.valueOf(m.get("statusCode")));
-      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-      DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+      assertCorsHeaders((Map<String, Object>) m.get("headers"));
+      DynamicObject resp = new DynamicObject(fromJson((String) m.get("body"), Map.class));
 
       List<DynamicObject> documents = resp.getList("documents");
       assertEquals(1, documents.size());
@@ -543,13 +541,13 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
     String response = handleRequest(event);
 
     // then
-    Map<String, String> m = fromJson(response, Map.class);
+    Map<String, Object> m = fromJson(response, Map.class);
 
     final int mapsize = 3;
     assertEquals(mapsize, m.size());
     assertEquals("401.0", String.valueOf(m.get("statusCode")));
-    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-    ApiResponseError resp = fromJson(m.get("body"), ApiResponseError.class);
+    assertCorsHeaders((Map<String, Object>) m.get("headers"));
+    ApiResponseError resp = fromJson((String) m.get("body"), ApiResponseError.class);
     assertEquals("fkq access denied to siteId (" + siteId + ")", resp.getMessage());
   }
 
@@ -570,13 +568,13 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
     String response = handleRequest(event);
 
     // then
-    Map<String, String> m = fromJson(response, Map.class);
+    Map<String, Object> m = fromJson(response, Map.class);
 
     final int mapsize = 3;
     assertEquals(mapsize, m.size());
     assertEquals("401.0", String.valueOf(m.get("statusCode")));
-    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-    ApiResponseError resp = fromJson(m.get("body"), ApiResponseError.class);
+    assertCorsHeaders((Map<String, Object>) m.get("headers"));
+    ApiResponseError resp = fromJson((String) m.get("body"), ApiResponseError.class);
     assertEquals("fkq access denied to siteId (" + siteId + ")", resp.getMessage());
   }
 
@@ -597,13 +595,13 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
     String response = handleRequest(event);
 
     // then
-    Map<String, String> m = fromJson(response, Map.class);
+    Map<String, Object> m = fromJson(response, Map.class);
 
     final int mapsize = 3;
     assertEquals(mapsize, m.size());
     assertEquals("200.0", String.valueOf(m.get("statusCode")));
-    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-    DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+    assertCorsHeaders((Map<String, Object>) m.get("headers"));
+    DynamicObject resp = new DynamicObject(fromJson((String) m.get("body"), Map.class));
 
     List<DynamicObject> documents = resp.getList("documents");
     assertEquals(0, documents.size());
@@ -625,12 +623,12 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
     String response = handleRequest(event);
 
     // then
-    Map<String, String> m = fromJson(response, Map.class);
+    Map<String, Object> m = fromJson(response, Map.class);
 
     final int mapsize = 3;
     assertEquals(mapsize, m.size());
     assertEquals("401.0", String.valueOf(m.get("statusCode")));
-    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+    assertCorsHeaders((Map<String, Object>) m.get("headers"));
     assertEquals("{\"message\":\"fkq access denied to siteId (default)\"}", m.get("body"));
   }
 
@@ -652,13 +650,13 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
     String response = handleRequest(event);
 
     // then
-    Map<String, String> m = fromJson(response, Map.class);
+    Map<String, Object> m = fromJson(response, Map.class);
 
     final int mapsize = 3;
     assertEquals(mapsize, m.size());
     assertEquals("200.0", String.valueOf(m.get("statusCode")));
-    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-    DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+    assertCorsHeaders((Map<String, Object>) m.get("headers"));
+    DynamicObject resp = new DynamicObject(fromJson((String) m.get("body"), Map.class));
 
     List<DynamicObject> documents = resp.getList("documents");
     assertEquals(0, documents.size());
@@ -680,13 +678,13 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       String response = handleRequest(event);
 
       // then
-      Map<String, String> m = fromJson(response, Map.class);
+      Map<String, Object> m = fromJson(response, Map.class);
 
       final int mapsize = 3;
       assertEquals(mapsize, m.size());
       assertEquals("200.0", String.valueOf(m.get("statusCode")));
-      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-      DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+      assertCorsHeaders((Map<String, Object>) m.get("headers"));
+      DynamicObject resp = new DynamicObject(fromJson((String) m.get("body"), Map.class));
 
       List<DynamicObject> documents = resp.getList("documents");
       assertEquals(0, documents.size());
@@ -721,13 +719,13 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       String response = handleRequest(event);
 
       // then
-      Map<String, String> m = fromJson(response, Map.class);
+      Map<String, Object> m = fromJson(response, Map.class);
 
       final int mapsize = 3;
       assertEquals(mapsize, m.size());
       assertEquals("200.0", String.valueOf(m.get("statusCode")));
-      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-      DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+      assertCorsHeaders((Map<String, Object>) m.get("headers"));
+      DynamicObject resp = new DynamicObject(fromJson((String) m.get("body"), Map.class));
 
       List<DynamicObject> documents = resp.getList("documents");
       assertEquals(1, documents.size());
@@ -837,12 +835,12 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       String response = handleRequest(event);
 
       // then
-      Map<String, String> m = fromJson(response, Map.class);
+      Map<String, Object> m = fromJson(response, Map.class);
 
       final int mapsize = 2;
       assertEquals(mapsize, m.size());
       assertEquals("200.0", String.valueOf(m.get("statusCode")));
-      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+      assertCorsHeaders((Map<String, Object>) m.get("headers"));
     }
   }
 
@@ -1005,14 +1003,14 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       String response = handleRequest(event);
 
       // then
-      Map<String, String> m = fromJson(response, Map.class);
+      Map<String, Object> m = fromJson(response, Map.class);
 
       final int mapsize = 3;
       assertEquals(mapsize, m.size());
       assertEquals("201.0", String.valueOf(m.get("statusCode")));
-      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+      assertCorsHeaders((Map<String, Object>) m.get("headers"));
 
-      DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+      DynamicObject resp = new DynamicObject(fromJson((String) m.get("body"), Map.class));
 
       assertNotNull(resp.get("documentId"));
       assertNull(resp.get("next"));
@@ -1046,10 +1044,10 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       String response = handleRequest(event);
 
       // then
-      String expected = "{" + getHeaders() + ",\"body\":\""
-          + "{\\\"message\\\":\\\"request body is required\\\"}\",\"statusCode\":400}";
-
-      assertEquals(expected, response);
+      Map<String, Object> m = fromJson(response, Map.class);
+      assertCorsHeaders((Map<String, Object>) m.get("headers"));
+      assertEquals("400.0", String.valueOf(m.get("statusCode")));
+      assertEquals("{\"message\":\"request body is required\"}", String.valueOf(m.get("body")));
     }
   }
 
@@ -1069,13 +1067,13 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       String response = handleRequest(event);
 
       // then
-      Map<String, String> m = fromJson(response, Map.class);
+      Map<String, Object> m = fromJson(response, Map.class);
 
       final int mapsize = 3;
       assertEquals(mapsize, m.size());
       assertEquals("400.0", String.valueOf(m.get("statusCode")));
-      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-      DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+      assertCorsHeaders((Map<String, Object>) m.get("headers"));
+      DynamicObject resp = new DynamicObject(fromJson((String) m.get("body"), Map.class));
 
       assertNull(resp.get("documentId"));
       assertNull(resp.get("next"));
@@ -1099,13 +1097,13 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       String response = handleRequest(event);
 
       // then
-      Map<String, String> m = fromJson(response, Map.class);
+      Map<String, Object> m = fromJson(response, Map.class);
 
       final int mapsize = 3;
       assertEquals(mapsize, m.size());
       assertEquals("400.0", String.valueOf(m.get("statusCode")));
-      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-      DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+      assertCorsHeaders((Map<String, Object>) m.get("headers"));
+      DynamicObject resp = new DynamicObject(fromJson((String) m.get("body"), Map.class));
 
       assertNull(resp.get("documentId"));
       assertNull(resp.get("next"));
@@ -1129,10 +1127,10 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       String response = handleRequest(event);
 
       // then
-      String expected = "{" + getHeaders() + ",\"body\":\""
-          + "{\\\"message\\\":\\\"invalid JSON body\\\"}\",\"statusCode\":400}";
-
-      assertEquals(expected, response);
+      Map<String, Object> m = fromJson(response, Map.class);
+      assertCorsHeaders((Map<String, Object>) m.get("headers"));
+      assertEquals("400.0", String.valueOf(m.get("statusCode")));
+      assertEquals("{\"message\":\"invalid JSON body\"}", String.valueOf(m.get("body")));
     }
   }
 
@@ -1151,10 +1149,11 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
     String response = handleRequest(event);
 
     // then
-    String expected = "{" + getHeaders() + ",\"body\":\""
-        + "{\\\"message\\\":\\\"fkq access denied to siteId (demo)\\\"}\",\"statusCode\":401}";
-
-    assertEquals(expected, response);
+    Map<String, Object> m = fromJson(response, Map.class);
+    assertCorsHeaders((Map<String, Object>) m.get("headers"));
+    assertEquals("401.0", String.valueOf(m.get("statusCode")));
+    assertEquals("{\"message\":\"fkq access denied to siteId (demo)\"}",
+        String.valueOf(m.get("body")));
   }
 
   /**
@@ -1171,13 +1170,13 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
     String response = handleRequest(event);
 
     // then
-    Map<String, String> m = fromJson(response, Map.class);
+    Map<String, Object> m = fromJson(response, Map.class);
 
     final int mapsize = 3;
     assertEquals(mapsize, m.size());
     assertEquals("201.0", String.valueOf(m.get("statusCode")));
-    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-    DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+    assertCorsHeaders((Map<String, Object>) m.get("headers"));
+    DynamicObject resp = new DynamicObject(fromJson((String) m.get("body"), Map.class));
 
     String documentId = resp.get("documentId").toString();
     assertNull(resp.get("next"));
@@ -1203,12 +1202,12 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
     String response = handleRequest(event);
 
     // then
-    Map<String, String> m = fromJson(response, Map.class);
+    Map<String, Object> m = fromJson(response, Map.class);
 
     final int mapsize = 3;
     assertEquals(mapsize, m.size());
     assertEquals("401.0", String.valueOf(m.get("statusCode")));
-    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+    assertCorsHeaders((Map<String, Object>) m.get("headers"));
   }
 
   /**

@@ -56,12 +56,12 @@ public class ApiWebhooksTagsRequestTest extends AbstractRequestHandler {
     String response = handleRequest(event);
 
     // then
-    Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+    Map<String, Object> m = GsonUtil.getInstance().fromJson(response, Map.class);
 
     final int mapsize = 3;
     assertEquals(mapsize, m.size());
     assertEquals("200.0", String.valueOf(m.get("statusCode")));
-    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+    assertCorsHeaders((Map<String, Object>) m.get("headers"));
     assertEquals("{\"tags\":[]}", m.get("body"));
   }
 
@@ -83,12 +83,12 @@ public class ApiWebhooksTagsRequestTest extends AbstractRequestHandler {
     String response = handleRequest(event);
 
     // then
-    Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+    Map<String, Object> m = GsonUtil.getInstance().fromJson(response, Map.class);
 
     final int mapsize = 3;
     assertEquals(mapsize, m.size());
     assertEquals("201.0", String.valueOf(m.get("statusCode")));
-    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+    assertCorsHeaders((Map<String, Object>) m.get("headers"));
     assertEquals("{\"message\":\"Created Tag 'category'.\"}", m.get("body"));
 
     // given
@@ -103,9 +103,9 @@ public class ApiWebhooksTagsRequestTest extends AbstractRequestHandler {
 
     assertEquals(mapsize, m.size());
     assertEquals("200.0", String.valueOf(m.get("statusCode")));
-    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+    assertCorsHeaders((Map<String, Object>) m.get("headers"));
 
-    Map<String, Object> body = fromJson(m.get("body"), Map.class);
+    Map<String, Object> body = fromJson((String) m.get("body"), Map.class);
     DynamicObject obj = new DynamicObject(body);
 
     List<DynamicObject> list = obj.getList("tags");

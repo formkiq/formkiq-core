@@ -33,9 +33,7 @@ import java.util.Map;
 import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
-import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.dynamodb.WebhooksService;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
@@ -53,7 +51,6 @@ public class ApiPrivateWebhooksRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testPostWebhooks01() throws Exception {
     // given
@@ -75,34 +72,32 @@ public class ApiPrivateWebhooksRequestTest extends AbstractRequestHandler {
         String response = handleRequest(event);
 
         // then
-        Map<String, String> m = fromJson(response, Map.class);
-        verifyHeaders(m, "200.0");
+        Map<String, Object> m = fromJson(response, Map.class);
+        verifyHeaders(m);
 
         String documentId = verifyDocumentId(m);
 
-        verifyS3File(id, siteId, documentId, name, null, false);
+        verifyS3File(id, siteId, documentId, name);
       }
     }
   }
 
-  @SuppressWarnings("unchecked")
-  private String verifyDocumentId(final Map<String, String> m) {
-    Map<String, Object> body = fromJson(m.get("body"), Map.class);
+  private String verifyDocumentId(final Map<String, Object> m) {
+    Map<String, Object> body = fromJson((String) m.get("body"), Map.class);
     String documentId = body.get("documentId").toString();
     assertNotNull(documentId);
     return documentId;
   }
 
-  private void verifyHeaders(final Map<String, String> map, final String statusCode) {
+  private void verifyHeaders(final Map<String, Object> map) {
     final int mapsize = 3;
     assertEquals(mapsize, map.size());
-    assertEquals(statusCode, String.valueOf(map.get("statusCode")));
-    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(map.get("headers")));
+    assertEquals("200.0", String.valueOf(map.get("statusCode")));
+    assertCorsHeaders((Map<String, Object>) map.get("headers"));
   }
 
-  @SuppressWarnings("unchecked")
   private void verifyS3File(final String webhookId, final String siteId, final String documentId,
-      final String name, final String contentType, final boolean hasTimeToLive) throws Exception {
+      final String name) {
 
     // verify s3 file
     String key = createDatabaseKey(siteId, documentId + FORMKIQ_DOC_EXT);
@@ -113,17 +108,6 @@ public class ApiPrivateWebhooksRequestTest extends AbstractRequestHandler {
     assertEquals("webhook/" + name, map.get("userId"));
     assertEquals("webhooks/" + webhookId, map.get("path"));
     assertEquals("{\"name\":\"john smith\"}", map.get("content"));
-
-    if (contentType != null) {
-      assertEquals("application/json", map.get("contentType"));
-    }
-
-    if (hasTimeToLive) {
-      DynamicObject obj =
-          getAwsServices().getExtension(WebhooksService.class).findWebhook(siteId, webhookId);
-      assertNotNull(obj.get("TimeToLive"));
-      assertEquals(obj.get("TimeToLive"), map.get("TimeToLive"));
-    }
 
     getS3().deleteObject(STAGE_BUCKET_NAME, key, null);
   }

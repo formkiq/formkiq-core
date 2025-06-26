@@ -74,13 +74,14 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
    */
   private ApiUrlResponse expectResponse(final String response) {
 
-    Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+    Map<String, Object> m = GsonUtil.getInstance().fromJson(response, Map.class);
 
     final int mapsize = 3;
     assertEquals(mapsize, m.size());
     assertEquals("200.0", String.valueOf(m.get("statusCode")));
-    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-    ApiUrlResponse resp = GsonUtil.getInstance().fromJson(m.get("body"), ApiUrlResponse.class);
+    assertCorsHeaders((Map<String, Object>) m.get("headers"));
+    ApiUrlResponse resp =
+        GsonUtil.getInstance().fromJson((String) m.get("body"), ApiUrlResponse.class);
 
     assertNull(resp.getNext());
     assertNull(resp.getPrevious());
