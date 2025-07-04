@@ -271,7 +271,7 @@ public class PublicWebhooksRequestHandler
 
     checkIsWebhookValid(hook);
 
-    String body = ApiGatewayRequestEventUtil.getBodyAsString(event);
+    String body = event.getBodyAsString();
 
     String contentType = getContentType(event);
 

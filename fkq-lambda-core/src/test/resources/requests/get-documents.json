@@ -93,6 +93,6 @@
     "stage": "$default"
   },
   "stageVariables": null,
-  "body": "{\n    \"path\":\"my-add-task.html\"\n}",
+  "body": "",
   "isBase64Encoded": false
 }

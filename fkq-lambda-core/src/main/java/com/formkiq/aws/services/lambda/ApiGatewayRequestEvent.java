@@ -23,9 +23,14 @@
  */
 package com.formkiq.aws.services.lambda;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
+
+import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.graalvm.annotations.Reflectable;
+import software.amazon.awssdk.utils.StringUtils;
 
 /**
  * Api Gateway Request Event.
@@ -283,5 +288,50 @@ public class ApiGatewayRequestEvent {
    */
   public void setResource(final String requestResource) {
     this.resource = requestResource;
+  }
+
+  /**
+   * Get Body as bytes.
+   * 
+   * @return byte[]
+   */
+  public byte[] getBodyAsBytes() {
+
+    if (body == null) {
+      throw new BadException("request body is required");
+    }
+
+    byte[] data = body.getBytes(StandardCharsets.UTF_8);
+
+    if (Boolean.TRUE.equals(isBase64Encoded)) {
+      data = Base64.getDecoder().decode(body);
+    }
+
+    return data;
+  }
+
+  /**
+   * Get {@link ApiGatewayRequestEvent} body as {@link String}.
+   *
+   * @return {@link String}
+   * @throws BadException BadException
+   */
+  public String getBodyAsString() throws BadException {
+
+    if (body == null) {
+      throw new BadException("request body is required");
+    }
+
+    String result = body;
+    if (Boolean.TRUE.equals(isBase64Encoded)) {
+      byte[] bytes = Base64.getDecoder().decode(body);
+      result = new String(bytes, StandardCharsets.UTF_8);
+    }
+
+    if (StringUtils.isEmpty(result)) {
+      throw new BadException("request body is required");
+    }
+
+    return result;
   }
 }

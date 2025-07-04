@@ -76,7 +76,7 @@ public class UpdateDocumentMatchingRequestHandler
 
     S3Service s3 = awsservice.getExtension(S3Service.class);
 
-    String body = ApiGatewayRequestEventUtil.getBodyAsString(event);
+    String body = event.getBodyAsString();
     s3.putObject(stageS3Bucket, key, body.getBytes(StandardCharsets.UTF_8), "application/json");
     s3.setObjectTag(stageS3Bucket, key, "userId", authorization.getUsername());
 

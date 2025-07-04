@@ -64,10 +64,7 @@ public record UserActivity(
     String entityTypeId,
 
     /* The identifier of the target entity. */
-    String entityId,
-
-    /* The namespace of the target entity. */
-    String entityNamespace) {
+    String entityId, String entityNamespace, String body) {
 
   /**
    * Creates a new {@link UserActivity.Builder} for {@link UserActivity}.
@@ -108,6 +105,8 @@ public record UserActivity(
     private String entityNamespace;
     /** Activity Resource. */
     private String resource;
+    /** Activity Body. */
+    private String body;
 
     public Builder documentId(final String userActivityDocumentId) {
       this.documentId = userActivityDocumentId;
@@ -148,6 +147,11 @@ public record UserActivity(
       final int error = 500;
       status(userActivityStatusCode != error ? UserActivityStatus.COMPLETE
           : UserActivityStatus.FAILED);
+      return this;
+    }
+
+    public Builder body(final String userActivityBody) {
+      this.body = userActivityBody;
       return this;
     }
 
@@ -218,7 +222,7 @@ public record UserActivity(
      */
     public UserActivity build() {
       return new UserActivity(resource, documentId, type, userId, insertedDate, s3Key, message,
-          status, sourceIpAddress, source, entityTypeId, entityId, entityNamespace);
+          status, sourceIpAddress, source, entityTypeId, entityId, entityNamespace, body);
     }
   }
 }
