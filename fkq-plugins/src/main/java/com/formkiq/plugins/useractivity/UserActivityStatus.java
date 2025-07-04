@@ -28,7 +28,9 @@ package com.formkiq.plugins.useractivity;
  */
 public enum UserActivityStatus {
   /** The activity completed successfully. */
-  SUCCESS,
+  COMPLETE,
   /** The activity failed. */
-  FAILED
+  FAILED,
+  /** Unauthorized. */
+  UNAUTHORIZED
 }

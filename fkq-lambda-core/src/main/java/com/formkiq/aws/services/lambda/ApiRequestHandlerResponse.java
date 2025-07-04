@@ -31,7 +31,6 @@ import com.formkiq.aws.services.lambda.exceptions.NotImplementedException;
 import com.formkiq.aws.services.lambda.exceptions.TooManyRequestsException;
 import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
 import com.formkiq.validation.ValidationException;
-import com.google.gson.Gson;
 
 import java.time.DateTimeException;
 import java.util.HashMap;
@@ -52,47 +51,10 @@ import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_UNAUTHORIZED;
 /**
  * Immutable HTTP‐style response holder.
  */
-public final class ApiRequestHandlerResponse {
-  /** Http Status Code. */
-  private final int statusCode;
-  /** Http Headers. */
-  private final Map<String, String> headers;
-  /** Http Body. */
-  private final String body;
-
-  /**
-   * constructor.
-   * 
-   * @param responseStatusCode int
-   * @param responseHeaders {@link Map}
-   * @param responseBody {@link String}
-   */
-  private ApiRequestHandlerResponse(final int responseStatusCode,
-      final Map<String, String> responseHeaders, final String responseBody) {
-    this.statusCode = responseStatusCode;
-    this.headers = responseHeaders;
-    this.body = responseBody;
-  }
+public record ApiRequestHandlerResponse(int statusCode, Map<String, String> headers, Object body) {
 
   public static Builder builder() {
     return new Builder();
-  }
-
-  public int getStatusCode() {
-    return statusCode;
-  }
-
-  public Map<String, String> getHeaders() {
-    return headers;
-  }
-
-  /**
-   * Get Http Body.
-   * 
-   * @return String
-   */
-  public String getBody() {
-    return body;
   }
 
   /**
@@ -108,15 +70,19 @@ public final class ApiRequestHandlerResponse {
     }
 
     if (body != null) {
-      m.put("body", body);
+      if (body instanceof Map map) {
+        if (!map.isEmpty()) {
+          m.put("body", GsonUtil.getInstance().toJson(body));
+        }
+      } else {
+        m.put("body", GsonUtil.getInstance().toJson(body));
+      }
     }
 
     return m;
   }
 
   public static final class Builder {
-    /** {@link Gson}. */
-    private final Gson gson = GsonUtil.getInstance();
     /** Status Code. */
     private int statusCode = -1;
     /** Http Headers. */
@@ -157,6 +123,17 @@ public final class ApiRequestHandlerResponse {
      */
     public Builder header(final String name, final String value) {
       headers.put(name, value);
+      return this;
+    }
+
+    /**
+     * Add Headers.
+     *
+     * @param map {@link Map}
+     * @return Builder
+     */
+    public Builder header(final Map<String, String> map) {
+      headers.putAll(map);
       return this;
     }
 
@@ -324,10 +301,8 @@ public final class ApiRequestHandlerResponse {
         allHeaders.putAll(createJsonHeaders());
       }
 
-      String s = this.object != null || !this.body.isEmpty()
-          ? this.gson.toJson(this.object != null ? this.object : this.body)
-          : null;
-      return new ApiRequestHandlerResponse(statusCode, allHeaders, s);
+      return new ApiRequestHandlerResponse(statusCode, allHeaders,
+          this.object != null ? this.object : this.body);
     }
   }
 }

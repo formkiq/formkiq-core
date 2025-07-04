@@ -26,10 +26,13 @@ package com.formkiq.plugins.useractivity;
 import java.time.Instant;
 
 /**
- * Represents an activity performed by a user on a document. This includes metadata such as who
- * performed the action, when it occurred, and where it is stored (S3).
+ * Represents an activity performed by a user on a document or entity. This includes metadata such
+ * as who performed the action, when it occurred, where it is stored (S3), and the target entity
+ * identifiers.
  */
 public record UserActivity(
+    /* Resource of User Activity. */
+    String resource,
     /* The unique identifier of the document. */
     String documentId,
 
@@ -52,7 +55,19 @@ public record UserActivity(
     UserActivityStatus status,
 
     /* The source IP address from which the activity originated. */
-    String sourceIpAddress) {
+    String sourceIpAddress,
+
+    /* The source system of the activity (e.g., HTTP, SQS). */
+    String source,
+
+    /* The type identifier of the target entity. */
+    String entityTypeId,
+
+    /* The identifier of the target entity. */
+    String entityId,
+
+    /* The namespace of the target entity. */
+    String entityNamespace) {
 
   /**
    * Creates a new {@link UserActivity.Builder} for {@link UserActivity}.
@@ -67,120 +82,132 @@ public record UserActivity(
    * Builder class for creating instances of {@link UserActivity}.
    */
   public static class Builder {
-    /** The unique identifier of the document. */
+    /** Document Id. */
     private String documentId;
-    /** The type of activity performed (e.g., "UPLOAD", "DELETE"). */
+    /** Activity Type. */
     private String type;
-    /** The identifier of the user who performed the activity. */
+    /** User Id. */
     private String userId;
-    /** The timestamp when the activity was recorded. */
+    /** Inserted Date. */
     private Instant insertedDate;
-    /** The S3 object key for the stored document or metadata. */
+    /** S3 Key. */
     private String s3Key;
-    /** A message or description related to the activity. */
+    /** Activity Message. */
     private String message;
-    /** The status of the activity (e.g., "SUCCESS", "FAILED"). */
+    /** {@link UserActivityStatus}. */
     private UserActivityStatus status;
-    /** The source IP address from which the activity originated. */
+    /** Source IP Address. */
     private String sourceIpAddress;
+    /** Source. */
+    private String source;
+    /** Entity Type Id. */
+    private String entityTypeId;
+    /** Entity Id. */
+    private String entityId;
+    /** Entity Namespace. */
+    private String entityNamespace;
+    /** Activity Resource. */
+    private String resource;
 
-    /**
-     * Sets the document ID.
-     *
-     * @param userActivityDocumentId the document identifier
-     * @return the builder instance
-     */
     public Builder documentId(final String userActivityDocumentId) {
       this.documentId = userActivityDocumentId;
       return this;
     }
 
-    /**
-     * Sets the activity userActivityType.
-     *
-     * @param userActivityType the activity userActivityType
-     * @return the builder instance
-     */
     public Builder type(final String userActivityType) {
       this.type = userActivityType;
       return this;
     }
 
-    /**
-     * Sets the user ID.
-     *
-     * @param userActivityUserId the user identifier
-     * @return the builder instance
-     */
     public Builder userId(final String userActivityUserId) {
       this.userId = userActivityUserId;
       return this;
     }
 
-    /**
-     * Sets the inserted timestamp.
-     *
-     * @param userActivityInsertedDate the date and time of insertion
-     * @return the builder instance
-     */
     public Builder insertedDate(final Instant userActivityInsertedDate) {
       this.insertedDate = userActivityInsertedDate;
       return this;
     }
 
-    /**
-     * Sets the S3 key.
-     *
-     * @param userActivityS3Key the S3 object key
-     * @return the builder instance
-     */
     public Builder s3Key(final String userActivityS3Key) {
       this.s3Key = userActivityS3Key;
       return this;
     }
 
-    /**
-     * Sets the userActivityMessage.
-     *
-     * @param userActivityMessage the userActivityMessage or description
-     * @return the builder instance
-     */
     public Builder message(final String userActivityMessage) {
       this.message = userActivityMessage;
       return this;
     }
 
-    /**
-     * Sets the userActivityStatus of the activity.
-     *
-     * @param userActivityStatus the activity userActivityStatus
-     * @return the builder instance
-     */
     public Builder status(final UserActivityStatus userActivityStatus) {
       this.status = userActivityStatus;
       return this;
     }
 
-    /**
-     * Sets the userActivityStatus of the activity.
-     *
-     * @param userActivityStatus the activity userActivityStatus
-     * @return the builder instance
-     */
-    public Builder status(final int userActivityStatus) {
+    public Builder status(final int userActivityStatusCode) {
       final int error = 500;
-      status(userActivityStatus != error ? UserActivityStatus.SUCCESS : UserActivityStatus.FAILED);
+      status(userActivityStatusCode != error ? UserActivityStatus.COMPLETE
+          : UserActivityStatus.FAILED);
+      return this;
+    }
+
+    public Builder sourceIpAddress(final String userActivitySourceIpAddress) {
+      this.sourceIpAddress = userActivitySourceIpAddress;
       return this;
     }
 
     /**
-     * Sets the source IP address.
+     * Sets the activitySource system of the activity.
      *
-     * @param userActivitySourceIpAddress the originating IP address
+     * @param activitySource the activitySource system (e.g., HTTP, SQS)
      * @return the builder instance
      */
-    public Builder sourceIpAddress(final String userActivitySourceIpAddress) {
-      this.sourceIpAddress = userActivitySourceIpAddress;
+    public Builder source(final String activitySource) {
+      this.source = activitySource;
+      return this;
+    }
+
+    /**
+     * Sets the resourceof the activity.
+     *
+     * @param activityResource the object activityResource
+     * @return the builder instance
+     */
+    public Builder resource(final String activityResource) {
+      this.resource = activityResource;
+      return this;
+    }
+
+    /**
+     * Sets the entity type identifier.
+     *
+     * @param activityEntityTypeId the entity type identifier
+     * @return the builder instance
+     */
+    public Builder entityTypeId(final String activityEntityTypeId) {
+      this.entityTypeId = activityEntityTypeId;
+      return this;
+    }
+
+    /**
+     * Sets the entity identifier.
+     *
+     * @param activityEntityId the entity identifier
+     * @return the builder instance
+     */
+    public Builder entityId(final String activityEntityId) {
+      this.entityId = activityEntityId;
+      return this;
+    }
+
+    /**
+     * Sets the entity namespace.
+     *
+     * @param activityEntityNamespace the entity namespace
+     * @return the builder instance
+     */
+    public Builder entityNamespace(final String activityEntityNamespace) {
+      this.entityNamespace = activityEntityNamespace;
       return this;
     }
 
@@ -190,8 +217,8 @@ public record UserActivity(
      * @return a new {@link UserActivity} object
      */
     public UserActivity build() {
-      return new UserActivity(documentId, type, userId, insertedDate, s3Key, message, status,
-          sourceIpAddress);
+      return new UserActivity(resource, documentId, type, userId, insertedDate, s3Key, message,
+          status, sourceIpAddress, source, entityTypeId, entityId, entityNamespace);
     }
   }
 }
