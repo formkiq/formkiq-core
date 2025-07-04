@@ -1,0 +1,107 @@
+{
+  "version": "1.0",
+  "resource": "/entities/{entityTypeId}",
+  "path": "/entities/Customer",
+  "httpMethod": "GET",
+  "headers": {
+    "Content-Length": "33",
+    "Content-Type": "text/plain",
+    "Host": "124gfedgfd.execute-api.us-east-2.amazonaws.com",
+    "User-Agent": "PostmanRuntime/7.44.1",
+    "X-Amzn-Trace-Id": "Root=1-6867d86f-118535702d7fa155140002ad",
+    "X-Forwarded-For": "2.7.2.11",
+    "X-Forwarded-Port": "443",
+    "X-Forwarded-Proto": "https",
+    "accept": "*/*",
+    "accept-encoding": "gzip, deflate, br",
+    "authorization": "AWS4-HMAC-SHA256 Credential=ASLKJDFJLKSDJFSDF/20250704/us-east-2/execute-api/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=0283409234kjldfKLFJSLDFJLSDFJ2349204",
+    "x-amz-content-sha256": "2dbfd91be135e8fedb23dec144d50968b133ad9345d59fbdaa15867c05db8160",
+    "x-amz-date": "20250704T133438Z"
+  },
+  "multiValueHeaders": {
+    "Content-Length": [
+      "33"
+    ],
+    "Content-Type": [
+      "text/plain"
+    ],
+    "Host": [
+      "124gfedgfd.execute-api.us-east-2.amazonaws.com"
+    ],
+    "User-Agent": [
+      "PostmanRuntime/7.44.1"
+    ],
+    "X-Amzn-Trace-Id": [
+      "Root=1-6867d86f-118535702d7fa155140002ad"
+    ],
+    "X-Forwarded-For": [
+      "2.7.2.11"
+    ],
+    "X-Forwarded-Port": [
+      "443"
+    ],
+    "X-Forwarded-Proto": [
+      "https"
+    ],
+    "accept": [
+      "*/*"
+    ],
+    "accept-encoding": [
+      "gzip, deflate, br"
+    ],
+    "authorization": [
+      "AWS4-HMAC-SHA256 Credential=ASLKJDFJLKSDJFSDF/20250704/us-east-2/execute-api/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=0283409234kjldfKLFJSLDFJLSDFJ2349204"
+    ],
+    "x-amz-content-sha256": [
+      "2dbfd91be135e8fedb23dec144d50968b133ad9345d59fbdaa15867c05db8160"
+    ],
+    "x-amz-date": [
+      "20250704T133438Z"
+    ]
+  },
+  "queryStringParameters": {
+    "namespace": "CUSTOM"
+  },
+  "multiValueQueryStringParameters": {
+    "namespace": [
+      "CUSTOM"
+    ]
+  },
+  "requestContext": {
+    "accountId": "1111111111111",
+    "apiId": "124gfedgfd",
+    "domainName": "124gfedgfd.execute-api.us-east-2.amazonaws.com",
+    "domainPrefix": "124gfedgfd",
+    "extendedRequestId": "NL7Bbj76CYcEJoQ=",
+    "httpMethod": "GET",
+    "identity": {
+      "accessKey": "ASLKJDFJLKSDJFSDF",
+      "accountId": "1111111111111",
+      "caller": "ASDLKJASLKDJSALKDJASD",
+      "cognitoAmr": null,
+      "cognitoAuthenticationProvider": null,
+      "cognitoAuthenticationType": null,
+      "cognitoIdentityId": null,
+      "cognitoIdentityPoolId": null,
+      "principalOrgId": "aws:PrincipalOrgID",
+      "sourceIp": "2.7.2.11",
+      "user": "ASDLKJASLKDJSALKDJASD",
+      "userAgent": "PostmanRuntime/7.44.1",
+      "userArn": "arn:aws:iam::1111111111111:user/dev"
+    },
+    "path": "/entities/Customer",
+    "protocol": "HTTP/1.1",
+    "requestId": "NL7Bbj76CYcEJoQ=",
+    "requestTime": "04/Jul/2025:13:34:39 +0000",
+    "requestTimeEpoch": 1751636079140,
+    "resourceId": "GET /entities/{entityTypeId}",
+    "resourcePath": "/entities/{entityTypeId}",
+    "stage": "$default"
+  },
+  "pathParameters": {
+    "entityTypeId": "Customer"
+  },
+  "stageVariables": null,
+  "body": "",
+  "isBase64Encoded": false
+}

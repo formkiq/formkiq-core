@@ -153,21 +153,26 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
   /**
    * Execute {@link ApiRequestHandlerInterceptor}.
-   * 
+   *
    * @param requestInterceptors {@link ApiRequestHandlerInterceptor}
    * @param event {@link ApiGatewayRequestEvent}
    * @param authorization {@link ApiAuthorization}
-   * @param object {@link ApiRequestHandlerResponse}
+   * @param apiResponse {@link ApiRequestHandlerResponse}
+   * @return ApiRequestHandlerResponse
    * @throws Exception Exception
    */
-  private void executeResponseInterceptors(
+  private ApiRequestHandlerResponse executeResponseInterceptors(
       final List<ApiRequestHandlerInterceptor> requestInterceptors,
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final ApiRequestHandlerResponse object) throws Exception {
+      final ApiRequestHandlerResponse apiResponse) throws Exception {
+
+    ApiRequestHandlerResponse response = apiResponse;
 
     for (ApiRequestHandlerInterceptor interceptor : requestInterceptors) {
-      interceptor.afterProcessRequest(event, authorization, object);
+      response = interceptor.afterProcessRequest(event, authorization, response);
     }
+
+    return response;
   }
 
   /**
@@ -422,24 +427,23 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
       response = processRequest(getUrlMap(), event, authorization);
 
-      executeResponseInterceptors(requestInterceptors, event, authorization, response);
+      response = executeResponseInterceptors(requestInterceptors, event, authorization, response);
 
-      ua.status(response.getStatusCode());
+      ua = new ApiGatewayRequestToUserActivityFunction().apply(event, response);
       writeJson(awsServices, output, response.toMap());
       writeUserActivity(awsServices, authorization, ua);
 
     } catch (Exception e) {
 
-      e.printStackTrace();
       response = ApiRequestHandlerResponse.builder().exception(e).build();
 
       if (ua == null) {
         ua = UserActivity.builder();
       }
 
-      ua.status(response.getStatusCode());
+      ua.status(response.statusCode()).message(e.getMessage());
 
-      if (SC_ERROR.getStatusCode() == response.getStatusCode()) {
+      if (SC_ERROR.getStatusCode() == response.statusCode()) {
         logger.error(e);
       }
 
@@ -453,6 +457,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
   private void writeUserActivity(final AwsServiceCache awsServices,
       final ApiAuthorization authorization, final UserActivity.Builder ua) {
+
     if (awsServices.containsExtension(UserActivityPlugin.class)) {
       String siteId = authorization != null ? authorization.getSiteId() : DEFAULT_SITE_ID;
       ua.userId(authorization != null ? authorization.getUsername() : "System");

@@ -26,13 +26,21 @@ package com.formkiq.aws.services.lambda;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.plugins.useractivity.UserActivity;
 import com.formkiq.plugins.useractivity.UserActivityStatus;
 import com.google.gson.Gson;
@@ -49,24 +57,297 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
   private final ApiGatewayRequestToUserActivityFunction function =
       new ApiGatewayRequestToUserActivityFunction();
 
+  /**
+   * GET /documents/{documentId}/url and /documents/{documentId}/content.
+   * 
+   * @throws IOException IOException
+   */
   @Test
-  public void testDocumentUrlToUserActivity01() throws IOException {
+  public void testGetDocumentById() throws IOException {
     // given
-    ApiGatewayRequestEvent request =
-        loadFile("src/test/resources/requests/get-documentid-url.json");
+    Collection<String> files = List.of("get-documentid-url.json", "get-documentid-content.json");
+    for (String file : files) {
+
+      ApiGatewayRequestEvent request = loadFile("src/test/resources/requests/" + file);
+
+      // when
+      UserActivity activity = function.apply(request, null).build();
+
+      // then
+      assertNotNull(activity);
+      assertEquals("documents", activity.resource());
+      assertEquals("HTTP", activity.source());
+      assertEquals("view", activity.type());
+      assertNull(activity.entityId());
+      assertNull(activity.entityNamespace());
+      assertNull(activity.entityTypeId());
+      assertEquals("03c0737e-2bc8-40f8-8291-797b364d4310", activity.documentId());
+
+      String expectedS3 = "activities/documents/year=" + getYear() + "/month=" + getMonth()
+          + "/day=" + getDay() + "/" + activity.documentId() + "/";
+      assertTrue(activity.s3Key().startsWith(expectedS3));
+
+      assertEquals("1.73.5.111", activity.sourceIpAddress());
+      assertEquals(UserActivityStatus.COMPLETE, activity.status());
+      assertNull(activity.message());
+
+      final long expectedTime = 1750944882199L;
+      assertEquals(Instant.ofEpochMilli(expectedTime), activity.insertedDate());
+      assertEquals(request.getPathParameters().get("documentId"), activity.documentId());
+    }
+  }
+
+  /**
+   * DELETE /documents/{documentId}.
+   * 
+   * @throws IOException IOException
+   */
+  @Test
+  public void testDeleteDocumentById() throws IOException {
+    // given
+    ApiGatewayRequestEvent request = loadFile("src/test/resources/requests/delete-documentid.json");
 
     // when
-    UserActivity activity = function.apply(request).build();
+    UserActivity activity = function.apply(request, null).build();
 
     // then
     assertNotNull(activity);
-    assertEquals("GET", activity.type());
+    assertEquals("documents", activity.resource());
+    assertEquals("HTTP", activity.source());
+    assertEquals("delete", activity.type());
+    assertNull(activity.entityId());
+    assertNull(activity.entityNamespace());
+    assertNull(activity.entityTypeId());
+    assertEquals("test.pdf", activity.documentId());
+
+    String expectedS3 = "activities/documents/year=" + getYear() + "/month=" + getMonth() + "/day="
+        + getDay() + "/" + activity.documentId() + "/";
+    assertTrue(activity.s3Key().startsWith(expectedS3));
+
+    assertEquals("1.73.5.111", activity.sourceIpAddress());
+    assertEquals(UserActivityStatus.COMPLETE, activity.status());
+    assertNull(activity.message());
+
+    final long expectedTime = 1546105259536L;
+    assertEquals(Instant.ofEpochMilli(expectedTime), activity.insertedDate());
+    assertEquals(request.getPathParameters().get("documentId"), activity.documentId());
+  }
+
+  /**
+   * GET /documents.
+   * 
+   * @throws IOException IOException
+   */
+  @Test
+  public void testGetDocuments() throws IOException {
+    // given
+    ApiGatewayRequestEvent request = loadFile("src/test/resources/requests/get-documents.json");
+
+    // when
+    UserActivity activity = function.apply(request, null).build();
+
+    // then
+    assertNotNull(activity);
+    assertEquals("documents", activity.resource());
+    assertEquals("HTTP", activity.source());
+    assertEquals("view", activity.type());
+    assertNull(activity.entityId());
+    assertNull(activity.entityNamespace());
+    assertNull(activity.entityTypeId());
+    assertNull(activity.documentId());
+    assertNull(activity.s3Key());
+
+    assertEquals("1.73.5.111", activity.sourceIpAddress());
+    assertEquals(UserActivityStatus.COMPLETE, activity.status());
+    assertNull(activity.message());
+
     final long expectedTime = 1750944882199L;
     assertEquals(Instant.ofEpochMilli(expectedTime), activity.insertedDate());
-    assertEquals(UserActivityStatus.SUCCESS, activity.status());
-    assertEquals("1.73.5.111", activity.sourceIpAddress());
+  }
+
+  /**
+   * Null {@link ApiGatewayRequestEvent}.
+   */
+  @Test
+  public void testNull() {
+    // given
+    // when
+    UserActivity activity = function.apply(null, null).build();
+
+    // then
+    assertNotNull(activity);
+    assertNull(activity.resource());
+    assertEquals("HTTP", activity.source());
+    assertNull(activity.type());
+    assertNull(activity.entityId());
+    assertNull(activity.entityNamespace());
+    assertNull(activity.entityTypeId());
+    assertNull(activity.documentId());
+    assertNull(activity.s3Key());
+    assertNull(activity.sourceIpAddress());
+    assertEquals(UserActivityStatus.COMPLETE, activity.status());
     assertNull(activity.message());
-    assertEquals(request.getPathParameters().get("documentId"), activity.documentId());
+    assertNull(activity.insertedDate());
+  }
+
+  private int getYear() {
+    LocalDate date = LocalDate.now(ZoneOffset.UTC);
+    return date.getYear();
+  }
+
+  /**
+   * GET /entityTypes.
+   * 
+   * @throws IOException IOException
+   */
+  @Test
+  public void testGetEntityTypes() throws IOException {
+    // given
+    ApiGatewayRequestEvent request = loadFile("src/test/resources/requests/get-entityTypes.json");
+
+    // when
+    UserActivity activity = function.apply(request, null).build();
+
+    // then
+    assertNotNull(activity);
+    assertEquals("entitytypes", activity.resource());
+    assertEquals("HTTP", activity.source());
+    assertEquals("view", activity.type());
+    assertNull(activity.entityId());
+    assertNull(activity.entityNamespace());
+    assertNull(activity.entityTypeId());
+    assertNull(activity.documentId());
+    assertNull(activity.s3Key());
+
+    assertEquals("1.73.5.111", activity.sourceIpAddress());
+    assertEquals(UserActivityStatus.COMPLETE, activity.status());
+    assertNull(activity.message());
+
+    final long expectedTime = 1751589734043L;
+    assertEquals(Instant.ofEpochMilli(expectedTime), activity.insertedDate());
+  }
+
+  /**
+   * POST /entityTypes.
+   * 
+   * @throws IOException IOException
+   */
+  @Test
+  public void testAddEntityTypes() throws IOException {
+    // given
+    ApiGatewayRequestEvent request = loadFile("src/test/resources/requests/add-entityTypes.json");
+    Map<String, Object> body = Map.of("entityTypeId", ID.uuid());
+    ApiRequestHandlerResponse response = new ApiRequestHandlerResponse(-1, null, body);
+
+    // when
+    UserActivity activity = function.apply(request, response).build();
+
+    // then
+    assertNotNull(activity);
+    assertEquals("entitytypes", activity.resource());
+    assertEquals("HTTP", activity.source());
+    assertEquals("create", activity.type());
+    assertNull(activity.entityId());
+    assertNull(activity.entityNamespace());
+    assertEquals(body.get("entityTypeId"), activity.entityTypeId());
+    assertNull(activity.documentId());
+
+    String expectedS3 = "activities/entitytypes/year=" + getYear() + "/month=" + getMonth()
+        + "/day=" + getDay() + "/" + activity.entityTypeId() + "/";
+    assertTrue(activity.s3Key().startsWith(expectedS3));
+
+    assertEquals("2.7.1.11", activity.sourceIpAddress());
+    assertEquals(UserActivityStatus.COMPLETE, activity.status());
+    assertNull(activity.message());
+
+    final long expectedTime = 1751589856468L;
+    assertEquals(Instant.ofEpochMilli(expectedTime), activity.insertedDate());
+  }
+
+  // TODO fix to get entityTypeId instead of string
+
+  /**
+   * POST /entities/{entityType}.
+   *
+   * @throws IOException IOException
+   */
+  @Test
+  public void testAddEntity() throws IOException {
+    // given
+    ApiGatewayRequestEvent request = loadFile("src/test/resources/requests/add-entity.json");
+    Map<String, Object> body = Map.of("entityId", ID.uuid());
+    ApiRequestHandlerResponse response = new ApiRequestHandlerResponse(-1, null, body);
+
+    // when
+    UserActivity activity = function.apply(request, response).build();
+
+    // then
+    assertNotNull(activity);
+    assertEquals("entities", activity.resource());
+    assertEquals("HTTP", activity.source());
+    assertEquals("create", activity.type());
+    assertEquals(body.get("entityId"), activity.entityId());
+    assertEquals("CUSTOM", activity.entityNamespace());
+    assertEquals("Customer", activity.entityTypeId());
+    // TODO enable..
+    // assertEquals(body.get("entityTypeId"), activity.entityTypeId());
+    // assertEquals(body.get("entityId"), activity.entityId());
+    assertNull(activity.documentId());
+
+    String expectedS3 = "activities/entities/" + activity.entityTypeId() + "/year=" + getYear()
+        + "/month=" + getMonth() + "/day=" + getDay() + "/" + activity.entityId() + "/";
+    assertTrue(activity.s3Key().startsWith(expectedS3));
+
+    assertEquals("2.7.1.3", activity.sourceIpAddress());
+    assertEquals(UserActivityStatus.COMPLETE, activity.status());
+    assertNull(activity.message());
+
+    final long expectedTime = 1751636384960L;
+    assertEquals(Instant.ofEpochMilli(expectedTime), activity.insertedDate());
+  }
+
+  /**
+   * GET /entities/{entityType}.
+   *
+   * @throws IOException IOException
+   */
+  @Test
+  public void testGetEntitiesByType() throws IOException {
+    // given
+    ApiGatewayRequestEvent request = loadFile("src/test/resources/requests/get-entity.json");
+    Map<String, Object> body = Map.of("entityTypeId", ID.uuid());
+    ApiRequestHandlerResponse response = new ApiRequestHandlerResponse(-1, null, body);
+
+    // when
+    UserActivity activity = function.apply(request, response).build();
+
+    // then
+    assertNotNull(activity);
+    assertEquals("entities", activity.resource());
+    assertEquals("HTTP", activity.source());
+    assertEquals("view", activity.type());
+    assertNull(activity.entityId());
+    assertEquals("CUSTOM", activity.entityNamespace());
+    assertEquals("Customer", activity.entityTypeId());
+    // TODO enable
+    // assertEquals(body.get("entityTypeId"), activity.entityTypeId());
+    assertNull(activity.documentId());
+    assertNull(activity.s3Key());
+
+    assertEquals("2.7.2.11", activity.sourceIpAddress());
+    assertEquals(UserActivityStatus.COMPLETE, activity.status());
+    assertNull(activity.message());
+
+    final long expectedTime = 1751636079140L;
+    assertEquals(Instant.ofEpochMilli(expectedTime), activity.insertedDate());
+  }
+
+  private String getMonth() {
+    return LocalDate.now(ZoneOffset.UTC).format(DateTimeFormatter.ofPattern("MM"));
+  }
+
+  private String getDay() {
+    return LocalDate.now(ZoneOffset.UTC).format(DateTimeFormatter.ofPattern("dd"));
   }
 
   private ApiGatewayRequestEvent loadFile(final String file) throws IOException {

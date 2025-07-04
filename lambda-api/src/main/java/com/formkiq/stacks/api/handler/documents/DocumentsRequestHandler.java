@@ -61,7 +61,6 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
-import com.formkiq.aws.services.lambda.GsonUtil;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.dynamodb.cache.CacheService;
 import com.formkiq.module.actions.ActionStatus;
@@ -74,7 +73,6 @@ import com.formkiq.stacks.dynamodb.DocumentSyncStatusQuery;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
-import com.google.gson.Gson;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.s3.model.ChecksumAlgorithm;
 
@@ -316,8 +314,7 @@ public class DocumentsRequestHandler
 
       ApiRequestHandlerResponse response = handler.post(event, authorization, awsservice, request);
 
-      Gson gson = GsonUtil.getInstance();
-      Map<String, Object> mapResponse = gson.fromJson(response.getBody(), Map.class);
+      Map<String, Object> mapResponse = (Map<String, Object>) response.body();
 
       new PresignedUrlsToS3Bucket(request).apply(mapResponse);
 

@@ -12,7 +12,8 @@
 		<allow pkg="java.net" />
 		<allow pkg="java.util" />
 		<allow pkg="com.amazonaws.services.lambda.runtime" />
-		
+
+		<allow pkg="com.formkiq.strings" />
 		<allow pkg="com.formkiq.aws.dynamodb" />
 		<allow pkg="com.formkiq.aws.s3" />
 		<allow pkg="com.formkiq.aws.sns" />

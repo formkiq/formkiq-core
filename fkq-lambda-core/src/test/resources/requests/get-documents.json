@@ -1,7 +1,7 @@
 {
   "version": "1.0",
-  "resource": "/documents/{documentId}/url",
-  "path": "/documents/03c0737e-2bc8-40f8-8291-797b364d4310/url",
+  "resource": "/documents",
+  "path": "/documents",
   "httpMethod": "GET",
   "headers": {
     "Content-Length": "33",
@@ -83,17 +83,14 @@
       "userAgent": "PostmanRuntime/7.44.1",
       "userArn": "arn:aws:iam::23423423423:user/myuser"
     },
-    "path": "/documents/03c0737e-2bc8-40f8-8291-797b364d4310/url",
+    "path": "/documents",
     "protocol": "HTTP/1.1",
     "requestId": "Mxjh5hhMiYcEMpg=",
     "requestTime": "26/Jun/2025:13:34:42 +0000",
     "requestTimeEpoch": 1750944882199,
-    "resourceId": "GET /documents/{documentId}/url",
-    "resourcePath": "/documents/{documentId}/url",
+    "resourceId": "GET /documents",
+    "resourcePath": "/documents",
     "stage": "$default"
-  },
-  "pathParameters": {
-    "documentId": "03c0737e-2bc8-40f8-8291-797b364d4310"
   },
   "stageVariables": null,
   "body": "{\n    \"path\":\"my-add-task.html\"\n}",
