@@ -96,6 +96,6 @@
     "documentId": "03c0737e-2bc8-40f8-8291-797b364d4310"
   },
   "stageVariables": null,
-  "body": "{\n    \"path\":\"my-add-task.html\"\n}",
+  "body": "",
   "isBase64Encoded": false
 }

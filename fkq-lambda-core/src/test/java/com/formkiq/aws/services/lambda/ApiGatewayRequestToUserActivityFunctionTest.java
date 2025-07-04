@@ -81,6 +81,7 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
       assertNull(activity.entityId());
       assertNull(activity.entityNamespace());
       assertNull(activity.entityTypeId());
+      assertNull(activity.body());
       assertEquals("03c0737e-2bc8-40f8-8291-797b364d4310", activity.documentId());
 
       String expectedS3 = "activities/documents/year=" + getYear() + "/month=" + getMonth()
@@ -119,6 +120,7 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
     assertNull(activity.entityNamespace());
     assertNull(activity.entityTypeId());
     assertEquals("test.pdf", activity.documentId());
+    assertNotNull(activity.body());
 
     String expectedS3 = "activities/documents/year=" + getYear() + "/month=" + getMonth() + "/day="
         + getDay() + "/" + activity.documentId() + "/";
@@ -156,6 +158,7 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
     assertNull(activity.entityTypeId());
     assertNull(activity.documentId());
     assertNull(activity.s3Key());
+    assertNull(activity.body());
 
     assertEquals("1.73.5.111", activity.sourceIpAddress());
     assertEquals(UserActivityStatus.COMPLETE, activity.status());
@@ -218,6 +221,7 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
     assertNull(activity.entityTypeId());
     assertNull(activity.documentId());
     assertNull(activity.s3Key());
+    assertNull(activity.body());
 
     assertEquals("1.73.5.111", activity.sourceIpAddress());
     assertEquals(UserActivityStatus.COMPLETE, activity.status());
@@ -247,6 +251,13 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
     assertEquals("entitytypes", activity.resource());
     assertEquals("HTTP", activity.source());
     assertEquals("create", activity.type());
+    assertEquals("""
+            {
+              "entityType": {
+                "namespace": "CUSTOM",
+                "name": "customer"
+              }
+            }""", activity.body());
     assertNull(activity.entityId());
     assertNull(activity.entityNamespace());
     assertEquals(body.get("entityTypeId"), activity.entityTypeId());
@@ -289,6 +300,13 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
     assertEquals(body.get("entityId"), activity.entityId());
     assertEquals("CUSTOM", activity.entityNamespace());
     assertEquals("Customer", activity.entityTypeId());
+    assertEquals("""
+            {
+              "entity": {
+                "name": "AcmeInc"
+              }
+            }""", activity.body());
+
     // TODO enable..
     // assertEquals(body.get("entityTypeId"), activity.entityTypeId());
     // assertEquals(body.get("entityId"), activity.entityId());
@@ -326,9 +344,11 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
     assertEquals("entities", activity.resource());
     assertEquals("HTTP", activity.source());
     assertEquals("view", activity.type());
+    assertNull(activity.body());
     assertNull(activity.entityId());
     assertEquals("CUSTOM", activity.entityNamespace());
     assertEquals("Customer", activity.entityTypeId());
+
     // TODO enable
     // assertEquals(body.get("entityTypeId"), activity.entityTypeId());
     assertNull(activity.documentId());

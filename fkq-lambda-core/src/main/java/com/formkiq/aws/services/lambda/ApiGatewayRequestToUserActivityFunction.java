@@ -23,6 +23,7 @@
  */
 package com.formkiq.aws.services.lambda;
 
+import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.plugins.useractivity.UserActivity;
 import com.formkiq.plugins.useractivity.UserActivityStatus;
 import com.formkiq.strings.Strings;
@@ -77,7 +78,8 @@ public class ApiGatewayRequestToUserActivityFunction
 
 
       builder = builder.resource(resource).entityNamespace(entityNamespace).type(activityType)
-          .insertedDate(getInsertedDate(request)).sourceIpAddress(getSourceIp(request));
+          .insertedDate(getInsertedDate(request)).sourceIpAddress(getSourceIp(request))
+          .body(getBody(request));
 
       if (isGenerateS3Key(request)) {
         String resourceId = Strings.notEmpty(documentId, entityId, entityTypeId);
@@ -87,6 +89,14 @@ public class ApiGatewayRequestToUserActivityFunction
     }
 
     return builder;
+  }
+
+  private String getBody(final ApiGatewayRequestEvent request) {
+    try {
+      return request.getBodyAsString();
+    } catch (BadException e) {
+      return null;
+    }
   }
 
   private String findResourceId(final ApiGatewayRequestEvent request,
