@@ -62,8 +62,9 @@ public class EntityTypeRequestHandler
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorization.getSiteId();
+    String entityTypeId = event.getPathParameter("entityTypeId");
+
     DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
-    String entityTypeId = new EntityTypeIdTransformer(awsservice, siteId).apply(event);
 
     EntityTypeRecord.Builder builder =
         EntityTypeRecord.builder().documentId(entityTypeId).namespace("").name("");

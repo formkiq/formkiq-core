@@ -23,41 +23,45 @@
  */
 package com.formkiq.stacks.api.handler.entity;
 
-import com.formkiq.aws.dynamodb.DynamoDbService;
-import com.formkiq.aws.dynamodb.eventsourcing.entity.EntityTypeRecord;
+import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
+import com.formkiq.aws.services.lambda.ApiRequestHandlerInterceptor;
+import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.api.handler.entity.query.EntityTypeNameToIdQuery;
-
-import java.util.function.BiFunction;
-import java.util.function.Function;
 
 /**
- * {@link Function} to convert {@link ApiGatewayRequestEvent} to EntityTypeId {@link String}.
+ * {@link ApiRequestHandlerInterceptor} for /entities request handler.
  */
-public class EntityTypeIdTransformer implements BiFunction<String, ApiGatewayRequestEvent, String> {
+public class EntityRequestHandlerInterceptor implements ApiRequestHandlerInterceptor {
 
-  /** Document Table Name. */
-  private final String tableName;
-  /** {@link DynamoDbService}. */
-  private final DynamoDbService db;
+  /** {@link AwsServiceCache}. */
+  private final AwsServiceCache awsservice;
 
   /**
    * constructor.
    * 
-   * @param awsservice {@link AwsServiceCache}
+   * @param awsServiceCache {@link AwsServiceCache}
    */
-  public EntityTypeIdTransformer(final AwsServiceCache awsservice) {
-    this.tableName = awsservice.environment("DOCUMENTS_TABLE");
-    this.db = awsservice.getExtension(DynamoDbService.class);
+  public EntityRequestHandlerInterceptor(final AwsServiceCache awsServiceCache) {
+    this.awsservice = awsServiceCache;
   }
 
   @Override
-  public String apply(final String siteId, final ApiGatewayRequestEvent event) {
-    String namespace = event.getQueryStringParameter("namespace", "");
-    String entityTypeId = event.getPathParameter("entityTypeId");
+  public ApiRequestHandlerResponse afterProcessRequest(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final ApiRequestHandlerResponse response) {
+    return response;
+  }
 
-    return new EntityTypeNameToIdQuery().find(db, tableName, siteId, EntityTypeRecord.builder()
-        .namespace(namespace).documentId(entityTypeId).name("").build(siteId));
+  @Override
+  public void beforeProcessRequest(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization) {
+
+    String entityTypeId = event != null ? event.getPathParameter("entityTypeId") : null;
+
+    if (entityTypeId != null) {
+      String siteId = authorization.getSiteId();
+      entityTypeId = new EntityTypeIdTransformer(awsservice).apply(siteId, event);
+      event.getPathParameters().put("entityTypeId", entityTypeId);
+    }
   }
 }

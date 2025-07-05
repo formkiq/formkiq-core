@@ -60,10 +60,10 @@ public class EntitiesRequestHandler
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorization.getSiteId();
-    String tableName = awsservice.environment("DOCUMENTS_TABLE");
+    String entityTypeId = event.getPathParameter("entityTypeId");
 
+    String tableName = awsservice.environment("DOCUMENTS_TABLE");
     DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
-    String entityTypeId = new EntityTypeIdTransformer(awsservice, siteId).apply(event);
 
     DynamoDbKey key =
         EntityRecord.builder().documentId("").entityTypeId(entityTypeId).name("").buildKey(siteId);

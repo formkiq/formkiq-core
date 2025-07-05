@@ -57,8 +57,7 @@ public class EntityRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
     String siteId = authorization.getSiteId();
     String entityId = event.getPathParameter("entityId");
     DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
-
-    String entityTypeId = new EntityTypeIdTransformer(awsservice, siteId).apply(event);
+    String entityTypeId = event.getPathParameter("entityTypeId");
 
     EntityRecord.Builder builder =
         EntityRecord.builder().documentId(entityId).entityTypeId(entityTypeId).name("");
