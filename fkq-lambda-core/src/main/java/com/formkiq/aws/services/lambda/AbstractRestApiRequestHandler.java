@@ -415,10 +415,6 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
           setupApiAuthorizationInterceptor(awsServices);
 
       authorization = buildApiAuthorization(event, interceptors);
-      ua = new ApiGatewayRequestToUserActivityFunction().apply(event);
-
-      // HttpCommand httpCommand =
-      // new ApiGatewayRequestEventToHttpCommandTransformer(authorization).apply(event);
 
       List<ApiRequestHandlerInterceptor> requestInterceptors =
           getApiRequestHandlerInterceptors(awsServices);
