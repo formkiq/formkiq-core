@@ -229,7 +229,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     serviceCache.register(MappingService.class, new MappingServiceExtension());
     serviceCache.register(LocaleService.class, new LocaleServiceExtension());
 
-    serviceCache.register(ApiRequestHandlerInterceptor.class,
+    serviceCache.registerAppend(ApiRequestHandlerInterceptor.class,
         new ClassServiceExtension<>(new EntityRequestHandlerInterceptor(serviceCache)));
   }
 

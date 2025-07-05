@@ -425,7 +425,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
       response = executeResponseInterceptors(requestInterceptors, event, authorization, response);
 
-      ua = new ApiGatewayRequestToUserActivityFunction().apply(event, response);
+      ua = new ApiGatewayRequestToUserActivityFunction().apply(authorization, event, response);
       writeJson(awsServices, output, response.toMap());
       writeUserActivity(awsServices, authorization, ua);
 
@@ -434,7 +434,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
       response = ApiRequestHandlerResponse.builder().exception(e).build();
 
       if (ua == null) {
-        ua = UserActivity.builder();
+        ua = new ApiGatewayRequestToUserActivityFunction().apply(authorization, null, null);
       }
 
       ua.status(response.statusCode()).message(e.getMessage());
@@ -456,7 +456,6 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
     if (awsServices.containsExtension(UserActivityPlugin.class)) {
       String siteId = authorization != null ? authorization.getSiteId() : DEFAULT_SITE_ID;
-      ua.userId(authorization != null ? authorization.getUsername() : "System");
 
       UserActivityPlugin plugin = awsServices.getExtension(UserActivityPlugin.class);
       plugin.addUserActivity(siteId, ua.build());

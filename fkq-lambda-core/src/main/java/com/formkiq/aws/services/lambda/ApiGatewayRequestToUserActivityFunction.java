@@ -23,6 +23,7 @@
  */
 package com.formkiq.aws.services.lambda;
 
+import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.plugins.useractivity.UserActivity;
 import com.formkiq.plugins.useractivity.UserActivityStatus;
@@ -36,15 +37,15 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.BiFunction;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.getSiteIdName;
 import static com.formkiq.strings.Strings.isEmpty;
 
 /**
  * Convert {@link ApiGatewayRequestEvent} to {@link UserActivity}.
  */
-public class ApiGatewayRequestToUserActivityFunction
-    implements BiFunction<ApiGatewayRequestEvent, ApiRequestHandlerResponse, UserActivity.Builder> {
+public class ApiGatewayRequestToUserActivityFunction {
 
   /** List of Change Types. */
   private static final Collection<String> CHANGE_TYPES = Set.of("create", "update", "delete");
@@ -53,9 +54,16 @@ public class ApiGatewayRequestToUserActivityFunction
   private static final DateTimeFormatter S3_TIMESTAMP_FORMATTER =
       DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'").withZone(ZoneOffset.UTC);
 
-  @Override
-  public UserActivity.Builder apply(final ApiGatewayRequestEvent request,
-      final ApiRequestHandlerResponse response) {
+  /**
+   * Build {@link UserActivity.Builder}.
+   * 
+   * @param authorization {@link ApiAuthorization}
+   * @param request {@link ApiGatewayRequestEvent}
+   * @param response ApiRequestHandlerResponse
+   * @return {@link UserActivity.Builder}
+   */
+  public UserActivity.Builder apply(final ApiAuthorization authorization,
+      final ApiGatewayRequestEvent request, final ApiRequestHandlerResponse response) {
 
     UserActivity.Builder builder =
         UserActivity.builder().source("HTTP").status(UserActivityStatus.COMPLETE);
@@ -76,15 +84,17 @@ public class ApiGatewayRequestToUserActivityFunction
       String resource = getResource(request);
       String activityType = getType(request);
 
-
       builder = builder.resource(resource).entityNamespace(entityNamespace).type(activityType)
           .insertedDate(getInsertedDate(request)).sourceIpAddress(getSourceIp(request))
-          .body(getBody(request));
+          .body(getBody(request))
+          .userId(authorization != null ? authorization.getUsername() : "System");
 
       if (isGenerateS3Key(request)) {
+
+        String siteId = authorization != null ? authorization.getSiteId() : DEFAULT_SITE_ID;
         String resourceId = Strings.notEmpty(documentId, entityId, entityTypeId);
         String parentId = !isEmpty(entityId) ? entityTypeId : null;
-        builder = builder.s3Key(generateS3Key(resource, parentId, resourceId));
+        builder = builder.s3Key(generateS3Key(siteId, resource, parentId, resourceId));
       }
     }
 
@@ -177,8 +187,8 @@ public class ApiGatewayRequestToUserActivityFunction
         && (url.startsWith("/entities") || url.startsWith("/entityTypes"));
   }
 
-  private static String generateS3Key(final String resource, final String parentId,
-      final String resourceId) {
+  private static String generateS3Key(final String siteId, final String resource,
+      final String parentId, final String resourceId) {
 
     String timestamp = S3_TIMESTAMP_FORMATTER.format(Instant.now());
 
@@ -191,8 +201,8 @@ public class ApiGatewayRequestToUserActivityFunction
     String resourceType = parentId != null ? resource + "/" + parentId : resource;
 
     return !isEmpty(resource) && !isEmpty(resourceId)
-        ? String.format("activities/%s/year=%d/month=%02d/day=%02d/%s/%s_%s.json", resourceType,
-            year, month, day, resourceId, timestamp, uuid)
+        ? String.format("activities/%s/%s/year=%d/month=%02d/day=%02d/%s/%s_%s.json",
+            getSiteIdName(siteId), resourceType, year, month, day, resourceId, timestamp, uuid)
         : null;
   }
 }
