@@ -49,7 +49,6 @@ import com.formkiq.aws.dynamodb.model.DocumentMetadata;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventBuilder;
-import com.formkiq.aws.services.lambda.ApiResponseError;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.testutils.aws.DynamoDbExtension;
@@ -399,11 +398,10 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
     Map<String, Object> headers = (Map<String, Object>) m.get("headers");
     assertCorsHeaders(headers);
 
-    ApiResponseError resp =
-        GsonUtil.getInstance().fromJson((String) m.get("body"), ApiResponseError.class);
+    Map<String, Object> resp = GsonUtil.getInstance().fromJson((String) m.get("body"), Map.class);
 
-    assertNotNull(resp.getMessage());
-    assertNull(resp.getNext());
-    assertNull(resp.getPrevious());
+    assertNotNull(resp.get("message"));
+    assertNull(resp.get("next"));
+    assertNull(resp.get("previous"));
   }
 }

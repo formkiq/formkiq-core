@@ -34,7 +34,6 @@ import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventBuilder;
-import com.formkiq.aws.services.lambda.ApiResponseError;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionType;
@@ -547,8 +546,8 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
     assertEquals(mapsize, m.size());
     assertEquals("401.0", String.valueOf(m.get("statusCode")));
     assertCorsHeaders((Map<String, Object>) m.get("headers"));
-    ApiResponseError resp = fromJson((String) m.get("body"), ApiResponseError.class);
-    assertEquals("fkq access denied to siteId (" + siteId + ")", resp.getMessage());
+    Map<String, Object> resp = fromJson((String) m.get("body"), Map.class);
+    assertEquals("fkq access denied to siteId (" + siteId + ")", resp.get("message"));
   }
 
   /**
@@ -574,8 +573,8 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
     assertEquals(mapsize, m.size());
     assertEquals("401.0", String.valueOf(m.get("statusCode")));
     assertCorsHeaders((Map<String, Object>) m.get("headers"));
-    ApiResponseError resp = fromJson((String) m.get("body"), ApiResponseError.class);
-    assertEquals("fkq access denied to siteId (" + siteId + ")", resp.getMessage());
+    Map<String, Object> resp = fromJson((String) m.get("body"), Map.class);
+    assertEquals("fkq access denied to siteId (" + siteId + ")", resp.get("message"));
   }
 
   /**
