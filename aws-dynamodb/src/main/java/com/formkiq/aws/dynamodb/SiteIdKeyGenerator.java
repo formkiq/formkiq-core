@@ -131,6 +131,16 @@ public final class SiteIdKeyGenerator {
   }
 
   /**
+   * Get Not Null Site Name.
+   * 
+   * @param siteId {@link String}
+   * @return String
+   */
+  public static String getSiteIdName(final String siteId) {
+    return isDefaultSiteId(siteId) ? DEFAULT_SITE_ID : siteId;
+  }
+
+  /**
    * Remove Key siteId from {@link String}.
    * 
    * @param siteId {@link String}
