@@ -35,6 +35,7 @@ import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.s3.S3ServiceExtension;
 import com.formkiq.aws.services.lambda.AbstractRestApiRequestHandler;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
+import com.formkiq.aws.services.lambda.ApiRequestHandlerInterceptor;
 import com.formkiq.aws.services.lambda.LambdaInputRecord;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.aws.sqs.SqsService;
@@ -48,6 +49,7 @@ import com.formkiq.module.actions.services.ActionsServiceExtension;
 import com.formkiq.module.events.EventService;
 import com.formkiq.module.events.EventServiceSnsExtension;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.ClassServiceExtension;
 import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.module.ocr.DocumentOcrService;
 import com.formkiq.module.ocr.DocumentOcrServiceExtension;
@@ -90,6 +92,7 @@ import com.formkiq.stacks.api.handler.documents.PublicDocumentsRequestHandler;
 import com.formkiq.stacks.api.handler.documents.UpdateDocumentMatchingRequestHandler;
 import com.formkiq.stacks.api.handler.entity.EntitiesRequestHandler;
 import com.formkiq.stacks.api.handler.entity.EntityRequestHandler;
+import com.formkiq.stacks.api.handler.entity.EntityRequestHandlerInterceptor;
 import com.formkiq.stacks.api.handler.entity.EntityTypeRequestHandler;
 import com.formkiq.stacks.api.handler.entity.EntityTypesRequestHandler;
 import com.formkiq.stacks.api.handler.folders.FoldersIndexKeyRequestHandler;
@@ -225,6 +228,9 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     serviceCache.register(SchemaService.class, new SchemaServiceExtension());
     serviceCache.register(MappingService.class, new MappingServiceExtension());
     serviceCache.register(LocaleService.class, new LocaleServiceExtension());
+
+    serviceCache.register(ApiRequestHandlerInterceptor.class,
+        new ClassServiceExtension<>(new EntityRequestHandlerInterceptor(serviceCache)));
   }
 
   /**

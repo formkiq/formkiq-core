@@ -252,12 +252,12 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
     assertEquals("HTTP", activity.source());
     assertEquals("create", activity.type());
     assertEquals("""
-            {
-              "entityType": {
-                "namespace": "CUSTOM",
-                "name": "customer"
-              }
-            }""", activity.body());
+        {
+          "entityType": {
+            "namespace": "CUSTOM",
+            "name": "customer"
+          }
+        }""", activity.body());
     assertNull(activity.entityId());
     assertNull(activity.entityNamespace());
     assertEquals(body.get("entityTypeId"), activity.entityTypeId());
@@ -274,8 +274,6 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
     final long expectedTime = 1751589856468L;
     assertEquals(Instant.ofEpochMilli(expectedTime), activity.insertedDate());
   }
-
-  // TODO fix to get entityTypeId instead of string
 
   /**
    * POST /entities/{entityType}.
@@ -300,17 +298,14 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
     assertEquals(body.get("entityId"), activity.entityId());
     assertEquals("CUSTOM", activity.entityNamespace());
     assertEquals("Customer", activity.entityTypeId());
-    assertEquals("""
-            {
-              "entity": {
-                "name": "AcmeInc"
-              }
-            }""", activity.body());
-
-    // TODO enable..
-    // assertEquals(body.get("entityTypeId"), activity.entityTypeId());
-    // assertEquals(body.get("entityId"), activity.entityId());
     assertNull(activity.documentId());
+    assertEquals("""
+        {
+          "entity": {
+            "name": "AcmeInc"
+          }
+        }""", activity.body());
+
 
     String expectedS3 = "activities/entities/" + activity.entityTypeId() + "/year=" + getYear()
         + "/month=" + getMonth() + "/day=" + getDay() + "/" + activity.entityId() + "/";
@@ -349,8 +344,6 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
     assertEquals("CUSTOM", activity.entityNamespace());
     assertEquals("Customer", activity.entityTypeId());
 
-    // TODO enable
-    // assertEquals(body.get("entityTypeId"), activity.entityTypeId());
     assertNull(activity.documentId());
     assertNull(activity.s3Key());
 

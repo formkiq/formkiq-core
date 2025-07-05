@@ -81,8 +81,7 @@ public class AddEntityRequestToEntityRecordTransformer
   public EntityRecord apply(final ApiGatewayRequestEvent event) {
 
     String entityId = update ? event.getPathParameter("entityId") : ID.uuid();
-
-    String entityTypeId = new EntityTypeIdTransformer(this.awsServices, siteId).apply(event);
+    String entityTypeId = event.getPathParameter("entityTypeId");
     AddEntityRequest request = getEntityRequest(event, entityTypeId, entityId);
 
     validate(entityTypeId, request);
