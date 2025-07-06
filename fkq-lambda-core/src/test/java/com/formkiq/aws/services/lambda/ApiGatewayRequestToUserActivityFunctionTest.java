@@ -101,7 +101,7 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
         assertNull(activity.message());
 
         final long expectedTime = 1750944882199L;
-        assertEquals(Instant.ofEpochMilli(expectedTime), activity.insertedDate());
+        assertEquals(Instant.ofEpochMilli(expectedTime), activity.insertedDate().toInstant());
         assertEquals(request.getPathParameters().get("documentId"), activity.documentId());
       }
     }
@@ -144,7 +144,7 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
       assertNull(activity.message());
 
       final long expectedTime = 1546105259536L;
-      assertEquals(Instant.ofEpochMilli(expectedTime), activity.insertedDate());
+      assertEquals(Instant.ofEpochMilli(expectedTime), activity.insertedDate().toInstant());
       assertEquals(request.getPathParameters().get("documentId"), activity.documentId());
     }
   }
@@ -183,7 +183,7 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
       assertNull(activity.message());
 
       final long expectedTime = 1750944882199L;
-      assertEquals(Instant.ofEpochMilli(expectedTime), activity.insertedDate());
+      assertEquals(Instant.ofEpochMilli(expectedTime), activity.insertedDate().toInstant());
     }
   }
 
@@ -209,7 +209,7 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
     assertNull(activity.sourceIpAddress());
     assertEquals(UserActivityStatus.COMPLETE, activity.status());
     assertNull(activity.message());
-    assertNull(activity.insertedDate());
+    assertNotNull(activity.insertedDate());
   }
 
   private int getYear() {
@@ -236,7 +236,7 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
 
       // then
       assertNotNull(activity);
-      assertEquals("entitytypes", activity.resource());
+      assertEquals("entityTypes", activity.resource());
       assertEquals("HTTP", activity.source());
       assertEquals("view", activity.type());
       assertNull(activity.entityId());
@@ -251,7 +251,7 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
       assertNull(activity.message());
 
       final long expectedTime = 1751589734043L;
-      assertEquals(Instant.ofEpochMilli(expectedTime), activity.insertedDate());
+      assertEquals(Instant.ofEpochMilli(expectedTime), activity.insertedDate().toInstant());
     }
   }
 
@@ -280,7 +280,7 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
 
       // then
       assertNotNull(activity);
-      assertEquals("entitytypes", activity.resource());
+      assertEquals("entityTypes", activity.resource());
       assertEquals("HTTP", activity.source());
       assertEquals("create", activity.type());
       assertEquals("""
@@ -295,7 +295,7 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
       assertEquals(body.get("entityTypeId"), activity.entityTypeId());
       assertNull(activity.documentId());
 
-      String expectedS3 = "activities/" + getSiteIdName(siteId) + "/entitytypes/year=" + getYear()
+      String expectedS3 = "activities/" + getSiteIdName(siteId) + "/entityTypes/year=" + getYear()
           + "/month=" + getMonth() + "/day=" + getDay() + "/" + activity.entityTypeId() + "/";
       assertTrue(activity.s3Key().startsWith(expectedS3));
 
@@ -304,7 +304,7 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
       assertNull(activity.message());
 
       final long expectedTime = 1751589856468L;
-      assertEquals(Instant.ofEpochMilli(expectedTime), activity.insertedDate());
+      assertEquals(Instant.ofEpochMilli(expectedTime), activity.insertedDate().toInstant());
     }
   }
 
@@ -354,7 +354,7 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
       assertNull(activity.message());
 
       final long expectedTime = 1751636384960L;
-      assertEquals(Instant.ofEpochMilli(expectedTime), activity.insertedDate());
+      assertEquals(Instant.ofEpochMilli(expectedTime), activity.insertedDate().toInstant());
     }
   }
 
@@ -395,7 +395,7 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
       assertNull(activity.message());
 
       final long expectedTime = 1751636079140L;
-      assertEquals(Instant.ofEpochMilli(expectedTime), activity.insertedDate());
+      assertEquals(Instant.ofEpochMilli(expectedTime), activity.insertedDate().toInstant());
     }
   }
 

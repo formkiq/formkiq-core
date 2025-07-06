@@ -65,8 +65,8 @@ public class ApiGatewayRequestToUserActivityFunction {
   public UserActivity.Builder apply(final ApiAuthorization authorization,
       final ApiGatewayRequestEvent request, final ApiRequestHandlerResponse response) {
 
-    UserActivity.Builder builder =
-        UserActivity.builder().source("HTTP").status(UserActivityStatus.COMPLETE);
+    UserActivity.Builder builder = UserActivity.builder().source("HTTP")
+        .status(UserActivityStatus.COMPLETE).insertedDate(getInsertedDate(request));
 
     if (response != null) {
       builder = builder.status(response.statusCode());
@@ -85,8 +85,7 @@ public class ApiGatewayRequestToUserActivityFunction {
       String activityType = getType(request);
 
       builder = builder.resource(resource).entityNamespace(entityNamespace).type(activityType)
-          .insertedDate(getInsertedDate(request)).sourceIpAddress(getSourceIp(request))
-          .body(getBody(request))
+          .sourceIpAddress(getSourceIp(request)).body(getBody(request))
           .userId(authorization != null ? authorization.getUsername() : "System");
 
       if (isGenerateS3Key(request)) {
@@ -130,7 +129,7 @@ public class ApiGatewayRequestToUserActivityFunction {
    */
   private static String getResource(final ApiGatewayRequestEvent request) {
     String[] split = request.getResource().split("/");
-    return split[1].toLowerCase();
+    return split[1];
   }
 
   private static String getType(final ApiGatewayRequestEvent request) {
