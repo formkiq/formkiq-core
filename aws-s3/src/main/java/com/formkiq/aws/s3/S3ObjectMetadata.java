@@ -23,6 +23,7 @@
  */
 package com.formkiq.aws.s3;
 
+import java.util.Base64;
 import java.util.Collections;
 import java.util.Map;
 
@@ -222,7 +223,8 @@ public class S3ObjectMetadata {
     String checksumType = getChecksumType();
 
     if ("SHA256".equals(checksumType)) {
-      checksum = getChecksumSha256();
+      checksum = base64ToHex(getChecksumSha256());
+
     } else if ("SHA1".equals(checksumType)) {
       checksum = getChecksumSha1();
     } else {
@@ -230,6 +232,22 @@ public class S3ObjectMetadata {
     }
 
     return checksum;
+  }
+
+  /**
+   * Decode a Base64-encoded SHA-256 checksum into its hexadecimal representation.
+   *
+   * @param base64Checksum the Base64 string (e.g. "eXuwq/95jXIAr3aF3KeQHt/8Ur8mUA1b2XKCZY7iQVI=")
+   * @return lowercase hex digest (e.g.
+   *         "797bb0abff798d7200af7685dca7901edffc52bf26500d5bd97282658ee24152")
+   */
+  private String base64ToHex(final String base64Checksum) {
+    byte[] bytes = Base64.getDecoder().decode(base64Checksum);
+    StringBuilder hex = new StringBuilder(bytes.length * 2);
+    for (byte b : bytes) {
+      hex.append(String.format("%02x", b));
+    }
+    return hex.toString();
   }
 
   /**
