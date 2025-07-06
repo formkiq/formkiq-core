@@ -24,6 +24,7 @@
 package com.formkiq.plugins.useractivity;
 
 import java.time.Instant;
+import java.util.Date;
 
 /**
  * Represents an activity performed by a user on a document or entity. This includes metadata such
@@ -43,7 +44,7 @@ public record UserActivity(
     String userId,
 
     /* The timestamp when the activity was recorded. */
-    Instant insertedDate,
+    Date insertedDate,
 
     /* The S3 object key for the stored document or metadata. */
     String s3Key,
@@ -221,8 +222,8 @@ public record UserActivity(
      * @return a new {@link UserActivity} object
      */
     public UserActivity build() {
-      return new UserActivity(resource, documentId, type, userId, insertedDate, s3Key, message,
-          status, sourceIpAddress, source, entityTypeId, entityId, entityNamespace, body);
+      return new UserActivity(resource, documentId, type, userId, Date.from(insertedDate), s3Key,
+          message, status, sourceIpAddress, source, entityTypeId, entityId, entityNamespace, body);
     }
   }
 }
