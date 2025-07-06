@@ -27,6 +27,7 @@ import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.BucketVersioningStatus;
+import software.amazon.awssdk.services.s3.model.ChecksumMode;
 import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
 import software.amazon.awssdk.services.s3.model.CopyObjectResponse;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
@@ -382,8 +383,8 @@ public class S3Service {
   public S3ObjectMetadata getObjectMetadata(final String bucket, final String key,
       final String versionId) {
 
-    HeadObjectRequest hr =
-        HeadObjectRequest.builder().bucket(bucket).key(key).versionId(versionId).build();
+    HeadObjectRequest hr = HeadObjectRequest.builder().bucket(bucket).key(key).versionId(versionId)
+        .checksumMode(ChecksumMode.ENABLED).build();
     S3ObjectMetadata md = new S3ObjectMetadata();
 
     try {
