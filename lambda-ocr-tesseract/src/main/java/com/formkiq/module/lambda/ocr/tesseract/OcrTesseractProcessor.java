@@ -50,8 +50,8 @@ import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.s3.S3ServiceExtension;
 import com.formkiq.aws.services.lambda.AbstractRestApiRequestHandler;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.LambdaInputRecord;
 import com.formkiq.aws.sns.SnsAwsServiceRegistry;
+import com.formkiq.aws.sqs.events.SqsEventRecord;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
@@ -192,8 +192,7 @@ public class OcrTesseractProcessor extends AbstractRestApiRequestHandler {
   }
 
   protected OcrSqsMessage getSqsMessage(final String body) {
-    OcrSqsMessage sqsMessage = this.gson.fromJson(body, OcrSqsMessage.class);
-    return sqsMessage;
+    return this.gson.fromJson(body, OcrSqsMessage.class);
   }
 
   @Override
@@ -203,10 +202,10 @@ public class OcrTesseractProcessor extends AbstractRestApiRequestHandler {
 
   @Override
   public void handleSqsRequest(final Logger logger, final AwsServiceCache awsServices,
-      final LambdaInputRecord record) throws IOException {
+      final SqsEventRecord record) {
 
     DocumentOcrService ocrService = serviceCache.getExtension(DocumentOcrService.class);
-    OcrSqsMessage sqsMessage = getSqsMessage(record.getBody());
+    OcrSqsMessage sqsMessage = getSqsMessage(record.body());
     processRecord(logger, awsServices, ocrService, sqsMessage);
   }
 
