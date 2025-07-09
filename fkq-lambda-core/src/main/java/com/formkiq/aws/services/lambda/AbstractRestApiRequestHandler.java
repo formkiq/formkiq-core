@@ -42,6 +42,8 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.exceptions.ForbiddenException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
+import com.formkiq.aws.sqs.events.SqsEvent;
+import com.formkiq.aws.sqs.events.SqsEventRecord;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.logger.LogLevel;
 import com.formkiq.module.lambdaservices.logger.Logger;
@@ -258,9 +260,9 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
     } else {
 
       if (str.contains("aws:sqs")) {
-        LambdaInputRecords records = this.gson.fromJson(str, LambdaInputRecords.class);
-        for (LambdaInputRecord record : records.getRecords()) {
-          if ("aws:sqs".equals(record.getEventSource())) {
+        SqsEvent records = this.gson.fromJson(str, SqsEvent.class);
+        for (SqsEventRecord record : records.records()) {
+          if ("aws:sqs".equals(record.eventSource())) {
             handleSqsRequest(logger, awsServices, record);
           }
         }
@@ -277,11 +279,11 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
    * 
    * @param logger {@link Logger}
    * @param awsServices {@link AwsServiceCache}
-   * @param record {@link LambdaInputRecord}
+   * @param sqsEventRecord {@link SqsEventRecord}
    * @throws IOException IOException
    */
   public abstract void handleSqsRequest(Logger logger, AwsServiceCache awsServices,
-      LambdaInputRecord record) throws IOException;
+      SqsEventRecord sqsEventRecord) throws IOException;
 
   /**
    * Whether {@link ApiGatewayRequestEvent} has access.

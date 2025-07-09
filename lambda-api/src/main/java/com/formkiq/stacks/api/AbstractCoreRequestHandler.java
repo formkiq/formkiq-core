@@ -36,10 +36,10 @@ import com.formkiq.aws.s3.S3ServiceExtension;
 import com.formkiq.aws.services.lambda.AbstractRestApiRequestHandler;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerInterceptor;
-import com.formkiq.aws.services.lambda.LambdaInputRecord;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.aws.sqs.SqsServiceExtension;
+import com.formkiq.aws.sqs.events.SqsEventRecord;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceExtension;
 import com.formkiq.module.actions.services.ActionsNotificationService;
@@ -403,7 +403,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
 
   @Override
   public void handleSqsRequest(final Logger logger, final AwsServiceCache services,
-      final LambdaInputRecord record) {
+      final SqsEventRecord record) {
     // empty
   }
 }

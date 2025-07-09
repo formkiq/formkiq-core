@@ -21,46 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.services.lambda;
+package com.formkiq.aws.s3.events;
 
-import java.util.ArrayList;
-import java.util.List;
 import com.formkiq.graalvm.annotations.Reflectable;
-import com.google.gson.annotations.SerializedName;
 
 /**
- * Sqs Records Object.
- *
+ * Encapsulates S3-specific event details.
  */
 @Reflectable
-public class LambdaInputRecords {
-
-  /** Input Records. */
-  @SerializedName("Records")
-  private List<LambdaInputRecord> records;
-
-  /**
-   * constructor.
-   */
-  public LambdaInputRecords() {
-    this.records = new ArrayList<>();
-  }
-
-  /**
-   * Get Records.
-   * 
-   * @return {@link List} {@link LambdaInputRecord}
-   */
-  public List<LambdaInputRecord> getRecords() {
-    return this.records;
-  }
-
-  /**
-   * Set Records.
-   * 
-   * @param list {@link List} {@link LambdaInputRecord}
-   */
-  public void setRecords(final List<LambdaInputRecord> list) {
-    this.records = list;
-  }
+public record S3Entity(String s3SchemaVersion, String configurationId, Bucket bucket,
+    S3Object object) {
 }
