@@ -21,17 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.s3.events;
-
-import com.formkiq.graalvm.annotations.Reflectable;
-
-import java.util.Date;
+package com.formkiq.aws.dynamodb.useractivities;
 
 /**
- * Represents a single S3 ObjectCreated (or other) event record.
+ * Represents a change from an old value to a new value.
  */
-@Reflectable
-public record S3Record(String eventVersion, String eventSource, String awsRegion, Date eventTime,
-    String eventName, UserIdentity userIdentity, RequestParameters requestParameters,
-    ResponseElements responseElements, S3Entity s3) {
+public record ChangeRecord(Object oldValue, Object newValue) {
 }

@@ -32,7 +32,7 @@
               - OAuth(JWT)
               - AWS IAM
               - API Key
-          version: 1.18.0
+          version: 1.18.0-useractivities
         tags:
         - name: documents
           description: API for the add, updating and fetching of documents
@@ -8989,12 +8989,18 @@
             Activity:
               type: object
               properties:
+                resource:
+                  type: string
+                  description: Resource of Activity
                 type:
                   type: string
                   description: Type of Activity
-                ipAddress:
+                source:
                   type: string
-                  description: The IP address of the user
+                  description: The Source of the activity
+                sourceIpAddress:
+                  type: string
+                  description: The Source IP address of the user
                 s3Key:
                   type: string
                   description: The S3 Key for the activity payload
@@ -9012,11 +9018,11 @@
                 documentId:
                   description: Document Identifier
                 entityTypeId:
+                  type: string
                   description: Entity Type Identifier
                 entityId:
+                  type: string
                   description: Entity Identifier
-                entityNamespace:
-                  $ref: '#/components/schemas/EntityTypeNamespace'
                 changes:
                   type: object
                   additionalProperties:

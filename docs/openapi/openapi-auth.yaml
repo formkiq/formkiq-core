@@ -12,7 +12,7 @@
           license:
             name: Apache 2.0
             url: https://www.apache.org/licenses/LICENSE-2.0.html
-          version: 1.18.0
+          version: 1.18.0-useractivities
           description: |
             This API provides endpoints for user authentication including login,  password change, and password reset functionality.
         servers:

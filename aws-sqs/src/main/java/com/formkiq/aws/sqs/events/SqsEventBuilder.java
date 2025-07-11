@@ -133,7 +133,6 @@ public class SqsEventBuilder {
      */
     public SqsEventBuilder add() {
       Objects.requireNonNull(body, "body must be set");
-      Objects.requireNonNull(eventSourceArn, "eventSourceARN must be set");
       SqsEventRecord rec =
           new SqsEventRecord(messageId, receiptHandle, body, Map.copyOf(attributes),
               Map.copyOf(messageAttributes), null, eventSource, eventSourceArn, awsRegion);

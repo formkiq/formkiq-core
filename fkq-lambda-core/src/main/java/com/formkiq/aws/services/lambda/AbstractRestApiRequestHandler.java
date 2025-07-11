@@ -460,7 +460,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
       String siteId = authorization != null ? authorization.getSiteId() : DEFAULT_SITE_ID;
 
       UserActivityPlugin plugin = awsServices.getExtension(UserActivityPlugin.class);
-      plugin.addUserActivity(siteId, ua.build());
+      plugin.addUserActivity(ua.build(siteId));
     }
   }
 

@@ -90,9 +90,8 @@ public interface UserActivityPlugin {
 
   /**
    * Add User Activity.
-   * 
-   * @param siteId {@link String}
+   *
    * @param userActivity {@link UserActivity}
    */
-  void addUserActivity(String siteId, UserActivity userActivity);
+  void addUserActivity(UserActivity userActivity);
 }

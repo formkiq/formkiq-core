@@ -29,10 +29,12 @@ import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.eventsourcing.entity.EntityAttribute;
 import com.formkiq.aws.dynamodb.eventsourcing.entity.EntityRecord;
 import com.formkiq.aws.dynamodb.eventsourcing.entity.EntityTypeRecord;
+import com.formkiq.aws.dynamodb.useractivities.AttributeValuesToChangeRecordFunction;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.plugins.useractivity.UserActivityContext;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidator;
@@ -96,6 +98,18 @@ public class AddEntityRequestToEntityRecordTransformer
     Map<String, AttributeValue> attributes = entity.getAttributes();
 
     DynamoDbService db = this.awsServices.getExtension(DynamoDbService.class);
+
+    if (!update) {
+      UserActivityContext
+          .set(new AttributeValuesToChangeRecordFunction(Map.of("documentId", "entityId"))
+              .apply(null, attributes));
+    } else {
+      Map<String, AttributeValue> oldAttributes = db.get(entity.key());
+      UserActivityContext
+          .set(new AttributeValuesToChangeRecordFunction(Map.of("documentId", "entityId"))
+              .apply(oldAttributes, attributes));
+    }
+
     db.putItem(attributes);
 
     return entity;

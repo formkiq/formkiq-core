@@ -23,8 +23,9 @@
  */
 package com.formkiq.plugins.useractivity;
 
+import com.formkiq.aws.dynamodb.useractivities.ChangeRecord;
+
 import java.util.Map;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
  * Thread-local container for holding user activity metadata as a DynamoDB map of AttributeValues.
@@ -35,7 +36,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 public class UserActivityContext {
 
   /** Thread Local Variable. */
-  private static final ThreadLocal<Map<String, AttributeValue>> CONTEXT = new ThreadLocal<>();
+  private static final ThreadLocal<Map<String, ChangeRecord>> CONTEXT = new ThreadLocal<>();
 
   private UserActivityContext() {
     // Prevent instantiation
@@ -46,7 +47,7 @@ public class UserActivityContext {
    *
    * @param data the DynamoDB attribute map
    */
-  public static void set(final Map<String, AttributeValue> data) {
+  public static void set(final Map<String, ChangeRecord> data) {
     CONTEXT.set(data);
   }
 
@@ -55,7 +56,7 @@ public class UserActivityContext {
    *
    * @return the attribute map, or null if not set
    */
-  public static Map<String, AttributeValue> get() {
+  public static Map<String, ChangeRecord> get() {
     return CONTEXT.get();
   }
 

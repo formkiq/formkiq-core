@@ -23,6 +23,8 @@
  */
 package com.formkiq.plugins.useractivity;
 
+import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
+
 import java.time.Instant;
 import java.util.Date;
 
@@ -32,13 +34,15 @@ import java.util.Date;
  * identifiers.
  */
 public record UserActivity(
+    /* Site Identifier. */
+    String siteId,
     /* Resource of User Activity. */
     String resource,
     /* The unique identifier of the document. */
     String documentId,
 
     /* The type of activity performed (e.g., "UPLOAD", "DELETE"). */
-    String type,
+    UserActivityType type,
 
     /* The identifier of the user who performed the activity. */
     String userId,
@@ -65,7 +69,13 @@ public record UserActivity(
     String entityTypeId,
 
     /* The identifier of the target entity. */
-    String entityId, String entityNamespace, String body) {
+    String entityId,
+    /* Entity Namespace. */
+    String entityNamespace,
+    /* Request Body. */
+    String body,
+    /* Change Set. */
+    String changeSet) {
 
   /**
    * Creates a new {@link UserActivity.Builder} for {@link UserActivity}.
@@ -83,7 +93,7 @@ public record UserActivity(
     /** Document Id. */
     private String documentId;
     /** Activity Type. */
-    private String type;
+    private UserActivityType type;
     /** User Id. */
     private String userId;
     /** Inserted Date. */
@@ -106,15 +116,17 @@ public record UserActivity(
     private String entityNamespace;
     /** Activity Resource. */
     private String resource;
-    /** Activity Body. */
+    /** Request Body. */
     private String body;
+    /** Change Set. */
+    private String changeSet;
 
     public Builder documentId(final String userActivityDocumentId) {
       this.documentId = userActivityDocumentId;
       return this;
     }
 
-    public Builder type(final String userActivityType) {
+    public Builder type(final UserActivityType userActivityType) {
       this.type = userActivityType;
       return this;
     }
@@ -153,6 +165,11 @@ public record UserActivity(
 
     public Builder body(final String userActivityBody) {
       this.body = userActivityBody;
+      return this;
+    }
+
+    public Builder changeSet(final String userActivityChangeSet) {
+      this.changeSet = userActivityChangeSet;
       return this;
     }
 
@@ -218,12 +235,15 @@ public record UserActivity(
 
     /**
      * Builds the {@link UserActivity} instance.
+     * 
+     * @param siteId {@link String}
      *
      * @return a new {@link UserActivity} object
      */
-    public UserActivity build() {
-      return new UserActivity(resource, documentId, type, userId, Date.from(insertedDate), s3Key,
-          message, status, sourceIpAddress, source, entityTypeId, entityId, entityNamespace, body);
+    public UserActivity build(final String siteId) {
+      return new UserActivity(siteId, resource, documentId, type, userId, Date.from(insertedDate),
+          s3Key, message, status, sourceIpAddress, source, entityTypeId, entityId, entityNamespace,
+          body, changeSet);
     }
   }
 }

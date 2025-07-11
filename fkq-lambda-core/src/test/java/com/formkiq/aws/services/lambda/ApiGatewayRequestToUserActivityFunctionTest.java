@@ -45,6 +45,7 @@ import java.util.Map;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
 import com.formkiq.plugins.useractivity.UserActivity;
 import com.formkiq.plugins.useractivity.UserActivityStatus;
 import com.google.gson.Gson;
@@ -79,13 +80,13 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
         ApiAuthorization auth = createAuthorization(siteId);
 
         // when
-        UserActivity activity = function.apply(auth, request, null).build();
+        UserActivity activity = function.apply(auth, request, null).build(siteId);
 
         // then
         assertNotNull(activity);
         assertEquals("documents", activity.resource());
         assertEquals("HTTP", activity.source());
-        assertEquals("view", activity.type());
+        assertEquals(UserActivityType.VIEW, activity.type());
         assertNull(activity.entityId());
         assertNull(activity.entityNamespace());
         assertNull(activity.entityTypeId());
@@ -122,13 +123,13 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
       ApiAuthorization auth = createAuthorization(siteId);
 
       // when
-      UserActivity activity = function.apply(auth, request, null).build();
+      UserActivity activity = function.apply(auth, request, null).build(siteId);
 
       // then
       assertNotNull(activity);
       assertEquals("documents", activity.resource());
       assertEquals("HTTP", activity.source());
-      assertEquals("delete", activity.type());
+      assertEquals(UserActivityType.DELETE, activity.type());
       assertNull(activity.entityId());
       assertNull(activity.entityNamespace());
       assertNull(activity.entityTypeId());
@@ -164,13 +165,13 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
       ApiAuthorization auth = createAuthorization(siteId);
 
       // when
-      UserActivity activity = function.apply(auth, request, null).build();
+      UserActivity activity = function.apply(auth, request, null).build(siteId);
 
       // then
       assertNotNull(activity);
       assertEquals("documents", activity.resource());
       assertEquals("HTTP", activity.source());
-      assertEquals("view", activity.type());
+      assertEquals(UserActivityType.VIEW, activity.type());
       assertNull(activity.entityId());
       assertNull(activity.entityNamespace());
       assertNull(activity.entityTypeId());
@@ -194,7 +195,7 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
   public void testNull() {
     // given
     // when
-    UserActivity activity = function.apply(null, null, null).build();
+    UserActivity activity = function.apply(null, null, null).build(null);
 
     // then
     assertNotNull(activity);
@@ -232,13 +233,13 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
       ApiAuthorization auth = createAuthorization(siteId);
 
       // when
-      UserActivity activity = function.apply(auth, request, null).build();
+      UserActivity activity = function.apply(auth, request, null).build(siteId);
 
       // then
       assertNotNull(activity);
       assertEquals("entityTypes", activity.resource());
       assertEquals("HTTP", activity.source());
-      assertEquals("view", activity.type());
+      assertEquals(UserActivityType.VIEW, activity.type());
       assertNull(activity.entityId());
       assertNull(activity.entityNamespace());
       assertNull(activity.entityTypeId());
@@ -276,13 +277,13 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
       ApiAuthorization auth = createAuthorization(siteId);
 
       // when
-      UserActivity activity = function.apply(auth, request, response).build();
+      UserActivity activity = function.apply(auth, request, response).build(siteId);
 
       // then
       assertNotNull(activity);
       assertEquals("entityTypes", activity.resource());
       assertEquals("HTTP", activity.source());
-      assertEquals("create", activity.type());
+      assertEquals(UserActivityType.CREATE, activity.type());
       assertEquals("""
           {
             "entityType": {
@@ -325,13 +326,13 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
       ApiAuthorization auth = createAuthorization(siteId);
 
       // when
-      UserActivity activity = function.apply(auth, request, response).build();
+      UserActivity activity = function.apply(auth, request, response).build(siteId);
 
       // then
       assertNotNull(activity);
       assertEquals("entities", activity.resource());
       assertEquals("HTTP", activity.source());
-      assertEquals("create", activity.type());
+      assertEquals(UserActivityType.CREATE, activity.type());
       assertEquals(body.get("entityId"), activity.entityId());
       assertEquals("CUSTOM", activity.entityNamespace());
       assertEquals("Customer", activity.entityTypeId());
@@ -375,13 +376,13 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
       ApiAuthorization auth = createAuthorization(siteId);
 
       // when
-      UserActivity activity = function.apply(auth, request, response).build();
+      UserActivity activity = function.apply(auth, request, response).build(siteId);
 
       // then
       assertNotNull(activity);
       assertEquals("entities", activity.resource());
       assertEquals("HTTP", activity.source());
-      assertEquals("view", activity.type());
+      assertEquals(UserActivityType.VIEW, activity.type());
       assertNull(activity.body());
       assertNull(activity.entityId());
       assertEquals("CUSTOM", activity.entityNamespace());

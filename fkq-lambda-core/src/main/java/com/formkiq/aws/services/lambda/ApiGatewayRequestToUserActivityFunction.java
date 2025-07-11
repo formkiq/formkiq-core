@@ -24,15 +24,18 @@
 package com.formkiq.aws.services.lambda;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.objects.DateUtil;
+import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
+import com.formkiq.aws.dynamodb.useractivities.ChangeRecord;
 import com.formkiq.plugins.useractivity.UserActivity;
+import com.formkiq.plugins.useractivity.UserActivityContext;
 import com.formkiq.plugins.useractivity.UserActivityStatus;
 import com.formkiq.strings.Strings;
 
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -48,11 +51,8 @@ import static com.formkiq.strings.Strings.isEmpty;
 public class ApiGatewayRequestToUserActivityFunction {
 
   /** List of Change Types. */
-  private static final Collection<String> CHANGE_TYPES = Set.of("create", "update", "delete");
-
-  /** S3 Timestamp Formatter. */
-  private static final DateTimeFormatter S3_TIMESTAMP_FORMATTER =
-      DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'").withZone(ZoneOffset.UTC);
+  private static final Collection<UserActivityType> CHANGE_TYPES =
+      Set.of(UserActivityType.CREATE, UserActivityType.UPDATE, UserActivityType.DELETE);
 
   /**
    * Build {@link UserActivity.Builder}.
@@ -78,11 +78,16 @@ public class ApiGatewayRequestToUserActivityFunction {
 
     builder = builder.documentId(documentId).entityId(entityId).entityTypeId(entityTypeId);
 
+    Map<String, ChangeRecord> changeSet = UserActivityContext.get();
+    if (changeSet != null) {
+      builder.changeSet(GsonUtil.getInstance().toJson(changeSet));
+    }
+
     if (request != null) {
 
       String entityNamespace = request.getQueryStringParameter("namespace");
       String resource = getResource(request);
-      String activityType = getType(request);
+      UserActivityType activityType = getType(request);
 
       builder = builder.resource(resource).entityNamespace(entityNamespace).type(activityType)
           .sourceIpAddress(getSourceIp(request)).body(getBody(request))
@@ -132,15 +137,15 @@ public class ApiGatewayRequestToUserActivityFunction {
     return split[1];
   }
 
-  private static String getType(final ApiGatewayRequestEvent request) {
+  private static UserActivityType getType(final ApiGatewayRequestEvent request) {
     String method = request.getHttpMethod().toUpperCase();
 
     return switch (method) {
-      case "GET" -> "view";
-      case "POST" -> "create";
-      case "PUT", "PATCH" -> "update";
-      case "DELETE" -> "delete";
-      default -> "";
+      case "GET" -> UserActivityType.VIEW;
+      case "POST" -> UserActivityType.CREATE;
+      case "PUT", "PATCH" -> UserActivityType.UPDATE;
+      case "DELETE" -> UserActivityType.DELETE;
+      default -> null;
     };
   }
 
@@ -168,20 +173,20 @@ public class ApiGatewayRequestToUserActivityFunction {
 
   private static boolean isGenerateS3Key(final ApiGatewayRequestEvent request) {
     String url = request.getResource();
-    String type = getType(request);
+    UserActivityType type = getType(request);
     return isDocumentView(url, type) || isDocumentChange(url, type) || isEntityChange(url, type);
   }
 
-  private static boolean isDocumentChange(final String url, final String type) {
+  private static boolean isDocumentChange(final String url, final UserActivityType type) {
     return CHANGE_TYPES.contains(type) && url.startsWith("/documents");
   }
 
-  private static boolean isDocumentView(final String url, final String type) {
-    return "view".equals(type) && url.startsWith("/documents")
+  private static boolean isDocumentView(final String url, final UserActivityType type) {
+    return UserActivityType.VIEW.equals(type) && url.startsWith("/documents")
         && (url.endsWith("/url") || url.endsWith("/content"));
   }
 
-  private static boolean isEntityChange(final String url, final String type) {
+  private static boolean isEntityChange(final String url, final UserActivityType type) {
     return CHANGE_TYPES.contains(type)
         && (url.startsWith("/entities") || url.startsWith("/entityTypes"));
   }
@@ -189,7 +194,7 @@ public class ApiGatewayRequestToUserActivityFunction {
   private static String generateS3Key(final String siteId, final String resource,
       final String parentId, final String resourceId) {
 
-    String timestamp = S3_TIMESTAMP_FORMATTER.format(Instant.now());
+    String timestamp = DateUtil.getNowInIso8601Format().replaceAll("[-:]", "");
 
     LocalDate date = LocalDate.now(ZoneOffset.UTC);
     int year = date.getYear();
