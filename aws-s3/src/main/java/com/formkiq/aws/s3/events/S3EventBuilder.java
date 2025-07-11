@@ -24,6 +24,7 @@
 package com.formkiq.aws.s3.events;
 
 import java.time.Instant;
+import java.util.Date;
 import java.util.Objects;
 import java.util.Collections;
 
@@ -91,8 +92,8 @@ public class S3EventBuilder {
     String eventVersion = "2.1";
     String awsRegion = "us-east-1";
     String configurationId = "exampleConfigRule";
-    S3Record record = new S3Record(eventVersion, "aws:s3", awsRegion, Instant.now(), eventName,
-        new UserIdentity("AWS:EXAMPLE"), new RequestParameters("127.0.0.1"),
+    S3Record record = new S3Record(eventVersion, "aws:s3", awsRegion, Date.from(Instant.now()),
+        eventName, new UserIdentity("AWS:EXAMPLE"), new RequestParameters("127.0.0.1"),
         new ResponseElements("EXAMPLEREQUESTID", "EXAMPLEID2"),
         new S3Entity("1.0", configurationId, new Bucket(bucketName,
             new UserIdentity("EXAMPLEOWNERID"), "arn:aws:s3:::" + bucketName),

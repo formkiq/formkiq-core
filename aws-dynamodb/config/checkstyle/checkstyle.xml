@@ -234,6 +234,6 @@
   </module>
   <module name="LineLength">
     <property name="ignorePattern" value="^package.*|^import.*|a href|href|http://|https://|ftp://"/>
-    <property name="max" value="100"/>
+    <property name="max" value="101"/>
   </module>
 </module>

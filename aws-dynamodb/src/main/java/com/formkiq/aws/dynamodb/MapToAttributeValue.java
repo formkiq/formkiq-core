@@ -63,6 +63,8 @@ public class MapToAttributeValue
       o = AttributeValue.fromN(String.valueOf(l));
     } else if (obj instanceof String s) {
       o = AttributeValue.fromS(s);
+    } else if (obj instanceof Map m) {
+      o = AttributeValue.fromM(apply(m));
     } else if (obj instanceof Boolean b) {
       o = AttributeValue.fromBool(b);
     } else if (obj instanceof Collection<?> c) {

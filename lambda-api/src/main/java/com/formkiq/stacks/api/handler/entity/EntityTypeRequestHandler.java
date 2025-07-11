@@ -31,12 +31,14 @@ import com.formkiq.aws.dynamodb.DynamoDbQueryBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.eventsourcing.entity.EntityRecord;
 import com.formkiq.aws.dynamodb.eventsourcing.entity.EntityTypeRecord;
+import com.formkiq.aws.dynamodb.useractivities.AttributeValuesToChangeRecordFunction;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.plugins.useractivity.UserActivityContext;
 import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -93,7 +95,11 @@ public class EntityTypeRequestHandler
     String siteId = authorization.getSiteId();
     String entityTypeId = event.getPathParameter("entityTypeId");
 
-    validateDelete(awsservice, siteId, entityTypeId);
+    Map<String, AttributeValue> attributes = validateDelete(awsservice, siteId, entityTypeId);
+
+    UserActivityContext
+        .set(new AttributeValuesToChangeRecordFunction(Map.of("documentId", "entityTypeId"))
+            .apply(attributes, null));
 
     DynamoDbKey entityTypeKey = EntityTypeRecord.builder().documentId(entityTypeId).namespace("")
         .name("").build(siteId).key();
@@ -106,19 +112,29 @@ public class EntityTypeRequestHandler
     return ApiRequestHandlerResponse.builder().ok().body("message", "EntityType deleted").build();
   }
 
-  private void validateDelete(final AwsServiceCache awsservice, final String siteId,
-      final String entityTypeId) throws ValidationException {
+  private Map<String, AttributeValue> validateDelete(final AwsServiceCache awsservice,
+      final String siteId, final String entityTypeId) throws ValidationException {
+
     DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
+    String tableName = awsservice.environment("DOCUMENTS_TABLE");
+
+    DynamoDbKey entityTypeKey =
+        EntityTypeRecord.builder().documentId(entityTypeId).namespace("").name("").buildKey(siteId);
+
+    Map<String, AttributeValue> entityType = db.get(entityTypeKey);
+
     EntityRecord entity =
         EntityRecord.builder().entityTypeId(entityTypeId).documentId("").name("").build(siteId);
-    DynamoDbKey key = entity.key();
+    DynamoDbKey entityKey = entity.key();
 
-    String tableName = awsservice.environment("DOCUMENTS_TABLE");
     QueryRequest q = DynamoDbQueryBuilder.builder().projectionExpression(PK).indexName(GSI1)
-        .pk(key.gsi1Pk()).beginsWith(key.gsi1Sk()).limit("1").build(tableName);
+        .pk(entityKey.gsi1Pk()).beginsWith(entityKey.gsi1Sk()).limit("1").build(tableName);
 
     ValidationBuilder vb = new ValidationBuilder();
+    vb.isRequired("entityTypeId", !entityType.isEmpty(), "EntityType not found");
     vb.isRequired("entityId", !db.exists(q), "Entities attached to Entity type");
     vb.check();
+
+    return entityType;
   }
 }

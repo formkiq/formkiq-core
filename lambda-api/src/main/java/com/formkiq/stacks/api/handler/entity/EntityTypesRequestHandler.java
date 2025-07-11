@@ -33,12 +33,14 @@ import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.base64.MapAttributeValueToString;
 import com.formkiq.aws.dynamodb.eventsourcing.entity.EntityTypeRecord;
+import com.formkiq.aws.dynamodb.useractivities.AttributeValuesToChangeRecordFunction;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.plugins.useractivity.UserActivityContext;
 import com.formkiq.stacks.api.handler.entity.query.EntityTypeNameToIdQuery;
 import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationException;
@@ -126,6 +128,9 @@ public class EntityTypesRequestHandler
     Map<String, AttributeValue> attributes = entityType.getAttributes();
     validateExist(awsservice, db, siteId, addEntityType.name(), addEntityType.namespace());
 
+    UserActivityContext
+        .set(new AttributeValuesToChangeRecordFunction(Map.of("documentId", "entityTypeId"))
+            .apply(null, attributes));
     db.putItem(attributes);
 
     return ApiRequestHandlerResponse.builder().status(SC_CREATED)

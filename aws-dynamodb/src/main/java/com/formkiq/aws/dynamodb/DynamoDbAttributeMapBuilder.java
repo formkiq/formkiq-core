@@ -68,6 +68,21 @@ public class DynamoDbAttributeMapBuilder {
   }
 
   /**
+   * Adds a String attribute if the value is non-null.
+   *
+   * @param name the attribute name
+   * @param value the {@link Map} value
+   * @return this builder
+   */
+  public DynamoDbAttributeMapBuilder withMap(final String name, final Map<String, Object> value) {
+    if (value != null) {
+      Map<String, AttributeValue> map = new MapToAttributeValue().apply(value);
+      attributes.put(name, AttributeValue.builder().m(map).build());
+    }
+    return this;
+  }
+
+  /**
    * Adds a Number attribute if the value is non-null.
    *
    * @param name the attribute name

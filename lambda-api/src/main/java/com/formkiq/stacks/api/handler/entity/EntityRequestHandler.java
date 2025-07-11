@@ -29,12 +29,14 @@ import com.formkiq.aws.dynamodb.AttributeValueToMapConfig;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.eventsourcing.entity.EntityRecord;
+import com.formkiq.aws.dynamodb.useractivities.AttributeValuesToChangeRecordFunction;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.plugins.useractivity.UserActivityContext;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.Map;
@@ -103,9 +105,14 @@ public class EntityRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
         .name("").build(siteId).key();
 
     DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
-    if (!db.deleteItem(key)) {
+    Map<String, AttributeValue> attributes = db.get(key);
+    if (attributes.isEmpty()) {
       throw new NotFoundException("entity '" + entityTypeId + "' not found");
     }
+
+    UserActivityContext
+        .set(new AttributeValuesToChangeRecordFunction(Map.of("documentId", "entityId"))
+            .apply(attributes, null));
 
     return ApiRequestHandlerResponse.builder().status(SC_OK).body("message", "Entity deleted")
         .build();
