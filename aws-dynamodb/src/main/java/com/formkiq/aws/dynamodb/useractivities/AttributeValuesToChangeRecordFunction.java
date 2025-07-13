@@ -24,23 +24,15 @@
 package com.formkiq.aws.dynamodb.useractivities;
 
 import com.formkiq.aws.dynamodb.AttributeValueToMap;
+import com.formkiq.aws.dynamodb.DbKeyPredicate;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
-import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static com.formkiq.aws.dynamodb.DbKeys.GSI1_PK;
-import static com.formkiq.aws.dynamodb.DbKeys.GSI1_SK;
-import static com.formkiq.aws.dynamodb.DbKeys.GSI2_PK;
-import static com.formkiq.aws.dynamodb.DbKeys.GSI2_SK;
-import static com.formkiq.aws.dynamodb.DbKeys.PK;
-import static com.formkiq.aws.dynamodb.DbKeys.SK;
 
 /**
  * {@link BiFunction} to generate a {@link ChangeRecord}.
@@ -48,8 +40,6 @@ import static com.formkiq.aws.dynamodb.DbKeys.SK;
 public class AttributeValuesToChangeRecordFunction implements
     BiFunction<Map<String, AttributeValue>, Map<String, AttributeValue>, Map<String, ChangeRecord>> {
 
-  /** DynamoDb Keys. */
-  private static final Collection<String> KEYS = Set.of(PK, SK, GSI1_PK, GSI1_SK, GSI2_PK, GSI2_SK);
   /** Keys to Rename. */
   private final Map<String, String> rename;
 
@@ -72,7 +62,7 @@ public class AttributeValuesToChangeRecordFunction implements
     Map<String, Object> newValueMap = toMap.apply(newValue);
 
     return Stream.concat(oldValueMap.keySet().stream(), newValueMap.keySet().stream()).distinct()
-        .filter(Predicate.not(KEYS::contains))
+        .filter(Predicate.not(new DbKeyPredicate()))
         // only those that changed
         .filter(k -> !Objects.equals(oldValueMap.get(k), newValueMap.get(k)))
         .collect(Collectors.toMap(k -> rename.getOrDefault(k, k), k -> {

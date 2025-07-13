@@ -23,25 +23,14 @@
  */
 package com.formkiq.aws.dynamodb.useractivities;
 
-import com.formkiq.graalvm.annotations.Reflectable;
-
 /**
- * Activity Type.
+ * Enumeration of possible activity outcomes.
  */
-@Reflectable
-public enum UserActivityType {
-  /** View Activity. */
-  VIEW,
-  /** Create Activity. */
-  CREATE,
-  /** Update Activity. */
-  UPDATE,
-  /** Delete Activity. */
-  DELETE,
-  /** Soft Delete Activity. */
-  SOFT_DELETE,
-  /** Restore Activity. */
-  RESTORE,
-  /** New Version. */
-  NEW_VERSION
+public enum UserActivityStatus {
+  /** The activity completed successfully. */
+  COMPLETE,
+  /** The activity failed. */
+  FAILED,
+  /** Unauthorized. */
+  UNAUTHORIZED
 }

@@ -192,6 +192,19 @@ public class Strings {
   }
 
   /**
+   * XOR {@link String} {@link List}.
+   *
+   * @param strs {@link Collection} {@link String}
+   * @return boolean
+   */
+  public static boolean isEmpty(final String... strs) {
+
+    int len = strs.length;
+    long countEmpty = Arrays.stream(strs).filter(Strings::isEmpty).count();
+    return len == countEmpty || countEmpty == 0;
+  }
+
+  /**
    * Is {@link String} a {@link UUID}.
    *
    * @param s {@link String}
@@ -247,19 +260,6 @@ public class Strings {
     PrintWriter pw = new PrintWriter(sw);
     e.printStackTrace(pw);
     return sw.toString();
-  }
-
-  /**
-   * XOR {@link String} {@link List}.
-   * 
-   * @param strs {@link Collection} {@link String}
-   * @return boolean
-   */
-  public static boolean isEmptyOrHasValues(final String... strs) {
-
-    int len = strs.length;
-    long countEmpty = Arrays.stream(strs).filter(s -> isEmpty(s)).count();
-    return len == countEmpty || countEmpty == 0;
   }
 
   /**

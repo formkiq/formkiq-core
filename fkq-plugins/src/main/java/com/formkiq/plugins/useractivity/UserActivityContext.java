@@ -24,6 +24,7 @@
 package com.formkiq.plugins.useractivity;
 
 import com.formkiq.aws.dynamodb.useractivities.ChangeRecord;
+import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
 
 import java.util.Map;
 
@@ -36,7 +37,7 @@ import java.util.Map;
 public class UserActivityContext {
 
   /** Thread Local Variable. */
-  private static final ThreadLocal<Map<String, ChangeRecord>> CONTEXT = new ThreadLocal<>();
+  private static final ThreadLocal<UserActivityContextData> CONTEXT = new ThreadLocal<>();
 
   private UserActivityContext() {
     // Prevent instantiation
@@ -45,18 +46,19 @@ public class UserActivityContext {
   /**
    * Set the user activity context for the current thread.
    *
+   * @param type {@link UserActivityType}
    * @param data the DynamoDB attribute map
    */
-  public static void set(final Map<String, ChangeRecord> data) {
-    CONTEXT.set(data);
+  public static void set(final UserActivityType type, final Map<String, ChangeRecord> data) {
+    CONTEXT.set(new UserActivityContextData(type, data));
   }
 
   /**
    * Get the user activity context for the current thread.
    *
-   * @return the attribute map, or null if not set
+   * @return UserActivityContextData, or null if not set
    */
-  public static Map<String, ChangeRecord> get() {
+  public static UserActivityContextData get() {
     return CONTEXT.get();
   }
 

@@ -34,6 +34,8 @@ import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.base64.MapAttributeValueToString;
 import com.formkiq.aws.dynamodb.eventsourcing.entity.EntityTypeRecord;
 import com.formkiq.aws.dynamodb.useractivities.AttributeValuesToChangeRecordFunction;
+import com.formkiq.aws.dynamodb.useractivities.ChangeRecord;
+import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -128,9 +130,10 @@ public class EntityTypesRequestHandler
     Map<String, AttributeValue> attributes = entityType.getAttributes();
     validateExist(awsservice, db, siteId, addEntityType.name(), addEntityType.namespace());
 
-    UserActivityContext
-        .set(new AttributeValuesToChangeRecordFunction(Map.of("documentId", "entityTypeId"))
-            .apply(null, attributes));
+    Map<String, ChangeRecord> changes =
+        new AttributeValuesToChangeRecordFunction(Map.of("documentId", "entityTypeId")).apply(null,
+            attributes);
+    UserActivityContext.set(UserActivityType.CREATE, changes);
     db.putItem(attributes);
 
     return ApiRequestHandlerResponse.builder().status(SC_CREATED)

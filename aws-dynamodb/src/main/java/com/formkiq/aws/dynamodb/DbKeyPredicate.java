@@ -21,16 +21,38 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.plugins.useractivity;
+package com.formkiq.aws.dynamodb;
+
+import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Predicate;
+
+import static com.formkiq.aws.dynamodb.DbKeys.GSI1_PK;
+import static com.formkiq.aws.dynamodb.DbKeys.GSI1_SK;
+import static com.formkiq.aws.dynamodb.DbKeys.GSI2_PK;
+import static com.formkiq.aws.dynamodb.DbKeys.GSI2_SK;
+import static com.formkiq.aws.dynamodb.DbKeys.PK;
+import static com.formkiq.aws.dynamodb.DbKeys.SK;
 
 /**
- * Enumeration of possible activity outcomes.
+ * DynamoDb Keys {@link Predicate}.
  */
-public enum UserActivityStatus {
-  /** The activity completed successfully. */
-  COMPLETE,
-  /** The activity failed. */
-  FAILED,
-  /** Unauthorized. */
-  UNAUTHORIZED
+public class DbKeyPredicate implements Predicate<Object> {
+
+  /** DynamoDb Keys. */
+  private static final Collection<String> KEYS = Set.of(PK, SK, GSI1_PK, GSI1_SK, GSI2_PK, GSI2_SK);
+
+  @Override
+  public boolean test(final Object obj) {
+    if (obj instanceof String s) {
+      return KEYS.contains(s);
+    }
+
+    if (obj instanceof Map.Entry<?, ?> e) {
+      return KEYS.contains((String) e.getKey());
+    }
+
+    throw new IllegalArgumentException("Object " + obj.getClass().getName() + " is unsupported");
+  }
 }

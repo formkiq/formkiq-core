@@ -25,12 +25,12 @@ package com.formkiq.aws.services.lambda;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
+import com.formkiq.aws.dynamodb.useractivities.UserActivityStatus;
 import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
-import com.formkiq.aws.dynamodb.useractivities.ChangeRecord;
 import com.formkiq.plugins.useractivity.UserActivity;
 import com.formkiq.plugins.useractivity.UserActivityContext;
-import com.formkiq.plugins.useractivity.UserActivityStatus;
+import com.formkiq.plugins.useractivity.UserActivityContextData;
 import com.formkiq.strings.Strings;
 
 import java.time.Instant;
@@ -78,18 +78,19 @@ public class ApiGatewayRequestToUserActivityFunction {
 
     builder = builder.documentId(documentId).entityId(entityId).entityTypeId(entityTypeId);
 
-    Map<String, ChangeRecord> changeSet = UserActivityContext.get();
-    if (changeSet != null) {
-      builder.changeSet(GsonUtil.getInstance().toJson(changeSet));
+    UserActivityContextData data = UserActivityContext.get();
+    if (data != null) {
+      builder.type(data.activityType());
+      builder.changeSet(GsonUtil.getInstance().toJson(data.changeRecords()));
     }
 
     if (request != null) {
 
       String entityNamespace = request.getQueryStringParameter("namespace");
       String resource = getResource(request);
-      UserActivityType activityType = getType(request);
+      // UserActivityType activityType = getType(request);
 
-      builder = builder.resource(resource).entityNamespace(entityNamespace).type(activityType)
+      builder = builder.resource(resource).entityNamespace(entityNamespace)/* .type(activityType) */
           .sourceIpAddress(getSourceIp(request)).body(getBody(request))
           .userId(authorization != null ? authorization.getUsername() : "System");
 
@@ -138,15 +139,23 @@ public class ApiGatewayRequestToUserActivityFunction {
   }
 
   private static UserActivityType getType(final ApiGatewayRequestEvent request) {
+
+    UserActivityType type;
     String method = request.getHttpMethod().toUpperCase();
 
-    return switch (method) {
-      case "GET" -> UserActivityType.VIEW;
-      case "POST" -> UserActivityType.CREATE;
-      case "PUT", "PATCH" -> UserActivityType.UPDATE;
-      case "DELETE" -> UserActivityType.DELETE;
-      default -> null;
-    };
+    if (request.getResource().equals("/documents/upload")) {
+      type = UserActivityType.CREATE;
+    } else {
+      type = switch (method) {
+        case "GET" -> UserActivityType.VIEW;
+        case "POST" -> UserActivityType.CREATE;
+        case "PUT", "PATCH" -> UserActivityType.UPDATE;
+        case "DELETE" -> UserActivityType.DELETE;
+        default -> null;
+      };
+    }
+
+    return type;
   }
 
   private static String getSourceIp(final ApiGatewayRequestEvent request) {
@@ -174,7 +183,8 @@ public class ApiGatewayRequestToUserActivityFunction {
   private static boolean isGenerateS3Key(final ApiGatewayRequestEvent request) {
     String url = request.getResource();
     UserActivityType type = getType(request);
-    return isDocumentView(url, type) || isDocumentChange(url, type) || isEntityChange(url, type);
+    return type != null
+        && (isDocumentView(url, type) || isDocumentChange(url, type) || isEntityChange(url, type));
   }
 
   private static boolean isDocumentChange(final String url, final UserActivityType type) {

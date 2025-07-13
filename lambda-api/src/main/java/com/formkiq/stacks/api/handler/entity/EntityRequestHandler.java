@@ -30,6 +30,8 @@ import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.eventsourcing.entity.EntityRecord;
 import com.formkiq.aws.dynamodb.useractivities.AttributeValuesToChangeRecordFunction;
+import com.formkiq.aws.dynamodb.useractivities.ChangeRecord;
+import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -110,9 +112,12 @@ public class EntityRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
       throw new NotFoundException("entity '" + entityTypeId + "' not found");
     }
 
-    UserActivityContext
-        .set(new AttributeValuesToChangeRecordFunction(Map.of("documentId", "entityId"))
-            .apply(attributes, null));
+    db.deleteItem(key);
+
+    Map<String, ChangeRecord> changes =
+        new AttributeValuesToChangeRecordFunction(Map.of("documentId", "entityId"))
+            .apply(attributes, null);
+    UserActivityContext.set(UserActivityType.DELETE, changes);
 
     return ApiRequestHandlerResponse.builder().status(SC_OK).body("message", "Entity deleted")
         .build();

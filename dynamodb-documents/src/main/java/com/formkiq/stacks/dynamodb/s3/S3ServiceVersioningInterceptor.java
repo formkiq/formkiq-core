@@ -28,7 +28,7 @@ import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
-import com.formkiq.aws.dynamodb.useractivities.UserActivityRecord;
+import com.formkiq.aws.dynamodb.useractivities.ActivityRecord;
 import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3Service;
@@ -97,13 +97,13 @@ public class S3ServiceVersioningInterceptor implements S3ServiceInterceptor {
   private void createAudit(final String siteId, final String documentId,
       final Map<String, AttributeValue> versionAttr) {
     String username = ApiAuthorization.getAuthorization().getUsername();
-    UserActivityRecord ua = new UserActivityRecord().setDocumentId(documentId).setUserId(username)
-        .setInsertedDate(new Date()).setType(UserActivityType.NEW_VERSION);
 
-    ua.setVersionPk(versionAttr.get(DbKeys.PK).s());
-    ua.setVersionSk(versionAttr.get(DbKeys.SK).s());
+    ActivityRecord ua =
+        ActivityRecord.builder().documentId(documentId).userId(username).insertedDate(new Date())
+            .type(UserActivityType.NEW_VERSION).versionPk(versionAttr.get(DbKeys.PK).s())
+            .versionSk(versionAttr.get(DbKeys.SK).s()).build(siteId);
 
-    this.auditService.putItem(ua.getAttributes(siteId));
+    this.auditService.putItem(ua.getAttributes());
   }
 
   /**

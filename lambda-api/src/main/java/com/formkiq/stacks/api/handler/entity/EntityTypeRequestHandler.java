@@ -32,6 +32,8 @@ import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.eventsourcing.entity.EntityRecord;
 import com.formkiq.aws.dynamodb.eventsourcing.entity.EntityTypeRecord;
 import com.formkiq.aws.dynamodb.useractivities.AttributeValuesToChangeRecordFunction;
+import com.formkiq.aws.dynamodb.useractivities.ChangeRecord;
+import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -97,9 +99,10 @@ public class EntityTypeRequestHandler
 
     Map<String, AttributeValue> attributes = validateDelete(awsservice, siteId, entityTypeId);
 
-    UserActivityContext
-        .set(new AttributeValuesToChangeRecordFunction(Map.of("documentId", "entityTypeId"))
-            .apply(attributes, null));
+    Map<String, ChangeRecord> changes =
+        new AttributeValuesToChangeRecordFunction(Map.of("documentId", "entityTypeId"))
+            .apply(attributes, null);
+    UserActivityContext.set(UserActivityType.DELETE, changes);
 
     DynamoDbKey entityTypeKey = EntityTypeRecord.builder().documentId(entityTypeId).namespace("")
         .name("").build(siteId).key();

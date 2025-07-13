@@ -21,27 +21,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.dynamodb.useractivities;
+package com.formkiq.plugins.useractivity;
 
-import com.formkiq.graalvm.annotations.Reflectable;
+import com.formkiq.aws.dynamodb.useractivities.ChangeRecord;
+import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
+
+import java.util.Map;
 
 /**
- * Activity Type.
+ * Represents a user activity event, capturing the type of activity and the associated change
+ * records.
  */
-@Reflectable
-public enum UserActivityType {
-  /** View Activity. */
-  VIEW,
-  /** Create Activity. */
-  CREATE,
-  /** Update Activity. */
-  UPDATE,
-  /** Delete Activity. */
-  DELETE,
-  /** Soft Delete Activity. */
-  SOFT_DELETE,
-  /** Restore Activity. */
-  RESTORE,
-  /** New Version. */
-  NEW_VERSION
+public record UserActivityContextData(UserActivityType activityType,
+    Map<String, ChangeRecord> changeRecords) {
 }

@@ -70,14 +70,34 @@ public class DynamoDbQueryBuilder implements DbKeys {
   }
 
   /**
-   * Sets the GSI index name to query; omit for primary index. <<<<<<< HEAD
-   *
+   * Sets the GSI index name to query; omit for primary index.
    * 
    * @param dbIndexName GSI name
    * @return this builder
    */
   public DynamoDbQueryBuilder indexName(final String dbIndexName) {
     this.indexName = dbIndexName;
+    return this;
+  }
+
+  /**
+   * Sets the GSI index name to query; omit for primary index.
+   *
+   * @param dbIndexName GSI name
+   * @param key {@link DynamoDbKey}
+   * @return this builder
+   */
+  public DynamoDbQueryBuilder indexName(final String dbIndexName, final DynamoDbKey key) {
+    indexName(dbIndexName);
+
+    if (GSI1.equals(dbIndexName)) {
+      pk(key.gsi1Pk());
+    } else if (GSI2.equals(dbIndexName)) {
+      pk(key.gsi2Pk());
+    } else {
+      pk(key.pk());
+    }
+
     return this;
   }
 

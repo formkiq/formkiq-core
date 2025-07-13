@@ -202,8 +202,7 @@ public class ConfigurationRequestHandler
       String googleWorkloadIdentityAudience = google.getWorkloadIdentityAudience();
       String googleWorkloadIdentityServiceAccount = google.getWorkloadIdentityServiceAccount();
 
-      if (!Strings.isEmptyOrHasValues(googleWorkloadIdentityAudience,
-          googleWorkloadIdentityServiceAccount)) {
+      if (!Strings.isEmpty(googleWorkloadIdentityAudience, googleWorkloadIdentityServiceAccount)) {
         errors.add(new ValidationErrorImpl().key("google")
             .error("all 'googleWorkloadIdentityAudience', 'googleWorkloadIdentityServiceAccount' "
                 + "are required for google setup"));
@@ -221,8 +220,7 @@ public class ConfigurationRequestHandler
       String docusignIntegrationKey = docusign.getIntegrationKey();
       String docusignRsaPrivateKey = docusign.getRsaPrivateKey();
 
-      if (!Strings.isEmptyOrHasValues(docusignUserId, docusignIntegrationKey,
-          docusignRsaPrivateKey)) {
+      if (!Strings.isEmpty(docusignUserId, docusignIntegrationKey, docusignRsaPrivateKey)) {
         errors.add(new ValidationErrorImpl().key("docusign")
             .error("all 'docusignUserId', 'docusignIntegrationKey', 'docusignRsaPrivateKey' "
                 + "are required for docusign setup"));
