@@ -289,6 +289,10 @@ public record ActivityRecord(DynamoDbKey key, String resource, UserActivityType 
       };
     }
 
+    private String getGsi2Pk() {
+      return "activity#" + DateUtil.getYyyyMmDdFormatter().format(new Date());
+    }
+
     private DynamoDbKey buildDocumentsKey(final String siteId) {
 
       Objects.requireNonNull(documentId, "documentId must not be null");
@@ -298,7 +302,10 @@ public record ActivityRecord(DynamoDbKey key, String resource, UserActivityType 
       String sk = "activity#" + DateUtil.getNowInIso8601Format() + "#" + documentId;
       String gsi1Pk = "activity#user#" + userId;
 
-      return DynamoDbKey.builder().pk(siteId, pk).sk(sk).gsi1Pk(siteId, gsi1Pk).gsi1Sk(sk).build();
+      String gsi2Pk = getGsi2Pk();
+
+      return DynamoDbKey.builder().pk(siteId, pk).sk(sk).gsi1Pk(siteId, gsi1Pk).gsi1Sk(sk)
+          .gsi2Pk(siteId, gsi2Pk).gsi2Sk(sk).build();
     }
 
     private DynamoDbKey buildEntitiesKey(final String siteId) {
@@ -311,7 +318,10 @@ public record ActivityRecord(DynamoDbKey key, String resource, UserActivityType 
       String sk = "activity#" + DateUtil.getNowInIso8601Format() + "#" + entityId;
       String gsi1Pk = "activity#user#" + userId;
 
-      return DynamoDbKey.builder().pk(siteId, pk).sk(sk).gsi1Pk(siteId, gsi1Pk).gsi1Sk(sk).build();
+      String gsi2Pk = getGsi2Pk();
+
+      return DynamoDbKey.builder().pk(siteId, pk).sk(sk).gsi1Pk(siteId, gsi1Pk).gsi1Sk(sk)
+          .gsi2Pk(siteId, gsi2Pk).gsi2Sk(sk).build();
     }
 
     private DynamoDbKey buildEntityTypesKey(final String siteId) {
@@ -323,7 +333,10 @@ public record ActivityRecord(DynamoDbKey key, String resource, UserActivityType 
       String sk = "activity#" + DateUtil.getNowInIso8601Format() + "#" + entityTypeId;
       String gsi1Pk = "activity#user#" + userId;
 
-      return DynamoDbKey.builder().pk(siteId, pk).sk(sk).gsi1Pk(siteId, gsi1Pk).gsi1Sk(sk).build();
+      String gsi2Pk = getGsi2Pk();
+
+      return DynamoDbKey.builder().pk(siteId, pk).sk(sk).gsi1Pk(siteId, gsi1Pk).gsi1Sk(sk)
+          .gsi2Pk(siteId, gsi2Pk).gsi2Sk(sk).build();
     }
 
     /**
