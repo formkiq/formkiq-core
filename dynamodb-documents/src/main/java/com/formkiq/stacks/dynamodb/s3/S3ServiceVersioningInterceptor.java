@@ -24,26 +24,31 @@
 package com.formkiq.stacks.dynamodb.s3;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
-import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
-import com.formkiq.aws.dynamodb.useractivities.ActivityRecord;
+import com.formkiq.aws.dynamodb.useractivities.UserActivityStatus;
 import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.s3.S3ServiceInterceptor;
+import com.formkiq.plugins.useractivity.UserActivity;
+import com.formkiq.stacks.dynamodb.GsonUtil;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.s3.model.ListObjectVersionsResponse;
 import software.amazon.awssdk.services.s3.model.ObjectVersion;
 
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.formkiq.aws.dynamodb.DbKeys.PK;
 import static com.formkiq.aws.dynamodb.DbKeys.PREFIX_DOCS;
+import static com.formkiq.aws.dynamodb.DbKeys.SK;
 import static com.formkiq.aws.dynamodb.DbKeys.TAG_DELIMINATOR;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
@@ -59,21 +64,21 @@ public class S3ServiceVersioningInterceptor implements S3ServiceInterceptor {
   private final DynamoDbService versionService;
   /** {@link SimpleDateFormat} in ISO Standard format. */
   private final SimpleDateFormat df = DateUtil.getIsoDateFormatter();
-  /** {@link DynamoDbService}. */
-  private final DynamoDbService auditService;
+  /** Activities Bucket. */
+  private final String activitiesBucket;
 
   /**
    * constructor.
    * 
    * @param watchS3Bucket {@link String}
    * @param dbVersionService {@link DynamoDbService}
-   * @param dbDocumentAuditService {@link DynamoDbService}
+   * @param s3ActivitiesBucket {@link String}
    */
   public S3ServiceVersioningInterceptor(final String watchS3Bucket,
-      final DynamoDbService dbVersionService, final DynamoDbService dbDocumentAuditService) {
+      final DynamoDbService dbVersionService, final String s3ActivitiesBucket) {
     this.watchBucket = watchS3Bucket;
     this.versionService = dbVersionService;
-    this.auditService = dbDocumentAuditService;
+    this.activitiesBucket = s3ActivitiesBucket;
   }
 
   @Override
@@ -82,28 +87,28 @@ public class S3ServiceVersioningInterceptor implements S3ServiceInterceptor {
     if (this.watchBucket.equalsIgnoreCase(bucket)) {
 
       ObjectVersion version = getPreviousObject(s3, bucket, key);
+      String siteId = SiteIdKeyGenerator.getSiteIdName(SiteIdKeyGenerator.getSiteId(key));
+      String documentId = SiteIdKeyGenerator.getDocumentId(key);
+
       if (version != null) {
-
-        String siteId = SiteIdKeyGenerator.getSiteId(key);
-        String documentId = SiteIdKeyGenerator.getDocumentId(key);
-
-        Map<String, AttributeValue> versionAttr =
-            createVersion(siteId, documentId, s3, bucket, key, version);
-        createAudit(siteId, documentId, versionAttr);
+        createVersion(siteId, documentId, s3, bucket, key, version);
       }
+
+      createAudit(s3, siteId, documentId);
     }
   }
 
-  private void createAudit(final String siteId, final String documentId,
-      final Map<String, AttributeValue> versionAttr) {
+  private void createAudit(final S3Service s3, final String siteId, final String documentId) {
+
     String username = ApiAuthorization.getAuthorization().getUsername();
 
-    ActivityRecord ua =
-        ActivityRecord.builder().documentId(documentId).userId(username).insertedDate(new Date())
-            .type(UserActivityType.NEW_VERSION).versionPk(versionAttr.get(DbKeys.PK).s())
-            .versionSk(versionAttr.get(DbKeys.SK).s()).build(siteId);
+    UserActivity ua = UserActivity.builder().resource("documents").source("S3Event")
+        .type(UserActivityType.NEW_VERSION).status(UserActivityStatus.COMPLETE)
+        .documentId(documentId).userId(username).insertedDate(Instant.now())
+        .s3Key(siteId, "documents", null, documentId).build(siteId);
 
-    this.auditService.putItem(ua.getAttributes());
+    byte[] data = GsonUtil.getInstance().toJson(ua).getBytes(StandardCharsets.UTF_8);
+    s3.putObject(this.activitiesBucket, ua.s3Key(), data, "application/json");
   }
 
   /**
@@ -121,8 +126,8 @@ public class S3ServiceVersioningInterceptor implements S3ServiceInterceptor {
     return objectVersions.size() > 1 ? objectVersions.get(1) : null;
   }
 
-  public Map<String, AttributeValue> createVersion(final String siteId, final String documentId,
-      final S3Service s3, final String bucket, final String key, final ObjectVersion version) {
+  public void createVersion(final String siteId, final String documentId, final S3Service s3,
+      final String bucket, final String key, final ObjectVersion version) {
 
     String username = ApiAuthorization.getAuthorization().getUsername();
 
@@ -131,8 +136,8 @@ public class S3ServiceVersioningInterceptor implements S3ServiceInterceptor {
     String fulldate = this.df.format(new Date());
 
     String pk = SiteIdKeyGenerator.createDatabaseKey(siteId, PREFIX_DOCS + documentId);
-    attr.put(DbKeys.PK, AttributeValue.fromS(pk));
-    attr.put(DbKeys.SK, AttributeValue.fromS("document" + TAG_DELIMINATOR + fulldate));
+    attr.put(PK, AttributeValue.fromS(pk));
+    attr.put(SK, AttributeValue.fromS("document" + TAG_DELIMINATOR + fulldate));
 
     S3ObjectMetadata resp = s3.getObjectMetadata(bucket, key, version.versionId());
 
@@ -152,6 +157,5 @@ public class S3ServiceVersioningInterceptor implements S3ServiceInterceptor {
     attr.put("s3version", AttributeValue.fromS(resp.getVersionId()));
 
     this.versionService.putItem(attr);
-    return attr;
   }
 }

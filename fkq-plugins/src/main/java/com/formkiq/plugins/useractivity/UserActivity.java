@@ -23,11 +23,18 @@
  */
 package com.formkiq.plugins.useractivity;
 
+import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.dynamodb.useractivities.UserActivityStatus;
 import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.Date;
+import java.util.UUID;
+
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.getSiteIdName;
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 
 /**
  * Represents an activity performed by a user on a document or entity. This includes metadata such
@@ -139,6 +146,28 @@ public record UserActivity(
 
     public Builder insertedDate(final Instant userActivityInsertedDate) {
       this.insertedDate = userActivityInsertedDate;
+      return this;
+    }
+
+    public Builder s3Key(final String siteId, final String resource, final String parentId,
+        final String resourceId) {
+
+      String timestamp = DateUtil.getNowInIso8601Format().replaceAll("[-:]", "");
+
+      LocalDate date = LocalDate.now(ZoneOffset.UTC);
+      int year = date.getYear();
+      int month = date.getMonthValue();
+      int day = date.getDayOfMonth();
+
+      String uuid = UUID.randomUUID().toString();
+      String resourceType = parentId != null ? resource + "/" + parentId : resource;
+
+      if (!isEmpty(resource) && !isEmpty(resourceId)) {
+        String key = String.format("activities/%s/%s/year=%d/month=%02d/day=%02d/%s/%s_%s.json",
+            getSiteIdName(siteId), resourceType, year, month, day, resourceId, timestamp, uuid);
+        s3Key(key);
+      }
+
       return this;
     }
 

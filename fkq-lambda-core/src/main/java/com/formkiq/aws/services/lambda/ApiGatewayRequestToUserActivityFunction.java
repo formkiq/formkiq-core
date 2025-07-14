@@ -24,7 +24,6 @@
 package com.formkiq.aws.services.lambda;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
-import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.dynamodb.useractivities.UserActivityStatus;
 import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
@@ -34,15 +33,11 @@ import com.formkiq.plugins.useractivity.UserActivityContextData;
 import com.formkiq.strings.Strings;
 
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneOffset;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
-import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.getSiteIdName;
 import static com.formkiq.strings.Strings.isEmpty;
 
 /**
@@ -88,9 +83,8 @@ public class ApiGatewayRequestToUserActivityFunction {
 
       String entityNamespace = request.getQueryStringParameter("namespace");
       String resource = getResource(request);
-      // UserActivityType activityType = getType(request);
 
-      builder = builder.resource(resource).entityNamespace(entityNamespace)/* .type(activityType) */
+      builder = builder.resource(resource).entityNamespace(entityNamespace)
           .sourceIpAddress(getSourceIp(request)).body(getBody(request))
           .userId(authorization != null ? authorization.getUsername() : "System");
 
@@ -99,7 +93,7 @@ public class ApiGatewayRequestToUserActivityFunction {
         String siteId = authorization != null ? authorization.getSiteId() : DEFAULT_SITE_ID;
         String resourceId = Strings.notEmpty(documentId, entityId, entityTypeId);
         String parentId = !isEmpty(entityId) ? entityTypeId : null;
-        builder = builder.s3Key(generateS3Key(siteId, resource, parentId, resourceId));
+        builder = builder.s3Key(siteId, resource, parentId, resourceId);
       }
     }
 
@@ -165,7 +159,7 @@ public class ApiGatewayRequestToUserActivityFunction {
             : "unknown";
   }
 
-  private static Instant getInsertedDate(final ApiGatewayRequestEvent request) {
+  private Instant getInsertedDate(final ApiGatewayRequestEvent request) {
     Instant insertedDate = null;
     if (request != null && request.getRequestContext() != null) {
       Long epochMillis = request.getRequestContext().getRequestTimeEpoch();
@@ -180,43 +174,24 @@ public class ApiGatewayRequestToUserActivityFunction {
     return insertedDate;
   }
 
-  private static boolean isGenerateS3Key(final ApiGatewayRequestEvent request) {
+  private boolean isGenerateS3Key(final ApiGatewayRequestEvent request) {
     String url = request.getResource();
     UserActivityType type = getType(request);
     return type != null
         && (isDocumentView(url, type) || isDocumentChange(url, type) || isEntityChange(url, type));
   }
 
-  private static boolean isDocumentChange(final String url, final UserActivityType type) {
+  private boolean isDocumentChange(final String url, final UserActivityType type) {
     return CHANGE_TYPES.contains(type) && url.startsWith("/documents");
   }
 
-  private static boolean isDocumentView(final String url, final UserActivityType type) {
+  private boolean isDocumentView(final String url, final UserActivityType type) {
     return UserActivityType.VIEW.equals(type) && url.startsWith("/documents")
         && (url.endsWith("/url") || url.endsWith("/content"));
   }
 
-  private static boolean isEntityChange(final String url, final UserActivityType type) {
+  private boolean isEntityChange(final String url, final UserActivityType type) {
     return CHANGE_TYPES.contains(type)
         && (url.startsWith("/entities") || url.startsWith("/entityTypes"));
-  }
-
-  private static String generateS3Key(final String siteId, final String resource,
-      final String parentId, final String resourceId) {
-
-    String timestamp = DateUtil.getNowInIso8601Format().replaceAll("[-:]", "");
-
-    LocalDate date = LocalDate.now(ZoneOffset.UTC);
-    int year = date.getYear();
-    int month = date.getMonthValue();
-    int day = date.getDayOfMonth();
-
-    String uuid = UUID.randomUUID().toString();
-    String resourceType = parentId != null ? resource + "/" + parentId : resource;
-
-    return !isEmpty(resource) && !isEmpty(resourceId)
-        ? String.format("activities/%s/%s/year=%d/month=%02d/day=%02d/%s/%s_%s.json",
-            getSiteIdName(siteId), resourceType, year, month, day, resourceId, timestamp, uuid)
-        : null;
   }
 }
