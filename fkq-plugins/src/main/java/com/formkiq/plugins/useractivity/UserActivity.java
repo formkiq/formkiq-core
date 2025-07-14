@@ -83,7 +83,7 @@ public record UserActivity(
     /* Request Body. */
     String body,
     /* Change Set. */
-    String changeSet) {
+    String changes) {
 
   /**
    * Creates a new {@link UserActivity.Builder} for {@link UserActivity}.
@@ -127,7 +127,7 @@ public record UserActivity(
     /** Request Body. */
     private String body;
     /** Change Set. */
-    private String changeSet;
+    private String changes;
 
     public Builder documentId(final String userActivityDocumentId) {
       this.documentId = userActivityDocumentId;
@@ -149,8 +149,7 @@ public record UserActivity(
       return this;
     }
 
-    public Builder s3Key(final String siteId, final String resource, final String parentId,
-        final String resourceId) {
+    public Builder s3Key(final String siteId, final String parentId, final String resourceId) {
 
       String timestamp = DateUtil.getNowInIso8601Format().replaceAll("[-:]", "");
 
@@ -198,8 +197,8 @@ public record UserActivity(
       return this;
     }
 
-    public Builder changeSet(final String userActivityChangeSet) {
-      this.changeSet = userActivityChangeSet;
+    public Builder changes(final String userActivityChanges) {
+      this.changes = userActivityChanges;
       return this;
     }
 
@@ -273,7 +272,7 @@ public record UserActivity(
     public UserActivity build(final String siteId) {
       return new UserActivity(siteId, resource, documentId, type, userId, Date.from(insertedDate),
           s3Key, message, status, sourceIpAddress, source, entityTypeId, entityId, entityNamespace,
-          body, changeSet);
+          body, changes);
     }
   }
 }

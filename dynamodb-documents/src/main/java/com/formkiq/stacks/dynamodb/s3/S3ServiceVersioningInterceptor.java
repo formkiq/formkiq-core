@@ -82,7 +82,8 @@ public class S3ServiceVersioningInterceptor implements S3ServiceInterceptor {
   }
 
   @Override
-  public void putObjectEvent(final S3Service s3, final String bucket, final String key) {
+  public void putObjectEvent(final S3Service s3, final String bucket, final String key,
+      final String changes) {
 
     if (this.watchBucket.equalsIgnoreCase(bucket)) {
 
@@ -94,18 +95,19 @@ public class S3ServiceVersioningInterceptor implements S3ServiceInterceptor {
         createVersion(siteId, documentId, s3, bucket, key, version);
       }
 
-      createAudit(s3, siteId, documentId);
+      createAudit(s3, siteId, documentId, changes);
     }
   }
 
-  private void createAudit(final S3Service s3, final String siteId, final String documentId) {
+  private void createAudit(final S3Service s3, final String siteId, final String documentId,
+      final String changes) {
 
     String username = ApiAuthorization.getAuthorization().getUsername();
 
     UserActivity ua = UserActivity.builder().resource("documents").source("S3Event")
         .type(UserActivityType.NEW_VERSION).status(UserActivityStatus.COMPLETE)
-        .documentId(documentId).userId(username).insertedDate(Instant.now())
-        .s3Key(siteId, "documents", null, documentId).build(siteId);
+        .documentId(documentId).userId(username).insertedDate(Instant.now()).changes(changes)
+        .s3Key(siteId, null, documentId).build(siteId);
 
     byte[] data = GsonUtil.getInstance().toJson(ua).getBytes(StandardCharsets.UTF_8);
     s3.putObject(this.activitiesBucket, ua.s3Key(), data, "application/json");

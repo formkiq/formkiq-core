@@ -8,6 +8,8 @@
 	<subpackage name="useractivity">
 		<allow pkg="java.util" />
 		<allow pkg="java.time" />
+		<allow pkg="com.formkiq.aws.dynamodb" />
+		<allow pkg="com.formkiq.aws.dynamodb.objects" />
 		<allow pkg="com.formkiq.aws.dynamodb.useractivities" />
 	</subpackage>
 

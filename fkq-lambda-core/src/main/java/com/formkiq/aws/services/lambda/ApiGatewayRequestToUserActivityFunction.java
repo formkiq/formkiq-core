@@ -76,7 +76,7 @@ public class ApiGatewayRequestToUserActivityFunction {
     UserActivityContextData data = UserActivityContext.get();
     if (data != null) {
       builder.type(data.activityType());
-      builder.changeSet(GsonUtil.getInstance().toJson(data.changeRecords()));
+      builder.changes(GsonUtil.getInstance().toJson(data.changeRecords()));
     }
 
     if (request != null) {
@@ -93,7 +93,7 @@ public class ApiGatewayRequestToUserActivityFunction {
         String siteId = authorization != null ? authorization.getSiteId() : DEFAULT_SITE_ID;
         String resourceId = Strings.notEmpty(documentId, entityId, entityTypeId);
         String parentId = !isEmpty(entityId) ? entityTypeId : null;
-        builder = builder.s3Key(siteId, resource, parentId, resourceId);
+        builder = builder.s3Key(siteId, parentId, resourceId);
       }
     }
 
