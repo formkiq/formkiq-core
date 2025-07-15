@@ -23,8 +23,8 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import com.formkiq.aws.dynamodb.DynamoDbTypes;
 import com.formkiq.aws.dynamodb.ID;
-import com.formkiq.aws.dynamodb.eventsourcing.DynamoDbTypes;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAttribute;

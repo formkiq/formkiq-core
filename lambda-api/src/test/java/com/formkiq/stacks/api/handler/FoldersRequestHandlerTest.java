@@ -41,9 +41,18 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
+import com.formkiq.client.model.AddFolderPermission;
+import com.formkiq.client.model.DocumentSearch;
+import com.formkiq.client.model.DocumentSearchMeta;
+import com.formkiq.client.model.DocumentSearchRequest;
+import com.formkiq.client.model.FolderPermission;
+import com.formkiq.client.model.FolderPermissionType;
+import com.formkiq.client.model.SetFolderPermissionsRequest;
+import com.formkiq.client.model.SetResponse;
 import org.junit.jupiter.api.Test;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddFolderRequest;
@@ -321,8 +330,7 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
       setBearerToken(siteId);
 
       // when
-      AddFolderResponse response =
-          this.foldersApi.addFolder(new AddFolderRequest().path(path), siteId, null);
+      AddFolderResponse response = addFolder(siteId, path);
 
       // then
       assertEquals("created folder", response.getMessage());
@@ -359,6 +367,170 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
       folders = this.foldersApi.getFolderDocuments(siteId, folderIndexKey, null, null, null, null);
       assertNotNull(folders.getDocuments());
       assertTrue(folders.getDocuments().isEmpty());
+    }
+  }
+
+  private AddFolderResponse addFolder(final String siteId, final String path) throws ApiException {
+    return this.foldersApi.addFolder(new AddFolderRequest().path(path), siteId, null);
+  }
+
+  /**
+   * Test add folders with permissions.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  void testAddFolderWithPermissions() throws Exception {
+    // given
+    final String path = "path1/path2/path3";
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      // when
+      AddFolderResponse response = addFolder(siteId, path);
+
+      // then
+      assertEquals("created folder", response.getMessage());
+
+      // when
+      List<SearchResultDocument> folders = notNull(
+          this.foldersApi.getFolderDocuments(siteId, null, null, null, null, null).getDocuments());
+
+      // then
+      assertEquals(1, folders.size());
+      String indexKey = folders.get(0).getIndexKey();
+      assertNotNull(indexKey);
+      assertEquals("path1", folders.get(0).getPath());
+
+      // when - get permissions before set
+      List<FolderPermission> permissions =
+          notNull(this.foldersApi.getFolderPermissions(indexKey, siteId).getRoles());
+
+      // when
+      assertEquals(0, permissions.size());
+
+      // given
+      SetFolderPermissionsRequest setReq =
+          createPermissions("myrole", List.of(FolderPermissionType.READ), "path1");
+
+      // when
+      SetResponse setResponse = this.foldersApi.setFolderPermissions(setReq, siteId);
+
+      // then
+      assertEquals("Folder permissions set", setResponse.getMessage());
+
+      permissions = notNull(this.foldersApi.getFolderPermissions(indexKey, siteId).getRoles());
+      assertEquals(1, permissions.size());
+      assertEquals("myrole", permissions.get(0).getRoleName());
+      assertEquals("READ", notNull(permissions.get(0).getPermissions()).stream()
+          .map(FolderPermissionType::getValue).collect(Collectors.joining(",")));
+    }
+  }
+
+  private SetFolderPermissionsRequest createPermissions(final String role,
+      final List<FolderPermissionType> permissionTypes, final String path) {
+    List<AddFolderPermission> roles =
+        List.of(new AddFolderPermission().roleName(role).permissions(permissionTypes));
+    return new SetFolderPermissionsRequest().path(path).roles(roles);
+  }
+
+  /**
+   * Test add folders listing with permissions.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  void testListDocumentWithPermissions() throws Exception {
+    // given
+    String siteId = "mySite";
+    setBearerToken(new String[] {siteId, "student"});
+
+    addFolder(siteId, "path1/path2");
+    addFolder(siteId, "path1/path3");
+
+    // when
+    List<SearchResultDocument> root = getSearchResultDocuments(siteId, null);
+    List<SearchResultDocument> rootSearch = searchMeta(siteId, "");
+
+    // then
+    for (List<SearchResultDocument> list : List.of(root, rootSearch)) {
+
+      assertEquals(1, list.size());
+
+      List<SearchResultDocument> path1 =
+          getSearchResultDocuments(siteId, list.get(0).getIndexKey());
+      assertEquals(2, path1.size());
+      assertEquals("path2", path1.get(0).getPath());
+      assertEquals("path3", path1.get(1).getPath());
+    }
+
+    // when
+    setPathPermissions(siteId, "myrole", "path1/path2");
+
+    // then
+    List<SearchResultDocument> withPerms =
+        getSearchResultDocuments(siteId, root.get(0).getIndexKey());
+    assertEquals(1, withPerms.size());
+    assertEquals("path3", withPerms.get(0).getPath());
+
+    List<SearchResultDocument> withPermsSearch = searchMeta(siteId, "path1");
+    assertEquals(1, withPermsSearch.size());
+    assertEquals("path3", withPermsSearch.get(0).getPath());
+
+    // when
+    setPathPermissions(siteId, "student", "path1/path2");
+
+    // then
+    withPerms = getSearchResultDocuments(siteId, root.get(0).getIndexKey());
+    assertEquals(2, withPerms.size());
+    assertEquals("path2", withPerms.get(0).getPath());
+    assertEquals("path3", withPerms.get(1).getPath());
+
+    withPermsSearch = searchMeta(siteId, "path1");
+    assertEquals(2, withPermsSearch.size());
+    assertEquals("path2", withPermsSearch.get(0).getPath());
+    assertEquals("path3", withPermsSearch.get(1).getPath());
+  }
+
+  private List<SearchResultDocument> searchMeta(final String siteId, final String path)
+      throws ApiException {
+    DocumentSearchRequest req = new DocumentSearchRequest()
+        .query(new DocumentSearch().meta(new DocumentSearchMeta().folder(path + "/")));
+    return notNull(this.searchApi.documentSearch(req, siteId, null, null, null).getDocuments());
+  }
+
+  private void setPathPermissions(final String siteId, final String roleName, final String path)
+      throws ApiException {
+    SetFolderPermissionsRequest setReq =
+        createPermissions(roleName, List.of(FolderPermissionType.READ), path);
+    this.foldersApi.setFolderPermissions(setReq, siteId);
+  }
+
+  /**
+   * Test Get Invalid Folder permissions.
+   *
+   */
+  @Test
+  void testGetInvalidFolderPermissions() {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      // given
+      String indexKey = ID.uuid();
+
+      // when
+      try {
+        this.foldersApi.getFolderPermissions(indexKey, siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
+        assertEquals("{\"message\":\"invalid indexKey '" + indexKey + "'\"}", e.getResponseBody());
+      }
     }
   }
 

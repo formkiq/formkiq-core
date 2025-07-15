@@ -21,56 +21,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb;
+package com.formkiq.aws.dynamodb;
+
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+
+import java.util.Map;
 
 /**
- * Extended Attributes for the {@link FolderIndexRecord}.
+ * {@link DynamoDbAttributeMapBuilder} for saving Custom Objects.
  */
-public class FolderIndexRecordExtended {
-
-  /** Record has changed. */
-  private boolean isChanged = false;
-  /** {@link FolderIndexRecord}. */
-  private FolderIndexRecord record = null;
+public interface CustomDynamoDbAttributeBuilder {
 
   /**
-   * constructor.
+   * Builds {@link AttributeValue} for DynamoDb.
    * 
-   * @param folderIndexRecord {@link FolderIndexRecord}
-   * @param isRecordChanged boolean
+   * @param name {@link String}
+   * @param value {@link Object}
+   * @return Map {@link AttributeValue}
    */
-  public FolderIndexRecordExtended(final FolderIndexRecord folderIndexRecord,
-      final boolean isRecordChanged) {
-    this.isChanged = isRecordChanged;
-    this.record = folderIndexRecord;
-  }
+  Map<String, AttributeValue> encode(String name, Object value);
 
   /**
-   * Set IsChanged.
+   * Decode {@link Map} {@link AttributeValue} to {@link Object}.
    * 
-   * @param changed boolean
-   * @return {@link FolderIndexRecordExtended}
+   * @param attrs {@link Map} {@link AttributeValue}
+   * @return Object
+   * @param <T> Type of object
    */
-  public FolderIndexRecordExtended changed(final boolean changed) {
-    this.isChanged = changed;
-    return this;
-  }
-
-  /**
-   * Is Record Changed.
-   * 
-   * @return boolean
-   */
-  public boolean isChanged() {
-    return this.isChanged;
-  }
-
-  /**
-   * Get {@link FolderIndexRecord}.
-   * 
-   * @return {@link FolderIndexRecord}
-   */
-  public FolderIndexRecord record() {
-    return this.record;
-  }
+  <T> T decode(Map<String, AttributeValue> attrs);
 }

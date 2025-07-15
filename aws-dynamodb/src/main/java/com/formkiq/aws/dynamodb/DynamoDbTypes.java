@@ -29,6 +29,7 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Map;
 import java.util.TimeZone;
 
 /**
@@ -46,7 +47,12 @@ public interface DynamoDbTypes {
    * @return String
    */
   static String toString(final AttributeValue attributeValue) {
-    return attributeValue.s();
+    return attributeValue != null ? attributeValue.s() : null;
+  }
+
+  static <T> T toCustom(final Map<String, AttributeValue> attrs,
+      final CustomDynamoDbAttributeBuilder builder) {
+    return builder.decode(attrs);
   }
 
   /**

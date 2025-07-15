@@ -80,15 +80,16 @@ task buildTemplate {
 	}
 }
 
+/*
 task downloadOpenApiGenerator(type: Download) {
 	dependsOn check
     src "https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/7.13.0/openapi-generator-cli-7.13.0.jar"
     dest buildDir
     overwrite false
-}
+}*/
 
 task assembleOpenApiTemplate {
-    dependsOn downloadOpenApiGenerator, buildTemplate
+    //dependsOn downloadOpenApiGenerator
 	inputs.files("src/main/resources/cloudformation/api.yaml", "src/main/resources/cloudformation/api-iam.yaml", "src/main/resources/cloudformation/api-key.yaml")
 	
 	doLast {
@@ -132,7 +133,7 @@ task assembleOpenApiTemplate {
 	}
 }
 
-graalvmNativeImage.dependsOn(downloadOpenApiGenerator)
+//graalvmNativeImage.dependsOn(downloadOpenApiGenerator)
 buildTemplate.dependsOn(graalvmNativeImage)
 distZip.dependsOn buildTemplate, assembleOpenApiTemplate, graalvmNativeImage
 

@@ -23,6 +23,8 @@
  */
 package com.formkiq.stacks.dynamodb;
 
+import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.dynamodb.BatchGetConfig;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamicObject;
@@ -49,6 +51,10 @@ import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecordToMap;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
+import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
+import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessorImpl;
+import com.formkiq.stacks.dynamodb.folders.FolderIndexRecord;
+import com.formkiq.stacks.dynamodb.folders.FolderRolePermission;
 import com.formkiq.stacks.dynamodb.schemas.SchemaCompositeKeyRecord;
 import com.formkiq.stacks.dynamodb.schemas.SchemaService;
 import com.formkiq.stacks.dynamodb.schemas.SchemaServiceDynamodb;
@@ -547,7 +553,7 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
     if (!StringUtils.isBlank(eq)) {
 
       try {
-        Map<String, String> map = this.folderIndexProcesor.getIndex(siteId, eq + "/");
+        Map<String, Object> map = this.folderIndexProcesor.getIndex(siteId, eq + "/");
 
         if (map.containsKey("documentId")) {
           value += map.get("documentId");
@@ -608,8 +614,8 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
       if (meta.path() != null) {
 
         try {
-          Map<String, String> map = this.folderIndexProcesor.getIndex(siteId, meta.path());
-          String documentId = map.get("documentId");
+          Map<String, Object> map = this.folderIndexProcesor.getIndex(siteId, meta.path());
+          String documentId = (String) map.get("documentId");
 
           DocumentItem item = this.docService.findDocument(siteId, documentId);
 
@@ -1063,6 +1069,8 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
   private PaginationResults<DynamicDocumentItem> searchForMetaDocuments(final QueryRequest q,
       final String siteId) {
 
+    final Collection<String> roles = ApiAuthorization.getAuthorization().getRoles();
+
     QueryResponse result = this.dbClient.query(q);
 
     List<String> documentIds = result.items().stream().filter(r -> r.containsKey("documentId"))
@@ -1077,7 +1085,17 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
     AttributeValueToGlobalMetaFolder metaFolder = new AttributeValueToGlobalMetaFolder();
     DocumentItemToDynamicDocumentItem transform = new DocumentItemToDynamicDocumentItem();
 
-    List<DynamicDocumentItem> results = result.items().stream().map(r -> {
+    List<DynamicDocumentItem> results = result.items().stream().filter(r -> {
+      Optional<FolderRolePermission> o = Optional.empty();
+      Collection<FolderRolePermission> permissions = FolderIndexRecord.getPermissions(r);
+      if (permissions != null) {
+        o = permissions.stream()
+            .filter(
+                p -> roles.contains(p.roleName()) && p.permissions().contains(ApiPermission.READ))
+            .findAny();
+      }
+      return permissions == null || o.isPresent();
+    }).map(r -> {
 
       AttributeValue documentId = r.get("documentId");
       boolean isDocument = documentId != null && documentMap.containsKey(documentId.s());

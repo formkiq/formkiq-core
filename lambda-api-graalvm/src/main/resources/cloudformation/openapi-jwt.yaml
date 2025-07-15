@@ -3124,6 +3124,67 @@ Resources:
                 - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /folders/{indexKey}/permissions:
+            get:
+              operationId: GetFolderPermissions
+              summary: Get folder permissions
+              description: Get list of permissions for a folder
+              tags:
+                - Document Folders
+              parameters:
+                - $ref: '#/components/parameters/siteIdParam'
+                - $ref: '#/components/parameters/indexKeyParam'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetFolderPermissionsResponse'
+              security:
+                - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/searchLambdaApi200"
+          /folders/permissions:
+            put:
+              operationId: SetFolderPermissions
+              summary: Sets Folder Permissions
+              description: Sets a folders permissions
+              tags:
+                - Document Folders
+              parameters:
+                - $ref: '#/components/parameters/siteIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/SetFolderPermissionsRequest'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/SetResponse'
+              security:
+                - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /shares:
             get:
               operationId: GetUserShares
@@ -7312,6 +7373,55 @@ Resources:
                   description: "List of document versions"
                   items:
                     $ref: "#/components/schemas/DocumentVersion"
+            GetFolderPermissionsResponse:
+              type: "object"
+              properties:
+                roles:
+                  type: "array"
+                  items:
+                    $ref: "#/components/schemas/FolderPermission"
+
+            FolderPermissionType:
+              type: string
+              description: Folder Permission Type
+              enum:
+                - READ
+                - WRITE
+                - DELETE
+
+            FolderPermission:
+              type: "object"
+              properties:
+                roleName:
+                  type: "string"
+                  description: "Name of Role"
+                permissions:
+                  type: "array"
+                  items:
+                    $ref: "#/components/schemas/FolderPermissionType"
+
+            SetFolderPermissionsRequest:
+              type: "object"
+              properties:
+                path:
+                  type: "string"
+                  description: "Path of Folder"
+                roles:
+                  type: "array"
+                  items:
+                    $ref: "#/components/schemas/AddFolderPermission"
+            AddFolderPermission:
+              type: "object"
+              properties:
+                roleName:
+                  type: "string"
+                  description: "Name of Role"
+                permissions:
+                  type: "array"
+                  description: "List of permissions"
+                  items:
+                    $ref: "#/components/schemas/FolderPermissionType"
+
             AddFolderRequest:
               type: "object"
               properties:

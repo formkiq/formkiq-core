@@ -31,6 +31,7 @@ import java.util.Arrays;
 import java.util.Map;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.stacks.dynamodb.folders.FolderIndexRecord;
 import org.junit.jupiter.api.Test;
 import com.formkiq.aws.dynamodb.DbKeys;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
