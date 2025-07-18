@@ -293,6 +293,17 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
   }
 
   @Override
+  public Collection<Map<String, AttributeValue>> get(final String dbTableName,
+      final Collection<DynamoDbKey> key) {
+    List<Map<String, AttributeValue>> list = key.stream().map(DynamoDbKey::toMap).toList();
+
+    ReadRequestBuilder request = new ReadRequestBuilder().append(dbTableName, list);
+    Map<String, List<Map<String, AttributeValue>>> stringListMap =
+        request.batchReadItems(this.dbClient, new BatchGetConfig());
+    return stringListMap.values().stream().flatMap(Collection::stream).toList();
+  }
+
+  @Override
   public Map<String, AttributeValue> get(final QueryConfig config, final AttributeValue pk,
       final AttributeValue sk) {
     Map<String, AttributeValue> key = Map.of(PK, pk, SK, sk);

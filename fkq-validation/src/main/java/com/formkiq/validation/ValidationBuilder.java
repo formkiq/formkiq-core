@@ -26,6 +26,7 @@ package com.formkiq.validation;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
@@ -63,6 +64,32 @@ public class ValidationBuilder {
     if (value == null || value.isEmpty()) {
       String error = errorMessage != null ? errorMessage : "'" + key + "' is required";
       errors.add(new ValidationErrorImpl().key(key).error(error));
+    }
+  }
+
+  /**
+   * Validate Field is required.
+   *
+   * @param key {@link String}
+   * @param values {@link String}
+   * @param errorMessage {@link String}
+   */
+  public void isRequired(final String key, final Collection<?> values, final String errorMessage) {
+    if (values == null || values.isEmpty()) {
+      errors.add(new ValidationErrorImpl().key(key).error(errorMessage));
+    }
+  }
+
+  /**
+   * Validate Field is required.
+   *
+   * @param key {@link String}
+   * @param values {@link String}
+   * @param errorMessage {@link String}
+   */
+  public void isRequired(final String key, final Map<?, ?> values, final String errorMessage) {
+    if (values == null || values.isEmpty()) {
+      errors.add(new ValidationErrorImpl().key(key).error(errorMessage));
     }
   }
 

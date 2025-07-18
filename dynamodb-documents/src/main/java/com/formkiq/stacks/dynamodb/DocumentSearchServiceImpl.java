@@ -1069,7 +1069,8 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
   private PaginationResults<DynamicDocumentItem> searchForMetaDocuments(final QueryRequest q,
       final String siteId) {
 
-    final Collection<String> roles = ApiAuthorization.getAuthorization().getRoles();
+    final ApiAuthorization authorization = ApiAuthorization.getAuthorization();
+    final Collection<String> roles = authorization.getRoles();
 
     QueryResponse result = this.dbClient.query(q);
 
@@ -1104,8 +1105,6 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
           : new DynamicDocumentItem(metaFolder.apply(r));
 
     }).collect(Collectors.toList());
-
-
 
     return new PaginationResults<>(results, new QueryResponseToPagination().apply(result));
   }
