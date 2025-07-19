@@ -21,56 +21,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb;
+package com.formkiq.testutils.api;
+
+import com.formkiq.client.invoker.ApiException;
 
 /**
- * Extended Attributes for the {@link FolderIndexRecord}.
+ * Api Http Response.
+ * 
+ * @param response Object response
+ * @param exception {@link ApiException}
+ * @param <T> Type of Object response
  */
-public class FolderIndexRecordExtended {
-
-  /** Record has changed. */
-  private boolean isChanged = false;
-  /** {@link FolderIndexRecord}. */
-  private FolderIndexRecord record = null;
-
-  /**
-   * constructor.
-   * 
-   * @param folderIndexRecord {@link FolderIndexRecord}
-   * @param isRecordChanged boolean
-   */
-  public FolderIndexRecordExtended(final FolderIndexRecord folderIndexRecord,
-      final boolean isRecordChanged) {
-    this.isChanged = isRecordChanged;
-    this.record = folderIndexRecord;
-  }
-
-  /**
-   * Set IsChanged.
-   * 
-   * @param changed boolean
-   * @return {@link FolderIndexRecordExtended}
-   */
-  public FolderIndexRecordExtended changed(final boolean changed) {
-    this.isChanged = changed;
-    return this;
-  }
-
-  /**
-   * Is Record Changed.
-   * 
-   * @return boolean
-   */
-  public boolean isChanged() {
-    return this.isChanged;
-  }
-
-  /**
-   * Get {@link FolderIndexRecord}.
-   * 
-   * @return {@link FolderIndexRecord}
-   */
-  public FolderIndexRecord record() {
-    return this.record;
-  }
+public record ApiHttpResponse<T>(T response, ApiException exception) {
 }

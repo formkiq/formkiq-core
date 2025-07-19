@@ -25,7 +25,7 @@ package com.formkiq.stacks.api.handler.indices;
 
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-import static com.formkiq.stacks.dynamodb.FolderIndexRecord.INDEX_FILE_SK;
+import static com.formkiq.stacks.dynamodb.folders.FolderIndexRecord.INDEX_FILE_SK;
 
 import java.io.IOException;
 import java.util.Map;
@@ -43,7 +43,7 @@ import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.handler.IndexKeyToString;
-import com.formkiq.stacks.dynamodb.FolderIndexProcessor;
+import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
 import com.formkiq.stacks.dynamodb.GlobalIndexService;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
@@ -94,10 +94,10 @@ public class IndicesRequestHandler
       } else {
 
         try {
-          Map<String, String> index = ip.getIndex(siteId, indexKey);
+          Map<String, Object> index = ip.getIndex(siteId, indexKey);
 
-          String pk = index.get(PK);
-          String sk = index.get(SK);
+          String pk = (String) index.get(PK);
+          String sk = (String) index.get(SK);
 
           if (!isEmpty(pk) && !isEmpty(sk) && sk.startsWith(INDEX_FILE_SK)) {
             DynamoDbService db = awsServices.getExtension(DynamoDbService.class);

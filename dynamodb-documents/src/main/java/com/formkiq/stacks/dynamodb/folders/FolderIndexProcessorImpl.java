@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb;
+package com.formkiq.stacks.dynamodb.folders;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.last;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
@@ -33,6 +33,7 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Deque;
@@ -43,6 +44,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.AttributeValueToDynamicObject;
+import com.formkiq.aws.dynamodb.AttributeValueToMap;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
@@ -517,20 +519,10 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
   }
 
   @Override
-  public Map<String, String> getIndex(final String siteId, final String path) throws IOException {
+  public Map<String, Object> getIndex(final String siteId, final String path) throws IOException {
 
-    Map<String, String> map = Collections.emptyMap();
-
-    if (!StringUtils.isEmpty(path)) {
-      String[] folders = tokens(path);
-      Map<String, Map<String, AttributeValue>> keys = generateFileKeys(siteId, path, folders, null);
-
-      String key = folders[folders.length - 1];
-      map = keys.get(key).entrySet().stream()
-          .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().s()));
-    }
-
-    return map;
+    Map<String, AttributeValue> attributes = getIndexByAttributeValues(siteId, path);
+    return new AttributeValueToMap().apply(attributes);
   }
 
   @Override
@@ -550,6 +542,45 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
       Map<String, AttributeValue> attr = this.db.get(fromS(pk), fromS(sk));
 
       o = new AttributeValueToDynamicObject().apply(attr);
+    }
+
+    return o;
+  }
+
+  private Map<String, AttributeValue> getIndexByAttributeValues(final String siteId,
+      final String path) throws IOException {
+
+    Map<String, AttributeValue> attributes = Collections.emptyMap();
+
+    if (!StringUtils.isEmpty(path)) {
+      String[] folders = tokens(path);
+      Map<String, Map<String, AttributeValue>> keys = generateFileKeys(siteId, path, folders, null);
+
+      String key = folders[folders.length - 1];
+      attributes = keys.get(key);
+    }
+
+    return attributes;
+  }
+
+  @Override
+  public FolderIndexRecord getIndexAsRecord(final String siteId, final String indexKey,
+      final boolean isFile) {
+
+    FolderIndexRecord o = null;
+    String index = URLDecoder.decode(indexKey, StandardCharsets.UTF_8);
+
+    int pos = index.indexOf(TAG_DELIMINATOR);
+    if (pos != -1) {
+      String parentId = index.substring(0, pos);
+      String path = index.substring(pos + 1);
+
+      String pk = getPk(siteId, parentId);
+      String sk = getSk(path, isFile);
+
+      Map<String, AttributeValue> attr = this.db.get(fromS(pk), fromS(sk));
+
+      o = new FolderIndexRecord().getFromAttributes(siteId, attr);
     }
 
     return o;
@@ -723,6 +754,17 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
       throw new RuntimeException(
           String.format("Unsupported move %s to %s", sourceType, targetType));
     }
+  }
+
+  @Override
+  public void setPermissions(final String siteId, final String path,
+      final Collection<FolderRolePermission> roles) throws IOException {
+
+    String folderPath = path.endsWith("/") ? path : path + "/";
+    Map<String, AttributeValue> attributes = getIndexByAttributeValues(siteId, folderPath);
+    FolderIndexRecord record = new FolderIndexRecord().getFromAttributes(siteId, attributes);
+    record = record.rolePermissions(roles);
+    this.db.putItem(record.getAttributes(siteId));
   }
 
   /**

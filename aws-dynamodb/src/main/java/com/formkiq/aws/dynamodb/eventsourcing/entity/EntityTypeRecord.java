@@ -24,7 +24,7 @@
 package com.formkiq.aws.dynamodb.eventsourcing.entity;
 
 import com.formkiq.aws.dynamodb.DynamoDbKey;
-import com.formkiq.aws.dynamodb.eventsourcing.DynamoDbTypes;
+import com.formkiq.aws.dynamodb.DynamoDbTypes;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.Date;
@@ -68,8 +68,6 @@ public record EntityTypeRecord(DynamoDbKey key, String documentId, String namesp
   /**
    * Builds the DynamoDB item attribute map for this entity, starting from the key attributes and
    * adding metadata fields.
-   * <p>
-   * Only non-null values are included via {@link DynamoDbAttributeMapBuilder}.
    *
    * @return a Map of attribute names to {@link AttributeValue} instances
    */

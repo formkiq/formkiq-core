@@ -50,6 +50,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
+import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessorImpl;
+import com.formkiq.stacks.dynamodb.folders.FolderIndexRecord;
+import com.formkiq.stacks.dynamodb.folders.FolderIndexRecordExtended;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -498,9 +502,9 @@ class FolderIndexProcessorTest implements DbKeys {
       item.setPath(source);
       service.saveDocument(siteId, item, null);
 
-      Map<String, String> sourceAttr = index.getIndex(siteId, source);
+      Map<String, Object> sourceAttr = index.getIndex(siteId, source);
       assertEquals("test.pdf", sourceAttr.get("path"));
-      final String sourceParentDocumentId = sourceAttr.get("parentDocumentId");
+      final String sourceParentDocumentId = (String) sourceAttr.get("parentDocumentId");
 
       // when
       index.moveIndex(siteId, source, destination, userId);
@@ -526,7 +530,7 @@ class FolderIndexProcessorTest implements DbKeys {
       assertEquals("directory2/test.pdf", doc2.get("path"));
       assertEquals(doc2.get("insertedDate"), doc2.get("lastModifiedDate"));
 
-      Map<String, String> destAttr = index.getIndex(siteId, "directory2/test.pdf");
+      Map<String, Object> destAttr = index.getIndex(siteId, "directory2/test.pdf");
       assertEquals("test.pdf", destAttr.get("path"));
       assertNotEquals(sourceParentDocumentId, destAttr.get("parentDocumentId"));
 

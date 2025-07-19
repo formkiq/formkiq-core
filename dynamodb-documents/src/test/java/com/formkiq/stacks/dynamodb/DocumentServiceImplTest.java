@@ -75,6 +75,8 @@ import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
 import com.formkiq.stacks.dynamodb.attributes.Watermark;
+import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
+import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessorImpl;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -578,7 +580,7 @@ public class DocumentServiceImplTest implements DbKeys {
 
       assertNotNull(service.findDocument(siteId, documentId));
 
-      Map<String, String> map = folderIndexProcessor.getIndex(siteId, item.getPath());
+      Map<String, Object> map = folderIndexProcessor.getIndex(siteId, item.getPath());
       assertEquals("test.txt", map.get("path"));
 
       assertEquals(tagCount,

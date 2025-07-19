@@ -166,6 +166,15 @@ public interface DynamoDbService {
   Map<String, AttributeValue> get(DynamoDbKey key);
 
   /**
+   * Gets DynamoDB Records.
+   *
+   * @param tableName {@link String}
+   * @param key {@link DynamoDbKey}
+   * @return {@link Map}
+   */
+  Collection<Map<String, AttributeValue>> get(String tableName, Collection<DynamoDbKey> key);
+
+  /**
    * Gets DynamoDB Record.
    *
    * @param config {@link QueryConfig}

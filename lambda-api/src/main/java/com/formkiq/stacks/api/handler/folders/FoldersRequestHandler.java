@@ -50,9 +50,9 @@ import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.handler.IndexKeyToString;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
-import com.formkiq.stacks.dynamodb.FolderIndexProcessor;
-import com.formkiq.stacks.dynamodb.FolderIndexRecord;
-import com.formkiq.stacks.dynamodb.FolderIndexRecordExtended;
+import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
+import com.formkiq.stacks.dynamodb.folders.FolderIndexRecord;
+import com.formkiq.stacks.dynamodb.folders.FolderIndexRecordExtended;
 
 /** {@link ApiGatewayRequestHandler} for "/folders". */
 public class FoldersRequestHandler implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {

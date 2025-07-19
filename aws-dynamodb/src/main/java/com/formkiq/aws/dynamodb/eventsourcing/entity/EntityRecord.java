@@ -25,8 +25,8 @@ package com.formkiq.aws.dynamodb.eventsourcing.entity;
 
 import com.formkiq.aws.dynamodb.DynamoDbAttributeMapBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
+import com.formkiq.aws.dynamodb.DynamoDbTypes;
 import com.formkiq.aws.dynamodb.MapToAttributeValue;
-import com.formkiq.aws.dynamodb.eventsourcing.DynamoDbTypes;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.ArrayList;

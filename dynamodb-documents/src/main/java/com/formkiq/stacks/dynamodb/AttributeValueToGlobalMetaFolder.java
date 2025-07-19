@@ -32,7 +32,7 @@ import com.formkiq.aws.dynamodb.base64.StringToBase64Encoder;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
-import static com.formkiq.stacks.dynamodb.FolderIndexRecord.INDEX_FOLDER_SK;
+import static com.formkiq.stacks.dynamodb.folders.FolderIndexRecord.INDEX_FOLDER_SK;
 
 /**
  * Convert {@link Map} {@link AttributeValue} to {@link DocumentTag}.

@@ -21,9 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb;
+package com.formkiq.stacks.dynamodb.folders;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -134,6 +135,16 @@ public interface FolderIndexProcessor {
   List<FolderIndexRecord> getFoldersByDocumentId(String siteId, String documentId);
 
   /**
+   * Get {@link FolderIndexRecord}.
+   * 
+   * @param siteId {@link String}
+   * @param indexKey {@link String}
+   * @param isFile boolean
+   * @return FolderIndexRecord
+   */
+  FolderIndexRecord getIndexAsRecord(String siteId, String indexKey, boolean isFile);
+
+  /**
    * Generates DynamoDB {@link WriteRequest} for Index.
    *
    * @param siteId {@link String}
@@ -141,7 +152,7 @@ public interface FolderIndexProcessor {
    * @return {@link List} {@link Map} {@link String}
    * @throws IOException IOException
    */
-  Map<String, String> getIndex(String siteId, String path) throws IOException;
+  Map<String, Object> getIndex(String siteId, String path) throws IOException;
 
   /**
    * Get Folder / File Index.
@@ -174,5 +185,15 @@ public interface FolderIndexProcessor {
    * @throws IOException IOException
    */
   void moveIndex(String siteId, String sourcePath, String targetPath, String userId)
+      throws IOException;
+
+  /**
+   * Sets Folder permissions.
+   * 
+   * @param siteId {@link String}
+   * @param path Folder {@link String}
+   * @param roles {@link Collection} {@link FolderRolePermission}
+   */
+  void setPermissions(String siteId, String path, Collection<FolderRolePermission> roles)
       throws IOException;
 }

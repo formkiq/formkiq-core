@@ -71,6 +71,10 @@ import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecordsToSchemaAt
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
 import com.formkiq.stacks.dynamodb.attributes.DynamicObjectToDocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.documents.DocumentPublicationRecord;
+import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
+import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessorImpl;
+import com.formkiq.stacks.dynamodb.folders.FolderIndexRecord;
+import com.formkiq.stacks.dynamodb.folders.FolderIndexRecordExtended;
 import com.formkiq.stacks.dynamodb.schemas.Schema;
 import com.formkiq.stacks.dynamodb.schemas.SchemaAttributes;
 import com.formkiq.stacks.dynamodb.schemas.SchemaService;
@@ -640,11 +644,11 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     if (!isEmpty(path)) {
 
       try {
-        Map<String, String> attr = this.folderIndexProcessor.getIndex(siteId, path);
+        Map<String, Object> attr = this.folderIndexProcessor.getIndex(siteId, path);
 
         if (attr.containsKey("documentId")) {
-          deleteItem(Map.of(PK, AttributeValue.builder().s(attr.get(PK)).build(), SK,
-              AttributeValue.builder().s(attr.get(SK)).build()));
+          deleteItem(Map.of(PK, AttributeValue.builder().s((String) attr.get(PK)).build(), SK,
+              AttributeValue.builder().s((String) attr.get(SK)).build()));
         }
       } catch (IOException e) {
         // ignore folder doesn't exist
@@ -1457,13 +1461,13 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
     boolean exists = false;
     try {
-      Map<String, String> map = this.folderIndexProcessor.getIndex(siteId, path);
+      Map<String, Object> map = this.folderIndexProcessor.getIndex(siteId, path);
 
       if ("folder".equals(map.get("type"))) {
         GetItemResponse response =
             this.dbClient.getItem(GetItemRequest.builder().tableName(this.documentTableName)
-                .key(Map.of(PK, AttributeValue.builder().s(map.get(PK)).build(), SK,
-                    AttributeValue.builder().s(map.get(SK)).build()))
+                .key(Map.of(PK, AttributeValue.builder().s((String) map.get(PK)).build(), SK,
+                    AttributeValue.builder().s((String) map.get(SK)).build()))
                 .build());
         exists = !response.item().isEmpty();
       }
