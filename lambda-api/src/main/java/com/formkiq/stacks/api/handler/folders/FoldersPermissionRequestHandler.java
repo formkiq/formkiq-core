@@ -27,7 +27,6 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.handler.IndexKeyToString;
@@ -37,9 +36,6 @@ import com.formkiq.stacks.dynamodb.folders.FolderRolePermission;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Map;
-
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
 /** {@link ApiGatewayRequestHandler} for "/folders/{indexKey}/permissions". */
 public class FoldersPermissionRequestHandler
@@ -63,7 +59,7 @@ public class FoldersPermissionRequestHandler
     Collection<FolderRolePermission> roles =
         obj.rolePermissions() != null ? obj.rolePermissions() : Collections.emptyList();
 
-    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(Map.of("roles", roles)));
+    return ApiRequestHandlerResponse.builder().ok().body("roles", roles).build();
   }
 
   @Override

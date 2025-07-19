@@ -32,7 +32,7 @@
               - OAuth(JWT)
               - AWS IAM
               - API Key
-          version: 1.18.0-useractivities
+          version: 1.18.0
         tags:
         - name: documents
           description: API for the add, updating and fetching of documents
