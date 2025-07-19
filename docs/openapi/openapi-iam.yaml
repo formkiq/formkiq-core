@@ -7325,8 +7325,6 @@
               description: Folder Permission Type
               enum:
               - READ
-              - WRITE
-              - DELETE
             FolderPermission:
               type: object
               properties:
