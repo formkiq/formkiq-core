@@ -9,6 +9,26 @@
 	<allow pkg="java.nio" />
 	<allow pkg="java.util" />
 
+	<subpackage name="api">
+		<allow pkg="com.formkiq.client.invoker" />
+		<allow pkg="com.formkiq.client.api" />
+		<allow pkg="com.formkiq.client.model" />
+
+		<subpackage name="attributes">
+			<allow pkg="com.formkiq.testutils.api" />
+		</subpackage>
+
+		<subpackage name="documents">
+			<allow pkg="java.math" />
+			<allow pkg="com.formkiq.testutils.api" />
+		</subpackage>
+
+		<subpackage name="folders">
+			<allow pkg="com.formkiq.testutils.api" />
+		</subpackage>
+
+	</subpackage>
+
 	<subpackage name="aws">
 		<allow pkg="com.amazonaws.services.lambda.runtime" />
 		<allow pkg="com.google.gson" />

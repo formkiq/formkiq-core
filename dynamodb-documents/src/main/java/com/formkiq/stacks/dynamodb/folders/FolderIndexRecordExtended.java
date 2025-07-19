@@ -21,40 +21,56 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb;
-
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
-import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.module.lambdaservices.AwsServiceExtension;
+package com.formkiq.stacks.dynamodb.folders;
 
 /**
- * 
- * {@link AwsServiceExtension} for {@link FolderIndexProcessor}.
- *
+ * Extended Attributes for the {@link FolderIndexRecord}.
  */
-public class FolderIndexProcessorExtension implements AwsServiceExtension<FolderIndexProcessor> {
+public class FolderIndexRecordExtended {
 
-  /** {@link FolderIndexProcessor}. */
-  private FolderIndexProcessor service;
+  /** Record has changed. */
+  private boolean isChanged = false;
+  /** {@link FolderIndexRecord}. */
+  private FolderIndexRecord record = null;
 
   /**
    * constructor.
+   * 
+   * @param folderIndexRecord {@link FolderIndexRecord}
+   * @param isRecordChanged boolean
    */
-  public FolderIndexProcessorExtension() {
-
+  public FolderIndexRecordExtended(final FolderIndexRecord folderIndexRecord,
+      final boolean isRecordChanged) {
+    this.isChanged = isRecordChanged;
+    this.record = folderIndexRecord;
   }
 
-  @Override
-  public FolderIndexProcessor loadService(final AwsServiceCache awsServiceCache) {
+  /**
+   * Set IsChanged.
+   * 
+   * @param changed boolean
+   * @return {@link FolderIndexRecordExtended}
+   */
+  public FolderIndexRecordExtended changed(final boolean changed) {
+    this.isChanged = changed;
+    return this;
+  }
 
-    if (this.service == null) {
-      DynamoDbConnectionBuilder connection =
-          awsServiceCache.getExtension(DynamoDbConnectionBuilder.class);
+  /**
+   * Is Record Changed.
+   * 
+   * @return boolean
+   */
+  public boolean isChanged() {
+    return this.isChanged;
+  }
 
-      this.service =
-          new FolderIndexProcessorImpl(connection, awsServiceCache.environment("DOCUMENTS_TABLE"));
-    }
-
-    return this.service;
+  /**
+   * Get {@link FolderIndexRecord}.
+   * 
+   * @return {@link FolderIndexRecord}
+   */
+  public FolderIndexRecord record() {
+    return this.record;
   }
 }

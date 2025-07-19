@@ -123,7 +123,7 @@ import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentSyncService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
-import com.formkiq.stacks.dynamodb.FolderIndexProcessor;
+import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
 import com.formkiq.stacks.dynamodb.apimodels.AddDocumentTag;
 import com.formkiq.stacks.dynamodb.apimodels.MatchDocumentTag;
 import com.formkiq.stacks.dynamodb.apimodels.UpdateMatchingDocumentTagsRequest;
@@ -1356,9 +1356,9 @@ public class StagingS3CreateTest implements DbKeys {
       }
 
       // then
-      Map<String, String> index = folderIndexProcesor.getIndex(siteId, path);
+      Map<String, Object> index = folderIndexProcesor.getIndex(siteId, path);
 
-      String documentId = index.get("documentId");
+      String documentId = (String) index.get("documentId");
       DocumentItem item = service.findDocument(siteId, documentId);
       assertNull(item.getContentLength());
       assertEquals("text/plain", item.getContentType());

@@ -23,58 +23,51 @@
  */
 package com.formkiq.stacks.api.handler.folders;
 
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-import java.io.IOException;
-import java.util.Map;
-
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
-import com.formkiq.aws.services.lambda.exceptions.BadException;
-import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.handler.IndexKeyToString;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
+import com.formkiq.stacks.dynamodb.folders.FolderIndexRecord;
+import com.formkiq.stacks.dynamodb.folders.FolderRolePermission;
 
-/** {@link ApiGatewayRequestHandler} for "/folders/{indexKey}". */
-public class FoldersIndexKeyRequestHandler
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
+
+/** {@link ApiGatewayRequestHandler} for "/folders/{indexKey}/permissions". */
+public class FoldersPermissionRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
   /**
    * constructor.
    *
    */
-  public FoldersIndexKeyRequestHandler() {}
+  public FoldersPermissionRequestHandler() {}
 
   @Override
-  public ApiRequestHandlerResponse delete(final ApiGatewayRequestEvent event,
+  public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorization.getSiteId();
-    FolderIndexProcessor indexProcessor = awsservice.getExtension(FolderIndexProcessor.class);
-
     String indexKey = new IndexKeyToString().apply(event.getPathParameters().get("indexKey"));
 
-    try {
-      boolean deleted = indexProcessor.deleteEmptyDirectory(siteId, indexKey);
+    FolderIndexProcessor processor = awsservice.getExtension(FolderIndexProcessor.class);
+    FolderIndexRecord obj = processor.getIndexAsRecord(siteId, indexKey, false);
+    Collection<FolderRolePermission> roles =
+        obj.rolePermissions() != null ? obj.rolePermissions() : Collections.emptyList();
 
-      if (!deleted) {
-        throw new NotFoundException("directory not found");
-      }
-
-      ApiMapResponse resp = new ApiMapResponse(Map.of("message", "deleted folder"));
-      return new ApiRequestHandlerResponse(SC_OK, resp);
-
-    } catch (IOException e) {
-      throw new BadException(e.getMessage());
-    }
+    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(Map.of("roles", roles)));
   }
 
   @Override
   public String getRequestUrl() {
-    return "/folders/{indexKey}";
+    return "/folders/{indexKey}/permissions";
   }
 }

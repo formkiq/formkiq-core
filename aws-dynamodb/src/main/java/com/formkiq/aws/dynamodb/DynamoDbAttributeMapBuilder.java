@@ -23,11 +23,14 @@
  */
 package com.formkiq.aws.dynamodb;
 
+import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 import java.util.HashMap;
 
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+
+import static com.formkiq.aws.dynamodb.objects.Objects.isEmpty;
 
 /**
  * Builder for assembling a DynamoDB item attribute map.
@@ -63,6 +66,23 @@ public class DynamoDbAttributeMapBuilder {
   public DynamoDbAttributeMapBuilder withString(final String name, final String value) {
     if (value != null) {
       attributes.put(name, AttributeValue.builder().s(value).build());
+    }
+    return this;
+  }
+
+  /**
+   * Adds a Custom attribute if the value is non-null.
+   *
+   * @param name the attribute name
+   * @param value the {@link Object} value
+   * @param custom {@link CustomDynamoDbAttributeBuilder}
+   * @return this builder
+   */
+  public DynamoDbAttributeMapBuilder withCustom(final String name, final Object value,
+      final CustomDynamoDbAttributeBuilder custom) {
+    if (value != null) {
+      Map<String, AttributeValue> av = custom.encode(name, value);
+      attributes.putAll(av);
     }
     return this;
   }
@@ -123,6 +143,21 @@ public class DynamoDbAttributeMapBuilder {
   public void withAttributeValue(final String name, final AttributeValue value) {
     if (value != null) {
       attributes.put(name, value);
+    }
+  }
+
+  /**
+   * Adds {@link Collection} of {@link Enum}.
+   * 
+   * @param name {@link String}
+   * @param values {@link Collection}
+   * @param <E> Type of Enum.
+   */
+  public <E extends Enum<E>> void withEnumList(final String name, final Collection<E> values) {
+    if (!isEmpty(values)) {
+      Collection<AttributeValue> val =
+          values.stream().map(v -> AttributeValue.builder().s(v.name()).build()).toList();
+      attributes.put(name, AttributeValue.builder().l(val).build());
     }
   }
 }
