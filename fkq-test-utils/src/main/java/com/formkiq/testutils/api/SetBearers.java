@@ -32,11 +32,14 @@ import java.util.function.BiFunction;
 /**
  * {@link BiFunction} to setup SetBearer.
  */
-public class SetBearer implements BiFunction<ApiClient, String, Void> {
+public class SetBearers implements BiFunction<ApiClient, String[], Void> {
   @Override
-  public Void apply(final ApiClient client, final String group) {
-    new SetBearers().apply(client,
-        group != null ? new String[] {group} : new String[] {SiteIdKeyGenerator.DEFAULT_SITE_ID});
+  public Void apply(final ApiClient client, final String[] groups) {
+
+    String[] a = Arrays.stream(groups).map(m -> m != null ? m : SiteIdKeyGenerator.DEFAULT_SITE_ID)
+        .toArray(String[]::new);
+    String jwt = JwtTokenEncoder.encodeCognito(a, "joesmith");
+    client.addDefaultHeader("Authorization", jwt);
     return null;
   }
 }

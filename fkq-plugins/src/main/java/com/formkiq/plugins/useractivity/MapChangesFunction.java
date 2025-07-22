@@ -26,6 +26,7 @@ package com.formkiq.plugins.useractivity;
 import com.formkiq.aws.dynamodb.DbKeyPredicate;
 import com.formkiq.aws.dynamodb.useractivities.ChangeRecord;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
@@ -53,7 +54,7 @@ public class MapChangesFunction
 
         if (prev == null || curr == null) {
           differences.put(key, new ChangeRecord(prev, curr));
-        } else if (!prev.equals(curr)) {
+        } else if (!isEquals(prev, curr)) {
           differences.put(key, new ChangeRecord(prev, curr));
         }
       }
@@ -67,5 +68,28 @@ public class MapChangesFunction
     }
 
     return differences;
+  }
+
+  private boolean isEquals(final Object o1, final Object o2) {
+    boolean isEqual = o1.equals(o2);
+
+    if (!isEqual && o1 instanceof Number && o2 instanceof Number) {
+      BigDecimal n1 = toBigDecimal((Number) o1);
+      BigDecimal n2 = toBigDecimal((Number) o2);
+      isEqual = n1.compareTo(n2) == 0;
+    }
+
+    return isEqual;
+  }
+
+  /**
+   * Turn any Number into a BigDecimal “sensibly”: - if it’s already BigDecimal, return it -
+   * otherwise use its string form (so 1.0D → "1.0", 2L → "2")
+   */
+  private BigDecimal toBigDecimal(final Number number) {
+    if (number instanceof BigDecimal) {
+      return (BigDecimal) number;
+    }
+    return new BigDecimal(number.toString());
   }
 }

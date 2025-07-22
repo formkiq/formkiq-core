@@ -615,7 +615,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
     String checksum = resp.getChecksum();
     current.put("checksum", AttributeValue.fromS(checksum));
-    prev.put("contentType", item.getChecksum());
+    prev.put("checksum", item.getChecksum());
 
     if (resp.getChecksumType() != null) {
       current.put("checksumType", AttributeValue.fromS(resp.getChecksumType()));

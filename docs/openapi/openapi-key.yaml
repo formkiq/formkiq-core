@@ -8974,10 +8974,10 @@
               type: object
               properties:
                 oldValue:
-                  type: string
+                  type: object
                   description: Previous key value
                 newValue:
-                  type: string
+                  type: object
                   description: New key value
             ActivityStatus:
               type: string
