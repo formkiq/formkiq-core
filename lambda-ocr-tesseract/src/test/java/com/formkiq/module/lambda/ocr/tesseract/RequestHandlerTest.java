@@ -48,7 +48,7 @@ import com.formkiq.client.model.GetExaminePdfResponse;
 import com.formkiq.client.model.GetExaminePdfUrlResponse;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.FormKiqApiExtension;
-import com.formkiq.testutils.aws.JwtTokenEncoder;
+import com.formkiq.testutils.api.JwtTokenEncoder;
 import com.formkiq.testutils.aws.LambdaContextRecorder;
 import com.formkiq.testutils.aws.LocalStackExtension;
 

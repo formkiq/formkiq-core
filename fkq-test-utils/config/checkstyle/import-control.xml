@@ -13,6 +13,9 @@
 		<allow pkg="com.formkiq.client.invoker" />
 		<allow pkg="com.formkiq.client.api" />
 		<allow pkg="com.formkiq.client.model" />
+		<allow pkg="com.formkiq.aws.dynamodb" />
+		<allow pkg="io.jsonwebtoken" />
+		<allow pkg="com.google.gson" />
 
 		<subpackage name="attributes">
 			<allow pkg="com.formkiq.testutils.api" />
@@ -27,11 +30,15 @@
 			<allow pkg="com.formkiq.testutils.api" />
 		</subpackage>
 
+		<subpackage name="activities">
+			<allow pkg="com.formkiq.testutils.api" />
+			<allow pkg="org.junit.jupiter.api" />
+		</subpackage>
+
 	</subpackage>
 
 	<subpackage name="aws">
 		<allow pkg="com.amazonaws.services.lambda.runtime" />
-		<allow pkg="com.google.gson" />
 		<allow pkg="com.formkiq.aws.cognito" />
 		<allow pkg="com.formkiq.aws.dynamodb" />
 		<allow pkg="com.formkiq.aws.s3" />
@@ -47,6 +54,8 @@
 		<allow pkg="java.time" />
 		<allow pkg="java.util" />
 		<allow pkg="java.math" />
+		<allow pkg="com.formkiq.testutils.api" />
+		<allow pkg="com.google.gson" />
 		
 		<allow pkg="com.formkiq.client.api" />
 		<allow pkg="com.formkiq.client.invoker" />
@@ -56,7 +65,6 @@
 		<allow pkg="org.mockserver.mock.action" />
 		<allow pkg="org.mockserver.model" />
 		<allow pkg="org.mockserver.integration" />
-		<allow pkg="io.jsonwebtoken" />
 
 		<allow pkg="org.junit.jupiter.api.extension" />
 		<allow pkg="org.testcontainers.containers" />

@@ -408,10 +408,9 @@ public class DocumentsS3UpdateTest implements DbKeys {
   /**
    * Create Document Request without existing Tags/Formats.
    *
-   * @throws Exception Exception
    */
   @Test
-  public void testHandleRequest01() throws Exception {
+  public void testHandleRequest01() {
 
     // given
     for (String siteId : Arrays.asList(null, ID.uuid())) {
@@ -941,10 +940,9 @@ public class DocumentsS3UpdateTest implements DbKeys {
   /**
    * Create Document Request with 'running' ACTIONS.
    *
-   * @throws Exception Exception
    */
   @Test
-  public void testHandleRequest14() throws Exception {
+  public void testHandleRequest14() {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
@@ -973,10 +971,9 @@ public class DocumentsS3UpdateTest implements DbKeys {
   /**
    * Create Document Request without contentType.
    *
-   * @throws Exception Exception
    */
   @Test
-  public void testHandleRequest15() throws Exception {
+  public void testHandleRequest15() {
     assertHandleContentType(ID.uuid(), null, null, "application/octet-stream");
     assertHandleContentType(ID.uuid(), null, "application/pdf", "application/pdf");
     assertHandleContentType(ID.uuid(), "application/pdf", null, "application/pdf");

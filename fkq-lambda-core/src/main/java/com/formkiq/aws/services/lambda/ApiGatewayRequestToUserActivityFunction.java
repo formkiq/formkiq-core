@@ -30,15 +30,11 @@ import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.plugins.useractivity.UserActivity;
 import com.formkiq.plugins.useractivity.UserActivityContext;
 import com.formkiq.plugins.useractivity.UserActivityContextData;
-import com.formkiq.strings.Strings;
 
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
-
-import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
-import static com.formkiq.strings.Strings.isEmpty;
 
 /**
  * Convert {@link ApiGatewayRequestEvent} to {@link UserActivity}.
@@ -87,14 +83,6 @@ public class ApiGatewayRequestToUserActivityFunction {
       builder = builder.resource(resource).entityNamespace(entityNamespace)
           .sourceIpAddress(getSourceIp(request)).body(getBody(request))
           .userId(authorization != null ? authorization.getUsername() : "System");
-
-      if (isGenerateS3Key(request)) {
-
-        String siteId = authorization != null ? authorization.getSiteId() : DEFAULT_SITE_ID;
-        String resourceId = Strings.notEmpty(documentId, entityId, entityTypeId);
-        String parentId = !isEmpty(entityId) ? entityTypeId : null;
-        builder = builder.s3Key(siteId, parentId, resourceId);
-      }
     }
 
     return builder;
@@ -174,24 +162,24 @@ public class ApiGatewayRequestToUserActivityFunction {
     return insertedDate;
   }
 
-  private boolean isGenerateS3Key(final ApiGatewayRequestEvent request) {
-    String url = request.getResource();
-    UserActivityType type = getType(request);
-    return type != null
-        && (isDocumentView(url, type) || isDocumentChange(url, type) || isEntityChange(url, type));
-  }
-
-  private boolean isDocumentChange(final String url, final UserActivityType type) {
-    return CHANGE_TYPES.contains(type) && url.startsWith("/documents");
-  }
-
-  private boolean isDocumentView(final String url, final UserActivityType type) {
-    return UserActivityType.VIEW.equals(type) && url.startsWith("/documents")
-        && (url.endsWith("/url") || url.endsWith("/content"));
-  }
-
-  private boolean isEntityChange(final String url, final UserActivityType type) {
-    return CHANGE_TYPES.contains(type)
-        && (url.startsWith("/entities") || url.startsWith("/entityTypes"));
-  }
+  // private boolean isGenerateS3Key(final ApiGatewayRequestEvent request) {
+  // String url = request.getResource();
+  // UserActivityType type = getType(request);
+  // return type != null
+  // && (isDocumentView(url, type) || isDocumentChange(url, type) || isEntityChange(url, type));
+  // }
+  //
+  // private boolean isDocumentChange(final String url, final UserActivityType type) {
+  // return CHANGE_TYPES.contains(type) && url.startsWith("/documents");
+  // }
+  //
+  // private boolean isDocumentView(final String url, final UserActivityType type) {
+  // return UserActivityType.VIEW.equals(type) && url.startsWith("/documents")
+  // && (url.endsWith("/url") || url.endsWith("/content"));
+  // }
+  //
+  // private boolean isEntityChange(final String url, final UserActivityType type) {
+  // return CHANGE_TYPES.contains(type)
+  // && (url.startsWith("/entities") || url.startsWith("/entityTypes"));
+  // }
 }

@@ -558,10 +558,11 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
         service.updateDocument(siteId, documentId, attributes);
 
         Map<String, Object> currentMap = new AttributeValueToMap().apply(attributes);
-        Map<String, ChangeRecord> changes =
+        Map<String, ChangeRecord> changeRecords =
             new MapChangesFunction().apply(prevAttributes, currentMap);
+        Map<String, Object> changes = convertToObjectMap(changeRecords);
 
-        s3ServiceInterceptor.putObjectEvent(s3service, s3bucket, s3key, gson.toJson(changes));
+        s3ServiceInterceptor.putObjectEvent(s3service, s3bucket, s3key, changes);
 
         List<DocumentTag> tags = getObjectTags(s3bucket, key);
         service.addTags(siteId, documentId, tags, null);
@@ -576,6 +577,16 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     } else {
       logger.error("Cannot find document " + documentId + " in site " + siteId);
     }
+  }
+
+  private Map<String, Object> convertToObjectMap(final Map<String, ChangeRecord> changes) {
+    return changes.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> {
+      ChangeRecord cr = entry.getValue();
+      Map<String, Object> innerMap = new HashMap<>();
+      innerMap.put("oldValue", cr.oldValue());
+      innerMap.put("newValue", cr.newValue());
+      return innerMap;
+    }));
   }
 
   private String findContentType(final DocumentItem item, final String contentType) {

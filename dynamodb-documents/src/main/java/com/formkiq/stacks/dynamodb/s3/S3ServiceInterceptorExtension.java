@@ -53,7 +53,7 @@ public class S3ServiceInterceptorExtension implements AwsServiceExtension<S3Serv
     if (this.service == null) {
 
       String versionsTable = awsServiceCache.environment("DOCUMENT_VERSIONS_TABLE");
-      String activitiesS3Bucket = awsServiceCache.environment("ACTIVITIES_S3_BUCKET");
+      String auditTable = awsServiceCache.environment("DOCUMENTS_AUDIT_TABLE");
 
       if (!isEmpty(versionsTable)) {
         String documentsS3Bucket = awsServiceCache.environment("DOCUMENTS_S3_BUCKET");
@@ -61,8 +61,7 @@ public class S3ServiceInterceptorExtension implements AwsServiceExtension<S3Serv
         DynamoDbConnectionBuilder connection =
             awsServiceCache.getExtension(DynamoDbConnectionBuilder.class);
         DynamoDbService dbVersion = new DynamoDbServiceImpl(connection, versionsTable);
-        this.service =
-            new S3ServiceVersioningInterceptor(documentsS3Bucket, dbVersion, activitiesS3Bucket);
+        this.service = new S3ServiceVersioningInterceptor(documentsS3Bucket, dbVersion, auditTable);
       } else {
         this.service = new S3ServiceNoVersioningInterceptor();
       }

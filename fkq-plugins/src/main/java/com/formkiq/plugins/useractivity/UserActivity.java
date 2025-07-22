@@ -23,18 +23,11 @@
  */
 package com.formkiq.plugins.useractivity;
 
-import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.dynamodb.useractivities.UserActivityStatus;
 import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
 
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneOffset;
 import java.util.Date;
-import java.util.UUID;
-
-import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.getSiteIdName;
-import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 
 /**
  * Represents an activity performed by a user on a document or entity. This includes metadata such
@@ -57,9 +50,6 @@ public record UserActivity(
 
     /* The timestamp when the activity was recorded. */
     Date insertedDate,
-
-    /* The S3 object key for the stored document or metadata. */
-    String s3Key,
 
     /* A message or description related to the activity. */
     String message,
@@ -106,8 +96,6 @@ public record UserActivity(
     private String userId;
     /** Inserted Date. */
     private Instant insertedDate;
-    /** S3 Key. */
-    private String s3Key;
     /** Activity Message. */
     private String message;
     /** {@link UserActivityStatus}. */
@@ -149,31 +137,26 @@ public record UserActivity(
       return this;
     }
 
-    public Builder s3Key(final String siteId, final String parentId, final String resourceId) {
-
-      String timestamp = DateUtil.getNowInIso8601Format().replaceAll("[-:]", "");
-
-      LocalDate date = LocalDate.now(ZoneOffset.UTC);
-      int year = date.getYear();
-      int month = date.getMonthValue();
-      int day = date.getDayOfMonth();
-
-      String uuid = UUID.randomUUID().toString();
-      String resourceType = parentId != null ? resource + "/" + parentId : resource;
-
-      if (!isEmpty(resource) && !isEmpty(resourceId)) {
-        String key = String.format("activities/%s/%s/year=%d/month=%02d/day=%02d/%s/%s_%s.json",
-            getSiteIdName(siteId), resourceType, year, month, day, resourceId, timestamp, uuid);
-        s3Key(key);
-      }
-
-      return this;
-    }
-
-    public Builder s3Key(final String userActivityS3Key) {
-      this.s3Key = userActivityS3Key;
-      return this;
-    }
+    // public Builder s3Key(final String siteId, final String parentId, final String resourceId) {
+    //
+    // String timestamp = DateUtil.getNowInIso8601Format().replaceAll("[-:]", "");
+    //
+    // LocalDate date = LocalDate.now(ZoneOffset.UTC);
+    // int year = date.getYear();
+    // int month = date.getMonthValue();
+    // int day = date.getDayOfMonth();
+    //
+    // String uuid = UUID.randomUUID().toString();
+    // String resourceType = parentId != null ? resource + "/" + parentId : resource;
+    //
+    // if (!isEmpty(resource) && !isEmpty(resourceId)) {
+    // String key = String.format("activities/%s/%s/year=%d/month=%02d/day=%02d/%s/%s_%s.json",
+    // getSiteIdName(siteId), resourceType, year, month, day, resourceId, timestamp, uuid);
+    // s3Key(key);
+    // }
+    //
+    // return this;
+    // }
 
     public Builder message(final String userActivityMessage) {
       this.message = userActivityMessage;
@@ -271,8 +254,8 @@ public record UserActivity(
      */
     public UserActivity build(final String siteId) {
       return new UserActivity(siteId, resource, documentId, type, userId, Date.from(insertedDate),
-          s3Key, message, status, sourceIpAddress, source, entityTypeId, entityId, entityNamespace,
-          body, changes);
+          message, status, sourceIpAddress, source, entityTypeId, entityId, entityNamespace, body,
+          changes);
     }
   }
 }

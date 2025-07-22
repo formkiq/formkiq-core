@@ -24,20 +24,15 @@
 package com.formkiq.aws.services.lambda;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
-import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.getSiteIdName;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -95,10 +90,6 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
         assertNull(activity.body());
         assertEquals("03c0737e-2bc8-40f8-8291-797b364d4310", activity.documentId());
 
-        String expectedS3 = "activities/" + getSiteIdName(siteId) + "/documents/year=" + getYear()
-            + "/month=" + getMonth() + "/day=" + getDay() + "/" + activity.documentId() + "/";
-        assertTrue(activity.s3Key().startsWith(expectedS3));
-
         assertEquals("1.73.5.111", activity.sourceIpAddress());
         assertEquals(UserActivityStatus.COMPLETE, activity.status());
         assertNull(activity.message());
@@ -139,10 +130,6 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
       assertEquals("test.pdf", activity.documentId());
       assertNotNull(activity.body());
 
-      String expectedS3 = "activities/" + getSiteIdName(siteId) + "/documents/year=" + getYear()
-          + "/month=" + getMonth() + "/day=" + getDay() + "/" + activity.documentId() + "/";
-      assertTrue(activity.s3Key().startsWith(expectedS3));
-
       assertEquals("1.73.5.111", activity.sourceIpAddress());
       assertEquals(UserActivityStatus.COMPLETE, activity.status());
       assertNull(activity.message());
@@ -180,7 +167,7 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
       assertNull(activity.entityNamespace());
       assertNull(activity.entityTypeId());
       assertNull(activity.documentId());
-      assertNull(activity.s3Key());
+      // assertNull(activity.s3Key());
       assertNull(activity.body());
 
       assertEquals("1.73.5.111", activity.sourceIpAddress());
@@ -210,16 +197,10 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
     assertNull(activity.entityNamespace());
     assertNull(activity.entityTypeId());
     assertNull(activity.documentId());
-    assertNull(activity.s3Key());
     assertNull(activity.sourceIpAddress());
     assertEquals(UserActivityStatus.COMPLETE, activity.status());
     assertNull(activity.message());
     assertNotNull(activity.insertedDate());
-  }
-
-  private int getYear() {
-    LocalDate date = LocalDate.now(ZoneOffset.UTC);
-    return date.getYear();
   }
 
   /**
@@ -249,7 +230,7 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
       assertNull(activity.entityNamespace());
       assertNull(activity.entityTypeId());
       assertNull(activity.documentId());
-      assertNull(activity.s3Key());
+      // assertNull(activity.s3Key());
       assertNull(activity.body());
 
       assertEquals("1.73.5.111", activity.sourceIpAddress());
@@ -302,10 +283,6 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
       assertEquals(body.get("entityTypeId"), activity.entityTypeId());
       assertNull(activity.documentId());
 
-      String expectedS3 = "activities/" + getSiteIdName(siteId) + "/entityTypes/year=" + getYear()
-          + "/month=" + getMonth() + "/day=" + getDay() + "/" + activity.entityTypeId() + "/";
-      assertTrue(activity.s3Key().startsWith(expectedS3));
-
       assertEquals("2.7.1.11", activity.sourceIpAddress());
       assertEquals(UserActivityStatus.COMPLETE, activity.status());
       assertNull(activity.message());
@@ -351,12 +328,6 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
             }
           }""", activity.body());
 
-
-      String expectedS3 = "activities/" + getSiteIdName(siteId) + "/entities/"
-          + activity.entityTypeId() + "/year=" + getYear() + "/month=" + getMonth() + "/day="
-          + getDay() + "/" + activity.entityId() + "/";
-      assertTrue(activity.s3Key().startsWith(expectedS3));
-
       assertEquals("2.7.1.3", activity.sourceIpAddress());
       assertEquals(UserActivityStatus.COMPLETE, activity.status());
       assertNull(activity.message());
@@ -397,7 +368,7 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
       assertEquals("Customer", activity.entityTypeId());
 
       assertNull(activity.documentId());
-      assertNull(activity.s3Key());
+      // assertNull(activity.s3Key());
 
       assertEquals("2.7.2.11", activity.sourceIpAddress());
       assertEquals(UserActivityStatus.COMPLETE, activity.status());
@@ -406,14 +377,6 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
       final long expectedTime = 1751636079140L;
       assertEquals(Instant.ofEpochMilli(expectedTime), activity.insertedDate().toInstant());
     }
-  }
-
-  private String getMonth() {
-    return LocalDate.now(ZoneOffset.UTC).format(DateTimeFormatter.ofPattern("MM"));
-  }
-
-  private String getDay() {
-    return LocalDate.now(ZoneOffset.UTC).format(DateTimeFormatter.ofPattern("dd"));
   }
 
   private ApiGatewayRequestEvent loadFile(final String file) throws IOException {

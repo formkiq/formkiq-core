@@ -107,6 +107,7 @@ public class AttributeValueToMap
       case L -> obj = val.l().stream().map(this::convert).toList();
       case NUL -> obj = null;
       case M -> obj = val.m().entrySet().stream()
+          .filter(e -> !AttributeValue.Type.NUL.equals(e.getValue().type()))
           .collect(Collectors.toMap(Map.Entry::getKey, e -> convert(e.getValue())));
       default -> throw new IllegalArgumentException(
           "Unsupported attribute value map conversion " + val.type());

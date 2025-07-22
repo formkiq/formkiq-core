@@ -21,22 +21,37 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.s3;
+package com.formkiq.testutils.api.activities;
+
+import com.formkiq.client.model.UserActivityChanges;
 
 import java.util.Map;
+import java.util.function.BiFunction;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
- * Interface for adding interactions for S3Service.
+ * Assert {@link UserActivityChanges}.
  */
-public interface S3ServiceInterceptor {
+public class AssertUserActivityChanges implements
+    BiFunction<Map<String, UserActivityChanges>, Map<String, Map<String, Object>>, Void> {
 
-  /**
-   * Put S3 Object Event.
-   *
-   * @param s3 {@link S3Service}
-   * @param bucket {@link String}
-   * @param key {@link String}
-   * @param changes {@link Map}
-   */
-  void putObjectEvent(S3Service s3, String bucket, String key, Map<String, Object> changes);
+  @Override
+  public Void apply(final Map<String, UserActivityChanges> changes,
+      final Map<String, Map<String, Object>> expected) {
+    assertEquals(changes.size(), expected.size());
+    changes.forEach((key, value) -> {
+      if (!expected.containsKey(key)) {
+        fail("cannot find key: " + key);
+      }
+
+      if (!expected.get(key).isEmpty()) {
+        assertEquals(value.getNewValue(), expected.get(key).get("newValue"));
+        assertEquals(value.getOldValue(), expected.get(key).get("oldValue"));
+      }
+    });
+
+    return null;
+  }
 }

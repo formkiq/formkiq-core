@@ -21,22 +21,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.s3;
+package com.formkiq.testutils.api;
 
-import java.util.Map;
+import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
+import com.formkiq.client.invoker.ApiClient;
+
+import java.util.Arrays;
+import java.util.function.BiFunction;
 
 /**
- * Interface for adding interactions for S3Service.
+ * {@link BiFunction} to setup SetBearer.
  */
-public interface S3ServiceInterceptor {
+public class SetBearer implements BiFunction<ApiClient, String[], Void> {
+  @Override
+  public Void apply(final ApiClient client, final String[] groups) {
 
-  /**
-   * Put S3 Object Event.
-   *
-   * @param s3 {@link S3Service}
-   * @param bucket {@link String}
-   * @param key {@link String}
-   * @param changes {@link Map}
-   */
-  void putObjectEvent(S3Service s3, String bucket, String key, Map<String, Object> changes);
+    String[] a = Arrays.stream(groups).map(m -> m != null ? m : SiteIdKeyGenerator.DEFAULT_SITE_ID)
+        .toArray(String[]::new);
+    String jwt = JwtTokenEncoder.encodeCognito(a, "joesmith");
+    client.addDefaultHeader("Authorization", jwt);
+    return null;
+  }
 }

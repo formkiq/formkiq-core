@@ -26,6 +26,8 @@ package com.formkiq.stacks.dynamodb.s3;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.s3.S3ServiceInterceptor;
 
+import java.util.Map;
+
 /**
  * {@link S3ServiceInterceptor} for No Document versioning.
  */
@@ -41,7 +43,7 @@ public class S3ServiceNoVersioningInterceptor implements S3ServiceInterceptor {
 
   @Override
   public void putObjectEvent(final S3Service s3, final String bucket, final String key,
-      final String changes) {
+      final Map<String, Object> changes) {
     // empty
   }
 }

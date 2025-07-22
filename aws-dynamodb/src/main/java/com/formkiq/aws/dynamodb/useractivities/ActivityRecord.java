@@ -38,8 +38,8 @@ import java.util.Objects;
  */
 public record ActivityRecord(DynamoDbKey key, String resource, UserActivityType type,
     UserActivityStatus status, String sourceIpAddress, String source, String userId,
-    String entityTypeId, String entityId, String documentId, String s3Key, String message,
-    Date insertedDate, String versionPk, String versionSk, Map<String, Object> changes) {
+    String entityTypeId, String entityId, String documentId, String message, Date insertedDate,
+    String versionPk, String versionSk, Map<String, Object> changes) {
 
   /**
    * Canonical constructor to enforce non-null properties and defensive copy of Date.
@@ -64,7 +64,7 @@ public record ActivityRecord(DynamoDbKey key, String resource, UserActivityType 
     return key.getAttributesBuilder().withString("resource", resource)
         .withString("type", type.name()).withString("status", status.name())
         .withString("sourceIpAddress", sourceIpAddress).withString("source", source)
-        .withString("userId", userId).withString("s3Key", s3Key).withString("message", message)
+        .withString("userId", userId).withString("message", message)
         .withString("entityTypeId", entityTypeId).withString("entityId", entityId)
         .withString("documentId", documentId).withDate("inserteddate", insertedDate)
         .withMap("changes", changes).build();
@@ -101,8 +101,6 @@ public record ActivityRecord(DynamoDbKey key, String resource, UserActivityType 
     private String entityId;
     /** Activity Record Document Id. */
     private String documentId;
-    /** Activity S3 Key. */
-    private String s3Key;
     /** Activity Message. */
     private String message;
     /** Activity Inserted Date. */
@@ -177,17 +175,6 @@ public record ActivityRecord(DynamoDbKey key, String resource, UserActivityType 
      */
     public Builder sourceIpAddress(final String activitySourceIpAddress) {
       this.sourceIpAddress = activitySourceIpAddress;
-      return this;
-    }
-
-    /**
-     * Sets the Activity S3 Key.
-     *
-     * @param activityS3Key S3 Key
-     * @return this Builder
-     */
-    public Builder s3Key(final String activityS3Key) {
-      this.s3Key = activityS3Key;
       return this;
     }
 
@@ -355,8 +342,7 @@ public record ActivityRecord(DynamoDbKey key, String resource, UserActivityType 
       DynamoDbKey key = buildKey(siteId);
 
       return new ActivityRecord(key, resource, type, status, sourceIpAddress, source, userId,
-          entityTypeId, entityId, documentId, s3Key, message, insertedDate, versionPk, versionSk,
-          changes);
+          entityTypeId, entityId, documentId, message, insertedDate, versionPk, versionSk, changes);
     }
   }
 }
