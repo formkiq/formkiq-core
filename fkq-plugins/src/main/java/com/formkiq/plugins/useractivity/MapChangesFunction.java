@@ -84,7 +84,10 @@ public class MapChangesFunction
 
   /**
    * Turn any Number into a BigDecimal “sensibly”: - if it’s already BigDecimal, return it -
-   * otherwise use its string form (so 1.0D → "1.0", 2L → "2")
+   * otherwise use its string form (so 1.0D → "1.0", 2L → "2").
+   * 
+   * @param number {@link Number}
+   * @return BigDecimal
    */
   private BigDecimal toBigDecimal(final Number number) {
     if (number instanceof BigDecimal) {
