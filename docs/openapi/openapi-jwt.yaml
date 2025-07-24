@@ -9001,9 +9001,6 @@
                 sourceIpAddress:
                   type: string
                   description: The Source IP address of the user
-                s3Key:
-                  type: string
-                  description: The S3 Key for the activity payload
                 message:
                   type: string
                   description: The activity message
