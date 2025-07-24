@@ -26,7 +26,7 @@ nativeImage {
 	dockerImage = "ghcr.io/graalvm/native-image-community:24"
     enableHttp = true
     enableHttps = true
-	buildOptions = "-Os"
+	buildOptions = "-Os -H:-ReduceImplicitExceptionStackTraceInformation"
 	systemProperty = ["java.net.preferIPv4Stack=true"]
 }
 
