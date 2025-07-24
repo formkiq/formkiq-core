@@ -23,8 +23,11 @@
  */
 package com.formkiq.aws.dynamodb.useractivities;
 
+import com.formkiq.graalvm.annotations.Reflectable;
+
 /**
  * Represents a change from an old value to a new value.
  */
+@Reflectable
 public record ChangeRecord(Object oldValue, Object newValue) {
 }
