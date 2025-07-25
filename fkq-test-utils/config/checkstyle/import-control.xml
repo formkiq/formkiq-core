@@ -9,6 +9,11 @@
 	<allow pkg="java.nio" />
 	<allow pkg="java.util" />
 
+	<subpackage name="dbloader">
+		<allow pkg="org.apache.commons.csv" />
+		<allow pkg="software.amazon.awssdk.services.dynamodb.model" />
+	</subpackage>
+
 	<subpackage name="api">
 		<allow pkg="com.formkiq.client.invoker" />
 		<allow pkg="com.formkiq.client.api" />
