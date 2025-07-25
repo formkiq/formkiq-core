@@ -169,7 +169,7 @@ public class ApiGatewayRequestEvent {
   public String getQueryStringParameter(final String key, final String defaultValue) {
     return getQueryStringParameters() != null
         ? getQueryStringParameters().getOrDefault(key, defaultValue)
-        : null;
+        : defaultValue;
   }
 
   /**
