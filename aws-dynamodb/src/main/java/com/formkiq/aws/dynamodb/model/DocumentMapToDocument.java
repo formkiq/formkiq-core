@@ -29,7 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.stream.Collectors;
+
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
@@ -44,7 +44,6 @@ public class DocumentMapToDocument
   private static final List<String> FIELDS =
       Arrays.asList("documentId", "path", "content", "contentType", "deepLinkPath");
 
-  @SuppressWarnings("unchecked")
   private String getValue(final Object obj) {
     String value = null;
 
@@ -72,7 +71,6 @@ public class DocumentMapToDocument
     return value;
   }
 
-  @SuppressWarnings("unchecked")
   @Override
   public Map<String, Object> apply(final Map<String, ? extends Object> data) {
 
@@ -89,8 +87,7 @@ public class DocumentMapToDocument
     }
 
     List<String> metadata =
-        data.entrySet().stream().filter(e -> e.getKey().startsWith(PREFIX_DOCUMENT_METADATA))
-            .map(e -> e.getKey()).collect(Collectors.toList());
+        data.keySet().stream().filter(o -> o.startsWith(PREFIX_DOCUMENT_METADATA)).toList();
 
     metadata.forEach(m -> {
 
