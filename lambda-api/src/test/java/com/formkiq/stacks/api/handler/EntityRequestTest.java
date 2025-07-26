@@ -518,6 +518,7 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
   public void testDeleteEntity01() throws Exception {
     // given
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
       setBearerToken(new String[] {siteId});
 
       String entityTypeId = addEntityType(siteId);

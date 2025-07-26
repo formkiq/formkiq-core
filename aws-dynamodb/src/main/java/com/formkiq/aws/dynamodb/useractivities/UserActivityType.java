@@ -43,5 +43,5 @@ public enum UserActivityType {
   /** Restore Activity. */
   RESTORE,
   /** New Version. */
-  NEW_VERSION;
+  NEW_VERSION
 }

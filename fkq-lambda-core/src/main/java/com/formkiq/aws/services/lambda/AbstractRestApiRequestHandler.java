@@ -23,23 +23,15 @@
  */
 package com.formkiq.aws.services.lambda;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_BAD_REQUEST;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_ERROR;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_FOUND;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_METHOD_CONFLICT;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_FOUND;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_IMPLEMENTED;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_TOO_MANY_REQUESTS;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_UNAUTHORIZED;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
-import java.time.DateTimeException;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -48,18 +40,16 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.ApiPermission;
-import com.formkiq.aws.dynamodb.DynamoDbQueryException;
-import com.formkiq.aws.services.lambda.exceptions.BadException;
-import com.formkiq.aws.services.lambda.exceptions.ConflictException;
 import com.formkiq.aws.services.lambda.exceptions.ForbiddenException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
-import com.formkiq.aws.services.lambda.exceptions.NotImplementedException;
-import com.formkiq.aws.services.lambda.exceptions.TooManyRequestsException;
-import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
+import com.formkiq.aws.sqs.events.SqsEvent;
+import com.formkiq.aws.sqs.events.SqsEventRecord;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.logger.LogLevel;
 import com.formkiq.module.lambdaservices.logger.Logger;
-import com.formkiq.validation.ValidationException;
+import com.formkiq.plugins.useractivity.UserActivity;
+import com.formkiq.plugins.useractivity.UserActivityContext;
+import com.formkiq.plugins.useractivity.UserActivityPlugin;
 import com.google.gson.Gson;
 import software.amazon.awssdk.utils.IoUtils;
 
@@ -75,54 +65,6 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
   /** {@link Gson}. */
   protected Gson gson = GsonUtil.getInstance();
-
-  private void buildForbiddenException(final AwsServiceCache awsServices, final OutputStream output,
-      final ForbiddenException e) throws IOException {
-
-    awsServices.getLogger().debug(e.getDebug());
-
-    buildResponse(awsServices, output, SC_UNAUTHORIZED, Collections.emptyMap(),
-        new ApiResponseError(e.getMessage()));
-  }
-
-  /**
-   * Handle Exception.
-   *
-   * @param awsServices {@link AwsServiceCache}
-   * @param output {@link OutputStream}
-   * @param status {@link ApiResponseStatus}
-   * @param headers {@link Map}
-   * @param apiResponse {@link ApiResponse}
-   * @throws IOException IOException
-   */
-  protected void buildResponse(final AwsServiceCache awsServices, final OutputStream output,
-      final ApiResponseStatus status, final Map<String, String> headers,
-      final ApiResponse apiResponse) throws IOException {
-
-    Map<String, Object> response = new HashMap<>();
-    Map<String, String> jsonheaders = createJsonHeaders();
-    response.put("statusCode", status.getStatusCode());
-
-    if (apiResponse instanceof ApiRedirectResponse a) {
-      jsonheaders.put("Location", a.getRedirectUri());
-    } else if (status.getStatusCode() == SC_FOUND.getStatusCode()
-        && apiResponse instanceof ApiMessageResponse a) {
-      jsonheaders.put("Location", a.getMessage());
-    } else if (apiResponse instanceof ApiMapResponse a) {
-      response.put("body", this.gson.toJson(a.getMap()));
-      jsonheaders.putAll(headers);
-    } else if (apiResponse instanceof ApiObjectResponse a) {
-      response.put("body", this.gson.toJson(a.getObject()));
-      jsonheaders.putAll(headers);
-    } else {
-      response.put("body", this.gson.toJson(apiResponse));
-      jsonheaders.putAll(headers);
-    }
-
-    response.put("headers", jsonheaders);
-
-    writeJson(awsServices, output, response);
-  }
 
   /**
    * Call Handler Rest Method.
@@ -195,20 +137,6 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
   }
 
   /**
-   * Create Response Headers.
-   *
-   * @return {@link Map} {@link String}
-   */
-  protected Map<String, String> createJsonHeaders() {
-    Map<String, String> headers = new HashMap<>();
-    headers.put("Access-Control-Allow-Headers", "Content-Type,X-Amz-Date,Authorization,X-Api-Key");
-    headers.put("Access-Control-Allow-Methods", "*");
-    headers.put("Access-Control-Allow-Origin", "*");
-    headers.put("Content-Type", "application/json");
-    return headers;
-  }
-
-  /**
    * Execute Before Request Interceptor.
    * 
    * @param requestInterceptors {@link List} {@link ApiRequestHandlerInterceptor}
@@ -227,21 +155,26 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
   /**
    * Execute {@link ApiRequestHandlerInterceptor}.
-   * 
+   *
    * @param requestInterceptors {@link ApiRequestHandlerInterceptor}
    * @param event {@link ApiGatewayRequestEvent}
    * @param authorization {@link ApiAuthorization}
-   * @param object {@link ApiRequestHandlerResponse}
+   * @param apiResponse {@link ApiRequestHandlerResponse}
+   * @return ApiRequestHandlerResponse
    * @throws Exception Exception
    */
-  private void executeResponseInterceptors(
+  private ApiRequestHandlerResponse executeResponseInterceptors(
       final List<ApiRequestHandlerInterceptor> requestInterceptors,
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final ApiRequestHandlerResponse object) throws Exception {
+      final ApiRequestHandlerResponse apiResponse) throws Exception {
+
+    ApiRequestHandlerResponse response = apiResponse;
 
     for (ApiRequestHandlerInterceptor interceptor : requestInterceptors) {
-      interceptor.afterProcessRequest(event, authorization, object);
+      response = interceptor.afterProcessRequest(event, authorization, response);
     }
+
+    return response;
   }
 
   /**
@@ -327,9 +260,9 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
     } else {
 
       if (str.contains("aws:sqs")) {
-        LambdaInputRecords records = this.gson.fromJson(str, LambdaInputRecords.class);
-        for (LambdaInputRecord record : records.getRecords()) {
-          if ("aws:sqs".equals(record.getEventSource())) {
+        SqsEvent records = this.gson.fromJson(str, SqsEvent.class);
+        for (SqsEventRecord record : records.records()) {
+          if ("aws:sqs".equals(record.eventSource())) {
             handleSqsRequest(logger, awsServices, record);
           }
         }
@@ -346,11 +279,11 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
    * 
    * @param logger {@link Logger}
    * @param awsServices {@link AwsServiceCache}
-   * @param record {@link LambdaInputRecord}
+   * @param sqsEventRecord {@link SqsEventRecord}
    * @throws IOException IOException
    */
   public abstract void handleSqsRequest(Logger logger, AwsServiceCache awsServices,
-      LambdaInputRecord record) throws IOException;
+      SqsEventRecord sqsEventRecord) throws IOException;
 
   /**
    * Whether {@link ApiGatewayRequestEvent} has access.
@@ -472,97 +405,72 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
   private void processApiGatewayRequest(final Logger logger, final ApiGatewayRequestEvent event,
       final AwsServiceCache awsServices, final OutputStream output) throws IOException {
 
+    UserActivity.Builder ua = null;
+    ApiRequestHandlerResponse response;
+    ApiAuthorization authorization = null;
+
     try {
+
+      resetThreadLocal();
 
       List<ApiAuthorizationInterceptor> interceptors =
           setupApiAuthorizationInterceptor(awsServices);
 
-      ApiAuthorization authorization = buildApiAuthorization(event, interceptors);
-      // HttpCommand httpCommand =
-      // new ApiGatewayRequestEventToHttpCommandTransformer(authorization).apply(event);
+      authorization = buildApiAuthorization(event, interceptors);
 
       List<ApiRequestHandlerInterceptor> requestInterceptors =
           getApiRequestHandlerInterceptors(awsServices);
 
       executeRequestInterceptors(requestInterceptors, event, authorization);
 
-      ApiRequestHandlerResponse object = processRequest(getUrlMap(), event, authorization);
+      response = processRequest(getUrlMap(), event, authorization);
 
-      executeResponseInterceptors(requestInterceptors, event, authorization, object);
+      response = executeResponseInterceptors(requestInterceptors, event, authorization, response);
 
-      buildResponse(awsServices, output, object.getStatus(), object.getHeaders(),
-          object.getResponse());
+      ua = new ApiGatewayRequestToUserActivityFunction().apply(authorization, event, response);
+      writeJson(awsServices, output, response.toMap());
+      writeUserActivity(awsServices, authorization, ua);
 
-    } catch (ConflictException e) {
-      buildResponse(awsServices, output, SC_METHOD_CONFLICT, Collections.emptyMap(),
-          new ApiResponseError(e.getMessage()));
-    } catch (TooManyRequestsException e) {
-      buildResponse(awsServices, output, SC_TOO_MANY_REQUESTS, Collections.emptyMap(),
-          new ApiResponseError(e.getMessage()));
-    } catch (BadException | IllegalArgumentException | DateTimeException e) {
-      buildResponse(awsServices, output, SC_BAD_REQUEST, Collections.emptyMap(),
-          new ApiResponseError(e.getMessage()));
-    } catch (ForbiddenException e) {
-      buildForbiddenException(awsServices, output, e);
-    } catch (UnauthorizedException e) {
-      buildResponse(awsServices, output, SC_UNAUTHORIZED, Collections.emptyMap(),
-          new ApiResponseError(e.getMessage()));
-    } catch (NotImplementedException e) {
-      buildResponse(awsServices, output, SC_NOT_IMPLEMENTED, Collections.emptyMap(),
-          new ApiResponseError(e.getMessage()));
-    } catch (ValidationException e) {
-      buildResponse(awsServices, output, SC_BAD_REQUEST, Collections.emptyMap(),
-          new ApiResponseError(e.errors()));
     } catch (Exception e) {
 
-      ApiResponseStatus status = buildStatus(e);
-      if (SC_ERROR == status) {
+      response = ApiRequestHandlerResponse.builder().exception(e).build();
+
+      if (ua == null) {
+        ua = new ApiGatewayRequestToUserActivityFunction().apply(authorization, null, null);
+      }
+
+      ua.status(response.statusCode()).message(e.getMessage());
+
+      if (SC_ERROR.getStatusCode() == response.statusCode()) {
         logger.error(e);
       }
 
-      String message = buildErrorMessage(e);
-      buildResponse(awsServices, output, status, Collections.emptyMap(),
-          new ApiResponseError(message));
+      writeJson(awsServices, output, response.toMap());
+      writeUserActivity(awsServices, authorization, ua);
 
     } finally {
-      ApiAuthorization.logout();
+      resetThreadLocal();
     }
   }
 
-  private ApiResponseStatus buildStatus(final Exception e) {
-    return switch (e.getClass().getName()) {
-      case "com.formkiq.aws.dynamodb.DynamoDbQueryException" -> SC_BAD_REQUEST;
-      case "com.formkiq.aws.services.lambda.exceptions.NotFoundException",
-          "com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException" ->
-        SC_NOT_FOUND;
-      default -> SC_ERROR;
-    };
+  private void writeUserActivity(final AwsServiceCache awsServices,
+      final ApiAuthorization authorization, final UserActivity.Builder ua) {
+
+    if (awsServices.containsExtension(UserActivityPlugin.class)) {
+      String siteId = authorization != null ? authorization.getSiteId() : DEFAULT_SITE_ID;
+
+      UserActivityPlugin plugin = awsServices.getExtension(UserActivityPlugin.class);
+      plugin.addUserActivity(ua.build(siteId));
+    }
   }
 
-
-  private String buildErrorMessage(final Exception e) {
-
-    return switch (e.getClass().getName()) {
-      case "com.formkiq.aws.dynamodb.DynamoDbQueryException" -> {
-        if (e instanceof DynamoDbQueryException ee) {
-          yield switch (ee.getError()) {
-            case INVALID_START_KEY -> "Invalid Next token";
-            default -> "Invalid query";
-          };
-        }
-        yield "Unknown error";
-      }
-      case "com.formkiq.aws.services.lambda.exceptions.NotFoundException",
-          "com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException" ->
-        e.getMessage();
-      default -> "Internal Server Error";
-    };
+  private static void resetThreadLocal() {
+    ApiAuthorization.logout();
+    UserActivityContext.clear();
   }
 
   private ApiAuthorization buildApiAuthorization(final ApiGatewayRequestEvent event,
       final List<ApiAuthorizationInterceptor> interceptors) throws Exception {
-
-    ApiAuthorization.logout();
 
     ApiAuthorization authorization =
         new ApiAuthorizationBuilder().interceptors(interceptors).build(event);

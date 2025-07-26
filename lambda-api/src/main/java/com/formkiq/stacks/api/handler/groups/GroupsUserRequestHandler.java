@@ -28,15 +28,11 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 
-import java.util.Map;
 import java.util.Optional;
-
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
 /** {@link ApiGatewayRequestHandler} for "/groups/{groupName}/users/{username}". */
 public class GroupsUserRequestHandler
@@ -57,8 +53,7 @@ public class GroupsUserRequestHandler
     service.removeUserFromGroup(username, groupName);
 
     String msg = "user '" + username + "' removed from group '" + groupName + "'";
-    ApiMapResponse resp = new ApiMapResponse(Map.of("message", msg));
-    return new ApiRequestHandlerResponse(SC_OK, resp);
+    return ApiRequestHandlerResponse.builder().ok().body("message", msg).build();
   }
 
   @Override

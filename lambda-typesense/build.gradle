@@ -48,7 +48,7 @@ nativeImage {
 	mainClassName = "com.formkiq.lambda.runtime.graalvm.LambdaRuntime"
     enableHttp = true
     enableHttps = true
-	buildOptions = "-Os"
+	buildOptions = "-Os -H:-ReduceImplicitExceptionStackTraceInformation"
 	systemProperty = ["java.net.preferIPv4Stack=true"]
 }
 

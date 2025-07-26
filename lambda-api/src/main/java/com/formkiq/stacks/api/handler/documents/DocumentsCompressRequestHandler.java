@@ -25,7 +25,6 @@ package com.formkiq.stacks.api.handler.documents;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_CREATED;
 import static java.util.Map.entry;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -45,7 +44,6 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -129,9 +127,8 @@ public class DocumentsCompressRequestHandler
     DynamicObject taskObject = getS3TaskObject(requestBodyObject, siteId, documentId, downloadUrl);
 
     putObjectToStaging(s3, stagingBucket, compressionTaskS3Key, GSON.toJson(taskObject));
-    ApiMapResponse response = new ApiMapResponse(Map.of("downloadUrl", downloadUrl));
 
-    return new ApiRequestHandlerResponse(SC_CREATED, response);
+    return ApiRequestHandlerResponse.builder().created().body("downloadUrl", downloadUrl).build();
   }
 
   /**

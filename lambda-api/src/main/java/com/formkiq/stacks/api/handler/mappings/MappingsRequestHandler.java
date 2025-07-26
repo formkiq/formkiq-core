@@ -29,7 +29,6 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.dynamodb.cache.CacheService;
@@ -40,9 +39,6 @@ import com.formkiq.stacks.dynamodb.mappings.MappingService;
 
 import java.util.HashMap;
 import java.util.Map;
-
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_CREATED;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
 /** {@link ApiGatewayRequestHandler} for "/mappings". */
 public class MappingsRequestHandler
@@ -74,7 +70,7 @@ public class MappingsRequestHandler
       map.put("next", current.getNext());
     }
 
-    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
+    return ApiRequestHandlerResponse.builder().ok().body(map).build();
   }
 
   @Override
@@ -93,7 +89,7 @@ public class MappingsRequestHandler
     AddMappingRequest req = fromBodyToObject(event, AddMappingRequest.class);
     MappingRecord record = service.saveMapping(siteId, null, req.getMapping());
 
-    return new ApiRequestHandlerResponse(SC_CREATED,
-        new ApiMapResponse(Map.of("mappingId", record.getDocumentId())));
+    return ApiRequestHandlerResponse.builder().created().body("mappingId", record.getDocumentId())
+        .build();
   }
 }

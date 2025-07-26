@@ -23,14 +23,10 @@
  */
 package com.formkiq.stacks.api.handler.sites;
 
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-import java.util.Map;
-
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
@@ -76,8 +72,7 @@ public class ConfigurationApiKeyRequestHandler
       throw new NotFoundException("apikey '" + apiKey + "' not found");
     }
 
-    return new ApiRequestHandlerResponse(SC_OK,
-        new ApiMapResponse(Map.of("message", "ApiKey deleted")));
+    return ApiRequestHandlerResponse.builder().ok().body("message", "ApiKey deleted").build();
   }
 
   @Override

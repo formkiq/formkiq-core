@@ -25,7 +25,7 @@ package com.formkiq.stacks.api.handler.webhooks;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.MOVED_PERMANENTLY;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
+
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -44,8 +44,6 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
-import com.formkiq.aws.services.lambda.ApiRedirectResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.TooManyRequestsException;
@@ -114,7 +112,7 @@ public class PublicWebhooksRequestHandler
 
   private ApiRequestHandlerResponse buildRedirect(final ApiGatewayRequestEvent event,
       final String redirectUri, final String body) {
-    ApiRequestHandlerResponse response;
+
     StringBuilder sb = new StringBuilder();
     sb.append(redirectUri);
 
@@ -130,9 +128,8 @@ public class PublicWebhooksRequestHandler
       }
     }
 
-    response =
-        new ApiRequestHandlerResponse(MOVED_PERMANENTLY, new ApiRedirectResponse(sb.toString()));
-    return response;
+    return ApiRequestHandlerResponse.builder().status(MOVED_PERMANENTLY)
+        .header("Location", sb.toString()).build();
   }
 
   private ApiRequestHandlerResponse buildResponse(final ApiGatewayRequestEvent event,
@@ -143,7 +140,7 @@ public class PublicWebhooksRequestHandler
     String contentType = item.getString("contentType");
 
     ApiRequestHandlerResponse response =
-        new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(Map.of("documentId", documentId)));
+        ApiRequestHandlerResponse.builder().ok().body("documentId", documentId).build();
 
     String redirectUri = getParameter(event, "redirect_uri");
 
@@ -153,8 +150,8 @@ public class PublicWebhooksRequestHandler
       response = buildRedirect(event, redirectUri, body);
 
     } else if (StringUtils.isNotBlank(redirectUri)) {
-      response =
-          new ApiRequestHandlerResponse(MOVED_PERMANENTLY, new ApiRedirectResponse(redirectUri));
+      response = ApiRequestHandlerResponse.builder().status(MOVED_PERMANENTLY)
+          .header("Location", redirectUri).build();
     }
 
     return response;
@@ -274,7 +271,7 @@ public class PublicWebhooksRequestHandler
 
     checkIsWebhookValid(hook);
 
-    String body = ApiGatewayRequestEventUtil.getBodyAsString(event);
+    String body = event.getBodyAsString();
 
     String contentType = getContentType(event);
 

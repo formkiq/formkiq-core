@@ -392,8 +392,10 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
         fail();
       } catch (ApiException e) {
         // then
-        assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
-        assertEquals("{\"message\":\"entityType '" + id + "' not found\"}", e.getResponseBody());
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"entityTypeId\"," + "\"error\":\"EntityType not found\"}]}",
+            e.getResponseBody());
       }
     }
   }

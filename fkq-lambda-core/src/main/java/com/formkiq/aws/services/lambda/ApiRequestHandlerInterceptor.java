@@ -34,14 +34,15 @@ public interface ApiRequestHandlerInterceptor {
 
   /**
    * Handle / Modify API requests AFTER they are processed.
-   * 
+   *
    * @param event {@link ApiGatewayRequestEvent}
    * @param authorization {@link ApiAuthorization}
    * @param response {@link ApiRequestHandlerResponse}
+   * @return ApiRequestHandlerResponse
    * @throws Exception Exception
    */
-  void afterProcessRequest(ApiGatewayRequestEvent event, ApiAuthorization authorization,
-      ApiRequestHandlerResponse response) throws Exception;
+  ApiRequestHandlerResponse afterProcessRequest(ApiGatewayRequestEvent event,
+      ApiAuthorization authorization, ApiRequestHandlerResponse response) throws Exception;
 
   /**
    * Handle / Modify API requests BEFORE they are processed.

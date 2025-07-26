@@ -55,8 +55,6 @@ import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.useractivity.UserActivityPlugin;
-import com.formkiq.stacks.api.ApiEmptyResponse;
-import com.formkiq.stacks.api.ApiUrlResponse;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
@@ -105,9 +103,8 @@ public class DocumentIdUrlRequestHandler
       }
     }
 
-    return url != null
-        ? new ApiRequestHandlerResponse(SC_OK, new ApiUrlResponse(url.toString(), documentId))
-        : new ApiRequestHandlerResponse(SC_NOT_FOUND, new ApiEmptyResponse());
+    return ApiRequestHandlerResponse.builder().status(url != null ? SC_OK : SC_NOT_FOUND)
+        .body("url", url != null ? url.toString() : null).body("documentId", documentId).build();
   }
 
   private boolean isBypassWatermark(final ApiGatewayRequestEvent event,

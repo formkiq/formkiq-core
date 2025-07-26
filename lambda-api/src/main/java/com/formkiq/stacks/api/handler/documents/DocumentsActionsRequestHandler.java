@@ -24,7 +24,7 @@
 package com.formkiq.stacks.api.handler.documents;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -38,7 +38,6 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
@@ -111,7 +110,7 @@ public class DocumentsActionsRequestHandler
     Map<String, Object> map = new HashMap<>();
     map.put("actions", list);
     map.put("next", current.hasNext() ? current.getNext() : null);
-    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
+    return ApiRequestHandlerResponse.builder().ok().body(map).build();
   }
 
   private DocumentItem getDocument(final AwsServiceCache awsservice, final String siteId,
@@ -155,8 +154,6 @@ public class DocumentsActionsRequestHandler
         awsservice.getExtension(ActionsNotificationService.class);
     notificationService.publishNextActionEvent(actions, siteId, documentId);
 
-    ApiMapResponse resp = new ApiMapResponse();
-    resp.setMap(Map.of("message", "Actions saved"));
-    return new ApiRequestHandlerResponse(SC_OK, resp);
+    return ApiRequestHandlerResponse.builder().ok().body("message", "Actions saved").build();
   }
 }

@@ -23,7 +23,6 @@
  */
 package com.formkiq.stacks.api.handler.documents;
 
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import static com.formkiq.module.http.HttpResponseStatus.is2XX;
 import static com.formkiq.module.http.HttpResponseStatus.is404;
 import java.net.http.HttpResponse;
@@ -36,7 +35,6 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
@@ -100,8 +98,8 @@ public class DocumentsFulltextRequestHandler
 
     typeSenseService.deleteDocument(siteId, documentId);
 
-    Map<String, Object> map = Map.of("message", "Deleted document '" + documentId + "'");
-    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
+    return ApiRequestHandlerResponse.builder().ok()
+        .body("message", "Deleted document '" + documentId + "'").build();
   }
 
   @Override
@@ -130,9 +128,7 @@ public class DocumentsFulltextRequestHandler
 
       body.put("metadata", metadata);
 
-      ApiMapResponse resp = new ApiMapResponse();
-      resp.setMap(body);
-      return new ApiRequestHandlerResponse(SC_OK, resp);
+      return ApiRequestHandlerResponse.builder().ok().body(body).build();
     }
 
     return handleError(response, documentId);
@@ -168,8 +164,8 @@ public class DocumentsFulltextRequestHandler
     HttpResponse<String> response = typeSenseService.updateDocument(siteId, documentId, document);
 
     if (is2XX(response)) {
-      Map<String, Object> map = Map.of("message", "Updated document to Typesense");
-      return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
+      return ApiRequestHandlerResponse.builder().ok()
+          .body("message", "Updated document to Typesense").build();
     }
 
     return handleError(response, documentId);
@@ -192,8 +188,8 @@ public class DocumentsFulltextRequestHandler
         typeSenseService.addOrUpdateDocument(siteId, documentId, document);
 
     if (is2XX(response)) {
-      Map<String, Object> map = Map.of("message", "Add document to Typesense");
-      return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
+      return ApiRequestHandlerResponse.builder().ok().body("message", "Add document to Typesense")
+          .build();
     }
 
     return handleError(response, documentId);

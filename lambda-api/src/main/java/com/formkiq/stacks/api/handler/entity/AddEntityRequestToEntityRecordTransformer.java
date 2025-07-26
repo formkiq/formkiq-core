@@ -29,10 +29,14 @@ import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.eventsourcing.entity.EntityAttribute;
 import com.formkiq.aws.dynamodb.eventsourcing.entity.EntityRecord;
 import com.formkiq.aws.dynamodb.eventsourcing.entity.EntityTypeRecord;
+import com.formkiq.aws.dynamodb.useractivities.AttributeValuesToChangeRecordFunction;
+import com.formkiq.aws.dynamodb.useractivities.ChangeRecord;
+import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.plugins.useractivity.UserActivityContext;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidator;
@@ -81,8 +85,7 @@ public class AddEntityRequestToEntityRecordTransformer
   public EntityRecord apply(final ApiGatewayRequestEvent event) {
 
     String entityId = update ? event.getPathParameter("entityId") : ID.uuid();
-
-    String entityTypeId = new EntityTypeIdTransformer(this.awsServices, siteId).apply(event);
+    String entityTypeId = event.getPathParameter("entityTypeId");
     AddEntityRequest request = getEntityRequest(event, entityTypeId, entityId);
 
     validate(entityTypeId, request);
@@ -97,6 +100,21 @@ public class AddEntityRequestToEntityRecordTransformer
     Map<String, AttributeValue> attributes = entity.getAttributes();
 
     DynamoDbService db = this.awsServices.getExtension(DynamoDbService.class);
+
+    if (!update) {
+      Map<String, ChangeRecord> changes =
+          new AttributeValuesToChangeRecordFunction(Map.of("documentId", "entityId")).apply(null,
+              attributes);
+      UserActivityContext.set(UserActivityType.CREATE, changes);
+    } else {
+
+      Map<String, AttributeValue> oldAttributes = db.get(entity.key());
+      Map<String, ChangeRecord> changes =
+          new AttributeValuesToChangeRecordFunction(Map.of("documentId", "entityId"))
+              .apply(oldAttributes, attributes);
+      UserActivityContext.set(UserActivityType.UPDATE, changes);
+    }
+
     db.putItem(attributes);
 
     return entity;

@@ -23,8 +23,6 @@
  */
 package com.formkiq.stacks.api.handler.documents;
 
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -35,10 +33,7 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
-import com.formkiq.aws.services.lambda.ApiMessageResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
-import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
@@ -80,10 +75,8 @@ public class DocumentAttributeRequestHandler
           "attribute '" + attributeKey + "' not found on document '" + documentId + "'");
     }
 
-    ApiResponse resp = new ApiMessageResponse(
-        "attribute '" + attributeKey + "' removed from document '" + documentId + "'");
-
-    return new ApiRequestHandlerResponse(SC_OK, resp);
+    return ApiRequestHandlerResponse.builder().ok().body("message",
+        "attribute '" + attributeKey + "' removed from document '" + documentId + "'").build();
   }
 
   @Override
@@ -107,8 +100,8 @@ public class DocumentAttributeRequestHandler
           "attribute '" + attributeKey + "' not found on document '" + documentId + "'");
     }
 
-    ApiMapResponse resp = new ApiMapResponse(Map.of("attribute", map.iterator().next()));
-    return new ApiRequestHandlerResponse(SC_OK, resp);
+    return ApiRequestHandlerResponse.builder().ok().body("attribute", map.iterator().next())
+        .build();
   }
 
   private AttributeValidationAccess getAttributeValidationAccess(
@@ -169,9 +162,8 @@ public class DocumentAttributeRequestHandler
     documentService.saveDocumentAttributes(siteId, documentId, documentAttributes, type,
         validationAccess);
 
-    ApiResponse resp = new ApiMessageResponse(
-        "Updated attribute '" + attributeKey + "' on document '" + documentId + "'");
-    return new ApiRequestHandlerResponse(SC_OK, resp);
+    return ApiRequestHandlerResponse.builder().ok().body("message",
+        "Updated attribute '" + attributeKey + "' on document '" + documentId + "'").build();
   }
 
   private static AttributeValidationType getValidationType(

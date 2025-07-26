@@ -29,38 +29,35 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.handler.entity.query.EntityTypeNameToIdQuery;
 
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
  * {@link Function} to convert {@link ApiGatewayRequestEvent} to EntityTypeId {@link String}.
  */
-public class EntityTypeIdTransformer implements Function<ApiGatewayRequestEvent, String> {
+public class EntityTypeIdTransformer implements BiFunction<String, ApiGatewayRequestEvent, String> {
 
   /** Document Table Name. */
   private final String tableName;
   /** {@link DynamoDbService}. */
   private final DynamoDbService db;
-  /** Site. */
-  private final String site;
 
   /**
    * constructor.
    * 
    * @param awsservice {@link AwsServiceCache}
-   * @param siteId {@link String}
    */
-  public EntityTypeIdTransformer(final AwsServiceCache awsservice, final String siteId) {
+  public EntityTypeIdTransformer(final AwsServiceCache awsservice) {
     this.tableName = awsservice.environment("DOCUMENTS_TABLE");
     this.db = awsservice.getExtension(DynamoDbService.class);
-    this.site = siteId;
   }
 
   @Override
-  public String apply(final ApiGatewayRequestEvent event) {
+  public String apply(final String siteId, final ApiGatewayRequestEvent event) {
     String namespace = event.getQueryStringParameter("namespace", "");
     String entityTypeId = event.getPathParameter("entityTypeId");
 
-    return new EntityTypeNameToIdQuery().find(db, tableName, site, EntityTypeRecord.builder()
-        .namespace(namespace).documentId(entityTypeId).name("").build(site));
+    return new EntityTypeNameToIdQuery().find(db, tableName, siteId, EntityTypeRecord.builder()
+        .namespace(namespace).documentId(entityTypeId).name("").build(siteId));
   }
 }

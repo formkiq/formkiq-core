@@ -32,7 +32,6 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
@@ -94,7 +93,6 @@ public class DocumentsOcrRequestHandler
   public ApiRequestHandlerResponse delete(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
-    ApiMapResponse resp = new ApiMapResponse();
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
 
@@ -103,7 +101,8 @@ public class DocumentsOcrRequestHandler
     DocumentOcrService ocrService = awsservice.getExtension(DocumentOcrService.class);
     ocrService.delete(siteId, documentId);
 
-    return new ApiRequestHandlerResponse(SC_OK, resp);
+    return ApiRequestHandlerResponse.builder().ok()
+        .body("message", "Deleted OCR for DocumentId '" + documentId + "'").build();
   }
 
   @Override
@@ -156,8 +155,7 @@ public class DocumentsOcrRequestHandler
       status = SC_NOT_FOUND;
     }
 
-    ApiMapResponse resp = new ApiMapResponse(map);
-    return new ApiRequestHandlerResponse(status, resp);
+    return ApiRequestHandlerResponse.builder().status(status).body(map).build();
   }
 
   private boolean isOcrStatus(final Map<String, Object> map, final OcrScanStatus status) {
@@ -311,8 +309,8 @@ public class DocumentsOcrRequestHandler
       throw new BadException("Maximum number of OCRs reached");
     }
 
-    ApiMapResponse resp = new ApiMapResponse(Map.of("message", "OCR request submitted"));
-    return new ApiRequestHandlerResponse(SC_OK, resp);
+    return ApiRequestHandlerResponse.builder().ok().body("message", "OCR request submitted")
+        .build();
   }
 
   @Override
@@ -337,9 +335,8 @@ public class DocumentsOcrRequestHandler
     DocumentOcrService ocrService = awsservice.getExtension(DocumentOcrService.class);
     ocrService.set(awsservice, siteId, documentId, userId, content, contentType);
 
-    ApiMapResponse resp =
-        new ApiMapResponse(Map.of("message", "Set OCR for documentId '" + documentId + "'"));
-    return new ApiRequestHandlerResponse(SC_OK, resp);
+    return ApiRequestHandlerResponse.builder().ok()
+        .body("message", "Set OCR for documentId '" + documentId + "'").build();
   }
 
   private void verifyDocument(final AwsServiceCache awsservice, final String siteId,

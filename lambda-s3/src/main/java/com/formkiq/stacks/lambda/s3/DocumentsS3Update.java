@@ -43,6 +43,7 @@ import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.AttributeValueToMap;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.cache.CacheService;
@@ -52,6 +53,7 @@ import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.aws.dynamodb.objects.Strings;
+import com.formkiq.aws.dynamodb.useractivities.ChangeRecord;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3PresignerService;
@@ -79,13 +81,14 @@ import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.module.lambdaservices.ClassServiceExtension;
 import com.formkiq.module.lambdaservices.logger.LogLevel;
 import com.formkiq.module.lambdaservices.logger.Logger;
+import com.formkiq.plugins.useractivity.MapChangesFunction;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
+import com.formkiq.stacks.dynamodb.GsonUtil;
 import com.formkiq.stacks.dynamodb.s3.S3ServiceInterceptorExtension;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -227,7 +230,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
   }
 
   /** {@link Gson}. */
-  private final Gson gson = new GsonBuilder().create();
+  private final Gson gson = GsonUtil.getInstance();
 
   /** constructor. */
   public DocumentsS3Update() {
@@ -545,12 +548,21 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
         logger.trace("s3 file version id: " + resp.getVersionId());
       }
 
-      Map<String, AttributeValue> attributes = buildAttributes(resp, contentType, contentLength);
+      Map<String, AttributeValue> attributes = new HashMap<>();
+      Map<String, Object> prevAttributes = new HashMap<>();
+      buildAttributes(attributes, prevAttributes, item, resp, contentType, contentLength);
 
       // if the event and s3 version id match, then correct event to process
       if (s3VersionId == null || s3VersionId.equals(resp.getVersionId())) {
+
         service.updateDocument(siteId, documentId, attributes);
-        s3ServiceInterceptor.putObjectEvent(s3service, s3bucket, s3key);
+
+        Map<String, Object> currentMap = new AttributeValueToMap().apply(attributes);
+        Map<String, ChangeRecord> changeRecords =
+            new MapChangesFunction().apply(prevAttributes, currentMap);
+        Map<String, Object> changes = convertToObjectMap(changeRecords);
+
+        s3ServiceInterceptor.putObjectEvent(s3service, s3bucket, s3key, changes);
 
         List<DocumentTag> tags = getObjectTags(s3bucket, key);
         service.addTags(siteId, documentId, tags, null);
@@ -565,6 +577,16 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     } else {
       logger.error("Cannot find document " + documentId + " in site " + siteId);
     }
+  }
+
+  private Map<String, Object> convertToObjectMap(final Map<String, ChangeRecord> changes) {
+    return changes.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> {
+      ChangeRecord cr = entry.getValue();
+      Map<String, Object> innerMap = new HashMap<>();
+      innerMap.put("oldValue", cr.oldValue());
+      innerMap.put("newValue", cr.newValue());
+      return innerMap;
+    }));
   }
 
   private String findContentType(final DocumentItem item, final String contentType) {
@@ -582,29 +604,33 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     return MimeType.MIME_UNKNOWN.equals(mimeType) ? contentType : mimeType.getContentType();
   }
 
-  private static Map<String, AttributeValue> buildAttributes(final S3ObjectMetadata resp,
+  private void buildAttributes(final Map<String, AttributeValue> current,
+      final Map<String, Object> prev, final DocumentItem item, final S3ObjectMetadata resp,
       final String contentType, final Long contentLength) {
-    Map<String, AttributeValue> attributes = new HashMap<>();
 
     if (!Strings.isEmpty(contentType)) {
-      attributes.put("contentType", AttributeValue.fromS(contentType));
+      current.put("contentType", AttributeValue.fromS(contentType));
+      prev.put("contentType", item.getContentType());
     }
 
     String checksum = resp.getChecksum();
-    attributes.put("checksum", AttributeValue.fromS(checksum));
+    current.put("checksum", AttributeValue.fromS(checksum));
+    prev.put("checksum", item.getChecksum());
 
     if (resp.getChecksumType() != null) {
-      attributes.put("checksumType", AttributeValue.fromS(resp.getChecksumType()));
+      current.put("checksumType", AttributeValue.fromS(resp.getChecksumType()));
+      prev.put("checksumType", item.getChecksumType());
     }
 
     if (contentLength != null) {
-      attributes.put("contentLength", AttributeValue.fromN("" + contentLength));
+      current.put("contentLength", AttributeValue.fromN("" + contentLength));
+      prev.put("contentLength", item.getContentLength());
     }
 
     if (resp.getVersionId() != null) {
-      attributes.put(S3VERSION_ATTRIBUTE, AttributeValue.fromS(resp.getVersionId()));
+      current.put(S3VERSION_ATTRIBUTE, AttributeValue.fromS(resp.getVersionId()));
+      prev.put(S3VERSION_ATTRIBUTE, item.getVersion());
     }
-    return attributes;
   }
 
   private DocumentItem findDocument(final String siteId, final String documentId) {

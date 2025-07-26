@@ -28,7 +28,6 @@ import com.formkiq.aws.dynamodb.DynamodbRecordToMap;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.base64.Pagination;
@@ -39,9 +38,6 @@ import com.formkiq.validation.ValidationException;
 
 import java.util.List;
 import java.util.Map;
-
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_CREATED;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
 /** {@link ApiGatewayRequestHandler} for "/sites/{siteId}/locales. */
 public class SitesLocalesRequestHandler
@@ -67,8 +63,8 @@ public class SitesLocalesRequestHandler
       throw new ValidationException(errors);
     }
 
-    return new ApiRequestHandlerResponse(SC_CREATED,
-        new ApiMapResponse(Map.of("message", "Locale '" + locale + "' saved")));
+    return ApiRequestHandlerResponse.builder().created()
+        .body("message", "Locale '" + locale + "' saved").build();
   }
 
   @Override
@@ -84,8 +80,8 @@ public class SitesLocalesRequestHandler
     List<Map<String, Object>> list =
         results.getResults().stream().map(new DynamodbRecordToMap()).toList();
 
-    return new ApiRequestHandlerResponse(SC_OK,
-        new ApiMapResponse(Map.of("locales", list), results.getNextToken()));
+    return ApiRequestHandlerResponse.builder().ok().body("locales", list)
+        .next(results.getNextToken()).build();
   }
 
   @Override

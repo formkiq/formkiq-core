@@ -23,7 +23,6 @@
  */
 package com.formkiq.stacks.api.handler.sites;
 
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.util.Collection;
 import java.util.Map;
 
@@ -31,7 +30,6 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
@@ -71,7 +69,7 @@ public class SitesSchemaRequestHandler
 
     Map<String, Object> map =
         Map.of("name", schema.getName(), "attributes", schema.getAttributes());
-    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
+    return ApiRequestHandlerResponse.builder().ok().body(map).build();
   }
 
   @Override
@@ -94,7 +92,6 @@ public class SitesSchemaRequestHandler
       throw new ValidationException(errors);
     }
 
-    return new ApiRequestHandlerResponse(SC_OK,
-        new ApiMapResponse(Map.of("message", "Sites Schema set")));
+    return ApiRequestHandlerResponse.builder().ok().body("message", "Sites Schema set").build();
   }
 }

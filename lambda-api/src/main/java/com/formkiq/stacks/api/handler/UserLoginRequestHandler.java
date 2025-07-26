@@ -28,7 +28,6 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -42,7 +41,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import static com.formkiq.strings.Strings.isEmpty;
 
 /** {@link ApiGatewayRequestHandler} for "/login". */
@@ -66,9 +64,8 @@ public class UserLoginRequestHandler
       AuthenticationResultType login =
           service.login((String) map.get("username"), (String) map.get("password"));
       Map<String, Object> data = transform(login);
+      return ApiRequestHandlerResponse.builder().ok().body(data).build();
 
-      ApiMapResponse resp = new ApiMapResponse(data);
-      return new ApiRequestHandlerResponse(SC_OK, resp);
     } catch (NotAuthorizedException e) {
       throw new BadException("Incorrect username or password");
     }

@@ -33,12 +33,16 @@ import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.base64.MapAttributeValueToString;
 import com.formkiq.aws.dynamodb.eventsourcing.entity.EntityTypeRecord;
+import com.formkiq.aws.dynamodb.useractivities.AttributeValuesToChangeRecordFunction;
+import com.formkiq.aws.dynamodb.useractivities.ChangeRecord;
+import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.plugins.useractivity.UserActivityContext;
 import com.formkiq.stacks.api.handler.entity.query.EntityTypeNameToIdQuery;
 import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationException;
@@ -85,8 +89,8 @@ public class EntityTypesRequestHandler
         new AttributeValueListToListMap(config).apply(response.items());
     String nextToken = new MapAttributeValueToString().apply(response.lastEvaluatedKey());
 
-    return ApiRequestHandlerResponse.builder().status(SC_OK).data("entityTypes", items)
-        .data("next", nextToken).build();
+    return ApiRequestHandlerResponse.builder().status(SC_OK).body("entityTypes", items)
+        .body("next", nextToken).build();
   }
 
   private String getNamespace(final ApiGatewayRequestEvent event) throws ValidationException {
@@ -126,10 +130,14 @@ public class EntityTypesRequestHandler
     Map<String, AttributeValue> attributes = entityType.getAttributes();
     validateExist(awsservice, db, siteId, addEntityType.name(), addEntityType.namespace());
 
+    Map<String, ChangeRecord> changes =
+        new AttributeValuesToChangeRecordFunction(Map.of("documentId", "entityTypeId")).apply(null,
+            attributes);
+    UserActivityContext.set(UserActivityType.CREATE, changes);
     db.putItem(attributes);
 
     return ApiRequestHandlerResponse.builder().status(SC_CREATED)
-        .data("entityTypeId", entityType.documentId()).build();
+        .body("entityTypeId", entityType.documentId()).build();
   }
 
   private void validateExist(final AwsServiceCache awsservice, final DynamoDbService db,
@@ -157,8 +165,6 @@ public class EntityTypesRequestHandler
     vb.isRequired("name", request.entityType().name());
     vb.isRequired("namespace", request.entityType().namespace());
     vb.check();
-
-    // request.entityType().namespace(request.entityType().namespace().toUpperCase());
 
     vb.isValidByRegex("name", request.entityType().name(), "^[A-Z][A-Za-z0-9]+$");
     vb.isEquals("namespace", request.entityType().namespace(), "CUSTOM");

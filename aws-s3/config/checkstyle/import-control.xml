@@ -26,6 +26,11 @@
 		<allow pkg="com.amazonaws.xray.interceptors" />
 		
 		<allow pkg="com.formkiq.module.lambdaservices" />
+
+		<subpackage name="events">
+			<allow pkg="com.google.gson.annotations" />
+			<allow pkg="com.formkiq.graalvm.annotations" />
+		</subpackage>
 	</subpackage>
 	
 </import-control>

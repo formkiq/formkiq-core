@@ -27,6 +27,8 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -47,7 +49,6 @@ import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentMetadata;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
-import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
 import com.formkiq.testutils.aws.DynamoDbExtension;
@@ -57,9 +58,6 @@ import com.formkiq.testutils.aws.LocalStackExtension;
 @ExtendWith(LocalStackExtension.class)
 @ExtendWith(DynamoDbExtension.class)
 public class ApiRequestHandlerTest extends AbstractRequestHandler {
-
-  /** Expected. */
-  private static final int EXPECTED_3 = 3;
 
   @BeforeEach
   public void setup() {
@@ -79,14 +77,13 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
       addParameter(event, "siteId", siteId);
 
       String expected =
-          "{" + getHeaders() + ",\"body\":\"{\\\"message\\\":\\\"Document 142 not found.\\\"}\","
-              + "\"statusCode\":404}";
+          "\"body\":\"{\\\"message\\\":\\\"Document 142 not found.\\\"}\"," + "\"statusCode\":404}";
 
       // when
       String response = handleRequest(event);
 
       // then
-      assertEquals(expected, response);
+      assertTrue(response.contains(expected));
     }
   }
 
@@ -116,13 +113,13 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
       String response = handleRequest(event);
 
       // then
-      Map<String, String> m = fromJson(response, Map.class);
+      Map<String, Object> m = fromJson(response, Map.class);
 
       final int mapsize = 3;
       assertEquals(mapsize, m.size());
       assertEquals("200.0", String.valueOf(m.get("statusCode")));
-      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-      DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+      assertCorsHeaders((Map<String, Object>) m.get("headers"));
+      DynamicObject resp = new DynamicObject(fromJson((String) m.get("body"), Map.class));
 
       assertEquals(documentId, resp.getString("documentId"));
       assertEquals(userId, resp.getString("userId"));
@@ -150,14 +147,14 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
     String input = "";
     ByteArrayOutputStream outstream = new ByteArrayOutputStream();
     final InputStream instream = new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8));
-    final String expected = "{" + getHeaders() + ","
-        + "\"body\":\"{\\\"message\\\":\\\"Invalid Request\\\"}\",\"statusCode\":404}";
+    final String expected =
+        "\"body\":\"{\\\"message\\\":\\\"Invalid Request\\\"}\",\"statusCode\":404}";
 
     // when
     getHandler().handleRequest(instream, outstream, getMockContext());
 
     // then
-    assertEquals(expected, outstream.toString(StandardCharsets.UTF_8));
+    assertTrue(outstream.toString(StandardCharsets.UTF_8).contains(expected));
   }
 
   /**
@@ -175,15 +172,14 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
       addParameter(event, "siteId", siteId);
       setCognitoGroup(event, siteId);
 
-      String expected = "{" + getHeaders()
-          + ",\"body\":\"{\\\"message\\\":\\\"/unknown request handler not found\\\"}\","
+      String expected = "\"body\":\"{\\\"message\\\":\\\"/unknown request handler not found\\\"}\","
           + "\"statusCode\":404}";
 
       // when
       String response = handleRequest(event);
 
       // then
-      assertEquals(expected, response);
+      assertTrue(response.contains(expected));
     }
   }
 
@@ -208,14 +204,14 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
     String response = handleRequest(event);
 
     // then
-    Map<String, String> m = fromJson(response, Map.class);
+    Map<String, Object> m = fromJson(response, Map.class);
 
     final int mapsize = 3;
     assertEquals(mapsize, m.size());
     assertEquals("200.0", String.valueOf(m.get("statusCode")));
-    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+    assertCorsHeaders((Map<String, Object>) m.get("headers"));
 
-    DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+    DynamicObject resp = new DynamicObject(fromJson((String) m.get("body"), Map.class));
 
     assertEquals(documentId, resp.get("documentId"));
     assertEquals(userId, resp.get("userId"));
@@ -252,14 +248,14 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
     String response = handleRequest(event);
 
     // then
-    Map<String, String> m = fromJson(response, Map.class);
+    Map<String, Object> m = fromJson(response, Map.class);
 
     final int mapsize = 3;
     assertEquals(mapsize, m.size());
     assertEquals("200.0", String.valueOf(m.get("statusCode")));
-    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+    assertCorsHeaders((Map<String, Object>) m.get("headers"));
 
-    DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+    DynamicObject resp = new DynamicObject(fromJson((String) m.get("body"), Map.class));
 
     assertEquals(documentId0, resp.get("documentId"));
     assertEquals(userId, resp.get("userId"));
@@ -296,13 +292,13 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
     String response = handleRequest(event);
 
     // then
-    Map<String, String> m = fromJson(response, Map.class);
+    Map<String, Object> m = fromJson(response, Map.class);
 
     final int mapsize = 3;
     assertEquals(mapsize, m.size());
     assertEquals("200.0", String.valueOf(m.get("statusCode")));
-    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-    Map<String, Object> resp = fromJson(m.get("body"), Map.class);
+    assertCorsHeaders((Map<String, Object>) m.get("headers"));
+    Map<String, Object> resp = fromJson((String) m.get("body"), Map.class);
     assertEquals("1.1", resp.get("version"));
     assertEquals("core", resp.get("type"));
     assertEquals("[ocr, typesense]", resp.get("modules").toString());
@@ -327,13 +323,13 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
     String response = handleRequest(event);
 
     // then
-    Map<String, String> m = fromJson(response, Map.class);
+    Map<String, Object> m = fromJson(response, Map.class);
 
     final int mapsize = 3;
     assertEquals(mapsize, m.size());
     assertEquals("200.0", String.valueOf(m.get("statusCode")));
-    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-    Map<String, Object> resp = fromJson(m.get("body"), Map.class);
+    assertCorsHeaders((Map<String, Object>) m.get("headers"));
+    Map<String, Object> resp = fromJson((String) m.get("body"), Map.class);
     assertEquals("1.1", resp.get("version"));
     assertEquals("core", resp.get("type"));
     assertEquals("[ocr, typesense]", resp.get("modules").toString());

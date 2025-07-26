@@ -26,6 +26,8 @@ package com.formkiq.aws.dynamodb;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
@@ -104,6 +106,9 @@ public class AttributeValueToMap
       case BOOL -> obj = val.bool();
       case L -> obj = val.l().stream().map(this::convert).toList();
       case NUL -> obj = null;
+      case M -> obj = val.m().entrySet().stream()
+          .filter(e -> !AttributeValue.Type.NUL.equals(e.getValue().type()))
+          .collect(Collectors.toMap(Map.Entry::getKey, e -> convert(e.getValue())));
       default -> throw new IllegalArgumentException(
           "Unsupported attribute value map conversion " + val.type());
     }

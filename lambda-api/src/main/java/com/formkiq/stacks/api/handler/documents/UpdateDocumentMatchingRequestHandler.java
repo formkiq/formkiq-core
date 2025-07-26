@@ -24,10 +24,9 @@
 package com.formkiq.stacks.api.handler.documents;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
+
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
-import java.util.Map;
 import java.util.UUID;
 
 import com.formkiq.aws.s3.S3Service;
@@ -35,7 +34,6 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.apimodels.UpdateMatchingDocumentTagsRequest;
@@ -78,12 +76,12 @@ public class UpdateDocumentMatchingRequestHandler
 
     S3Service s3 = awsservice.getExtension(S3Service.class);
 
-    String body = ApiGatewayRequestEventUtil.getBodyAsString(event);
+    String body = event.getBodyAsString();
     s3.putObject(stageS3Bucket, key, body.getBytes(StandardCharsets.UTF_8), "application/json");
     s3.setObjectTag(stageS3Bucket, key, "userId", authorization.getUsername());
 
-    ApiMapResponse resp = new ApiMapResponse(Map.of("message", "received update tags request"));
-    return new ApiRequestHandlerResponse(SC_OK, resp);
+    return ApiRequestHandlerResponse.builder().ok().body("message", "received update tags request")
+        .build();
   }
 
   /**
