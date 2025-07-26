@@ -26,8 +26,6 @@ package com.formkiq.stacks.api.handler.documents;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_CREATED;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
 import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
@@ -120,7 +118,7 @@ public class DocumentsRequestHandler
       map.put("next", current.hasNext() ? current.getNext() : null);
     }
 
-    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
+    return ApiRequestHandlerResponse.builder().ok().body(map).build();
   }
 
   private ActionStatus getActionStatus(final ApiGatewayRequestEvent event) throws BadException {
@@ -316,7 +314,7 @@ public class DocumentsRequestHandler
 
       ApiRequestHandlerResponse response = handler.post(event, authorization, awsservice, request);
 
-      Map<String, Object> mapResponse = ((ApiMapResponse) response.getResponse()).getMap();
+      Map<String, Object> mapResponse = (Map<String, Object>) response.body();
 
       new PresignedUrlsToS3Bucket(request).apply(mapResponse);
 
@@ -326,7 +324,7 @@ public class DocumentsRequestHandler
     Map<String, Object> hashMap = new HashMap<>(apiMapResponse.getMap());
     hashMap.remove("headers");
     hashMap.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
-    return new ApiRequestHandlerResponse(SC_CREATED, new ApiMapResponse(hashMap));
+    return ApiRequestHandlerResponse.builder().created().body(hashMap).build();
   }
 
   /**

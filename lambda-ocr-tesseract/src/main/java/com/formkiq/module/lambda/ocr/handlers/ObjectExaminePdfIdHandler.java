@@ -24,7 +24,7 @@
 package com.formkiq.module.lambda.ocr.handlers;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -37,7 +37,6 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.module.lambda.ocr.pdf.PdfService;
@@ -97,8 +96,6 @@ public class ObjectExaminePdfIdHandler
       throw new DocumentNotFoundException(id);
     }
 
-    Map<String, Object> map = Map.of("fileinfo", fileinfo);
-    ApiMapResponse resp = new ApiMapResponse(map);
-    return new ApiRequestHandlerResponse(SC_OK, resp);
+    return ApiRequestHandlerResponse.builder().ok().body("fileinfo", fileinfo).build();
   }
 }

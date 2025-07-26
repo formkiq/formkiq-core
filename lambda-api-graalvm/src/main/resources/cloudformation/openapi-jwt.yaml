@@ -4226,6 +4226,45 @@ Resources:
                 - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /activities:
+            get:
+              operationId: GetResourceActivities
+              summary: Get resource activities 
+              description: Retrieve an resource activities
+              tags:
+                - User Activities
+              parameters:
+                - $ref: '#/components/parameters/siteIdParam'
+                - $ref: '#/components/parameters/documentIdQuery'
+                - $ref: '#/components/parameters/entityTypeIdQuery'
+                - $ref: '#/components/parameters/namespaceParam'
+                - $ref: '#/components/parameters/entityIdQuery'
+                - $ref: '#/components/parameters/nextParam'
+                - $ref: '#/components/parameters/limitParam'
+                - name: "userId"
+                  in: "query"
+                  description: "Fetch specific user activities"
+                  required: false
+                  schema:
+                    type: "string"
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetActivitesResponse'
+              security:
+                - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /public/documents:
             post:
               operationId: PublicAddDocument
@@ -6919,11 +6958,25 @@ Resources:
               required: true
               schema:
                 type: string
+            entityIdQuery:
+              name: entityId
+              in: query
+              description: Entity Identifier
+              required: false
+              schema:
+                type: string
             entityTypeIdParam:
               name: entityTypeId
               in: path
               description: EntityType Identifier
               required: true
+              schema:
+                type: string
+            entityTypeIdQuery:
+              name: entityTypeId
+              in: query
+              description: EntityType Identifier
+              required: false
               schema:
                 type: string
             shareKey:
@@ -7120,6 +7173,13 @@ Resources:
               in: path
               description: Document Identifier
               required: true
+              schema:
+                type: string
+            documentIdQuery:
+              name: documentId
+              in: query
+              description: Document Identifier
+              required: false
               schema:
                 type: string
             docusignEnvelopeIdParam:
@@ -8930,6 +8990,19 @@ Resources:
                 message:
                   type: string
                   description: Document sync message
+
+            GetActivitesResponse:
+              type: "object"
+              properties:
+                next:
+                  type: "string"
+                  description: "Next page of results token"
+                activities:
+                  type: "array"
+                  description: "List of Entity Type activities"
+                  items:
+                    $ref: "#/components/schemas/Activity"
+
             GetUserActivitesResponse:
               type: "object"
               properties:
@@ -8938,7 +9011,7 @@ Resources:
                   description: "Next page of results token"
                 userActivities:
                   type: "array"
-                  description: "List of user activities syncs"
+                  description: "List of user activities"
                   items:
                     $ref: "#/components/schemas/UserActivity"
             UserActivityType:
@@ -8973,11 +9046,59 @@ Resources:
               type: object
               properties:
                 oldValue:
-                  type: string
+                  type: object
                   description: Previous key value
                 newValue:
-                  type: string
+                  type: object
                   description: New key value
+
+            ActivityStatus:
+              type: string
+              description:  "The status of the activity"
+              enum:
+                - COMPLETE
+                - FAILED
+                - UNAUTHORIZED
+
+            Activity:
+              type: "object"
+              properties:
+                resource:
+                  type: "string"
+                  description: "Resource of Activity"
+                type:
+                  type: "string"
+                  description: "Type of Activity"
+                source:
+                  type: "string"
+                  description: "The Source of the activity"
+                sourceIpAddress:
+                  type: "string"
+                  description: "The Source IP address of the user"
+                message:
+                  type: "string"
+                  description: "The activity message"
+                status:
+                  $ref: '#/components/schemas/ActivityStatus'
+                insertedDate:
+                  type: "string"
+                  description: "Inserted Timestamp"
+                userId:
+                  type: "string"
+                  description: "User who added document"
+                documentId:
+                  description: "Document Identifier"
+                entityTypeId:
+                  type: "string"
+                  description: "Entity Type Identifier"
+                entityId:
+                  type: "string"
+                  description: "Entity Identifier"
+                changes:
+                  type: object
+                  additionalProperties:
+                    $ref: '#/components/schemas/UserActivityChanges'
+
             GetFoldersResponse:
               type: "object"
               properties:

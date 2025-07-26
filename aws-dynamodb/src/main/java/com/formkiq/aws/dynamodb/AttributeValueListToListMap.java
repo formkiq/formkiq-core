@@ -59,6 +59,6 @@ public class AttributeValueListToListMap
 
   @Override
   public List<Map<String, Object>> apply(final List<Map<String, AttributeValue>> map) {
-    return notNull(map).stream().map(transformer::apply).toList();
+    return notNull(map).stream().map(transformer).toList();
   }
 }

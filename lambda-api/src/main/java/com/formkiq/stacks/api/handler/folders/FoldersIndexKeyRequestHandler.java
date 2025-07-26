@@ -23,15 +23,12 @@
  */
 package com.formkiq.stacks.api.handler.folders;
 
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.io.IOException;
-import java.util.Map;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
@@ -65,8 +62,7 @@ public class FoldersIndexKeyRequestHandler
         throw new NotFoundException("directory not found");
       }
 
-      ApiMapResponse resp = new ApiMapResponse(Map.of("message", "deleted folder"));
-      return new ApiRequestHandlerResponse(SC_OK, resp);
+      return ApiRequestHandlerResponse.builder().ok().body("message", "deleted folder").build();
 
     } catch (IOException e) {
       throw new BadException(e.getMessage());

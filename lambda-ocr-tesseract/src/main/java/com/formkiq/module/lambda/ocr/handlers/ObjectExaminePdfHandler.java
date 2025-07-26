@@ -29,7 +29,6 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 
@@ -40,7 +39,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
 /** {@link ApiGatewayRequestHandler} for "/objects/examine/pdf". */
 public class ObjectExaminePdfHandler
@@ -51,7 +49,7 @@ public class ObjectExaminePdfHandler
 
   @Override
   public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
-      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) {
 
     S3PresignerService service = awsservice.getExtension(S3PresignerService.class);
 
@@ -68,8 +66,7 @@ public class ObjectExaminePdfHandler
     map.put("id", id);
     map.put("uploadUrl", url);
 
-    ApiMapResponse resp = new ApiMapResponse(map);
-    return new ApiRequestHandlerResponse(SC_OK, resp);
+    return ApiRequestHandlerResponse.builder().ok().body(map).build();
   }
 
   @Override

@@ -32,7 +32,6 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
-import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 
@@ -46,7 +45,6 @@ public class ApiDocumentsPublicDocumentsRequestTest extends AbstractRequestHandl
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testPostPublicDocuments01() throws Exception {
     // given
@@ -62,13 +60,13 @@ public class ApiDocumentsPublicDocumentsRequestTest extends AbstractRequestHandl
     String response = handleRequest(event);
 
     // then
-    Map<String, String> m = fromJson(response, Map.class);
+    Map<String, Object> m = fromJson(response, Map.class);
     final int mapsize = 3;
     assertEquals(mapsize, m.size());
     assertEquals("201.0", String.valueOf(m.get("statusCode")));
-    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+    assertCorsHeaders((Map<String, Object>) m.get("headers"));
 
-    Map<String, Object> body = fromJson(m.get("body"), Map.class);
+    Map<String, Object> body = fromJson((String) m.get("body"), Map.class);
     assertNotNull(body.get("documentId"));
     assertNotNull(body.get("uploadUrl"));
     List<Map<String, Object>> documents = (List<Map<String, Object>>) body.get("documents");
@@ -89,7 +87,6 @@ public class ApiDocumentsPublicDocumentsRequestTest extends AbstractRequestHandl
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testPostPublicForms02() throws Exception {
     // given
@@ -104,11 +101,11 @@ public class ApiDocumentsPublicDocumentsRequestTest extends AbstractRequestHandl
     String response = handleRequest(event);
 
     // then
-    Map<String, String> m = fromJson(response, Map.class);
+    Map<String, Object> m = fromJson(response, Map.class);
     final int mapsize = 3;
     assertEquals(mapsize, m.size());
     assertEquals("201.0", String.valueOf(m.get("statusCode")));
-    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+    assertCorsHeaders((Map<String, Object>) m.get("headers"));
   }
 
   /**
@@ -116,7 +113,6 @@ public class ApiDocumentsPublicDocumentsRequestTest extends AbstractRequestHandl
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testPostPublicForms03() throws Exception {
     // givens
@@ -128,10 +124,10 @@ public class ApiDocumentsPublicDocumentsRequestTest extends AbstractRequestHandl
     String response = handleRequest(event);
 
     // then
-    Map<String, String> m = fromJson(response, Map.class);
+    Map<String, Object> m = fromJson(response, Map.class);
     final int mapsize = 3;
     assertEquals(mapsize, m.size());
     assertEquals("404.0", String.valueOf(m.get("statusCode")));
-    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+    assertCorsHeaders((Map<String, Object>) m.get("headers"));
   }
 }

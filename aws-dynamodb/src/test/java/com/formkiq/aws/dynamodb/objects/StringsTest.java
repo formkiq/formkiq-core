@@ -101,13 +101,13 @@ class StringsTest {
   }
 
   @Test
-  void testIsEmptyOrHasValues01() {
-    assertTrue(Strings.isEmptyOrHasValues("asd", "asd"));
-    assertFalse(Strings.isEmptyOrHasValues("", "asd"));
-    assertFalse(Strings.isEmptyOrHasValues("asd", null));
-    assertTrue(Strings.isEmptyOrHasValues("", ""));
-    assertTrue(Strings.isEmptyOrHasValues("", null));
-    assertTrue(Strings.isEmptyOrHasValues(null, null, null));
+  void testIsEmpty01() {
+    assertTrue(Strings.isEmpty("asd", "asd"));
+    assertFalse(Strings.isEmpty("", "asd"));
+    assertFalse(Strings.isEmpty("asd", null));
+    assertTrue(Strings.isEmpty("", ""));
+    assertTrue(Strings.isEmpty("", null));
+    assertTrue(Strings.isEmpty(null, null, null));
   }
 
   @Test

@@ -29,10 +29,7 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMessageResponse;
-import com.formkiq.aws.services.lambda.ApiRedirectResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
-import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.useractivity.UserActivityPlugin;
@@ -44,7 +41,6 @@ import java.time.Duration;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_TEMPORARY_REDIRECT;
 
 /** {@link ApiGatewayRequestHandler} for "/publications/{documentId}". */
@@ -67,8 +63,8 @@ public class PublicationsDocumentIdRequestHandler
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
     documentService.deletePublishDocument(siteId, documentId);
 
-    ApiResponse resp = new ApiMessageResponse("'" + documentId + "' object deleted");
-    return new ApiRequestHandlerResponse(SC_OK, resp);
+    return ApiRequestHandlerResponse.builder().ok()
+        .body("message", "'" + documentId + "' object deleted").build();
   }
 
   @Override
@@ -83,7 +79,6 @@ public class PublicationsDocumentIdRequestHandler
     DocumentPublicationRecord item = documentService.findPublishDocument(siteId, documentId);
     throwIfNull(item, new DocumentNotFoundException(documentId));
 
-    // DocumentPublicationRecord publicationValue = item.getPublicationValue();
     String s3key = createS3Key(siteId, documentId);
     String s3VersionKey = item.getS3version();
 
@@ -99,14 +94,13 @@ public class PublicationsDocumentIdRequestHandler
     URL url = s3Service.presignGetUrl(awsservice.environment("DOCUMENTS_S3_BUCKET"), s3key,
         duration, s3VersionKey, config);
 
-    ApiResponse response = new ApiRedirectResponse(url.toString());
-
     if (awsservice.containsExtension(UserActivityPlugin.class)) {
       UserActivityPlugin plugin = awsservice.getExtension(UserActivityPlugin.class);
       plugin.addDocumentViewActivity(siteId, documentId, s3VersionKey);
     }
 
-    return new ApiRequestHandlerResponse(SC_TEMPORARY_REDIRECT, response);
+    return ApiRequestHandlerResponse.builder().status(SC_TEMPORARY_REDIRECT)
+        .header("Location", url.toString()).build();
   }
 
   @Override

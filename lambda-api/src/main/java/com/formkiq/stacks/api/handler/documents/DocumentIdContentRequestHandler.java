@@ -25,7 +25,6 @@ package com.formkiq.stacks.api.handler.documents;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
 import java.net.URL;
 import java.time.Duration;
@@ -40,9 +39,7 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
-import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -77,7 +74,7 @@ public class DocumentIdContentRequestHandler
         getDocumentItem(awsservice, siteId, documentId, versionKey, versionAttributes);
     String versionId = getVersionId(awsservice, versionAttributes, versionKey);
 
-    ApiResponse response;
+    ApiRequestHandlerResponse.Builder response;
 
     String s3key = createS3Key(siteId, documentId);
 
@@ -100,11 +97,11 @@ public class DocumentIdContentRequestHandler
       plugin.addDocumentViewActivity(siteId, documentId, versionKey);
     }
 
-    return new ApiRequestHandlerResponse(SC_OK, response);
+    return response.ok().build();
   }
 
-  private ApiResponse getApiResponse(final AwsServiceCache awsservice, final DocumentItem item,
-      final String s3key, final String versionId) {
+  private ApiRequestHandlerResponse.Builder getApiResponse(final AwsServiceCache awsservice,
+      final DocumentItem item, final String s3key, final String versionId) {
     String contentType =
         item.getContentType() != null ? item.getContentType() : "application/octet-stream";
 
@@ -117,12 +114,13 @@ public class DocumentIdContentRequestHandler
     URL url = s3Service.presignGetUrl(awsservice.environment("DOCUMENTS_S3_BUCKET"), s3key,
         duration, versionId, config);
 
-    return new ApiMapResponse(Map.of("contentUrl", url.toString(), "contentType", contentType));
+    return ApiRequestHandlerResponse.builder()
+        .body(Map.of("contentUrl", url.toString(), "contentType", contentType));
   }
 
-  private static ApiResponse getPlainTextResponse(final AwsServiceCache awsservice,
-      final String s3key, final String versionId, final DocumentItem item, final String documentId)
-      throws DocumentNotFoundException {
+  private static ApiRequestHandlerResponse.Builder getPlainTextResponse(
+      final AwsServiceCache awsservice, final String s3key, final String versionId,
+      final DocumentItem item, final String documentId) throws DocumentNotFoundException {
 
     S3Service s3Service = awsservice.getExtension(S3Service.class);
 
@@ -130,8 +128,8 @@ public class DocumentIdContentRequestHandler
       String content = s3Service.getContentAsString(awsservice.environment("DOCUMENTS_S3_BUCKET"),
           s3key, versionId);
 
-      return new ApiMapResponse(Map.of("content", content, "contentType", item.getContentType(),
-          "isBase64", Boolean.FALSE));
+      return ApiRequestHandlerResponse.builder().body(Map.of("content", content, "contentType",
+          item.getContentType(), "isBase64", Boolean.FALSE));
     } catch (NoSuchKeyException e) {
       throw new DocumentNotFoundException(documentId);
     }

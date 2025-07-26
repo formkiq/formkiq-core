@@ -23,16 +23,11 @@
  */
 package com.formkiq.stacks.api.handler.documents;
 
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-import java.util.Map;
-
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
-import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentService;
@@ -68,7 +63,6 @@ public class DocumentIdRestoreRequestHandler
       throw new DocumentNotFoundException(documentId);
     }
 
-    ApiResponse response = new ApiMapResponse(Map.of("message", "document restored"));
-    return new ApiRequestHandlerResponse(SC_OK, response);
+    return ApiRequestHandlerResponse.builder().ok().body("message", "document restored").build();
   }
 }

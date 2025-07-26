@@ -87,7 +87,6 @@ public class SearchDocumentRequestBuilder implements HttpRequestBuilder {
     return this;
   }
 
-
   /**
    * Set the pagination cursor for the docsPrevious set of results.
    *

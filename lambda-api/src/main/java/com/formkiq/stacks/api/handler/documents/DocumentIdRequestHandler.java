@@ -28,7 +28,6 @@ import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_FOUND;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -49,11 +48,8 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
-import com.formkiq.aws.services.lambda.ApiMessageResponse;
 import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
-import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.aws.dynamodb.cache.CacheService;
@@ -123,9 +119,9 @@ public class DocumentIdRequestHandler
         throw new NotFoundException("Document " + documentId + " not found.");
       }
 
-      ApiResponse resp = new ApiMessageResponse(
-          "'" + documentId + "' object" + (softDelete ? " soft" : "") + " deleted");
-      return new ApiRequestHandlerResponse(SC_OK, resp);
+      return ApiRequestHandlerResponse.builder().ok()
+          .body("message", "'" + documentId + "' object" + (softDelete ? " soft" : "") + " deleted")
+          .build();
 
     } catch (S3Exception e) {
 
@@ -165,7 +161,7 @@ public class DocumentIdRequestHandler
     ditem.put("previous", current.getPrevious());
     ditem.put("next", current.hasNext() ? current.getNext() : null);
 
-    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(ditem));
+    return ApiRequestHandlerResponse.builder().ok().body(ditem).build();
   }
 
   @Override
@@ -230,7 +226,7 @@ public class DocumentIdRequestHandler
     }
 
     uploadUrls.put("siteId", siteId);
-    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(uploadUrls));
+    return ApiRequestHandlerResponse.builder().ok().body(uploadUrls).build();
   }
 
   /**

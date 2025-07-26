@@ -23,7 +23,12 @@
  */
 package com.formkiq.aws.services.lambda;
 
-/** API Response Object. */
+/**
+ * API Response Object.
+ * 
+ * @deprecated use {@link ApiRequestHandlerResponse} instead.
+ */
+@Deprecated(forRemoval = true)
 public interface ApiResponse {
 
   /**

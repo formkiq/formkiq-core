@@ -21,6 +21,10 @@
 		<allow pkg="com.formkiq.graalvm.annotations" />
 		<allow pkg="com.google.gson.annotations" />
 		<allow pkg="com.formkiq.module.lambdaservices" />
+
+		<subpackage name="events">
+			<allow pkg="java.time" />
+		</subpackage>
 	</subpackage>
 	
 </import-control>

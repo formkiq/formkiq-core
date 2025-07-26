@@ -12,7 +12,8 @@
 		<allow pkg="java.net" />
 		<allow pkg="java.util" />
 		<allow pkg="com.amazonaws.services.lambda.runtime" />
-		
+
+		<allow pkg="com.formkiq.strings" />
 		<allow pkg="com.formkiq.aws.dynamodb" />
 		<allow pkg="com.formkiq.aws.s3" />
 		<allow pkg="com.formkiq.aws.sns" />
@@ -23,6 +24,8 @@
 		<allow pkg="com.formkiq.graalvm.annotations" />
 		<allow pkg="com.formkiq.module.lambdaservices" />
 		<allow pkg="com.formkiq.plugins.tagschema" />
+		<allow pkg="com.formkiq.plugins.useractivity" />
+
 		<allow pkg="com.formkiq.validation" />
 		<allow pkg="com.formkiq.stacks.common.objects" />
 		<allow pkg="com.formkiq.stacks.dynamodb" />

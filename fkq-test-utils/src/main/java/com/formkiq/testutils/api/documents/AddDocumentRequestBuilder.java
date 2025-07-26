@@ -29,6 +29,7 @@ import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAction;
 import com.formkiq.client.model.AddDocumentAttribute;
 import com.formkiq.client.model.AddDocumentAttributeStandard;
+import com.formkiq.client.model.AddDocumentMetadata;
 import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AddDocumentResponse;
 import com.formkiq.client.model.DocumentActionType;
@@ -36,6 +37,7 @@ import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * Builder for {@link AddDocumentRequest}.
@@ -50,6 +52,30 @@ public class AddDocumentRequestBuilder implements HttpRequestBuilder {
    */
   public AddDocumentRequestBuilder() {
     this.request = new AddDocumentRequest();
+  }
+
+  /**
+   * Add Metadata.
+   *
+   * @param key {@link String}
+   * @param value {@link String}
+   * @return AddDocumentRequestBuilder
+   */
+  public AddDocumentRequestBuilder addMetadata(final String key, final String value) {
+    this.request.addMetadataItem(new AddDocumentMetadata().key(key).value(value));
+    return this;
+  }
+
+  /**
+   * Add Metadata.
+   *
+   * @param key {@link String}
+   * @param values {@link List} {@link String}
+   * @return AddDocumentRequestBuilder
+   */
+  public AddDocumentRequestBuilder addMetadata(final String key, final List<String> values) {
+    this.request.addMetadataItem(new AddDocumentMetadata().key(key).values(values));
+    return this;
   }
 
   /**

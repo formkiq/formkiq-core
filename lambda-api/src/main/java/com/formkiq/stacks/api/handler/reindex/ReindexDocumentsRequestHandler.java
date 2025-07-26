@@ -27,7 +27,6 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentService;
@@ -38,7 +37,6 @@ import java.util.List;
 import java.util.Map;
 
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
 /** {@link ApiGatewayRequestHandler} for "/reindex/documents/{documentId}". */
 public class ReindexDocumentsRequestHandler
@@ -68,8 +66,10 @@ public class ReindexDocumentsRequestHandler
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
     documentService.reindexDocumentAttributes(siteId, documentId);
 
-    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(Map.of("message",
-        "Reindex started for documentId '" + documentId + "' on target '" + target + "'")));
+    return ApiRequestHandlerResponse.builder().ok()
+        .body("message",
+            "Reindex started for documentId '" + documentId + "' on target '" + target + "'")
+        .build();
   }
 
   @Override
