@@ -50,7 +50,15 @@ public class UserActivityContext {
    * @param data the DynamoDB attribute map
    */
   public static void set(final UserActivityType type, final Map<String, ChangeRecord> data) {
-    CONTEXT.set(new UserActivityContextData(type, data));
+
+    if (!UserActivityType.UPDATE.equals(type)) {
+      CONTEXT.set(new UserActivityContextData(type, data));
+    } else {
+      data.remove("insertedDate");
+      if (!data.isEmpty()) {
+        CONTEXT.set(new UserActivityContextData(type, data));
+      }
+    }
   }
 
   /**

@@ -23,11 +23,13 @@
  */
 package com.formkiq.plugins.useractivity;
 
+import com.formkiq.aws.dynamodb.useractivities.ChangeRecord;
 import com.formkiq.aws.dynamodb.useractivities.UserActivityStatus;
 import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
 
 import java.time.Instant;
 import java.util.Date;
+import java.util.Map;
 
 /**
  * Represents an activity performed by a user on a document or entity. This includes metadata such
@@ -73,7 +75,7 @@ public record UserActivity(
     /* Request Body. */
     String body,
     /* Change Set. */
-    String changes) {
+    Map<String, ChangeRecord> changes) {
 
   /**
    * Creates a new {@link UserActivity.Builder} for {@link UserActivity}.
@@ -115,7 +117,7 @@ public record UserActivity(
     /** Request Body. */
     private String body;
     /** Change Set. */
-    private String changes;
+    private Map<String, ChangeRecord> changes;
 
     public Builder documentId(final String userActivityDocumentId) {
       this.documentId = userActivityDocumentId;
@@ -180,7 +182,7 @@ public record UserActivity(
       return this;
     }
 
-    public Builder changes(final String userActivityChanges) {
+    public Builder changes(final Map<String, ChangeRecord> userActivityChanges) {
       this.changes = userActivityChanges;
       return this;
     }

@@ -63,7 +63,6 @@ public class AttributeValuesToChangeRecordFunction implements
 
     return Stream.concat(oldValueMap.keySet().stream(), newValueMap.keySet().stream()).distinct()
         .filter(Predicate.not(new DbKeyPredicate()))
-        // only those that changed
         .filter(k -> !Objects.equals(oldValueMap.get(k), newValueMap.get(k)))
         .collect(Collectors.toMap(k -> rename.getOrDefault(k, k), k -> {
           Object oldObj = oldValueMap.get(k);

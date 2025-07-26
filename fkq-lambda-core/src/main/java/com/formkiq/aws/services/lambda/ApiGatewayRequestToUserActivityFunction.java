@@ -72,7 +72,7 @@ public class ApiGatewayRequestToUserActivityFunction {
     UserActivityContextData data = UserActivityContext.get();
     if (data != null) {
       builder.type(data.activityType());
-      builder.changes(GsonUtil.getInstance().toJson(data.changeRecords()));
+      builder.changes(data.changeRecords());
     }
 
     if (request != null) {
