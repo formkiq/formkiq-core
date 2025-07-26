@@ -28,9 +28,13 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
 import com.formkiq.validation.ValidationBuilder;
+
+import java.io.IOException;
+import java.util.Optional;
 
 /** {@link ApiGatewayRequestHandler} for "/folders/permissions". */
 public class FoldersPermissionsRequestHandler
@@ -53,10 +57,13 @@ public class FoldersPermissionsRequestHandler
 
     FolderIndexProcessor processor = awsservice.getExtension(FolderIndexProcessor.class);
 
-    processor.setPermissions(siteId, req.path(), req.roles());
-
-    return ApiRequestHandlerResponse.builder().ok().body("message", "Folder permissions set")
-        .build();
+    try {
+      processor.setPermissions(siteId, req.path(), req.roles());
+      return ApiRequestHandlerResponse.builder().ok().body("message", "Folder permissions set")
+          .build();
+    } catch (IOException e) {
+      throw new NotFoundException("Folder '" + req.path() + "' not found");
+    }
   }
 
   private void validate(final SetFolderPermissionsRequest req) {
@@ -64,13 +71,27 @@ public class FoldersPermissionsRequestHandler
     vb.isRequired(null, req, "invalid body");
     vb.check();
 
-    vb.isRequired(null, req.path());
+    vb.isRequired("path", req.path());
     vb.isRequired(null, req.roles(), "'roles' is required");
+    vb.check();
+
+    req.roles().forEach(role -> {
+      vb.isRequired("roleName", role.roleName());
+      vb.isRequired("permissions", role.permissions(), "'permissions' is required");
+    });
     vb.check();
   }
 
   @Override
   public String getRequestUrl() {
     return "/folders/permissions";
+  }
+
+  @Override
+  public Optional<Boolean> isAuthorized(final AwsServiceCache awsservice, final String method,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
+    String siteId = authorization.getSiteId();
+    boolean access = authorization.isAdminOrGovern(siteId);
+    return Optional.of(access);
   }
 }

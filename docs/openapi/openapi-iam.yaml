@@ -3107,7 +3107,10 @@
             put:
               operationId: SetFolderPermissions
               summary: Sets Folder Permissions
-              description: Sets a folders permissions
+              description: |-
+                Sets a folders permissions
+
+                NOTE: Can only be called be ADMIN or GOVERN.
               tags:
               - Document Folders
               parameters:
@@ -7385,6 +7388,8 @@
               description: Folder Permission Type
               enum:
               - READ
+              - WRITE
+              - DELETE
             FolderPermission:
               type: object
               properties:
