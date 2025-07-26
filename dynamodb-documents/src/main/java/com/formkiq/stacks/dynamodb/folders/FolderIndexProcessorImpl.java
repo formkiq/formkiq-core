@@ -547,6 +547,47 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
     return o;
   }
 
+  @Override
+  public List<FolderIndexRecord> getFolderIndexRecords(final String siteId, final String path)
+      throws IOException {
+
+    if (StringUtils.isEmpty(path)) {
+      return Collections.emptyList();
+    }
+
+    String[] tokens = tokens(path);
+    String fileToken = getFileToken(path, tokens);
+    String lastUuid = "";
+    List<FolderIndexRecord> records = new ArrayList<>();
+
+    for (String folder : tokens) {
+
+      String pk = getPk(siteId, lastUuid);
+      String sk = getSk(folder, folder.equals(fileToken));
+      DynamoDbKey key = new DynamoDbKey(pk, sk, null, null, null, null);
+
+      Map<String, AttributeValue> attr = this.db.get(key);
+      if (!attr.isEmpty()) {
+        FolderIndexRecord record = new FolderIndexRecord().getFromAttributes(siteId, attr);
+        records.add(record);
+        lastUuid = record.documentId();
+      } else {
+        throw new IOException("Cannot find folder '" + path + "'");
+      }
+
+    }
+
+    return records;
+  }
+
+  private String getFileToken(final String path, final String[] tokens) {
+    if (path.endsWith("/")) {
+      return null;
+    }
+
+    return last(tokens);
+  }
+
   private Map<String, AttributeValue> getIndexByAttributeValues(final String siteId,
       final String path) throws IOException {
 

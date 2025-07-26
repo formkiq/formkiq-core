@@ -25,10 +25,14 @@ package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_BAD_REQUEST;
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_FOUND;
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_UNAUTHORIZED;
 import static com.formkiq.testutils.aws.FkqDocumentService.addDocument;
 import static java.lang.Boolean.TRUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -44,15 +48,18 @@ import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import com.formkiq.aws.dynamodb.ID;
-import com.formkiq.aws.services.lambda.ApiResponseStatus;
-import com.formkiq.client.model.AddFolderPermission;
+import com.formkiq.client.model.AddDocumentResponse;
+import com.formkiq.client.model.DeleteResponse;
 import com.formkiq.client.model.DocumentSearch;
 import com.formkiq.client.model.DocumentSearchMeta;
 import com.formkiq.client.model.DocumentSearchRequest;
-import com.formkiq.client.model.FolderPermission;
 import com.formkiq.client.model.FolderPermissionType;
-import com.formkiq.client.model.SetFolderPermissionsRequest;
 import com.formkiq.client.model.SetResponse;
+import com.formkiq.testutils.api.ApiHttpResponse;
+import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
+import com.formkiq.testutils.api.documents.DeleteDocumentRequestBuilder;
+import com.formkiq.testutils.api.folders.GetFoldersRequestBuilder;
+import com.formkiq.testutils.api.folders.SetFolderPermissionsRequestBuilder;
 import org.junit.jupiter.api.Test;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddFolderRequest;
@@ -90,7 +97,7 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
 
       // when
       GetFoldersResponse response =
-          this.foldersApi.getFolderDocuments(siteId, null, null, null, null, null);
+          new GetFoldersRequestBuilder().submit(client, siteId).response();
 
       // then
       List<SearchResultDocument> documents = response.getDocuments();
@@ -104,10 +111,10 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
       String indexKey1 = documents.get(1).getIndexKey();
 
       // when
-      final GetFoldersResponse response0 =
-          this.foldersApi.getFolderDocuments(siteId, indexKey0, null, null, null, null);
-      final GetFoldersResponse response1 =
-          this.foldersApi.getFolderDocuments(siteId, indexKey1, null, null, null, null);
+      final var response0 =
+          new GetFoldersRequestBuilder().indexKey(indexKey0).submit(client, siteId).response();
+      final var response1 =
+          new GetFoldersRequestBuilder().indexKey(indexKey1).submit(client, siteId).response();
 
       // then
       documents = response0.getDocuments();
@@ -176,7 +183,7 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
 
       // when
       GetFoldersResponse response =
-          this.foldersApi.getFolderDocuments(siteId, null, null, null, null, null);
+          new GetFoldersRequestBuilder().submit(client, siteId).response();
 
       // then
       List<SearchResultDocument> documents = response.getDocuments();
@@ -186,7 +193,8 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
 
       String indexKey0 = documents.get(0).getIndexKey();
 
-      response = this.foldersApi.getFolderDocuments(siteId, indexKey0, null, null, null, null);
+      response =
+          new GetFoldersRequestBuilder().indexKey(indexKey0).submit(client, siteId).response();
       documents = response.getDocuments();
 
       final int expected = 10;
@@ -195,8 +203,8 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
       assertEquals("Chicago/sample_0", documents.get(0).getPath());
       assertEquals("Chicago/sample_1", documents.get(1).getPath());
 
-      response = this.foldersApi.getFolderDocuments(siteId, indexKey0, null, null, null,
-          response.getNext());
+      response = new GetFoldersRequestBuilder().indexKey(indexKey0).next(response.getNext())
+          .submit(client, siteId).response();
       documents = response.getDocuments();
       assertNotNull(documents);
       assertEquals(expected / 2, documents.size());
@@ -228,7 +236,7 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
       for (String path : List.of("/Chicago", "/Chicago/", "Chicago")) {
         // when
         GetFoldersResponse response =
-            this.foldersApi.getFolderDocuments(siteId, null, path, null, null, null);
+            new GetFoldersRequestBuilder().path(path).submit(client, siteId).response();
 
         // then
         List<SearchResultDocument> documents = response.getDocuments();
@@ -243,10 +251,9 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
   /**
    * Test getting invalid folders using path parameter.
    *
-   * @throws Exception Exception
    */
   @Test
-  void testGetFolders05() throws Exception {
+  void testGetFolders05() {
     // given
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
@@ -255,7 +262,7 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
 
       // when
       GetFoldersResponse response =
-          this.foldersApi.getFolderDocuments(siteId, null, path, null, null, null);
+          new GetFoldersRequestBuilder().path(path).submit(client, siteId).response();
 
       // then
       List<SearchResultDocument> documents = response.getDocuments();
@@ -303,14 +310,15 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
     latch.await();
     executorService.shutdown();
 
-    List<SearchResultDocument> docs = notNull(
-        foldersApi.getFolderDocuments(siteId, null, null, "200", null, null).getDocuments());
+    List<SearchResultDocument> docs = notNull(new GetFoldersRequestBuilder().limit("200")
+        .submit(client, siteId).response().getDocuments());
+
     assertEquals(1, docs.size());
     assertEquals(TRUE, docs.get(0).getFolder());
     assertEquals("Chicago", docs.get(0).getPath());
 
-    docs = notNull(
-        foldersApi.getFolderDocuments(siteId, null, "Chicago", "200", null, null).getDocuments());
+    docs = notNull(new GetFoldersRequestBuilder().path("Chicago").limit("200")
+        .submit(client, siteId).response().getDocuments());
 
     assertEquals(numberOfThreads, docs.size());
   }
@@ -339,8 +347,7 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
 
       // given
       // when
-      GetFoldersResponse folders =
-          this.foldersApi.getFolderDocuments(siteId, null, null, null, null, null);
+      GetFoldersResponse folders = new GetFoldersRequestBuilder().submit(client, siteId).response();
 
       // then
       assertNotNull(folders.getDocuments());
@@ -351,7 +358,8 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
       String folderIndexKey = folders.getDocuments().get(0).getIndexKey();
 
       // when
-      folders = this.foldersApi.getFolderDocuments(siteId, folderIndexKey, null, null, null, null);
+      folders =
+          new GetFoldersRequestBuilder().indexKey(folderIndexKey).submit(client, siteId).response();
 
       // then
       assertNotNull(folders.getDocuments());
@@ -364,7 +372,8 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
 
       // then
       assertEquals("deleted folder", deleteResponse.getMessage());
-      folders = this.foldersApi.getFolderDocuments(siteId, folderIndexKey, null, null, null, null);
+      folders =
+          new GetFoldersRequestBuilder().indexKey(folderIndexKey).submit(client, siteId).response();
       assertNotNull(folders.getDocuments());
       assertTrue(folders.getDocuments().isEmpty());
     }
@@ -375,7 +384,7 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * Test add folders with permissions.
+   * Test add folders with permissions with govern role.
    *
    * @throws Exception Exception
    */
@@ -386,7 +395,7 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
 
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
-      setBearerToken(siteId);
+      setBearerToken(siteId + "_govern");
 
       // when
       AddFolderResponse response = addFolder(siteId, path);
@@ -395,8 +404,8 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
       assertEquals("created folder", response.getMessage());
 
       // when
-      List<SearchResultDocument> folders = notNull(
-          this.foldersApi.getFolderDocuments(siteId, null, null, null, null, null).getDocuments());
+      var folders =
+          notNull(new GetFoldersRequestBuilder().submit(client, siteId).response().getDocuments());
 
       // then
       assertEquals(1, folders.size());
@@ -405,21 +414,17 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
       assertEquals("path1", folders.get(0).getPath());
 
       // when - get permissions before set
-      List<FolderPermission> permissions =
-          notNull(this.foldersApi.getFolderPermissions(indexKey, siteId).getRoles());
-
-      // when
-      assertEquals(0, permissions.size());
-
-      // given
-      SetFolderPermissionsRequest setReq =
-          createPermissions("myrole", List.of(FolderPermissionType.READ), "path1");
-
-      // when
-      SetResponse setResponse = this.foldersApi.setFolderPermissions(setReq, siteId);
+      var permissions = notNull(this.foldersApi.getFolderPermissions(indexKey, siteId).getRoles());
 
       // then
-      assertEquals("Folder permissions set", setResponse.getMessage());
+      assertEquals(0, permissions.size());
+
+      // when
+      var setResponse = new SetFolderPermissionsRequestBuilder().path("path1").addReadRole("myrole")
+          .submit(client, siteId);
+
+      // then
+      assertEquals("Folder permissions set", setResponse.response().getMessage());
 
       permissions = notNull(this.foldersApi.getFolderPermissions(indexKey, siteId).getRoles());
       assertEquals(1, permissions.size());
@@ -429,11 +434,147 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
     }
   }
 
-  private SetFolderPermissionsRequest createPermissions(final String role,
-      final List<FolderPermissionType> permissionTypes, final String path) {
-    List<AddFolderPermission> roles =
-        List.of(new AddFolderPermission().roleName(role).permissions(permissionTypes));
-    return new SetFolderPermissionsRequest().path(path).roles(roles);
+  /**
+   * Test add folders permissions to invalid path.
+   *
+   */
+  @Test
+  void testAddFolderPermissionsMissingFolder() {
+    // given
+    setBearerToken("Admins");
+    String path = ID.uuid();
+
+    // when
+    ApiHttpResponse<SetResponse> resp = setPathReadPermissions(DEFAULT_SITE_ID, "myrole", path);
+
+    // then
+    assertNotNull(resp);
+    assertNull(resp.response());
+    assertEquals(SC_NOT_FOUND.getStatusCode(), resp.exception().getCode());
+    assertEquals("{\"message\":\"Folder '" + path + "' not found\"}",
+        resp.exception().getResponseBody());
+  }
+
+  /**
+   * Test add folders permissions to invalid permission.
+   *
+   */
+  @Test
+  void testAddFolderPermissionsMissingPermission() throws ApiException {
+    // given
+    setBearerToken("Admins");
+    String path = ID.uuid();
+
+    addFolder(DEFAULT_SITE_ID, path);
+
+    // when
+    var resp = new SetFolderPermissionsRequestBuilder().path(path)
+        .addRole(null, (FolderPermissionType) null).submit(client, DEFAULT_SITE_ID);
+
+    // then
+    assertNull(resp.response());
+    assertEquals(SC_BAD_REQUEST.getStatusCode(), resp.exception().getCode());
+    assertEquals(
+        "{\"errors\":[{\"key\":\"roleName\",\"error\":\"'roleName' is required\"},"
+            + "{\"key\":\"permissions\",\"error\":\"'permissions' is required\"}]}",
+        resp.exception().getResponseBody());
+  }
+
+  /**
+   * Test add documents in folder with/without WRITE permission.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  void testWriteDocumentWithPermissions() throws Exception {
+    // given
+    String siteId = "school";
+    final String folder = "path10";
+    final String path = folder + "/" + ID.uuid();
+
+    setBearerToken(new String[] {siteId, "Admins"});
+
+    // when - add folder / permissions
+    addFolder(siteId, "path10");
+    var error = new SetFolderPermissionsRequestBuilder().path("path10")
+        .addRole("teacher", FolderPermissionType.WRITE).addReadRole("student")
+        .submit(client, siteId).exception();
+
+    // then
+    assertNull(error);
+
+    // given
+    setBearerToken(new String[] {siteId, "student"});
+    AddDocumentRequestBuilder req = new AddDocumentRequestBuilder().content().path(path);
+
+    // when - write file as student
+    ApiHttpResponse<AddDocumentResponse> resp = req.submit(client, siteId);
+
+    // then
+    assertEquals(SC_UNAUTHORIZED.getStatusCode(), resp.exception().getCode());
+
+    // given
+    setBearerToken(new String[] {siteId, "teacher"});
+
+    // when - write file as teacher
+    resp = req.submit(client, siteId);
+
+    // then
+    assertNull(resp.exception());
+    String documentId = resp.response().getDocumentId();
+    ApiHttpResponse<DeleteResponse> deleteRep =
+        new DeleteDocumentRequestBuilder(documentId).submit(client, siteId);
+    assertEquals(SC_UNAUTHORIZED.getStatusCode(), deleteRep.exception().getCode());
+
+    // given
+    setBearerToken(new String[] {siteId, "teacher", "Admins"});
+
+    // when
+    deleteRep = new DeleteDocumentRequestBuilder(documentId).submit(client, siteId);
+
+    // then
+    assertNull(deleteRep.exception());
+    assertEquals("'" + documentId + "' object deleted", deleteRep.response().getMessage());
+  }
+
+  /**
+   * Test set folder permissions not as admin.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  void testSetFolderPermissionsNonAdmin() throws Exception {
+    // given
+    String siteId = "mysite";
+    setBearerToken(new String[] {siteId});
+
+    // when - add folder / permissions
+    addFolder(siteId, "myfolder");
+    var resp = new SetFolderPermissionsRequestBuilder().path("myfolder")
+        .addRole("teacher", FolderPermissionType.WRITE).submit(client, siteId);
+
+    // then
+    assertEquals(SC_UNAUTHORIZED.getStatusCode(), resp.exception().getCode());
+  }
+
+  /**
+   * Test set folder permissions as bad request.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  void testSetFolderPermissionsBadRequest() throws Exception {
+    // given
+    setBearerToken(new String[] {"Admins"});
+
+    // when - add folder / permissions
+    addFolder(null, "myfolder");
+    var resp = new SetFolderPermissionsRequestBuilder().submit(client, null);
+
+    // then
+    assertEquals(SC_BAD_REQUEST.getStatusCode(), resp.exception().getCode());
+    assertEquals("{\"errors\":[{\"key\":\"path\",\"error\":\"'path' is required\"},"
+        + "{\"error\":\"'roles' is required\"}]}", resp.exception().getResponseBody());
   }
 
   /**
@@ -466,10 +607,14 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
       assertEquals("path3", path1.get(1).getPath());
     }
 
+    setBearerToken(new String[] {siteId, "student", "Admins"});
+
     // when
-    setPathPermissions(siteId, "myrole", "path1/path2");
+    assertNull(setPathReadPermissions(siteId, "myrole", "path1/path2").exception());
 
     // then
+    setBearerToken(new String[] {siteId, "student"});
+
     List<SearchResultDocument> withPerms =
         getSearchResultDocuments(siteId, root.get(0).getIndexKey());
     assertEquals(1, withPerms.size());
@@ -479,10 +624,14 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
     assertEquals(1, withPermsSearch.size());
     assertEquals("path3", withPermsSearch.get(0).getPath());
 
+    setBearerToken(new String[] {siteId, "student", "Admins"});
+
     // when
-    setPathPermissions(siteId, "student", "path1/path2");
+    assertNull(setPathReadPermissions(siteId, "student", "path1/path2").exception());
 
     // then
+    setBearerToken(new String[] {siteId, "student"});
+
     withPerms = getSearchResultDocuments(siteId, root.get(0).getIndexKey());
     assertEquals(2, withPerms.size());
     assertEquals("path2", withPerms.get(0).getPath());
@@ -501,11 +650,10 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
     return notNull(this.searchApi.documentSearch(req, siteId, null, null, null).getDocuments());
   }
 
-  private void setPathPermissions(final String siteId, final String roleName, final String path)
-      throws ApiException {
-    SetFolderPermissionsRequest setReq =
-        createPermissions(roleName, List.of(FolderPermissionType.READ), path);
-    this.foldersApi.setFolderPermissions(setReq, siteId);
+  private ApiHttpResponse<SetResponse> setPathReadPermissions(final String siteId,
+      final String roleName, final String path) {
+    return new SetFolderPermissionsRequestBuilder().path(path)
+        .addRole(roleName, FolderPermissionType.READ).submit(client, siteId);
   }
 
   /**
@@ -528,7 +676,7 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
         fail();
       } catch (ApiException e) {
         // then
-        assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
+        assertEquals(SC_NOT_FOUND.getStatusCode(), e.getCode());
         assertEquals("{\"message\":\"invalid indexKey '" + indexKey + "'\"}", e.getResponseBody());
       }
     }
@@ -643,16 +791,16 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
         fail();
       } catch (ApiException e) {
         // then
-        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(SC_BAD_REQUEST.getStatusCode(), e.getCode());
         assertEquals("{\"message\":\"folder is not empty\"}", e.getResponseBody());
       }
     }
   }
 
   private List<SearchResultDocument> getSearchResultDocuments(final String siteId,
-      final String indexKey) throws ApiException {
-    return notNull(this.foldersApi.getFolderDocuments(siteId, indexKey, null, null, null, null)
-        .getDocuments());
+      final String indexKey) {
+    return notNull(new GetFoldersRequestBuilder().indexKey(indexKey).submit(client, siteId)
+        .response().getDocuments());
   }
 
   /**
@@ -683,11 +831,10 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
    * @param siteId {@link String}
    */
   private void assertDocumentForbidden(final String siteId) {
-    try {
-      this.foldersApi.getFolderDocuments(siteId, null, null, null, null, null);
-      fail();
-    } catch (ApiException e) {
-      assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
-    }
+
+    ApiHttpResponse<GetFoldersResponse> submit =
+        new GetFoldersRequestBuilder().submit(client, siteId);
+    assertNull(submit.response());
+    assertEquals(SC_UNAUTHORIZED.getStatusCode(), submit.exception().getCode());
   }
 }
