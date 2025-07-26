@@ -55,6 +55,7 @@ public class UserActivityContext {
       CONTEXT.set(new UserActivityContextData(type, data));
     } else {
       data.remove("insertedDate");
+      data.remove("lastModifiedDate");
       if (!data.isEmpty()) {
         CONTEXT.set(new UserActivityContextData(type, data));
       }
