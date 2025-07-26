@@ -264,4 +264,10 @@ public class ValidationBuilder {
   public void addErrors(final Collection<ValidationError> list) {
     this.errors.addAll(list);
   }
+
+  public void authorized(final boolean authorized) {
+    if (!authorized) {
+      errors.add(new UnAuthorizedValidationError());
+    }
+  }
 }

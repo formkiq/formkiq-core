@@ -30,6 +30,7 @@ import com.formkiq.aws.services.lambda.exceptions.ForbiddenException;
 import com.formkiq.aws.services.lambda.exceptions.NotImplementedException;
 import com.formkiq.aws.services.lambda.exceptions.TooManyRequestsException;
 import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
+import com.formkiq.validation.UnAuthorizedValidationError;
 import com.formkiq.validation.ValidationException;
 
 import java.time.DateTimeException;
@@ -224,9 +225,15 @@ public record ApiRequestHandlerResponse(int statusCode, Map<String, String> head
       } else if (exception instanceof TooManyRequestsException) {
         this.statusCode = SC_TOO_MANY_REQUESTS.getStatusCode();
       } else if (exception instanceof ValidationException e) {
-        this.body.remove("message");
-        this.statusCode = SC_BAD_REQUEST.getStatusCode();
-        this.body.put("errors", e.errors());
+
+        if (e.errors().stream().anyMatch(ee -> ee instanceof UnAuthorizedValidationError)) {
+          this.statusCode = SC_UNAUTHORIZED.getStatusCode();
+        } else {
+          this.body.remove("message");
+          this.statusCode = SC_BAD_REQUEST.getStatusCode();
+          this.body.put("errors", e.errors());
+        }
+
       } else if (isBadRequestException(exception)) {
         this.statusCode = SC_BAD_REQUEST.getStatusCode();
       } else if (exception instanceof ForbiddenException

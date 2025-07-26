@@ -23,7 +23,6 @@
  */
 package com.formkiq.stacks.dynamodb;
 
-import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.dynamodb.BatchGetConfig;
 import com.formkiq.aws.dynamodb.DbKeys;
@@ -53,8 +52,7 @@ import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecordToMap;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessorImpl;
-import com.formkiq.stacks.dynamodb.folders.FolderIndexRecord;
-import com.formkiq.stacks.dynamodb.folders.FolderRolePermission;
+import com.formkiq.stacks.dynamodb.folders.FolderPermissionAttributePredicate;
 import com.formkiq.stacks.dynamodb.schemas.SchemaCompositeKeyRecord;
 import com.formkiq.stacks.dynamodb.schemas.SchemaService;
 import com.formkiq.stacks.dynamodb.schemas.SchemaServiceDynamodb;
@@ -1069,9 +1067,6 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
   private PaginationResults<DynamicDocumentItem> searchForMetaDocuments(final QueryRequest q,
       final String siteId) {
 
-    final ApiAuthorization authorization = ApiAuthorization.getAuthorization();
-    final Collection<String> roles = authorization.getRoles();
-
     QueryResponse result = this.dbClient.query(q);
 
     List<String> documentIds = result.items().stream().filter(r -> r.containsKey("documentId"))
@@ -1086,25 +1081,18 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
     AttributeValueToGlobalMetaFolder metaFolder = new AttributeValueToGlobalMetaFolder();
     DocumentItemToDynamicDocumentItem transform = new DocumentItemToDynamicDocumentItem();
 
-    List<DynamicDocumentItem> results = result.items().stream().filter(r -> {
-      Optional<FolderRolePermission> o = Optional.empty();
-      Collection<FolderRolePermission> permissions = FolderIndexRecord.getPermissions(r);
-      if (permissions != null) {
-        o = permissions.stream()
-            .filter(
-                p -> roles.contains(p.roleName()) && p.permissions().contains(ApiPermission.READ))
-            .findAny();
-      }
-      return permissions == null || o.isPresent();
-    }).map(r -> {
+    FolderPermissionAttributePredicate pred =
+        new FolderPermissionAttributePredicate(ApiPermission.READ);
+    List<DynamicDocumentItem> results =
+        result.items().stream().filter(i -> pred.test(siteId, i)).map(r -> {
 
-      AttributeValue documentId = r.get("documentId");
-      boolean isDocument = documentId != null && documentMap.containsKey(documentId.s());
+          AttributeValue documentId = r.get("documentId");
+          boolean isDocument = documentId != null && documentMap.containsKey(documentId.s());
 
-      return isDocument ? transform.apply(documentMap.get(r.get("documentId").s()))
-          : new DynamicDocumentItem(metaFolder.apply(r));
+          return isDocument ? transform.apply(documentMap.get(r.get("documentId").s()))
+              : new DynamicDocumentItem(metaFolder.apply(r));
 
-    }).collect(Collectors.toList());
+        }).collect(Collectors.toList());
 
     return new PaginationResults<>(results, new QueryResponseToPagination().apply(result));
   }

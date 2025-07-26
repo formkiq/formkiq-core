@@ -23,6 +23,7 @@
  */
 package com.formkiq.testutils.api.documents;
 
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
@@ -75,6 +76,16 @@ public class AddDocumentRequestBuilder implements HttpRequestBuilder {
    */
   public AddDocumentRequestBuilder addMetadata(final String key, final List<String> values) {
     this.request.addMetadataItem(new AddDocumentMetadata().key(key).values(values));
+    return this;
+  }
+
+  /**
+   * Set Random Content.
+   *
+   * @return AddDocumentRequestBuilder
+   */
+  public AddDocumentRequestBuilder content() {
+    this.request.setContent(ID.uuid());
     return this;
   }
 

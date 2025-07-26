@@ -165,6 +165,15 @@ public interface FolderIndexProcessor {
   DynamicObject getIndex(String siteId, String indexKey, boolean isFile);
 
   /**
+   * Get Folder Index Records.
+   *
+   * @param siteId {@link String}
+   * @param path {@link String}
+   * @return Map
+   */
+  List<FolderIndexRecord> getFolderIndexRecords(String siteId, String path) throws IOException;
+
+  /**
    * Is Folder in Path.
    *
    * @param siteId {@link String}

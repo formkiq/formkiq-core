@@ -98,12 +98,23 @@ public class Objects {
   /**
    * Get Last Element of {@link List}.
    *
-   * @param <T> Type of Object.
+   * @param <T> Type of Object
    * @param list {@link List}
    * @return {@link Object}
    */
   public static <T> T last(final List<T> list) {
     return !notNull(list).isEmpty() ? list.get(list.size() - 1) : null;
+  }
+
+  /**
+   * Get Last Element of {@link List}.
+   *
+   * @param <T> Type of Object
+   * @param list {@link List}
+   * @return {@link Object}
+   */
+  public static <T> T last(final String[] list) {
+    return list == null || list.length == 0 ? null : (T) list[list.length - 1];
   }
 
   /**

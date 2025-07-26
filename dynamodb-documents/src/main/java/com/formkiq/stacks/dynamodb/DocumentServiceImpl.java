@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.dynamodb;
 
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.dynamodb.AttributeValueToMap;
 import com.formkiq.aws.dynamodb.BatchGetConfig;
 import com.formkiq.aws.dynamodb.DbKeys;
@@ -71,14 +72,17 @@ import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecordsToSchemaAt
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
 import com.formkiq.stacks.dynamodb.attributes.DynamicObjectToDocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.documents.DocumentPublicationRecord;
+import com.formkiq.stacks.dynamodb.folders.FindFolderIndexTopLevelFolder;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessorImpl;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexRecord;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexRecordExtended;
+import com.formkiq.stacks.dynamodb.folders.FolderPermissionPredicate;
 import com.formkiq.stacks.dynamodb.schemas.Schema;
 import com.formkiq.stacks.dynamodb.schemas.SchemaAttributes;
 import com.formkiq.stacks.dynamodb.schemas.SchemaService;
 import com.formkiq.stacks.dynamodb.schemas.SchemaServiceDynamodb;
+import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
@@ -125,6 +129,7 @@ import java.util.stream.Collectors;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
 import static com.formkiq.aws.dynamodb.objects.Objects.concat;
+import static com.formkiq.aws.dynamodb.objects.Objects.last;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static com.formkiq.aws.dynamodb.objects.Strings.isUuid;
@@ -383,8 +388,13 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       List<FolderIndexRecord> folders =
           this.folderIndexProcessor.createFolders(siteId, document.getPath(), document.getUserId());
 
+      FolderIndexRecord folder = last(folders);
+      if (folder != null) {
+        validateFolderPermissions(siteId, folder, ApiPermission.WRITE);
+      }
+
       folderIndexRecord = this.folderIndexProcessor.addFileToFolder(siteId,
-          document.getDocumentId(), Objects.last(folders), document.getPath());
+          document.getDocumentId(), folder, document.getPath());
 
       String filename = Strings.getFilename(document.getPath());
       if (!filename.contains(folderIndexRecord.path())) {
@@ -394,6 +404,16 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     }
 
     return folderIndexRecord;
+  }
+
+  private void validateFolderPermissions(final String siteId, final FolderIndexRecord folder,
+      final ApiPermission apiPermission) {
+
+    FolderPermissionPredicate pred = new FolderPermissionPredicate(apiPermission);
+
+    ValidationBuilder vb = new ValidationBuilder();
+    vb.authorized(pred.test(siteId, folder.rolePermissions()));
+    vb.check();
   }
 
   private String createPath(final List<FolderIndexRecord> folders,
@@ -437,7 +457,6 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   @Override
   public boolean deleteDocument(final String siteId, final String documentId,
       final boolean softDelete) {
-
 
     Map<String, AttributeValue> documentRecord = getDocumentRecord(siteId, documentId);
 
@@ -644,12 +663,20 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     if (!isEmpty(path)) {
 
       try {
-        Map<String, Object> attr = this.folderIndexProcessor.getIndex(siteId, path);
+        List<FolderIndexRecord> folderIndexRecords =
+            this.folderIndexProcessor.getFolderIndexRecords(siteId, path);
+        FolderIndexRecord folder = new FindFolderIndexTopLevelFolder().apply(folderIndexRecords);
+        FolderIndexRecord file = last(folderIndexRecords);
 
-        if (attr.containsKey("documentId")) {
-          deleteItem(Map.of(PK, AttributeValue.builder().s((String) attr.get(PK)).build(), SK,
-              AttributeValue.builder().s((String) attr.get(SK)).build()));
+        if (folder != null) {
+          validateFolderPermissions(siteId, folder, ApiPermission.DELETE);
         }
+
+        if (file != null && "file".equals(file.type())) {
+          DynamoDbKey key = new DynamoDbKey(file.pk(siteId), file.sk(), null, null, null, null);
+          dbService.deleteItem(key);
+        }
+
       } catch (IOException e) {
         // ignore folder doesn't exist
       }
@@ -2396,24 +2423,33 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
     Collection<ValidationError> errors = new ArrayList<>();
 
-    if (!isEmpty(document.getDeepLinkPath())) {
-
-      if (!Strings.isUrl(document.getDeepLinkPath())) {
-        errors.add(new ValidationErrorImpl().key("deepLinkPath")
-            .error("DeepLinkPath '" + document.getDeepLinkPath() + "' is not a valid URL"));
-      }
-    }
-
-    if (document.getPath() != null && document.getPath().contains("//")) {
-      errors.add(new ValidationErrorImpl().key("path")
-          .error("invalid Path contains multiple '//' characters"));
-    }
+    validateDeepLinkPath(document, errors);
+    validateDocumentPath(document, errors);
 
     validateDimension("width", document.getWidth(), errors);
     validateDimension("height", document.getHeight(), errors);
 
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
+    }
+  }
+
+  private static void validateDocumentPath(final DocumentItem document,
+      final Collection<ValidationError> errors) {
+    if (document.getPath() != null && document.getPath().contains("//")) {
+      errors.add(new ValidationErrorImpl().key("path")
+          .error("invalid Path contains multiple '//' characters"));
+    }
+  }
+
+  private void validateDeepLinkPath(final DocumentItem document,
+      final Collection<ValidationError> errors) {
+    if (!isEmpty(document.getDeepLinkPath())) {
+
+      if (!Strings.isUrl(document.getDeepLinkPath())) {
+        errors.add(new ValidationErrorImpl().key("deepLinkPath")
+            .error("DeepLinkPath '" + document.getDeepLinkPath() + "' is not a valid URL"));
+      }
     }
   }
 
