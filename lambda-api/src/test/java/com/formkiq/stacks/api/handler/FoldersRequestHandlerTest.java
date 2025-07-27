@@ -481,6 +481,31 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * Test add permission to file and not folder.
+   *
+   */
+  @Test
+  void testSetFolderPermissionsOnDocument() {
+    // given
+    setBearerToken("Admins");
+    String path = "mytestdir/" + ID.uuid();
+
+    var response =
+        new AddDocumentRequestBuilder().content().path(path).submit(client, DEFAULT_SITE_ID);
+    assertNull(response.exception());
+
+    // when
+    var resp = new SetFolderPermissionsRequestBuilder().path(path)
+        .addRole("myrole", FolderPermissionType.READ).submit(client, DEFAULT_SITE_ID);
+
+    // then
+    assertNull(resp.response());
+    assertEquals(SC_NOT_FOUND.getStatusCode(), resp.exception().getCode());
+    assertEquals("{\"message\":\"Folder '" + path + "' not found\"}",
+        resp.exception().getResponseBody());
+  }
+
+  /**
    * Test add documents in folder with/without WRITE permission.
    *
    * @throws Exception Exception
