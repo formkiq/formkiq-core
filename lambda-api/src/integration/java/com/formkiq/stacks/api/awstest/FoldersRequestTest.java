@@ -24,11 +24,13 @@
 package com.formkiq.stacks.api.awstest;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_UNAUTHORIZED;
 import static com.formkiq.testutils.aws.FkqDocumentService.addDocument;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContent;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -40,8 +42,19 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.base64.StringToBase64Encoder;
 import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.model.AddDocumentResponse;
+import com.formkiq.client.model.FolderPermission;
+import com.formkiq.client.model.FolderPermissionType;
+import com.formkiq.client.model.GetFolderPermissionsResponse;
 import com.formkiq.client.model.SearchResultDocument;
+import com.formkiq.client.model.SetResponse;
+import com.formkiq.testutils.api.ApiHttpResponse;
+import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
+import com.formkiq.testutils.api.folders.GetFolderPermissionsRequestBuilder;
+import com.formkiq.testutils.api.folders.GetFoldersRequestBuilder;
+import com.formkiq.testutils.api.folders.SetFolderPermissionsRequestBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import com.formkiq.client.api.DocumentFoldersApi;
@@ -115,14 +128,12 @@ public class FoldersRequestTest extends AbstractAwsIntegrationTest {
 
       for (ApiClient apiClient : clients) {
 
-        DocumentFoldersApi foldersApi = new DocumentFoldersApi(apiClient);
-
         // when
-        GetFoldersResponse folderDocuments =
-            foldersApi.getFolderDocuments(siteId, null, null, null, null, null);
+        ApiHttpResponse<GetFoldersResponse> submit =
+            new GetFoldersRequestBuilder().submit(apiClient, siteId);
 
         // then
-        assertNotNull(folderDocuments.getDocuments());
+        assertNotNull(submit.response().getDocuments());
       }
     }
   }
@@ -209,14 +220,66 @@ public class FoldersRequestTest extends AbstractAwsIntegrationTest {
         assertNotNull(response.getIndexKey());
         assertEquals("created folder", response.getMessage());
 
-        GetFoldersResponse folderDocuments =
-            foldersApi.getFolderDocuments(siteId, null, null, "100", null, null);
-        assertFalse(folderDocuments.getDocuments().isEmpty());
-        folderDocuments =
-            foldersApi.getFolderDocuments(siteId, response.getIndexKey(), null, "100", null, null);
-        assertEquals(1, folderDocuments.getDocuments().size());
-        assertEquals(folder + "/test.txt", folderDocuments.getDocuments().get(0).getPath());
+        ApiHttpResponse<GetFoldersResponse> submit =
+            new GetFoldersRequestBuilder().limit("100").submit(apiClient, siteId);
+        assertFalse(notNull(submit.response().getDocuments()).isEmpty());
+
+        submit = new GetFoldersRequestBuilder().indexKey(response.getIndexKey()).limit("100")
+            .submit(apiClient, siteId);
+
+        List<SearchResultDocument> docs = notNull(submit.response().getDocuments());
+        assertEquals(1, docs.size());
+        assertEquals(folder + "/test.txt", docs.get(0).getPath());
       }
+    }
+  }
+
+  /**
+   * Test POST /folders/permissions.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  public void testPutFolderWithPermissions() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      List<ApiClient> clients = getApiClients(siteId);
+
+      String folder = "mydoc_" + ID.uuid();
+      String path = folder + "/doc.txt";
+      ApiHttpResponse<AddDocumentResponse> addDoc =
+          new AddDocumentRequestBuilder().content().path(path).submit(clients.get(0), siteId);
+      assertNull(addDoc.exception());
+
+      String indexKey = new StringToBase64Encoder().apply("#" + folder);
+
+      SetFolderPermissionsRequestBuilder req = new SetFolderPermissionsRequestBuilder().path(folder)
+          .addRole("myrole", FolderPermissionType.WRITE);
+
+      for (ApiClient apiClient : List.of(clients.get(0), clients.get(1))) {
+
+        // when
+        ApiHttpResponse<SetResponse> setPerm = req.submit(apiClient, siteId);
+
+        // then
+        assertEquals("Folder permissions set", setPerm.response().getMessage());
+        ApiHttpResponse<GetFolderPermissionsResponse> getPerms =
+            new GetFolderPermissionsRequestBuilder().indexKey(indexKey).submit(apiClient, siteId);
+        assertNull(getPerms.exception());
+        List<FolderPermission> roles = notNull(getPerms.response().getRoles());
+        assertEquals(1, roles.size());
+        assertEquals("myrole", roles.get(0).getRoleName());
+        assertEquals("WRITE", String.join(",",
+            notNull(roles.get(0).getPermissions()).stream().map(Enum::name).toList()));
+      }
+
+      // when
+      ApiHttpResponse<SetResponse> setPerm = req.submit(clients.get(2), siteId);
+
+      // then
+      assertEquals(SC_UNAUTHORIZED.getStatusCode(), setPerm.exception().getCode());
     }
   }
 }
