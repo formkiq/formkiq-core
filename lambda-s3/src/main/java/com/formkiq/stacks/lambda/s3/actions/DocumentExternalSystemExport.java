@@ -40,7 +40,6 @@ import com.google.gson.Gson;
 
 import java.net.URL;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -92,9 +91,6 @@ public class DocumentExternalSystemExport {
     URL s3Url = getS3Url(siteId, documentId, item);
     item.put("url", s3Url);
 
-    List<DynamicDocumentItem> documents = new ArrayList<>();
-    documents.add(item);
-
     Collection<Map<String, Object>> attributes = addDocumentAttributes(siteId, documentId);
     if (!attributes.isEmpty()) {
       item.put("attributes", attributes);
@@ -102,7 +98,7 @@ public class DocumentExternalSystemExport {
 
     addDocumentTags(siteId, documentId, item);
 
-    return this.gson.toJson(Map.of("documents", documents));
+    return this.gson.toJson(Map.of("document", item));
   }
 
   private Collection<Map<String, Object>> addDocumentAttributes(final String siteId,

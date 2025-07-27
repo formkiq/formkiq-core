@@ -1111,18 +1111,16 @@ public class DocumentActionsProcessorTest implements DbKeys {
       HttpRequest lastRequest = CALLBACK.getLastRequest();
       assertTrue(lastRequest.getPath().toString().endsWith("/callback"));
       Map<String, Object> resultmap = GSON.fromJson(lastRequest.getBodyAsString(), Map.class);
-      List<Map<String, String>> documents = (List<Map<String, String>>) resultmap.get("documents");
-      assertEquals(1, documents.size());
+      Map<String, String> document = (Map<String, String>) resultmap.get("document");
 
-      assertEquals(Objects.requireNonNullElse(siteId, DEFAULT_SITE_ID),
-          documents.get(0).get("siteId"));
+      assertEquals(Objects.requireNonNullElse(siteId, DEFAULT_SITE_ID), document.get("siteId"));
 
-      assertEquals(documentId, documents.get(0).get("documentId"));
-      assertEquals("application/pdf", documents.get(0).get("contentType"));
-      assertEquals("joe", documents.get(0).get("userId"));
-      assertNotNull(documents.get(0).get("insertedDate"));
-      assertNotNull(documents.get(0).get("lastModifiedDate"));
-      assertNotNull(documents.get(0).get("url"));
+      assertEquals(documentId, document.get("documentId"));
+      assertEquals("application/pdf", document.get("contentType"));
+      assertEquals("joe", document.get("userId"));
+      assertNotNull(document.get("insertedDate"));
+      assertNotNull(document.get("lastModifiedDate"));
+      assertNotNull(document.get("url"));
 
       Action action = actionsService.getActions(siteId, documentId).get(0);
       assertEquals(ActionStatus.COMPLETE, action.status());
@@ -1174,15 +1172,13 @@ public class DocumentActionsProcessorTest implements DbKeys {
       HttpRequest lastRequest = CALLBACK.getLastRequest();
       assertTrue(lastRequest.getPath().toString().endsWith("/callback"));
       Map<String, Object> resultmap = GSON.fromJson(lastRequest.getBodyAsString(), Map.class);
-      List<Map<String, String>> documents = (List<Map<String, String>>) resultmap.get("documents");
-      assertEquals(1, documents.size());
+      Map<String, String> document = (Map<String, String>) resultmap.get("document");
 
-      assertEquals(Objects.requireNonNullElse(siteId, DEFAULT_SITE_ID),
-          documents.get(0).get("siteId"));
+      assertEquals(Objects.requireNonNullElse(siteId, DEFAULT_SITE_ID), document.get("siteId"));
 
-      assertEquals(documentId, documents.get(0).get("documentId"));
-      assertEquals("CLEAN", documents.get(0).get("status"));
-      assertEquals("2022-01-01", documents.get(0).get("timestamp"));
+      assertEquals(documentId, document.get("documentId"));
+      assertEquals("CLEAN", document.get("status"));
+      assertEquals("2022-01-01", document.get("timestamp"));
 
       Action action = actionsService.getActions(siteId, documentId).get(1);
       assertEquals(ActionStatus.COMPLETE, action.status());
@@ -2417,10 +2413,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
       Message message = getMessage(sqsDocumentQueueUrl);
 
-      List<Map<String, Object>> documents =
-          assertEventBridgeMessage(message, "Document Action Event");
+      Map<String, Object> document = assertEventBridgeMessage(message, "Document Action Event");
 
-      validateAttributes(documents);
+      validateAttributes(document);
     }
   }
 
@@ -2632,7 +2627,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     assertEquals(Objects.requireNonNullElse(siteId, DEFAULT_SITE_ID), map.get("siteId"));
   }
 
-  private List<Map<String, Object>> assertEventBridgeMessage(final Message message,
+  private Map<String, Object> assertEventBridgeMessage(final Message message,
       final String detailType) {
     Map<String, Object> data = GSON.fromJson(message.body(), Map.class);
     assertEquals("formkiq.test", data.get("source"));
@@ -2640,13 +2635,13 @@ public class DocumentActionsProcessorTest implements DbKeys {
     assertTrue(data.get("time").toString().endsWith("Z"));
 
     data = (Map<String, Object>) data.get("detail");
-    List<Map<String, Object>> documents = (List<Map<String, Object>>) data.get("documents");
-    assertEquals(1, documents.size());
-    assertNotNull(documents.get(0).get("documentId"));
-    assertNotNull(documents.get(0).get("url"));
-    assertNotNull(documents.get(0).get("path"));
 
-    return documents;
+    Map<String, Object> document = (Map<String, Object>) data.get("document");
+    assertNotNull(document.get("documentId"));
+    assertNotNull(document.get("url"));
+    assertNotNull(document.get("path"));
+
+    return document;
   }
 
   private void assertEventBridgeDeleteMessage(final Message message, final String detailType) {
@@ -2656,11 +2651,11 @@ public class DocumentActionsProcessorTest implements DbKeys {
     assertTrue(data.get("time").toString().endsWith("Z"));
 
     data = (Map<String, Object>) data.get("detail");
-    List<Map<String, Object>> documents = (List<Map<String, Object>>) data.get("documents");
-    assertEquals(1, documents.size());
-    assertNotNull(documents.get(0).get("documentId"));
-    assertNull(documents.get(0).get("url"));
-    assertNull(documents.get(0).get("path"));
+    Map<String, Object> document = (Map<String, Object>) data.get("document");
+
+    assertNotNull(document.get("documentId"));
+    assertNull(document.get("url"));
+    assertNull(document.get("path"));
 
   }
 
@@ -2698,9 +2693,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
     return sqsDocumentQueueUrl;
   }
 
-  private void validateAttributes(final List<Map<String, Object>> documents) {
+  private void validateAttributes(final Map<String, Object> document) {
     Collection<Map<String, Object>> attrList =
-        (Collection<Map<String, Object>>) documents.get(0).get("attributes");
+        (Collection<Map<String, Object>>) document.get("attributes");
     assertEquals(1, attrList.size());
 
     Map<String, Object> attrMap = attrList.iterator().next();
