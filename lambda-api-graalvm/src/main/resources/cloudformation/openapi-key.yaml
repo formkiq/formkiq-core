@@ -438,6 +438,186 @@ Resources:
                 - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
+          /sites/{siteId}/opensearch/snapshot/{repositoryName}:
+            get:
+              operationId: GetOpensearchSnapshotRepository
+              description: Returns the OpenSearch Snapshot Repository
+              summary: Get site(s) OpenSearch snapshot repository
+              tags:
+                - System Management
+              parameters:
+                - $ref: '#/components/parameters/siteIdPathParam'
+                - $ref: '#/components/parameters/snapshotRepositoryNamePath'
+              responses:
+                '200':
+                  description: "200 OK"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        "$ref": "#/components/schemas/GetOpenSearchSnapshotRepositoryResponse"
+              security:
+                - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
+            post:
+              operationId: AddOpensearchSnapshotRepository
+              description: Add an OpenSearch Snapshot Repository
+              summary: Add OpenSearch Snapshot Repository
+              tags:
+                - System Management
+              parameters:
+                - $ref: '#/components/parameters/siteIdPathParam'
+                - $ref: '#/components/parameters/snapshotRepositoryNamePath'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/AddOpenSearchSnapshotRepositoryRequest'
+              responses:
+                '200':
+                  description: "200 OK"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        "$ref": "#/components/schemas/AddOpenSearchSnapshotRepositoryResponse"
+              security:
+                - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
+            delete:
+              operationId: DeleteOpensearchSnapshotRepository
+              description: Deletes the OpenSearch Snapshot Repository
+              summary: Deletes site(s) OpenSearch Snapshot Repository
+              tags:
+                - System Management
+              parameters:
+                - $ref: '#/components/parameters/siteIdPathParam'
+                - $ref: '#/components/parameters/snapshotRepositoryNamePath'
+              responses:
+                '200':
+                  $ref: '#/components/responses/200CorsDeleteResponse'
+              security:
+                - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
+          /sites/{siteId}/opensearch/snapshot/{repositoryName}/{snapshotName}:
+            get:
+              operationId: GetOpensearchSnapshot
+              description: Returns the OpenSearch Snapshot
+              summary: Get site(s) OpenSearch snapshot
+              tags:
+                - System Management
+              parameters:
+                - $ref: '#/components/parameters/siteIdPathParam'
+                - $ref: '#/components/parameters/snapshotRepositoryNamePath'
+                - $ref: '#/components/parameters/snapshotNamePath'
+              responses:
+                '200':
+                  description: "200 OK"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        "$ref": "#/components/schemas/GetOpenSearchSnapshotResponse"
+              security:
+                - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
+            post:
+              operationId: AddOpensearchSnapshot
+              description: Add an OpenSearch Snapshot
+              summary: Add an OpenSearch Snapshot
+              tags:
+                - System Management
+              parameters:
+                - $ref: '#/components/parameters/siteIdPathParam'
+                - $ref: '#/components/parameters/snapshotRepositoryNamePath'
+                - $ref: '#/components/parameters/snapshotNamePath'
+              responses:
+                '200':
+                  description: "200 OK"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        "$ref": "#/components/schemas/AddResponse"
+              security:
+                - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
+            delete:
+              operationId: DeleteOpensearchSnapshot
+              description: Deletes the OpenSearch Snapshot
+              summary: Deletes site(s) OpenSearch Snapshot
+              tags:
+                - System Management
+              parameters:
+                - $ref: '#/components/parameters/siteIdPathParam'
+                - $ref: '#/components/parameters/snapshotRepositoryNamePath'
+                - $ref: '#/components/parameters/snapshotNamePath'
+              responses:
+                '200':
+                  $ref: '#/components/responses/200CorsDeleteResponse'
+              security:
+                - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
+          /sites/{siteId}/opensearch/snapshot/{repositoryName}/{snapshotName}/restore:
+            post:
+              operationId: AddOpensearchRestoreSnapshot
+              description: Add an OpenSearch Restore Snapshot
+              summary: Add an OpenSearch Restore Snapshot
+              tags:
+                - System Management
+              parameters:
+                - $ref: '#/components/parameters/siteIdPathParam'
+                - $ref: '#/components/parameters/snapshotRepositoryNamePath'
+                - $ref: '#/components/parameters/snapshotNamePath'
+              responses:
+                '200':
+                  description: "200 OK"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        "$ref": "#/components/schemas/AddResponse"
+              security:
+                - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
           /sites/{siteId}/schema/document:
             get:
               operationId: GetSitesSchema
@@ -7028,6 +7208,20 @@ Resources:
               required: true
               schema:
                 type: string
+            snapshotRepositoryNamePath:
+              name: repositoryName
+              in: path
+              description: Snapshot Repository Name
+              required: true
+              schema:
+                type: string
+            snapshotNamePath:
+              name: snapshotName
+              in: path
+              description: Snapshot Name
+              required: true
+              schema:
+                type: string
             localeParam:
               name: locale
               in: path
@@ -11989,6 +12183,111 @@ Resources:
                   type: "array"
                   items:
                     $ref: "#/components/schemas/SiteGroupPermissions"
+            GetOpenSearchSnapshotResponse:
+              type: object
+              properties:
+                s3Repositories:
+                  type: "array"
+                  items:
+                    $ref: "#/components/schemas/GetOpenSearchSnapshot"
+            GetOpenSearchSnapshot:
+              type: object
+              properties:
+                bucket:
+                  type: "string"
+                  description: "Name of the S3 bucket"
+
+            GetOpenSearchSnapshotRepositoryResponse:
+              type: object
+              properties:
+                snapshots:
+                  type: "array"
+                  items:
+                    $ref: "#/components/schemas/OpenSearchSnapshot"
+
+            OpenSearchSnapshot:
+              type: object
+              properties:
+                snapshot:
+                  type: "string"
+                  description: "Snapshot name"
+                uuid:
+                  type: "string"
+                  description: "Snapshot’s universally unique identifier (UUID)"
+                version:
+                  type: "number"
+                  description: "Open Search version that created the snapshot"
+                indices:
+                  type: "array"
+                  description: "Indices in the snapshot"
+                  items:
+                    type: "string"
+                shards:
+                  $ref: "#/components/schemas/OpenSearchSnapshotShard"
+                failures:
+                  type: "array"
+                  description: "Failures, if any, that occured during snapshot creation"
+                  items:
+                    type: "string"
+                state:
+                  type: "string"
+                  description: "Snapshot status. Possible values: IN_PROGRESS, SUCCESS, FAILED, PARTIAL"
+                start_time:
+                  type: "string"
+                  description: "Date/time when the snapshot creation process began"
+                start_time_in_millis:
+                  type: "number"
+                  description: "Time (in milliseconds) when the snapshot creation process began"
+                end_time:
+                  type: "string"
+                  description: "Date/time when the snapshot creation process ended"
+                end_time_in_millis:
+                  type: "number"
+                  description: "Time (in milliseconds) when the snapshot creation process ended"
+                duration_in_millis:
+                  type: "number"
+                  description: "Total time (in milliseconds) that the snapshot creation process lasted"
+
+            OpenSearchSnapshotShard:
+              type: object
+              properties:
+                total:
+                  type: "number"
+                  description: "Total number of shards"
+                failed:
+                  type: "number"
+                  description: "Failed number of shards"
+                successful:
+                  type: "number"
+                  description: "Successful number of shards"
+
+            GetOpenSearchSnapshotRepository:
+              type: object
+              properties:
+                s3Repository:
+                  $ref: "#/components/schemas/OpenSearchS3Repository"
+            AddOpenSearchSnapshotRepositoryRequest:
+              type: object
+              properties:
+                s3Repository:
+                  $ref: "#/components/schemas/OpenSearchS3Repository"
+            OpenSearchS3Repository:
+              type: object
+              required:
+                - bucket
+              properties:
+                bucket:
+                  type: "string"
+                  description: "Name of the S3 bucket"
+                basePath:
+                  type: "string"
+                  description: "The path within the bucket in which you want to store snapshots"
+            AddOpenSearchSnapshotRepositoryResponse:
+              type: "object"
+              properties:
+                message:
+                  type: "string"
+                  description: "Result message"
             SetOpenSearchIndexRequest:
               type: object
               properties:

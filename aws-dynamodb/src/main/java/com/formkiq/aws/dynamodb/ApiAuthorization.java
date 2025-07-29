@@ -121,6 +121,17 @@ public class ApiAuthorization {
   }
 
   /**
+   * Returns whether the user has Admin or Govern permission.
+   *
+   * @param siteId {@link String}
+   * @return boolean
+   */
+  public boolean isAdmin(final String siteId) {
+    Collection<ApiPermission> permissions = getPermissions(siteId);
+    return permissions.contains(ApiPermission.ADMIN);
+  }
+
+  /**
    * Add Site Permission.
    * 
    * @param siteId {@link String}
