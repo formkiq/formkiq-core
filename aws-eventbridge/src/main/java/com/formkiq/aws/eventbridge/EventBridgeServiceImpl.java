@@ -29,11 +29,13 @@ import software.amazon.awssdk.services.eventbridge.model.CreateEventBusRequest;
 import software.amazon.awssdk.services.eventbridge.model.CreateEventBusResponse;
 import software.amazon.awssdk.services.eventbridge.model.DeleteEventBusRequest;
 import software.amazon.awssdk.services.eventbridge.model.DeleteEventBusResponse;
+import software.amazon.awssdk.services.eventbridge.model.DeleteRuleRequest;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequest;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsResponse;
 import software.amazon.awssdk.services.eventbridge.model.PutRuleRequest;
 import software.amazon.awssdk.services.eventbridge.model.PutTargetsRequest;
+import software.amazon.awssdk.services.eventbridge.model.RemoveTargetsRequest;
 import software.amazon.awssdk.services.eventbridge.model.Target;
 
 /**
@@ -97,15 +99,27 @@ public class EventBridgeServiceImpl implements EventBridgeService {
   }
 
   @Override
-  public void createRule(final String eventBusName, final String ruleName,
-      final String eventPattern, final String targetId, final String arn) {
+  public void createRule(final String eventBusName, final String ruleName, final String ruleArn,
+      final String eventPattern, final String targetId, final String targetArn) {
     PutRuleRequest ruleReq = PutRuleRequest.builder().name(ruleName).eventBusName(eventBusName)
         .eventPattern(eventPattern).build();
     client.putRule(ruleReq);
 
-    Target target = Target.builder().id(targetId).arn(arn).build();
+    Target target = Target.builder().id(targetId).roleArn(ruleArn).arn(targetArn).build();
     PutTargetsRequest putTarget = PutTargetsRequest.builder().rule(ruleName)
         .eventBusName(eventBusName).targets(target).build();
     client.putTargets(putTarget);
+  }
+
+  @Override
+  public void deleteRule(final String eventBusName, final String ruleName, final String targetId) {
+
+    RemoveTargetsRequest target = RemoveTargetsRequest.builder().rule(ruleName).ids(targetId)
+        .eventBusName(eventBusName).build();
+    client.removeTargets(target);
+
+    DeleteRuleRequest deleteReq =
+        DeleteRuleRequest.builder().name(ruleName).eventBusName(eventBusName).build();
+    client.deleteRule(deleteReq);
   }
 }

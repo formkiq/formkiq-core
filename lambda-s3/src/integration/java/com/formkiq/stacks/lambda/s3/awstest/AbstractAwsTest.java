@@ -25,6 +25,9 @@ package com.formkiq.stacks.lambda.s3.awstest;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.formkiq.aws.eventbridge.EventBridgeConnectionBuilder;
+import com.formkiq.aws.eventbridge.EventBridgeService;
+import com.formkiq.aws.eventbridge.EventBridgeServiceImpl;
 import org.junit.jupiter.api.BeforeAll;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
@@ -93,6 +96,8 @@ public abstract class AbstractAwsTest {
   private static SsmService ssmService;
   /** Documents Bucket Name. */
   private static String stagingdocumentsbucketname;
+  /** {@link EventBridgeService}. */
+  private static EventBridgeService eventBridgeService;
 
   /**
    * beforeclass.
@@ -146,6 +151,11 @@ public abstract class AbstractAwsTest {
     documentService = new DocumentServiceImpl(dbConnection, documentsTable, documentsSyncsTable,
         new DocumentVersionServiceNoVersioning());
     searchService = new DocumentSearchServiceImpl(dbConnection, documentService, documentsTable);
+
+    EventBridgeConnectionBuilder eventBridgeConnectionBuilder =
+        new EventBridgeConnectionBuilder(enableAwsXray).setRegion(awsregion)
+            .setCredentials(awsprofile);
+    eventBridgeService = new EventBridgeServiceImpl(null, eventBridgeConnectionBuilder);
   }
 
   /**
@@ -182,6 +192,15 @@ public abstract class AbstractAwsTest {
    */
   protected static DocumentService getDocumentService() {
     return documentService;
+  }
+
+  /**
+   * Get {@link EventBridgeService}.
+   * 
+   * @return {@link EventBridgeService}
+   */
+  public static EventBridgeService getEventBridgeService() {
+    return eventBridgeService;
   }
 
   /**

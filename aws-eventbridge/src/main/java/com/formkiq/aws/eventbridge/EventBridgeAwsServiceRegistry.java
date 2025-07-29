@@ -44,7 +44,6 @@ public class EventBridgeAwsServiceRegistry implements AwsServiceRegistry {
         .setRegion(serviceCache.region()).setCredentials(credentialsProvider)
         .setEndpointOverride(awsServiceEndpoints.get("sqs"));
 
-    serviceCache.register(EventBridgeConnectionBuilder.class,
-        new ClassServiceExtension<EventBridgeConnectionBuilder>(sqs));
+    serviceCache.register(EventBridgeConnectionBuilder.class, new ClassServiceExtension<>(sqs));
   }
 }

@@ -45,6 +45,7 @@ import software.amazon.awssdk.services.s3.model.LambdaFunctionConfiguration;
 import software.amazon.awssdk.services.s3.model.QueueConfiguration;
 import software.amazon.awssdk.services.sqs.model.CreateQueueRequest;
 import software.amazon.awssdk.services.sqs.model.CreateQueueResponse;
+import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName;
 import software.amazon.awssdk.services.sqs.model.SetQueueAttributesRequest;
 
@@ -98,6 +99,27 @@ public class AwsResourceTest extends AbstractAwsTest {
     assertEquals(1, c.events().size());
     Event e = c.events().get(0);
     assertEquals(event, e.toString());
+  }
+
+  private static void assertEventBridgeMessage(final String queueUrl) throws InterruptedException {
+
+
+    List<Message> receiveMessages;
+
+    do {
+      receiveMessages = getSqsService().receiveMessages(queueUrl).messages();
+      if (receiveMessages.isEmpty()) {
+        TimeUnit.SECONDS.sleep(1);
+      }
+
+    } while (receiveMessages.isEmpty());
+
+    Gson gson = new GsonBuilder().create();
+    String body = receiveMessages.iterator().next().body();
+    Map<String, Object> map = gson.fromJson(body, Map.class);
+    assertTrue(map.containsKey("detail"));
+    Map<String, Object> detail = (Map<String, Object>) map.get("detail");
+    assertTrue(detail.containsKey("document"));
   }
 
   /**
@@ -202,11 +224,28 @@ public class AwsResourceTest extends AbstractAwsTest {
   public void testAddDeleteFile01() throws Exception {
     // given
     String key = ID.uuid();
+    String eventbridgename = "FormKiQ-DocumentEvents-" + getAppenvironment();
 
     String contentType = "text/plain";
-    String createQueue = "createtest-" + UUID.randomUUID();
-    String documentEventQueueUrl = createSqsQueue(createQueue).queueUrl();
+    String createQueue1 = "createtest-" + UUID.randomUUID();
+    String createQueue2 = "createtest-" + UUID.randomUUID();
+    String documentEventQueueUrl = createSqsQueue(createQueue1).queueUrl();
+
+    String eventBridgeQueueUrl = createSqsQueue(createQueue2).queueUrl();
+    String eventBridgeQueueArn = getSqsService().getQueueArn(eventBridgeQueueUrl);
+
     String snsDocumentEventArn = subscribeToSns(getSnsDocumentEventArn(), documentEventQueueUrl);
+
+    String awsprofile = System.getProperty("testprofile");
+    String ruleRoleArn = IamRoleCreator.builder().roleName("Amazon_EventBridge_Invoke_Sqs")
+        .queueArn(eventBridgeQueueArn).profileName(awsprofile).build().create();
+
+    String eventPattern = "{\"source\":[\"formkiq." + getAppenvironment() + "\"]}";
+    getEventBridgeService().createRule(eventbridgename, "sqs", ruleRoleArn, eventPattern, "test",
+        eventBridgeQueueArn);
+
+    final int timeout = 5;
+    TimeUnit.SECONDS.sleep(timeout);
 
     try {
 
@@ -217,6 +256,7 @@ public class AwsResourceTest extends AbstractAwsTest {
       verifyFileExistsInDocumentsS3(key, contentType);
       verifyFileNotExistInStagingS3(key);
       assertSnsMessage(documentEventQueueUrl, "create");
+      assertEventBridgeMessage(eventBridgeQueueUrl);
 
       // when
       key = writeToStaging(key, contentType);
@@ -233,8 +273,10 @@ public class AwsResourceTest extends AbstractAwsTest {
       assertSnsMessage(documentEventQueueUrl, "delete");
 
     } finally {
+      getEventBridgeService().deleteRule(eventbridgename, "sqs", "test");
       getSnsService().unsubscribe(snsDocumentEventArn);
       getSqsService().deleteQueue(documentEventQueueUrl);
+      getSqsService().deleteQueue(eventBridgeQueueUrl);
     }
   }
 

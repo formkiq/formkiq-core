@@ -2425,7 +2425,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     eventBridgeService.createEventBridge(eventBusName);
 
     String eventPattern = "{\"source\":[\"formkiq.test\"]}";
-    eventBridgeService.createRule(eventBusName, "sqs", eventPattern, "test", sqsQueueArn);
+    eventBridgeService.createRule(eventBusName, "sqs", null, eventPattern, "test", sqsQueueArn);
     return eventBusName;
   }
 
