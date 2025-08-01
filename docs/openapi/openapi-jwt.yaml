@@ -12072,6 +12072,29 @@
                   type: array
                   items:
                     $ref: '#/components/schemas/OpenSearchS3Repository'
+            OpenSearchSnapshotFailure:
+              type: object
+              description: Details about a failure for a specific shard in a snapshot.
+              properties:
+                index:
+                  type: string
+                  description: The index name.
+                index_uuid:
+                  type: string
+                  description: UUID of the index.
+                shard_id:
+                  type: integer
+                  format: int32
+                  description: Shard identifier.
+                reason:
+                  type: string
+                  description: Full exception/message explaining why the failure occurred.
+                node_id:
+                  type: string
+                  description: ID of the node handling that shard.
+                status:
+                  type: string
+                  description: Status of the failure (e.g., INTERNAL_SERVER_ERROR).
             OpenSearchSnapshot:
               type: object
               properties:
@@ -12093,9 +12116,8 @@
                   $ref: '#/components/schemas/OpenSearchSnapshotShard'
                 failures:
                   type: array
-                  description: Failures, if any, that occured during snapshot creation
                   items:
-                    type: string
+                    $ref: '#/components/schemas/OpenSearchSnapshotFailure'
                 state:
                   type: string
                   description: 'Snapshot status. Possible values: IN_PROGRESS, SUCCESS, FAILED, PARTIAL'
