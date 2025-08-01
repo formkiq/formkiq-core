@@ -366,7 +366,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /sites/{siteId}/opensearch/index:
             get:
-              operationId: GetOpensearchIndex
+              operationId: GetOpenSearchIndex
               description: Returns the OpenSearch index settings
               summary: Get site(s) OpenSearch index settings
               tags:
@@ -392,7 +392,7 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
             put:
-              operationId: SetOpensearchIndex
+              operationId: SetOpenSearchIndex
               description: Sets the OpenSearch index settings
               summary: Set site(s) OpenSearch index settings
               tags:
@@ -424,7 +424,7 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
             delete:
-              operationId: DeleteOpensearchIndex
+              operationId: DeleteOpenSearchIndex
               description: Deletes the OpenSearch index
               summary: Deletes site(s) OpenSearch index
               tags:
@@ -440,7 +440,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
           /sites/{siteId}/opensearch/snapshot/{repositoryName}:
             get:
-              operationId: GetOpensearchSnapshotRepository
+              operationId: GetOpenSearchSnapshotRepository
               description: Returns the OpenSearch Snapshot Repository
               summary: Get site(s) OpenSearch snapshot repository
               tags:
@@ -467,7 +467,7 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
             post:
-              operationId: AddOpensearchSnapshotRepository
+              operationId: AddOpenSearchSnapshotRepository
               description: Add an OpenSearch Snapshot Repository
               summary: Add OpenSearch Snapshot Repository
               tags:
@@ -475,12 +475,6 @@ Resources:
               parameters:
                 - $ref: '#/components/parameters/siteIdPathParam'
                 - $ref: '#/components/parameters/snapshotRepositoryNamePath'
-              requestBody:
-                required: true
-                content:
-                  application/json:
-                    schema:
-                      $ref: '#/components/schemas/AddOpenSearchSnapshotRepositoryRequest'
               responses:
                 '200':
                   description: "200 OK"
@@ -500,7 +494,7 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
             delete:
-              operationId: DeleteOpensearchSnapshotRepository
+              operationId: DeleteOpenSearchSnapshotRepository
               description: Deletes the OpenSearch Snapshot Repository
               summary: Deletes site(s) OpenSearch Snapshot Repository
               tags:
@@ -517,7 +511,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
           /sites/{siteId}/opensearch/snapshot/{repositoryName}/{snapshotName}:
             get:
-              operationId: GetOpensearchSnapshot
+              operationId: GetOpenSearchSnapshot
               description: Returns the OpenSearch Snapshot
               summary: Get site(s) OpenSearch snapshot
               tags:
@@ -545,7 +539,7 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
             post:
-              operationId: AddOpensearchSnapshot
+              operationId: AddOpenSearchSnapshot
               description: Add an OpenSearch Snapshot
               summary: Add an OpenSearch Snapshot
               tags:
@@ -573,7 +567,7 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
             delete:
-              operationId: DeleteOpensearchSnapshot
+              operationId: DeleteOpenSearchSnapshot
               description: Deletes the OpenSearch Snapshot
               summary: Deletes site(s) OpenSearch Snapshot
               tags:
@@ -591,7 +585,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
           /sites/{siteId}/opensearch/snapshot/{repositoryName}/{snapshotName}/restore:
             post:
-              operationId: AddOpensearchRestoreSnapshot
+              operationId: AddOpenSearchRestoreSnapshot
               description: Add an OpenSearch Restore Snapshot
               summary: Add an OpenSearch Restore Snapshot
               tags:
@@ -11407,15 +11401,6 @@ Resources:
                 outputType:
                   type: "string"
                   description: "The output type of the image"
-            AddActionResizeOutputType:
-              type: string
-              description: Resize Output Type
-              enum:
-                - BMP
-                - GIF
-                - JPEG
-                - PNG
-                - TIF
             AddDocumentOcrRequest:
               type: object
               example:
@@ -12186,24 +12171,18 @@ Resources:
             GetOpenSearchSnapshotResponse:
               type: object
               properties:
-                s3Repositories:
-                  type: "array"
-                  items:
-                    $ref: "#/components/schemas/GetOpenSearchSnapshot"
-            GetOpenSearchSnapshot:
-              type: object
-              properties:
-                bucket:
-                  type: "string"
-                  description: "Name of the S3 bucket"
-
-            GetOpenSearchSnapshotRepositoryResponse:
-              type: object
-              properties:
                 snapshots:
                   type: "array"
                   items:
                     $ref: "#/components/schemas/OpenSearchSnapshot"
+
+            GetOpenSearchSnapshotRepositoryResponse:
+              type: object
+              properties:
+                s3Repositories:
+                  type: "array"
+                  items:
+                    $ref: "#/components/schemas/OpenSearchS3Repository"
 
             OpenSearchSnapshot:
               type: object
@@ -12215,7 +12194,7 @@ Resources:
                   type: "string"
                   description: "Snapshot’s universally unique identifier (UUID)"
                 version:
-                  type: "number"
+                  type: "string"
                   description: "Open Search version that created the snapshot"
                 indices:
                   type: "array"
@@ -12261,27 +12240,18 @@ Resources:
                   type: "number"
                   description: "Successful number of shards"
 
-            GetOpenSearchSnapshotRepository:
-              type: object
-              properties:
-                s3Repository:
-                  $ref: "#/components/schemas/OpenSearchS3Repository"
-            AddOpenSearchSnapshotRepositoryRequest:
-              type: object
-              properties:
-                s3Repository:
-                  $ref: "#/components/schemas/OpenSearchS3Repository"
             OpenSearchS3Repository:
               type: object
               required:
                 - bucket
+                - repository
               properties:
+                repository:
+                  type: "string"
+                  description: "Name of the Repository"
                 bucket:
                   type: "string"
                   description: "Name of the S3 bucket"
-                basePath:
-                  type: "string"
-                  description: "The path within the bucket in which you want to store snapshots"
             AddOpenSearchSnapshotRepositoryResponse:
               type: "object"
               properties:
