@@ -425,7 +425,34 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
-          /sites/{siteId}/opensearch/snapshot/{repositoryName}:
+          /sites/{siteId}/opensearch/snapshotRepositories:
+            get:
+              operationId: GetOpenSearchSnapshotRepositories
+              description: Returns the OpenSearch Snapshot Repositories
+              summary: Get site(s) OpenSearch snapshot repositories
+              tags:
+              - System Management
+              parameters:
+              - $ref: '#/components/parameters/siteIdPathParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetOpenSearchSnapshotRepositoryResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
+          /sites/{siteId}/opensearch/snapshotRepositories/{repositoryName}:
             get:
               operationId: GetOpenSearchSnapshotRepository
               description: Returns the OpenSearch Snapshot Repository
@@ -496,7 +523,35 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
-          /sites/{siteId}/opensearch/snapshot/{repositoryName}/{snapshotName}:
+          /sites/{siteId}/opensearch/snapshotRepositories/{repositoryName}/snapshots:
+            get:
+              operationId: GetOpenSearchSnapshots
+              description: Returns the OpenSearch Snapshots
+              summary: Get site(s) OpenSearch snapshots
+              tags:
+              - System Management
+              parameters:
+              - $ref: '#/components/parameters/siteIdPathParam'
+              - $ref: '#/components/parameters/snapshotRepositoryNamePath'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetOpenSearchSnapshotResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
+          /sites/{siteId}/opensearch/snapshotRepositories/{repositoryName}/snapshots/{snapshotName}:
             get:
               operationId: GetOpenSearchSnapshot
               description: Returns the OpenSearch Snapshot
