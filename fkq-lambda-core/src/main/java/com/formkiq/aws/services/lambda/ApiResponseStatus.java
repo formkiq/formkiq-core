@@ -98,7 +98,7 @@ public enum ApiResponseStatus {
       }
     }
 
-    return null;
+    return SC_BAD_REQUEST;
   }
 
   /**
