@@ -12150,9 +12150,6 @@
                   description: Successful number of shards
             OpenSearchS3Repository:
               type: object
-              required:
-              - bucket
-              - repository
               properties:
                 repository:
                   type: string
