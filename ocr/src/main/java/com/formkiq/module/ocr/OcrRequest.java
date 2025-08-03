@@ -45,6 +45,8 @@ public class OcrRequest {
   private String ocrNumberOfPages;
   /** Parse Types. */
   private List<String> parseTypes;
+  /** {@link List} {@link AwsTextractQuery}. */
+  private List<AwsTextractQuery> ocrTextractQueries;
 
   /**
    * constructor.
@@ -105,6 +107,24 @@ public class OcrRequest {
    */
   public void setAddPdfDetectedCharactersAsText(final boolean bool) {
     this.addPdfDetectedCharactersAsText = bool;
+  }
+
+  /**
+   * Get {@link List} {@link AwsTextractQuery}.
+   * 
+   * @return {@link List} {@link AwsTextractQuery}
+   */
+  public List<AwsTextractQuery> getOcrTextractQueries() {
+    return this.ocrTextractQueries;
+  }
+
+  /**
+   * Set {@link List} {@link AwsTextractQuery}.
+   * 
+   * @param list {@link List} {@link AwsTextractQuery}
+   */
+  public void setOcrTextractQueries(final List<AwsTextractQuery> list) {
+    this.ocrTextractQueries = list;
   }
 
   /**

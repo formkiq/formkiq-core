@@ -2885,7 +2885,8 @@
 
                 | ActionType | Parameter | Description | Example |
                 | -------- | ------- | ------- | ------- |
-                | OCR  | ocrParseTypes | Ocr Parsing strategy to use | TEXT, FORMS, TABLES |
+                | OCR  | ocrParseTypes | Ocr Parsing strategy to use | TEXT, FORMS, TABLES, QUERIES (requires 'ocrTextractQueries') |
+                | OCR  | ocrTextractQueries | Required for "QUERIES", questions to ask Textract |
                 | OCR | ocrEngine     | Ocr Engine to use | tesseract or textract |
                 | OCR | ocrOutputType     | Convert OCR result to an Output format (textract table only) | true |
                 | OCR | ocrNumberOfPages  | Number of pages to OCR (from start) | -1 |
@@ -10944,7 +10945,7 @@
                   type: object
                   description: Action parameters
                   additionalProperties:
-                    type: string
+                    type: object
                 metadata:
                   type: object
                   description: Action metadata
@@ -11230,12 +11231,31 @@
               description: OCR Engine output format (textract table only)
               enum:
               - CSV
+            TextractQuery:
+              type: object
+              description: A question to ask Textract
+              properties:
+                text:
+                  type: string
+                  description: Natural-language question
+                alias:
+                  type: string
+                  description: Label to identify this query in the result
+                pages:
+                  type: array
+                  items:
+                    type: string
+                  description: Page selection
             AddActionParameters:
               type: object
               properties:
+                ocrTextractQueries:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/TextractQuery'
                 ocrParseTypes:
                   type: string
-                  description: 'OCR: Parse types - TEXT, FORMS, TABLES'
+                  description: 'OCR: Parse types - TEXT, FORMS, TABLES, QUERIES (must include ocrTextractQueries)'
                 ocrEngine:
                   $ref: '#/components/schemas/OcrEngine'
                 ocrOutputType:
@@ -11305,10 +11325,15 @@
                 - TEXT
                 - FORMS
                 - TABLES
+                - QUERIES
               properties:
+                textractQueries:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/TextractQuery'
                 parseTypes:
                   type: array
-                  description: OCR Parse types - TEXT, FORMS, TABLES
+                  description: OCR Parse types - TEXT, FORMS, TABLES, QUERIES
                   items:
                     type: string
                 addPdfDetectedCharactersAsText:

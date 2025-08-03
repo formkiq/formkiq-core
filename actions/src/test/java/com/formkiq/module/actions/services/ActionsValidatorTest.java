@@ -141,7 +141,7 @@ class ActionsValidatorTest {
     }
   }
 
-  private static void testDimensionTemplate(final Map<String, String> parameters,
+  private static void testDimensionTemplate(final Map<String, Object> parameters,
       final String errorKey, final String errorMessage) {
     Action action = new Action().type(ActionType.RESIZE).userId("joe").parameters(parameters);
     testTemplate(action, errorKey, errorMessage);

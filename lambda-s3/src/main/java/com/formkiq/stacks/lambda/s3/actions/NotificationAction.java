@@ -73,11 +73,11 @@ public class NotificationAction implements DocumentAction {
   public void run(final Logger logger, final String siteId, final String documentId,
       final List<Action> actions, final Action action) throws IOException {
 
-    String cc = action.parameters().get(PARAMETER_NOTIFICATION_TO_CC);
-    String bcc = action.parameters().get(PARAMETER_NOTIFICATION_TO_BCC);
-    String subject = action.parameters().get(PARAMETER_NOTIFICATION_SUBJECT);
-    String text = action.parameters().get(PARAMETER_NOTIFICATION_TEXT);
-    String html = action.parameters().get(PARAMETER_NOTIFICATION_HTML);
+    String cc = (String) action.parameters().get(PARAMETER_NOTIFICATION_TO_CC);
+    String bcc = (String) action.parameters().get(PARAMETER_NOTIFICATION_TO_BCC);
+    String subject = (String) action.parameters().get(PARAMETER_NOTIFICATION_SUBJECT);
+    String text = (String) action.parameters().get(PARAMETER_NOTIFICATION_TEXT);
+    String html = (String) action.parameters().get(PARAMETER_NOTIFICATION_HTML);
 
     Builder msg = Message.builder().subject(Content.builder().data(subject).build());
 

@@ -903,7 +903,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     assertEquals("[TEXT]", ocrAction.getOcrParseTypes(new Action()).toString());
 
     // invalid
-    Map<String, String> parameters = Map.of("ocrParseTypes", "ADAD,IUJK");
+    Map<String, Object> parameters = Map.of("ocrParseTypes", "ADAD,IUJK");
     assertEquals("[ADAD, IUJK]",
         ocrAction.getOcrParseTypes(new Action().parameters(parameters)).toString());
 
@@ -940,6 +940,45 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertEquals("true", resultmap.get("addPdfDetectedCharactersAsText").toString());
       assertEquals("2", resultmap.get("ocrNumberOfPages").toString());
       assertEquals("CSV", resultmap.get("ocrOutputType").toString());
+
+      Action action = actionsService.getActions(siteId, documentId).get(0);
+      assertEquals(ActionStatus.RUNNING, action.status());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertNull(action.completedDate());
+    }
+  }
+
+  /**
+   * Handle OCR Action ocrParseTypes FORMS, TABLES, QUERIES.
+   *
+   */
+  @Test
+  public void testHandleOcr01() {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      List<Map<String, Object>> queries =
+          List.of(Map.of("text", "abc", "alias", "xyz", "pages", List.of("2", "4")));
+      String documentId = ID.uuid();
+      List<Action> actions =
+          Collections.singletonList(new Action().type(ActionType.OCR).userId("joe").parameters(
+              Map.of("ocrParseTypes", "FORMS, TABLES, QUERIES", "ocrTextractQueries", queries)));
+      actionsService.saveNewActions(siteId, documentId, actions);
+
+      Map<String, Object> map =
+          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+
+      // when
+      processor.handleRequest(map, null);
+
+      // then
+      HttpRequest lastRequest = CALLBACK.getLastRequest();
+      assertTrue(lastRequest.getPath().toString().endsWith("/ocr"));
+      Map<String, Object> resultmap = GSON.fromJson(lastRequest.getBodyAsString(), Map.class);
+      assertEquals("FORMS, TABLES, QUERIES",
+          String.join(", ", ((List<String>) resultmap.get("parseTypes"))));
+      assertEquals("[{pages=[2, 4], alias=xyz, text=abc}]",
+          resultmap.get("textractQueries").toString());
 
       Action action = actionsService.getActions(siteId, documentId).get(0);
       assertEquals(ActionStatus.RUNNING, action.status());
@@ -2564,25 +2603,25 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
   @Test
   public void testPath() throws IOException, ValidationException {
-    Map<String, String> parameters = Map.of("width", "300", "height", "200", "path", "resized.png");
+    Map<String, Object> parameters = Map.of("width", "300", "height", "200", "path", "resized.png");
     testResizeTemplate(parameters, 300, 200, "png");
   }
 
   @Test
   public void testResizeWithFixedWidthAndHeight() throws IOException, ValidationException {
-    Map<String, String> parameters = Map.of("width", "300", "height", "200");
+    Map<String, Object> parameters = Map.of("width", "300", "height", "200");
     testResizeTemplate(parameters, 300, 200, "png");
   }
 
   @Test
   public void testResizeWithFixedWidthAndAutoHeight() throws IOException, ValidationException {
-    Map<String, String> parameters = Map.of("width", "100", "height", "auto");
+    Map<String, Object> parameters = Map.of("width", "100", "height", "auto");
     testResizeTemplate(parameters, 100, 75, "png");
   }
 
   @Test
   public void testResizeWithAutoWidthAndFixedHeight() throws IOException, ValidationException {
-    Map<String, String> parameters = Map.of("width", "auto", "height", "100");
+    Map<String, Object> parameters = Map.of("width", "auto", "height", "100");
     testResizeTemplate(parameters, 133, 100, "png");
   }
 
@@ -2614,13 +2653,13 @@ public class DocumentActionsProcessorTest implements DbKeys {
   private void testResizeToAllFormatsTemplate(final String srcImageFormat,
       final List<String> resImageFormats) throws IOException, ValidationException {
     for (String resImageFormat : resImageFormats) {
-      Map<String, String> parameters =
+      Map<String, Object> parameters =
           Map.of("width", "300", "height", "200", "outputType", resImageFormat);
       testResizeTemplate(parameters, 300, 200, srcImageFormat);
     }
   }
 
-  public void testResizeTemplate(final Map<String, String> parameters, final int expectedWidth,
+  public void testResizeTemplate(final Map<String, Object> parameters, final int expectedWidth,
       final int expectedHeight, final String srcImageFormat)
       throws IOException, ValidationException {
     // given
@@ -2665,7 +2704,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
   // Helper method to create and process a resize action.
   private void processResizeAction(final String siteId, final String documentId,
-      final Map<String, String> parameters) {
+      final Map<String, Object> parameters) {
     List<Action> actions = Collections
         .singletonList(new Action().type(ActionType.RESIZE).userId("joe").parameters(parameters));
     actionsService.saveNewActions(siteId, documentId, actions);
@@ -2679,15 +2718,15 @@ public class DocumentActionsProcessorTest implements DbKeys {
   // Helper method to verify successful resize operation.
   private void verifySuccessfulResize(final String siteId, final String documentId,
       final String s3Key, final int expectedWidth, final int expectedHeight,
-      final String srcImageFormat, final Map<String, String> parameters) throws IOException {
+      final String srcImageFormat, final Map<String, Object> parameters) throws IOException {
     String imageKey = getResizedImageKey(s3Key);
-    String resImageFormat = parameters.getOrDefault("outputType", srcImageFormat);
+    String resImageFormat = (String) parameters.getOrDefault("outputType", srcImageFormat);
 
     verifyAction(siteId, documentId);
     verifyDocumentAttributes(siteId, documentId);
     verifyData(expectedWidth, expectedHeight, imageKey, resImageFormat);
 
-    String path = parameters.getOrDefault("path",
+    String path = (String) parameters.getOrDefault("path",
         "test-" + expectedWidth + "x" + expectedHeight + "." + resImageFormat);
     verifyMetadata(expectedWidth, expectedHeight, imageKey, path);
   }
