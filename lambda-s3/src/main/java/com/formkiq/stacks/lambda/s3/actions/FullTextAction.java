@@ -252,7 +252,7 @@ public class FullTextAction implements DocumentAction {
   }
 
   private int getCharacterMax(final Action action) {
-    Map<String, String> parameters = notNull(action.parameters());
+    Map<String, Object> parameters = notNull(action.parameters());
     return parameters.containsKey("characterMax") ? -1 : DEFAULT_TYPESENSE_CHARACTER_MAX;
   }
 }

@@ -21,36 +21,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.module.actions.services;
+package com.formkiq.stacks.api.handler.documents;
 
-import com.formkiq.aws.dynamodb.ApiAuthorization;
-import com.formkiq.module.actions.Action;
-import com.formkiq.module.actions.ActionType;
+import com.formkiq.graalvm.annotations.Reflectable;
+import com.formkiq.module.ocr.AwsTextractQuery;
+import com.formkiq.module.ocr.OcrEngine;
+import com.formkiq.module.ocr.OcrOutputType;
 
-import java.util.Map;
-import java.util.function.Function;
+import java.util.List;
 
 /**
- * Convert {@link Map} to {@link Action}.
+ * Parameters for an action. Many are optional; types follow the OpenAPI spec.
  */
-public class MapToAction implements Function<Map<String, Object>, Action> {
-
-  @Override
-  public Action apply(final Map<String, Object> map) {
-
-    String userId = ApiAuthorization.getAuthorization().getUsername();
-
-    Object stype = map.get("type");
-    String queueId = (String) map.get("queueId");
-
-    ActionType type;
-    try {
-      type = stype != null ? ActionType.valueOf(stype.toString().toUpperCase()) : null;
-    } catch (IllegalArgumentException e) {
-      type = null;
-    }
-
-    Map<String, String> parameters = (Map<String, String>) map.get("parameters");
-    return new Action().queueId(queueId).type(type).parameters(parameters).userId(userId);
-  }
+@Reflectable
+public record AddActionParameters(List<AwsTextractQuery> ocrTextractQueries, String ocrParseTypes,
+    OcrEngine ocrEngine, OcrOutputType ocrOutputType, String ocrNumberOfPages,
+    String addPdfDetectedCharactersAsText, String url, String characterMax, String engine,
+    String notificationType, String notificationToCc, String notificationToBcc,
+    String notificationSubject, String notificationText, String notificationHtml, String tags,
+    String mappingId, String eventBusName, String width, String height, String path,
+    String outputType) {
 }

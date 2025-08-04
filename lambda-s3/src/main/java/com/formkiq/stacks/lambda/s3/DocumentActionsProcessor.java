@@ -614,7 +614,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   private void sendWebhook(final Logger logger, final String siteId, final String documentId,
       final List<Action> actions, final Action action) throws IOException, InterruptedException {
 
-    String url = action.parameters().get("url");
+    String url = (String) action.parameters().get("url");
 
     String body = new DocumentExternalSystemExport(serviceCache).apply(siteId, documentId);
 

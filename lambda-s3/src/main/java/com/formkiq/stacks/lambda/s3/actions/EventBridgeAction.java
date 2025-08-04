@@ -62,7 +62,7 @@ public class EventBridgeAction implements DocumentAction {
   public void run(final Logger logger, final String siteId, final String documentId,
       final List<Action> actions, final Action action) throws IOException, ValidationException {
 
-    String eventBusName = action.parameters().get("eventBusName");
+    String eventBusName = (String) action.parameters().get("eventBusName");
 
     if (Strings.isEmpty(eventBusName)) {
       throw new IOException("'eventBusName' missing");

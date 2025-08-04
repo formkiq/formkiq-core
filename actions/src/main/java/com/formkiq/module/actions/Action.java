@@ -31,6 +31,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import com.formkiq.aws.dynamodb.AttributeValueToMap;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamodbRecord;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
@@ -63,7 +65,7 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
   private Map<String, String> metadata;
   /** Action Parameters. */
   @Reflectable
-  private Map<String, String> parameters;
+  private Map<String, Object> parameters;
   /** QueueId. */
   @Reflectable
   private String queueId;
@@ -144,7 +146,7 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
             fromS(this.type.name()), "status", fromS(this.status.name()), "documentId",
             fromS(this.documentId), "userId", fromS(this.userId)));
 
-    addM(attrs, "parameters", this.parameters);
+    addMobject(attrs, "parameters", this.parameters);
     addM(attrs, "metadata", this.metadata);
 
     String pkGsi1 = pkGsi1(siteId);
@@ -224,8 +226,9 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
     }
 
     if (attrs.containsKey("parameters")) {
-      record.parameters(attrs.get("parameters").m().entrySet().stream()
-          .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().s())));
+      Map<String, AttributeValue> params = attrs.get("parameters").m();
+      Map<String, Object> map = new AttributeValueToMap().apply(params);
+      record.parameters(map);
     }
 
     if (attrs.containsKey("metadata")) {
@@ -331,7 +334,7 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
    * 
    * @return {@link Map}
    */
-  public Map<String, String> parameters() {
+  public Map<String, Object> parameters() {
     return this.parameters;
   }
 
@@ -341,7 +344,7 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
    * @param map {@link Map}
    * @return {@link Action}
    */
-  public Action parameters(final Map<String, String> map) {
+  public Action parameters(final Map<String, Object> map) {
     this.parameters = map;
     return this;
   }
