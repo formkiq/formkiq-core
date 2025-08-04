@@ -46,7 +46,7 @@ public class OcrRequest {
   /** Parse Types. */
   private List<String> parseTypes;
   /** {@link List} {@link AwsTextractQuery}. */
-  private List<AwsTextractQuery> ocrTextractQueries;
+  private List<AwsTextractQuery> textractQueries;
 
   /**
    * constructor.
@@ -114,8 +114,8 @@ public class OcrRequest {
    * 
    * @return {@link List} {@link AwsTextractQuery}
    */
-  public List<AwsTextractQuery> getOcrTextractQueries() {
-    return this.ocrTextractQueries;
+  public List<AwsTextractQuery> getTextractQueries() {
+    return this.textractQueries;
   }
 
   /**
@@ -124,7 +124,7 @@ public class OcrRequest {
    * @param list {@link List} {@link AwsTextractQuery}
    */
   public void setOcrTextractQueries(final List<AwsTextractQuery> list) {
-    this.ocrTextractQueries = list;
+    this.textractQueries = list;
   }
 
   /**

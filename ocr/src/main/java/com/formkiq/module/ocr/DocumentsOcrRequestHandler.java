@@ -323,7 +323,7 @@ public class DocumentsOcrRequestHandler
         notNull(request.getParseTypes()).stream().filter("queries"::equalsIgnoreCase).findFirst();
     if (o.isPresent()) {
 
-      List<AwsTextractQuery> queries = notNull(request.getOcrTextractQueries());
+      List<AwsTextractQuery> queries = notNull(request.getTextractQueries());
       ValidationBuilder vb = new ValidationBuilder();
       vb.isRequired(null, queries, "'OcrTextractQueries' is required");
 
