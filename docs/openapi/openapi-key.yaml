@@ -425,15 +425,13 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
-          /sites/{siteId}/opensearch/snapshotRepositories:
+          /sites/global/opensearch/snapshotRepositories:
             get:
               operationId: GetOpenSearchSnapshotRepositories
               description: Returns the OpenSearch Snapshot Repositories
               summary: Get site(s) OpenSearch snapshot repositories
               tags:
               - System Management
-              parameters:
-              - $ref: '#/components/parameters/siteIdPathParam'
               responses:
                 "200":
                   description: 200 OK
@@ -452,7 +450,7 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
-          /sites/{siteId}/opensearch/snapshotRepositories/{repositoryName}:
+          /sites/{siteId}/opensearch/snapshotRepository:
             get:
               operationId: GetOpenSearchSnapshotRepository
               description: Returns the OpenSearch Snapshot Repository
@@ -461,7 +459,6 @@
               - System Management
               parameters:
               - $ref: '#/components/parameters/siteIdPathParam'
-              - $ref: '#/components/parameters/snapshotRepositoryNamePath'
               responses:
                 "200":
                   description: 200 OK
@@ -488,7 +485,6 @@
               - System Management
               parameters:
               - $ref: '#/components/parameters/siteIdPathParam'
-              - $ref: '#/components/parameters/snapshotRepositoryNamePath'
               responses:
                 "200":
                   description: 200 OK
@@ -515,7 +511,6 @@
               - System Management
               parameters:
               - $ref: '#/components/parameters/siteIdPathParam'
-              - $ref: '#/components/parameters/snapshotRepositoryNamePath'
               responses:
                 "200":
                   $ref: '#/components/responses/200CorsDeleteResponse'
@@ -523,7 +518,7 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
-          /sites/{siteId}/opensearch/snapshotRepositories/{repositoryName}/snapshots:
+          /sites/{siteId}/opensearch/snapshots:
             get:
               operationId: GetOpenSearchSnapshots
               description: Returns the OpenSearch Snapshots
@@ -532,7 +527,6 @@
               - System Management
               parameters:
               - $ref: '#/components/parameters/siteIdPathParam'
-              - $ref: '#/components/parameters/snapshotRepositoryNamePath'
               responses:
                 "200":
                   description: 200 OK
@@ -551,7 +545,7 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
-          /sites/{siteId}/opensearch/snapshotRepositories/{repositoryName}/snapshots/{snapshotName}:
+          /sites/{siteId}/opensearch/snapshots/{snapshotName}:
             get:
               operationId: GetOpenSearchSnapshot
               description: Returns the OpenSearch Snapshot
@@ -560,7 +554,6 @@
               - System Management
               parameters:
               - $ref: '#/components/parameters/siteIdPathParam'
-              - $ref: '#/components/parameters/snapshotRepositoryNamePath'
               - $ref: '#/components/parameters/snapshotNamePath'
               responses:
                 "200":
@@ -588,7 +581,6 @@
               - System Management
               parameters:
               - $ref: '#/components/parameters/siteIdPathParam'
-              - $ref: '#/components/parameters/snapshotRepositoryNamePath'
               - $ref: '#/components/parameters/snapshotNamePath'
               responses:
                 "200":
@@ -616,7 +608,6 @@
               - System Management
               parameters:
               - $ref: '#/components/parameters/siteIdPathParam'
-              - $ref: '#/components/parameters/snapshotRepositoryNamePath'
               - $ref: '#/components/parameters/snapshotNamePath'
               responses:
                 "200":
@@ -625,7 +616,7 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
-          /sites/{siteId}/opensearch/snapshot/{repositoryName}/{snapshotName}/restore:
+          /sites/{siteId}/opensearch/snapshots/{snapshotName}/restore:
             post:
               operationId: AddOpenSearchRestoreSnapshot
               description: Add an OpenSearch Restore Snapshot
@@ -634,7 +625,6 @@
               - System Management
               parameters:
               - $ref: '#/components/parameters/siteIdPathParam'
-              - $ref: '#/components/parameters/snapshotRepositoryNamePath'
               - $ref: '#/components/parameters/snapshotNamePath'
               responses:
                 "200":
