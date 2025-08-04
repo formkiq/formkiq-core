@@ -39,6 +39,7 @@ import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.validation.ValidationBuilder;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -46,8 +47,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_FOUND;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
@@ -302,6 +305,8 @@ public class DocumentsOcrRequestHandler
     verifyDocument(awsservice, siteId, documentId);
 
     OcrRequest request = fromBodyToObject(event, OcrRequest.class);
+    validate(request);
+
     String userId = authorization.getUsername();
 
     DocumentOcrService ocrService = awsservice.getExtension(DocumentOcrService.class);
@@ -311,6 +316,20 @@ public class DocumentsOcrRequestHandler
 
     return ApiRequestHandlerResponse.builder().ok().body("message", "OCR request submitted")
         .build();
+  }
+
+  private void validate(final OcrRequest request) {
+    Optional<String> o =
+        notNull(request.getParseTypes()).stream().filter("queries"::equalsIgnoreCase).findFirst();
+    if (o.isPresent()) {
+
+      List<AwsTextractQuery> queries = notNull(request.getTextractQueries());
+      ValidationBuilder vb = new ValidationBuilder();
+      vb.isRequired(null, queries, "'TextractQueries' is required");
+
+      queries.forEach(q -> vb.isRequired("TextractQuery.text", q.text()));
+      vb.check();
+    }
   }
 
   @Override

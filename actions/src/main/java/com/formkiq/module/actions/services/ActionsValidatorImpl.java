@@ -23,6 +23,7 @@
  */
 package com.formkiq.module.actions.services;
 
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION_HTML;
 import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION_SUBJECT;
@@ -69,13 +70,13 @@ public class ActionsValidatorImpl implements ActionsValidator {
     this.db = dbService;
   }
 
-  private Map<String, String> getParameters(final Action action) {
+  private Map<String, Object> getParameters(final Action action) {
     return action.parameters() != null ? action.parameters() : Collections.emptyMap();
   }
 
-  private boolean hasValue(final Map<String, String> parameters, final String key) {
+  private boolean hasValue(final Map<String, Object> parameters, final String key) {
     return parameters != null && parameters.containsKey(key)
-        && !isEmpty(parameters.get(key).trim());
+        && !isEmpty(parameters.get(key).toString().trim());
   }
 
   /**
@@ -86,7 +87,7 @@ public class ActionsValidatorImpl implements ActionsValidator {
    * @param errors {@link Collections} {@link ValidationError}
    */
   private void validateDocumentTagging(final String chatGptApiKey,
-      final Map<String, String> parameters, final Collection<ValidationError> errors) {
+      final Map<String, Object> parameters, final Collection<ValidationError> errors) {
 
     if (!parameters.containsKey("tags")) {
       errors.add(new ValidationErrorImpl().key("parameters.tags")
@@ -119,7 +120,7 @@ public class ActionsValidatorImpl implements ActionsValidator {
           .error("notificationEmail is not configured"));
     } else {
 
-      Map<String, String> parameters = getParameters(action);
+      Map<String, Object> parameters = getParameters(action);
 
       for (String parameter : Arrays.asList(PARAMETER_NOTIFICATION_TYPE,
           PARAMETER_NOTIFICATION_SUBJECT)) {
@@ -161,13 +162,13 @@ public class ActionsValidatorImpl implements ActionsValidator {
   private void validateIdp(final String siteId, final Action action,
       final Collection<ValidationError> errors) {
 
-    Map<String, String> parameters = getParameters(action);
+    Map<String, Object> parameters = getParameters(action);
 
     if (!hasValue(parameters, "mappingId")) {
       errors.add(new ValidationErrorImpl().key("mappingId").error("'mappingId' is required"));
 
     } else {
-      String mappingId = parameters.get("mappingId");
+      String mappingId = (String) parameters.get("mappingId");
       MappingRecord m = new MappingRecord().setDocumentId(mappingId);
 
       if (!this.db.exists(m.fromS(m.pk(siteId)), m.fromS(m.sk()))) {
@@ -178,7 +179,7 @@ public class ActionsValidatorImpl implements ActionsValidator {
 
   private void validateEventBridge(final Action action, final Collection<ValidationError> errors) {
 
-    Map<String, String> parameters = getParameters(action);
+    Map<String, Object> parameters = getParameters(action);
 
     if (!hasValue(parameters, "eventBusName")) {
       errors.add(new ValidationErrorImpl().key("parameters.eventBusName")
@@ -187,7 +188,7 @@ public class ActionsValidatorImpl implements ActionsValidator {
   }
 
   private void validateResize(final Action action, final Collection<ValidationError> errors) {
-    Map<String, String> parameters = getParameters(action);
+    Map<String, Object> parameters = getParameters(action);
 
     String widthParameterName = "width";
     String heightParameterName = "height";
@@ -204,13 +205,13 @@ public class ActionsValidatorImpl implements ActionsValidator {
     validateImageFormat(parameters, errors);
   }
 
-  private void validateDimension(final Map<String, String> parameters,
+  private void validateDimension(final Map<String, Object> parameters,
       final Collection<ValidationError> errors, final String dimension) {
     if (!hasValue(parameters, dimension)) {
       errors.add(new ValidationErrorImpl().key("parameters." + dimension)
           .error("'" + dimension + "' parameter is required"));
     } else {
-      String value = parameters.get(dimension);
+      String value = (String) parameters.get(dimension);
 
       if (!isGreaterThanZeroInteger(value) && !"auto".equals(value)) {
         errors.add(new ValidationErrorImpl().key("parameters." + dimension)
@@ -227,9 +228,9 @@ public class ActionsValidatorImpl implements ActionsValidator {
     }
   }
 
-  private void validateImageFormat(final Map<String, String> parameters,
+  private void validateImageFormat(final Map<String, Object> parameters,
       final Collection<ValidationError> errors) {
-    String outputType = parameters.get("outputType");
+    String outputType = (String) parameters.get("outputType");
 
     if (outputType != null && !VALID_IMAGE_FORMATS.contains(outputType.toLowerCase())) {
       errors.add(new ValidationErrorImpl().key("parameters.outputType")
@@ -278,7 +279,7 @@ public class ActionsValidatorImpl implements ActionsValidator {
       final String chatGptApiKey, final String notificationsEmail,
       final Collection<ValidationError> errors) {
 
-    Map<String, String> parameters = getParameters(action);
+    Map<String, Object> parameters = getParameters(action);
     if (ActionType.WEBHOOK.equals(action.type()) && !parameters.containsKey("url")) {
       errors.add(new ValidationErrorImpl().key("parameters.url")
           .error("action 'url' parameter is required"));
@@ -294,6 +295,32 @@ public class ActionsValidatorImpl implements ActionsValidator {
       validateEventBridge(action, errors);
     } else if (ActionType.RESIZE.equals(action.type())) {
       validateResize(action, errors);
+    } else if (ActionType.OCR.equals(action.type())) {
+      validateOcr(action, errors);
+    }
+  }
+
+  private void validateOcr(final Action action, final Collection<ValidationError> errors) {
+    Map<String, Object> parameters = getParameters(action);
+    String ocrParseTypes = (String) parameters.get("ocrParseTypes");
+    if (ocrParseTypes != null) {
+      ocrParseTypes = ocrParseTypes.toLowerCase();
+      Collection<Map<String, Object>> ocrTextractQueries =
+          notNull((Collection<Map<String, Object>>) parameters.getOrDefault("ocrTextractQueries",
+              Collections.emptyList()));
+
+      if (ocrParseTypes.contains("queries") && ocrTextractQueries.isEmpty()) {
+        errors.add(new ValidationErrorImpl().key("parameters.ocrTextractQueries")
+            .error("action 'ocrTextractQueries' parameter is required"));
+      }
+
+      ocrTextractQueries.forEach(q -> {
+        String text = (String) q.get("text");
+        if (isEmpty(text)) {
+          errors.add(new ValidationErrorImpl().key("parameters.ocrTextractQueries.text")
+              .error("action 'ocrTextractQueries.text' parameter is required"));
+        }
+      });
     }
   }
 }

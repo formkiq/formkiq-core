@@ -47,6 +47,7 @@ import com.formkiq.client.model.MappingAttribute;
 import com.formkiq.client.model.MappingAttributeLabelMatchingType;
 import com.formkiq.client.model.MappingAttributeSourceType;
 import com.formkiq.client.model.OcrOutputType;
+import com.formkiq.client.model.TextractQuery;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -219,10 +220,9 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
   /**
    * POST /documents/{documentId}/actions missing 'type'.
    *
-   * @throws Exception an error has occurred
    */
   @Test
-  public void testHandlePostDocumentActions02() throws Exception {
+  public void testHandlePostDocumentActions02() {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
@@ -317,10 +317,9 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
   /**
    * POST /documents/{documentId}/actions missing 'parameters' for notification.
    *
-   * @throws Exception an error has occurred
    */
   @Test
-  public void testHandlePostDocumentActions04() throws Exception {
+  public void testHandlePostDocumentActions04() {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
@@ -390,10 +389,9 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
   /**
    * POST /documents/{documentId}/actions for Queues missing queueId.
    *
-   * @throws Exception an error has occurred
    */
   @Test
-  public void testHandlePostDocumentActions06() throws Exception {
+  public void testHandlePostDocumentActions06() {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
@@ -420,10 +418,9 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
   /**
    * POST /documents/{documentId}/actions for Queues invalid queueId.
    *
-   * @throws Exception an error has occurred
    */
   @Test
-  public void testHandlePostDocumentActions07() throws Exception {
+  public void testHandlePostDocumentActions07() {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
@@ -450,10 +447,9 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
   /**
    * POST /documents/{documentId}/actions for Queues queueId.
    *
-   * @throws Exception an error has occurred
    */
   @Test
-  public void testHandlePostDocumentActions08() throws Exception {
+  public void testHandlePostDocumentActions08() {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
@@ -489,10 +485,9 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
   /**
    * POST /documents/{documentId}/actions for IDP invalid / missing mappingId.
    *
-   * @throws Exception an error has occurred
    */
   @Test
-  public void testHandlePostDocumentActions09() throws Exception {
+  public void testHandlePostDocumentActions09() {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
@@ -575,6 +570,96 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       assertEquals(1, actions.size());
       assertEquals(ActionType.IDP, actions.get(0).type());
       assertEquals(mappingId, actions.get(0).parameters().get("mappingId"));
+    }
+  }
+
+  /**
+   * POST /documents/{documentId}/actions for Textract queries, missing ocrTextractQueries.
+   *
+   */
+  @Test
+  public void testDocumentActionsWithQueriesMissingOcrTextractQueries() {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      String documentId = saveDocument(siteId);
+      AddActionParameters param = new AddActionParameters().ocrParseTypes("QUERIES");
+      AddDocumentActionsRequest req = new AddDocumentActionsRequest().actions(Collections
+          .singletonList(new AddAction().type(DocumentActionType.OCR).parameters(param)));
+
+      // when
+      try {
+        this.documentActionsApi.addDocumentActions(documentId, siteId, req);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"parameters.ocrTextractQueries\","
+                + "\"error\":\"action 'ocrTextractQueries' parameter is required\"}]}",
+            e.getResponseBody());
+      }
+
+      // given
+      param.addOcrTextractQueriesItem(new TextractQuery());
+
+      // when
+      try {
+        this.documentActionsApi.addDocumentActions(documentId, siteId, req);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"parameters.ocrTextractQueries.text\","
+                + "\"error\":\"action 'ocrTextractQueries.text' parameter is required\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * POST /documents/{documentId}/actions for Textract queries.
+   *
+   */
+  @Test
+  public void testHandlePostDocumentActionsWithQueries() throws ApiException {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      String documentId = saveDocument(siteId);
+      TextractQuery query =
+          new TextractQuery().alias("query").text("mytext").pages(List.of("1", "5"));
+      AddActionParameters param =
+          new AddActionParameters().ocrParseTypes("QUERIES").addOcrTextractQueriesItem(query);
+
+      AddDocumentActionsRequest req = new AddDocumentActionsRequest().actions(Collections
+          .singletonList(new AddAction().type(DocumentActionType.OCR).parameters(param)));
+
+      // when
+      AddDocumentActionsResponse response =
+          this.documentActionsApi.addDocumentActions(documentId, siteId, req);
+
+      // then
+      assertEquals("Actions saved", response.getMessage());
+
+      List<DocumentAction> actions = notNull(this.documentActionsApi
+          .getDocumentActions(documentId, siteId, null, null, null).getActions());
+      assertEquals(1, actions.size());
+      DocumentAction action = actions.get(0);
+      Map<String, Object> params = notNull(action.getParameters());
+      assertEquals("QUERIES", params.get("ocrParseTypes"));
+
+      List<Map<String, Object>> queries =
+          (List<Map<String, Object>>) params.get("ocrTextractQueries");
+      assertEquals(1, queries.size());
+      assertEquals("mytext", queries.get(0).get("text"));
+      assertEquals("query", queries.get(0).get("alias"));
+      assertEquals("1,5", String.join(",", ((List<String>) queries.get(0).get("pages"))));
     }
   }
 

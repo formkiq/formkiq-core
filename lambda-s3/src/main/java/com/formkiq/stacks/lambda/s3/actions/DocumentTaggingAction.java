@@ -139,7 +139,7 @@ public class DocumentTaggingAction implements DocumentAction {
   }
 
   private String getTags(final Action action) throws IOException {
-    String tags = action.parameters().get("tags");
+    String tags = (String) action.parameters().get("tags");
     if (isEmpty(tags)) {
       throw new IOException("missing 'tags' parameter");
     }
@@ -240,7 +240,7 @@ public class DocumentTaggingAction implements DocumentAction {
   public void run(final Logger logger, final String siteId, final String documentId,
       final List<Action> actions, final Action action) throws IOException {
 
-    String engine = action.parameters().get("engine");
+    String engine = (String) action.parameters().get("engine");
     if ("chatgpt".equalsIgnoreCase(engine)) {
       runChatGpt(logger, siteId, documentId, action);
     } else {

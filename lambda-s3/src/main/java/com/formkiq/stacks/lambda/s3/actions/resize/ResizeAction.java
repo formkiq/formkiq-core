@@ -99,7 +99,7 @@ public class ResizeAction implements DocumentAction {
     return item.getPath();
   }
 
-  private Image createResImage(final Image srcImage, final Map<String, String> parameters)
+  private Image createResImage(final Image srcImage, final Map<String, Object> parameters)
       throws IOException {
     BufferedImage resizedImage = resizeImage(srcImage, parameters);
     String format = getFormat(srcImage, parameters);
@@ -117,9 +117,9 @@ public class ResizeAction implements DocumentAction {
   }
 
   private static BufferedImage resizeImage(final Image srcImage,
-      final Map<String, String> parameters) throws IOException {
-    String widthStr = parameters.get("width");
-    String heightStr = parameters.get("height");
+      final Map<String, Object> parameters) throws IOException {
+    String widthStr = (String) parameters.get("width");
+    String heightStr = (String) parameters.get("height");
     boolean isKeepAspectRatio = "auto".equals(widthStr) || "auto".equals(heightStr);
 
     return ImageUtils.resize(srcImage.bufferedImage(), parseDimension(widthStr),
@@ -130,15 +130,15 @@ public class ResizeAction implements DocumentAction {
     return "auto".equals(dimensionStr) ? Integer.MAX_VALUE : Integer.parseInt(dimensionStr);
   }
 
-  private static String getFormat(final Image srcImage, final Map<String, String> parameters) {
-    String format = parameters.get("outputType");
+  private static String getFormat(final Image srcImage, final Map<String, Object> parameters) {
+    String format = (String) parameters.get("outputType");
 
     return format != null ? format : srcImage.format();
   }
 
-  private static String getResPath(final Image srcImage, final Map<String, String> parameters,
+  private static String getResPath(final Image srcImage, final Map<String, Object> parameters,
       final BufferedImage resizedImage, final String format) {
-    String path = parameters.get("path");
+    String path = (String) parameters.get("path");
 
     if (path == null) {
       String imageFormatExtension =

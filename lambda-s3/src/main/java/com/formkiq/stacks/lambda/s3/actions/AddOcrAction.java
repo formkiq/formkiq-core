@@ -76,13 +76,18 @@ public class AddOcrAction implements DocumentAction {
   }
 
   private Map<String, Object> buildAddOcrPayload(final Action action) {
-    Map<String, String> parameters =
+    Map<String, Object> parameters =
         action.parameters() != null ? action.parameters() : new HashMap<>();
 
     String addPdfDetectedCharactersAsText =
-        parameters.getOrDefault("addPdfDetectedCharactersAsText", "false");
+        (String) parameters.getOrDefault("addPdfDetectedCharactersAsText", "false");
 
     Map<String, Object> payload = new HashMap<>();
+
+    List<Map<String, Object>> textractQueries = getTextractQueries(action);
+    if (textractQueries != null) {
+      payload.put("textractQueries", textractQueries);
+    }
 
     List<String> parseTypes = getOcrParseTypes(action);
     payload.put("parseTypes", parseTypes);
@@ -92,17 +97,27 @@ public class AddOcrAction implements DocumentAction {
       payload.put("ocrNumberOfPages", parameters.get("ocrNumberOfPages"));
     }
 
-    String ocrOutputType = parameters.get("ocrOutputType");
+    String ocrOutputType = (String) parameters.get("ocrOutputType");
     if (ocrOutputType != null) {
       payload.put("ocrOutputType", ocrOutputType);
     }
 
-    String ocrEngine = parameters.get("ocrEngine");
+    String ocrEngine = (String) parameters.get("ocrEngine");
 
     if (!isEmpty(ocrEngine)) {
       payload.put("ocrEngine", ocrEngine);
     }
     return payload;
+  }
+
+  private List<Map<String, Object>> getTextractQueries(final Action action) {
+    Map<String, Object> parameters = notNull(action.parameters());
+    Object q = parameters.get("ocrTextractQueries");
+    if (q instanceof List) {
+      return (List<Map<String, Object>>) q;
+    }
+
+    return null;
   }
 
   /**
@@ -113,8 +128,8 @@ public class AddOcrAction implements DocumentAction {
    */
   public List<String> getOcrParseTypes(final Action action) {
 
-    Map<String, String> parameters = notNull(action.parameters());
-    String s = parameters.getOrDefault("ocrParseTypes", "TEXT");
+    Map<String, Object> parameters = notNull(action.parameters());
+    String s = (String) parameters.getOrDefault("ocrParseTypes", "TEXT");
 
     return Arrays.stream(s.split(",")).map(t -> t.trim().toUpperCase()).distinct()
         .collect(Collectors.toList());

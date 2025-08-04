@@ -74,12 +74,8 @@ public class IdpAction implements DocumentAction {
   /** IDP Regex. */
   public static final String REGEX = "\\s+";
   /** Idp Action {@link StringFormatter}. */
-  public static final StringFormatter FORMATTER = new StringFormatter() {
-    @Override
-    public String format(final String text) {
-      return new StringFormatterAlphaNumeric().format(text.toLowerCase());
-    }
-  };
+  public static final StringFormatter FORMATTER =
+      text -> new StringFormatterAlphaNumeric().format(text.toLowerCase());
   /** {@link MappingService}. */
   private final MappingService mappingService;
   /** {@link DocumentContentFunction}. */
@@ -108,7 +104,7 @@ public class IdpAction implements DocumentAction {
   public void run(final Logger logger, final String siteId, final String documentId,
       final List<Action> actions, final Action action) throws IOException, ValidationException {
 
-    String mappingId = action.parameters().get("mappingId");
+    String mappingId = (String) action.parameters().get("mappingId");
 
     MappingRecord mapping = getMapping(siteId, mappingId);
 
@@ -162,21 +158,15 @@ public class IdpAction implements DocumentAction {
     List<String> labelTexts = mappingAttribute.getLabelTexts();
     TextMatchAlgorithm alg = getTextMatchAlgorithm(mappingAttribute);
     TextMatch match = matcher.findMatch(null, labelTexts,
-        new TokenGeneratorKeyValue(contentKeyValues), alg, null, new StringFormatter() {
-          @Override
-          public String format(final String text) {
-            return text;
-          }
-        });
+        new TokenGeneratorKeyValue(contentKeyValues), alg, null, text -> text);
 
     if (match != null) {
       Optional<List<String>> o = contentKeyValues.stream()
           .filter(m -> m.get("key").toString().contains(match.getToken().getOriginal()))
           .map(v -> (List<String>) v.get("values")).findFirst();
 
-      if (o.isPresent()) {
-        createDocumentAttribute(siteId, documentId, mappingAttribute, o.get());
-      }
+      o.ifPresent(
+          strings -> createDocumentAttribute(siteId, documentId, mappingAttribute, strings));
     }
   }
 
@@ -214,11 +204,10 @@ public class IdpAction implements DocumentAction {
     AttributeRecord attribute = this.attributeService.getAttribute(siteId, attributeKey);
 
     List<DocumentAttributeRecord> records = notNull(matchValues).stream()
-        .map(val -> createDocumentAttribute(siteId, documentId, attribute, attributeKey, val))
-        .toList();
+        .map(val -> createDocumentAttribute(documentId, attribute, attributeKey, val)).toList();
 
     if (records.isEmpty() && AttributeDataType.KEY_ONLY.equals(attribute.getDataType())) {
-      records = List.of(createDocumentAttribute(siteId, documentId, attribute, attributeKey, null));
+      records = List.of(createDocumentAttribute(documentId, attribute, attributeKey, null));
     }
 
     if (!records.isEmpty()) {
@@ -227,9 +216,8 @@ public class IdpAction implements DocumentAction {
     }
   }
 
-  private DocumentAttributeRecord createDocumentAttribute(final String siteId,
-      final String documentId, final AttributeRecord attribute, final String attributeKey,
-      final String matchValue) {
+  private DocumentAttributeRecord createDocumentAttribute(final String documentId,
+      final AttributeRecord attribute, final String attributeKey, final String matchValue) {
 
     DocumentAttributeRecord r = new DocumentAttributeRecord().setDocumentId(documentId)
         .setKey(attributeKey).setUserId("System");
