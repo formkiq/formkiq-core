@@ -325,11 +325,9 @@ public class DocumentsOcrRequestHandler
 
       List<AwsTextractQuery> queries = notNull(request.getTextractQueries());
       ValidationBuilder vb = new ValidationBuilder();
-      vb.isRequired(null, queries, "'OcrTextractQueries' is required");
+      vb.isRequired(null, queries, "'TextractQueries' is required");
 
-      queries.forEach(q -> {
-        vb.isRequired("text", q.text());
-      });
+      queries.forEach(q -> vb.isRequired("TextractQuery.text", q.text()));
       vb.check();
     }
   }
