@@ -42,12 +42,12 @@ import com.formkiq.client.model.AddAttribute;
 import com.formkiq.client.model.AddAttributeRequest;
 import com.formkiq.client.model.AddMapping;
 import com.formkiq.client.model.AddMappingRequest;
-import com.formkiq.client.model.AwsTextractQuery;
 import com.formkiq.client.model.Document;
 import com.formkiq.client.model.MappingAttribute;
 import com.formkiq.client.model.MappingAttributeLabelMatchingType;
 import com.formkiq.client.model.MappingAttributeSourceType;
 import com.formkiq.client.model.OcrOutputType;
+import com.formkiq.client.model.TextractQuery;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -603,7 +603,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       }
 
       // given
-      param.addOcrTextractQueriesItem(new AwsTextractQuery());
+      param.addOcrTextractQueriesItem(new TextractQuery());
 
       // when
       try {
@@ -632,8 +632,8 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       setBearerToken(siteId);
 
       String documentId = saveDocument(siteId);
-      AwsTextractQuery query =
-          new AwsTextractQuery().alias("query").text("mytext").pages(List.of("1", "5"));
+      TextractQuery query =
+          new TextractQuery().alias("query").text("mytext").pages(List.of("1", "5"));
       AddActionParameters param =
           new AddActionParameters().ocrParseTypes("QUERIES").addOcrTextractQueriesItem(query);
 

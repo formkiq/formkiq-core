@@ -5,6 +5,7 @@
 
 	<subpackage name="ocr">
 
+		<allow pkg="com.formkiq.validation" />
 		<allow pkg="java.io" />
 		<allow pkg="java.nio.charset" />
 		<allow pkg="java.time" />

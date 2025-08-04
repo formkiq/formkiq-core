@@ -12,6 +12,7 @@ dependencies {
 	implementation project(':dynamodb-documents')
 	implementation project(':aws-s3')
 	implementation project(':aws-sqs')
+	implementation project(':fkq-validation')
 	implementation project(':fkq-lambda-services')
 	implementation project(':fkq-lambda-core')
 	implementation project(':fkq-plugins')
