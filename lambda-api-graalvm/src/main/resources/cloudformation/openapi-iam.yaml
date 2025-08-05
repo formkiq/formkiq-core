@@ -367,7 +367,10 @@ Resources:
           /sites/{siteId}/opensearch/index:
             get:
               operationId: GetOpenSearchIndex
-              description: Returns the OpenSearch index settings (Deprecated use /sites/{siteId}/opensearch/indices)
+              description: |-
+                Returns the OpenSearch index settings 
+
+                (Deprecated use /sites/{siteId}/opensearch/indices)
               summary: Get site(s) OpenSearch index settings
               tags:
                 - System Management
@@ -461,6 +464,38 @@ Resources:
                     application/json:
                       schema:
                         "$ref": "#/components/schemas/GetOpenSearchIndiceResponse"
+              security:
+                - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
+            put:
+              operationId: SetOpenSearchIndices
+              description: Sets the OpenSearch index to use for a SiteId
+              summary: Set site(s) OpenSearch index to use for a SiteId
+              tags:
+                - System Management
+              parameters:
+                - $ref: '#/components/parameters/siteIdPathParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/SetOpenSearchIndiceRequest'
+              responses:
+                '200':
+                  description: "200 OK"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        "$ref": "#/components/schemas/SetResponse"
               security:
                 - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -12360,6 +12395,12 @@ Resources:
                 bucket:
                   type: "string"
                   description: "Name of the S3 bucket"
+            SetOpenSearchIndiceRequest:
+              type: object
+              properties:
+                indexName:
+                  type: "string"
+                  description: "The name of the index to set for SiteId"
             SetOpenSearchIndexRequest:
               type: object
               properties:
