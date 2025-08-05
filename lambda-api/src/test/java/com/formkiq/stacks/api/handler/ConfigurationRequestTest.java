@@ -224,7 +224,7 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     } catch (ApiException e) {
       // then
       assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
-      assertEquals("{\"message\":\"fkq access denied to siteId (global)\"}", e.getResponseBody());
+      assertEquals("{\"message\":\"fkq access denied to siteId (global)\"} ", e.getResponseBody());
     }
   }
 

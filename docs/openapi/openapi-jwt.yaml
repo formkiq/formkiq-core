@@ -645,6 +645,22 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
+            delete:
+              operationId: DeleteOpenSearchRestoreSnapshot
+              description: Deletes the OpenSearch Restore Snapshot
+              summary: Deletes site(s) OpenSearch Restore Snapshot
+              tags:
+              - System Management
+              parameters:
+              - $ref: '#/components/parameters/siteIdPathParam'
+              - $ref: '#/components/parameters/snapshotNamePath'
+              responses:
+                "200":
+                  $ref: '#/components/responses/200CorsDeleteResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
           /sites/{siteId}/schema/document:
             get:
               operationId: GetSitesSchema
