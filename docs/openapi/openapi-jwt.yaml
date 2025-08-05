@@ -354,7 +354,7 @@
           /sites/{siteId}/opensearch/index:
             get:
               operationId: GetOpenSearchIndex
-              description: Returns the OpenSearch index settings
+              description: Returns the OpenSearch index settings (Deprecated use /sites/{siteId}/opensearch/indices)
               summary: Get site(s) OpenSearch index settings
               tags:
               - System Management
@@ -500,32 +500,6 @@
                     application/json:
                       schema:
                         $ref: '#/components/schemas/GetOpenSearchSnapshotRepositoryResponse'
-              security:
-              - ApiAuthorization: []
-              x-amazon-apigateway-integration:
-                $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
-            post:
-              operationId: AddOpenSearchSnapshotRepository
-              description: Add an OpenSearch Snapshot Repository
-              summary: Add OpenSearch Snapshot Repository
-              tags:
-              - System Management
-              parameters:
-              - $ref: '#/components/parameters/siteIdPathParam'
-              responses:
-                "200":
-                  description: 200 OK
-                  headers:
-                    Access-Control-Allow-Origin:
-                      $ref: '#/components/headers/AccessControlAllowOrigin'
-                    Access-Control-Allow-Methods:
-                      $ref: '#/components/headers/AccessControlAllowMethods'
-                    Access-Control-Allow-Headers:
-                      $ref: '#/components/headers/AccessControlAllowHeaders'
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/AddOpenSearchSnapshotRepositoryResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -12199,17 +12173,11 @@
                 bucket:
                   type: string
                   description: Name of the S3 bucket
-            AddOpenSearchSnapshotRepositoryResponse:
-              type: object
-              properties:
-                message:
-                  type: string
-                  description: Result message
             SetOpenSearchIndexRequest:
               type: object
               properties:
                 indexSettings:
-                  $ref: '#/components/schemas/OpenSearchIndex'
+                  $ref: '#/components/schemas/OpenSearchIndexSetting'
             SetOpenSearchIndexResponse:
               type: object
               properties:
@@ -12267,11 +12235,6 @@
                   description: OpenSearch Indices
                   items:
                     $ref: '#/components/schemas/OpenSearchIndex'
-            GetOpenSearchIndexResponse:
-              type: object
-              properties:
-                indexSettings:
-                  $ref: '#/components/schemas/OpenSearchIndex'
             OpenSearchIndex:
               type: object
               properties:
@@ -12288,6 +12251,20 @@
                   type: array
                   items:
                     $ref: '#/components/schemas/OpenSearchAlias'
+            GetOpenSearchIndexResponse:
+              type: object
+              properties:
+                indexSettings:
+                  $ref: '#/components/schemas/OpenSearchIndexSetting'
+            OpenSearchIndexSetting:
+              type: object
+              properties:
+                numberOfReplicas:
+                  type: string
+                  description: The number of replicas per shard
+                numberOfShards:
+                  type: string
+                  description: The number of shards in index
             OpenSearchAlias:
               type: object
               properties:
