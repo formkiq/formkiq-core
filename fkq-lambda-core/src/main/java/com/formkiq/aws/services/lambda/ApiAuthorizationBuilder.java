@@ -407,6 +407,7 @@ public class ApiAuthorizationBuilder {
       }
     }
 
+    groups.remove("global");
     groups.remove("authentication_only");
 
     return groups;

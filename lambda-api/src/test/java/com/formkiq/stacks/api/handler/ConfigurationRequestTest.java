@@ -208,6 +208,28 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * Get /config for Global SiteId.
+   *
+   */
+  @Test
+  public void testHandleGetConfigurationGlobal() {
+    // given
+    String group = "Admins";
+    setBearerToken(group);
+
+    // when
+    try {
+      this.systemApi.getConfiguration("global");
+      fail();
+    } catch (ApiException e) {
+      // then
+      assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
+      assertEquals("{\"message\":\"fkq access denied to siteId (global)\"}", e.getResponseBody());
+    }
+  }
+
+
+  /**
    * PUT /config default as Admin.
    *
    * @throws Exception an error has occurred

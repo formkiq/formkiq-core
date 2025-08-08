@@ -52,7 +52,7 @@ public class ConfigurationApiKeyRequestHandler
 
   private void checkPermissions(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization) throws UnauthorizedException {
-    String siteId = event.getPathParameters().get("siteId");
+    String siteId = getPathParameterSiteId(event);
     if (!authorization.getPermissions(siteId).contains(ApiPermission.ADMIN)) {
       throw new UnauthorizedException("user is unauthorized");
     }
@@ -62,7 +62,7 @@ public class ConfigurationApiKeyRequestHandler
   public ApiRequestHandlerResponse delete(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
-    String siteId = event.getPathParameters().get("siteId");
+    String siteId = getPathParameterSiteId(event);
     String apiKey = event.getPathParameters().get("apiKey");
 
     ApiKeysService apiKeysService = awsservice.getExtension(ApiKeysService.class);

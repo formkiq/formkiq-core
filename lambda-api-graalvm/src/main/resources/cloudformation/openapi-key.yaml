@@ -367,7 +367,10 @@ Resources:
           /sites/{siteId}/opensearch/index:
             get:
               operationId: GetOpenSearchIndex
-              description: Returns the OpenSearch index settings
+              description: |-
+                Returns the OpenSearch index settings 
+
+                (Deprecated use /sites/{siteId}/opensearch/indices)
               summary: Get site(s) OpenSearch index settings
               tags:
                 - System Management
@@ -438,15 +441,72 @@ Resources:
                 - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
-          /sites/{siteId}/opensearch/snapshotRepositories:
+          /sites/{siteId}/opensearch/indices:
+            get:
+              operationId: GetOpenSearchIndices
+              description: Returns the OpenSearch indices
+              summary: Get site(s) OpenSearch indices
+              tags:
+                - System Management
+              parameters:
+                - $ref: '#/components/parameters/siteIdPathParam'
+              responses:
+                '200':
+                  description: "200 OK"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        "$ref": "#/components/schemas/GetOpenSearchIndiceResponse"
+              security:
+                - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
+            put:
+              operationId: SetOpenSearchIndices
+              description: Sets the OpenSearch index to use for a SiteId
+              summary: Set site(s) OpenSearch index to use for a SiteId
+              tags:
+                - System Management
+              parameters:
+                - $ref: '#/components/parameters/siteIdPathParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/SetOpenSearchIndiceRequest'
+              responses:
+                '200':
+                  description: "200 OK"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        "$ref": "#/components/schemas/SetResponse"
+              security:
+                - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
+          /sites/global/opensearch/snapshotRepositories:
             get:
               operationId: GetOpenSearchSnapshotRepositories
               description: Returns the OpenSearch Snapshot Repositories
               summary: Get site(s) OpenSearch snapshot repositories
               tags:
                 - System Management
-              parameters:
-                - $ref: '#/components/parameters/siteIdPathParam'
               responses:
                 '200':
                   description: "200 OK"
@@ -465,7 +525,7 @@ Resources:
                 - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
-          /sites/{siteId}/opensearch/snapshotRepositories/{repositoryName}:
+          /sites/{siteId}/opensearch/snapshotRepository:
             get:
               operationId: GetOpenSearchSnapshotRepository
               description: Returns the OpenSearch Snapshot Repository
@@ -474,7 +534,6 @@ Resources:
                 - System Management
               parameters:
                 - $ref: '#/components/parameters/siteIdPathParam'
-                - $ref: '#/components/parameters/snapshotRepositoryNamePath'
               responses:
                 '200':
                   description: "200 OK"
@@ -489,33 +548,6 @@ Resources:
                     application/json:
                       schema:
                         "$ref": "#/components/schemas/GetOpenSearchSnapshotRepositoryResponse"
-              security:
-                - ApiAuthorization: []
-              x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
-            post:
-              operationId: AddOpenSearchSnapshotRepository
-              description: Add an OpenSearch Snapshot Repository
-              summary: Add OpenSearch Snapshot Repository
-              tags:
-                - System Management
-              parameters:
-                - $ref: '#/components/parameters/siteIdPathParam'
-                - $ref: '#/components/parameters/snapshotRepositoryNamePath'
-              responses:
-                '200':
-                  description: "200 OK"
-                  headers:
-                    Access-Control-Allow-Origin:
-                      $ref: '#/components/headers/AccessControlAllowOrigin'
-                    Access-Control-Allow-Methods:
-                      $ref: '#/components/headers/AccessControlAllowMethods'
-                    Access-Control-Allow-Headers:
-                      $ref: '#/components/headers/AccessControlAllowHeaders'
-                  content:
-                    application/json:
-                      schema:
-                        "$ref": "#/components/schemas/AddOpenSearchSnapshotRepositoryResponse"
               security:
                 - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -528,7 +560,6 @@ Resources:
                 - System Management
               parameters:
                 - $ref: '#/components/parameters/siteIdPathParam'
-                - $ref: '#/components/parameters/snapshotRepositoryNamePath'
               responses:
                 '200':
                   $ref: '#/components/responses/200CorsDeleteResponse'
@@ -536,7 +567,7 @@ Resources:
                 - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
-          /sites/{siteId}/opensearch/snapshotRepositories/{repositoryName}/snapshots:
+          /sites/{siteId}/opensearch/snapshots:
             get:
               operationId: GetOpenSearchSnapshots
               description: Returns the OpenSearch Snapshots
@@ -545,7 +576,6 @@ Resources:
                 - System Management
               parameters:
                 - $ref: '#/components/parameters/siteIdPathParam'
-                - $ref: '#/components/parameters/snapshotRepositoryNamePath'
               responses:
                 '200':
                   description: "200 OK"
@@ -564,7 +594,7 @@ Resources:
                 - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
-          /sites/{siteId}/opensearch/snapshotRepositories/{repositoryName}/snapshots/{snapshotName}:
+          /sites/{siteId}/opensearch/snapshots/{snapshotName}:
             get:
               operationId: GetOpenSearchSnapshot
               description: Returns the OpenSearch Snapshot
@@ -573,7 +603,6 @@ Resources:
                 - System Management
               parameters:
                 - $ref: '#/components/parameters/siteIdPathParam'
-                - $ref: '#/components/parameters/snapshotRepositoryNamePath'
                 - $ref: '#/components/parameters/snapshotNamePath'
               responses:
                 '200':
@@ -601,7 +630,6 @@ Resources:
                 - System Management
               parameters:
                 - $ref: '#/components/parameters/siteIdPathParam'
-                - $ref: '#/components/parameters/snapshotRepositoryNamePath'
                 - $ref: '#/components/parameters/snapshotNamePath'
               responses:
                 '200':
@@ -629,7 +657,6 @@ Resources:
                 - System Management
               parameters:
                 - $ref: '#/components/parameters/siteIdPathParam'
-                - $ref: '#/components/parameters/snapshotRepositoryNamePath'
                 - $ref: '#/components/parameters/snapshotNamePath'
               responses:
                 '200':
@@ -638,7 +665,7 @@ Resources:
                 - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
-          /sites/{siteId}/opensearch/snapshot/{repositoryName}/{snapshotName}/restore:
+          /sites/{siteId}/opensearch/snapshots/{snapshotName}/restore:
             post:
               operationId: AddOpenSearchRestoreSnapshot
               description: Add an OpenSearch Restore Snapshot
@@ -647,7 +674,6 @@ Resources:
                 - System Management
               parameters:
                 - $ref: '#/components/parameters/siteIdPathParam'
-                - $ref: '#/components/parameters/snapshotRepositoryNamePath'
                 - $ref: '#/components/parameters/snapshotNamePath'
               responses:
                 '200':
@@ -663,6 +689,22 @@ Resources:
                     application/json:
                       schema:
                         "$ref": "#/components/schemas/AddResponse"
+              security:
+                - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
+            delete:
+              operationId: DeleteOpenSearchRestoreSnapshot
+              description: Deletes the OpenSearch Restore Snapshot
+              summary: Deletes site(s) OpenSearch Restore Snapshot
+              tags:
+                - System Management
+              parameters:
+                - $ref: '#/components/parameters/siteIdPathParam'
+                - $ref: '#/components/parameters/snapshotNamePath'
+              responses:
+                '200':
+                  $ref: '#/components/responses/200CorsDeleteResponse'
               security:
                 - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -12353,17 +12395,17 @@ Resources:
                 bucket:
                   type: "string"
                   description: "Name of the S3 bucket"
-            AddOpenSearchSnapshotRepositoryResponse:
-              type: "object"
+            SetOpenSearchIndiceRequest:
+              type: object
               properties:
-                message:
+                indexName:
                   type: "string"
-                  description: "Result message"
+                  description: "The name of the index to set for SiteId"
             SetOpenSearchIndexRequest:
               type: object
               properties:
                 indexSettings:
-                  $ref: "#/components/schemas/OpenSearchIndex"
+                  $ref: "#/components/schemas/OpenSearchIndexSetting"
             SetOpenSearchIndexResponse:
               type: "object"
               properties:
@@ -12413,11 +12455,14 @@ Resources:
                   type: "array"
                   items:
                     $ref: "#/components/schemas/SiteGroupPermissions"
-            GetOpenSearchIndexResponse:
+            GetOpenSearchIndiceResponse:
               type: object
               properties:
-                indexSettings:
-                  $ref: "#/components/schemas/OpenSearchIndex"
+                indices:
+                  type: "array"
+                  description: "OpenSearch Indices"
+                  items:
+                    $ref: "#/components/schemas/OpenSearchIndex"
             OpenSearchIndex:
               type: object
               properties:
@@ -12427,6 +12472,33 @@ Resources:
                 numberOfShards:
                   type: "string"
                   description: "The number of shards in index"
+                name:
+                  type: "string"
+                  description: "Name of Index"
+                aliases:
+                  type: "array"
+                  items:
+                    $ref: "#/components/schemas/OpenSearchAlias"
+            GetOpenSearchIndexResponse:
+              type: object
+              properties:
+                indexSettings:
+                  $ref: "#/components/schemas/OpenSearchIndexSetting"
+            OpenSearchIndexSetting:
+              type: object
+              properties:
+                numberOfReplicas:
+                  type: "string"
+                  description: "The number of replicas per shard"
+                numberOfShards:
+                  type: "string"
+                  description: "The number of shards in index"
+            OpenSearchAlias:
+              type: object
+              properties:
+                name:
+                  type: "string"
+                  description: "Name of Alias"
             GetSitesResponse:
               type: object
               properties:

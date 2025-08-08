@@ -803,4 +803,27 @@ class ApiAuthorizationBuilderTest {
     assertEquals("groups: default (READ)", api0.getAccessSummary());
     assertEquals("default", String.join(",", api0.getRoles()));
   }
+
+  /**
+   * Sites permissionsMap with 'global'.
+   */
+  @Test
+  void testApiAuthorizerGlobal() throws Exception {
+    // given
+    ApiGatewayRequestEvent event0 =
+        getExplicitSitesJwtEvent(List.of("global"), Map.of("global", List.of("read")));
+
+    // when
+    final ApiAuthorization api0 = new ApiAuthorizationBuilder().build(event0);
+
+    // then
+    assertNull(api0.getSiteId());
+    assertEquals("", String.join(",", api0.getSiteIds()));
+    assertEquals("",
+        api0.getPermissions().stream().map(Enum::name).collect(Collectors.joining(",")));
+    assertEquals("",
+        api0.getPermissions("global").stream().map(Enum::name).collect(Collectors.joining(",")));
+    assertEquals("no groups", api0.getAccessSummary());
+    assertEquals("global", String.join(",", api0.getRoles()));
+  }
 }

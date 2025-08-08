@@ -72,7 +72,7 @@ public class ConfigurationApiKeysRequestHandler
 
   private void checkPermissions(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization) throws UnauthorizedException {
-    String siteId = event.getPathParameters().get("siteId");
+    String siteId = event.getPathParameter("siteId");
     if (!authorization.getPermissions(siteId).contains(ApiPermission.ADMIN)) {
       throw new UnauthorizedException("user is unauthorized");
     }
@@ -87,7 +87,7 @@ public class ConfigurationApiKeysRequestHandler
     int limit = getLimit(awsservice.getLogger(), event);
     String nextToken = event.getQueryStringParameter("next");
 
-    String siteId = event.getPathParameters().get("siteId");
+    String siteId = getPathParameterSiteId(event);
     Pagination<ApiKey> list = apiKeysService.list(siteId, nextToken, limit);
 
     Map<String, Object> map = Map.of("apiKeys", list.getResults());
@@ -103,7 +103,7 @@ public class ConfigurationApiKeysRequestHandler
   public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
-    String siteId = event.getPathParameters().get("siteId");
+    String siteId = getPathParameterSiteId(event);
 
     ApiKeysService apiKeysService = awsservice.getExtension(ApiKeysService.class);
     DynamicObject body = fromBodyToDynamicObject(event);

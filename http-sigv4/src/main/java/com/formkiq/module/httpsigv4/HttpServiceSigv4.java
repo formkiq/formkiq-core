@@ -205,6 +205,15 @@ public final class HttpServiceSigv4 implements HttpService {
   }
 
   @Override
+  public HttpResponse<String> head(final String url, final Optional<HttpHeaders> headers,
+      final Optional<Map<String, String>> parameters) throws IOException {
+    SdkHttpFullRequest.Builder request =
+        buildRequest(url, SdkHttpMethod.HEAD, headers, parameters, Optional.empty());
+    SdkHttpFullRequest req = sign(request);
+    return execute(req);
+  }
+
+  @Override
   public HttpResponse<String> get(final String url, final Optional<HttpHeaders> headers,
       final Optional<Map<String, String>> parameters) throws IOException {
     SdkHttpFullRequest.Builder request =

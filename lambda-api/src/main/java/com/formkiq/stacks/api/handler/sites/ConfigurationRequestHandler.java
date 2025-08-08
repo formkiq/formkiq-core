@@ -92,7 +92,7 @@ public class ConfigurationRequestHandler
   public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
-    String siteId = event.getPathParameters().get("siteId");
+    String siteId = getPathParameterSiteId(event);
     ConfigService configService = awsservice.getExtension(ConfigService.class);
 
     SiteConfiguration obj = configService.get(siteId);
@@ -151,7 +151,7 @@ public class ConfigurationRequestHandler
   public ApiRequestHandlerResponse patch(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
-    String siteId = event.getPathParameter("siteId");
+    String siteId = getPathParameterSiteId(event);
     SiteConfiguration config = fromBodyToObject(event, SiteConfiguration.class);
 
     validate(awsservice, config);
