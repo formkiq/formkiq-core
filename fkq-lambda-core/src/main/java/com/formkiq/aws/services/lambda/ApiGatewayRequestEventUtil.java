@@ -37,6 +37,7 @@ import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.cache.CacheService;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
+import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
 import com.formkiq.module.lambdaservices.logger.Logger;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
@@ -53,6 +54,22 @@ public interface ApiGatewayRequestEventUtil {
 
   /** {@link Gson}. */
   Gson GSON = GsonUtil.getInstance();
+
+  /**
+   * Get SiteId as a Path Parameter.
+   * 
+   * @param event {@link ApiGatewayRequestEvent}
+   * @return String
+   * @throws UnauthorizedException UnauthorizedException
+   */
+  default String getPathParameterSiteId(final ApiGatewayRequestEvent event)
+      throws UnauthorizedException {
+    String siteId = event.getPathParameters().get("siteId");
+    if ("global".equals(siteId)) {
+      throw new UnauthorizedException("'global' siteId is reserved");
+    }
+    return siteId;
+  }
 
   /**
    * Create Pagination.
