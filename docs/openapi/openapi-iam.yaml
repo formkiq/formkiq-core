@@ -2814,6 +2814,7 @@
               - Advanced Document Search
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/indexNameQuery'
               - $ref: '#/components/parameters/limitParam'
               requestBody:
                 required: true
@@ -2857,6 +2858,7 @@
               - Advanced Document Search
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/indexNameQuery'
               requestBody:
                 required: true
                 content:
@@ -7209,6 +7211,13 @@
               name: siteId
               in: query
               description: Site Identifier
+              required: false
+              schema:
+                type: string
+            indexNameQuery:
+              name: indexName
+              in: query
+              description: IndexName to query
               required: false
               schema:
                 type: string
