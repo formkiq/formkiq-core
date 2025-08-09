@@ -275,6 +275,8 @@ Resources:
     Properties:
       Location: console/template-install.yaml
       Parameters:
+        LogRetentionInDays:
+          Ref: LogRetentionInDays
         LogFormat:
           Ref: LogFormat
         LogLevelApplication:

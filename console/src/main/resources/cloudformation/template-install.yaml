@@ -111,6 +111,10 @@ Parameters:
     Description: >
       The level of logging for the AWS Platform System logs. Only used when LogFormat is JSON
 
+  LogRetentionInDays:
+    Type: Number
+    Description: The number of days to retain the log events
+
 Conditions:
 
   IsEmptyOrUnderscore:
@@ -212,6 +216,8 @@ Resources:
           COGNITO_USER_POOL_ID:
             Ref: CognitoUserPoolId
       LoggingConfig:
+        LogGroup:
+          Ref: ConsoleInstallerLogGroup
         LogFormat:
           Ref: LogFormat
         ApplicationLogLevel:
@@ -224,6 +230,18 @@ Resources:
             - IsLogFormatJSON
             - Ref: LogLevelSystem
             - Ref: AWS::NoValue
+
+  ConsoleInstallerLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays:
+        Ref: LogRetentionInDays
+      Tags:
+        - Key: AppEnvironment
+          Value:
+            Ref: AppEnvironment
+        - Key: Application
+          Value: "FormKiQ"
 
   ConsoleInstallRole:
     Type: AWS::IAM::Role
