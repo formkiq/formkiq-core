@@ -9,6 +9,7 @@ plugins {
   id 'com.formkiq.gradle.graalvm-native-plugin' version '1.7.2'
   id 'de.undercouch.download' version '5.6.0'
   id 'org.openapi.generator' version '7.13.0'
+  id 'com.github.jk1.dependency-license-report' version '2.9'
 }
 
 def moduleName = "formkiq-core"
@@ -27,6 +28,7 @@ repositories { mavenCentral() }
 
 allprojects {
 
+
   version = '1.18.0'
   
   ext.awsCognitoVersion = '1.6.0'
@@ -38,6 +40,7 @@ allprojects {
     apply plugin: 'com.github.spotbugs'
     apply plugin: 'com.github.ben-manes.versions'
     apply plugin: 'com.formkiq.gradle.graalvm-native-plugin'
+    // apply plugin: 'com.github.jk1.dependency-license-report'
 	
 	java {
 		toolchain {
@@ -58,6 +61,24 @@ allprojects {
         configProperties = [project_loc: "${projectDir}"]
         maxWarnings = 0
         maxErrors = 0
+    }
+
+    licenseReport {
+      // optional: aggregate root + all subprojects
+      projects = [project] + project.subprojects
+
+      // optional: limit which configs to scan
+      configurations = ['runtimeClasspath']
+
+      outputDir = "$rootDir/docs/licenses"
+
+      renderers = [
+        new com.github.jk1.license.render.JsonReportRenderer('licenses.json'),
+        new com.github.jk1.license.render.InventoryHtmlReportRenderer('index.html', 'FormKiQ Core')
+      ]
+      filters = [
+        new com.github.jk1.license.filter.LicenseBundleNormalizer()
+      ]
     }
 }
 
