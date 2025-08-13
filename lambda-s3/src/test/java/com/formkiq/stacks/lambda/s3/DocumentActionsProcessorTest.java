@@ -1111,7 +1111,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
       HttpRequest lastRequest = CALLBACK.getLastRequest();
       assertTrue(lastRequest.getPath().toString().endsWith("/callback"));
       Map<String, Object> resultmap = GSON.fromJson(lastRequest.getBodyAsString(), Map.class);
-      Map<String, String> document = (Map<String, String>) resultmap.get("document");
+
+      List<Map<String, Object>> documents = (List<Map<String, Object>>) resultmap.get("documents");
+      assertEquals(1, documents.size());
+      Map<String, Object> document = documents.get(0);
 
       assertEquals(Objects.requireNonNullElse(siteId, DEFAULT_SITE_ID), document.get("siteId"));
 
@@ -1172,7 +1175,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
       HttpRequest lastRequest = CALLBACK.getLastRequest();
       assertTrue(lastRequest.getPath().toString().endsWith("/callback"));
       Map<String, Object> resultmap = GSON.fromJson(lastRequest.getBodyAsString(), Map.class);
-      Map<String, String> document = (Map<String, String>) resultmap.get("document");
+
+      List<Map<String, Object>> documents = (List<Map<String, Object>>) resultmap.get("documents");
+      assertEquals(1, documents.size());
+      Map<String, Object> document = documents.get(0);
 
       assertEquals(Objects.requireNonNullElse(siteId, DEFAULT_SITE_ID), document.get("siteId"));
 
@@ -2636,12 +2642,16 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
     data = (Map<String, Object>) data.get("detail");
 
-    Map<String, Object> document = (Map<String, Object>) data.get("document");
-    assertNotNull(document.get("documentId"));
-    assertNotNull(document.get("url"));
-    assertNotNull(document.get("path"));
+    List<Map<String, Object>> documents = (List<Map<String, Object>>) data.get("documents");
+    assertEquals(1, documents.size());
 
-    return document;
+    assertNotNull(documents.get(0).get("documentId"));
+    assertEquals("joe", documents.get(0).get("userId"));
+    assertNotNull(documents.get(0).get("insertedDate"));
+    assertNotNull(documents.get(0).get("lastModifiedDate"));
+    assertNotNull(documents.get(0).get("url"));
+
+    return documents.get(0);
   }
 
   private void assertEventBridgeDeleteMessage(final Message message, final String detailType) {
@@ -2651,7 +2661,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
     assertTrue(data.get("time").toString().endsWith("Z"));
 
     data = (Map<String, Object>) data.get("detail");
-    Map<String, Object> document = (Map<String, Object>) data.get("document");
+    List<Map<String, Object>> documents = (List<Map<String, Object>>) data.get("documents");
+    assertEquals(1, documents.size());
+    Map<String, Object> document = documents.get(0);
 
     assertNotNull(document.get("documentId"));
     assertNull(document.get("url"));
