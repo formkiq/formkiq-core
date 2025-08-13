@@ -47,6 +47,7 @@ import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -228,9 +229,21 @@ public class DocumentIdUrlRequestHandler
     int hours = getDurationHours(event);
     Duration duration = Duration.ofHours(hours);
 
-    S3PresignerService s3Service = awsservice.getExtension(S3PresignerService.class);
-    return s3Bucket != null ? s3Service.presignGetUrl(s3Bucket, s3key, duration, versionId, config)
-        : new URL(s3key);
+    URL url;
+    if (s3Bucket != null) {
+      S3Service s3 = awsservice.getExtension(S3Service.class);
+      if (!s3.exists(s3Bucket, s3key)) {
+        throw new DocumentNotFoundException(item.getDocumentId());
+      }
+
+      S3PresignerService s3Service = awsservice.getExtension(S3PresignerService.class);
+      url = s3Service.presignGetUrl(s3Bucket, s3key, duration, versionId, config);
+
+    } else {
+      url = new URL(s3key);
+    }
+
+    return url;
   }
 
   private String findContentType(final DocumentItem item) {

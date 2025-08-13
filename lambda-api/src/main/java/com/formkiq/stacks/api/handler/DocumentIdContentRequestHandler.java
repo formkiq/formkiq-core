@@ -81,6 +81,9 @@ public class DocumentIdContentRequestHandler
     ApiResponse response;
 
     String s3key = createS3Key(siteId, documentId);
+    if (!exists(awsservice, s3key)) {
+      throw new DocumentNotFoundException(item.getDocumentId());
+    }
 
     if (MimeType.isPlainText(item.getContentType())) {
 
@@ -102,6 +105,11 @@ public class DocumentIdContentRequestHandler
     }
 
     return new ApiRequestHandlerResponse(SC_OK, response);
+  }
+
+  private boolean exists(final AwsServiceCache awsservice, final String s3key) {
+    S3Service s3 = awsservice.getExtension(S3Service.class);
+    return s3.exists(awsservice.environment("DOCUMENTS_S3_BUCKET"), s3key);
   }
 
   private ApiResponse getApiResponse(final AwsServiceCache awsservice, final DocumentItem item,

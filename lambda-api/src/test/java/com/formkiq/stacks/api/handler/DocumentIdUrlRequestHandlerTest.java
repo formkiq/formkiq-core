@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.testutils.aws.TestServices.ACCESS_POINT_S3_BUCKET;
 import static com.formkiq.testutils.aws.TestServices.AWS_REGION;
 import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
@@ -86,6 +87,14 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
     awsServices.register(DocumentService.class, new DocumentServiceExtension());
 
     this.documentService = awsServices.getExtension(DocumentService.class);
+
+    createBucket(ACCESS_POINT_S3_BUCKET);
+  }
+
+  private void createBucket(final String bucket) {
+    if (!getS3().exists(bucket)) {
+      getS3().createBucket(bucket);
+    }
   }
 
   /**
@@ -125,6 +134,7 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
         }
 
         this.documentService.saveDocument(siteId, item, new ArrayList<>());
+        addS3File(siteId, documentId, contentType);
 
         // when
         GetDocumentUrlResponse resp =
@@ -146,6 +156,11 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
     }
   }
 
+  private void addS3File(final String siteId, final String documentId, final String contentType) {
+    getS3().putObject(BUCKET_NAME, createS3Key(siteId, documentId),
+        "ASD".getBytes(StandardCharsets.UTF_8), contentType);
+  }
+
   /**
    * /documents/{documentId}/url request w/ duration.
    *
@@ -163,6 +178,7 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
       final int duration = 8;
       this.documentService.saveDocument(siteId,
           new DocumentItemDynamoDb(documentId, new Date(), userId), new ArrayList<>());
+      addS3File(siteId, documentId, null);
 
       // when
       GetDocumentUrlResponse resp =
@@ -213,9 +229,7 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
   @Test
   public void testHandleGetDocumentContent04() throws Exception {
 
-    if (!getS3().exists("anotherbucket")) {
-      getS3().createBucket("anotherbucket");
-    }
+    createBucket("anotherbucket");
 
     byte[] content = "Some data".getBytes(StandardCharsets.UTF_8);
     getS3().putObject("anotherbucket", "somefile.txt", content, "text/plain");
@@ -306,6 +320,8 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
       server.getEnvironmentMap().put("ACCESS_POINT_S3_BUCKET", ACCESS_POINT_S3_BUCKET);
 
       String documentId = addDocumentWithWatermarks(siteId);
+      getS3().putObject(ACCESS_POINT_S3_BUCKET, createS3Key(siteId, documentId),
+          "ASD".getBytes(StandardCharsets.UTF_8), null);
 
       // when
       GetDocumentUrlResponse resp =
@@ -322,6 +338,8 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
     setBearerToken(new String[] {siteId, "admins"});
 
     String documentId = addDocumentWithWatermarks(siteId);
+    getS3().putObject(ACCESS_POINT_S3_BUCKET, createS3Key(siteId, documentId),
+        "ASD".getBytes(StandardCharsets.UTF_8), null);
 
     // when
     GetDocumentUrlResponse resp =
@@ -443,10 +461,12 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
       String userId = "jsmith";
 
       String bucketName = "somebucket";
+      createBucket(bucketName);
       String filename = UUID.randomUUID() + " .pdf";
       DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, new Date(), userId);
       item.setDeepLinkPath("s3://" + bucketName + "/" + filename);
       this.documentService.saveDocument(siteId, item, new ArrayList<>());
+      getS3().putObject(bucketName, filename, "ASD".getBytes(StandardCharsets.UTF_8), null);
 
       // when
       GetDocumentUrlResponse resp =
@@ -491,6 +511,35 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
       assertNotNull(resp);
       assertNotNull(resp.getUrl());
       assertEquals("https://www.google.com", resp.getUrl());
+    }
+  }
+
+  /**
+   * /documents/{documentId}/url request missing s3 file.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testGetDocumentMissingS3File() throws Exception {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      String documentId = ID.uuid();
+      DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      this.documentService.saveDocument(siteId, item, new ArrayList<>());
+
+      // when
+      try {
+        this.documentsApi.getDocumentUrl(documentId, siteId, null, null, null, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
+        assertEquals("{\"message\":\"Document " + documentId + " not found.\"}",
+            e.getResponseBody());
+      }
     }
   }
 

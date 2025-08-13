@@ -286,6 +286,22 @@ public class S3Service {
   }
 
   /**
+   * Whether S3Key exists.
+   *
+   * @param bucket {@link String}
+   * @param key {@link String}
+   * @return boolean
+   */
+  public boolean exists(final String bucket, final String key) {
+    try {
+      this.s3Client.headObject(HeadObjectRequest.builder().bucket(bucket).key(key).build());
+      return true;
+    } catch (NoSuchKeyException e) {
+      return false;
+    }
+  }
+
+  /**
    * Whether Bucket exists.
    * 
    * @param bucket {@link String}
