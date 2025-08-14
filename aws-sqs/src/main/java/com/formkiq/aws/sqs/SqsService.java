@@ -129,4 +129,11 @@ public interface SqsService {
    * @return {@link SetQueueAttributesResponse}
    */
   SetQueueAttributesResponse setQueueAttributes(SetQueueAttributesRequest request);
+
+  /**
+   * Removes all messages from the given SQS queue.
+   *
+   * @param queueUrl The URL of the queue to clear.
+   */
+  void clearQueue(String queueUrl);
 }

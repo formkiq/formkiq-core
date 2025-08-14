@@ -1,0 +1,221 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: FormKiq Integration Tests Template
+
+Parameters:
+  AppEnvironment:
+    Type: String
+    Description: Application environment (e.g., dev, qa, prod)
+
+Resources:
+  # === NEW Event Bus we are creating ===
+  ActionsEventBus:
+    Type: AWS::Events::EventBus
+    Properties:
+      Name: !Sub 'FormKiQ-Actions-${AppEnvironment}'
+
+  # === Queues ===
+  SnsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      MessageRetentionPeriod: 60
+      ReceiveMessageWaitTimeSeconds: 20
+
+  EventBridgeQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      MessageRetentionPeriod: 60
+      ReceiveMessageWaitTimeSeconds: 20
+
+  ActionsEventQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      MessageRetentionPeriod: 60
+      ReceiveMessageWaitTimeSeconds: 20
+
+  # === Rule on the EXISTING bus -> EventBridgeQueue ===
+  EventBridgeRuleToEventBridgeQueue:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub 'event-to-sqs-${AppEnvironment}'
+      Description: !Sub 'Route formkiq.${AppEnvironment} events to EventBridgeQueue (existing bus)'
+      EventBusName: !Sub 'FormKiQ-DocumentEvents-${AppEnvironment}' # existing bus, not created here
+      EventPattern:
+        source:
+          - !Sub 'formkiq.${AppEnvironment}'
+      Targets:
+        - Id: EventBridgeQueueTarget
+          Arn: !GetAtt EventBridgeQueue.Arn
+
+  EventBridgeQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref EventBridgeQueue
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowEventBridgeSpecificRule
+            Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action: sqs:SendMessage
+            Resource: !GetAtt EventBridgeQueue.Arn
+            Condition:
+              ArnEquals:
+                aws:SourceArn: !GetAtt EventBridgeRuleToEventBridgeQueue.Arn
+
+  # === Rule on the NEW ActionsEventBus (match ALL events) -> ActionsEventQueue ===
+  ActionsAllEventsRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub 'all-events-to-sqs-${AppEnvironment}'
+      Description: !Sub 'Route ALL events on FormKiQ-Actions-${AppEnvironment} to ActionsEventQueue'
+      EventBusName: !Ref ActionsEventBus
+      EventPattern:
+        source:
+          - !Sub 'formkiq.${AppEnvironment}'
+      Targets:
+        - Id: ActionsEventQueueTarget
+          Arn: !GetAtt ActionsEventQueue.Arn
+
+  ActionsEventQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref ActionsEventQueue
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowEventBridgeAllEventsRule
+            Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action: sqs:SendMessage
+            Resource: !GetAtt ActionsEventQueue.Arn
+            Condition:
+              ArnEquals:
+                aws:SourceArn: !GetAtt ActionsAllEventsRule.Arn
+
+  # ===== SNS → SnsQueue wiring (topic ARN from SSM) =====
+  SnsTopicSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: sqs
+      TopicArn: !Sub '{{resolve:ssm:/formkiq/${AppEnvironment}/sns/DocumentEventArn}}'
+      Endpoint: !GetAtt SnsQueue.Arn
+      RawMessageDelivery: true
+    DependsOn:
+      - SnsQueuePolicy
+
+  SnsQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref SnsQueue
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowSnsTopicToSend
+            Effect: Allow
+            Principal:
+              Service: sns.amazonaws.com
+            Action: sqs:SendMessage
+            Resource: !GetAtt SnsQueue.Arn
+            Condition:
+              ArnEquals:
+                aws:SourceArn: !Sub '{{resolve:ssm:/formkiq/${AppEnvironment}/sns/DocumentEventArn}}'
+
+  # -------- SSM Parameters --------
+  # SnsQueue
+  SnsQueueUrlParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub '/formkiq/${AppEnvironment}/sqs/sns-queue/url'
+      Type: String
+      Description: !Sub 'SnsQueue URL for ${AppEnvironment}'
+      Value: !Ref SnsQueue
+
+  SnsQueueArnParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub '/formkiq/${AppEnvironment}/sqs/sns-queue/arn'
+      Type: String
+      Description: !Sub 'SnsQueue ARN for ${AppEnvironment}'
+      Value: !GetAtt SnsQueue.Arn
+
+  # EventBridgeQueue
+  EventBridgeQueueUrlParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub '/formkiq/${AppEnvironment}/sqs/eventbridge-queue/url'
+      Type: String
+      Description: !Sub 'EventBridgeQueue URL for ${AppEnvironment}'
+      Value: !Ref EventBridgeQueue
+
+  EventBridgeQueueArnParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub '/formkiq/${AppEnvironment}/sqs/eventbridge-queue/arn'
+      Type: String
+      Description: !Sub 'EventBridgeQueue ARN for ${AppEnvironment}'
+      Value: !GetAtt EventBridgeQueue.Arn
+
+  # ActionsEventQueue (renamed from AllEventsQueue)
+  ActionsEventQueueUrlParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub '/formkiq/${AppEnvironment}/sqs/actions-event-queue/url'
+      Type: String
+      Description: !Sub 'ActionsEventQueue URL for ${AppEnvironment}'
+      Value: !Ref ActionsEventQueue
+
+  ActionsEventQueueArnParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub '/formkiq/${AppEnvironment}/sqs/actions-event-queue/arn'
+      Type: String
+      Description: !Sub 'ActionsEventQueue ARN for ${AppEnvironment}'
+      Value: !GetAtt ActionsEventQueue.Arn
+
+  # ActionsEventBus (name & ARN)
+  ActionsEventBusNameParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub '/formkiq/${AppEnvironment}/eventbridge/actions-event-bus/name'
+      Type: String
+      Description: !Sub 'ActionsEventBus name for ${AppEnvironment}'
+      Value: !Ref ActionsEventBus
+
+  ActionsEventBusArnParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub '/formkiq/${AppEnvironment}/eventbridge/actions-event-bus/arn'
+      Type: String
+      Description: !Sub 'ActionsEventBus ARN for ${AppEnvironment}'
+      Value: !GetAtt ActionsEventBus.Arn
+
+Outputs:
+  ActionsEventBusNameOut:
+    Description: The name of the newly created Actions EventBridge bus
+    Value: !Ref ActionsEventBus
+
+  SnsQueueUrl:
+    Description: URL of SnsQueue
+    Value: !Ref SnsQueue
+  SnsQueueArn:
+    Description: ARN of SnsQueue
+    Value: !GetAtt SnsQueue.Arn
+
+  EventBridgeQueueUrl:
+    Description: URL of EventBridgeQueue
+    Value: !Ref EventBridgeQueue
+  EventBridgeQueueArn:
+    Description: ARN of EventBridgeQueue
+    Value: !GetAtt EventBridgeQueue.Arn
+
+  ActionsEventQueueUrl:
+    Description: URL of ActionsEventQueue
+    Value: !Ref ActionsEventQueue
+  ActionsEventQueueArn:
+    Description: ARN of ActionsEventQueue
+    Value: !GetAtt ActionsEventQueue.Arn
