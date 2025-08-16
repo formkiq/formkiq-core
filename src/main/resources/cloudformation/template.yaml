@@ -143,6 +143,19 @@ Parameters:
       - "true"
       - "false"
 
+  UserPoolTier:
+    Type: String
+    Description: >
+      Cognito User Pool feature plan (tier). Determines the set of capabilities and limits
+      available for the pool. Valid values:
+        - LITE: Basic authentication and user management features at the lowest cost.
+        - ESSENTIALS: Standard tier with advanced authentication features (default).
+        - PLUS: Includes all ESSENTIALS features plus premium capabilities such as
+          advanced security protections, WebAuthn/passkey support, and additional customization.
+      The default is ESSENTIALS if not otherwise specified.
+    AllowedValues: ["LITE", "ESSENTIALS", "PLUS"]
+    Default: "LITE"
+
 Conditions:
 
   HasTypesenseApiKey:
@@ -376,6 +389,8 @@ Resources:
           Ref: LogLevelApplication
         LogLevelSystem:
           Ref: LogLevelSystem
+        UserPoolTier:
+          Ref: UserPoolTier
         RedirectUrl:
           Fn::GetAtt:
           - CoreConsole
