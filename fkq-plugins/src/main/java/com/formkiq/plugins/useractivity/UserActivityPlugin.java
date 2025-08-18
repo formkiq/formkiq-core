@@ -23,6 +23,9 @@
  */
 package com.formkiq.plugins.useractivity;
 
+import com.formkiq.aws.dynamodb.useractivities.ActivityResourceType;
+
+import java.util.Collection;
 import java.util.Map;
 
 /**
@@ -41,32 +44,37 @@ public interface UserActivityPlugin {
 
   /**
    * Add Document Activity.
-   * 
+   *
+   * @param resourceType {@link ActivityResourceType}
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param record {@link Map}
    */
-  void addDocumentActivity(String siteId, String documentId, Map<String, Object> record);
+  void addDocumentActivity(ActivityResourceType resourceType, String siteId, String documentId,
+      Map<String, Object> record);
 
   /**
    * Add update Document Activity.
-   * 
+   *
+   * @param resourceType {@link ActivityResourceType}
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param current {@link Map}
    * @param previous {@link Map}
    */
-  void updateDocumentActivity(String siteId, String documentId, Map<String, Object> current,
-      Map<String, Object> previous);
+  void updateDocumentActivity(ActivityResourceType resourceType, String siteId, String documentId,
+      Map<String, Object> current, Map<String, Object> previous);
 
   /**
    * Add delete Document Activity.
-   * 
+   *
+   * @param resourceType {@link ActivityResourceType}
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param record {@link Map}
    */
-  void deleteDocumentActivity(String siteId, String documentId, Map<String, Object> record);
+  void deleteDocumentActivity(ActivityResourceType resourceType, String siteId, String documentId,
+      Map<String, Object> record);
 
 
   /**
@@ -94,4 +102,11 @@ public interface UserActivityPlugin {
    * @param userActivity {@link UserActivity}
    */
   void addUserActivity(UserActivity userActivity);
+
+  /**
+   * Add User Activity.
+   *
+   * @param userActivity {@link Collection} {@link UserActivity}
+   */
+  void addUserActivity(Collection<UserActivity> userActivity);
 }

@@ -25,6 +25,7 @@ package com.formkiq.aws.dynamodb.useractivities;
 
 import com.formkiq.aws.dynamodb.DynamoDbAttributeMapBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.eventsourcing.entity.DynamoDbEntityBuilder;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -269,7 +270,7 @@ public record ActivityRecord(DynamoDbKey key, String resource, UserActivityType 
     @Override
     public DynamoDbKey buildKey(final String siteId) {
       return switch (resource) {
-        case "documents", "users" -> buildDocumentsKey(siteId);
+        case "documents", "users", "documentAttributes" -> buildDocumentsKey(siteId);
         case "entities" -> buildEntitiesKey(siteId);
         case "entityTypes" -> buildEntityTypesKey(siteId);
         default -> throw new IllegalArgumentException("Invalid resource " + resource);
@@ -286,7 +287,8 @@ public record ActivityRecord(DynamoDbKey key, String resource, UserActivityType 
       Objects.requireNonNull(userId, "userId must not be null");
 
       String pk = "doc#" + documentId;
-      String sk = "activity#" + DateUtil.getNowInIso8601Format() + "#" + documentId;
+      String sk =
+          "activity#" + DateUtil.getNowInIso8601Format() + "#" + documentId + "#" + ID.uuid();
       String gsi1Pk = "activity#user#" + userId;
 
       String gsi2Pk = getGsi2Pk();

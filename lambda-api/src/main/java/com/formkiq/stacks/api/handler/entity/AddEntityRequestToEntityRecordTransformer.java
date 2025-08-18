@@ -29,6 +29,7 @@ import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.eventsourcing.entity.EntityAttribute;
 import com.formkiq.aws.dynamodb.eventsourcing.entity.EntityRecord;
 import com.formkiq.aws.dynamodb.eventsourcing.entity.EntityTypeRecord;
+import com.formkiq.aws.dynamodb.useractivities.ActivityResourceType;
 import com.formkiq.aws.dynamodb.useractivities.AttributeValuesToChangeRecordFunction;
 import com.formkiq.aws.dynamodb.useractivities.ChangeRecord;
 import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
@@ -105,14 +106,14 @@ public class AddEntityRequestToEntityRecordTransformer
       Map<String, ChangeRecord> changes =
           new AttributeValuesToChangeRecordFunction(Map.of("documentId", "entityId")).apply(null,
               attributes);
-      UserActivityContext.set(UserActivityType.CREATE, changes);
+      UserActivityContext.set(ActivityResourceType.ENTITY, UserActivityType.CREATE, changes);
     } else {
 
       Map<String, AttributeValue> oldAttributes = db.get(entity.key());
       Map<String, ChangeRecord> changes =
           new AttributeValuesToChangeRecordFunction(Map.of("documentId", "entityId"))
               .apply(oldAttributes, attributes);
-      UserActivityContext.set(UserActivityType.UPDATE, changes);
+      UserActivityContext.set(ActivityResourceType.ENTITY, UserActivityType.UPDATE, changes);
     }
 
     db.putItem(attributes);

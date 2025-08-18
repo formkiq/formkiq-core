@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.dynamodb;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -40,6 +41,16 @@ public interface DocumentServiceInterceptor {
    */
   void saveDocument(String siteId, String documentId, Map<String, Object> current,
       Map<String, Object> previous);
+
+  /**
+   * Save Document Attributes Interceptor.
+   *
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param attributes {@link Map}
+   */
+  void saveDocumentAttributes(String siteId, String documentId,
+      List<Map<String, Object>> attributes);
 
   /**
    * Delete Document Interceptor.

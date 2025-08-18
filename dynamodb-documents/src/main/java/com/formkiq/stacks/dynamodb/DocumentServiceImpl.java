@@ -1921,7 +1921,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       // delete old composite keys
       deleteDocumentAttributes(siteId, (Collection<DocumentAttributeRecord>) tx.getDeletes());
 
-      saveDocumentInterceptor(siteId, documentId, current, previous);
+      saveDocumentInterceptor(siteId, documentId, current, previous, tx);
 
       if (isPathChanged) {
         String path = previous.containsKey("path") ? previous.get("path").s() : null;
@@ -1977,11 +1977,24 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   private void saveDocumentInterceptor(final String siteId, final String documentId,
-      final Map<String, AttributeValue> current, final Map<String, AttributeValue> previous) {
+      final Map<String, AttributeValue> current, final Map<String, AttributeValue> previous,
+      final DynamodbRecordTx tx) {
+
     if (this.interceptor != null) {
+
       AttributeValueToMap attributeValueToMap = new AttributeValueToMap();
+
+      List<Map<String, Object>> attrs = notNull(tx.getSaves()).stream()
+          .map(a -> attributeValueToMap.apply(a.getAttributes(siteId))).toList();
+
+      // List<Map<String, Object>> deleteAttrs = notNull(tx.getDeletes()).stream()
+      // .map(a -> attributeValueToMap.apply(a.getAttributes(siteId))).toList();
+
       this.interceptor.saveDocument(siteId, documentId, attributeValueToMap.apply(current),
           attributeValueToMap.apply(previous));
+
+      this.interceptor.saveDocumentAttributes(siteId, documentId, attrs);
+      // this.interceptor.deleteDocumentAttributes(siteId, documentId, deleteAttrs);
     }
   }
 

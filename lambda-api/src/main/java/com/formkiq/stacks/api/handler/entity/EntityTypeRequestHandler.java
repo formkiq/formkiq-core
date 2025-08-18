@@ -31,6 +31,7 @@ import com.formkiq.aws.dynamodb.DynamoDbQueryBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.eventsourcing.entity.EntityRecord;
 import com.formkiq.aws.dynamodb.eventsourcing.entity.EntityTypeRecord;
+import com.formkiq.aws.dynamodb.useractivities.ActivityResourceType;
 import com.formkiq.aws.dynamodb.useractivities.AttributeValuesToChangeRecordFunction;
 import com.formkiq.aws.dynamodb.useractivities.ChangeRecord;
 import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
@@ -102,7 +103,7 @@ public class EntityTypeRequestHandler
     Map<String, ChangeRecord> changes =
         new AttributeValuesToChangeRecordFunction(Map.of("documentId", "entityTypeId"))
             .apply(attributes, null);
-    UserActivityContext.set(UserActivityType.DELETE, changes);
+    UserActivityContext.set(ActivityResourceType.ENTITY_TYPE, UserActivityType.DELETE, changes);
 
     DynamoDbKey entityTypeKey = EntityTypeRecord.builder().documentId(entityTypeId).namespace("")
         .name("").build(siteId).key();

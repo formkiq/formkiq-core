@@ -24,6 +24,7 @@
 package com.formkiq.aws.services.lambda;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.useractivities.ActivityResourceType;
 import com.formkiq.aws.dynamodb.useractivities.UserActivityStatus;
 import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
@@ -32,9 +33,13 @@ import com.formkiq.plugins.useractivity.UserActivityContext;
 import com.formkiq.plugins.useractivity.UserActivityContextData;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 
 /**
  * Convert {@link ApiGatewayRequestEvent} to {@link UserActivity}.
@@ -53,7 +58,44 @@ public class ApiGatewayRequestToUserActivityFunction {
    * @param response ApiRequestHandlerResponse
    * @return {@link UserActivity.Builder}
    */
-  public UserActivity.Builder apply(final ApiAuthorization authorization,
+  public Collection<UserActivity.Builder> apply(final ApiAuthorization authorization,
+      final ApiGatewayRequestEvent request, final ApiRequestHandlerResponse response) {
+
+    Collection<UserActivity.Builder> builders = null;
+
+    Collection<UserActivityContextData> data = UserActivityContext.get();
+
+    if (!notNull(data).isEmpty()) {
+
+      builders = new ArrayList<>(data.size());
+
+      for (UserActivityContextData contextData : data) {
+        UserActivity.Builder builder = createBuilder(authorization, request, response);
+        builder.resource(findResource(contextData.resourceType()));
+        builder.type(contextData.activityType());
+        builder.changes(contextData.changeRecords());
+        builders.add(builder);
+      }
+    }
+
+    if (builders == null) {
+      builders = List.of(createBuilder(authorization, request, response));
+    }
+
+    return builders;
+  }
+
+  private String findResource(final ActivityResourceType resourceType) {
+    return switch (resourceType) {
+      case DOCUMENT -> "documents";
+      case DOCUMENT_ATTRIBUTE -> "documentAttributes";
+      case ENTITY_TYPE -> "entityTypes";
+      case ENTITY -> "entities";
+      default -> throw new IllegalArgumentException("Unknown resource type: " + resourceType);
+    };
+  }
+
+  private UserActivity.Builder createBuilder(final ApiAuthorization authorization,
       final ApiGatewayRequestEvent request, final ApiRequestHandlerResponse response) {
 
     UserActivity.Builder builder = UserActivity.builder().source("HTTP")
@@ -69,12 +111,6 @@ public class ApiGatewayRequestToUserActivityFunction {
 
     builder = builder.documentId(documentId).entityId(entityId).entityTypeId(entityTypeId);
 
-    UserActivityContextData data = UserActivityContext.get();
-    if (data != null) {
-      builder.type(data.activityType());
-      builder.changes(data.changeRecords());
-    }
-
     if (request != null) {
 
       String entityNamespace = request.getQueryStringParameter("namespace");
@@ -84,7 +120,6 @@ public class ApiGatewayRequestToUserActivityFunction {
           .sourceIpAddress(getSourceIp(request)).body(getBody(request))
           .userId(authorization != null ? authorization.getUsername() : "System");
     }
-
     return builder;
   }
 

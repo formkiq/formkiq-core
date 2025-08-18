@@ -21,18 +21,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.plugins.useractivity;
-
-import com.formkiq.aws.dynamodb.useractivities.ActivityResourceType;
-import com.formkiq.aws.dynamodb.useractivities.ChangeRecord;
-import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
-
-import java.util.Map;
+package com.formkiq.aws.dynamodb.useractivities;
 
 /**
- * Represents a user activity event, capturing the type of activity and the associated change
- * records.
+ * Types of Activity Resources.
  */
-public record UserActivityContextData(ActivityResourceType resourceType,
-    UserActivityType activityType, Map<String, ChangeRecord> changeRecords) {
+public enum ActivityResourceType {
+  /** Document Resource Type. */
+  DOCUMENT,
+  /** Document Attribute Resource Type. */
+  DOCUMENT_ATTRIBUTE,
+  /** Entity Type Resource Type. */
+  ENTITY_TYPE,
+  /** Entity Resource Type. */
+  ENTITY
 }
