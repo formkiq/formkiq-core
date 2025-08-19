@@ -23,7 +23,6 @@
  */
 package com.formkiq.stacks.dynamodb;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -47,10 +46,11 @@ public interface DocumentServiceInterceptor {
    *
    * @param siteId {@link String}
    * @param documentId {@link String}
-   * @param attributes {@link Map}
+   * @param current {@link Map}
+   * @param previous {@link Map}
    */
-  void saveDocumentAttributes(String siteId, String documentId,
-      List<Map<String, Object>> attributes);
+  void saveDocumentAttribute(String siteId, String documentId, Map<String, Object> current,
+      Map<String, Object> previous);
 
   /**
    * Delete Document Interceptor.
@@ -61,6 +61,17 @@ public interface DocumentServiceInterceptor {
    * @param current {@link Map}
    */
   void deleteDocument(String siteId, String documentId, boolean softDelete,
+      Map<String, Object> current);
+
+  /**
+   * Delete Document Attribute Interceptor.
+   *
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param softDelete boolean
+   * @param current {@link Map}
+   */
+  void deleteDocumentAttribute(String siteId, String documentId, boolean softDelete,
       Map<String, Object> current);
 
   /**

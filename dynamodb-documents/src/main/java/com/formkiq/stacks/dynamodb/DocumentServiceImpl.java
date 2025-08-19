@@ -1903,7 +1903,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     boolean isPathChanged = isPathChanged(siteId, document, previous, documentValues, writeBuilder);
 
     writeBuilder.appends(this.documentTableName,
-        tx.getSaves().stream().map(a -> a.getAttributes(siteId)).toList());
+        tx.saves().stream().map(a -> a.getAttributes(siteId)).toList());
 
     addDocumentSyncRecord(writeBuilder, siteId, document.getDocumentId(), documentExists, now,
         options);
@@ -1919,7 +1919,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       String documentId = document.getDocumentId();
 
       // delete old composite keys
-      deleteDocumentAttributes(siteId, (Collection<DocumentAttributeRecord>) tx.getDeletes());
+      deleteDocumentAttributes(siteId, (Collection<DocumentAttributeRecord>) tx.deletes());
 
       saveDocumentInterceptor(siteId, documentId, current, previous, tx);
 
@@ -1982,19 +1982,29 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
     if (this.interceptor != null) {
 
-      AttributeValueToMap attributeValueToMap = new AttributeValueToMap();
+      AttributeValueToMap toMap = new AttributeValueToMap();
 
-      List<Map<String, Object>> attrs = notNull(tx.getSaves()).stream()
-          .map(a -> attributeValueToMap.apply(a.getAttributes(siteId))).toList();
+      Map<String, Map<String, AttributeValue>> prevKeys = tx.previousValues().stream()
+          .map(t -> t.getAttributes(siteId)).filter(a -> a.containsKey("key"))
+          .collect(Collectors.toMap(a -> a.get("key").s(), Function.identity()));
 
-      // List<Map<String, Object>> deleteAttrs = notNull(tx.getDeletes()).stream()
-      // .map(a -> attributeValueToMap.apply(a.getAttributes(siteId))).toList();
+      this.interceptor.saveDocument(siteId, documentId, toMap.apply(current),
+          toMap.apply(previous));
 
-      this.interceptor.saveDocument(siteId, documentId, attributeValueToMap.apply(current),
-          attributeValueToMap.apply(previous));
+      List<Map<String, Object>> attrs =
+          notNull(tx.saves()).stream().map(a -> toMap.apply(a.getAttributes(siteId))).toList();
 
-      this.interceptor.saveDocumentAttributes(siteId, documentId, attrs);
-      // this.interceptor.deleteDocumentAttributes(siteId, documentId, deleteAttrs);
+      attrs.forEach(attr -> {
+        Map<String, AttributeValue> prev =
+            prevKeys.getOrDefault((String) attr.get("key"), Collections.emptyMap());
+        this.interceptor.saveDocumentAttribute(siteId, documentId, attr, toMap.apply(prev));
+      });
+
+      List<Map<String, Object>> deleteAttrs =
+          notNull(tx.deletes()).stream().map(a -> toMap.apply(a.getAttributes(siteId))).toList();
+
+      deleteAttrs.forEach(
+          attr -> this.interceptor.deleteDocumentAttribute(siteId, documentId, false, attr));
     }
   }
 
@@ -2016,7 +2026,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     if (tx != null) {
 
       List<Map<String, AttributeValue>> list =
-          tx.getSaves().stream().map(k -> k.getAttributes(siteId)).toList();
+          tx.saves().stream().map(k -> k.getAttributes(siteId)).toList();
 
       WriteRequestBuilder builder = new WriteRequestBuilder();
       builder.appends(this.documentTableName, list);
@@ -2026,8 +2036,11 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
       if (builder.batchWriteItem(this.dbClient)) {
         // delete old composite keys
-        deleteDocumentAttributes(siteId, (Collection<DocumentAttributeRecord>) tx.getDeletes());
+        deleteDocumentAttributes(siteId, (Collection<DocumentAttributeRecord>) tx.deletes());
       }
+
+      saveDocumentInterceptor(siteId, documentId, Collections.emptyMap(), Collections.emptyMap(),
+          tx);
     }
   }
 
@@ -2082,10 +2095,11 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
             .error("No attributes found to be saved, only found ones to delete")));
       }
 
-      tx = new DynamodbRecordTx(toSave, toBeDeleted);
+      tx = new DynamodbRecordTx(toSave, toBeDeleted, previousAllAttributes);
 
     } else {
-      tx = new DynamodbRecordTx(Collections.emptyList(), Collections.emptyList());
+      tx = new DynamodbRecordTx(Collections.emptyList(), Collections.emptyList(),
+          Collections.emptyList());
     }
 
     return tx;

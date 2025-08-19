@@ -80,15 +80,17 @@ public interface UserActivityPlugin {
   /**
    * Add soft delete Document Activity.
    *
+   * @param resourceType {@link ActivityResourceType}
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param record {@link Map}
    */
-  void deleteSoftDocumentActivity(String siteId, String documentId, Map<String, Object> record);
+  void deleteSoftDocumentActivity(ActivityResourceType resourceType, String siteId,
+      String documentId, Map<String, Object> record);
 
   /**
    * Restore Soft Delete Document Activity.
-   * 
+   *
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param record {@link Map}

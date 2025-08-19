@@ -46,6 +46,7 @@ import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
 import com.formkiq.plugins.useractivity.UserActivity;
 import com.formkiq.plugins.useractivity.UserActivityContext;
 import com.google.gson.Gson;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -58,6 +59,11 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
   /** {@link ApiGatewayRequestToUserActivityFunction}. */
   private final ApiGatewayRequestToUserActivityFunction function =
       new ApiGatewayRequestToUserActivityFunction();
+
+  @BeforeEach
+  public void setup() {
+    UserActivityContext.clear();
+  }
 
   /**
    * GET /documents/{documentId}/url and /documents/{documentId}/content.
