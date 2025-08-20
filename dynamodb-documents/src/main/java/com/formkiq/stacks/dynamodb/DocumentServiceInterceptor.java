@@ -82,4 +82,14 @@ public interface DocumentServiceInterceptor {
    * @param current {@link Map}
    */
   void restoreSoftDeletedDocument(String siteId, String documentId, Map<String, Object> current);
+
+  /**
+   * Restore Soft Deleted Document Attribute Inteerceptor.
+   *
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param current {@link Map}
+   */
+  void restoreSoftDeletedDocumentAttribute(String siteId, String documentId,
+      Map<String, Object> current);
 }

@@ -91,12 +91,13 @@ public interface UserActivityPlugin {
   /**
    * Restore Soft Delete Document Activity.
    *
+   * @param resourceType {@link ActivityResourceType}
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param record {@link Map}
    */
-  void restoreSoftDeletedDocumentActivity(String siteId, String documentId,
-      Map<String, Object> record);
+  void restoreSoftDeletedDocumentActivity(ActivityResourceType resourceType, String siteId,
+      String documentId, Map<String, Object> record);
 
   /**
    * Add User Activity.

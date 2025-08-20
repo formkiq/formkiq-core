@@ -1782,8 +1782,16 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
           new DocumentRestoreMoveAttributeFunction(siteId, documentId));
 
       if (this.interceptor != null) {
-        Map<String, Object> apply = new AttributeValueToMap().apply(attr);
-        this.interceptor.restoreSoftDeletedDocument(siteId, documentId, apply);
+        AttributeValueToMap toMap = new AttributeValueToMap();
+
+        list.forEach(i -> {
+          if (i.containsKey("SK") && i.get("SK").s().startsWith("softdelete#attr#")) {
+            this.interceptor.restoreSoftDeletedDocumentAttribute(siteId, documentId,
+                toMap.apply(i));
+          }
+        });
+
+        this.interceptor.restoreSoftDeletedDocument(siteId, documentId, toMap.apply(attr));
       }
 
       String path = attr.get("path").s();
