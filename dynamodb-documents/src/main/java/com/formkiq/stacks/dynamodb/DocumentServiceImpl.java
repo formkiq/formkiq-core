@@ -68,6 +68,7 @@ import com.formkiq.stacks.dynamodb.attributes.AttributeValidatorImpl;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeKeyPredicate;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecordPredicate;
+import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecordToMap;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecordsToSchemaAttributes;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
 import com.formkiq.stacks.dynamodb.attributes.DynamicObjectToDocumentAttributeRecord;
@@ -487,9 +488,17 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       }
 
       if (documentRecord != null) {
-        AttributeValueToMap transform = new AttributeValueToMap();
-        Map<String, Object> apply = transform.apply(documentRecord);
-        this.interceptor.deleteDocument(siteId, documentId, softDelete, apply);
+        AttributeValueToMap toMap = new AttributeValueToMap();
+
+        list.forEach(a -> {
+          if (a.containsKey("SK") && a.get("SK").s().startsWith("attr#")) {
+            this.interceptor.deleteDocumentAttribute(siteId, documentId, softDelete,
+                toMap.apply(a));
+          }
+        });
+
+        this.interceptor.deleteDocument(siteId, documentId, softDelete,
+            toMap.apply(documentRecord));
       }
     }
 
@@ -1984,9 +1993,9 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
       AttributeValueToMap toMap = new AttributeValueToMap();
 
-      Map<String, Map<String, AttributeValue>> prevKeys = tx.previousValues().stream()
-          .map(t -> t.getAttributes(siteId)).filter(a -> a.containsKey("key"))
-          .collect(Collectors.toMap(a -> a.get("key").s(), Function.identity()));
+      Map<String, Map<String, Object>> prevValues = new DocumentAttributeRecordToMap(true)
+          .apply((Collection<DocumentAttributeRecord>) tx.previousValues()).stream()
+          .collect(Collectors.toMap(a -> (String) a.get("key"), Function.identity()));
 
       this.interceptor.saveDocument(siteId, documentId, toMap.apply(current),
           toMap.apply(previous));
@@ -1994,14 +2003,22 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       List<Map<String, Object>> attrs =
           notNull(tx.saves()).stream().map(a -> toMap.apply(a.getAttributes(siteId))).toList();
 
+      Set<Object> saveKeys = attrs.stream().map(a -> a.get("key")).collect(Collectors.toSet());
+
       attrs.forEach(attr -> {
-        Map<String, AttributeValue> prev =
-            prevKeys.getOrDefault((String) attr.get("key"), Collections.emptyMap());
-        this.interceptor.saveDocumentAttribute(siteId, documentId, attr, toMap.apply(prev));
+        Map<String, Object> prev =
+            prevValues.getOrDefault((String) attr.get("key"), Collections.emptyMap());
+
+        if (!prev.isEmpty()) {
+          prev.put("documentId", documentId);
+        }
+
+        this.interceptor.saveDocumentAttribute(siteId, documentId, attr, prev);
       });
 
       List<Map<String, Object>> deleteAttrs =
-          notNull(tx.deletes()).stream().map(a -> toMap.apply(a.getAttributes(siteId))).toList();
+          notNull(tx.deletes()).stream().map(a -> toMap.apply(a.getAttributes(siteId)))
+              .filter(a -> !saveKeys.contains(a.get("key"))).toList();
 
       deleteAttrs.forEach(
           attr -> this.interceptor.deleteDocumentAttribute(siteId, documentId, false, attr));

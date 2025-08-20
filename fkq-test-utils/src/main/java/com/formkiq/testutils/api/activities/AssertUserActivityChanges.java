@@ -25,6 +25,7 @@ package com.formkiq.testutils.api.activities;
 
 import com.formkiq.client.model.UserActivityChanges;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.function.BiFunction;
 
@@ -47,8 +48,18 @@ public class AssertUserActivityChanges implements
       }
 
       if (!expected.get(key).isEmpty()) {
-        assertEquals(value.getNewValue(), expected.get(key).get("newValue"));
-        assertEquals(value.getOldValue(), expected.get(key).get("oldValue"));
+
+        Object nv = value.getNewValue();
+        if (nv instanceof Collection c) {
+          nv = String.join(",", c);
+        }
+        assertEquals(nv, expected.get(key).get("newValue"));
+
+        Object ov = value.getOldValue();
+        if (ov instanceof Collection c) {
+          ov = String.join(",", c);
+        }
+        assertEquals(ov, expected.get(key).get("oldValue"));
       }
     });
 
