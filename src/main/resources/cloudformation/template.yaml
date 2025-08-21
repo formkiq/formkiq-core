@@ -217,8 +217,6 @@ Resources:
 
   CoreStorage:
     Type: AWS::Serverless::Application
-    DependsOn:
-      - EventMessages
     Properties:
       Location: storage/template.yaml
       Parameters:
