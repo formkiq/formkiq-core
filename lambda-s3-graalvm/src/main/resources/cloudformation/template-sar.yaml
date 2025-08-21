@@ -39,6 +39,7 @@ Parameters:
   DocumentEventsBus:
     Type: String
     Description: Name EventBridge Event Bus
+    Default: ""
 
   LogRetentionInDays:
     Type: Number

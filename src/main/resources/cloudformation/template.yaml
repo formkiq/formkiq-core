@@ -215,14 +215,6 @@ Resources:
         FormKiQType: "core"
         FormKiQVersion: #@ data.values.version or assert.fail("missing version")
 
-  EventMessages:
-    Type: AWS::Serverless::Application
-    Properties:
-      Location: event-message.yaml
-      Parameters:
-        AppEnvironment:
-          Ref: AppEnvironment
-
   CoreStorage:
     Type: AWS::Serverless::Application
     DependsOn:
@@ -250,10 +242,6 @@ Resources:
           Fn::GetAtt:
             - Config
             - Outputs.FormKiQType
-        DocumentEventsBus:
-          Fn::GetAtt:
-            - EventMessages
-            - Outputs.DocumentEventsBus
       Tags:
         Application: "FormKiQ"
         AppEnvironment: 
