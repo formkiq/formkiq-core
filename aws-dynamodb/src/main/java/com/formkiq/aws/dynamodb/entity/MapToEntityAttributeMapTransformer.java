@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.dynamodb.eventsourcing.entity;
+package com.formkiq.aws.dynamodb.entity;
 
 import java.util.ArrayList;
 import java.util.Collection;

@@ -21,32 +21,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.dynamodb;
+package com.formkiq.aws.dynamodb.entity;
 
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-
-import java.util.Map;
+import java.util.List;
+import java.util.function.Function;
 
 /**
- * {@link DynamoDbAttributeMapBuilder} for saving Custom Objects.
+ * {@link Function} to transform {@link EntityAttribute} to {@link Object}.
  */
-public interface CustomDynamoDbAttributeBuilder {
+public class EntityAttributeToObjectTransformer implements Function<EntityAttribute, Object> {
 
-  /**
-   * Builds {@link AttributeValue} for DynamoDb.
-   * 
-   * @param name {@link String}
-   * @param value {@link Object}
-   * @return Map {@link AttributeValue}
-   */
-  Map<String, AttributeValue> encode(String name, Object value);
+  @Override
+  public Object apply(final EntityAttribute attribute) {
 
-  /**
-   * Decode {@link Map} {@link AttributeValue} to {@link Object}.
-   * 
-   * @param attrs {@link Map} {@link AttributeValue}
-   * @return Object
-   * @param <T> Type of object
-   */
-  <T> T decode(Map<String, AttributeValue> attrs);
+    Object obj = null;
+
+    if (attribute.getStringValues() != null && !attribute.getStringValues().isEmpty()) {
+      obj = toObject(attribute.getStringValues());
+    } else if (attribute.getNumberValues() != null && !attribute.getNumberValues().isEmpty()) {
+      obj = toObject(attribute.getNumberValues());
+    } else if (attribute.getBooleanValue() != null) {
+      obj = attribute.getBooleanValue();
+    }
+
+    return obj;
+  }
+
+  private Object toObject(final List<?> list) {
+    return list.size() == 1 ? list.get(0) : list;
+  }
 }

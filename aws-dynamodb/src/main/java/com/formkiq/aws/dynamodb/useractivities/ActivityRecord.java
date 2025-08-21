@@ -23,10 +23,10 @@
  */
 package com.formkiq.aws.dynamodb.useractivities;
 
-import com.formkiq.aws.dynamodb.DynamoDbAttributeMapBuilder;
+import com.formkiq.aws.dynamodb.builder.DynamoDbAttributeMapBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.ID;
-import com.formkiq.aws.dynamodb.eventsourcing.entity.DynamoDbEntityBuilder;
+import com.formkiq.aws.dynamodb.builder.DynamoDbEntityBuilder;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 

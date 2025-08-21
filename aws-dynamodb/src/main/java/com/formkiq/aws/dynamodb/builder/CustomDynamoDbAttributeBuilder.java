@@ -21,25 +21,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.dynamodb.eventsourcing.entity;
+package com.formkiq.aws.dynamodb.builder;
 
-import com.formkiq.aws.dynamodb.DynamoDbKey;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
-public interface DynamoDbEntityBuilder<T> {
+import java.util.Map;
+
+/**
+ * {@link DynamoDbAttributeMapBuilder} for saving Custom Objects.
+ */
+public interface CustomDynamoDbAttributeBuilder {
 
   /**
-   * Build {@link DynamoDbKey}.
+   * Builds {@link AttributeValue} for DynamoDb.
    * 
-   * @param siteId {@link String}
-   * @return DynamoDbKey
+   * @param name {@link String}
+   * @param value {@link Object}
+   * @return Map {@link AttributeValue}
    */
-  DynamoDbKey buildKey(String siteId);
+  Map<String, AttributeValue> encode(String name, Object value);
 
   /**
-   * Builds the {@link T}, computing the DynamoDbKey.
-   *
-   * @param siteId {@link String}
-   * @return a new T
+   * Decode {@link Map} {@link AttributeValue} to {@link Object}.
+   * 
+   * @param attrs {@link Map} {@link AttributeValue}
+   * @return Object
+   * @param <T> Type of object
    */
-  T build(String siteId);
+  <T> T decode(Map<String, AttributeValue> attrs);
 }

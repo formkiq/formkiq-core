@@ -24,8 +24,8 @@
 package com.formkiq.stacks.dynamodb.folders;
 
 import com.formkiq.aws.dynamodb.ApiPermission;
-import com.formkiq.aws.dynamodb.CustomDynamoDbAttributeBuilder;
-import com.formkiq.aws.dynamodb.DynamoDbAttributeMapBuilder;
+import com.formkiq.aws.dynamodb.builder.CustomDynamoDbAttributeBuilder;
+import com.formkiq.aws.dynamodb.builder.DynamoDbAttributeMapBuilder;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.Collection;

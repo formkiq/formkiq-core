@@ -21,33 +21,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.dynamodb.eventsourcing.entity;
+package com.formkiq.aws.dynamodb.builder;
 
-import java.util.List;
-import java.util.function.Function;
+import com.formkiq.aws.dynamodb.DynamoDbKey;
 
-/**
- * {@link Function} to transform {@link EntityAttribute} to {@link Object}.
- */
-public class EntityAttributeToObjectTransformer implements Function<EntityAttribute, Object> {
+public interface DynamoDbEntityBuilder<T> {
 
-  @Override
-  public Object apply(final EntityAttribute attribute) {
+  /**
+   * Build {@link DynamoDbKey}.
+   * 
+   * @param siteId {@link String}
+   * @return DynamoDbKey
+   */
+  DynamoDbKey buildKey(String siteId);
 
-    Object obj = null;
-
-    if (attribute.getStringValues() != null && !attribute.getStringValues().isEmpty()) {
-      obj = toObject(attribute.getStringValues());
-    } else if (attribute.getNumberValues() != null && !attribute.getNumberValues().isEmpty()) {
-      obj = toObject(attribute.getNumberValues());
-    } else if (attribute.getBooleanValue() != null) {
-      obj = attribute.getBooleanValue();
-    }
-
-    return obj;
-  }
-
-  private Object toObject(final List<?> list) {
-    return list.size() == 1 ? list.get(0) : list;
-  }
+  /**
+   * Builds the {@link T}, computing the DynamoDbKey.
+   *
+   * @param siteId {@link String}
+   * @return a new T
+   */
+  T build(String siteId);
 }

@@ -24,7 +24,7 @@
 package com.formkiq.stacks.api.handler.entity;
 
 import com.formkiq.aws.dynamodb.MapToEntityMap;
-import com.formkiq.aws.dynamodb.eventsourcing.entity.MapToEntityAttributeMapTransformer;
+import com.formkiq.aws.dynamodb.entity.MapToEntityAttributeMapTransformer;
 
 import java.util.List;
 import java.util.Map;
