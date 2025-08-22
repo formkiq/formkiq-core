@@ -36,6 +36,8 @@ import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.getSiteIdName;
+
 /**
  * Record representing an Document Activity Event, with its DynamoDB key structure and metadata.
  */
@@ -139,7 +141,8 @@ public record DocumentActivityEventRecord(DynamoDbKey key, String siteId, String
     @Override
     public DocumentActivityEventRecord build(final String siteId) {
       DynamoDbKey key = buildKey(siteId);
-      return new DocumentActivityEventRecord(key, siteId, documentId, new Date(), activityKeys);
+      return new DocumentActivityEventRecord(key, getSiteIdName(siteId), documentId, new Date(),
+          activityKeys);
     }
   }
 }
