@@ -25,8 +25,6 @@ package com.formkiq.aws.dynamodb.builder;
 
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -37,42 +35,11 @@ import java.util.function.Function;
 public class MapToAttributeValue
     implements Function<Map<String, Object>, Map<String, AttributeValue>> {
 
+  /** {@link ObjectToAttributeValue}. */
+  private final ObjectToAttributeValue toValue = new ObjectToAttributeValue();
+
   @Override
   public Map<String, AttributeValue> apply(final Map<String, Object> map) {
-
-    Map<String, AttributeValue> result = null;
-
-    if (map != null) {
-      result = new HashMap<>();
-      for (Map.Entry<String, Object> e : map.entrySet()) {
-        AttributeValue a = convert(e.getValue());
-        result.put(e.getKey(), a);
-      }
-    }
-
-    return result;
-  }
-
-  private AttributeValue convert(final Object obj) {
-    AttributeValue o;
-    if (obj == null) {
-      o = AttributeValue.fromNul(true);
-    } else if (obj instanceof Double d) {
-      o = AttributeValue.fromN(String.valueOf(d));
-    } else if (obj instanceof Long l) {
-      o = AttributeValue.fromN(String.valueOf(l));
-    } else if (obj instanceof String s) {
-      o = AttributeValue.fromS(s);
-    } else if (obj instanceof Map m) {
-      o = AttributeValue.fromM(apply(m));
-    } else if (obj instanceof Boolean b) {
-      o = AttributeValue.fromBool(b);
-    } else if (obj instanceof Collection<?> c) {
-      o = AttributeValue.fromL(c.stream().map(this::convert).toList());
-    } else {
-      throw new IllegalArgumentException("Unsupported data type: " + obj.getClass().getName());
-    }
-
-    return o;
+    return toValue.convertMap(map);
   }
 }

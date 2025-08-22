@@ -50,9 +50,9 @@ public interface DynamoDbTypes {
     return attributeValue != null ? attributeValue.s() : null;
   }
 
-  static <T> T toCustom(final Map<String, AttributeValue> attrs,
+  static <T> T toCustom(final String name, final Map<String, AttributeValue> attrs,
       final CustomDynamoDbAttributeBuilder builder) {
-    return builder.decode(attrs);
+    return builder.decode(name, attrs);
   }
 
   /**

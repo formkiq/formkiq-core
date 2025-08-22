@@ -26,6 +26,7 @@ package com.formkiq.aws.dynamodb.builder;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 
@@ -100,6 +101,23 @@ public class DynamoDbAttributeMapBuilder {
     if (value != null) {
       Map<String, AttributeValue> map = new MapToAttributeValue().apply(value);
       attributes.put(name, AttributeValue.builder().m(map).build());
+    }
+    return this;
+  }
+
+
+  /**
+   * Add Attribute {@link List}.
+   * 
+   * @param name {@link String}
+   * @param values {@link List}
+   * @return builder
+   */
+  public DynamoDbAttributeMapBuilder withList(final String name,
+      final List<Map<String, Object>> values) {
+    if (values != null) {
+      AttributeValue list = new ObjectToAttributeValue().apply(values);
+      attributes.put(name, list);
     }
     return this;
   }

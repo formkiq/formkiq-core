@@ -43,10 +43,11 @@ public interface CustomDynamoDbAttributeBuilder {
 
   /**
    * Decode {@link Map} {@link AttributeValue} to {@link Object}.
-   * 
+   *
+   * @param name {@link String}
    * @param attrs {@link Map} {@link AttributeValue}
    * @return Object
    * @param <T> Type of object
    */
-  <T> T decode(Map<String, AttributeValue> attrs);
+  <T> T decode(String name, Map<String, AttributeValue> attrs);
 }

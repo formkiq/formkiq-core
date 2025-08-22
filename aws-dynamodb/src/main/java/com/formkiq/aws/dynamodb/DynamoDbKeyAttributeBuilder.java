@@ -21,57 +21,53 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb.folders;
+package com.formkiq.aws.dynamodb;
 
-import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.dynamodb.builder.CustomDynamoDbAttributeBuilder;
 import com.formkiq.aws.dynamodb.builder.DynamoDbAttributeMapBuilder;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-/**
- * {@link CustomDynamoDbAttributeBuilder} for {@link FolderRolePermission}.
- */
-public class FolderRolePermissionAttributeBuilder implements CustomDynamoDbAttributeBuilder {
+import static com.formkiq.aws.dynamodb.DbKeys.PK;
+import static com.formkiq.aws.dynamodb.DbKeys.SK;
 
-  /** Attribute Prefix. */
-  private static final String ATTRIBUTE_KEY_PREFIX = "role#";
+/**
+ * {@link CustomDynamoDbAttributeBuilder} for {@link DynamoDbKey}.
+ */
+public class DynamoDbKeyAttributeBuilder implements CustomDynamoDbAttributeBuilder {
 
   @Override
   public Map<String, AttributeValue> encode(final String name, final Object value) {
 
-    DynamoDbAttributeMapBuilder builder = DynamoDbAttributeMapBuilder.builder();
+    List<Map<String, Object>> list = new ArrayList<>();
 
     if (value instanceof Collection<?> c) {
       c.forEach(val -> {
-        if (val instanceof FolderRolePermission p) {
-          builder.withEnumList(ATTRIBUTE_KEY_PREFIX + p.roleName(), p.permissions());
+        if (val instanceof DynamoDbKey key) {
+          list.add(Map.of(PK, key.pk(), SK, key.sk()));
         }
       });
     }
 
-    return builder.build();
+    return DynamoDbAttributeMapBuilder.builder().withList(name, list).build();
   }
 
   @Override
   public <T> T decode(final String name, final Map<String, AttributeValue> attrs) {
 
-    List<FolderRolePermission> list = null;
-    List<String> keys =
-        attrs.keySet().stream().filter(k -> k.startsWith(ATTRIBUTE_KEY_PREFIX)).toList();
+    Collection<DynamoDbKey> keys = null;
+    AttributeValue av = attrs.get(name);
 
-    if (!keys.isEmpty()) {
-      list = keys.stream().map(k -> {
-        String roleName = k.substring(ATTRIBUTE_KEY_PREFIX.length());
-        List<ApiPermission> permissions =
-            attrs.get(k).l().stream().map(a -> ApiPermission.valueOf(a.s())).toList();
-        return new FolderRolePermission(roleName, permissions);
-      }).toList();
+    if (av != null) {
+      keys = av.l().stream()
+          .map(a -> new DynamoDbKey(a.m().get(PK).s(), a.m().get(SK).s(), null, null, null, null))
+          .toList();
     }
 
-    return (T) list;
+    return (T) keys;
   }
 }

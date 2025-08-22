@@ -179,7 +179,7 @@ public class FolderIndexRecord implements DynamodbRecord<FolderIndexRecord>, DbK
    */
   public static Collection<FolderRolePermission> getPermissions(
       final Map<String, AttributeValue> attrs) {
-    return toCustom(attrs, FOLDER_ROLE_BUILDER);
+    return toCustom(null, attrs, FOLDER_ROLE_BUILDER);
   }
 
   /**
