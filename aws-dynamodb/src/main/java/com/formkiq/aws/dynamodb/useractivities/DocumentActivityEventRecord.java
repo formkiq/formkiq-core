@@ -133,8 +133,8 @@ public record DocumentActivityEventRecord(DynamoDbKey key, String siteId, String
       Objects.requireNonNull(documentId, "documentId must not be null");
 
       String pk = "documentEvent";
-      String sk =
-          "event#" + DateUtil.getInIso8601Format(new Date()) + "#" + documentId + "#" + ID.uuid();
+      String sk = "event#docs#activities#" + DateUtil.getInIso8601Format(new Date()) + "#"
+          + documentId + "#" + ID.uuid();
       return DynamoDbKey.builder().pk(siteId, pk).sk(sk).build();
     }
 
