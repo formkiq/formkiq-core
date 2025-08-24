@@ -135,14 +135,12 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
       List<DocumentSync> list = getDocumentSyncs(siteId, documentId);
 
       // then
-      final int expected = 3;
+      final int expected = 2;
       assertEquals(expected, list.size());
       assertDocumentSync(list.get(0), com.formkiq.client.model.DocumentSyncService.TYPESENSE,
           com.formkiq.client.model.DocumentSyncStatus.FAILED, DocumentSyncType.METADATA);
       assertDocumentSync(list.get(1), com.formkiq.client.model.DocumentSyncService.OPENSEARCH,
           DocumentSyncStatus.COMPLETE, DocumentSyncType.METADATA);
-      assertDocumentSync(list.get(2), com.formkiq.client.model.DocumentSyncService.EVENTBRIDGE,
-          DocumentSyncStatus.PENDING, DocumentSyncType.METADATA);
     }
   }
 
@@ -250,48 +248,8 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
         List<DocumentAction> actions = getDocumentActions(siteId, documentId);
         assertEquals(1, actions.size());
         assertEquals(DocumentActionType.FULLTEXT, actions.get(0).getType());
-
-        List<DocumentSync> list = getDocumentSyncs(siteId, documentId);
-        assertEquals(1, list.size());
-
-        assertDocumentSyncEventBridge(list.get(0), DocumentSyncType.METADATA);
       }
     }
-  }
-
-  /**
-   * POST /documents/{documentId}/syncs request. Invalid Request Combo.
-   */
-  @Test
-  public void testAddDocumentSyncs04() throws ApiException {
-    // given
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-
-      setBearerToken(siteId);
-      String documentId = this.documentsApi
-          .addDocument(new AddDocumentRequest().content("asd"), siteId, null).getDocumentId();
-      assertNotNull(documentId);
-
-      AddDocumentSyncRequest req = new AddDocumentSyncRequest();
-      req.setSync(new AddDocumentSync().type(DocumentSyncType.CONTENT)
-          .service(AddDocumentSyncService.EVENTBRIDGE));
-
-      // when
-      AddResponse response = this.documentsApi.addDocumentSync(documentId, siteId, req);
-
-      // then
-      assertEquals("Added Document sync", response.getMessage());
-      List<DocumentSync> list = getDocumentSyncs(siteId, documentId);
-      assertEquals(2, list.size());
-      assertDocumentSyncEventBridge(list.get(0), DocumentSyncType.CONTENT);
-      assertDocumentSyncEventBridge(list.get(1), DocumentSyncType.METADATA);
-    }
-  }
-
-  private void assertDocumentSyncEventBridge(final DocumentSync sync, final DocumentSyncType type) {
-    assertEquals(DocumentSyncService.EVENTBRIDGE, sync.getService());
-    assertEquals(DocumentSyncStatus.PENDING, sync.getStatus());
-    assertEquals(type, sync.getType());
   }
 
   /**
@@ -307,7 +265,7 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
 
       AddDocumentSyncRequest req = new AddDocumentSyncRequest();
       req.setSync(new AddDocumentSync().type(DocumentSyncType.CONTENT)
-          .service(AddDocumentSyncService.EVENTBRIDGE));
+          .service(AddDocumentSyncService.FULLTEXT));
 
       // when
       try {
@@ -358,21 +316,6 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
         if (AddDocumentSyncService.FULLTEXT.equals(service)) {
           verifyStreamTriggeredDate(siteId, documentId);
         }
-
-        List<DocumentSync> list = getDocumentSyncs(siteId, documentId);
-        if (AddDocumentSyncService.EVENTBRIDGE.equals(service)) {
-
-          assertEquals(2, list.size());
-
-          assertDocumentSyncEventBridge(list.get(0), DocumentSyncType.METADATA);
-
-          assertDocumentSyncEventBridge(list.get(1), DocumentSyncType.METADATA);
-
-        } else {
-          assertEquals(1, list.size());
-
-          assertDocumentSyncEventBridge(list.get(0), DocumentSyncType.METADATA);
-        }
       }
     }
   }
@@ -398,7 +341,7 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
   }
 
   private static List<AddDocumentSyncService> getAddDocumentSyncServices() {
-    return List.of(AddDocumentSyncService.FULLTEXT, AddDocumentSyncService.EVENTBRIDGE);
+    return List.of(AddDocumentSyncService.FULLTEXT);
   }
 
   /**
@@ -425,21 +368,6 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
         assertEquals("Added Document sync", addResponse.getMessage());
         List<DocumentAction> actions = getDocumentActions(siteId, documentId);
         assertEquals(0, actions.size());
-
-        List<DocumentSync> list = getDocumentSyncs(siteId, documentId);
-        if (AddDocumentSyncService.EVENTBRIDGE.equals(service)) {
-
-          assertEquals(2, list.size());
-
-          assertDocumentSyncEventBridge(list.get(0), DocumentSyncType.METADATA);
-
-          assertDocumentSyncEventBridge(list.get(1), DocumentSyncType.METADATA);
-
-        } else {
-          assertEquals(1, list.size());
-
-          assertDocumentSyncEventBridge(list.get(0), DocumentSyncType.METADATA);
-        }
       }
     }
   }
@@ -480,44 +408,12 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
   }
 
   /**
-   * POST /documents/{documentId}/syncs request. DELETE / SOFT_DELETE with EVENTBRIDGE.
-   */
-  @Test
-  public void testAddDocumentSyncs09() throws ApiException {
-    // given
-    AddDocumentSyncService service = AddDocumentSyncService.EVENTBRIDGE;
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-
-      for (DocumentSyncType type : List.of(DocumentSyncType.DELETE, DocumentSyncType.SOFT_DELETE)) {
-
-        setBearerToken(siteId);
-        String documentId = this.documentsApi
-            .addDocument(new AddDocumentRequest().content("asd"), siteId, null).getDocumentId();
-        assertNotNull(documentId);
-
-        AddDocumentSyncRequest req =
-            new AddDocumentSyncRequest().sync(new AddDocumentSync().service(service).type(type));
-
-        // when
-        AddResponse response = this.documentsApi.addDocumentSync(documentId, siteId, req);
-
-        // then
-        assertEquals("Added Document sync", response.getMessage());
-
-        List<DocumentSync> syncs = getDocumentSyncs(siteId, documentId);
-        assertEquals(2, syncs.size());
-        assertDocumentSyncEventBridge(syncs.get(0), type);
-      }
-    }
-  }
-
-  /**
    * Test Add Document Syncs retry.
    * 
    * @throws ApiException ApiException
    */
   @Test
-  public void testAddDocumentSyncs10() throws ApiException, InterruptedException {
+  public void testAddDocumentSyncs10() throws ApiException {
     // given
     AwsServiceCache awsServices = getAwsServices();
     DynamoDbConnectionBuilder connection =
@@ -537,13 +433,10 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
         notNull(this.documentsApi.getDocumentSyncs(documentId, null, null, null).getSyncs());
 
     // then
-    final int expected = 3;
-    assertEquals(expected, syncs.size());
+    assertEquals(2, syncs.size());
     assertDocumentSync(syncs.get(0), DocumentSyncService.TYPESENSE, DocumentSyncStatus.FAILED,
         DocumentSyncType.METADATA);
     assertDocumentSync(syncs.get(1), DocumentSyncService.TYPESENSE, DocumentSyncStatus.COMPLETE,
-        DocumentSyncType.METADATA);
-    assertDocumentSync(syncs.get(2), DocumentSyncService.EVENTBRIDGE, DocumentSyncStatus.PENDING,
         DocumentSyncType.METADATA);
 
     List<Document> docs = notNull(this.documentsApi
@@ -561,13 +454,11 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
     assertEquals("Added Document sync", addResponse.getMessage());
 
     syncs = notNull(this.documentsApi.getDocumentSyncs(documentId, null, null, null).getSyncs());
-    assertEquals(expected, syncs.size());
+    assertEquals(2, syncs.size());
 
     assertDocumentSync(syncs.get(0), DocumentSyncService.TYPESENSE, DocumentSyncStatus.FAILED_RETRY,
         DocumentSyncType.METADATA);
     assertDocumentSync(syncs.get(1), DocumentSyncService.TYPESENSE, DocumentSyncStatus.COMPLETE,
-        DocumentSyncType.METADATA);
-    assertDocumentSync(syncs.get(2), DocumentSyncService.EVENTBRIDGE, DocumentSyncStatus.PENDING,
         DocumentSyncType.METADATA);
 
     docs = notNull(this.documentsApi

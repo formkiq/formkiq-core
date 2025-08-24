@@ -149,11 +149,8 @@ public class DocumentsDocumentIdSyncsRequestTest extends AbstractAwsIntegrationT
 
         for (DocumentSync sync : list) {
           assertNotNull(sync.getUserId());
-
-          if (!DocumentSyncService.EVENTBRIDGE.equals(sync.getService())) {
-            assertNotNull(sync.getSyncDate());
-            assertEquals(DocumentSyncStatus.COMPLETE, sync.getStatus());
-          }
+          assertNotNull(sync.getSyncDate());
+          assertEquals(DocumentSyncStatus.COMPLETE, sync.getStatus());
         }
 
         List<DocumentSync> typesense = find(list, DocumentSyncService.TYPESENSE);

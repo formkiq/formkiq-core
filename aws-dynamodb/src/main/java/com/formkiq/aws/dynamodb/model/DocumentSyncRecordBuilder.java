@@ -44,25 +44,6 @@ public class DocumentSyncRecordBuilder {
   /** Sync Message for Updated Metadata. */
   public static final String MESSAGE_UPDATED_METADATA = "updated Document Metadata";
 
-
-  /**
-   * Build {@link DocumentSyncRecord}.
-   * 
-   * @param documentId {@link String}
-   * @param syncType {@link DocumentSyncType}
-   * @param documentExists does document already exist.
-   * @return DocumentSyncRecord
-   */
-  public DocumentSyncRecord buildEventBridge(final String documentId,
-      final DocumentSyncType syncType, final boolean documentExists) {
-
-    String username = ApiAuthorization.getAuthorization().getUsername();
-    return new DocumentSyncRecord().setInsertedDate(new Date()).setDocumentId(documentId)
-        .setService(DocumentSyncServiceType.EVENTBRIDGE).setType(syncType)
-        .setStatus(DocumentSyncStatus.PENDING).setMessage(getMessage(syncType, documentExists))
-        .setUserId(username);
-  }
-
   private String getMessage(final DocumentSyncType syncType, final boolean documentExists) {
     return switch (syncType) {
       case CONTENT -> documentExists ? MESSAGE_UPDATED_CONTENT : MESSAGE_ADDED_CONTENT;

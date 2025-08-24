@@ -45,12 +45,9 @@ import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.WriteRequestBuilder;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentSyncRecord;
-import com.formkiq.aws.dynamodb.model.DocumentSyncRecordBuilder;
-import com.formkiq.aws.dynamodb.model.DocumentSyncType;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
-import com.formkiq.aws.dynamodb.model.TimeToLiveBuilder;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.objects.Strings;
@@ -507,16 +504,8 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
   private boolean deleteDocumentSoft(final String siteId, final String documentId,
       final List<Map<String, AttributeValue>> list) {
-    boolean deleted =
-        this.dbService.moveItems(list, new DocumentDeleteMoveAttributeFunction(siteId, documentId));
-
-    if (deleted) {
-      DocumentSyncRecord a = new DocumentSyncRecordBuilder().buildEventBridge(documentId,
-          DocumentSyncType.SOFT_DELETE, true);
-      saveDocumentSyncRecord(siteId, a);
-    }
-
-    return deleted;
+    return this.dbService.moveItems(list,
+        new DocumentDeleteMoveAttributeFunction(siteId, documentId));
   }
 
   private boolean deleteDocumentHard(final String siteId, final String documentId,
@@ -538,14 +527,6 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     // TODO merge deletes together
     final boolean deleted = this.dbService.deleteItems(listKeys);
     this.versionsService.deleteAllVersionIds(siteId, documentId);
-
-    DocumentSyncRecord a =
-        new DocumentSyncRecordBuilder().buildEventBridge(documentId, DocumentSyncType.DELETE, true);
-
-    long ttl = new TimeToLiveBuilder().withDaysFromNow(1).build();
-    a.setTimeToLive(ttl);
-
-    saveDocumentSyncRecord(siteId, a);
 
     return deleted;
   }
@@ -1913,7 +1894,6 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     WriteRequestBuilder writeBuilder =
         new WriteRequestBuilder().appends(this.documentTableName, tagValues);
 
-    Date now = new Date();
     DynamodbRecordTx tx = getSaveDocumentAttributesTx(siteId, document.getDocumentId(), attributes,
         AttributeValidationType.FULL, options.getValidationAccess());
 
@@ -1921,9 +1901,6 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
     writeBuilder.appends(this.documentTableName,
         tx.saves().stream().map(a -> a.getAttributes(siteId)).toList());
-
-    addDocumentSyncRecord(writeBuilder, siteId, document.getDocumentId(), documentExists, now,
-        options);
 
     if (documentExists) {
       writeBuilder.append(this.documentTableName, documentValues);
@@ -2056,9 +2033,6 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       WriteRequestBuilder builder = new WriteRequestBuilder();
       builder.appends(this.documentTableName, list);
 
-      SaveDocumentOptions options = new SaveDocumentOptions();
-      addDocumentSyncRecord(builder, siteId, documentId, true, new Date(), options);
-
       if (builder.batchWriteItem(this.dbClient)) {
         // delete old composite keys
         deleteDocumentAttributes(siteId, (Collection<DocumentAttributeRecord>) tx.deletes());
@@ -2128,20 +2102,6 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     }
 
     return tx;
-  }
-
-  private void addDocumentSyncRecord(final WriteRequestBuilder writeBuilder, final String siteId,
-      final String documentId, final boolean documentExists, final Date now,
-      final SaveDocumentOptions options) {
-
-    if (!options.isSkipDocumentEventBridge()) {
-      DocumentSyncType syncType = DocumentSyncType.METADATA;
-      DocumentSyncRecord a =
-          new DocumentSyncRecordBuilder().buildEventBridge(documentId, syncType, documentExists);
-      a.setInsertedDate(now);
-
-      writeBuilder.appends(this.documentSyncsTable, List.of(a.getAttributes(siteId)));
-    }
   }
 
   private Collection<DocumentAttributeRecord> getCompositeKeysToBeDeletedByAttributes(
@@ -2439,11 +2399,6 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
     Map<String, AttributeValue> keys = keysDocument(siteId, documentId);
     this.dbService.updateValues(keys.get(PK), keys.get(SK), attributes);
-
-    DocumentSyncRecord a = new DocumentSyncRecordBuilder().buildEventBridge(documentId,
-        DocumentSyncType.CONTENT, false);
-
-    saveDocumentSyncRecord(siteId, a);
   }
 
   private void saveDocumentSyncRecord(final String siteId, final DocumentSyncRecord a) {

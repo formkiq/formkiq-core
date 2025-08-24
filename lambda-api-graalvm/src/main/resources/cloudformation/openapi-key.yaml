@@ -9239,14 +9239,12 @@ Resources:
               description: Add Document Sync Service
               enum:
                 - FULLTEXT
-                - EVENTBRIDGE
             DocumentSyncService:
               type: string
               description: Service of Document Sync
               enum:
                 - TYPESENSE
                 - OPENSEARCH
-                - EVENTBRIDGE
             DocumentSyncStatus:
               type: string
               description: Status of Document Sync
@@ -9389,6 +9387,8 @@ Resources:
                   description: "User who added document"
                 documentId:
                   description: "Document Identifier"
+                attributeKey:
+                  description: "Document Attribute Key"
                 entityTypeId:
                   type: "string"
                   description: "Entity Type Identifier"

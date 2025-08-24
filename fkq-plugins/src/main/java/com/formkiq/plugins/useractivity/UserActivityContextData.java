@@ -34,5 +34,6 @@ import java.util.Map;
  * records.
  */
 public record UserActivityContextData(ActivityResourceType resourceType,
-    UserActivityType activityType, Map<String, ChangeRecord> changeRecords) {
+    UserActivityType activityType, Map<String, ChangeRecord> changeRecords,
+    Map<String, Object> properties) {
 }

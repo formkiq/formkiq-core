@@ -106,14 +106,16 @@ public class AddEntityRequestToEntityRecordTransformer
       Map<String, ChangeRecord> changes =
           new AttributeValuesToChangeRecordFunction(Map.of("documentId", "entityId")).apply(null,
               attributes);
-      UserActivityContext.set(ActivityResourceType.ENTITY, UserActivityType.CREATE, changes);
+      UserActivityContext.set(ActivityResourceType.ENTITY, UserActivityType.CREATE, changes,
+          Collections.emptyMap());
     } else {
 
       Map<String, AttributeValue> oldAttributes = db.get(entity.key());
       Map<String, ChangeRecord> changes =
           new AttributeValuesToChangeRecordFunction(Map.of("documentId", "entityId"))
               .apply(oldAttributes, attributes);
-      UserActivityContext.set(ActivityResourceType.ENTITY, UserActivityType.UPDATE, changes);
+      UserActivityContext.set(ActivityResourceType.ENTITY, UserActivityType.UPDATE, changes,
+          Collections.emptyMap());
     }
 
     db.putItem(attributes);

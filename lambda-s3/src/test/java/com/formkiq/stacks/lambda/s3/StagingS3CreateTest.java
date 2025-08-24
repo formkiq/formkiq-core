@@ -27,7 +27,6 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
-import static com.formkiq.aws.dynamodb.model.DocumentSyncServiceType.EVENTBRIDGE;
 import static com.formkiq.aws.dynamodb.model.DocumentSyncServiceType.FORMKIQ_CLI;
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
 import static com.formkiq.stacks.lambda.s3.StagingS3Create.FORMKIQ_B64_EXT;
@@ -1841,7 +1840,7 @@ public class StagingS3CreateTest implements DbKeys {
     PaginationResults<DocumentSyncRecord> syncs =
         syncService.getSyncs(siteId, documentId, null, MAX_RESULTS);
 
-    final int expected = 4;
+    final int expected = 2;
     List<DocumentSyncRecord> results = syncs.getResults();
     assertEquals(expected, results.size());
 
@@ -1853,25 +1852,11 @@ public class StagingS3CreateTest implements DbKeys {
     assertNotNull(results.get(i++).getSyncDate());
 
     assertEquals(documentId, results.get(i).getDocumentId());
-    assertEquals(EVENTBRIDGE, results.get(i).getService());
-    assertEquals(DocumentSyncStatus.PENDING, results.get(i).getStatus());
-    assertEquals(DocumentSyncType.METADATA, results.get(i).getType());
-    assertEquals("updated Document Metadata", results.get(i).getMessage());
-    assertNull(results.get(i++).getSyncDate());
-
-    assertEquals(documentId, results.get(i).getDocumentId());
     assertEquals(FORMKIQ_CLI, results.get(i).getService());
     assertEquals(DocumentSyncStatus.COMPLETE, results.get(i).getStatus());
     assertEquals(DocumentSyncType.CONTENT, results.get(i).getType());
     assertEquals("added Document Content", results.get(i).getMessage());
-    assertNotNull(results.get(i++).getSyncDate());
-
-    assertEquals(documentId, results.get(i).getDocumentId());
-    assertEquals(EVENTBRIDGE, results.get(i).getService());
-    assertEquals(DocumentSyncStatus.PENDING, results.get(i).getStatus());
-    assertEquals(DocumentSyncType.METADATA, results.get(i).getType());
-    assertEquals("added Document Metadata", results.get(i).getMessage());
-    assertNull(results.get(i).getSyncDate());
+    assertNotNull(results.get(i).getSyncDate());
   }
 
   private void verifyS3Metadata(final String siteId, final DocumentItem item) {

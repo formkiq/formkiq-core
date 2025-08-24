@@ -189,11 +189,13 @@ public class DynamoDbStreamEventBuilder {
     /**
      * Builds and returns the event payload as a Map.
      * 
-     * @return Map
+     * @return {@link AwsEvent}
      */
-    public Map<String, Object> build() {
+    public AwsEvent build() {
       validate();
-      return new DynamoDbStreamEventBuilder(this).build();
+      Map<String, Object> map = new DynamoDbStreamEventBuilder(this).build();
+      String json = GSON.toJson(map);
+      return GSON.fromJson(json, AwsEvent.class);
     }
   }
 }

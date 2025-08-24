@@ -134,7 +134,8 @@ public class EntityTypesRequestHandler
     Map<String, ChangeRecord> changes =
         new AttributeValuesToChangeRecordFunction(Map.of("documentId", "entityTypeId")).apply(null,
             attributes);
-    UserActivityContext.set(ActivityResourceType.ENTITY_TYPE, UserActivityType.CREATE, changes);
+    UserActivityContext.set(ActivityResourceType.ENTITY_TYPE, UserActivityType.CREATE, changes,
+        Map.of());
     db.putItem(attributes);
 
     return ApiRequestHandlerResponse.builder().status(SC_CREATED)

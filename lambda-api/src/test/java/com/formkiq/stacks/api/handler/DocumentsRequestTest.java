@@ -27,16 +27,12 @@ import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.client.model.AddAttributeSchemaOptional;
-import com.formkiq.client.model.DocumentSync;
-import com.formkiq.client.model.DocumentSyncStatus;
-import com.formkiq.client.model.DocumentSyncType;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.s3.S3ServiceExtension;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
-import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.invoker.ApiResponse;
 import com.formkiq.client.model.AddAction;
@@ -56,7 +52,6 @@ import com.formkiq.client.model.ChildDocument;
 import com.formkiq.client.model.DocumentActionType;
 import com.formkiq.client.model.DocumentAttribute;
 import com.formkiq.client.model.DocumentMetadata;
-import com.formkiq.client.model.DocumentSyncService;
 import com.formkiq.client.model.DocumentTag;
 import com.formkiq.client.model.GetDocumentResponse;
 import com.formkiq.client.model.SetSchemaAttributes;
@@ -76,7 +71,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
-import static com.formkiq.aws.dynamodb.model.DocumentSyncRecordBuilder.MESSAGE_ADDED_METADATA;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -131,25 +125,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       assertEquals("application/pdf", site.getContentType());
       assertNotNull(site.getPath());
       assertNotNull(site.getDocumentId());
-
-      assertDocumentEventBridge(documentsApi, null, responseNoSiteId.getDocumentId());
-      assertDocumentEventBridge(documentsApi, siteId, responseSiteId.getDocumentId());
     }
-  }
-
-  private void assertDocumentEventBridge(final DocumentsApi documentsApi, final String siteId,
-      final String documentId) throws ApiException {
-    List<DocumentSync> syncs =
-        notNull(documentsApi.getDocumentSyncs(documentId, siteId, null, null).getSyncs());
-    assertEquals(1, syncs.size());
-    DocumentSync sync = syncs.get(0);
-    assertEquals(DocumentSyncService.EVENTBRIDGE, sync.getService());
-    assertNull(sync.getSyncDate());
-    assertNotNull(sync.getInsertedDate());
-    assertEquals(DocumentSyncType.METADATA, sync.getType());
-    assertEquals(MESSAGE_ADDED_METADATA, sync.getMessage());
-    assertEquals("joesmith", sync.getUserId());
-    assertEquals(DocumentSyncStatus.PENDING, sync.getStatus());
   }
 
   /**

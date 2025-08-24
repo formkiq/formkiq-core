@@ -165,8 +165,10 @@ public class SqsEventBuilder {
      * 
      * @return Map
      */
-    public Map<String, Object> build() {
-      return new SqsEventBuilder(this).build();
+    public AwsEvent build() {
+      Map<String, Object> map = new SqsEventBuilder(this).build();
+      String json = GSON.toJson(map);
+      return GSON.fromJson(json, AwsEvent.class);
     }
   }
 }

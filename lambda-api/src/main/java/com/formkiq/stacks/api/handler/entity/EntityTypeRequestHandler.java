@@ -47,6 +47,7 @@ import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 
+import java.util.Collections;
 import java.util.Map;
 
 import static com.formkiq.aws.dynamodb.DbKeys.GSI1;
@@ -103,7 +104,8 @@ public class EntityTypeRequestHandler
     Map<String, ChangeRecord> changes =
         new AttributeValuesToChangeRecordFunction(Map.of("documentId", "entityTypeId"))
             .apply(attributes, null);
-    UserActivityContext.set(ActivityResourceType.ENTITY_TYPE, UserActivityType.DELETE, changes);
+    UserActivityContext.set(ActivityResourceType.ENTITY_TYPE, UserActivityType.DELETE, changes,
+        Collections.emptyMap());
 
     DynamoDbKey entityTypeKey = EntityTypeRecord.builder().documentId(entityTypeId).namespace("")
         .name("").build(siteId).key();

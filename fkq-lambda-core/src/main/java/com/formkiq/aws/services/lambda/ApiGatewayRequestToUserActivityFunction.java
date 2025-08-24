@@ -73,6 +73,7 @@ public class ApiGatewayRequestToUserActivityFunction {
         UserActivity.Builder builder = createBuilder(authorization, request, response);
         builder.resource(findResource(contextData.resourceType()));
         builder.type(contextData.activityType());
+        builder.attributeKey((String) contextData.properties().get("attributeKey"));
         builder.changes(contextData.changeRecords());
         builders.add(builder);
       }

@@ -23,7 +23,6 @@
  */
 package com.formkiq.stacks.dynamodb;
 
-import static com.formkiq.aws.dynamodb.model.DocumentSyncServiceType.EVENTBRIDGE;
 import static com.formkiq.aws.dynamodb.model.DocumentSyncServiceType.TYPESENSE;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENT_SYNCS_TABLE;
@@ -101,35 +100,6 @@ public class DocumentSyncServiceDynamoDbTest {
       assertEquals(documentId, results.getResults().get(0).getDocumentId());
       assertEquals(TYPESENSE, results.getResults().get(0).getService());
       assertEquals(DocumentSyncStatus.FAILED, results.getResults().get(0).getStatus());
-      assertNotNull(results.getResults().get(0).getSyncDate());
-    }
-  }
-
-  /**
-   * Get Document Syncs.
-   *
-   */
-  @Test
-  public void testGetSyncs02() {
-    // given
-    ApiAuthorization.login(new ApiAuthorization().username("joe"));
-
-    String documentId = ID.uuid();
-
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-
-      // when
-      syncService.saveSync(siteId, documentId, EVENTBRIDGE, DocumentSyncStatus.COMPLETE,
-          DocumentSyncType.METADATA, true);
-
-      // then
-      PaginationResults<DocumentSyncRecord> results =
-          syncService.getSyncs(siteId, documentId, null, 1);
-      assertEquals(1, results.getResults().size());
-
-      assertEquals(documentId, results.getResults().get(0).getDocumentId());
-      assertEquals(EVENTBRIDGE, results.getResults().get(0).getService());
-      assertEquals(DocumentSyncStatus.COMPLETE, results.getResults().get(0).getStatus());
       assertNotNull(results.getResults().get(0).getSyncDate());
     }
   }

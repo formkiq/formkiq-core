@@ -28,6 +28,7 @@ import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.dynamodb.useractivities.ActivityRecord;
+import com.formkiq.aws.dynamodb.useractivities.DocumentActivityEventRecord;
 import com.formkiq.aws.dynamodb.useractivities.UserActivityStatus;
 import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
 import com.formkiq.aws.s3.S3ObjectMetadata;
@@ -106,7 +107,9 @@ public class S3ServiceVersioningInterceptor implements S3ServiceInterceptor {
         .documentId(documentId).userId(username).insertedDate(new Date()).changes(changes)
         .build(siteId);
 
-    versionService.putItem(auditTable, ua.getAttributes());
+    DocumentActivityEventRecord event = DocumentActivityEventRecord.builder().documentId(documentId)
+        .activityKeys(List.of(ua.key())).build(siteId);
+    versionService.putItems(auditTable, List.of(ua.getAttributes(), event.getAttributes()));
   }
 
   /**

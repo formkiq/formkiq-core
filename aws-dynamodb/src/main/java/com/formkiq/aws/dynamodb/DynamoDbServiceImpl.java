@@ -424,11 +424,17 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
 
   @Override
   public void putItems(final List<Map<String, AttributeValue>> attrs) {
+    putItems(this.tableName, attrs);
+  }
+
+  @Override
+  public void putItems(final String dynamoTableName,
+      final List<Map<String, AttributeValue>> attrs) {
 
     if (!attrs.isEmpty()) {
       WriteRequestBuilder builder = new WriteRequestBuilder();
       for (Map<String, AttributeValue> attr : attrs) {
-        builder.append(this.tableName, attr);
+        builder.append(dynamoTableName, attr);
       }
       builder.batchWriteItem(this.dbClient);
     }

@@ -118,7 +118,8 @@ public class EntityRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
     Map<String, ChangeRecord> changes =
         new AttributeValuesToChangeRecordFunction(Map.of("documentId", "entityId"))
             .apply(attributes, null);
-    UserActivityContext.set(ActivityResourceType.ENTITY, UserActivityType.DELETE, changes);
+    UserActivityContext.set(ActivityResourceType.ENTITY, UserActivityType.DELETE, changes,
+        Map.of());
 
     return ApiRequestHandlerResponse.builder().status(SC_OK).body("message", "Entity deleted")
         .build();

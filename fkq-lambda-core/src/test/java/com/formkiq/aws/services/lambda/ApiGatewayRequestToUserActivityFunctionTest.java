@@ -73,7 +73,8 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
   @Test
   public void testGetDocumentById() throws IOException {
     // given
-    UserActivityContext.set(ActivityResourceType.DOCUMENT, UserActivityType.VIEW, Map.of());
+    UserActivityContext.set(ActivityResourceType.DOCUMENT, UserActivityType.VIEW, Map.of(),
+        Map.of());
     Collection<String> files = List.of("get-documentid-url.json", "get-documentid-content.json");
     for (String file : files) {
 
@@ -117,7 +118,8 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
   public void testDeleteDocumentById() throws IOException {
     // given
     ApiGatewayRequestEvent request = loadFile("src/test/resources/requests/delete-documentid.json");
-    UserActivityContext.set(ActivityResourceType.DOCUMENT, UserActivityType.DELETE, Map.of());
+    UserActivityContext.set(ActivityResourceType.DOCUMENT, UserActivityType.DELETE, Map.of(),
+        Map.of());
 
     for (String siteId : Arrays.asList(null, DEFAULT_SITE_ID, ID.uuid())) {
 
@@ -155,7 +157,8 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
   @Test
   public void testGetDocuments() throws IOException {
     // given
-    UserActivityContext.set(ActivityResourceType.DOCUMENT, UserActivityType.VIEW, Map.of());
+    UserActivityContext.set(ActivityResourceType.DOCUMENT, UserActivityType.VIEW, Map.of(),
+        Map.of());
     ApiGatewayRequestEvent request = loadFile("src/test/resources/requests/get-documents.json");
 
     for (String siteId : Arrays.asList(null, DEFAULT_SITE_ID, ID.uuid())) {
@@ -219,7 +222,8 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
   public void testGetEntityTypes() throws IOException {
     // given
     ApiGatewayRequestEvent request = loadFile("src/test/resources/requests/get-entityTypes.json");
-    UserActivityContext.set(ActivityResourceType.ENTITY_TYPE, UserActivityType.VIEW, Map.of());
+    UserActivityContext.set(ActivityResourceType.ENTITY_TYPE, UserActivityType.VIEW, Map.of(),
+        Map.of());
 
     for (String siteId : Arrays.asList(null, DEFAULT_SITE_ID, ID.uuid())) {
 
@@ -261,7 +265,8 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
   @Test
   public void testAddEntityTypes() throws IOException {
     // given
-    UserActivityContext.set(ActivityResourceType.ENTITY_TYPE, UserActivityType.CREATE, Map.of());
+    UserActivityContext.set(ActivityResourceType.ENTITY_TYPE, UserActivityType.CREATE, Map.of(),
+        Map.of());
     ApiGatewayRequestEvent request = loadFile("src/test/resources/requests/add-entityTypes.json");
     Map<String, Object> body = Map.of("entityTypeId", ID.uuid());
     ApiRequestHandlerResponse response = new ApiRequestHandlerResponse(-1, null, body);
@@ -308,7 +313,8 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
   @Test
   public void testAddEntity() throws IOException {
     // given
-    UserActivityContext.set(ActivityResourceType.ENTITY, UserActivityType.CREATE, Map.of());
+    UserActivityContext.set(ActivityResourceType.ENTITY, UserActivityType.CREATE, Map.of(),
+        Map.of());
     ApiGatewayRequestEvent request = loadFile("src/test/resources/requests/add-entity.json");
     Map<String, Object> body = Map.of("entityId", ID.uuid());
     ApiRequestHandlerResponse response = new ApiRequestHandlerResponse(-1, null, body);
@@ -354,7 +360,7 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
   @Test
   public void testGetEntitiesByType() throws IOException {
     // given
-    UserActivityContext.set(ActivityResourceType.ENTITY, UserActivityType.VIEW, Map.of());
+    UserActivityContext.set(ActivityResourceType.ENTITY, UserActivityType.VIEW, Map.of(), Map.of());
     ApiGatewayRequestEvent request = loadFile("src/test/resources/requests/get-entity.json");
     Map<String, Object> body = Map.of("entityTypeId", ID.uuid());
     ApiRequestHandlerResponse response = new ApiRequestHandlerResponse(-1, null, body);

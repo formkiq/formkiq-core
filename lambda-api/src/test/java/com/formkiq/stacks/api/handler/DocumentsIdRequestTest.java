@@ -55,8 +55,6 @@ import com.formkiq.client.model.DocumentSearch;
 import com.formkiq.client.model.DocumentSearchAttribute;
 import com.formkiq.client.model.DocumentSearchMeta;
 import com.formkiq.client.model.DocumentSearchRequest;
-import com.formkiq.client.model.DocumentSync;
-import com.formkiq.client.model.DocumentSyncType;
 import com.formkiq.client.model.SearchResultDocument;
 import com.formkiq.client.model.SetSchemaAttributes;
 import com.formkiq.client.model.SetSitesSchemaRequest;
@@ -338,12 +336,6 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       documents = getDocuments(siteId, 1);
       assertEquals(1, documents.size());
       assertEquals(path, documents.get(0).getPath());
-
-      List<DocumentSync> syncs =
-          notNull(this.documentsApi.getDocumentSyncs(documentId, siteId, null, null).getSyncs());
-      assertEquals(2, syncs.size());
-      assertEquals(DocumentSyncType.SOFT_DELETE, syncs.get(0).getType());
-      assertEquals(DocumentSyncType.METADATA, syncs.get(1).getType());
     }
   }
 

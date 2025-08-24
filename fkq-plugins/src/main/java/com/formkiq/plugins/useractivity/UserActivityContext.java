@@ -53,17 +53,18 @@ public class UserActivityContext {
    * @param resourceType {@link ActivityResourceType}
    * @param type {@link UserActivityType}
    * @param data the DynamoDB attribute map
+   * @param properties Extra property information
    */
   public static void set(final ActivityResourceType resourceType, final UserActivityType type,
-      final Map<String, ChangeRecord> data) {
+      final Map<String, ChangeRecord> data, final Map<String, Object> properties) {
 
     if (!UserActivityType.UPDATE.equals(type)) {
-      CONTEXT.get().add(new UserActivityContextData(resourceType, type, data));
+      CONTEXT.get().add(new UserActivityContextData(resourceType, type, data, properties));
     } else {
       data.remove("insertedDate");
       data.remove("lastModifiedDate");
       if (!data.isEmpty()) {
-        CONTEXT.get().add(new UserActivityContextData(resourceType, type, data));
+        CONTEXT.get().add(new UserActivityContextData(resourceType, type, data, properties));
       }
     }
   }
