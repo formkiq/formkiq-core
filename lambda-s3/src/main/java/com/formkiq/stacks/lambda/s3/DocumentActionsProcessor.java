@@ -93,6 +93,12 @@ import com.formkiq.stacks.lambda.s3.actions.NotificationAction;
 import com.formkiq.stacks.lambda.s3.actions.PdfExportAction;
 import com.formkiq.stacks.lambda.s3.actions.resize.ResizeAction;
 import com.formkiq.stacks.lambda.s3.actions.SendHttpRequest;
+import com.formkiq.stacks.lambda.s3.event.AwsEvent;
+import com.formkiq.stacks.lambda.s3.event.AwsEventDynamodbEntity;
+import com.formkiq.stacks.lambda.s3.event.AwsEventDynamodbNewImage;
+import com.formkiq.stacks.lambda.s3.event.AwsEventRecord;
+import com.formkiq.stacks.lambda.s3.event.AwsEventSnsNotification;
+import com.formkiq.stacks.lambda.s3.event.DynamodbAttributeValue;
 import com.formkiq.validation.ValidationException;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -226,7 +232,7 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
       logger.debug(json);
     }
 
-    List<AwsEvent.Record> records = event.records();
+    List<AwsEventRecord> records = event.records();
 
     try {
       processRecords(logger, records);
@@ -425,14 +431,14 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
    * @throws InterruptedException InterruptedException
    * @throws IOException IOException
    */
-  private void processRecords(final Logger logger, final List<AwsEvent.Record> records)
+  private void processRecords(final Logger logger, final List<AwsEventRecord> records)
       throws IOException, InterruptedException {
 
-    for (AwsEvent.Record e : Objects.notNull(records)) {
+    for (AwsEventRecord e : Objects.notNull(records)) {
 
       if (e.body() != null) {
 
-        AwsEvent.SnsNotification map = this.gson.fromJson(e.body(), AwsEvent.SnsNotification.class);
+        AwsEventSnsNotification map = this.gson.fromJson(e.body(), AwsEventSnsNotification.class);
 
         if (map.message() != null) {
           processDocumentEvent(logger, map);
@@ -444,14 +450,14 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
     }
   }
 
-  private void processDynamodbStream(final Logger logger, final AwsEvent.Record map) {
+  private void processDynamodbStream(final Logger logger, final AwsEventRecord map) {
 
     String eventName = map.eventName();
-    AwsEvent.DynamodbEntity dynamodb = map.dynamodb();
-    AwsEvent.NewImage newImage = dynamodb.newImage();
+    AwsEventDynamodbEntity dynamodb = map.dynamodb();
+    AwsEventDynamodbNewImage newImage = dynamodb.newImage();
     String siteId = newImage.siteId().s();
     String documentId = newImage.documentId().s();
-    AwsEvent.AttributeValue activityKeys = newImage.activityKeys();
+    DynamodbAttributeValue activityKeys = newImage.activityKeys();
 
     List<DynamoDbKey> keys = activityKeys.l().stream()
         .map(a -> new DynamoDbKey(a.m().get(PK).s(), a.m().get(SK).s(), null, null, null, null))
@@ -482,7 +488,7 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
     eventBridgeService.putEvents(documentEventsBus, msg);
   }
 
-  private void processDocumentEvent(final Logger logger, final AwsEvent.SnsNotification map) {
+  private void processDocumentEvent(final Logger logger, final AwsEventSnsNotification map) {
     DocumentEvent event = this.gson.fromJson(map.message(), DocumentEvent.class);
 
     String s = String.format(

@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.lambda.s3;
 
+import com.formkiq.stacks.lambda.s3.event.AwsEvent;
 import com.google.gson.Gson;
 
 import java.util.Collections;
