@@ -102,7 +102,7 @@ public class DocumentIdContentRequestHandler
 
     return response.ok().build();
   }
-  
+
   private boolean exists(final AwsServiceCache awsservice, final String s3key) {
     S3Service s3 = awsservice.getExtension(S3Service.class);
     return s3.exists(awsservice.environment("DOCUMENTS_S3_BUCKET"), s3key);
