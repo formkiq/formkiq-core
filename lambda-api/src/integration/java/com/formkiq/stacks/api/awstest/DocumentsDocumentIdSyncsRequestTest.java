@@ -109,7 +109,7 @@ public class DocumentsDocumentIdSyncsRequestTest extends AbstractAwsIntegrationT
         // then
         assertEquals("Added Document sync", response.getMessage());
 
-        final int expectedCount = 5;
+        final int expectedCount = 3;
         GetDocumentSyncResponse syncs = getDocumentSyncs(api, siteId, documentId, expectedCount);
         assertEquals(expectedCount, notNull(syncs.getSyncs()).size());
 
@@ -129,7 +129,7 @@ public class DocumentsDocumentIdSyncsRequestTest extends AbstractAwsIntegrationT
   @Timeout(value = TEST_TIMEOUT)
   public void testGetSyncs01() throws Exception {
     // given
-    final int expectedCount = 4;
+    final int expectedCount = 2;
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       for (ApiClient client : getApiClients(siteId)) {

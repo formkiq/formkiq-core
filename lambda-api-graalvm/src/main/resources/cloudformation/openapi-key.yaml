@@ -441,6 +441,31 @@ Resources:
                 - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
+          /sites/global/opensearch/indices:
+            get:
+              operationId: GetAllOpenSearchIndices
+              description: Returns all OpenSearch indices
+              summary: Get all OpenSearch indices
+              tags:
+                - System Management
+              responses:
+                '200':
+                  description: "200 OK"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        "$ref": "#/components/schemas/GetOpenSearchIndiceResponse"
+              security:
+                - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
           /sites/{siteId}/opensearch/indices:
             get:
               operationId: GetOpenSearchIndices

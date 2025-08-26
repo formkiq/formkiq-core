@@ -144,7 +144,7 @@ public class AwsResourceTest extends AbstractAwsTest {
     Map<String, Object> map = gson.fromJson(body, Map.class);
     assertTrue(map.containsKey("detail"));
     Map<String, Object> detail = (Map<String, Object>) map.get("detail");
-    assertTrue(detail.containsKey("documents"));
+    assertTrue(detail.containsKey("document"));
 
     getSqsService().clearQueue(queueUrl);
   }

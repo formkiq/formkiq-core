@@ -150,13 +150,17 @@ public class ApiAuthorizationBuilder {
       }
     }
 
-    if (defaultSiteId != null && !isValidSiteId(defaultSiteId, groups)
-        && !event.getPath().startsWith("/public/")) {
+    if (defaultSiteId != null && !isGlobalAdmin(admin, defaultSiteId)
+        && !isValidSiteId(defaultSiteId, groups) && !event.getPath().startsWith("/public/")) {
       String s = String.format("fkq access denied to siteId (%s)", defaultSiteId);
       throw new ForbiddenException(s);
     }
 
     return authorization;
+  }
+
+  private boolean isGlobalAdmin(final boolean admin, final String siteId) {
+    return admin && "global".equals(siteId);
   }
 
   /**

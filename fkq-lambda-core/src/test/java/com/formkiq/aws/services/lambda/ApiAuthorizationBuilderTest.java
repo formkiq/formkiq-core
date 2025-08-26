@@ -512,6 +512,29 @@ class ApiAuthorizationBuilderTest {
   }
 
   /**
+   * Basic 'Admins' only access.
+   */
+  @Test
+  void testApiAuthorizerAdminsWithRandomSiteId() throws Exception {
+    // given
+    String s0 = "[Admins]";
+    ApiGatewayRequestEvent event0 = getJwtEvent(s0);
+    event0.setPath("/random");
+    event0.setQueryStringParameters(Map.of("siteId", "global"));
+
+    // when
+    ApiAuthorization api0 = new ApiAuthorizationBuilder().build(event0);
+
+    // then
+    assertEquals("global", api0.getSiteId());
+    assertEquals("", String.join(",", api0.getSiteIds()));
+    assertEquals("",
+        api0.getPermissions().stream().map(Enum::name).collect(Collectors.joining(",")));
+    assertEquals("no groups", api0.getAccessSummary());
+    assertEquals("Admins", String.join(",", api0.getRoles()));
+  }
+
+  /**
    * Empty groups access.
    */
   @Test
