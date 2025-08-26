@@ -88,6 +88,10 @@
 				<allow pkg="software.amazon.awssdk.utils" />
 				
 			</subpackage>
+
+			<subpackage name="awstest">
+				<allow pkg="software.amazon.awssdk.services.iam" />
+			</subpackage>
 		</subpackage>
 	</subpackage>
 	

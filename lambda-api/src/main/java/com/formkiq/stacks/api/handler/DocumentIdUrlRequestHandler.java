@@ -47,12 +47,14 @@ import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
+import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.useractivity.UserActivityPlugin;
 import com.formkiq.stacks.api.ApiEmptyResponse;
@@ -63,6 +65,7 @@ import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.s3.model.S3Exception;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/url". */
 public class DocumentIdUrlRequestHandler
@@ -176,7 +179,8 @@ public class DocumentIdUrlRequestHandler
    */
   private URL getS3Url(final ApiAuthorization authorization, final AwsServiceCache awsservice,
       final ApiGatewayRequestEvent event, final DocumentItem item, final String versionId,
-      final boolean inline, final boolean bypassWatermark) throws MalformedURLException {
+      final boolean inline, final boolean bypassWatermark)
+      throws MalformedURLException, UnauthorizedException {
 
     final String documentId = item.getDocumentId();
 
@@ -228,9 +232,33 @@ public class DocumentIdUrlRequestHandler
     int hours = getDurationHours(event);
     Duration duration = Duration.ofHours(hours);
 
-    S3PresignerService s3Service = awsservice.getExtension(S3PresignerService.class);
-    return s3Bucket != null ? s3Service.presignGetUrl(s3Bucket, s3key, duration, versionId, config)
-        : new URL(s3key);
+    URL url;
+    if (s3Bucket != null) {
+      url = getUrl(awsservice, item, versionId, s3Bucket, s3key, duration, config);
+
+    } else {
+      url = new URL(s3key);
+    }
+
+    return url;
+  }
+
+  private URL getUrl(final AwsServiceCache awsservice, final DocumentItem item,
+      final String versionId, final String s3Bucket, final String s3key, final Duration duration,
+      final PresignGetUrlConfig config) throws UnauthorizedException {
+    S3Service s3 = awsservice.getExtension(S3Service.class);
+
+    try {
+      if (!s3.exists(s3Bucket, s3key)) {
+        throw new DocumentNotFoundException(item.getDocumentId());
+      }
+
+      S3PresignerService s3Service = awsservice.getExtension(S3PresignerService.class);
+      return s3Service.presignGetUrl(s3Bucket, s3key, duration, versionId, config);
+    } catch (S3Exception e) {
+      throw new UnauthorizedException(
+          "Unable to access bucket: '" + s3Bucket + "' and key '" + s3key + "'");
+    }
   }
 
   private String findContentType(final DocumentItem item) {

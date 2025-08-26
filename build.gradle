@@ -27,7 +27,7 @@ repositories { mavenCentral() }
 
 allprojects {
 
-  version = '1.17.1'
+  version = '1.17.2'
   
   ext.awsCognitoVersion = '1.6.0'
   group = 'com.formkiq.stacks'
@@ -80,7 +80,6 @@ subprojects {
     systemProperties['testprofile'] = project.getProperty('testprofile')
     systemProperties['testappenvironment'] = project.getProperty('testappenvironment')
     systemProperties['testchatgptapikey'] = project.getProperty('testchatgptapikey')
-    systemProperties['testeventbridgename'] = project.getProperty('testeventbridgename')
   }
 
   spotbugs {

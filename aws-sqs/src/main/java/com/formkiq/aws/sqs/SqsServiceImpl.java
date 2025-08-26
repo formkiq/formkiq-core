@@ -34,6 +34,7 @@ import software.amazon.awssdk.services.sqs.model.DeleteQueueResponse;
 import software.amazon.awssdk.services.sqs.model.GetQueueAttributesRequest;
 import software.amazon.awssdk.services.sqs.model.ListQueuesRequest;
 import software.amazon.awssdk.services.sqs.model.ListQueuesResponse;
+import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
@@ -41,13 +42,15 @@ import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 import software.amazon.awssdk.services.sqs.model.SetQueueAttributesRequest;
 import software.amazon.awssdk.services.sqs.model.SetQueueAttributesResponse;
 
+import java.util.List;
+
 /**
  * Implementation of {@link SqsService}.
  */
 public class SqsServiceImpl implements SqsService {
 
   /** {@link SqsClient}. */
-  private SqsClient sqsClient;
+  private final SqsClient sqsClient;
 
   /**
    * constructor.
@@ -108,21 +111,40 @@ public class SqsServiceImpl implements SqsService {
 
   @Override
   public ReceiveMessageResponse receiveMessages(final String queueUrl) {
-    ReceiveMessageResponse response =
-        this.sqsClient.receiveMessage(ReceiveMessageRequest.builder().queueUrl(queueUrl).build());
-
-    return response;
+    return this.sqsClient
+        .receiveMessage(ReceiveMessageRequest.builder().queueUrl(queueUrl).build());
   }
 
   @Override
   public SendMessageResponse sendMessage(final String queueUrl, final String message) {
-    SendMessageResponse response = this.sqsClient
+    return this.sqsClient
         .sendMessage(SendMessageRequest.builder().queueUrl(queueUrl).messageBody(message).build());
-    return response;
   }
 
   @Override
   public SetQueueAttributesResponse setQueueAttributes(final SetQueueAttributesRequest request) {
     return this.sqsClient.setQueueAttributes(request);
+  }
+
+  @Override
+  public void clearQueue(final String queueUrl) {
+    final int maxNumberOfMessages = 10;
+    while (true) {
+      ReceiveMessageRequest receiveRequest = ReceiveMessageRequest.builder().queueUrl(queueUrl)
+          .maxNumberOfMessages(maxNumberOfMessages).waitTimeSeconds(0).build();
+
+      List<Message> messages = sqsClient.receiveMessage(receiveRequest).messages();
+
+      if (messages.isEmpty()) {
+        break;
+      }
+
+      // Delete each message
+      for (Message message : messages) {
+        DeleteMessageRequest deleteRequest = DeleteMessageRequest.builder().queueUrl(queueUrl)
+            .receiptHandle(message.receiptHandle()).build();
+        sqsClient.deleteMessage(deleteRequest);
+      }
+    }
   }
 }

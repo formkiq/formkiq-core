@@ -44,17 +44,22 @@ import com.formkiq.client.model.GetDocumentsResponse;
 import com.formkiq.client.model.UpdateConfigurationRequest;
 import com.formkiq.testutils.FileGenerator;
 import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.nimbusds.jose.util.StandardCharset;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import software.amazon.awssdk.services.sqs.model.Message;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.testutils.aws.FkqDocumentService.addDocument;
@@ -64,6 +69,7 @@ import static com.formkiq.testutils.aws.FkqDocumentService.waitForActionsComplet
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * GET, POST /documents/{documentId}/actions tests.
@@ -72,9 +78,23 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
 
   /** JUnit Test Timeout. */
-  private static final int TEST_TIMEOUT = 90;
+  private static final int TEST_TIMEOUT = 30;
+  /** Actions Event Bus. */
+  private static String actionsEventBus;
+  /** Actions Event Queue. */
+  private static String actionsEventQueue;
   /** {@link FileGenerator}. */
   private final FileGenerator fileGenerator = new FileGenerator();
+
+  @BeforeAll
+  public static void setup() {
+    actionsEventBus = getSsm().getParameterValue(
+        "/formkiq/" + getAppenvironment() + "/eventbridge/actions-event-bus/name");
+    actionsEventQueue = getSsm()
+        .getParameterValue("/formkiq/" + getAppenvironment() + "/sqs/actions-event-queue/url");
+
+    getSqs().clearQueue(actionsEventQueue);
+  }
 
   /**
    * POST /documents/{documentId}.
@@ -113,18 +133,13 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
   @Timeout(value = TEST_TIMEOUT)
   public void testAddDocumentActions02() throws Exception {
     // given
-    String testeventbridgename = System.getProperty("testeventbridgename");
-    if (testeventbridgename == null) {
-      throw new IOException("eventbridge name not set");
-    }
-
     String siteId = SiteIdKeyGenerator.DEFAULT_SITE_ID;
     List<ApiClient> clients = getApiClients(siteId);
     ApiClient client = clients.get(0);
 
     String content = "this is a test";
     AddAction addAction = new AddAction().type(DocumentActionType.EVENTBRIDGE)
-        .parameters(new AddActionParameters().eventBusName(testeventbridgename));
+        .parameters(new AddActionParameters().eventBusName(actionsEventBus));
     List<AddAction> actions = List.of(addAction, addAction);
 
     // when
@@ -139,6 +154,30 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
     assertNotNull(docActions.get(0).getInsertedDate());
     assertNotNull(docActions.get(0).getCompletedDate());
     assertEquals(DocumentActionStatus.COMPLETE, docActions.get(1).getStatus());
+
+    assertEventBridgeMessage(actionsEventQueue);
+  }
+
+  private static void assertEventBridgeMessage(final String queueUrl) throws InterruptedException {
+
+    List<Message> receiveMessages;
+
+    do {
+      receiveMessages = getSqs().receiveMessages(queueUrl).messages();
+      if (receiveMessages.isEmpty()) {
+        TimeUnit.SECONDS.sleep(1);
+      }
+
+    } while (receiveMessages.isEmpty());
+
+    Gson gson = new GsonBuilder().create();
+    String body = receiveMessages.iterator().next().body();
+    Map<String, Object> map = gson.fromJson(body, Map.class);
+    assertTrue(map.containsKey("detail"));
+    Map<String, Object> detail = (Map<String, Object>) map.get("detail");
+    assertTrue(detail.containsKey("documents"));
+
+    getSqs().clearQueue(queueUrl);
   }
 
   /**

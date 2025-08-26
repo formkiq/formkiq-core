@@ -116,4 +116,9 @@ public class FkqSqsService implements SqsService {
   public SetQueueAttributesResponse setQueueAttributes(final SetQueueAttributesRequest request) {
     return this.service.setQueueAttributes(request);
   }
+
+  @Override
+  public void clearQueue(final String queueUrl) {
+    this.service.clearQueue(queueUrl);
+  }
 }

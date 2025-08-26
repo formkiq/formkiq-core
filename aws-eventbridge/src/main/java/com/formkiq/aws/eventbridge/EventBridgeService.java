@@ -80,10 +80,20 @@ public interface EventBridgeService {
    * 
    * @param eventBusName {@link String}
    * @param ruleName {@link String}
+   * @param ruleArn {@link String}
    * @param eventPattern {@link String}
    * @param targetId {@link String}
-   * @param arn {@link String}
+   * @param targetArn {@link String}
    */
-  void createRule(String eventBusName, String ruleName, String eventPattern, String targetId,
-      String arn);
+  void createRule(String eventBusName, String ruleName, String ruleArn, String eventPattern,
+      String targetId, String targetArn);
+
+  /**
+   * Delete Event Bridge Rule.
+   * 
+   * @param eventBusName {@link String}
+   * @param ruleName {@link String}
+   * @param targetId {@link String}
+   */
+  void deleteRule(String eventBusName, String ruleName, String targetId);
 }

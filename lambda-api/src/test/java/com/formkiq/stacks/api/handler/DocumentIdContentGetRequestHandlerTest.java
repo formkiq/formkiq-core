@@ -42,6 +42,7 @@ import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddDocumentRequest;
+import com.formkiq.client.model.AddDocumentUploadRequest;
 import com.formkiq.client.model.GetDocumentContentResponse;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.localstack.LocalStackContainer.Service;
@@ -265,6 +266,36 @@ public class DocumentIdContentGetRequestHandlerTest extends AbstractApiClientReq
       assertEquals(content, response.getContent());
       assertEquals(contentType, response.getContentType());
       assertEquals(Boolean.FALSE, response.getIsBase64());
+    }
+  }
+
+  /**
+   * /documents/{documentId}/content request, with S3 file missing.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testGetDocumentS3FileMissing() throws Exception {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      AddDocumentUploadRequest req = new AddDocumentUploadRequest();
+      String documentId =
+          this.documentsApi.addDocumentUpload(req, siteId, null, null, null).getDocumentId();
+      assertNotNull(documentId);
+
+      // when
+      try {
+        this.documentsApi.getDocumentContent(documentId, siteId, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
+        assertEquals("{\"message\":\"Document " + documentId + " not found.\"}",
+            e.getResponseBody());
+      }
     }
   }
 }
