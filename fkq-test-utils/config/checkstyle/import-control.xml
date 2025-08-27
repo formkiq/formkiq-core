@@ -40,6 +40,10 @@
 			<allow pkg="org.junit.jupiter.api" />
 		</subpackage>
 
+        <subpackage name="opensearch">
+            <allow pkg="com.formkiq.testutils.api" />
+        </subpackage>
+
 	</subpackage>
 
 	<subpackage name="aws">
