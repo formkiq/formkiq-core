@@ -36,11 +36,22 @@ import java.util.concurrent.TimeUnit;
 public class SqsMessageReceiver {
 
   /** {@link SqsService}. */
-  private final SqsService sqsService;
+  private final SqsService sqs;
   /** Sqs Queue Url. */
   private final String queueUrl;
   /** Retry Limit. */
   private static final int RETRY_LIMIT = 10;
+
+  /**
+   * constructor.
+   *
+   * @param sqsService {@link SqsService}
+   * @param sqsQueueUrl {@link String}
+   */
+  public SqsMessageReceiver(final SqsService sqsService, final String sqsQueueUrl) {
+    this.sqs = sqsService;
+    this.queueUrl = sqsQueueUrl;
+  }
 
   /**
    * constructor.
@@ -49,8 +60,7 @@ public class SqsMessageReceiver {
    * @param sqsQueueUrl {@link String}
    */
   public SqsMessageReceiver(final AwsServiceCache awsServiceCache, final String sqsQueueUrl) {
-    this.sqsService = awsServiceCache.getExtension(SqsService.class);
-    this.queueUrl = sqsQueueUrl;
+    this(awsServiceCache.getExtension(SqsService.class), sqsQueueUrl);
   }
 
   /**
@@ -61,17 +71,17 @@ public class SqsMessageReceiver {
    */
   public ReceiveMessageResponse get() throws InterruptedException {
     int retry = 0;
-    ReceiveMessageResponse response = sqsService.receiveMessages(queueUrl);
+    ReceiveMessageResponse response = sqs.receiveMessages(queueUrl);
     while (response.messages().isEmpty()) {
       TimeUnit.SECONDS.sleep(1);
-      response = sqsService.receiveMessages(queueUrl);
+      response = sqs.receiveMessages(queueUrl);
       retry++;
       if (retry > RETRY_LIMIT) {
         throw new RuntimeException("Timeout waiting for SQS message");
       }
     }
 
-    response.messages().forEach(m -> sqsService.deleteMessage(queueUrl, m.receiptHandle()));
+    response.messages().forEach(m -> sqs.deleteMessage(queueUrl, m.receiptHandle()));
     return response;
   }
 
@@ -79,7 +89,7 @@ public class SqsMessageReceiver {
    * Clears all messages in queue.
    */
   public void clear() {
-    ReceiveMessageResponse response = sqsService.receiveMessages(queueUrl);
-    response.messages().forEach(m -> sqsService.deleteMessage(queueUrl, m.receiptHandle()));
+    ReceiveMessageResponse response = sqs.receiveMessages(queueUrl);
+    response.messages().forEach(m -> sqs.deleteMessage(queueUrl, m.receiptHandle()));
   }
 }
