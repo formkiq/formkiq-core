@@ -23,8 +23,8 @@
  */
 package com.formkiq.stacks.dynamodb.folders;
 
-import static com.formkiq.aws.dynamodb.DynamoDbTypes.toCustom;
-import static com.formkiq.aws.dynamodb.DynamoDbTypes.toDate;
+import static com.formkiq.aws.dynamodb.builder.DynamoDbTypes.toCustom;
+import static com.formkiq.aws.dynamodb.builder.DynamoDbTypes.toDate;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 
 import java.util.Collection;
@@ -33,7 +33,7 @@ import java.util.Map;
 
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
-import com.formkiq.aws.dynamodb.DynamoDbTypes;
+import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import com.formkiq.aws.dynamodb.DynamodbRecord;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.graalvm.annotations.Reflectable;
@@ -179,7 +179,7 @@ public class FolderIndexRecord implements DynamodbRecord<FolderIndexRecord>, DbK
    */
   public static Collection<FolderRolePermission> getPermissions(
       final Map<String, AttributeValue> attrs) {
-    return toCustom(attrs, FOLDER_ROLE_BUILDER);
+    return toCustom(null, attrs, FOLDER_ROLE_BUILDER);
   }
 
   /**

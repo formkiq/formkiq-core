@@ -21,25 +21,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.dynamodb.eventsourcing.entity;
+package com.formkiq.aws.dynamodb.useractivities;
 
-import com.formkiq.aws.dynamodb.DynamoDbKey;
-
-public interface DynamoDbEntityBuilder<T> {
-
-  /**
-   * Build {@link DynamoDbKey}.
-   * 
-   * @param siteId {@link String}
-   * @return DynamoDbKey
-   */
-  DynamoDbKey buildKey(String siteId);
-
-  /**
-   * Builds the {@link T}, computing the DynamoDbKey.
-   *
-   * @param siteId {@link String}
-   * @return a new T
-   */
-  T build(String siteId);
+/**
+ * Types of Activity Resources.
+ */
+public enum ActivityResourceType {
+  /** Document Resource Type. */
+  DOCUMENT,
+  /** Document Attribute Resource Type. */
+  DOCUMENT_ATTRIBUTE,
+  /** Entity Type Resource Type. */
+  ENTITY_TYPE,
+  /** Entity Resource Type. */
+  ENTITY
 }

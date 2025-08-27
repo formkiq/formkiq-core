@@ -23,7 +23,7 @@
  */
 package com.formkiq.stacks.api.handler.entity;
 
-import com.formkiq.aws.dynamodb.eventsourcing.entity.EntityAttribute;
+import com.formkiq.aws.dynamodb.entity.EntityAttribute;
 
 import java.util.function.Function;
 

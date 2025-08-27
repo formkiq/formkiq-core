@@ -37,6 +37,7 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.config.ConfigServiceExtension;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
+import com.formkiq.testutils.api.SetBearers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -214,8 +215,7 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testHandleGetConfigurationGlobal() {
     // given
-    String group = "Admins";
-    setBearerToken(group);
+    new SetBearers().apply(this.client, new String[] {"Admins", "other"});
 
     // when
     try {
@@ -224,7 +224,7 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     } catch (ApiException e) {
       // then
       assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
-      assertEquals("{\"message\":\"fkq access denied to siteId (global)\"}", e.getResponseBody());
+      assertEquals("{\"message\":\"'global' siteId is reserved\"}", e.getResponseBody());
     }
   }
 

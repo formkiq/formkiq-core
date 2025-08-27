@@ -21,33 +21,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.dynamodb.eventsourcing.entity;
+package com.formkiq.stacks.lambda.s3.event;
 
+// AwsEvent.java
+import com.formkiq.graalvm.annotations.Reflectable;
+import com.google.gson.annotations.SerializedName;
 import java.util.List;
-import java.util.function.Function;
 
-/**
- * {@link Function} to transform {@link EntityAttribute} to {@link Object}.
- */
-public class EntityAttributeToObjectTransformer implements Function<EntityAttribute, Object> {
-
-  @Override
-  public Object apply(final EntityAttribute attribute) {
-
-    Object obj = null;
-
-    if (attribute.getStringValues() != null && !attribute.getStringValues().isEmpty()) {
-      obj = toObject(attribute.getStringValues());
-    } else if (attribute.getNumberValues() != null && !attribute.getNumberValues().isEmpty()) {
-      obj = toObject(attribute.getNumberValues());
-    } else if (attribute.getBooleanValue() != null) {
-      obj = attribute.getBooleanValue();
-    }
-
-    return obj;
-  }
-
-  private Object toObject(final List<?> list) {
-    return list.size() == 1 ? list.get(0) : list;
-  }
+@Reflectable
+public record AwsEvent(@SerializedName("Records") List<AwsEventRecord> records) {
 }

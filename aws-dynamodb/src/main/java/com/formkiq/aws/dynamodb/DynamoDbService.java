@@ -133,6 +133,15 @@ public interface DynamoDbService {
   boolean exists(DynamoDbKey key);
 
   /**
+   * Whether Database Record Exist.
+   *
+   * @param tableName {@link String}
+   * @param key {@link DynamoDbKey}
+   * @return boolean
+   */
+  boolean exists(String tableName, DynamoDbKey key);
+
+  /**
    * Returns {@link DynamoDbKey} that exist.
    *
    * @param key {@link DynamoDbKey}
@@ -249,6 +258,14 @@ public interface DynamoDbService {
   void putItems(List<Map<String, AttributeValue>> attrs);
 
   /**
+   * Put DynamoDb Records.
+   *
+   * @param tableName {@link String}
+   * @param attrs {@link List} {@link Map} {@link AttributeValue}
+   */
+  void putItems(String tableName, List<Map<String, AttributeValue>> attrs);
+
+  /**
    * Query DynamoDB Records.
    *
    * @param pk {@link AttributeValue}
@@ -315,6 +332,20 @@ public interface DynamoDbService {
    */
   QueryResponse queryBeginsWith(QueryConfig config, AttributeValue pk, AttributeValue sk,
       Map<String, AttributeValue> exclusiveStartKey, int limit);
+
+  /**
+   * Query DynamoDB Records.
+   *
+   * @param tableName {@link String}
+   * @param config {@link QueryConfig}
+   * @param pk {@link AttributeValue}
+   * @param sk {@link AttributeValue}
+   * @param exclusiveStartKey {@link Map}
+   * @param limit int
+   * @return {@link QueryResponse}
+   */
+  QueryResponse queryBeginsWith(String tableName, QueryConfig config, AttributeValue pk,
+      AttributeValue sk, Map<String, AttributeValue> exclusiveStartKey, int limit);
 
   /**
    * Query DynamoDB Index for Records.

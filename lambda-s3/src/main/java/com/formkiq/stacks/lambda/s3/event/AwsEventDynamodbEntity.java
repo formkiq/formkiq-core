@@ -21,32 +21,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.dynamodb;
+package com.formkiq.stacks.lambda.s3.event;
 
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import com.formkiq.graalvm.annotations.Reflectable;
+import com.google.gson.annotations.SerializedName;
 
-import java.util.Map;
-
-/**
- * {@link DynamoDbAttributeMapBuilder} for saving Custom Objects.
- */
-public interface CustomDynamoDbAttributeBuilder {
-
-  /**
-   * Builds {@link AttributeValue} for DynamoDb.
-   * 
-   * @param name {@link String}
-   * @param value {@link Object}
-   * @return Map {@link AttributeValue}
-   */
-  Map<String, AttributeValue> encode(String name, Object value);
-
-  /**
-   * Decode {@link Map} {@link AttributeValue} to {@link Object}.
-   * 
-   * @param attrs {@link Map} {@link AttributeValue}
-   * @return Object
-   * @param <T> Type of object
-   */
-  <T> T decode(Map<String, AttributeValue> attrs);
+@Reflectable
+public record AwsEventDynamodbEntity(
+    @SerializedName("ApproximateCreationDateTime") Long approximateCreationDateTime,
+    @SerializedName("Keys") AwsEventDynamodbKeys keys,
+    @SerializedName("NewImage") AwsEventDynamodbNewImage newImage,
+    @SerializedName("SequenceNumber") String sequenceNumber,
+    @SerializedName("SizeBytes") Long sizeBytes,
+    @SerializedName("StreamViewType") String streamViewType) {
 }

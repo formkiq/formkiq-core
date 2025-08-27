@@ -46,14 +46,17 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 
 /**
  * Export {@link DocumentItem} to External System.
  */
-public class DocumentExternalSystemExport {
+public class DocumentExternalSystemExport implements BiFunction<String, String, String> {
 
   /** {@link DocumentService}. */
   private final DocumentService documentService;
@@ -70,14 +73,21 @@ public class DocumentExternalSystemExport {
     this.s3Presigner = serviceCache.getExtension(S3PresignerService.class);
   }
 
+  @Override
+  public String apply(final String siteId, final String documentId) {
+    return apply(siteId, documentId, null);
+  }
+
   /**
-   * Apply transformation for Document to {@link String}.
+   * Convert {@link DocumentItem} to JSON.
    * 
    * @param siteId {@link String}
    * @param documentId {@link String}
-   * @return String
+   * @param activities {@link Collection}
+   * @return {@link String}
    */
-  public String apply(final String siteId, final String documentId) {
+  public String apply(final String siteId, final String documentId,
+      final Collection<Map<String, Object>> activities) {
 
     DocumentItem result = this.documentService.findDocument(siteId, documentId);
     if (result == null) {
@@ -92,17 +102,87 @@ public class DocumentExternalSystemExport {
     URL s3Url = getS3Url(siteId, documentId, item);
     item.put("url", s3Url);
 
-    List<DynamicDocumentItem> documents = new ArrayList<>();
-    documents.add(item);
-
     Collection<Map<String, Object>> attributes = addDocumentAttributes(siteId, documentId);
     if (!attributes.isEmpty()) {
       item.put("attributes", attributes);
     }
 
+    addChanged(activities, item);
+    addChangedAttributes(activities, item);
+
     addDocumentTags(siteId, documentId, item);
 
-    return this.gson.toJson(Map.of("documents", documents));
+    return this.gson.toJson(Map.of("document", item));
+  }
+
+  private void addChanged(final Collection<Map<String, Object>> activities,
+      final DynamicDocumentItem item) {
+    if (!notNull(activities).isEmpty()) {
+
+      Collection<Map<String, Object>> documentActivities =
+          activities.stream().filter(a -> "documents".equals(a.get("resource"))).toList();
+      Map<String, Object> changed = new HashMap<>();
+      documentActivities.forEach(a -> {
+        Map<String, Object> valuesMap = (Map<String, Object>) a.get("changes");
+        if (!notNull(valuesMap).isEmpty()) {
+          valuesMap.forEach((k, v) -> {
+            if (v instanceof Map mm && mm.containsKey("oldValue")) {
+              Object oldValue = mm.get("oldValue");
+              changed.put(k, oldValue);
+            }
+          });
+        }
+      });
+
+      if (!changed.isEmpty()) {
+        item.put("changed", changed);
+      }
+    }
+  }
+
+  private void addChangedAttributes(final Collection<Map<String, Object>> activities,
+      final DynamicDocumentItem item) {
+
+    if (!notNull(activities).isEmpty()) {
+
+      Map<Object, List<Map<String, Object>>> attributesActivities =
+          activities.stream().filter(a -> "documentAttributes".equals(a.get("resource")))
+              .collect(Collectors.groupingBy(a -> a.get("attributeKey")));
+
+      Map<String, Map<String, Object>> changedAttributes = new HashMap<>();
+      attributesActivities.forEach((k, v) -> {
+        Map<String, List<Object>> values = new HashMap<>();
+        v.forEach(a -> {
+          if (a.get("changes") instanceof Map m) {
+            Map<String, Object> map = new HashMap<>(m);
+            map.keySet().removeIf(key -> !key.contains("Value"));
+            map.forEach((k1, v1) -> {
+              if (v1 instanceof Map mm && mm.containsKey("oldValue")) {
+                Object oldValue = mm.get("oldValue");
+                values.computeIfAbsent(k1, s -> new ArrayList<>()).add(oldValue);
+              }
+            });
+          }
+        });
+
+        Map<String, Object> m = new HashMap<>();
+        values.forEach((k1, v1) -> {
+          if (v1.size() == 1) {
+            m.put(k1, v1.get(0));
+          } else {
+            m.put(k1 + "s", v1);
+          }
+        });
+
+        if (!m.isEmpty()) {
+          changedAttributes.put((String) k, m);
+        }
+      });
+
+      if (!changedAttributes.isEmpty()) {
+        item.put("changedAttributes", changedAttributes);
+      }
+    }
   }
 
   private Collection<Map<String, Object>> addDocumentAttributes(final String siteId,

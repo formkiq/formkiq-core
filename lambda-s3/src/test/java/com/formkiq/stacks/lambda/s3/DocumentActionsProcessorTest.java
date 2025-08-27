@@ -33,10 +33,6 @@ import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
-import com.formkiq.aws.dynamodb.model.DocumentSyncRecord;
-import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
-import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
-import com.formkiq.aws.dynamodb.model.DocumentSyncType;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
@@ -66,8 +62,6 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.module.typesense.TypeSenseService;
 import com.formkiq.module.typesense.TypeSenseServiceImpl;
-import com.formkiq.stacks.dynamodb.DocumentSyncService;
-import com.formkiq.stacks.dynamodb.DocumentSyncServiceDynamoDb;
 import com.formkiq.stacks.dynamodb.GsonUtil;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
@@ -98,6 +92,7 @@ import com.formkiq.stacks.dynamodb.mappings.MappingAttributeSourceType;
 import com.formkiq.stacks.dynamodb.mappings.MappingService;
 import com.formkiq.stacks.dynamodb.mappings.MappingServiceDynamodb;
 import com.formkiq.stacks.lambda.s3.actions.AddOcrAction;
+import com.formkiq.stacks.lambda.s3.event.AwsEvent;
 import com.formkiq.stacks.lambda.s3.util.FileUtils;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
@@ -120,7 +115,6 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.s3.model.S3Object;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
@@ -146,7 +140,6 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
-import static com.formkiq.aws.dynamodb.model.DocumentSyncRecordBuilder.MESSAGE_ADDED_METADATA;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
@@ -205,8 +198,6 @@ public class DocumentActionsProcessorTest implements DbKeys {
   private static ConfigService configService;
   /** {@link DocumentService}. */
   private static DocumentService documentService;
-  /** {@link DocumentService}. */
-  private static DocumentSyncService documentSyncService;
   /** {@link DocumentSearchService}. */
   private static DocumentSearchService documentSearchService;
   /** {@link ClientAndServer}. */
@@ -225,8 +216,6 @@ public class DocumentActionsProcessorTest implements DbKeys {
   private static EventBridgeService eventBridgeService;
   /** {@link SqsService}. */
   private static SqsService sqsService;
-  /** {@link SnsService}. */
-  private static SnsService sns;
   /** Valid image formats. */
   private static final List<String> VALID_IMAGE_FORMATS =
       List.of("bmp", "gif", "jpeg", "png", "tif");
@@ -261,8 +250,6 @@ public class DocumentActionsProcessorTest implements DbKeys {
     attributeService = new AttributeServiceDynamodb(db);
     documentSearchService =
         new DocumentSearchServiceImpl(dbBuilder, documentService, DOCUMENTS_TABLE);
-    documentSyncService =
-        new DocumentSyncServiceDynamoDb(db, DOCUMENTS_TABLE, DOCUMENT_SYNCS_TABLE);
     createMockServer();
 
     s3Service = new S3Service(TestServices.getS3Connection(null));
@@ -280,7 +267,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
     configService = new ConfigServiceDynamoDb(dbBuilder, DOCUMENTS_TABLE);
 
-    sns = new SnsService(TestServices.getSnsConnection(null));
+    SnsService sns = new SnsService(TestServices.getSnsConnection(null));
     snsDocumentEventTopicArn = sns.createTopic(SNS_DOCUMENT_EVENT_TOPIC).topicArn();
 
     SqsConnectionBuilder sqsBuilder = TestServices.getSqsConnection(null);
@@ -364,9 +351,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
                 "contentType": "text/plain","userId": "joe"}"""));
   }
 
-  private static void initProcessor(final String module, final String chatgptUrl,
-      final String eventBusName) {
-    Map<String, String> env = buildEnvironment(module, chatgptUrl, eventBusName);
+  private static void initProcessor(final String module, final String chatgptUrl) {
+    Map<String, String> env = buildEnvironment(module, chatgptUrl);
 
     AwsCredentials creds = AwsBasicCredentials.create("aaa", "bbb");
     StaticCredentialsProvider credentialsProvider = StaticCredentialsProvider.create(creds);
@@ -382,8 +368,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
     eventBridgeService = serviceCache.getExtension(EventBridgeService.class);
   }
 
-  private static Map<String, String> buildEnvironment(final String module, final String chatgptUrl,
-      final String eventBusName) {
+  private static Map<String, String> buildEnvironment(final String module,
+      final String chatgptUrl) {
     Map<String, String> env = new HashMap<>();
     env.put("AWS_REGION", AWS_REGION.toString());
     env.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
@@ -395,7 +381,6 @@ public class DocumentActionsProcessorTest implements DbKeys {
     env.put("SNS_DOCUMENT_EVENT", snsDocumentEventTopicArn);
     env.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
     env.put("CHATGPT_API_COMPLETIONS_URL", URL + "/" + chatgptUrl);
-    env.put("DOCUMENT_EVENTS_BUS", eventBusName);
     return env;
   }
 
@@ -408,7 +393,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     // null = new LambdaContextRecorder();
     CALLBACK.reset();
 
-    initProcessor("opensearch", "chatgpt1", null);
+    initProcessor("opensearch", "chatgpt1");
     s3Service.deleteAllFiles(BUCKET_NAME);
   }
 
@@ -426,8 +411,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               "chatgpt", "tags", "organization,location,person,subject,sentiment,document type")));
       actionsService.saveNewActions(siteId, documentId, actions);
 
-      Map<String, Object> map =
-          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -472,8 +456,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               "chatgpt", "tags", "organization,location,person,subject,sentiment,document type")));
       actionsService.saveNewActions(siteId, documentId, actions);
 
-      Map<String, Object> map =
-          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -523,8 +506,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               "unknown", "tags", "organization,location,person,subject,sentiment,document type")));
       actionsService.saveNewActions(siteId, documentId, actions);
 
-      Map<String, Object> map =
-          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -544,7 +526,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
   @Test
   public void testDocumentTaggingAction04() {
 
-    initProcessor("opensearch", "chatgpt2", null);
+    initProcessor("opensearch", "chatgpt2");
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
@@ -571,8 +553,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               "chatgpt", "tags", "Organization,location,person,subject,sentiment,document type")));
       actionsService.saveNewActions(siteId, documentId, actions);
 
-      Map<String, Object> map =
-          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -618,7 +599,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
   @Test
   public void testDocumentTaggingAction05() {
 
-    initProcessor("opensearch", "chatgpt3", null);
+    initProcessor("opensearch", "chatgpt3");
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
@@ -645,8 +626,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               "chatgpt", "tags", "Organization,location,person,subject,sentiment,document type")));
       actionsService.saveNewActions(siteId, documentId, actions);
 
-      Map<String, Object> map =
-          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -690,7 +670,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
   @Test
   public void testDocumentTaggingAction06() {
 
-    initProcessor("opensearch", "chatgpt4", null);
+    initProcessor("opensearch", "chatgpt4");
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
@@ -717,8 +697,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               "chatgpt", "tags", "organization,location,person,subject,sentiment,document type")));
       actionsService.saveNewActions(siteId, documentId, actions);
 
-      Map<String, Object> map =
-          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -758,7 +737,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
   @Test
   public void testDocumentTaggingAction07() {
 
-    initProcessor("opensearch", "chatgpt5", null);
+    initProcessor("opensearch", "chatgpt5");
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
@@ -785,8 +764,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               "document type,meeting date,chairperson,secretary,board members,resolutions")));
       actionsService.saveNewActions(siteId, documentId, actions);
 
-      Map<String, Object> map =
-          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -832,7 +810,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
   @Test
   public void testDocumentTaggingAction08() {
 
-    initProcessor("opensearch", "chatgpt6", null);
+    initProcessor("opensearch", "chatgpt6");
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
@@ -859,8 +837,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               "chatgpt", "tags", "Organization,location,person,subject,sentiment,document type")));
       actionsService.saveNewActions(siteId, documentId, actions);
 
-      Map<String, Object> map =
-          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -926,8 +903,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               "ocrNumberOfPages", "2", "ocrOutputType", "CSV")));
       actionsService.saveNewActions(siteId, documentId, actions);
 
-      Map<String, Object> map =
-          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -965,8 +941,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               Map.of("ocrParseTypes", "FORMS, TABLES, QUERIES", "ocrTextractQueries", queries)));
       actionsService.saveNewActions(siteId, documentId, actions);
 
-      Map<String, Object> map =
-          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -990,7 +965,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
   /**
    * Handle Fulltext(Opensearch) plain/text document.
-   * 
+   *
    * @throws ValidationException ValidationException
    */
   @Test
@@ -1007,8 +982,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
           Collections.singletonList(new Action().type(ActionType.FULLTEXT).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
-      Map<String, Object> map =
-          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -1029,7 +1003,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
   /**
    * Handle Fulltext application/pdf document.
-   * 
+   *
    * @throws ValidationException ValidationException
    */
   @Test
@@ -1048,8 +1022,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
           Collections.singletonList(new Action().type(ActionType.FULLTEXT).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
-      Map<String, Object> map =
-          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -1081,8 +1054,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
           Collections.singletonList(new Action().type(ActionType.FULLTEXT).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
-      Map<String, Object> map =
-          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -1102,7 +1074,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
   /**
    * Handle WEBHOOK Action.
-   * 
+   *
    * @throws ValidationException ValidationException
    */
   @Test
@@ -1119,8 +1091,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
           .userId("joe").parameters(Map.of("url", URL + "/callback")));
       actionsService.saveNewActions(siteId, documentId, actions);
 
-      Map<String, Object> map =
-          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -1133,10 +1104,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       HttpRequest lastRequest = CALLBACK.getLastRequest();
       assertTrue(lastRequest.getPath().toString().endsWith("/callback"));
       Map<String, Object> resultmap = GSON.fromJson(lastRequest.getBodyAsString(), Map.class);
-
-      List<Map<String, Object>> documents = (List<Map<String, Object>>) resultmap.get("documents");
-      assertEquals(1, documents.size());
-      Map<String, Object> document = documents.get(0);
+      Map<String, String> document = (Map<String, String>) resultmap.get("document");
 
       assertEquals(Objects.requireNonNullElse(siteId, DEFAULT_SITE_ID), document.get("siteId"));
 
@@ -1157,7 +1125,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
   /**
    * Handle WEBHOOK + ANTIVIRUS Action.
-   * 
+   *
    * @throws ValidationException ValidationException
    */
   @Test
@@ -1180,8 +1148,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               .parameters(Map.of("url", URL + "/callback")));
       actionsService.saveNewActions(siteId, documentId, actions);
 
-      Map<String, Object> map =
-          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -1195,10 +1162,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       HttpRequest lastRequest = CALLBACK.getLastRequest();
       assertTrue(lastRequest.getPath().toString().endsWith("/callback"));
       Map<String, Object> resultmap = GSON.fromJson(lastRequest.getBodyAsString(), Map.class);
-
-      List<Map<String, Object>> documents = (List<Map<String, Object>>) resultmap.get("documents");
-      assertEquals(1, documents.size());
-      Map<String, Object> document = documents.get(0);
+      Map<String, String> document = (Map<String, String>) resultmap.get("document");
 
       assertEquals(Objects.requireNonNullElse(siteId, DEFAULT_SITE_ID), document.get("siteId"));
 
@@ -1216,13 +1180,13 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
   /**
    * Handle Fulltext(Typesense) plain/text document.
-   * 
+   *
    * @throws IOException IOException
    * @throws ValidationException ValidationException
    */
   @Test
   public void testHandle07() throws IOException, ValidationException {
-    initProcessor("typesense", "chatgpt1", null);
+    initProcessor("typesense", "chatgpt1");
 
     String content = "this is some data";
 
@@ -1242,8 +1206,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
           Collections.singletonList(new Action().type(ActionType.FULLTEXT).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
-      Map<String, Object> map =
-          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -1266,7 +1229,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
   /**
    * Handle RUNNING action in progress.
-   * 
+   *
    * @throws ValidationException ValidationException
    */
   @Test
@@ -1286,8 +1249,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               .parameters(Map.of("url", URL + "/callback2")));
       actionsService.saveNewActions(siteId, documentId, actions);
 
-      Map<String, Object> map =
-          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -1305,7 +1267,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
   /**
    * Handle FAILED and PENDING action.
-   * 
+   *
    * @throws ValidationException ValidationException
    */
   @Test
@@ -1325,8 +1287,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               .parameters(Map.of("url", URL + "/callback2")));
       actionsService.saveNewActions(siteId, documentId, actions);
 
-      Map<String, Object> map =
-          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -1353,7 +1314,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
   /**
    * Handle Fulltext that needs OCR Action.
-   * 
+   *
    * @throws ValidationException ValidationException
    */
   @Test
@@ -1370,8 +1331,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
           Collections.singletonList(new Action().type(ActionType.FULLTEXT).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
-      Map<String, Object> map =
-          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -1389,7 +1349,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
   /**
    * Handle Fulltext that needs OCR Action.
-   * 
+   *
    * @throws ValidationException ValidationException
    */
   @Test
@@ -1407,8 +1367,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
           new Action().type(ActionType.FULLTEXT).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
-      Map<String, Object> map =
-          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -1429,7 +1388,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
   /**
    * Handle Fulltext(Opensearch) plain/text PATCH document not found 404, POST works.
-   * 
+   *
    * @throws ValidationException ValidationException
    */
   @Test
@@ -1446,8 +1405,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
           Collections.singletonList(new Action().type(ActionType.FULLTEXT).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
-      Map<String, Object> map =
-          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -1473,7 +1431,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
   @Test
   public void testInvalidRequest() {
     // given
-    Map<String, Object> map = new HashMap<>();
+    AwsEvent map = new AwsEvent(null);
 
     // when
     processor.handleRequest(map, null);
@@ -1496,8 +1454,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
           .singletonList(new Action().type(ActionType.QUEUE).userId("joe").queueId(name));
       actionsService.saveNewActions(siteId, documentId, actions);
 
-      Map<String, Object> map =
-          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -1505,7 +1462,6 @@ public class DocumentActionsProcessorTest implements DbKeys {
       // then
       assertEquals(ActionStatus.IN_QUEUE,
           actionsService.getActions(siteId, documentId).get(0).status());
-      assertSyncsCount(siteId, documentId, 0);
     }
   }
 
@@ -1567,30 +1523,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
         DocumentAttributeRecord record = results.get(0);
         assertEquals("invoice", record.getKey());
         assertEquals("6200041751", record.getStringValue());
-
-        List<DocumentSyncRecord> syncs = assertSyncsCount(siteId, documentId, 2);
-        assertSyncEquals(syncs.get(0), "updated Document Metadata");
-        assertSyncEquals(syncs.get(1), MESSAGE_ADDED_METADATA);
       }
     }
-  }
-
-  private void assertSyncEquals(final DocumentSyncRecord sync, final String message) {
-    assertEquals(DocumentSyncServiceType.EVENTBRIDGE, sync.getService());
-    assertNull(sync.getSyncDate());
-    assertNotNull(sync.getInsertedDate());
-    assertEquals(DocumentSyncType.METADATA, sync.getType());
-    assertEquals(message, sync.getMessage());
-    assertEquals("System", sync.getUserId());
-    assertEquals(DocumentSyncStatus.PENDING, sync.getStatus());
-  }
-
-  private List<DocumentSyncRecord> assertSyncsCount(final String siteId, final String documentId,
-      final int expected) {
-    List<DocumentSyncRecord> syncs =
-        notNull(documentSyncService.getSyncs(siteId, documentId, null, 2).getResults());
-    assertEquals(expected, syncs.size());
-    return syncs;
   }
 
   /**
@@ -1632,10 +1566,6 @@ public class DocumentActionsProcessorTest implements DbKeys {
         DocumentAttributeRecord record = results.get(0);
         assertEquals("invoice", record.getKey());
         assertEquals("6.200041751E9", record.getNumberValue().toString());
-
-        List<DocumentSyncRecord> syncs = assertSyncsCount(siteId, documentId, 2);
-        assertSyncEquals(syncs.get(0), "updated Document Metadata");
-        assertSyncEquals(syncs.get(1), MESSAGE_ADDED_METADATA);
       }
     }
   }
@@ -1676,9 +1606,6 @@ public class DocumentActionsProcessorTest implements DbKeys {
         List<DocumentAttributeRecord> results =
             documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
         assertEquals(0, results.size());
-
-        List<DocumentSyncRecord> syncs = assertSyncsCount(siteId, documentId, 1);
-        assertSyncEquals(syncs.get(0), MESSAGE_ADDED_METADATA);
       }
     }
   }
@@ -1771,10 +1698,6 @@ public class DocumentActionsProcessorTest implements DbKeys {
         record = results.get(1);
         assertEquals("invoice", record.getKey());
         assertEquals("abc", record.getStringValue());
-
-        List<DocumentSyncRecord> syncs = assertSyncsCount(siteId, documentId, 2);
-        assertSyncEquals(syncs.get(0), "updated Document Metadata");
-        assertSyncEquals(syncs.get(1), MESSAGE_ADDED_METADATA);
       }
     }
   }
@@ -2187,8 +2110,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
         .parameters(Map.of("mappingId", mappingRecord.getDocumentId())));
     actionsService.saveNewActions(siteId, documentId, actions);
 
-    Map<String, Object> map =
-        SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+    AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
     // when
     processor.handleRequest(map, null);
@@ -2230,8 +2152,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
           Collections.singletonList(new Action().type(ActionType.PUBLISH).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
-      Map<String, Object> map =
-          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -2278,8 +2199,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
           Collections.singletonList(new Action().type(ActionType.PDFEXPORT).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
-      Map<String, Object> map =
-          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -2314,8 +2234,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
           Collections.singletonList(new Action().type(ActionType.PDFEXPORT).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
-      Map<String, Object> map =
-          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -2351,8 +2270,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
           Collections.singletonList(new Action().type(ActionType.PDFEXPORT).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
-      Map<String, Object> map =
-          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -2370,9 +2288,6 @@ public class DocumentActionsProcessorTest implements DbKeys {
       if (siteId != null) {
         assertEquals(siteId, lastRequest.getFirstQueryStringParameter("siteId"));
       }
-
-      List<DocumentSyncRecord> syncs = assertSyncsCount(siteId, documentId, 1);
-      assertSyncEquals(syncs.get(0), MESSAGE_ADDED_METADATA);
     }
   }
 
@@ -2409,8 +2324,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
           .parameters(Map.of("eventBusName", eventBusName)).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
-      Map<String, Object> map =
-          SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
       // when
       processor.handleRequest(map, null);
@@ -2422,7 +2336,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
       Message message = getMessage(sqsDocumentQueueUrl);
 
-      Map<String, Object> document = assertEventBridgeMessage(message, "Document Action Event");
+      Map<String, Object> document = assertEventBridgeMessage(message);
 
       validateAttributes(document);
     }
@@ -2436,170 +2350,6 @@ public class DocumentActionsProcessorTest implements DbKeys {
     String eventPattern = "{\"source\":[\"formkiq.test\"]}";
     eventBridgeService.createRule(eventBusName, "sqs", null, eventPattern, "test", sqsQueueArn);
     return eventBusName;
-  }
-
-  /**
-   * Handle DynamoDb Create Metadata Sync Event.
-   *
-   * @throws Exception Exception
-   */
-  @Test
-  @Timeout(TEST_TIMEOUT)
-  public void testDynamoDbSyncEvent01() throws Exception {
-    // given
-    String sqsDocumentQueueUrl = setupDynamoDbSync();
-
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-
-      String documentId = createDocument(siteId);
-
-      // when
-      handleDynamodb(siteId, documentId);
-
-      // then
-      assertEquals(0, actionsService.getActions(siteId, documentId).size());
-
-      List<DocumentSyncRecord> syncs = getDocumentSyncs(siteId, documentId);
-      assertEquals(1, syncs.size());
-      assertEventBridge(syncs.get(0), DocumentSyncType.METADATA);
-
-      Message message = getMessage(sqsDocumentQueueUrl);
-
-      assertEventBridgeMessage(message, "Document Create Metadata");
-    }
-  }
-
-  /**
-   * Handle DynamoDb Content Sync Event.
-   *
-   * @throws Exception Exception
-   */
-  @Test
-  @Timeout(TEST_TIMEOUT)
-  public void testDynamoDbSyncEvent02() throws Exception {
-    // given
-    String sqsDocumentQueueUrl = setupDynamoDbSync();
-
-    String sqsDocumentQueueUrl2 = sqsService.createQueue("sqssnsCreate2" + ID.uuid()).queueUrl();
-    String sqsQueueArn = sqsService.getQueueArn(sqsDocumentQueueUrl2);
-    sns.subscribe(snsDocumentEventTopicArn, "sqs", sqsQueueArn);
-
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-
-      String documentId = createDocument(siteId);
-
-      String contentType = "text/plain";
-      Map<String, AttributeValue> attributes =
-          Map.of("contentType", AttributeValue.fromS(contentType));
-      documentService.updateDocument(siteId, documentId, attributes);
-
-      // when
-      handleDynamodb(siteId, documentId);
-
-      // then
-      assertEquals(0, actionsService.getActions(siteId, documentId).size());
-
-      List<DocumentSyncRecord> syncs = getDocumentSyncs(siteId, documentId);
-      assertEquals(2, syncs.size());
-      assertEventBridge(syncs.get(0), DocumentSyncType.CONTENT);
-      assertEventBridge(syncs.get(1), DocumentSyncType.METADATA);
-
-      Message message = getMessage(sqsDocumentQueueUrl);
-      assertEventBridgeMessage(message, "Document Create Content");
-
-      message = getMessage(sqsDocumentQueueUrl);
-      assertEventBridgeMessage(message, "Document Create Metadata");
-
-      message = getMessage(sqsDocumentQueueUrl2);
-      assertSnsMessage(message, "create", siteId);
-    }
-  }
-
-  /**
-   * Handle DynamoDb Delete Sync Event.
-   *
-   * @throws Exception Exception
-   */
-  @Test
-  @Timeout(TEST_TIMEOUT)
-  public void testDynamoDbSyncEvent03() throws Exception {
-    // given
-    String sqsDocumentQueueUrl = setupDynamoDbSync();
-
-    String sqsDocumentQueueUrl2 = sqsService.createQueue("sqssnsCreate2" + ID.uuid()).queueUrl();
-    String sqsQueueArn = sqsService.getQueueArn(sqsDocumentQueueUrl2);
-    sns.subscribe(snsDocumentEventTopicArn, "sqs", sqsQueueArn);
-
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-
-      String documentId = createDocument(siteId);
-      TimeUnit.MILLISECONDS.sleep(2);
-
-      documentService.deleteDocument(siteId, documentId, false);
-
-      // when
-      handleDynamodb(siteId, documentId);
-
-      // then
-      assertEquals(0, actionsService.getActions(siteId, documentId).size());
-
-      List<DocumentSyncRecord> syncs = getDocumentSyncs(siteId, documentId);
-      assertEquals(2, syncs.size());
-      assertEventBridge(syncs.get(0), DocumentSyncType.DELETE);
-      assertEventBridge(syncs.get(1), DocumentSyncType.METADATA);
-
-      Message message = getMessage(sqsDocumentQueueUrl);
-      assertEventBridgeDeleteMessage(message, "Document Delete Metadata");
-
-      message = getMessage(sqsDocumentQueueUrl);
-      assertEventBridgeDeleteMessage(message, "Document Create Metadata");
-
-      message = getMessage(sqsDocumentQueueUrl2);
-      assertSnsMessage(message, "delete", siteId);
-    }
-  }
-
-  /**
-   * Handle DynamoDb Soft Delete Sync Event.
-   *
-   * @throws Exception Exception
-   */
-  @Test
-  @Timeout(TEST_TIMEOUT)
-  public void testDynamoDbSyncEvent04() throws Exception {
-    // given
-    String sqsDocumentQueueUrl = setupDynamoDbSync();
-
-    String sqsDocumentQueueUrl2 = sqsService.createQueue("sqssnsCreate2" + ID.uuid()).queueUrl();
-    String sqsQueueArn = sqsService.getQueueArn(sqsDocumentQueueUrl2);
-    sns.subscribe(snsDocumentEventTopicArn, "sqs", sqsQueueArn);
-
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-
-      String documentId = createDocument(siteId);
-      TimeUnit.MILLISECONDS.sleep(2);
-      documentService.deleteDocument(siteId, documentId, true);
-
-      // when
-      handleDynamodb(siteId, documentId);
-
-      // then
-      assertEquals(0, actionsService.getActions(siteId, documentId).size());
-
-      List<DocumentSyncRecord> syncs = getDocumentSyncs(siteId, documentId);
-      assertEquals(2, syncs.size());
-      assertEventBridge(syncs.get(0), DocumentSyncType.SOFT_DELETE);
-      assertEventBridge(syncs.get(1), DocumentSyncType.METADATA);
-
-      Message message = getMessage(sqsDocumentQueueUrl);
-      assertEventBridgeDeleteMessage(message, "Document Soft Delete Metadata");
-
-      message = getMessage(sqsDocumentQueueUrl);
-      assertEventBridgeDeleteMessage(message, "Document Create Metadata");
-
-      message = getMessage(sqsDocumentQueueUrl2);
-      assertSnsMessage(message, "softDelete", siteId);
-    }
   }
 
   @Test
@@ -2710,8 +2460,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
         .singletonList(new Action().type(ActionType.RESIZE).userId("joe").parameters(parameters));
     actionsService.saveNewActions(siteId, documentId, actions);
 
-    Map<String, Object> map =
-        SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+    AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
     processor.handleRequest(map, null);
   }
@@ -2801,103 +2550,19 @@ public class DocumentActionsProcessorTest implements DbKeys {
     return response.messages().get(0);
   }
 
-  private void assertEventBridge(final DocumentSyncRecord sync, final DocumentSyncType syncType) {
-    assertEquals(DocumentSyncServiceType.EVENTBRIDGE, sync.getService());
-    assertEquals(syncType, sync.getType());
-    assertEquals(DocumentSyncStatus.COMPLETE, sync.getStatus());
-    assertNotNull(sync.getSyncDate());
-  }
-
-  private void assertSnsMessage(final Message m, final String eventType, final String siteId) {
-
-    Map<String, String> map = GSON.fromJson(m.body(), Map.class);
-    String message = map.get("Message");
-
-    map = GSON.fromJson(message, Map.class);
-    assertNotNull(map.get("documentId"));
-    assertEquals(eventType, map.get("type"));
-    assertNotNull(map.get("path"));
-
-    assertTrue(map.get("url").contains("testbucket"));
-    assertNull(map.get("content"));
-
-    if (!"delete".equals(eventType) && !"softDelete".equals(eventType)) {
-      assertNotNull(map.get("userId"));
-    }
-
-    assertEquals(Objects.requireNonNullElse(siteId, DEFAULT_SITE_ID), map.get("siteId"));
-  }
-
-  private Map<String, Object> assertEventBridgeMessage(final Message message,
-      final String detailType) {
+  private Map<String, Object> assertEventBridgeMessage(final Message message) {
     Map<String, Object> data = GSON.fromJson(message.body(), Map.class);
     assertEquals("formkiq.test", data.get("source"));
-    assertEquals(detailType, data.get("detail-type"));
+    assertEquals("Document Action Event", data.get("detail-type"));
     assertTrue(data.get("time").toString().endsWith("Z"));
 
     data = (Map<String, Object>) data.get("detail");
-
-    List<Map<String, Object>> documents = (List<Map<String, Object>>) data.get("documents");
-    assertEquals(1, documents.size());
-
-    assertNotNull(documents.get(0).get("documentId"));
-    assertEquals("joe", documents.get(0).get("userId"));
-    assertNotNull(documents.get(0).get("insertedDate"));
-    assertNotNull(documents.get(0).get("lastModifiedDate"));
-    assertNotNull(documents.get(0).get("url"));
-
-    return documents.get(0);
-  }
-
-  private void assertEventBridgeDeleteMessage(final Message message, final String detailType) {
-    Map<String, Object> data = GSON.fromJson(message.body(), Map.class);
-    assertEquals("formkiq.test", data.get("source"));
-    assertEquals(detailType, data.get("detail-type"));
-    assertTrue(data.get("time").toString().endsWith("Z"));
-
-    data = (Map<String, Object>) data.get("detail");
-    List<Map<String, Object>> documents = (List<Map<String, Object>>) data.get("documents");
-    assertEquals(1, documents.size());
-    Map<String, Object> document = documents.get(0);
-
+    Map<String, Object> document = (Map<String, Object>) data.get("document");
     assertNotNull(document.get("documentId"));
-    assertNull(document.get("url"));
-    assertNull(document.get("path"));
+    assertNotNull(document.get("url"));
+    assertNotNull(document.get("path"));
 
-  }
-
-  private void handleDynamodb(final String siteId, final String documentId) {
-    List<DocumentSyncRecord> syncs = getDocumentSyncs(siteId, documentId);
-
-    for (DocumentSyncRecord sync : syncs) {
-      String pk = SiteIdKeyGenerator.createDatabaseKey(siteId, "docs#" + documentId);
-
-      Map<String, Object> map = DynamoDbStreamEventBuilder.builder().pk(pk).sk(sync.sk())
-          .documentId(documentId).type(sync.getType().name()).build();
-
-      processor.handleRequest(map, null);
-    }
-  }
-
-  private List<DocumentSyncRecord> getDocumentSyncs(final String siteId, final String documentId) {
-    return notNull(
-        documentSyncService.getSyncs(siteId, documentId, null, MAX_RESULTS).getResults());
-  }
-
-  private String createDocument(final String siteId) throws ValidationException {
-    String documentId = ID.uuid();
-    DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-    documentService.saveDocument(siteId, item, null);
-    return documentId;
-  }
-
-  private String setupDynamoDbSync() {
-    String sqsDocumentQueueUrl = sqsService.createQueue("sqssnsCreate1" + ID.uuid()).queueUrl();
-    String sqsQueueArn = sqsService.getQueueArn(sqsDocumentQueueUrl);
-    String eventBusName = createEventBus(sqsQueueArn);
-
-    initProcessor(null, null, eventBusName);
-    return sqsDocumentQueueUrl;
+    return document;
   }
 
   private void validateAttributes(final Map<String, Object> document) {

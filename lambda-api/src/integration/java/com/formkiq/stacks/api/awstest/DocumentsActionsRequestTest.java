@@ -48,19 +48,23 @@ import com.formkiq.client.model.GetDocumentsResponse;
 import com.formkiq.client.model.UpdateConfigurationRequest;
 import com.formkiq.testutils.FileGenerator;
 import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+
 import com.formkiq.testutils.aws.LambdaContextRecorder;
 import com.nimbusds.jose.util.StandardCharset;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+
 import software.amazon.awssdk.services.sqs.model.Message;
 
 import java.io.File;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import software.amazon.awssdk.utils.IoUtils;
+
 
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -186,7 +190,7 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
     Map<String, Object> map = gson.fromJson(body, Map.class);
     assertTrue(map.containsKey("detail"));
     Map<String, Object> detail = (Map<String, Object>) map.get("detail");
-    assertTrue(detail.containsKey("documents"));
+    assertTrue(detail.containsKey("document"));
 
     getSqs().clearQueue(queueUrl);
   }
@@ -233,7 +237,6 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
       GetDocumentResponse item = api.getDocument(renditionDocId, null, null);
       assertEquals("100", item.getWidth());
       assertEquals("56", item.getHeight());
-
     }
   }
 

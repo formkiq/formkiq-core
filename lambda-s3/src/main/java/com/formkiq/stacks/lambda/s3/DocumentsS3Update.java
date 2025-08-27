@@ -27,12 +27,15 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.getSiteId;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static com.formkiq.module.events.document.DocumentEventType.CREATE;
+import static com.formkiq.module.events.document.DocumentEventType.DELETE;
 import static com.formkiq.module.events.document.DocumentEventType.UPDATE;
 import static com.formkiq.stacks.dynamodb.DocumentService.SYSTEM_DEFINED_TAGS;
 import static com.formkiq.stacks.dynamodb.DocumentVersionService.S3VERSION_ATTRIBUTE;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.URL;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -54,6 +57,7 @@ import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.dynamodb.useractivities.ChangeRecord;
+import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3PresignerService;
@@ -72,6 +76,7 @@ import com.formkiq.module.actions.services.ActionsNotificationServiceExtension;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceExtension;
 import com.formkiq.module.events.EventService;
+import com.formkiq.module.events.EventServiceSns;
 import com.formkiq.module.events.EventServiceSnsExtension;
 import com.formkiq.module.events.document.DocumentEvent;
 import com.formkiq.module.http.HttpService;
@@ -503,7 +508,13 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
         }
       }
 
-      service.deleteDocument(siteId, documentId, false);
+      DocumentItem item = service.findDocument(siteId, documentId);
+      if (item != null) {
+        service.deleteDocument(siteId, documentId, false);
+
+        DocumentEvent event = buildDocumentEvent(DELETE, siteId, item, null, null, null);
+        sendSnsMessage(event);
+      }
     }
   }
 
@@ -572,11 +583,58 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
       DocumentEvent event =
           buildDocumentEvent(create ? CREATE : UPDATE, siteId, item, s3bucket, key, contentType);
+
+      sendNextActionsSnsMessage(event);
       sendSnsMessage(event);
 
     } else {
       logger.error("Cannot find document " + documentId + " in site " + siteId);
     }
+  }
+
+  /**
+   * Either sends the Create Message to SNS.
+   *
+   * @param event {@link DocumentEvent}
+   */
+  private void sendSnsMessage(final DocumentEvent event) {
+
+    String contentType = event.contentType();
+    String s3bucket = event.s3bucket();
+    String key = event.s3key();
+
+    if ("application/json".equals(contentType)) {
+      String content = getContent(event);
+      event.content(content);
+    }
+
+    if (s3bucket != null && key != null) {
+      S3PresignerService s3PresignedService = serviceCache.getExtension(S3PresignerService.class);
+      PresignGetUrlConfig config = new PresignGetUrlConfig().contentType(contentType);
+      URL url = s3PresignedService.presignGetUrl(s3bucket, key, Duration.ofDays(1), null, config);
+      event.url(url.toString());
+    }
+
+    EventService documentEventService = serviceCache.getExtension(EventService.class);
+    documentEventService.publish(serviceCache.getLogger(), event);
+  }
+
+  private String getContent(final DocumentEvent event) {
+
+    String content = null;
+
+    String s3bucket = event.s3bucket();
+    String key = event.s3key();
+    String contentType = event.contentType();
+    S3Service s3Service = serviceCache.getExtension(S3Service.class);
+    S3ObjectMetadata resp = s3Service.getObjectMetadata(s3bucket, key, null);
+
+    if (MimeType.isPlainText(contentType) && resp.getContentLength() != null
+        && resp.getContentLength() < EventServiceSns.MAX_SNS_CONTENT_SIZE) {
+      content = s3Service.getContentAsString(s3bucket, key, null);
+    }
+
+    return content;
   }
 
   private Map<String, Object> convertToObjectMap(final Map<String, ChangeRecord> changes) {
@@ -642,7 +700,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
    *
    * @param event {@link DocumentEvent}
    */
-  private void sendSnsMessage(final DocumentEvent event) {
+  private void sendNextActionsSnsMessage(final DocumentEvent event) {
 
     String eventType = event.type();
     String siteId = event.siteId();

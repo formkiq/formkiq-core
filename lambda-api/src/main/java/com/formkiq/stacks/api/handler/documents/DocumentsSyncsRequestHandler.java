@@ -176,7 +176,6 @@ public class DocumentsSyncsRequestHandler
           throw new BadException("No fulltext services enabled");
         }
       }
-      case EVENTBRIDGE -> DocumentSyncServiceType.EVENTBRIDGE;
       default -> throw new BadException("Unknown service type: " + service);
     };
   }

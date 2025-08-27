@@ -59,15 +59,15 @@ public class ActivityRecordTest {
       // then
       assertKeyEquals(siteId, "doc#" + documentId, key.pk());
       assertTrue(key.sk().startsWith("activity#"));
-      assertTrue(key.sk().endsWith("#" + documentId));
+      assertTrue(key.sk().contains("#" + documentId + "#"));
 
       assertKeyEquals(siteId, "activity#user#" + USER_ID, key.gsi1Pk());
       assertTrue(key.gsi1Sk().startsWith("activity#"));
-      assertTrue(key.gsi1Sk().endsWith("#" + documentId));
+      assertTrue(key.gsi1Sk().contains("#" + documentId + "#"));
 
       assertKeyEquals(siteId, "activity#" + TODAY, key.gsi2Pk());
       assertTrue(key.gsi2Sk().startsWith("activity#"));
-      assertTrue(key.gsi2Sk().endsWith("#" + documentId));
+      assertTrue(key.gsi2Sk().contains("#" + documentId + "#"));
     }
   }
 

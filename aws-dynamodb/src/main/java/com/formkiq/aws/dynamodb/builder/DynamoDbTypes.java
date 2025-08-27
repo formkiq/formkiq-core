@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.dynamodb;
+package com.formkiq.aws.dynamodb.builder;
 
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
@@ -50,9 +50,9 @@ public interface DynamoDbTypes {
     return attributeValue != null ? attributeValue.s() : null;
   }
 
-  static <T> T toCustom(final Map<String, AttributeValue> attrs,
+  static <T> T toCustom(final String name, final Map<String, AttributeValue> attrs,
       final CustomDynamoDbAttributeBuilder builder) {
-    return builder.decode(attrs);
+    return builder.decode(name, attrs);
   }
 
   /**

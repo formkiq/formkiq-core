@@ -21,10 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.dynamodb;
+package com.formkiq.aws.dynamodb.builder;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 
@@ -103,6 +105,23 @@ public class DynamoDbAttributeMapBuilder {
     return this;
   }
 
+
+  /**
+   * Add Attribute {@link List}.
+   * 
+   * @param name {@link String}
+   * @param values {@link List}
+   * @return builder
+   */
+  public DynamoDbAttributeMapBuilder withList(final String name,
+      final List<Map<String, Object>> values) {
+    if (values != null) {
+      AttributeValue list = new ObjectToAttributeValue().apply(values);
+      attributes.put(name, list);
+    }
+    return this;
+  }
+
   /**
    * Adds a Number attribute if the value is non-null.
    *
@@ -156,10 +175,57 @@ public class DynamoDbAttributeMapBuilder {
     return this;
   }
 
-  public void withAttributeValue(final String name, final AttributeValue value) {
+  /**
+   * With {@link AttributeValue}.
+   * 
+   * @param name {@link String}
+   * @param value {@link AttributeValue}
+   * @return DynamoDbAttributeMapBuilder
+   */
+  public DynamoDbAttributeMapBuilder withAttributeValue(final String name,
+      final AttributeValue value) {
     if (value != null) {
       attributes.put(name, value);
     }
+    return this;
+  }
+
+  /**
+   * Set a Time to Live in Seconds.
+   *
+   * @param ttlSeconds long
+   * @return DynamoDbAttributeMapBuilder
+   */
+  public DynamoDbAttributeMapBuilder withTimeToLiveInSeconds(final long ttlSeconds) {
+    long expiresAt = Instant.now().getEpochSecond() + ttlSeconds;
+    attributes.put("TimeToLive", AttributeValue.fromN(Long.toString(expiresAt)));
+    return this;
+  }
+
+  /**
+   * Set a Time to Live in hours.
+   *
+   * @param hours long
+   * @return DynamoDbAttributeMapBuilder
+   */
+  public DynamoDbAttributeMapBuilder withTimeToLiveInHours(final long hours) {
+    final long secondsPerHour = 3600;
+    long expiresAt = Instant.now().getEpochSecond() + hours * secondsPerHour;
+    attributes.put("TimeToLive", AttributeValue.fromN(Long.toString(expiresAt)));
+    return this;
+  }
+
+  /**
+   * Set a Time to Live in days.
+   *
+   * @param days long
+   * @return DynamoDbAttributeMapBuilder
+   */
+  public DynamoDbAttributeMapBuilder withTimeToLiveInDays(final long days) {
+    final long secondsPerDay = 86400;
+    long expiresAt = Instant.now().getEpochSecond() + days * secondsPerDay;
+    attributes.put("TimeToLive", AttributeValue.fromN(Long.toString(expiresAt)));
+    return this;
   }
 
   /**

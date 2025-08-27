@@ -23,7 +23,7 @@
  */
 package com.formkiq.aws.dynamodb.base64;
 
-import com.formkiq.aws.dynamodb.MapToAttributeValue;
+import com.formkiq.aws.dynamodb.builder.MapToAttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.Map;

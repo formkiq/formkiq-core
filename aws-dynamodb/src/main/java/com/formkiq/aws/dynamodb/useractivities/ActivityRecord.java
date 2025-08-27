@@ -23,9 +23,10 @@
  */
 package com.formkiq.aws.dynamodb.useractivities;
 
-import com.formkiq.aws.dynamodb.DynamoDbAttributeMapBuilder;
+import com.formkiq.aws.dynamodb.builder.DynamoDbAttributeMapBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
-import com.formkiq.aws.dynamodb.eventsourcing.entity.DynamoDbEntityBuilder;
+import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.builder.DynamoDbEntityBuilder;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
@@ -38,8 +39,8 @@ import java.util.Objects;
  */
 public record ActivityRecord(DynamoDbKey key, String resource, UserActivityType type,
     UserActivityStatus status, String sourceIpAddress, String source, String userId,
-    String entityTypeId, String entityId, String documentId, String message, Date insertedDate,
-    String versionPk, String versionSk, Map<String, Object> changes) {
+    String entityTypeId, String entityId, String documentId, String attributeKey, String message,
+    Date insertedDate, String versionPk, String versionSk, Map<String, Object> changes) {
 
   /**
    * Canonical constructor to enforce non-null properties and defensive copy of Date.
@@ -66,8 +67,8 @@ public record ActivityRecord(DynamoDbKey key, String resource, UserActivityType 
         .withString("sourceIpAddress", sourceIpAddress).withString("source", source)
         .withString("userId", userId).withString("message", message)
         .withString("entityTypeId", entityTypeId).withString("entityId", entityId)
-        .withString("documentId", documentId).withDate("inserteddate", insertedDate)
-        .withMap("changes", changes).build();
+        .withString("documentId", documentId).withString("attributeKey", attributeKey)
+        .withDate("inserteddate", insertedDate).withMap("changes", changes).build();
   }
 
   /**
@@ -101,6 +102,8 @@ public record ActivityRecord(DynamoDbKey key, String resource, UserActivityType 
     private String entityId;
     /** Activity Record Document Id. */
     private String documentId;
+    /** Activity Record Attribute Key. */
+    private String attributeKey;
     /** Activity Message. */
     private String message;
     /** Activity Inserted Date. */
@@ -256,6 +259,17 @@ public record ActivityRecord(DynamoDbKey key, String resource, UserActivityType 
     }
 
     /**
+     * Sets the Attribute Key.
+     *
+     * @param activityAttributeKey the attribute key
+     * @return this Builder
+     */
+    public Builder attributeKey(final String activityAttributeKey) {
+      this.attributeKey = activityAttributeKey;
+      return this;
+    }
+
+    /**
      * Sets the insertion date of the activity.
      *
      * @param activityInsertedDate the insertion date
@@ -269,7 +283,7 @@ public record ActivityRecord(DynamoDbKey key, String resource, UserActivityType 
     @Override
     public DynamoDbKey buildKey(final String siteId) {
       return switch (resource) {
-        case "documents", "users" -> buildDocumentsKey(siteId);
+        case "documents", "users", "documentAttributes" -> buildDocumentsKey(siteId);
         case "entities" -> buildEntitiesKey(siteId);
         case "entityTypes" -> buildEntityTypesKey(siteId);
         default -> throw new IllegalArgumentException("Invalid resource " + resource);
@@ -286,7 +300,8 @@ public record ActivityRecord(DynamoDbKey key, String resource, UserActivityType 
       Objects.requireNonNull(userId, "userId must not be null");
 
       String pk = "doc#" + documentId;
-      String sk = "activity#" + DateUtil.getNowInIso8601Format() + "#" + documentId;
+      String sk =
+          "activity#" + DateUtil.getNowInIso8601Format() + "#" + documentId + "#" + ID.uuid();
       String gsi1Pk = "activity#user#" + userId;
 
       String gsi2Pk = getGsi2Pk();
@@ -342,7 +357,8 @@ public record ActivityRecord(DynamoDbKey key, String resource, UserActivityType 
       DynamoDbKey key = buildKey(siteId);
 
       return new ActivityRecord(key, resource, type, status, sourceIpAddress, source, userId,
-          entityTypeId, entityId, documentId, message, insertedDate, versionPk, versionSk, changes);
+          entityTypeId, entityId, documentId, attributeKey, message, insertedDate, versionPk,
+          versionSk, changes);
     }
   }
 }

@@ -681,11 +681,9 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
     GetDocumentSyncResponse syncResponse =
         this.documentsApi.getDocumentSyncs(documentId, null, null, null);
     assertNotNull(syncResponse.getSyncs());
-    assertEquals(2, syncResponse.getSyncs().size());
+    assertEquals(1, syncResponse.getSyncs().size());
     assertEquals(DocumentSyncStatus.COMPLETE, syncResponse.getSyncs().get(0).getStatus());
     assertEquals(DocumentSyncService.TYPESENSE, syncResponse.getSyncs().get(0).getService());
-    assertEquals(DocumentSyncStatus.PENDING, syncResponse.getSyncs().get(1).getStatus());
-    assertEquals(DocumentSyncService.EVENTBRIDGE, syncResponse.getSyncs().get(1).getService());
 
     GetDocumentFulltextResponse getResponse = null;
     while (getResponse == null) {

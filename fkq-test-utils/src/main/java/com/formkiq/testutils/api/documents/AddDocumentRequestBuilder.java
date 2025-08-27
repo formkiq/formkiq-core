@@ -138,6 +138,20 @@ public class AddDocumentRequestBuilder implements HttpRequestBuilder {
 
   /**
    * Add Document Attribute.
+   *
+   * @param key {@link String}
+   * @param values {@link List} {@link String}
+   * @return AddDocumentRequestBuilder
+   */
+  public AddDocumentRequestBuilder addAttribute(final String key, final List<String> values) {
+    AddDocumentAttribute attr =
+        new AddDocumentAttribute(new AddDocumentAttributeStandard().key(key).stringValues(values));
+    this.request.addAttributesItem(attr);
+    return this;
+  }
+
+  /**
+   * Add Document Attribute.
    * 
    * @param key {@link String}
    * @param value {@link BigDecimal}

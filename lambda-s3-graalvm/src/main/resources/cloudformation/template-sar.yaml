@@ -39,6 +39,7 @@ Parameters:
   DocumentEventsBus:
     Type: String
     Description: Name EventBridge Event Bus
+    Default: ""
 
   LogRetentionInDays:
     Type: Number
@@ -551,77 +552,6 @@ Resources:
           - Key: "AppEnvironment"
             Value: 
               Fn::Sub: "${AppEnvironment}"
-
-  DocumentsToActionsProcessorRole:
-    Type: "AWS::IAM::Role"
-    Properties:
-      Tags:
-        - Key: "Application"
-          Value: "FormKiQ"
-        - Key: "AppEnvironment"
-          Value:
-            Fn::Sub: "${AppEnvironment}"
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: "Allow"
-            Principal:
-              Service: "pipes.amazonaws.com"
-            Action: "sts:AssumeRole"
-      Policies:
-        - PolicyName: "EventPipePolicy"
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: "Allow"
-                Action:
-                  - "dynamodb:DescribeStream"
-                  - "dynamodb:GetRecords"
-                  - "dynamodb:GetShardIterator"
-                  - "dynamodb:ListStreams"
-                Resource:
-                  - Fn::GetAtt:
-                      - DocumentSyncs
-                      - StreamArn
-              - Effect: "Allow"
-                Action:
-                  - "sqs:SendMessage"
-                Resource:
-                  - Fn::GetAtt:
-                      - DocumentActionsQueue
-                      - Arn
-                  - Fn::GetAtt:
-                      - DocumentsDeadLetterQueue
-                      - Arn
-
-  DocumentsToActionsProcessorPipe:
-    Type: "AWS::Pipes::Pipe"
-    Properties:
-      RoleArn:
-        Fn::GetAtt:
-          - DocumentsToActionsProcessorRole
-          - Arn
-      Source:
-        Fn::GetAtt:
-          - DocumentSyncs
-          - StreamArn
-      SourceParameters:
-        FilterCriteria:
-          Filters:
-            - Pattern: '{"eventName": [{"equals-ignore-case": "INSERT"}],"eventSource": [{"equals-ignore-case": "aws:dynamodb"}],"dynamodb.NewImage.service.S": [{"equals-ignore-case": "EVENTBRIDGE"}],"dynamodb.NewImage.status.S": [{"equals-ignore-case": "PENDING"}]}'
-        DynamoDBStreamParameters:
-          StartingPosition: LATEST
-          BatchSize: 1
-          MaximumRetryAttempts: 10
-          DeadLetterConfig:
-            Arn:
-              Fn::GetAtt:
-                - DocumentsDeadLetterQueue
-                - Arn
-      Target:
-        Fn::GetAtt:
-          - DocumentActionsQueue
-          - Arn
 
   DocumentsStagingQueue:
     Type: "AWS::SQS::Queue"

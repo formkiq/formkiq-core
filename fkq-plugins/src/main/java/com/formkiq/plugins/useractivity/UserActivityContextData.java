@@ -23,6 +23,7 @@
  */
 package com.formkiq.plugins.useractivity;
 
+import com.formkiq.aws.dynamodb.useractivities.ActivityResourceType;
 import com.formkiq.aws.dynamodb.useractivities.ChangeRecord;
 import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
 
@@ -32,6 +33,7 @@ import java.util.Map;
  * Represents a user activity event, capturing the type of activity and the associated change
  * records.
  */
-public record UserActivityContextData(UserActivityType activityType,
-    Map<String, ChangeRecord> changeRecords) {
+public record UserActivityContextData(ActivityResourceType resourceType,
+    UserActivityType activityType, Map<String, ChangeRecord> changeRecords,
+    Map<String, Object> properties) {
 }

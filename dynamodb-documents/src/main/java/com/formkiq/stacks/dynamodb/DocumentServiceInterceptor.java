@@ -42,6 +42,17 @@ public interface DocumentServiceInterceptor {
       Map<String, Object> previous);
 
   /**
+   * Save Document Attributes Interceptor.
+   *
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param current {@link Map}
+   * @param previous {@link Map}
+   */
+  void saveDocumentAttribute(String siteId, String documentId, Map<String, Object> current,
+      Map<String, Object> previous);
+
+  /**
    * Delete Document Interceptor.
    * 
    * @param siteId {@link String}
@@ -53,6 +64,17 @@ public interface DocumentServiceInterceptor {
       Map<String, Object> current);
 
   /**
+   * Delete Document Attribute Interceptor.
+   *
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param softDelete boolean
+   * @param current {@link Map}
+   */
+  void deleteDocumentAttribute(String siteId, String documentId, boolean softDelete,
+      Map<String, Object> current);
+
+  /**
    * Restore Soft Deleted Document Inteerceptor.
    * 
    * @param siteId {@link String}
@@ -60,4 +82,14 @@ public interface DocumentServiceInterceptor {
    * @param current {@link Map}
    */
   void restoreSoftDeletedDocument(String siteId, String documentId, Map<String, Object> current);
+
+  /**
+   * Restore Soft Deleted Document Attribute Inteerceptor.
+   *
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param current {@link Map}
+   */
+  void restoreSoftDeletedDocumentAttribute(String siteId, String documentId,
+      Map<String, Object> current);
 }

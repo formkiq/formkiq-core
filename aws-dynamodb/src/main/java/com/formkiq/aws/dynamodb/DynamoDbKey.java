@@ -23,6 +23,8 @@
  */
 package com.formkiq.aws.dynamodb;
 
+import com.formkiq.aws.dynamodb.builder.DynamoDbAttributeMapBuilder;
+import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.Map;

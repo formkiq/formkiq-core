@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.lambda.s3;
 
+import com.formkiq.stacks.lambda.s3.event.AwsEvent;
 import com.google.gson.Gson;
 
 import java.util.Collections;
@@ -165,8 +166,10 @@ public class SqsEventBuilder {
      * 
      * @return Map
      */
-    public Map<String, Object> build() {
-      return new SqsEventBuilder(this).build();
+    public AwsEvent build() {
+      Map<String, Object> map = new SqsEventBuilder(this).build();
+      String json = GSON.toJson(map);
+      return GSON.fromJson(json, AwsEvent.class);
     }
   }
 }

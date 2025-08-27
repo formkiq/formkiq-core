@@ -25,42 +25,11 @@ package com.formkiq.aws.dynamodb;
 
 import java.util.Collection;
 
+
 /**
  * {@link DynamodbRecord} Transaction.
  */
-public class DynamodbRecordTx {
-  /** Records to Save. */
-  private final Collection<? extends DynamodbRecord<?>> saves;
-  /** Records to Delete. */
-  private final Collection<? extends DynamodbRecord<?>> deletes;
-
-  /**
-   * constructor.
-   * 
-   * @param recordsToSave {@link Collection}
-   * @param recordsToDelete {@link Collection}
-   */
-  public DynamodbRecordTx(final Collection<? extends DynamodbRecord<?>> recordsToSave,
-      final Collection<? extends DynamodbRecord<?>> recordsToDelete) {
-    this.saves = recordsToSave;
-    this.deletes = recordsToDelete;
-  }
-
-  /**
-   * Get {@link DynamodbRecord} to Save.
-   * 
-   * @return {@link Collection} {@link DynamodbRecord}
-   */
-  public Collection<? extends DynamodbRecord<?>> getSaves() {
-    return this.saves;
-  }
-
-  /**
-   * Get {@link DynamodbRecord} to Delete.
-   * 
-   * @return {@link Collection} {@link DynamodbRecord}
-   */
-  public Collection<? extends DynamodbRecord<?>> getDeletes() {
-    return this.deletes;
-  }
+public record DynamodbRecordTx(Collection<? extends DynamodbRecord<?>> saves,
+    Collection<? extends DynamodbRecord<?>> deletes,
+    Collection<? extends DynamodbRecord<?>> previousValues) {
 }

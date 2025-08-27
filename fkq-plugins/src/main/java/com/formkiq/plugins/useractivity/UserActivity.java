@@ -43,7 +43,8 @@ public record UserActivity(
     String resource,
     /* The unique identifier of the document. */
     String documentId,
-
+    /* Document Attribute Key. */
+    String attributeKey,
     /* The type of activity performed (e.g., "UPLOAD", "DELETE"). */
     UserActivityType type,
 
@@ -92,6 +93,8 @@ public record UserActivity(
   public static class Builder {
     /** Document Id. */
     private String documentId;
+    /** Attribute Key. */
+    private String attributeKey;
     /** Activity Type. */
     private UserActivityType type;
     /** User Id. */
@@ -121,6 +124,11 @@ public record UserActivity(
 
     public Builder documentId(final String userActivityDocumentId) {
       this.documentId = userActivityDocumentId;
+      return this;
+    }
+
+    public Builder attributeKey(final String userActivityAttributeKey) {
+      this.attributeKey = userActivityAttributeKey;
       return this;
     }
 
@@ -255,9 +263,9 @@ public record UserActivity(
      * @return a new {@link UserActivity} object
      */
     public UserActivity build(final String siteId) {
-      return new UserActivity(siteId, resource, documentId, type, userId, Date.from(insertedDate),
-          message, status, sourceIpAddress, source, entityTypeId, entityId, entityNamespace, body,
-          changes);
+      return new UserActivity(siteId, resource, documentId, attributeKey, type, userId,
+          Date.from(insertedDate), message, status, sourceIpAddress, source, entityTypeId, entityId,
+          entityNamespace, body, changes);
     }
   }
 }

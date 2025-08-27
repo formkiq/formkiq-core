@@ -40,11 +40,13 @@ import java.util.Map;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.useractivities.ActivityResourceType;
 import com.formkiq.aws.dynamodb.useractivities.UserActivityStatus;
 import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
 import com.formkiq.plugins.useractivity.UserActivity;
 import com.formkiq.plugins.useractivity.UserActivityContext;
 import com.google.gson.Gson;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -58,6 +60,11 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
   private final ApiGatewayRequestToUserActivityFunction function =
       new ApiGatewayRequestToUserActivityFunction();
 
+  @BeforeEach
+  public void setup() {
+    UserActivityContext.clear();
+  }
+
   /**
    * GET /documents/{documentId}/url and /documents/{documentId}/content.
    * 
@@ -66,7 +73,8 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
   @Test
   public void testGetDocumentById() throws IOException {
     // given
-    UserActivityContext.set(UserActivityType.VIEW, Map.of());
+    UserActivityContext.set(ActivityResourceType.DOCUMENT, UserActivityType.VIEW, Map.of(),
+        Map.of());
     Collection<String> files = List.of("get-documentid-url.json", "get-documentid-content.json");
     for (String file : files) {
 
@@ -77,7 +85,7 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
         ApiAuthorization auth = createAuthorization(siteId);
 
         // when
-        UserActivity activity = function.apply(auth, request, null).build(siteId);
+        UserActivity activity = function.apply(auth, request, null).iterator().next().build(siteId);
 
         // then
         assertNotNull(activity);
@@ -110,14 +118,15 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
   public void testDeleteDocumentById() throws IOException {
     // given
     ApiGatewayRequestEvent request = loadFile("src/test/resources/requests/delete-documentid.json");
-    UserActivityContext.set(UserActivityType.DELETE, Map.of());
+    UserActivityContext.set(ActivityResourceType.DOCUMENT, UserActivityType.DELETE, Map.of(),
+        Map.of());
 
     for (String siteId : Arrays.asList(null, DEFAULT_SITE_ID, ID.uuid())) {
 
       ApiAuthorization auth = createAuthorization(siteId);
 
       // when
-      UserActivity activity = function.apply(auth, request, null).build(siteId);
+      UserActivity activity = function.apply(auth, request, null).iterator().next().build(siteId);
 
       // then
       assertNotNull(activity);
@@ -148,7 +157,8 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
   @Test
   public void testGetDocuments() throws IOException {
     // given
-    UserActivityContext.set(UserActivityType.VIEW, Map.of());
+    UserActivityContext.set(ActivityResourceType.DOCUMENT, UserActivityType.VIEW, Map.of(),
+        Map.of());
     ApiGatewayRequestEvent request = loadFile("src/test/resources/requests/get-documents.json");
 
     for (String siteId : Arrays.asList(null, DEFAULT_SITE_ID, ID.uuid())) {
@@ -156,7 +166,7 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
       ApiAuthorization auth = createAuthorization(siteId);
 
       // when
-      UserActivity activity = function.apply(auth, request, null).build(siteId);
+      UserActivity activity = function.apply(auth, request, null).iterator().next().build(siteId);
 
       // then
       assertNotNull(activity);
@@ -186,7 +196,7 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
   public void testNull() {
     // given
     // when
-    UserActivity activity = function.apply(null, null, null).build(null);
+    UserActivity activity = function.apply(null, null, null).iterator().next().build(null);
 
     // then
     assertNotNull(activity);
@@ -212,14 +222,15 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
   public void testGetEntityTypes() throws IOException {
     // given
     ApiGatewayRequestEvent request = loadFile("src/test/resources/requests/get-entityTypes.json");
-    UserActivityContext.set(UserActivityType.VIEW, Map.of());
+    UserActivityContext.set(ActivityResourceType.ENTITY_TYPE, UserActivityType.VIEW, Map.of(),
+        Map.of());
 
     for (String siteId : Arrays.asList(null, DEFAULT_SITE_ID, ID.uuid())) {
 
       ApiAuthorization auth = createAuthorization(siteId);
 
       // when
-      UserActivity activity = function.apply(auth, request, null).build(siteId);
+      UserActivity activity = function.apply(auth, request, null).iterator().next().build(siteId);
 
       // then
       assertNotNull(activity);
@@ -254,7 +265,8 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
   @Test
   public void testAddEntityTypes() throws IOException {
     // given
-    UserActivityContext.set(UserActivityType.CREATE, Map.of());
+    UserActivityContext.set(ActivityResourceType.ENTITY_TYPE, UserActivityType.CREATE, Map.of(),
+        Map.of());
     ApiGatewayRequestEvent request = loadFile("src/test/resources/requests/add-entityTypes.json");
     Map<String, Object> body = Map.of("entityTypeId", ID.uuid());
     ApiRequestHandlerResponse response = new ApiRequestHandlerResponse(-1, null, body);
@@ -264,7 +276,8 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
       ApiAuthorization auth = createAuthorization(siteId);
 
       // when
-      UserActivity activity = function.apply(auth, request, response).build(siteId);
+      UserActivity activity =
+          function.apply(auth, request, response).iterator().next().build(siteId);
 
       // then
       assertNotNull(activity);
@@ -300,7 +313,8 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
   @Test
   public void testAddEntity() throws IOException {
     // given
-    UserActivityContext.set(UserActivityType.CREATE, Map.of());
+    UserActivityContext.set(ActivityResourceType.ENTITY, UserActivityType.CREATE, Map.of(),
+        Map.of());
     ApiGatewayRequestEvent request = loadFile("src/test/resources/requests/add-entity.json");
     Map<String, Object> body = Map.of("entityId", ID.uuid());
     ApiRequestHandlerResponse response = new ApiRequestHandlerResponse(-1, null, body);
@@ -310,7 +324,8 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
       ApiAuthorization auth = createAuthorization(siteId);
 
       // when
-      UserActivity activity = function.apply(auth, request, response).build(siteId);
+      UserActivity activity =
+          function.apply(auth, request, response).iterator().next().build(siteId);
 
       // then
       assertNotNull(activity);
@@ -345,7 +360,7 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
   @Test
   public void testGetEntitiesByType() throws IOException {
     // given
-    UserActivityContext.set(UserActivityType.VIEW, Map.of());
+    UserActivityContext.set(ActivityResourceType.ENTITY, UserActivityType.VIEW, Map.of(), Map.of());
     ApiGatewayRequestEvent request = loadFile("src/test/resources/requests/get-entity.json");
     Map<String, Object> body = Map.of("entityTypeId", ID.uuid());
     ApiRequestHandlerResponse response = new ApiRequestHandlerResponse(-1, null, body);
@@ -355,7 +370,8 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
       ApiAuthorization auth = createAuthorization(siteId);
 
       // when
-      UserActivity activity = function.apply(auth, request, response).build(siteId);
+      UserActivity activity =
+          function.apply(auth, request, response).iterator().next().build(siteId);
 
       // then
       assertNotNull(activity);

@@ -259,8 +259,13 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
 
   @Override
   public boolean exists(final DynamoDbKey key) {
+    return exists(this.tableName, key);
+  }
 
-    GetItemRequest r = GetItemRequest.builder().key(key.toMap()).tableName(this.tableName)
+  @Override
+  public boolean exists(final String dynamodbTableName, final DynamoDbKey key) {
+
+    GetItemRequest r = GetItemRequest.builder().key(key.toMap()).tableName(dynamodbTableName)
         .projectionExpression("PK").build();
 
     GetItemResponse response = this.dbClient.getItem(r);
@@ -419,11 +424,17 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
 
   @Override
   public void putItems(final List<Map<String, AttributeValue>> attrs) {
+    putItems(this.tableName, attrs);
+  }
+
+  @Override
+  public void putItems(final String dynamoTableName,
+      final List<Map<String, AttributeValue>> attrs) {
 
     if (!attrs.isEmpty()) {
       WriteRequestBuilder builder = new WriteRequestBuilder();
       for (Map<String, AttributeValue> attr : attrs) {
-        builder.append(this.tableName, attr);
+        builder.append(dynamoTableName, attr);
       }
       builder.batchWriteItem(this.dbClient);
     }
@@ -502,6 +513,13 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
   public QueryResponse queryBeginsWith(final QueryConfig config, final AttributeValue pk,
       final AttributeValue sk, final Map<String, AttributeValue> exclusiveStartKey,
       final int limit) {
+    return queryBeginsWith(this.tableName, config, pk, sk, exclusiveStartKey, limit);
+  }
+
+  @Override
+  public QueryResponse queryBeginsWith(final String dynamoDbtableName, final QueryConfig config,
+      final AttributeValue pk, final AttributeValue sk,
+      final Map<String, AttributeValue> exclusiveStartKey, final int limit) {
 
     String gsi = Strings.isEmpty(config.indexName()) ? "" : config.indexName();
     String expression = gsi + PK + " = :pk and begins_with(" + gsi + SK + ",:sk)";
@@ -514,7 +532,7 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
         sk != null ? Map.of(":pk", pk, ":sk", sk) : Map.of(":pk", pk);
 
     QueryRequest q =
-        QueryRequest.builder().tableName(this.tableName).keyConditionExpression(expression)
+        QueryRequest.builder().tableName(dynamoDbtableName).keyConditionExpression(expression)
             .expressionAttributeValues(values).scanIndexForward(config.isScanIndexForward())
             .expressionAttributeNames(config.expressionAttributeNames())
             .projectionExpression(config.projectionExpression()).indexName(config.indexName())

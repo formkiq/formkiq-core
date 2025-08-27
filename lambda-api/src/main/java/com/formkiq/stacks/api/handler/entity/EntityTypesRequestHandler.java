@@ -32,7 +32,8 @@ import com.formkiq.aws.dynamodb.DynamoDbQueryBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.base64.MapAttributeValueToString;
-import com.formkiq.aws.dynamodb.eventsourcing.entity.EntityTypeRecord;
+import com.formkiq.aws.dynamodb.entity.EntityTypeRecord;
+import com.formkiq.aws.dynamodb.useractivities.ActivityResourceType;
 import com.formkiq.aws.dynamodb.useractivities.AttributeValuesToChangeRecordFunction;
 import com.formkiq.aws.dynamodb.useractivities.ChangeRecord;
 import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
@@ -133,7 +134,8 @@ public class EntityTypesRequestHandler
     Map<String, ChangeRecord> changes =
         new AttributeValuesToChangeRecordFunction(Map.of("documentId", "entityTypeId")).apply(null,
             attributes);
-    UserActivityContext.set(UserActivityType.CREATE, changes);
+    UserActivityContext.set(ActivityResourceType.ENTITY_TYPE, UserActivityType.CREATE, changes,
+        Map.of());
     db.putItem(attributes);
 
     return ApiRequestHandlerResponse.builder().status(SC_CREATED)

@@ -25,24 +25,19 @@ package com.formkiq.stacks.lambda.s3;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
+import com.formkiq.aws.dynamodb.AttributeValueToMap;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
+import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceExtension;
-import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
-import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
-import com.formkiq.aws.dynamodb.model.DocumentSyncType;
-import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.eventbridge.EventBridgeAwsServiceRegistry;
 import com.formkiq.aws.eventbridge.EventBridgeMessage;
 import com.formkiq.aws.eventbridge.EventBridgeService;
 import com.formkiq.aws.eventbridge.EventBridgeServiceExtension;
-import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
-import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.aws.s3.S3PresignerServiceExtension;
 import com.formkiq.aws.s3.S3Service;
@@ -64,7 +59,6 @@ import com.formkiq.module.actions.services.ActionsNotificationServiceExtension;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceExtension;
 import com.formkiq.module.events.EventService;
-import com.formkiq.module.events.EventServiceSns;
 import com.formkiq.module.events.EventServiceSnsExtension;
 import com.formkiq.module.events.document.DocumentEvent;
 import com.formkiq.module.http.HttpService;
@@ -99,35 +93,38 @@ import com.formkiq.stacks.lambda.s3.actions.NotificationAction;
 import com.formkiq.stacks.lambda.s3.actions.PdfExportAction;
 import com.formkiq.stacks.lambda.s3.actions.resize.ResizeAction;
 import com.formkiq.stacks.lambda.s3.actions.SendHttpRequest;
+import com.formkiq.stacks.lambda.s3.event.AwsEvent;
+import com.formkiq.stacks.lambda.s3.event.AwsEventDynamodbEntity;
+import com.formkiq.stacks.lambda.s3.event.AwsEventDynamodbNewImage;
+import com.formkiq.stacks.lambda.s3.event.AwsEventRecord;
+import com.formkiq.stacks.lambda.s3.event.AwsEventSnsNotification;
+import com.formkiq.stacks.lambda.s3.event.DynamodbAttributeValue;
 import com.formkiq.validation.ValidationException;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpClient.Redirect;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.util.Date;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static com.formkiq.module.events.document.DocumentEventType.ACTIONS;
-import static com.formkiq.module.events.document.DocumentEventType.CREATE;
-import static com.formkiq.module.events.document.DocumentEventType.DELETE;
-import static com.formkiq.module.events.document.DocumentEventType.SOFT_DELETE;
 
 /** {@link RequestHandler} for handling Document Actions. */
 @Reflectable
-public class DocumentActionsProcessor implements RequestHandler<Map<String, Object>, Void>, DbKeys {
+public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>, DbKeys {
 
   /** {@link AwsServiceCache}. */
   private static AwsServiceCache serviceCache;
@@ -226,16 +223,17 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   }
 
   @Override
-  public Void handleRequest(final Map<String, Object> map, final Context context) {
+  public Void handleRequest(final AwsEvent event, final Context context) {
 
     Logger logger = serviceCache.getLogger();
 
     if (logger.isLogged(LogLevel.DEBUG)) {
-      String json = this.gson.toJson(map);
+      String json = this.gson.toJson(event);
       logger.debug(json);
     }
 
-    List<Map<String, Object>> records = (List<Map<String, Object>>) map.get("Records");
+    List<AwsEventRecord> records = event.records();
+
     try {
       processRecords(logger, records);
     } catch (IOException | InterruptedException e) {
@@ -433,161 +431,65 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
    * @throws InterruptedException InterruptedException
    * @throws IOException IOException
    */
-  private void processRecords(final Logger logger, final List<Map<String, Object>> records)
+  private void processRecords(final Logger logger, final List<AwsEventRecord> records)
       throws IOException, InterruptedException {
 
-    for (Map<String, Object> e : Objects.notNull(records)) {
+    for (AwsEventRecord e : Objects.notNull(records)) {
 
-      if (e.containsKey("body")) {
+      if (e.body() != null) {
 
-        String body = e.get("body").toString();
+        AwsEventSnsNotification map = this.gson.fromJson(e.body(), AwsEventSnsNotification.class);
 
-        Map<String, Object> map = this.gson.fromJson(body, Map.class);
-        if (map.containsKey("Message")) {
-
+        if (map.message() != null) {
           processDocumentEvent(logger, map);
-
-        } else if (map.containsKey("dynamodb")) {
-
-          processDynamodbStream(logger, map);
         }
+
+      } else if (e.dynamodb() != null) {
+        processDynamodbStream(logger, e);
       }
     }
   }
 
-  private void processDynamodbStream(final Logger logger, final Map<String, Object> map) {
+  private void processDynamodbStream(final Logger logger, final AwsEventRecord map) {
 
-    String eventName = (String) map.get("eventName");
-    Map<String, Object> dynamodb = (Map<String, Object>) map.get("dynamodb");
-    Map<String, Object> keys = (Map<String, Object>) dynamodb.get("Keys");
-    Map<String, Object> newImage = (Map<String, Object>) dynamodb.get("NewImage");
-    final String pk = getS((Map<String, Object>) keys.get("PK"));
-    final String sk = getS((Map<String, Object>) keys.get("SK"));
-    String siteId = SiteIdKeyGenerator.getSiteId(pk);
-    String documentId = getS((Map<String, Object>) newImage.get("documentId"));
-    String type = getS((Map<String, Object>) newImage.get("type"));
+    String eventName = map.eventName();
+    AwsEventDynamodbEntity dynamodb = map.dynamodb();
+    AwsEventDynamodbNewImage newImage = dynamodb.newImage();
+    String siteId = newImage.siteId().s();
+    String documentId = newImage.documentId().s();
+    DynamodbAttributeValue activityKeys = newImage.activityKeys();
 
+    List<DynamoDbKey> keys = activityKeys.l().stream()
+        .map(a -> new DynamoDbKey(a.m().get(PK).s(), a.m().get(SK).s(), null, null, null, null))
+        .toList();
+    DynamoDbService db = serviceCache.getExtension(DynamoDbService.class);
+    Collection<Map<String, AttributeValue>> activities =
+        db.get(serviceCache.environment("DOCUMENTS_AUDIT_TABLE"), keys);
+    String detailType = new DetailTypeResolver().apply(activities);
+
+    String pk = dynamodb.keys().pk().s();
+    String sk = dynamodb.keys().sk().s();
     String s = String.format(
         "{\"eventName\": \"%s\",\"PK\": \"%s\",\"SK\":\"%s\","
             + "\"siteId\":\"%s\",\"documentId\":\"%s\",\"type\":\"%s\"}",
-        eventName, pk, sk, siteId, documentId, type);
+        eventName, pk, sk, siteId, documentId, detailType);
     logger.info(s);
 
-    String documentEventsBus = serviceCache.environment("DOCUMENT_EVENTS_BUS");
-    String appEnvironment = serviceCache.environment("APP_ENVIRONMENT");
-    String detailType = getDetailType(eventName, type);
-    String detail = new DocumentExternalSystemExport(serviceCache).apply(siteId, documentId);
 
+    String detail = new DocumentExternalSystemExport(serviceCache).apply(siteId, documentId,
+        activities.stream().map(new AttributeValueToMap()).toList());
+
+    String appEnvironment = serviceCache.environment("APP_ENVIRONMENT");
     EventBridgeMessage msg =
         new EventBridgeMessageBuilder().build(appEnvironment, detailType, detail);
     EventBridgeService eventBridgeService = serviceCache.getExtension(EventBridgeService.class);
+
+    String documentEventsBus = serviceCache.environment("DOCUMENT_EVENTS_BUS");
     eventBridgeService.putEvents(documentEventsBus, msg);
-
-    DocumentSyncService sync = serviceCache.getExtension(DocumentSyncService.class);
-    sync.update(pk, sk, DocumentSyncStatus.COMPLETE, new Date());
-
-    if ("Document Create Content".equalsIgnoreCase(detailType)) {
-      DocumentEvent event = buildDocumentEvent(CREATE, siteId, documentId);
-      sendSnsMessage(event);
-    } else if ("Document Delete Metadata".equalsIgnoreCase(detailType)) {
-      DocumentEvent event = buildDocumentEvent(DELETE, siteId, documentId);
-      sendSnsMessage(event);
-    } else if ("Document Soft Delete Metadata".equalsIgnoreCase(detailType)) {
-      DocumentEvent event = buildDocumentEvent(SOFT_DELETE, siteId, documentId);
-      sendSnsMessage(event);
-    }
   }
 
-  /**
-   * Either sends the Create Message to SNS.
-   *
-   * @param event {@link DocumentEvent}
-   */
-  private void sendSnsMessage(final DocumentEvent event) {
-
-    String contentType = event.contentType();
-    String s3bucket = event.s3bucket();
-    String key = event.s3key();
-
-    if ("application/json".equals(contentType)) {
-      String content = getContent(event);
-      event.content(content);
-    }
-
-    S3PresignerService s3PresignedService = serviceCache.getExtension(S3PresignerService.class);
-    PresignGetUrlConfig config = new PresignGetUrlConfig().contentType(contentType);
-    URL url = s3PresignedService.presignGetUrl(s3bucket, key, Duration.ofDays(1), null, config);
-    event.url(url.toString());
-
-    EventService documentEventService = serviceCache.getExtension(EventService.class);
-    documentEventService.publish(serviceCache.getLogger(), event);
-  }
-
-  private String getContent(final DocumentEvent event) {
-
-    String content = null;
-
-    String s3bucket = event.s3bucket();
-    String key = event.s3key();
-    String contentType = event.contentType();
-    S3Service s3Service = serviceCache.getExtension(S3Service.class);
-    S3ObjectMetadata resp = s3Service.getObjectMetadata(s3bucket, key, null);
-
-    if (MimeType.isPlainText(contentType) && resp.getContentLength() != null
-        && resp.getContentLength() < EventServiceSns.MAX_SNS_CONTENT_SIZE) {
-      content = s3Service.getContentAsString(s3bucket, key, null);
-    }
-
-    return content;
-  }
-
-  /**
-   * Builds Document Event.
-   *
-   * @param eventType {@link String}
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @return {@link DocumentEvent}
-   */
-  private DocumentEvent buildDocumentEvent(final String eventType, final String siteId,
-      final String documentId) {
-
-    DocumentService service = serviceCache.getExtension(DocumentService.class);
-    DocumentItem doc = service.findDocument(siteId, documentId);
-    String userId = doc != null ? doc.getUserId() : null;
-    String contentType = doc != null ? doc.getContentType() : "";
-    String path = doc != null ? doc.getPath() : "";
-    String site = siteId != null ? siteId : SiteIdKeyGenerator.DEFAULT_SITE_ID;
-    String s3Bucket = serviceCache.environment("DOCUMENTS_S3_BUCKET");
-    String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
-
-    return new DocumentEvent().siteId(site).documentId(documentId).s3bucket(s3Bucket).s3key(s3Key)
-        .type(eventType).userId(userId).contentType(contentType).path(path);
-  }
-
-  private String getDetailType(final String eventName, final String type) {
-
-    String detailType = "Unknown";
-    if ("insert".equalsIgnoreCase(eventName)) {
-      detailType = "Create";
-    }
-
-    DocumentSyncType syncType = DocumentSyncType.valueOf(type.toUpperCase());
-
-    return switch (syncType) {
-      case CONTENT -> "Document " + detailType + " Content";
-      case METADATA -> "Document " + detailType + " Metadata";
-      case DELETE -> "Document Delete Metadata";
-      case SOFT_DELETE -> "Document Soft Delete Metadata";
-    };
-  }
-
-  private String getS(final Map<String, Object> map) {
-    return (String) map.getOrDefault("S", null);
-  }
-
-  private void processDocumentEvent(final Logger logger, final Map<String, Object> map) {
-    DocumentEvent event = this.gson.fromJson(map.get("Message").toString(), DocumentEvent.class);
+  private void processDocumentEvent(final Logger logger, final AwsEventSnsNotification map) {
+    DocumentEvent event = this.gson.fromJson(map.message(), DocumentEvent.class);
 
     String s = String.format(
         "{\"siteId\": \"%s\",\"documentId\": \"%s\",\"s3key\": \"%s\",\"s3bucket\": \"%s\","

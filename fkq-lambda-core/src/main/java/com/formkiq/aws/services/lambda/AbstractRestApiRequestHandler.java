@@ -405,8 +405,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
   private void processApiGatewayRequest(final Logger logger, final ApiGatewayRequestEvent event,
       final AwsServiceCache awsServices, final OutputStream output) throws IOException {
 
-    UserActivity.Builder ua = null;
-    ApiRequestHandlerResponse response;
+    Collection<UserActivity.Builder> ua = null;
     ApiAuthorization authorization = null;
 
     try {
@@ -423,7 +422,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
       executeRequestInterceptors(requestInterceptors, event, authorization);
 
-      response = processRequest(getUrlMap(), event, authorization);
+      ApiRequestHandlerResponse response = processRequest(getUrlMap(), event, authorization);
 
       response = executeResponseInterceptors(requestInterceptors, event, authorization, response);
 
@@ -433,13 +432,13 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
     } catch (Exception e) {
 
-      response = ApiRequestHandlerResponse.builder().exception(e).build();
+      ApiRequestHandlerResponse response = ApiRequestHandlerResponse.builder().exception(e).build();
 
       if (ua == null) {
         ua = new ApiGatewayRequestToUserActivityFunction().apply(authorization, null, null);
       }
 
-      ua.status(response.statusCode()).message(e.getMessage());
+      ua.forEach(a -> a.status(response.statusCode()).message(e.getMessage()));
 
       if (SC_ERROR.getStatusCode() == response.statusCode()) {
         logger.error(e);
@@ -454,13 +453,13 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
   }
 
   private void writeUserActivity(final AwsServiceCache awsServices,
-      final ApiAuthorization authorization, final UserActivity.Builder ua) {
+      final ApiAuthorization authorization, final Collection<UserActivity.Builder> ua) {
 
     if (awsServices.containsExtension(UserActivityPlugin.class)) {
       String siteId = authorization != null ? authorization.getSiteId() : DEFAULT_SITE_ID;
 
       UserActivityPlugin plugin = awsServices.getExtension(UserActivityPlugin.class);
-      plugin.addUserActivity(ua.build(siteId));
+      plugin.addUserActivity(ua.stream().map(a -> a.build(siteId)).toList());
     }
   }
 
