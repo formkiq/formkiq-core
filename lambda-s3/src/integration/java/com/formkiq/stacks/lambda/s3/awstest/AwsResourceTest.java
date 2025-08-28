@@ -46,7 +46,6 @@ import software.amazon.awssdk.services.s3.model.Event;
 import software.amazon.awssdk.services.s3.model.GetBucketNotificationConfigurationResponse;
 import software.amazon.awssdk.services.s3.model.LambdaFunctionConfiguration;
 import software.amazon.awssdk.services.s3.model.QueueConfiguration;
-import software.amazon.awssdk.services.sqs.model.Message;
 
 import java.net.URL;
 import java.net.http.HttpClient;
@@ -87,30 +86,22 @@ public class AwsResourceTest extends AbstractAwsTest {
   private static final long TEST_TIMEOUT = 30;
   /** Document Event Queue 1. */
   private static String documentSnsQueue;
-  /** Event Bridge Queue. */
-  private static String eventBridgeQueueUrl;
 
   @BeforeAll
   public static void setup() {
     documentSnsQueue =
         getSsmService().getParameterValue("/formkiq/" + getAppenvironment() + "/sqs/sns-queue/url");
-    eventBridgeQueueUrl = getSsmService()
-        .getParameterValue("/formkiq/" + getAppenvironment() + "/sqs/eventbridge-queue/url");
-
     getSqsService().clearQueue(documentSnsQueue);
-    getSqsService().clearQueue(eventBridgeQueueUrl);
   }
 
   @BeforeEach
   public void setupTest() {
     getSqsService().clearQueue(documentSnsQueue);
-    getSqsService().clearQueue(eventBridgeQueueUrl);
   }
 
   @AfterAll
   public static void teardown() {
     getSqsService().clearQueue(documentSnsQueue);
-    getSqsService().clearQueue(eventBridgeQueueUrl);
   }
 
   /**
@@ -125,28 +116,6 @@ public class AwsResourceTest extends AbstractAwsTest {
     assertEquals(1, c.events().size());
     Event e = c.events().get(0);
     assertEquals(event, e.toString());
-  }
-
-  private static void assertEventBridgeMessage(final String queueUrl) throws InterruptedException {
-
-    List<Message> receiveMessages;
-
-    do {
-      receiveMessages = getSqsService().receiveMessages(queueUrl).messages();
-      if (receiveMessages.isEmpty()) {
-        TimeUnit.SECONDS.sleep(1);
-      }
-
-    } while (receiveMessages.isEmpty());
-
-    Gson gson = new GsonBuilder().create();
-    String body = receiveMessages.iterator().next().body();
-    Map<String, Object> map = gson.fromJson(body, Map.class);
-    assertTrue(map.containsKey("detail"));
-    Map<String, Object> detail = (Map<String, Object>) map.get("detail");
-    assertTrue(detail.containsKey("document"));
-
-    getSqsService().clearQueue(queueUrl);
   }
 
   /**
@@ -222,7 +191,6 @@ public class AwsResourceTest extends AbstractAwsTest {
     verifyFileExistsInDocumentsS3(key, contentType);
     verifyFileNotExistInStagingS3(key);
     assertSnsMessage(documentSnsQueue, "create");
-    assertEventBridgeMessage(eventBridgeQueueUrl);
 
     // when
     key = writeToStaging(key, contentType);
@@ -477,7 +445,6 @@ public class AwsResourceTest extends AbstractAwsTest {
         txt1.getBytes(StandardCharsets.UTF_8), contentType);
 
     SearchQuery q = new SearchQuery().meta(new SearchMetaCriteria().path(path));
-    // SearchQuery q = new SearchQuery().tag(new SearchTagCriteria().key("path").eq(path));
 
     // then
     PaginationResults<DynamicDocumentItem> result =

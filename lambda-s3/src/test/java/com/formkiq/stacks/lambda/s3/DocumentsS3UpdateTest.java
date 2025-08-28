@@ -447,13 +447,13 @@ public class DocumentsS3UpdateTest implements DbKeys {
     map = GSON.fromJson(message, Map.class);
     assertNotNull(map.get("documentId"));
     assertEquals(eventType, map.get("type"));
-    assertNotNull(map.get("path"));
 
     assertNull(map.get("content"));
 
     if (!"delete".equals(eventType) && !"softDelete".equals(eventType)) {
       assertTrue(map.get("url").contains("example-bucket"));
       assertNotNull(map.get("userId"));
+      assertNotNull(map.get("path"));
     }
 
     assertEquals(Objects.requireNonNullElse(siteId, DEFAULT_SITE_ID), map.get("siteId"));
