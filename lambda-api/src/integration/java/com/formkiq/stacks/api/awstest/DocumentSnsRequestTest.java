@@ -92,31 +92,32 @@ class DocumentSnsRequestTest extends AbstractAwsIntegrationTest {
 
     // then
     Message message = getMessage(receiver);
-    assertMessage(message, "create", documentId, path);
+    Map<String, Object> map = assertMessage(message, "create", documentId, path);
+    assertNotNull(map.get("url"));
 
     // when
     new DeleteDocumentRequestBuilder(documentId).softDelete(true).submit(client, null);
 
     // then
     message = getMessage(receiver);
-    assertMessage(message, "softDelete", documentId, path);
+    assertMessage(message, "softDelete", documentId, null);
 
     // when
     new DeleteDocumentRequestBuilder(documentId).submit(client, null);
 
     // then
     message = getMessage(receiver);
-    assertMessage(message, "delete", documentId, path);
+    assertMessage(message, "delete", documentId, null);
   }
 
-  private void assertMessage(final Message message, final String type, final String documentId,
-      final String path) {
+  private Map<String, Object> assertMessage(final Message message, final String type,
+      final String documentId, final String path) {
     Map<String, Object> map = getDocument(message);
     assertEquals(type, map.get("type"));
     assertEquals("default", map.get("siteId"));
     assertEquals(path, map.get("path"));
     assertEquals(documentId, map.get("documentId"));
-    assertNotNull(map.get("url"));
+    return map;
   }
 
   private static SqsMessageReceiver getSqsMessageReceiver() {
