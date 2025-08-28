@@ -24,10 +24,12 @@
 package com.formkiq.stacks.api.handler.documents;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.getSiteIdName;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_FOUND;
+import static com.formkiq.module.events.document.DocumentEventType.SOFT_DELETE;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -56,6 +58,8 @@ import com.formkiq.aws.dynamodb.cache.CacheService;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.services.ActionsNotificationService;
 import com.formkiq.module.actions.services.ActionsService;
+import com.formkiq.module.events.EventService;
+import com.formkiq.module.events.document.DocumentEvent;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentService;
@@ -117,6 +121,13 @@ public class DocumentIdRequestHandler
 
       if (!service.deleteDocument(siteId, documentId, softDelete)) {
         throw new NotFoundException("Document " + documentId + " not found.");
+      }
+
+      if (softDelete) {
+        DocumentEvent docEve = new DocumentEvent().siteId(getSiteIdName(siteId))
+            .documentId(documentId).type(SOFT_DELETE);
+        EventService documentEventService = awsservice.getExtension(EventService.class);
+        documentEventService.publish(awsservice.getLogger(), docEve);
       }
 
       return ApiRequestHandlerResponse.builder().ok()

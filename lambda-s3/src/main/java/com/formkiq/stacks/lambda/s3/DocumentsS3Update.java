@@ -24,6 +24,7 @@
 package com.formkiq.stacks.lambda.s3;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.getSiteId;
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.getSiteIdName;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static com.formkiq.module.events.document.DocumentEventType.CREATE;
@@ -511,10 +512,11 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
       DocumentItem item = service.findDocument(siteId, documentId);
       if (item != null) {
         service.deleteDocument(siteId, documentId, false);
-
-        DocumentEvent event = buildDocumentEvent(DELETE, siteId, item, null, null, null);
-        sendSnsMessage(event);
       }
+
+      DocumentEvent event =
+          new DocumentEvent().siteId(getSiteIdName(siteId)).documentId(documentId).type(DELETE);
+      sendSnsMessage(event);
     }
   }
 
