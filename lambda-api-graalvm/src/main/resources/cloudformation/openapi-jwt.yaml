@@ -4464,6 +4464,67 @@ Resources:
                 - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /documents/{documentId}/dataClassification:
+            get:
+              operationId: GetDocumentDataClassification
+              summary: Get document's data classification
+              description: Retrieve an document's data classification
+              tags:
+                - Document Data Classification
+              parameters:
+                - $ref: '#/components/parameters/siteIdParam'
+                - $ref: '#/components/parameters/documentIdParam'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetDocumentDataClassificationResponse'
+              security:
+                - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/dataClassificationLambdaApi200"
+            put:
+              operationId: SetDocumentDataClassification
+              summary: Set document's data classification
+              description: Set all text/tags found within a document to OpenSearch; available as an Add-On Module
+              tags:
+                - Advanced Document Search
+              parameters:
+                - $ref: '#/components/parameters/siteIdParam'
+                - $ref: '#/components/parameters/documentIdParam'
+              requestBody:
+                required: false
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/SetDocumentDataClassificationRequest'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/SetResponse'
+              security:
+                - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/dataClassificationLambdaApi200"
           /userActivities:
             get:
               operationId: GetUserActivities
@@ -9315,6 +9376,16 @@ Resources:
                   type: string
                   description: Document sync message
 
+            SetDocumentDataClassificationRequest:
+              type: "object"
+
+            GetDocumentDataClassificationResponse:
+              type: "object"
+              properties:
+                url:
+                  type: "string"
+                  description: "Url to fetch classification result"
+
             GetActivitesResponse:
               type: "object"
               properties:
@@ -13411,6 +13482,20 @@ Resources:
               responses:
                 default:
                   statusCode: "201"
+                  responseParameters:
+                    method.response.header.Access-Control-Allow-Methods: "'*'"
+                    method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+                    method.response.header.Access-Control-Allow-Origin: "'*'"
+              passthroughBehavior: "when_no_templates"
+              httpMethod: "POST"
+              type: "aws_proxy"
+              payloadFormatVersion: "1.0"
+            dataClassificationLambdaApi200:
+              uri:
+                Fn::Sub: "arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations"
+              responses:
+                default:
+                  statusCode: "200"
                   responseParameters:
                     method.response.header.Access-Control-Allow-Methods: "'*'"
                     method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
