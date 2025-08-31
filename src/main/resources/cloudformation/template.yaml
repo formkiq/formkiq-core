@@ -158,6 +158,12 @@ Parameters:
 
 Conditions:
 
+  HasCertificateStackName:
+    Fn::Not:
+      - Fn::Equals:
+          - Ref: CertificateStackName
+          - ''
+
   HasTypesenseApiKey:
     Fn::Not:
       - Fn::Equals: 
@@ -265,6 +271,14 @@ Resources:
           - IsGovCloud
           - "true"
           - "false"
+        CertificateStackNameDomainName:
+          Fn::If:
+            - HasCertificateStackName
+            - Fn::Split:
+                - ","
+                - Fn::ImportValue:
+                    Fn::Sub: '${CertificateStackName}-ConsoleDomain'
+            - "_"
 
   CoreConsoleInstall:
     Type: AWS::Serverless::Application

@@ -33,6 +33,11 @@ Parameters:
     Description: The name of the FormKiQ Certificate Stack Name
     Default: ""
 
+  CertificateStackNameDomainName:
+    Type: String
+    Description: The name of the FormKiQ Certificate Stack Name Domain Name
+    Default: "_"
+
   IsGovCloud:
     Description: Is Installation AWS Region gov cloud
     Type: String
@@ -50,6 +55,12 @@ Conditions:
       - Fn::Equals:
         - Ref: CertificateStackName
         - ''
+
+  HasCertificateStackNameDomainName:
+    Fn::Not:
+      - Fn::Equals:
+          - Ref: CertificateStackNameDomainName
+          - '_'
 
   IsNotGovCloud:
     Fn::Equals:
@@ -188,16 +199,13 @@ Resources:
         DefaultRootObject: index.html
         Aliases:
           Fn::If:
-          - HasCertificateStackName
-          - Fn::Split:
-              - ","
-              - Fn::ImportValue:
-                  Fn::Sub: '${CertificateStackName}-ConsoleDomain'
+          - HasCertificateStackNameDomainName
+          - Ref: CertificateStackNameDomainName
           - Ref: "AWS::NoValue"
         ViewerCertificate:
           AcmCertificateArn:
             Fn::If:
-            - HasCertificateStackName
+            - HasCertificateStackNameDomainName
             - Fn::ImportValue:
                 Fn::Sub: '${CertificateStackName}-ConsoleCertificateArn'
             - Ref: "AWS::NoValue"
@@ -242,20 +250,15 @@ Resources:
       Type: String
       Value:
         Fn::If:
-        - HasCertificateStackName
-        - Fn::Join:
-            - ""
-            -
-              - 'https://'
-              - Fn::ImportValue:
-                  Fn::Sub: '${CertificateStackName}-ConsoleDomain'
-        - Fn::Join:
-            - ""
-            -
-              - 'https://'
-              - Fn::GetAtt:
-                - CloudFrontDistribution
-                - DomainName
+          - HasCertificateStackNameDomainName
+          - Ref: CertificateStackNameDomainName
+          - Fn::Join:
+              - ""
+              -
+                - 'https://'
+                - Fn::GetAtt:
+                    - CloudFrontDistribution
+                    - DomainName
       Tags:
         Application: "FormKiQ"
         AppEnvironment:
@@ -305,13 +308,12 @@ Outputs:
     Description: Console URL
     Value:
       Fn::If:
-      - HasCertificateStackName
+      - CertificateStackNameDomainName
       - Fn::Join:
           - ""
           -
             - 'https://'
-            - Fn::ImportValue:
-                Fn::Sub: '${CertificateStackName}-ConsoleDomain'
+            - Ref: CertificateStackNameDomainName
       - Fn::If:
         - IsNotGovCloud
         - Fn::Join:
