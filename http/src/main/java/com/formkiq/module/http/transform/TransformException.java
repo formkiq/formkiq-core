@@ -23,8 +23,6 @@
  */
 package com.formkiq.module.http.transform;
 
-import java.io.IOException;
-
 /**
  * {@link Exception} that is thrown when a transformation fails.
  */

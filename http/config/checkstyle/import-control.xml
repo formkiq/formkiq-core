@@ -15,7 +15,10 @@
 		<allow pkg="java.nio.charset" />
 		<allow pkg="java.nio.file" />
 		<allow pkg="java.util" />
-		
+
+        <subpackage name="transform">
+            <allow pkg="com.formkiq.module.http" />
+        </subpackage>
 	</subpackage>
 	
 </import-control>
