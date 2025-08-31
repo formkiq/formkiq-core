@@ -4444,7 +4444,7 @@
               summary: Set document's data classification
               description: Set all text/tags found within a document to OpenSearch; available as an Add-On Module
               tags:
-              - Advanced Document Search
+              - Document Data Classification
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
@@ -4467,7 +4467,7 @@
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/SetResponse'
+                        $ref: '#/components/schemas/SetDocumentDataClassificationResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -9303,6 +9303,26 @@
                   description: Document sync message
             SetDocumentDataClassificationRequest:
               type: object
+            SetDocumentDataClassificationResponse:
+              type: object
+              properties:
+                content:
+                  type: string
+                  description: Result content
+                attributes:
+                  description: Attributes extracted from result content
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/DataClassificationAttribute'
+            DataClassificationAttribute:
+              type: object
+              properties:
+                key:
+                  type: string
+                  description: Data Classification Attribute Key
+                value:
+                  type: string
+                  description: Data Classification Attribute Value
             GetDocumentDataClassificationResponse:
               type: object
               properties:
