@@ -214,12 +214,12 @@ Resources:
             - Ref: "AWS::NoValue"
           SslSupportMethod:
             Fn::If:
-            - HasCertificateStackName
+            - HasCertificateStackNameDomainName
             - sni-only
             - Ref: "AWS::NoValue"
           CloudFrontDefaultCertificate:
             Fn::If:
-            - HasCertificateStackName
+            - HasCertificateStackNameDomainName
             - Ref: "AWS::NoValue"
             - 'true'
         Enabled: true
