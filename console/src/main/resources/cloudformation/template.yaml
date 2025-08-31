@@ -200,7 +200,10 @@ Resources:
         Aliases:
           Fn::If:
           - HasCertificateStackNameDomainName
-          - Ref: CertificateStackNameDomainName
+          - Fn::Split:
+              - ","
+              - Fn::ImportValue:
+                  Fn::Sub: '${CertificateStackName}-ConsoleDomain'
           - Ref: "AWS::NoValue"
         ViewerCertificate:
           AcmCertificateArn:
