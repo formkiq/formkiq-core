@@ -308,7 +308,7 @@ Outputs:
     Description: Console URL
     Value:
       Fn::If:
-      - CertificateStackNameDomainName
+      - HasCertificateStackNameDomainName
       - Fn::Join:
           - ""
           -
