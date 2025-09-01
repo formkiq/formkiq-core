@@ -837,7 +837,7 @@ Outputs:
     Description: "The endpoint url for the IAM API"
     Value: 
       Fn::If:
-        - HasCertificateStackName
+        - HasCertificateStackNameIamApiDomain
         - Fn::Join:
           - ''
           - - 'https://'
@@ -849,7 +849,7 @@ Outputs:
     Description: "The endpoint url for the Key API"
     Value: 
       Fn::If:
-        - HasCertificateStackName
+        - HasCertificateStackNameKeyApiDomain
         - Fn::Join:
           - ''
           - - 'https://'
