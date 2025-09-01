@@ -254,7 +254,11 @@ Resources:
       Value:
         Fn::If:
           - HasCertificateStackNameDomainName
-          - Ref: CertificateStackNameDomainName
+          - Fn::Join:
+              - ""
+              -
+                - 'https://'
+                - Ref: CertificateStackNameDomainName
           - Fn::Join:
               - ""
               -
