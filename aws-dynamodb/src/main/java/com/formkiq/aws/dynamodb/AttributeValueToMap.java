@@ -74,9 +74,16 @@ public class AttributeValueToMap
 
       removeKeys(result);
       renameKeys(result);
+      deleteKeys(result);
     }
 
     return result;
+  }
+
+  private void deleteKeys(final Map<String, Object> result) {
+    if (this.config != null) {
+      notNull(this.config.getDeleteKeys()).forEach(result::remove);
+    }
   }
 
   private void renameKeys(final Map<String, Object> result) {

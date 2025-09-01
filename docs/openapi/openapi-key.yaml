@@ -4421,6 +4421,8 @@
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/limitParam'
+              - $ref: '#/components/parameters/nextParam'
               responses:
                 "200":
                   description: 200 OK
@@ -9324,6 +9326,9 @@
                 llmPromptEntityName:
                   type: string
                   description: Name of the LLM Prompt Entity
+                insertedDate:
+                  type: string
+                  description: Inserted Timestamp
                 content:
                   type: string
                   description: Result content
@@ -9344,6 +9349,9 @@
             GetDocumentDataClassificationResponse:
               type: object
               properties:
+                next:
+                  type: string
+                  description: Next page of results token
                 dataClassifications:
                   type: array
                   description: List of Data Classifications

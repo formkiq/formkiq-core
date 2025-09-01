@@ -23,12 +23,14 @@
  */
 package com.formkiq.aws.dynamodb.builder;
 
+import com.formkiq.aws.dynamodb.AttributeValueToMap;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 
@@ -104,5 +106,15 @@ public interface DynamoDbTypes {
   static String fromDate(final Date value) {
     DateFormat df = getDateFormat();
     return df.format(value);
+  }
+
+  /**
+   * Convert {@link AttributeValue} to {@link List} {@link Map}.
+   * 
+   * @param av {@link AttributeValue}
+   * @return {@link List} {@link Map}
+   */
+  static List<Map<String, Object>> toList(AttributeValue av) {
+    return av.l().stream().map(l -> new AttributeValueToMap(null).apply(l.m())).toList();
   }
 }
