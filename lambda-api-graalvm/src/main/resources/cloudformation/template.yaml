@@ -422,7 +422,7 @@ Resources:
     Type: 'AWS::ApiGatewayV2::ApiMapping'
     Properties:
       DomainName:
-        Ref: HasCertificateStackNameIamApiDomain
+        Ref: CertificateStackNameIamApiDomain
       ApiId: 
         Fn::GetAtt:
           - IamApi
