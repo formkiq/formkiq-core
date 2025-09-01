@@ -9409,6 +9409,9 @@ Resources:
                 content:
                   type: "string"
                   description: "Result content"
+                userId:
+                  type: "string"
+                  description: "UserId that created Result"
                 attributes:
                   description: "Attributes extracted from result content"
                   type: "array"

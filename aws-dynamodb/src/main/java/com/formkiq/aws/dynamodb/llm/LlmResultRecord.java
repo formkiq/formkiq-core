@@ -40,7 +40,7 @@ import static com.formkiq.aws.dynamodb.DbKeys.PREFIX_DOCS;
  * Record representing an Llm Result, with its DynamoDB key structure and metadata.
  */
 public record LlmResultRecord(DynamoDbKey key, String documentId, String llmPromptEntityName,
-    String content, Date insertedDate, List<Map<String, Object>> attributes) {
+    String content, Date insertedDate, List<Map<String, Object>> attributes, String userId) {
 
   /**
    * Canonical constructor to enforce non-null properties and defensive copy of Date.
@@ -51,6 +51,7 @@ public record LlmResultRecord(DynamoDbKey key, String documentId, String llmProm
     Objects.requireNonNull(llmPromptEntityName, "llmPromptEntityName must not be null");
     Objects.requireNonNull(content, "content must not be null");
     Objects.requireNonNull(insertedDate, "insertedDate must not be null");
+    Objects.requireNonNull(userId, "userId must not be null");
     insertedDate = new Date(insertedDate.getTime());
   }
 
@@ -68,7 +69,8 @@ public record LlmResultRecord(DynamoDbKey key, String documentId, String llmProm
     return new LlmResultRecord(key, DynamoDbTypes.toString(attributes.get("documentId")),
         DynamoDbTypes.toString(attributes.get("llmPromptEntityName")),
         DynamoDbTypes.toString(attributes.get("content")),
-        DynamoDbTypes.toDate(attributes.get("inserteddate")), attrs);
+        DynamoDbTypes.toDate(attributes.get("inserteddate")), attrs,
+        DynamoDbTypes.toString(attributes.get("userId")));
   }
 
   /**
@@ -80,7 +82,8 @@ public record LlmResultRecord(DynamoDbKey key, String documentId, String llmProm
   public Map<String, AttributeValue> getAttributes() {
     return key.getAttributesBuilder().withString("documentId", documentId)
         .withString("content", content).withString("llmPromptEntityName", llmPromptEntityName)
-        .withList("attributes", attributes).withDate("inserteddate", insertedDate).build();
+        .withString("userId", userId).withList("attributes", attributes)
+        .withDate("inserteddate", insertedDate).build();
   }
 
   /**
@@ -102,6 +105,8 @@ public record LlmResultRecord(DynamoDbKey key, String documentId, String llmProm
     private String llmPromptEntityName;
     /** Content. */
     private String content;
+    /** UserId. */
+    private String userId;
     /** Inserted Date. */
     private Date insertedDate = new Date();
     /** Attributes. */
@@ -115,6 +120,17 @@ public record LlmResultRecord(DynamoDbKey key, String documentId, String llmProm
      */
     public Builder documentId(final String llmResultDocumentId) {
       this.documentId = llmResultDocumentId;
+      return this;
+    }
+
+    /**
+     * Sets the User identifier.
+     *
+     * @param llmResultUserId the user ID
+     * @return this Builder
+     */
+    public Builder userId(final String llmResultUserId) {
+      this.userId = llmResultUserId;
       return this;
     }
 
@@ -180,7 +196,7 @@ public record LlmResultRecord(DynamoDbKey key, String documentId, String llmProm
 
       DynamoDbKey key = buildKey(siteId);
       return new LlmResultRecord(key, documentId, llmPromptEntityName, content, insertedDate,
-          attributes);
+          attributes, userId);
     }
   }
 }
