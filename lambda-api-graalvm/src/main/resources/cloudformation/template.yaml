@@ -128,7 +128,52 @@ Parameters:
     Description: >
       The level of logging for the AWS Platform System logs.
 
+  CertificateStackNameHttpApiDomain:
+    Type: String
+    Description: Certificate Http Api Domain
+    Default: ""
+
+  CertificateStackNameIamApiDomain:
+    Type: String
+    Description: Certificate IAM Api Domain
+    Default: ""
+
+  CertificateStackNameKeyApiDomain:
+    Type: String
+    Description: Certificate Key Api Domain
+    Default: ""
+
 Conditions:
+
+  HasCertificateStackNameHttpApiDomain:
+    Fn::Not:
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: CertificateStackNameHttpApiDomain
+              - ""
+          - Fn::Equals:
+              - Ref: CertificateStackNameHttpApiDomain
+              - "_"
+
+  HasCertificateStackNameIamApiDomain:
+    Fn::Not:
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: CertificateStackNameIamApiDomain
+              - ""
+          - Fn::Equals:
+              - Ref: CertificateStackNameIamApiDomain
+              - "_"
+
+  HasCertificateStackNameKeyApiDomain:
+    Fn::Not:
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: CertificateStackNameKeyApiDomain
+              - ""
+          - Fn::Equals:
+              - Ref: CertificateStackNameKeyApiDomain
+              - "_"
 
   HasCertificateStackName:
     Fn::Not:
@@ -340,12 +385,11 @@ Resources:
         Format: '{ "requestId":"$context.requestId", "ip": "$context.identity.sourceIp", "requestTime":"$context.requestTime", "httpMethod":"$context.httpMethod","routeKey":"$context.routeKey", "status":"$context.status","protocol":"$context.protocol", "integrationStatus": $context.integrationStatus, "integrationLatency": $context.integrationLatency, "responseLength":"$context.responseLength" }'
 
   DocumentsStageMapping:
-    Condition: HasCertificateStackName
+    Condition: HasCertificateStackNameHttpApiDomain
     Type: 'AWS::ApiGatewayV2::ApiMapping'
     Properties:
       DomainName:
-        Fn::ImportValue:
-          Fn::Sub: '${CertificateStackName}-HttpApiDomain'
+        Ref: CertificateStackNameHttpApiDomain
       ApiId: 
         Fn::GetAtt:
           - HttpApi
@@ -374,12 +418,11 @@ Resources:
         Format: '{ "requestId":"$context.requestId", "ip": "$context.identity.sourceIp", "requestTime":"$context.requestTime", "httpMethod":"$context.httpMethod","routeKey":"$context.routeKey", "status":"$context.status","protocol":"$context.protocol", "integrationStatus": $context.integrationStatus, "integrationLatency": $context.integrationLatency, "responseLength":"$context.responseLength" }'
 
   IamDocumentsStageMapping:
-    Condition: HasCertificateStackName
+    Condition: HasCertificateStackNameIamApiDomain
     Type: 'AWS::ApiGatewayV2::ApiMapping'
     Properties:
       DomainName:
-        Fn::ImportValue:
-          Fn::Sub: '${CertificateStackName}-IamApiDomain'
+        Ref: CertificateStackNameIamApiDomain
       ApiId: 
         Fn::GetAtt:
           - IamApi
@@ -408,12 +451,11 @@ Resources:
         Format: '{ "requestId":"$context.requestId", "ip": "$context.identity.sourceIp", "requestTime":"$context.requestTime", "httpMethod":"$context.httpMethod","routeKey":"$context.routeKey", "status":"$context.status","protocol":"$context.protocol", "integrationStatus": $context.integrationStatus, "integrationLatency": $context.integrationLatency, "responseLength":"$context.responseLength" }'
 
   KeyDocumentsStageMapping:
-    Condition: HasCertificateStackName
+    Condition: HasCertificateStackNameKeyApiDomain
     Type: 'AWS::ApiGatewayV2::ApiMapping'
     Properties:
       DomainName:
-        Fn::ImportValue:
-          Fn::Sub: '${CertificateStackName}-KeyApiDomain'
+        Ref: CertificateStackNameKeyApiDomain
       ApiId: 
         Fn::GetAtt:
           - KeyApi
@@ -498,8 +540,7 @@ Resources:
           - Fn::Join:
             - ''
             - - 'https://'
-              - Fn::ImportValue:
-                  Fn::Sub: '${CertificateStackName}-HttpApiDomain'
+              - Ref: CertificateStackNameHttpApiDomain
           - Fn::GetAtt:
             - HttpApi
             - Outputs.DocumentsHttpApiUrl
@@ -521,8 +562,7 @@ Resources:
           - Fn::Join:
             - ''
             - - 'https://'
-              - Fn::ImportValue:
-                  Fn::Sub: '${CertificateStackName}-HttpApiDomain'
+              - Ref: CertificateStackNameHttpApiDomain
           - Fn::GetAtt:
             - HttpApi
             - Outputs.DocumentsHttpApiUrl
@@ -544,8 +584,7 @@ Resources:
           - Fn::Join:
             - ''
             - - 'https://'
-              - Fn::ImportValue:
-                  Fn::Sub: '${CertificateStackName}-IamApiDomain'
+              - Ref: CertificateStackNameIamApiDomain
           - Fn::GetAtt:
             - IamApi
             - Outputs.DocumentsIamApiUrl
@@ -583,8 +622,7 @@ Resources:
           - Fn::Join:
             - ''
             - - 'https://'
-              - Fn::ImportValue:
-                  Fn::Sub: '${CertificateStackName}-IamApiDomain'
+              - Ref: CertificateStackNameIamApiDomain
           - Fn::GetAtt:
             - KeyApi
             - Outputs.DocumentsKeyApiUrl
@@ -799,12 +837,11 @@ Outputs:
     Description: "The endpoint url for the IAM API"
     Value: 
       Fn::If:
-        - HasCertificateStackName
+        - HasCertificateStackNameIamApiDomain
         - Fn::Join:
           - ''
           - - 'https://'
-            - Fn::ImportValue:
-                Fn::Sub: '${CertificateStackName}-IamApiDomain'
+            - Ref: CertificateStackNameIamApiDomain
         - Fn::GetAtt:
           - IamApi
           - Outputs.DocumentsIamApiUrl
@@ -812,12 +849,11 @@ Outputs:
     Description: "The endpoint url for the Key API"
     Value: 
       Fn::If:
-        - HasCertificateStackName
+        - HasCertificateStackNameKeyApiDomain
         - Fn::Join:
           - ''
           - - 'https://'
-            - Fn::ImportValue:
-                Fn::Sub: '${CertificateStackName}-KeyApiDomain'
+            - Ref: CertificateStackNameKeyApiDomain
         - Fn::GetAtt:
           - KeyApi
           - Outputs.DocumentsKeyApiUrl    
@@ -825,12 +861,11 @@ Outputs:
     Description: "The endpoint url for the Http API"
     Value:
       Fn::If:
-        - HasCertificateStackName
+        - HasCertificateStackNameHttpApiDomain
         - Fn::Join:
           - ''
           - - 'https://'
-            - Fn::ImportValue:
-                Fn::Sub: '${CertificateStackName}-HttpApiDomain'
+            - Ref: CertificateStackNameHttpApiDomain
         - Fn::GetAtt:
           - HttpApi
           - Outputs.DocumentsHttpApiUrl
