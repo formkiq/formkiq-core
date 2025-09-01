@@ -4468,7 +4468,7 @@ Resources:
             get:
               operationId: GetDocumentDataClassification
               summary: Get document's data classification
-              description: Retrieve an document's data classification
+              description: Retrieve an document's data classification; available as an Add-On Module
               tags:
                 - Document Data Classification
               parameters:
@@ -4495,7 +4495,7 @@ Resources:
             put:
               operationId: SetDocumentDataClassification
               summary: Set document's data classification
-              description: Set all text/tags found within a document to OpenSearch; available as an Add-On Module
+              description: Generate Data Classfication attributes within a document; available as an Add-On Module
               tags:
                 - Document Data Classification
               parameters:
@@ -9378,10 +9378,29 @@ Resources:
 
             SetDocumentDataClassificationRequest:
               type: "object"
+              properties:
+                llmPromptEntityName:
+                  type: "string"
+                  description: "Name of the LLM Prompt Entity"
 
             SetDocumentDataClassificationResponse:
               type: "object"
               properties:
+                content:
+                  type: "string"
+                  description: "Result content"
+                attributes:
+                  description: "Attributes extracted from result content"
+                  type: "array"
+                  items:
+                    $ref: "#/components/schemas/DataClassificationAttribute"
+
+            DataClassification:
+              type: "object"
+              properties:
+                llmPromptEntityName:
+                  type: "string"
+                  description: "Name of the LLM Prompt Entity"
                 content:
                   type: "string"
                   description: "Result content"
@@ -9404,9 +9423,11 @@ Resources:
             GetDocumentDataClassificationResponse:
               type: "object"
               properties:
-                url:
-                  type: "string"
-                  description: "Url to fetch classification result"
+                dataClassifications:
+                  type: "array"
+                  description: "List of Data Classifications"
+                  items:
+                    $ref: "#/components/schemas/DataClassification"
 
             GetActivitesResponse:
               type: "object"
