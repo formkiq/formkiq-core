@@ -82,7 +82,7 @@ public class HttpServiceJdk11 implements HttpService {
     String u = url;
 
     if (parameters.isPresent() && !parameters.get().isEmpty()) {
-      String q = parameters.get().entrySet().stream()
+      String q = parameters.get().entrySet().stream().filter(e -> e.getValue() != null)
           .map(s -> s.getKey() + "=" + encode(s.getValue())).collect(Collectors.joining("&"));
       u += "?" + q;
     }
