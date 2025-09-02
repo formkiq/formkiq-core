@@ -536,7 +536,7 @@ Resources:
       Type: String
       Value:
         Fn::If:
-          - HasCertificateStackName
+          - HasCertificateStackNameHttpApiDomain
           - Fn::Join:
             - ''
             - - 'https://'
@@ -558,7 +558,7 @@ Resources:
       Type: String
       Value: 
         Fn::If:
-          - HasCertificateStackName
+          - HasCertificateStackNameHttpApiDomain
           - Fn::Join:
             - ''
             - - 'https://'
@@ -580,7 +580,7 @@ Resources:
       Type: String
       Value: 
         Fn::If:
-          - HasCertificateStackName
+          - HasCertificateStackNameIamApiDomain
           - Fn::Join:
             - ''
             - - 'https://'
@@ -618,11 +618,11 @@ Resources:
       Type: String
       Value: 
         Fn::If:
-          - HasCertificateStackName
+          - HasCertificateStackNameKeyApiDomain
           - Fn::Join:
             - ''
             - - 'https://'
-              - Ref: CertificateStackNameIamApiDomain
+              - Ref: CertificateStackNameKeyApiDomain
           - Fn::GetAtt:
             - KeyApi
             - Outputs.DocumentsKeyApiUrl
