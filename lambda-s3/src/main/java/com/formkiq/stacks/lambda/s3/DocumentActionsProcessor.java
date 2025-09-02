@@ -455,37 +455,40 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
     String eventName = map.eventName();
     AwsEventDynamodbEntity dynamodb = map.dynamodb();
     AwsEventDynamodbNewImage newImage = dynamodb.newImage();
-    String siteId = newImage.siteId().s();
-    String documentId = newImage.documentId().s();
-    DynamodbAttributeValue activityKeys = newImage.activityKeys();
 
-    List<DynamoDbKey> keys = activityKeys.l().stream()
-        .map(a -> new DynamoDbKey(a.m().get(PK).s(), a.m().get(SK).s(), null, null, null, null))
-        .toList();
-    DynamoDbService db = serviceCache.getExtension(DynamoDbService.class);
-    Collection<Map<String, AttributeValue>> activities =
-        db.get(serviceCache.environment("DOCUMENTS_AUDIT_TABLE"), keys);
-    String detailType = new DetailTypeResolver().apply(activities);
+    if (newImage != null) {
+      String siteId = newImage.siteId().s();
+      String documentId = newImage.documentId().s();
+      DynamodbAttributeValue activityKeys = newImage.activityKeys();
 
-    String pk = dynamodb.keys().pk().s();
-    String sk = dynamodb.keys().sk().s();
-    String s = String.format(
-        "{\"eventName\": \"%s\",\"PK\": \"%s\",\"SK\":\"%s\","
-            + "\"siteId\":\"%s\",\"documentId\":\"%s\",\"type\":\"%s\"}",
-        eventName, pk, sk, siteId, documentId, detailType);
-    logger.info(s);
+      List<DynamoDbKey> keys = activityKeys.l().stream()
+          .map(a -> new DynamoDbKey(a.m().get(PK).s(), a.m().get(SK).s(), null, null, null, null))
+          .toList();
 
+      DynamoDbService db = serviceCache.getExtension(DynamoDbService.class);
+      Collection<Map<String, AttributeValue>> activities =
+          db.get(serviceCache.environment("DOCUMENTS_AUDIT_TABLE"), keys);
+      String detailType = new DetailTypeResolver().apply(activities);
 
-    String detail = new DocumentExternalSystemExport(serviceCache).apply(siteId, documentId,
-        activities.stream().map(new AttributeValueToMap()).toList());
+      String pk = dynamodb.keys().pk().s();
+      String sk = dynamodb.keys().sk().s();
+      String s = String.format(
+          "{\"eventName\": \"%s\",\"PK\": \"%s\",\"SK\":\"%s\","
+              + "\"siteId\":\"%s\",\"documentId\":\"%s\",\"type\":\"%s\"}",
+          eventName, pk, sk, siteId, documentId, detailType);
+      logger.info(s);
 
-    String appEnvironment = serviceCache.environment("APP_ENVIRONMENT");
-    EventBridgeMessage msg =
-        new EventBridgeMessageBuilder().build(appEnvironment, detailType, detail);
-    EventBridgeService eventBridgeService = serviceCache.getExtension(EventBridgeService.class);
+      String detail = new DocumentExternalSystemExport(serviceCache).apply(siteId, documentId,
+          activities.stream().map(new AttributeValueToMap()).toList());
 
-    String documentEventsBus = serviceCache.environment("DOCUMENT_EVENTS_BUS");
-    eventBridgeService.putEvents(documentEventsBus, msg);
+      String appEnvironment = serviceCache.environment("APP_ENVIRONMENT");
+      EventBridgeMessage msg =
+          new EventBridgeMessageBuilder().build(appEnvironment, detailType, detail);
+      EventBridgeService eventBridgeService = serviceCache.getExtension(EventBridgeService.class);
+
+      String documentEventsBus = serviceCache.environment("DOCUMENT_EVENTS_BUS");
+      eventBridgeService.putEvents(documentEventsBus, msg);
+    }
   }
 
   private void processDocumentEvent(final Logger logger, final AwsEventSnsNotification map) {
