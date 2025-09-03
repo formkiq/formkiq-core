@@ -38,6 +38,7 @@ import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
 
 import java.math.BigDecimal;
+import java.util.Base64;
 import java.util.List;
 
 /**
@@ -97,6 +98,18 @@ public class AddDocumentRequestBuilder implements HttpRequestBuilder {
    */
   public AddDocumentRequestBuilder content(final String content) {
     this.request.setContent(content);
+    return this;
+  }
+
+  /**
+   * Set Content.
+   *
+   * @param content {@link String}
+   * @return AddDocumentRequestBuilder
+   */
+  public AddDocumentRequestBuilder content(final byte[] content) {
+    this.request.setContent(Base64.getEncoder().encodeToString(content));
+    this.request.setIsBase64(true);
     return this;
   }
 
