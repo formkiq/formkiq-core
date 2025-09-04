@@ -751,6 +751,46 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
     }
   }
 
+  /**
+   * POST /documents/{documentId}/attributes. PRESET namespace.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddDocumentAttribute12() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+      addAttribute(siteId, "LlmPrompt", AttributeDataType.ENTITY);
+
+      String entityTypeId = "LlmPrompt";
+      String entityId = ID.uuid();
+
+      AddDocumentRequest areq = new AddDocumentRequest().content("adasd");
+      String documentId = this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
+      assertNotNull(documentId);
+
+      AddDocumentAttributeEntity a = new AddDocumentAttributeEntity().key("strings")
+          .entityId(entityId).entityTypeId(entityTypeId).namespace(EntityTypeNamespace.PRESET);
+      AddDocumentAttributesRequest attrReq =
+          new AddDocumentAttributesRequest().addAttributesItem(new AddDocumentAttribute(a));
+
+      // when
+      try {
+        this.documentAttributesApi.addDocumentAttributes(documentId, attrReq, siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"name\","
+                + "\"error\":\"unexpected value must be one of 'LlmPrompt'\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
   private ApiException addDocumentAttributesWithError(final String siteId, final String documentId,
       final AddDocumentAttributesRequest req) {
     ApiException error = null;

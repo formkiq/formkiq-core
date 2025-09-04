@@ -26,17 +26,22 @@ package com.formkiq.aws.dynamodb.entity;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import com.formkiq.aws.dynamodb.builder.DynamoDbEntityBuilder;
+import com.formkiq.validation.ValidationBuilder;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
+import java.util.Arrays;
 import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
+
+import static com.formkiq.aws.dynamodb.objects.Strings.isUuid;
 
 /**
  * Record representing an entity, with its DynamoDB key structure and metadata.
  */
-public record EntityTypeRecord(DynamoDbKey key, String documentId, String namespace, String name,
-    Date insertedDate) {
+public record EntityTypeRecord(DynamoDbKey key, String documentId, EntityTypeNamespace namespace,
+    String name, Date insertedDate) {
 
   /**
    * Canonical constructor to enforce non-null properties and defensive copy of Date.
@@ -61,7 +66,7 @@ public record EntityTypeRecord(DynamoDbKey key, String documentId, String namesp
     Objects.requireNonNull(attributes, "attributes must not be null");
     DynamoDbKey key = DynamoDbKey.fromAttributeMap(attributes);
     return new EntityTypeRecord(key, DynamoDbTypes.toString(attributes.get("documentId")),
-        DynamoDbTypes.toString(attributes.get("namespace")),
+        EntityTypeNamespace.valueOf(DynamoDbTypes.toString(attributes.get("namespace"))),
         DynamoDbTypes.toString(attributes.get("name")),
         DynamoDbTypes.toDate(attributes.get("inserteddate")));
   }
@@ -74,7 +79,7 @@ public record EntityTypeRecord(DynamoDbKey key, String documentId, String namesp
    */
   public Map<String, AttributeValue> getAttributes() {
     return key.getAttributesBuilder().withString("documentId", documentId)
-        .withString("namespace", namespace).withString("name", name)
+        .withString("namespace", namespace.name()).withString("name", name)
         .withDate("inserteddate", insertedDate).build();
   }
 
@@ -94,7 +99,7 @@ public record EntityTypeRecord(DynamoDbKey key, String documentId, String namesp
     /** Document Id. */
     private String documentId;
     /** Namespace. */
-    private String namespace;
+    private EntityTypeNamespace namespace;
     /** Name. */
     private String name;
     /** Inserted Date. */
@@ -117,9 +122,21 @@ public record EntityTypeRecord(DynamoDbKey key, String documentId, String namesp
      * @param entityTypeNamespace the entityTypeNamespace
      * @return this Builder
      */
-    public Builder namespace(final String entityTypeNamespace) {
-      this.namespace = entityTypeNamespace != null ? entityTypeNamespace.toUpperCase() : null;
+    public Builder namespace(final EntityTypeNamespace entityTypeNamespace) {
+      this.namespace = entityTypeNamespace;
       return this;
+    }
+
+    /**
+     * Sets the entityTypeNamespace of the document with default value.
+     *
+     * @param entityTypeNamespace the entityTypeNamespace
+     * @param defaultValue default Entity Type Namespace
+     * @return this Builder
+     */
+    public Builder namespace(final EntityTypeNamespace entityTypeNamespace,
+        final EntityTypeNamespace defaultValue) {
+      return namespace(entityTypeNamespace != null ? entityTypeNamespace : defaultValue);
     }
 
     /**
@@ -130,6 +147,16 @@ public record EntityTypeRecord(DynamoDbKey key, String documentId, String namesp
      */
     public Builder name(final String entityTypeName) {
       this.name = entityTypeName;
+      return this;
+    }
+
+    /**
+     * Sets "Empty" name to pass validation.
+     *
+     * @return this Builder
+     */
+    public Builder nameEmpty() {
+      this.name = "Empty";
       return this;
     }
 
@@ -165,8 +192,35 @@ public record EntityTypeRecord(DynamoDbKey key, String documentId, String namesp
     public EntityTypeRecord build(final String siteId) {
       Objects.requireNonNull(insertedDate, "insertedDate must not be null");
 
+      validate();
       DynamoDbKey key = buildKey(siteId);
       return new EntityTypeRecord(key, documentId, namespace, name, insertedDate);
+    }
+
+    private void validate() {
+      ValidationBuilder vb = new ValidationBuilder();
+
+      vb.isRequired("name", name);
+
+      if (!isUuid(documentId)) {
+        vb.isRequired("namespace", namespace, "'namespace' is required");
+      } else if (namespace == null) {
+        namespace = EntityTypeNamespace.CUSTOM;
+      }
+
+      vb.check();
+
+      vb.isValidByRegex("name", name, "^[A-Z][A-Za-z0-9]+$");
+
+      if (EntityTypeNamespace.PRESET.equals(namespace)) {
+        PresetEntity entity = PresetEntity.fromString(name);
+        String presetEntities = Arrays.stream(PresetEntity.values()).map(PresetEntity::getName)
+            .collect(Collectors.joining(", "));
+        vb.isRequired("name", entity != null,
+            "unexpected value must be one of '" + presetEntities + "'");
+      }
+
+      vb.check();
     }
   }
 }

@@ -57,8 +57,6 @@ public class EntityTypeNameToIdQuery implements DynamoDbFind<String, EntityTypeR
   public QueryRequest build(final String tableName, final String siteId,
       final EntityTypeRecord record) {
 
-    validateNamespace(record);
-
     DynamoDbKey key = EntityTypeRecord.builder().documentId("").name(record.documentId())
         .namespace(record.namespace()).buildKey(siteId);
     return DynamoDbQueryBuilder.builder().indexName(GSI1).pk(key.gsi1Pk()).beginsWith(key.gsi1Sk())
@@ -81,15 +79,5 @@ public class EntityTypeNameToIdQuery implements DynamoDbFind<String, EntityTypeR
     }
 
     return id;
-  }
-
-  private void validateNamespace(final EntityTypeRecord record) {
-
-    vb.isRequired("entityTypeId", record.documentId());
-    vb.isRequired("namespace", record.namespace());
-    vb.check();
-
-    vb.isEquals("namespace", record.namespace(), "CUSTOM");
-    vb.check();
   }
 }

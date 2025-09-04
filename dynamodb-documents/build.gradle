@@ -2,58 +2,58 @@
 description = "DocumentStore Dynamodb"
 
 sourceSets {
-    integration {
-        java.srcDir "$projectDir/src/integration/java"
-        resources.srcDir "$projectDir/src/integration/resources"
-        compileClasspath += main.output + test.output
-        runtimeClasspath += main.output + test.output
-    }
+  integration {
+    java.srcDir "$projectDir/src/integration/java"
+    resources.srcDir "$projectDir/src/integration/resources"
+    compileClasspath += main.output + test.output
+    runtimeClasspath += main.output + test.output
+  }
 }
 
 configurations {
-    integrationImplementation.extendsFrom testImplementation
-    integrationRuntime.extendsFrom testRuntime
+  integrationImplementation.extendsFrom testImplementation
+  integrationRuntime.extendsFrom testRuntime
 }
 
 dependencies {
 
-	annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.5.0'
+  annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.5.0'
 
-    implementation project(':strings')
-    implementation project(':aws-s3')
-	implementation project(':aws-dynamodb')
-	implementation project(':fkq-plugins')
-	implementation project(':fkq-validation')
-	implementation project(':fkq-lambda-services')
-    implementation group: 'com.formkiq', name: 'graalvm-annotations', version: '1.2.0'
-    implementation group: 'com.google.code.gson', name: 'gson', version: '2.13.1'
-    	
-	testImplementation project(':aws-ssm')
-	testImplementation project(':fkq-test-utils')
-	testImplementation 'org.slf4j:slf4j-api:2.0.17'
-	testImplementation group: 'com.google.guava', name: 'guava', version: '33.4.8-jre'
-	testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.17'
-	
-	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.11.4'
-    testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.21.1'
-	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.21.1'
-	
-	configurations.all {
-   		exclude group: 'software.amazon.awssdk', module: 'apache-client'
-   		exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
-	}
+  implementation project(':strings')
+  implementation project(':aws-s3')
+  implementation project(':aws-dynamodb')
+  implementation project(':fkq-plugins')
+  implementation project(':fkq-validation')
+  implementation project(':fkq-lambda-services')
+  implementation group: 'com.formkiq', name: 'graalvm-annotations', version: '1.2.0'
+  implementation group: 'com.google.code.gson', name: 'gson', version: '2.13.1'
+
+  testImplementation project(':aws-ssm')
+  testImplementation project(':fkq-test-utils')
+  testImplementation 'org.slf4j:slf4j-api:2.0.17'
+  testImplementation group: 'com.google.guava', name: 'guava', version: '33.4.8-jre'
+  testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.17'
+
+  testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.11.4'
+  testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.21.1'
+  testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.21.1'
+
+  configurations.all {
+    exclude group: 'software.amazon.awssdk', module: 'apache-client'
+    exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
+  }
 }
 
 jar {
-    archiveBaseName = 'dynamodb-documents'
+  archiveBaseName = 'dynamodb-documents'
 }
 
-task createZip(type: Zip) {   
-   from "nodejs"
-   include "*"
-   include "*/*"
-   archiveFileName = "documentsmetrics-${project.version}.zip"
-   destinationDirectory = file("$buildDir/distributions")
+task createZip(type: Zip) {
+  from "nodejs"
+  include "*"
+  include "*/*"
+  archiveFileName = "documentsmetrics-${project.version}.zip"
+  destinationDirectory = file("$buildDir/distributions")
 }
 
 createZip.dependsOn check
@@ -61,11 +61,11 @@ build.dependsOn createZip
 
 test {
   failFast = true
-  useJUnitPlatform() 
+  useJUnitPlatform()
 }
 
 task integrationTest(type: Test) {
-    testClassesDirs = sourceSets.integration.output.classesDirs
-    classpath = sourceSets.integration.runtimeClasspath
-    useJUnitPlatform()
+  testClassesDirs = sourceSets.integration.output.classesDirs
+  classpath = sourceSets.integration.runtimeClasspath
+  useJUnitPlatform()
 }

@@ -21,14 +21,46 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api.handler.entity;
-
-import com.formkiq.aws.dynamodb.entity.EntityTypeNamespace;
-import com.formkiq.graalvm.annotations.Reflectable;
+package com.formkiq.aws.dynamodb.entity;
 
 /**
- * Add Entity Type.
+ * Present Entity.
  */
-@Reflectable
-record AddEntityType(String name, EntityTypeNamespace namespace) {
+public enum PresetEntity {
+  /** LLM Prompt entity. */
+  LLM_PROMPT("LlmPrompt");
+
+  /** Entity Name. */
+  private final String name;
+
+  PresetEntity(final String entityName) {
+    this.name = entityName;
+  }
+
+  /**
+   * Get the string value for this preset entity.
+   *
+   * @return string representation
+   */
+  public String getName() {
+    return name;
+  }
+
+  /**
+   * Convert a string to the matching enum constant. Defaults to {@link #LLM_PROMPT} if no match is
+   * found.
+   *
+   * @param value string to convert (case-insensitive)
+   * @return matching enum constant, or {@code LLM_PROMPT} if none match
+   */
+  public static PresetEntity fromString(final String value) {
+    if (value != null) {
+      for (PresetEntity e : values()) {
+        if (e.name.equalsIgnoreCase(value) || e.name().equalsIgnoreCase(value)) {
+          return e;
+        }
+      }
+    }
+    return null;
+  }
 }

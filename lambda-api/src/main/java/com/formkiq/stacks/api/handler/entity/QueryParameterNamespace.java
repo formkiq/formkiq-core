@@ -24,11 +24,30 @@
 package com.formkiq.stacks.api.handler.entity;
 
 import com.formkiq.aws.dynamodb.entity.EntityTypeNamespace;
-import com.formkiq.graalvm.annotations.Reflectable;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
+import com.formkiq.validation.ValidationBuilder;
+
+import java.util.List;
+import java.util.function.Function;
 
 /**
- * Add Entity Type.
+ * {@link Function} to convert {@link ApiGatewayRequestEvent} to {@link EntityTypeNamespace}.
  */
-@Reflectable
-record AddEntityType(String name, EntityTypeNamespace namespace) {
+public class QueryParameterNamespace
+    implements Function<ApiGatewayRequestEvent, EntityTypeNamespace> {
+
+  @Override
+  public EntityTypeNamespace apply(final ApiGatewayRequestEvent event) {
+    EntityTypeNamespace ns = null;
+    String namespace = event.getQueryStringParameter("namespace");
+
+    if (namespace != null) {
+      ValidationBuilder vb = new ValidationBuilder();
+      vb.isEquals("namespace", namespace.toUpperCase(), List.of("PRESET", "CUSTOM"));
+      vb.check();
+      ns = EntityTypeNamespace.fromString(namespace);
+    }
+
+    return ns;
+  }
 }

@@ -209,6 +209,93 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * Post /entities/{entityTypeId} for LLM Prompt.
+   *
+   */
+  @Test
+  public void testAddEntityLlmPrompt() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(new String[] {siteId});
+
+      String entityTypeId = addLlmPromptEntityType(siteId);
+
+      AddEntityRequest req =
+          new AddEntityRequest().entity(new AddEntity().name("MyPrompt").addAttributesItem(
+              new AddEntityAttribute().key("userPrompt").stringValue("This prompt")));
+
+      // when
+      AddEntityResponse response = this.entityApi.addEntity(entityTypeId, req, siteId, "preset");
+
+      // then
+      String entityId = response.getEntityId();
+      assertNotNull(entityId);
+
+      // when - try with different namespaces
+      GetEntityResponse entityResponse0 =
+          this.entityApi.getEntity(entityTypeId, entityId, siteId, "preset");
+      GetEntityResponse entityResponse1 =
+          this.entityApi.getEntity(entityTypeId, entityId, siteId, "custom");
+      GetEntityResponse entityResponse2 =
+          this.entityApi.getEntity(entityTypeId, entityId, siteId, null);
+
+      for (GetEntityResponse entityResponse : List.of(entityResponse0, entityResponse1,
+          entityResponse2)) {
+        Entity entity = entityResponse.getEntity();
+        assertNotNull(entity);
+        assertEquals("MyPrompt", entity.getName());
+
+        List<EntityAttribute> attributes = notNull(entity.getAttributes());
+        assertEquals(1, attributes.size());
+        assertEquals("userPrompt", attributes.get(0).getKey());
+        assertEquals("This prompt", attributes.get(0).getStringValue());
+      }
+    }
+  }
+
+  /**
+   * Post /entities/{entityTypeId} for missing LLM Prompt.
+   *
+   */
+  @Test
+  public void testAddEntityLlmPromptMissing() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(new String[] {siteId});
+
+      String entityTypeId = addLlmPromptEntityType(siteId);
+
+      AddEntityRequest req = new AddEntityRequest().entity(new AddEntity().name("MyPrompt"));
+
+      // when
+      try {
+        this.entityApi.addEntity(entityTypeId, req, siteId, "preset");
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"userPrompt\",\"error\":\"'userPrompt' is required\"}]}",
+            e.getResponseBody());
+      }
+
+      // when - using EntityType Name.
+      try {
+        this.entityApi.addEntity("LlmPrompt", req, siteId, "preset");
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"userPrompt\",\"error\":\"'userPrompt' is required\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
    * Get /entities/{entityTypeId}.
    *
    * @throws Exception an error has occurred
@@ -458,6 +545,19 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
             new AddEntityType().name("Company").namespace(EntityTypeNamespace.CUSTOM)), siteId)
         .getEntityTypeId();
     assertNotNull(entityTypeId);
+    return entityTypeId;
+  }
+
+  private String addLlmPromptEntityType(final String siteId) throws ApiException {
+    String entityTypeId =
+        this.entityApi.addEntityType(
+            new AddEntityTypeRequest().entityType(
+                new AddEntityType().name("LlmPrompt").namespace(EntityTypeNamespace.PRESET)),
+            siteId).getEntityTypeId();
+    assertNotNull(entityTypeId);
+
+    addAttribute(siteId, "userPrompt", AttributeDataType.STRING);
+
     return entityTypeId;
   }
 

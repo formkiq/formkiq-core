@@ -28,7 +28,10 @@ import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.entity.EntityAttribute;
 import com.formkiq.aws.dynamodb.entity.EntityRecord;
+import com.formkiq.aws.dynamodb.entity.EntityTypeNamespace;
 import com.formkiq.aws.dynamodb.entity.EntityTypeRecord;
+import com.formkiq.aws.dynamodb.entity.PresetEntity;
+import com.formkiq.aws.dynamodb.entity.PresetLlmPromptEntityBuilder;
 import com.formkiq.aws.dynamodb.useractivities.ActivityResourceType;
 import com.formkiq.aws.dynamodb.useractivities.AttributeValuesToChangeRecordFunction;
 import com.formkiq.aws.dynamodb.useractivities.ChangeRecord;
@@ -50,6 +53,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
@@ -58,13 +62,11 @@ import static com.formkiq.strings.Strings.isEmpty;
 /**
  * {@link Function} to transform {@link ApiGatewayRequestEvent} to {@link EntityRecord}.
  */
-public class AddEntityRequestToEntityRecordTransformer
-    implements ApiGatewayRequestEventUtil, Function<ApiGatewayRequestEvent, EntityRecord> {
+public class AddEntityRequestToEntityRecordTransformer implements ApiGatewayRequestEventUtil,
+    BiFunction<ApiAuthorization, ApiGatewayRequestEvent, EntityRecord> {
 
   /** {@link AwsServiceCache}. */
   private final AwsServiceCache awsServices;
-  /** Site Identifier. */
-  private final String siteId;
   /** Is Update. */
   private final boolean update;
 
@@ -72,31 +74,32 @@ public class AddEntityRequestToEntityRecordTransformer
    * constructor.
    * 
    * @param awsservice {@link AwsServiceCache}
-   * @param authorization {@link ApiAuthorization}
    * @param isUpdate boolean
    */
   public AddEntityRequestToEntityRecordTransformer(final AwsServiceCache awsservice,
-      final ApiAuthorization authorization, final boolean isUpdate) {
+      final boolean isUpdate) {
     this.awsServices = awsservice;
-    this.siteId = authorization.getSiteId();
     this.update = isUpdate;
   }
 
   @Override
-  public EntityRecord apply(final ApiGatewayRequestEvent event) {
+  public EntityRecord apply(final ApiAuthorization authorization,
+      final ApiGatewayRequestEvent event) {
 
+    String siteId = authorization.getSiteId();
     String entityId = update ? event.getPathParameter("entityId") : ID.uuid();
     String entityTypeId = event.getPathParameter("entityTypeId");
-    AddEntityRequest request = getEntityRequest(event, entityTypeId, entityId);
+    AddEntityRequest request = getEntityRequest(siteId, event, entityTypeId, entityId);
 
-    validate(entityTypeId, request);
+    EntityTypeRecord entityType = validate(siteId, entityTypeId, request);
 
-    AddEntity addEntity = request.entity();
-    List<EntityAttribute> entityAttributes =
-        notNull(addEntity.attributes()).stream().map(new AddEntityAttributeMapper()).toList();
+    // AddEntity addEntity = request.entity();
+    // List<EntityAttribute> entityAttributes =
+    // notNull(addEntity.attributes()).stream().map(new AddEntityAttributeMapper()).toList();
 
-    EntityRecord entity = EntityRecord.builder().documentId(entityId).name(addEntity.name())
-        .entityTypeId(entityTypeId).attributes(entityAttributes).build(siteId);
+    EntityRecord entity = getEntityRecord(siteId, request, entityType, entityId);
+    // EntityRecord.builder().documentId(entityId).name(addEntity.name())
+    // .entityTypeId(entityTypeId).attributes(entityAttributes).build(siteId);
 
     Map<String, AttributeValue> attributes = entity.getAttributes();
 
@@ -123,7 +126,36 @@ public class AddEntityRequestToEntityRecordTransformer
     return entity;
   }
 
-  private AddEntityRequest getEntityRequest(final ApiGatewayRequestEvent event,
+  private EntityRecord getEntityRecord(final String siteId, final AddEntityRequest request,
+      final EntityTypeRecord entityType, final String entityId) {
+
+    EntityRecord entity = null;
+    AddEntity addEntity = request.entity();
+    List<EntityAttribute> entityAttributes =
+        notNull(addEntity.attributes()).stream().map(new AddEntityAttributeMapper()).toList();
+
+    if (EntityTypeNamespace.PRESET.equals(entityType.namespace())) {
+
+      PresetEntity presetEntity = PresetEntity.fromString(entityType.name());
+      if (presetEntity != null) {
+
+        entity = new PresetLlmPromptEntityBuilder().documentId(entityId).name(addEntity.name())
+            .entityTypeId(entityType.documentId()).attributes(entityAttributes).build(siteId);
+
+      } else {
+        throw new NotFoundException("Entity Type '" + entityType.name() + "' not found");
+      }
+
+    } else {
+
+      entity = EntityRecord.builder().documentId(entityId).name(addEntity.name())
+          .entityTypeId(entityType.documentId()).attributes(entityAttributes).build(siteId);
+    }
+
+    return entity;
+  }
+
+  private AddEntityRequest getEntityRequest(final String siteId, final ApiGatewayRequestEvent event,
       final String entityTypeId, final String entityId) {
 
     AddEntityRequest req = fromBodyToObject(event, AddEntityRequest.class);
@@ -148,7 +180,8 @@ public class AddEntityRequestToEntityRecordTransformer
     return req;
   }
 
-  private void validate(final String entityTypeId, final AddEntityRequest request) {
+  private EntityTypeRecord validate(final String siteId, final String entityTypeId,
+      final AddEntityRequest request) {
 
     ValidationBuilder vb = new ValidationBuilder();
     vb.isRequired(null, request, "Missing 'entity'");
@@ -158,11 +191,13 @@ public class AddEntityRequestToEntityRecordTransformer
     vb.check();
 
     DynamoDbService db = this.awsServices.getExtension(DynamoDbService.class);
-    validateRequired(db, entityTypeId, request, vb);
-    validateAttributes(notNull(request.entity().attributes()), vb);
+    EntityTypeRecord entityType = validateRequired(db, siteId, entityTypeId, request, vb);
+    validateAttributes(siteId, notNull(request.entity().attributes()), vb);
+
+    return entityType;
   }
 
-  private void validateAttributes(final List<AddEntityAttribute> attributes,
+  private void validateAttributes(final String siteId, final List<AddEntityAttribute> attributes,
       final ValidationBuilder vb) {
 
     AddEntityAttributeToRecordTransformer transformer = new AddEntityAttributeToRecordTransformer();
@@ -179,18 +214,21 @@ public class AddEntityRequestToEntityRecordTransformer
     vb.check();
   }
 
-  private void validateRequired(final DynamoDbService db, final String entityTypeId,
-      final AddEntityRequest request, final ValidationBuilder vb) {
+  private EntityTypeRecord validateRequired(final DynamoDbService db, final String siteId,
+      final String entityTypeId, final AddEntityRequest request, final ValidationBuilder vb) {
     vb.isRequired("entityTypeId", entityTypeId);
     vb.isRequired("name", request.entity().name());
     vb.check();
 
-    EntityTypeRecord entityTypeRecord =
-        EntityTypeRecord.builder().documentId(entityTypeId).namespace("").name("").build(siteId);
+    EntityTypeRecord entityTypeRecord = EntityTypeRecord.builder().documentId(entityTypeId)
+        .namespace(EntityTypeNamespace.CUSTOM).nameEmpty().build(siteId);
 
-    vb.isRequired("entityTypeId", db.exists(entityTypeRecord.key()));
+    Map<String, AttributeValue> entityRecord = db.get(entityTypeRecord.key());
+    vb.isRequired("entityTypeId", !entityRecord.isEmpty());
     vb.check();
 
     notNull(request.entity().attributes()).forEach(a -> vb.isRequired("key", a.key()));
+
+    return EntityTypeRecord.fromAttributeMap(entityRecord);
   }
 }

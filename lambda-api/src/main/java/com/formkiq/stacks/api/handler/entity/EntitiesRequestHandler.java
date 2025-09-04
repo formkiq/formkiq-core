@@ -97,9 +97,8 @@ public class EntitiesRequestHandler
   public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
-    EntityRecord entity =
-        new AddEntityRequestToEntityRecordTransformer(awsservice, authorization, false)
-            .apply(event);
+    EntityRecord entity = new AddEntityRequestToEntityRecordTransformer(awsservice, false)
+        .apply(authorization, event);
 
     return ApiRequestHandlerResponse.builder().created().body("entityId", entity.documentId())
         .build();

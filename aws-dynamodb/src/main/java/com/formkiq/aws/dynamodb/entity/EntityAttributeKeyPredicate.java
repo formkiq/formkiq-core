@@ -21,14 +21,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api.handler.entity;
+package com.formkiq.aws.dynamodb.entity;
 
-import com.formkiq.aws.dynamodb.entity.EntityTypeNamespace;
-import com.formkiq.graalvm.annotations.Reflectable;
+import java.util.function.Predicate;
 
 /**
- * Add Entity Type.
+ * {@link Predicate} for finding {@link EntityAttribute} by Key.
  */
-@Reflectable
-record AddEntityType(String name, EntityTypeNamespace namespace) {
+public class EntityAttributeKeyPredicate implements Predicate<EntityAttribute> {
+  /** Attribute Key. */
+  private final String key;
+
+  /**
+   * constructor.
+   * 
+   * @param attributeKey {@link String}
+   */
+  public EntityAttributeKeyPredicate(final String attributeKey) {
+    this.key = attributeKey;
+  }
+
+  @Override
+  public boolean test(final EntityAttribute a) {
+    return key.equals(a.getKey());
+  }
 }

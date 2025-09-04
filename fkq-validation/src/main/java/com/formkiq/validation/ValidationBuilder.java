@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 /**
@@ -51,6 +52,16 @@ public class ValidationBuilder {
    */
   public void isRequired(final String key, final String value) {
     isRequired(key, value, null);
+  }
+
+  /**
+   * Validate Field is required.
+   *
+   * @param key {@link Optional}
+   * @param value boolean
+   */
+  public void isRequired(final String key, final Optional<?> value) {
+    isRequired(key, value.orElse(null), "'" + key + "' is required");
   }
 
   /**

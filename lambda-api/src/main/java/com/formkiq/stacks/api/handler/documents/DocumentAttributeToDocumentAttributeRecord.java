@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api.handler.documents;
 
 import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.entity.EntityTypeNamespace;
 import com.formkiq.aws.dynamodb.entity.EntityTypeRecord;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.handler.entity.query.EntityTypeNameToIdQuery;
@@ -175,9 +176,9 @@ public class DocumentAttributeToDocumentAttributeRecord
     vb.isRequired("entityTypeId", a.getEntityTypeId());
     vb.check();
 
-    String namespace = a.getNamespace() != null ? a.getNamespace() : "";
+    EntityTypeNamespace namespace = EntityTypeNamespace.fromString(a.getNamespace());
     String entityTypeId = new EntityTypeNameToIdQuery().find(db, tableName, site, EntityTypeRecord
-        .builder().namespace(namespace).documentId(a.getEntityTypeId()).name("").build(site));
+        .builder().namespace(namespace).documentId(a.getEntityTypeId()).nameEmpty().build(site));
 
     String stringValue = entityTypeId + "#" + a.getEntityId();
 

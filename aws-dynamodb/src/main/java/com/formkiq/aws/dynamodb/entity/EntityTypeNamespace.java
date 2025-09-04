@@ -21,14 +21,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api.handler.entity;
-
-import com.formkiq.aws.dynamodb.entity.EntityTypeNamespace;
-import com.formkiq.graalvm.annotations.Reflectable;
+package com.formkiq.aws.dynamodb.entity;
 
 /**
- * Add Entity Type.
+ * {@link EntityTypeRecord} namespace.
  */
-@Reflectable
-record AddEntityType(String name, EntityTypeNamespace namespace) {
+public enum EntityTypeNamespace {
+  /** Predefined namespace. */
+  PRESET,
+  /** Custom namespace. */
+  CUSTOM;
+
+  /**
+   * Convert a string to the matching enum constant. Defaults to {@link #CUSTOM} if no match is
+   * found.
+   *
+   * @param value string to convert (case-insensitive)
+   * @return matching enum constant, or {@code CUSTOM} if none match
+   */
+  public static EntityTypeNamespace fromString(final String value) {
+    if (value != null) {
+      for (EntityTypeNamespace v : values()) {
+        if (v.name().equalsIgnoreCase(value)) {
+          return v;
+        }
+      }
+    }
+    return null;
+  }
 }

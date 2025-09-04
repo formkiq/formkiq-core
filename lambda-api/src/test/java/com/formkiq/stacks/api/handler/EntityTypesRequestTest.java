@@ -93,9 +93,7 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
       } catch (ApiException e) {
         // then
         assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
-        assertEquals(
-            "{\"errors\":[{\"key\":\"name\",\"error\":\"'name' is required\"},"
-                + "{\"key\":\"namespace\",\"error\":\"'namespace' is required\"}]}",
+        assertEquals("{\"errors\":[{\"key\":\"name\",\"error\":\"'name' is required\"}]}",
             e.getResponseBody());
       }
     }
@@ -121,8 +119,10 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
       } catch (ApiException e) {
         // then
         assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
-        assertEquals("{\"errors\":[{\"key\":\"namespace\","
-            + "\"error\":\"'namespace' unexpected value 'PRESET'\"}]}", e.getResponseBody());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"name\","
+                + "\"error\":\"unexpected value must be one of 'LlmPrompt'\"}]}",
+            e.getResponseBody());
       }
     }
   }
@@ -267,7 +267,7 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
         assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
         assertEquals(
             "{\"errors\":[{\"key\":\"namespace\",\"error\":\"'namespace' "
-                + "unexpected value 'nothing' must be one of PRESET, CUSTOM\"}]}",
+                + "unexpected value 'NOTHING' must be one of PRESET, CUSTOM\"}]}",
             e.getResponseBody());
       }
     }
@@ -280,7 +280,7 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testGetEntityTypes03() {
     // given
-    String id = "myentity";
+    String id = "Myentity";
     setBearerToken(new String[] {DEFAULT_SITE_ID});
 
     // when
@@ -346,7 +346,8 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
       // then
       assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
       assertEquals("{\"errors\":[{\"key\":\"namespace\","
-          + "\"error\":\"'namespace' unexpected value 'ADSAF'\"}]}", e.getResponseBody());
+          + "\"error\":\"'namespace' unexpected value 'ADSAF' must be one of "
+          + "PRESET, CUSTOM\"}]}", e.getResponseBody());
     }
   }
 
@@ -400,9 +401,68 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
     }
   }
 
+  /**
+   * Post /entityTypes with LlmPrompt Entity Type.
+   *
+   */
+  @Test
+  public void testAddLlmPromptEntityType() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      setBearerToken(new String[] {siteId});
+
+      AddEntityTypeRequest req = new AddEntityTypeRequest()
+          .entityType(new AddEntityType().name("LlmPrompt").namespace(EntityTypeNamespace.PRESET));
+
+      // when
+      AddEntityTypeResponse response = this.entityApi.addEntityType(req, siteId);
+
+      // then
+      assertNotNull(response.getEntityTypeId());
+      GetEntityTypesResponse results = this.entityApi.getEntityTypes(siteId, "preset", null, null);
+      List<EntityType> entityTypes = notNull(results.getEntityTypes());
+      assertEquals(1, entityTypes.size());
+      EntityType entityType = entityTypes.get(0);
+      assertEntityTypeEquals(entityType, "LlmPrompt", EntityTypeNamespace.PRESET);
+    }
+  }
+
+  /**
+   * Post /entityTypes with invalid Preset Entity Type.
+   *
+   */
+  @Test
+  public void testInvalidPresetEntityType() {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      setBearerToken(new String[] {siteId});
+
+      AddEntityTypeRequest req = new AddEntityTypeRequest()
+          .entityType(new AddEntityType().name("Something").namespace(EntityTypeNamespace.PRESET));
+
+      // when
+      try {
+        this.entityApi.addEntityType(req, siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"name\","
+                + "\"error\":\"unexpected value must be one of 'LlmPrompt'\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
   private void assertEntityTypeEquals(final EntityType entityType, final String name) {
+    assertEntityTypeEquals(entityType, name, EntityTypeNamespace.CUSTOM);
+  }
+
+  private void assertEntityTypeEquals(final EntityType entityType, final String name,
+      final EntityTypeNamespace namespace) {
     assertEquals(name, entityType.getName());
-    assertEquals(EntityTypeNamespace.CUSTOM, entityType.getNamespace());
+    assertEquals(namespace, entityType.getNamespace());
     assertNotNull(entityType.getEntityTypeId());
     assertNotNull(entityType.getInsertedDate());
     assertNotNull(DynamoDbTypes.toDate(entityType.getInsertedDate()));

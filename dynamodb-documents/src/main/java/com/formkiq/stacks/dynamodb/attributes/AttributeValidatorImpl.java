@@ -37,6 +37,7 @@ import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.entity.EntityRecord;
+import com.formkiq.aws.dynamodb.entity.EntityTypeNamespace;
 import com.formkiq.aws.dynamodb.entity.EntityTypeRecord;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.stacks.dynamodb.schemas.Schema;
@@ -269,8 +270,8 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
 
     if (vb.isEmpty()) {
       String[] s = a.getStringValue().split("#");
-      DynamoDbKey entityType =
-          EntityTypeRecord.builder().name("").namespace("").documentId(s[0]).buildKey(siteId);
+      DynamoDbKey entityType = EntityTypeRecord.builder().nameEmpty()
+          .namespace(EntityTypeNamespace.CUSTOM).documentId(s[0]).buildKey(siteId);
       vb.isRequired("entityTypeId", this.db.exists(entityType), "EntityTypeId does not exist");
 
       DynamoDbKey entity =

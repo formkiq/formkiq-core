@@ -3,31 +3,33 @@ description = "FormKiQ Core - Lambda S3 Graalvm"
 apply plugin: 'distribution'
 
 def getCmd() {
-    String os = System.getProperty("os.name").toLowerCase()
-    return os.contains("win") ? "cmd" : "bash"
+  String os = System.getProperty("os.name").toLowerCase()
+  return os.contains("win") ? "cmd" : "bash"
 }
 
 def getCmdParam() {
-    String os = System.getProperty("os.name").toLowerCase()
-    return os.contains("win") ? "/c" : "-c"
+  String os = System.getProperty("os.name").toLowerCase()
+  return os.contains("win") ? "/c" : "-c"
 }
 
 dependencies {
-    implementation project(':lambda-s3')
+  implementation project(':lambda-s3')
 }
 
 compileJava {
-    options.annotationProcessorPath += configurations.runtimeClasspath
+  options.annotationProcessorPath += configurations.runtimeClasspath
 }
 
-nativeImage { 
-    outputFileName = "server"
-    dockerImage = "ghcr.io/graalvm/graalvm-ce:ol9-java17-22.3.3"
-    mainClassName = "com.formkiq.lambda.runtime.graalvm.LambdaRuntime"
-    enableHttp = true
-    enableHttps = true
-    enableStatic = true
-    systemProperty = ["java.net.preferIPv4Stack=true"]
+nativeImage {
+  outputFileName = "server"
+  dockerImage = "ghcr.io/graalvm/graalvm-ce:ol9-java17-22.3.3"
+  mainClassName = "com.formkiq.lambda.runtime.graalvm.LambdaRuntime"
+  enableHttp = true
+  enableHttps = true
+  enableStatic = true
+  systemProperty = [
+    "java.net.preferIPv4Stack=true"
+  ]
 }
 
 test {
@@ -36,100 +38,100 @@ test {
 }
 
 task buildTemplate {
-	inputs.files("src/main/resources/cloudformation/template-sar.yaml")
-	outputs.files("${buildDir}/distributions/storage/template.yaml")
+  inputs.files("src/main/resources/cloudformation/template-sar.yaml")
+  outputs.files("${buildDir}/distributions/storage/template.yaml")
 
-	def randomtext = ('0'..'z').shuffled().take(10).join();
-	def sha256 = randomtext.digest('SHA-256')
+  def randomtext = ('0'..'z').shuffled().take(10).join();
+  def sha256 = randomtext.digest('SHA-256')
 
-	doLast {
-	    
-		exec {
-			commandLine getCmd(), getCmdParam(), "ytt --data-value hash=${sha256} -f src/main/resources/cloudformation/template-sar.yaml > ${buildDir}/distributions/storage/template.yaml"
-		}
-	}
+  doLast {
+
+    exec {
+      commandLine getCmd(), getCmdParam(), "ytt --data-value hash=${sha256} -f src/main/resources/cloudformation/template-sar.yaml > ${buildDir}/distributions/storage/template.yaml"
+    }
+  }
 }
 
 tasks.distTar.enabled = false
 
 distZip {
-    archiveFileName = "storage/lambda-s3-graalvm.zip"
+  archiveFileName = "storage/lambda-s3-graalvm.zip"
 }
 
 distributions {
-    main {
-        contents {
-            from("runtime/") {
-            	include "bootstrap"
-            }
-            from ("${buildDir}/graalvm") {
-                include '**/**'
-            }
-            into '/'
-        }
+  main {
+    contents {
+      from("runtime/") {
+        include "bootstrap"
+      }
+      from ("${buildDir}/graalvm") {
+        include '**/**'
+      }
+      into '/'
     }
+  }
 }
 
 tasks.register('buildZip', Zip) {
-    archiveFileName = "lambda-s3-graalvm.zip"
-    destinationDirectory = layout.buildDirectory.dir('dist')
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+  archiveFileName = "lambda-s3-graalvm.zip"
+  destinationDirectory = layout.buildDirectory.dir('dist')
+  duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 
-    from("${project.projectDir}/lib") {
-        include '**/**'
-    }
-    from("${project.projectDir}/runtime") {
-        include 'bootstrap'
-    }
-    from("${buildDir}/graalvm") {
-        include '**/**'
-    }
+  from("${project.projectDir}/lib") {
+    include '**/**'
+  }
+  from("${project.projectDir}/runtime") {
+    include 'bootstrap'
+  }
+  from("${buildDir}/graalvm") {
+    include '**/**'
+  }
 }
 
 task copyRuntimeClasspath(type: Copy) {
-    description = 'Copies all runtime classpath dependencies to build/libs'
-    from configurations.runtimeClasspath
-    into "$buildDir/libs"
+  description = 'Copies all runtime classpath dependencies to build/libs'
+  from configurations.runtimeClasspath
+  into "$buildDir/libs"
 }
 
 jar.dependsOn(copyRuntimeClasspath)
 
 task buildDockerAndCopyServer {
-    description = 'Builds Docker image, creates a container, copies the server ZIP, and removes the container.'
+  description = 'Builds Docker image, creates a container, copies the server ZIP, and removes the container.'
 
-    // Ensure that the Docker commands are executed in order
-    doLast {
-        // Step 1: Build the Docker image
-        println 'Building Docker image: amazonlinux-graalvm:latest'
-        exec {
-            commandLine 'docker', 'build', '-t', 'amazonlinux-graalvm:latest', '.'
-        }
-
-        // Step 2: Create a container from the image
-        println 'Creating Docker container: temp-container'
-        exec {
-            commandLine 'docker', 'create', '--name', 'temp-container', 'amazonlinux-graalvm:latest'
-        }
-
-        // Step 4: Copy the ZIP file from the container to the host
-        println 'Copying /graalvm.zip from Docker container'
-        exec {
-            commandLine 'docker', 'cp', 'temp-container:/graalvm.zip', "$buildDir/graalvm.zip"
-        }
-
-        // Step 5: Remove the temporary container
-        println 'Removing temporary Docker container: temp-container'
-        exec {
-            commandLine 'docker', 'rm', 'temp-container'
-        }
-
-        println 'Docker build and copy process completed successfully.'
+  // Ensure that the Docker commands are executed in order
+  doLast {
+    // Step 1: Build the Docker image
+    println 'Building Docker image: amazonlinux-graalvm:latest'
+    exec {
+      commandLine 'docker', 'build', '-t', 'amazonlinux-graalvm:latest', '.'
     }
+
+    // Step 2: Create a container from the image
+    println 'Creating Docker container: temp-container'
+    exec {
+      commandLine 'docker', 'create', '--name', 'temp-container', 'amazonlinux-graalvm:latest'
+    }
+
+    // Step 4: Copy the ZIP file from the container to the host
+    println 'Copying /graalvm.zip from Docker container'
+    exec {
+      commandLine 'docker', 'cp', 'temp-container:/graalvm.zip', "$buildDir/graalvm.zip"
+    }
+
+    // Step 5: Remove the temporary container
+    println 'Removing temporary Docker container: temp-container'
+    exec {
+      commandLine 'docker', 'rm', 'temp-container'
+    }
+
+    println 'Docker build and copy process completed successfully.'
+  }
 }
 
 tasks.register('unzipFile', Copy) {
-    from zipTree("$buildDir/graalvm.zip")
-    into "$buildDir/graalvm"
+  from zipTree("$buildDir/graalvm.zip")
+  into "$buildDir/graalvm"
 }
 
 buildDockerAndCopyServer.dependsOn test, jar

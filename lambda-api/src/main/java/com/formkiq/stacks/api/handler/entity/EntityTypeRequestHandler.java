@@ -30,6 +30,7 @@ import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbQueryBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.entity.EntityRecord;
+import com.formkiq.aws.dynamodb.entity.EntityTypeNamespace;
 import com.formkiq.aws.dynamodb.entity.EntityTypeRecord;
 import com.formkiq.aws.dynamodb.useractivities.ActivityResourceType;
 import com.formkiq.aws.dynamodb.useractivities.AttributeValuesToChangeRecordFunction;
@@ -69,11 +70,12 @@ public class EntityTypeRequestHandler
 
     String siteId = authorization.getSiteId();
     String entityTypeId = event.getPathParameter("entityTypeId");
+    EntityTypeNamespace namespace = new QueryParameterNamespace().apply(event);
 
     DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
 
     EntityTypeRecord.Builder builder =
-        EntityTypeRecord.builder().documentId(entityTypeId).namespace("").name("");
+        EntityTypeRecord.builder().documentId(entityTypeId).namespace(namespace).name("");
 
     Map<String, AttributeValue> attributes = db.get(builder.buildKey(siteId));
 
@@ -98,8 +100,10 @@ public class EntityTypeRequestHandler
 
     String siteId = authorization.getSiteId();
     String entityTypeId = event.getPathParameter("entityTypeId");
+    EntityTypeNamespace namespace = new QueryParameterNamespace().apply(event);
 
-    Map<String, AttributeValue> attributes = validateDelete(awsservice, siteId, entityTypeId);
+    Map<String, AttributeValue> attributes =
+        validateDelete(awsservice, siteId, entityTypeId, namespace);
 
     Map<String, ChangeRecord> changes =
         new AttributeValuesToChangeRecordFunction(Map.of("documentId", "entityTypeId"))
@@ -107,8 +111,8 @@ public class EntityTypeRequestHandler
     UserActivityContext.set(ActivityResourceType.ENTITY_TYPE, UserActivityType.DELETE, changes,
         Collections.emptyMap());
 
-    DynamoDbKey entityTypeKey = EntityTypeRecord.builder().documentId(entityTypeId).namespace("")
-        .name("").build(siteId).key();
+    DynamoDbKey entityTypeKey = EntityTypeRecord.builder().documentId(entityTypeId)
+        .namespace(namespace, EntityTypeNamespace.CUSTOM).name("").buildKey(siteId);
 
     DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
     if (!db.deleteItem(entityTypeKey)) {
@@ -119,13 +123,14 @@ public class EntityTypeRequestHandler
   }
 
   private Map<String, AttributeValue> validateDelete(final AwsServiceCache awsservice,
-      final String siteId, final String entityTypeId) throws ValidationException {
+      final String siteId, final String entityTypeId, final EntityTypeNamespace namespace)
+      throws ValidationException {
 
     DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
     String tableName = awsservice.environment("DOCUMENTS_TABLE");
 
-    DynamoDbKey entityTypeKey =
-        EntityTypeRecord.builder().documentId(entityTypeId).namespace("").name("").buildKey(siteId);
+    DynamoDbKey entityTypeKey = EntityTypeRecord.builder().documentId(entityTypeId)
+        .namespace(namespace, EntityTypeNamespace.CUSTOM).nameEmpty().buildKey(siteId);
 
     Map<String, AttributeValue> entityType = db.get(entityTypeKey);
 
