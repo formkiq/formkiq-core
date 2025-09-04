@@ -45,7 +45,7 @@ import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.useractivity.UserActivityContext;
-import com.formkiq.stacks.api.handler.entity.query.EntityTypeNameToIdQuery;
+import com.formkiq.aws.dynamodb.entity.EntityTypeNameToIdQuery;
 import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;

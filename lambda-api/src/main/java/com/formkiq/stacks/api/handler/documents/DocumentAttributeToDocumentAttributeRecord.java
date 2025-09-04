@@ -27,7 +27,7 @@ import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.entity.EntityTypeNamespace;
 import com.formkiq.aws.dynamodb.entity.EntityTypeRecord;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.api.handler.entity.query.EntityTypeNameToIdQuery;
+import com.formkiq.aws.dynamodb.entity.EntityTypeNameToIdQuery;
 import com.formkiq.stacks.dynamodb.attributes.AttributeKeyReserved;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecordBuilder;

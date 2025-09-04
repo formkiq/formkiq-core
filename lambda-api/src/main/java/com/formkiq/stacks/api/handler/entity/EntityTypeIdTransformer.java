@@ -29,7 +29,7 @@ import com.formkiq.aws.dynamodb.entity.EntityTypeRecord;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.api.handler.entity.query.EntityTypeNameToIdQuery;
+import com.formkiq.aws.dynamodb.entity.EntityTypeNameToIdQuery;
 
 import java.util.function.BiFunction;
 import java.util.function.Function;

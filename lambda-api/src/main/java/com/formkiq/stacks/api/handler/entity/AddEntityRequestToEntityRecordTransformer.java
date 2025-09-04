@@ -92,14 +92,7 @@ public class AddEntityRequestToEntityRecordTransformer implements ApiGatewayRequ
     AddEntityRequest request = getEntityRequest(siteId, event, entityTypeId, entityId);
 
     EntityTypeRecord entityType = validate(siteId, entityTypeId, request);
-
-    // AddEntity addEntity = request.entity();
-    // List<EntityAttribute> entityAttributes =
-    // notNull(addEntity.attributes()).stream().map(new AddEntityAttributeMapper()).toList();
-
     EntityRecord entity = getEntityRecord(siteId, request, entityType, entityId);
-    // EntityRecord.builder().documentId(entityId).name(addEntity.name())
-    // .entityTypeId(entityTypeId).attributes(entityAttributes).build(siteId);
 
     Map<String, AttributeValue> attributes = entity.getAttributes();
 
@@ -129,7 +122,7 @@ public class AddEntityRequestToEntityRecordTransformer implements ApiGatewayRequ
   private EntityRecord getEntityRecord(final String siteId, final AddEntityRequest request,
       final EntityTypeRecord entityType, final String entityId) {
 
-    EntityRecord entity = null;
+    EntityRecord entity;
     AddEntity addEntity = request.entity();
     List<EntityAttribute> entityAttributes =
         notNull(addEntity.attributes()).stream().map(new AddEntityAttributeMapper()).toList();

@@ -21,14 +21,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api.handler.entity.query;
+package com.formkiq.aws.dynamodb.entity;
 
 import com.formkiq.aws.dynamodb.DynamoDbFind;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbQuery;
 import com.formkiq.aws.dynamodb.DynamoDbQueryBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
-import com.formkiq.aws.dynamodb.entity.EntityTypeRecord;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.validation.ValidationBuilder;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
