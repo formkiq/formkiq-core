@@ -30,5 +30,5 @@ import com.formkiq.graalvm.annotations.Reflectable;
  * Add Entity Type.
  */
 @Reflectable
-record AddEntityType(String name, EntityTypeNamespace namespace) {
+public record AddEntityType(String name, EntityTypeNamespace namespace) {
 }
