@@ -28,6 +28,7 @@ import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.stacks.dynamodb.DocumentService;
@@ -62,7 +63,7 @@ public class PublishAction implements DocumentAction {
   }
 
   @Override
-  public void run(final Logger logger, final String siteId, final String documentId,
+  public ProcessActionStatus run(final Logger logger, final String siteId, final String documentId,
       final List<Action> actions, final Action action) throws IOException, ValidationException {
 
     DocumentItem item = this.documentService.findDocument(siteId, documentId);
@@ -75,5 +76,6 @@ public class PublishAction implements DocumentAction {
 
     this.documentService.publishDocument(siteId, documentId, s3version, item.getPath(), contentType,
         action.userId());
+    return new ProcessActionStatus(ActionStatus.COMPLETE, true);
   }
 }

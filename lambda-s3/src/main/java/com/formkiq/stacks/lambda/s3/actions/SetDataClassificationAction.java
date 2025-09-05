@@ -23,59 +23,59 @@
  */
 package com.formkiq.stacks.lambda.s3.actions;
 
-import com.formkiq.aws.dynamodb.objects.Strings;
-import com.formkiq.aws.eventbridge.EventBridgeMessage;
-import com.formkiq.aws.eventbridge.EventBridgeService;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.logger.LogLevel;
 import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.stacks.lambda.s3.DocumentAction;
 import com.formkiq.stacks.lambda.s3.ProcessActionStatus;
-import com.formkiq.validation.ValidationException;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
- * Event Bridge implementation of {@link DocumentAction}.
+ * DocumentAction for DataClassification {@link Action}.
  */
-public class EventBridgeAction implements DocumentAction {
+public class SetDataClassificationAction implements DocumentAction {
 
-  /** {@link EventBridgeService}. */
-  private final EventBridgeService eventBridgeService;
-  /** App Environment. */
-  private final String appEnvironment;
-  /** {@link DocumentExternalSystemExport}. */
-  private final DocumentExternalSystemExport systemExport;
+  /** {@link SendHttpRequest}. */
+  private final SendHttpRequest http;
+  /** {@link Gson}. */
+  private final Gson gson = new GsonBuilder().create();
 
   /**
    * constructor.
    *
    * @param serviceCache {@link AwsServiceCache}
    */
-  public EventBridgeAction(final AwsServiceCache serviceCache) {
-    this.eventBridgeService = serviceCache.getExtension(EventBridgeService.class);
-    this.appEnvironment = serviceCache.environment("APP_ENVIRONMENT");
-    this.systemExport = new DocumentExternalSystemExport(serviceCache);
+  public SetDataClassificationAction(final AwsServiceCache serviceCache) {
+    this.http = new SendHttpRequest(serviceCache);
   }
 
   @Override
   public ProcessActionStatus run(final Logger logger, final String siteId, final String documentId,
-      final List<Action> actions, final Action action) throws IOException, ValidationException {
+      final List<Action> actions, final Action action) throws IOException {
+    Map<String, Object> payload = buildPayload(action);
+    String json = this.gson.toJson(payload);
 
-    String eventBusName = (String) action.parameters().get("eventBusName");
-
-    if (Strings.isEmpty(eventBusName)) {
-      throw new IOException("'eventBusName' missing");
+    if (logger.isLogged(LogLevel.DEBUG)) {
+      String s = String.format("{\"type\",\"%s\",\"method\":\"%s\",\"url\":\"%s\",\"body\":\"%s\"}",
+          "ocr", "POST", "/documents/" + documentId + "/dataClassification", json);
+      logger.debug(s);
     }
 
-    String detailType = "Document Action Event";
-    String detail = this.systemExport.apply(siteId, documentId);
+    this.http.sendRequest(siteId, "put", "/documents/" + documentId + "/dataClassification", json);
+    return new ProcessActionStatus(ActionStatus.COMPLETE, false);
+  }
 
-    EventBridgeMessage msg =
-        new EventBridgeMessageBuilder().build(this.appEnvironment, detailType, detail);
-    eventBridgeService.putEvents(eventBusName, msg);
-    return new ProcessActionStatus(ActionStatus.COMPLETE, true);
+  private Map<String, Object> buildPayload(final Action action) {
+    Map<String, Object> parameters =
+        action.parameters() != null ? action.parameters() : new HashMap<>();
+    return Map.of("llmPromptEntityName", parameters.get("llmPromptEntityName"));
   }
 }

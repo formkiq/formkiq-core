@@ -37,6 +37,7 @@ import com.formkiq.module.typesense.TypeSenseService;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.lambda.s3.DocumentAction;
 import com.formkiq.stacks.lambda.s3.DocumentContentFunction;
+import com.formkiq.stacks.lambda.s3.ProcessActionStatus;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -93,7 +94,7 @@ public class FullTextAction implements DocumentAction {
   }
 
   @Override
-  public void run(final Logger logger, final String siteId, final String documentId,
+  public ProcessActionStatus run(final Logger logger, final String siteId, final String documentId,
       final List<Action> actions, final Action action) throws IOException {
 
     ActionStatus status = ActionStatus.PENDING;
@@ -138,6 +139,7 @@ public class FullTextAction implements DocumentAction {
 
     action.status(status);
     this.actionsService.updateActionStatus(siteId, documentId, action);
+    return new ProcessActionStatus(ActionStatus.COMPLETE, false);
   }
 
   private void debug(final Logger logger, final String siteId, final DocumentItem item) {

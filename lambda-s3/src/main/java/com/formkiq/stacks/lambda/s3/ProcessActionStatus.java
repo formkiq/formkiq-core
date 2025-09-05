@@ -23,32 +23,13 @@
  */
 package com.formkiq.stacks.lambda.s3;
 
-import java.io.IOException;
-import java.util.List;
-
-import com.formkiq.module.actions.Action;
-import com.formkiq.module.lambdaservices.logger.Logger;
-import com.formkiq.validation.ValidationException;
+import com.formkiq.module.actions.ActionStatus;
 
 /**
+ * Process Action Status.
  * 
- * Document Action interface.
- *
+ * @param actionStatus {@link ActionStatus}
+ * @param updateComplete boolean
  */
-public interface DocumentAction {
-
-  /**
-   * Run Action.
-   * 
-   * @param logger {@link Logger}
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param actions {@link List} {@link Action}
-   * @param action {@link Action}
-   * @return ProcessActionStatus
-   * @throws IOException IOException
-   * @throws ValidationException ValidationException
-   */
-  ProcessActionStatus run(Logger logger, String siteId, String documentId, List<Action> actions,
-      Action action) throws IOException, ValidationException;
+public record ProcessActionStatus(ActionStatus actionStatus, boolean updateComplete) {
 }

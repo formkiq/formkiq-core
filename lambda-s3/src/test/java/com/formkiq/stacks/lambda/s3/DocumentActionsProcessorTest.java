@@ -911,6 +911,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       // then
       HttpRequest lastRequest = CALLBACK.getLastRequest();
       assertTrue(lastRequest.getPath().toString().endsWith("/ocr"));
+      assertEquals("POST", lastRequest.getMethod().getValue());
       Map<String, Object> resultmap = GSON.fromJson(lastRequest.getBodyAsString(), Map.class);
       assertEquals("[TEXT]", resultmap.get("parseTypes").toString());
       assertEquals("true", resultmap.get("addPdfDetectedCharactersAsText").toString());
@@ -2589,4 +2590,39 @@ public class DocumentActionsProcessorTest implements DbKeys {
     response.messages().forEach(m -> sqsService.deleteMessage(sqsQueueUrl, m.receiptHandle()));
     return response;
   }
+
+  /**
+   * Handle Data Classification Action.
+   *
+   */
+  @Test
+  public void testHandleDataClassification01() {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      String documentId = ID.uuid();
+      List<Action> actions =
+          Collections.singletonList(new Action().type(ActionType.DATA_CLASSIFICATION).userId("joe")
+              .parameters(Map.of("llmPromptEntityName", "Myprompt")));
+      actionsService.saveNewActions(siteId, documentId, actions);
+
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+
+      // when
+      processor.handleRequest(map, null);
+
+      // then
+      HttpRequest lastRequest = CALLBACK.getLastRequest();
+      assertTrue(lastRequest.getPath().toString().endsWith("/dataClassification"));
+      assertEquals("PUT", lastRequest.getMethod().getValue());
+      Map<String, Object> resultmap = GSON.fromJson(lastRequest.getBodyAsString(), Map.class);
+      assertEquals("Myprompt", resultmap.get("llmPromptEntityName").toString());
+
+      Action action = actionsService.getActions(siteId, documentId).get(0);
+      assertEquals(ActionStatus.RUNNING, action.status());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertNull(action.completedDate());
+    }
+  }
+
 }

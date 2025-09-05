@@ -46,6 +46,7 @@ import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.http.HttpHeaders;
 import com.formkiq.module.http.HttpService;
@@ -57,6 +58,7 @@ import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import com.formkiq.stacks.lambda.s3.DocumentAction;
 import com.formkiq.stacks.lambda.s3.DocumentContentFunction;
+import com.formkiq.stacks.lambda.s3.ProcessActionStatus;
 import com.formkiq.stacks.lambda.s3.openai.OpenAiChatCompletionsChoice;
 import com.formkiq.stacks.lambda.s3.openai.OpenAiChatCompletionsChoiceMessage;
 import com.formkiq.stacks.lambda.s3.openai.OpenAiChatCompletionsChoiceMessageFunctionCall;
@@ -237,7 +239,7 @@ public class DocumentTaggingAction implements DocumentAction {
   }
 
   @Override
-  public void run(final Logger logger, final String siteId, final String documentId,
+  public ProcessActionStatus run(final Logger logger, final String siteId, final String documentId,
       final List<Action> actions, final Action action) throws IOException {
 
     String engine = (String) action.parameters().get("engine");
@@ -246,6 +248,8 @@ public class DocumentTaggingAction implements DocumentAction {
     } else {
       throw new IOException("Unknown engine: " + engine);
     }
+
+    return new ProcessActionStatus(ActionStatus.COMPLETE, true);
   }
 
   /**

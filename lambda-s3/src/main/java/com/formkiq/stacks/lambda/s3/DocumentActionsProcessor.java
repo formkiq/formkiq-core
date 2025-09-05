@@ -91,6 +91,7 @@ import com.formkiq.stacks.lambda.s3.actions.FullTextAction;
 import com.formkiq.stacks.lambda.s3.actions.IdpAction;
 import com.formkiq.stacks.lambda.s3.actions.NotificationAction;
 import com.formkiq.stacks.lambda.s3.actions.PdfExportAction;
+import com.formkiq.stacks.lambda.s3.actions.SetDataClassificationAction;
 import com.formkiq.stacks.lambda.s3.actions.resize.ResizeAction;
 import com.formkiq.stacks.lambda.s3.actions.SendHttpRequest;
 import com.formkiq.stacks.lambda.s3.event.AwsEvent;
@@ -282,78 +283,80 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
       final List<Action> actions, final Action action)
       throws IOException, InterruptedException, ValidationException {
 
-    ActionStatus completeStatus = ActionStatus.COMPLETE;
-
     logAction(logger, "action start", siteId, documentId, action);
 
-    boolean updateComplete = false;
+    ProcessActionStatus actionStatus = performAction(logger, siteId, documentId, actions, action);
+
+    logAction(logger, "action complete", siteId, documentId, action);
+
+    if (actionStatus.updateComplete()) {
+      updateComplete(logger, siteId, documentId, actions, action, actionStatus.actionStatus());
+    }
+  }
+
+  private ProcessActionStatus performAction(final Logger logger, final String siteId,
+      final String documentId, final List<Action> actions, final Action action)
+      throws IOException, InterruptedException {
+    ProcessActionStatus actionStatus;
     switch (action.type()) {
-      case QUEUE -> {
-        completeStatus = ActionStatus.IN_QUEUE;
-        updateComplete = true;
-      }
+      case QUEUE -> actionStatus = new ProcessActionStatus(ActionStatus.IN_QUEUE, true);
 
       case DOCUMENTTAGGING -> {
         DocumentTaggingAction dtAction = new DocumentTaggingAction(serviceCache);
-        dtAction.run(logger, siteId, documentId, actions, action);
-
-        updateComplete = true;
+        actionStatus = dtAction.run(logger, siteId, documentId, actions, action);
       }
 
-      case OCR -> new AddOcrAction(serviceCache).run(logger, siteId, documentId, actions, action);
+      case OCR -> actionStatus =
+          new AddOcrAction(serviceCache).run(logger, siteId, documentId, actions, action);
 
-      case FULLTEXT ->
-        new FullTextAction(serviceCache).run(logger, siteId, documentId, actions, action);
+      case FULLTEXT -> actionStatus =
+          new FullTextAction(serviceCache).run(logger, siteId, documentId, actions, action);
 
-      case ANTIVIRUS -> new SendHttpRequest(serviceCache).sendRequest(siteId, "PUT",
-          "/documents/" + documentId + "/antivirus", "");
+      case ANTIVIRUS -> {
+        new SendHttpRequest(serviceCache).sendRequest(siteId, "PUT",
+            "/documents/" + documentId + "/antivirus", "");
+        actionStatus = new ProcessActionStatus(ActionStatus.COMPLETE, false);
+      }
 
-      case WEBHOOK -> sendWebhook(logger, siteId, documentId, actions, action);
+      case WEBHOOK -> {
+        sendWebhook(logger, siteId, documentId, actions, action);
+        actionStatus = new ProcessActionStatus(ActionStatus.COMPLETE, false);
+      }
 
       case NOTIFICATION -> {
         DocumentAction da = new NotificationAction(siteId, serviceCache);
-        da.run(logger, siteId, documentId, actions, action);
-
-        updateComplete = true;
+        actionStatus = da.run(logger, siteId, documentId, actions, action);
       }
 
       case IDP -> {
         DocumentAction da = new IdpAction(serviceCache);
-        da.run(logger, siteId, documentId, actions, action);
-        updateComplete = true;
+        actionStatus = da.run(logger, siteId, documentId, actions, action);
       }
 
       case PUBLISH -> {
         DocumentAction da = new PublishAction(serviceCache);
-        da.run(logger, siteId, documentId, actions, action);
-        updateComplete = true;
+        actionStatus = da.run(logger, siteId, documentId, actions, action);
       }
 
       case PDFEXPORT -> {
         DocumentAction da = new PdfExportAction(serviceCache);
-        da.run(logger, siteId, documentId, actions, action);
-        updateComplete = true;
+        actionStatus = da.run(logger, siteId, documentId, actions, action);
       }
 
       case EVENTBRIDGE -> {
         DocumentAction da = new EventBridgeAction(serviceCache);
-        da.run(logger, siteId, documentId, actions, action);
-        updateComplete = true;
+        actionStatus = da.run(logger, siteId, documentId, actions, action);
       }
 
-      case RESIZE -> {
-        new ResizeAction(serviceCache).run(logger, siteId, documentId, actions, action);
-        updateComplete = true;
-      }
+      case RESIZE -> actionStatus =
+          new ResizeAction(serviceCache).run(logger, siteId, documentId, actions, action);
+
+      case DATA_CLASSIFICATION -> actionStatus = new SetDataClassificationAction(serviceCache)
+          .run(logger, siteId, documentId, actions, action);
 
       default -> throw new IOException("Unhandled Action Type: " + action.type());
     }
-
-    logAction(logger, "action complete", siteId, documentId, action);
-
-    if (updateComplete) {
-      updateComplete(logger, siteId, documentId, actions, action, completeStatus);
-    }
+    return actionStatus;
   }
 
   /**
