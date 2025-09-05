@@ -40,5 +40,5 @@ public record AddActionParameters(List<AwsTextractQuery> ocrTextractQueries, Str
     String notificationType, String notificationToCc, String notificationToBcc,
     String notificationSubject, String notificationText, String notificationHtml, String tags,
     String mappingId, String eventBusName, String width, String height, String path,
-    String outputType) {
+    String outputType, String llmPromptEntityName) {
 }

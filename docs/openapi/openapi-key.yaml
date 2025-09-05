@@ -2957,6 +2957,7 @@
                 | OCR | ocrOutputType     | Convert OCR result to an Output format (textract table only) | true |
                 | OCR | ocrNumberOfPages  | Number of pages to OCR (from start) | -1 |
                 | OCR    | addPdfDetectedCharactersAsText | PDF Documents convert images to text | true or false |
+                | DATA_CLASSIFICATION | llmPromptEntityName | LLM Prompt Entity Name |
                 | FULLTEXT    | characterMax    | Maximum number of characters to add to Fulltext destination | -1 |
                 | DOCUMENTTAGGING    | engine    | Tagging Engine to use | chatgpt |
                 | DOCUMENTTAGGING    | tags    | Comma-deliminted list of keywords | author,title,description |
@@ -11103,6 +11104,7 @@
               - PDFEXPORT
               - EVENTBRIDGE
               - RESIZE
+              - DATA_CLASSIFICATION
             DocumentAction:
               type: object
               properties:
@@ -11459,6 +11461,9 @@
                 addPdfDetectedCharactersAsText:
                   type: string
                   description: 'OCR: For the rewriting of the PDF document, converting any image text to searchable text'
+                llmPromptEntityName:
+                  type: string
+                  description: 'DATA_CLASSIFICATION: Set the LLM Prompt Entity Name'
                 url:
                   type: string
                   description: 'Webhook: Callback URL'

@@ -25,14 +25,13 @@ package com.formkiq.stacks.api.handler.entity;
 
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.entity.EntityTypeNamespace;
-import com.formkiq.aws.dynamodb.entity.EntityTypeRecord;
-import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.aws.dynamodb.entity.EntityTypeNameToIdQuery;
+import com.formkiq.aws.dynamodb.entity.FindEntityTypeByName;
 
 import java.util.function.BiFunction;
 import java.util.function.Function;
+
 
 /**
  * {@link Function} to convert {@link ApiGatewayRequestEvent} to EntityTypeId {@link String}.
@@ -59,12 +58,7 @@ public class EntityTypeIdTransformer implements BiFunction<String, ApiGatewayReq
     EntityTypeNamespace namespace = new QueryParameterNamespace().apply(event);
     String entityTypeId = event.getPathParameter("entityTypeId");
 
-    if (!Strings.isUuid(entityTypeId)) {
-      EntityTypeRecord entityType = EntityTypeRecord.builder().namespace(namespace)
-          .documentId(entityTypeId).name(entityTypeId).build(siteId);
-      entityTypeId = new EntityTypeNameToIdQuery().find(db, tableName, siteId, entityType);
-    }
-
-    return entityTypeId;
+    return new FindEntityTypeByName().find(db, tableName, siteId,
+        new FindEntityTypeByName.EntityTypeName(namespace, entityTypeId));
   }
 }

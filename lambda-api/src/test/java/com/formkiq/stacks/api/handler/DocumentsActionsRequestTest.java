@@ -37,6 +37,10 @@ import java.util.List;
 import java.util.Map;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.entity.EntityRecord;
+import com.formkiq.aws.dynamodb.entity.EntityTypeNamespace;
+import com.formkiq.aws.dynamodb.entity.EntityTypeRecord;
+import com.formkiq.aws.dynamodb.entity.PresetEntity;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.model.AddAttribute;
 import com.formkiq.client.model.AddAttributeRequest;
@@ -837,6 +841,104 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
           response.getNext());
       assertEquals(1, notNull(response.getActions()).size());
       assertEquals(DocumentActionType.FULLTEXT, response.getActions().get(0).getType());
+    }
+  }
+
+  /**
+   * POST /documents/{documentId}/actions for Data classification.
+   *
+   */
+  @Test
+  public void testDataClassificationMissingPrompt() {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      String documentId = saveDocument(siteId);
+      AddDocumentActionsRequest req = new AddDocumentActionsRequest().actions(
+          Collections.singletonList(new AddAction().type(DocumentActionType.DATA_CLASSIFICATION)));
+
+      // when
+      try {
+        this.documentActionsApi.addDocumentActions(documentId, siteId, req);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"parameters.llmPromptEntityName\","
+                + "\"error\":\"action 'llmPromptEntityName' parameter is required\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * POST /documents/{documentId}/actions for Data classification.
+   *
+   */
+  @Test
+  public void testDataClassificationPrompt() throws ApiException {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      String documentId = saveDocument(siteId);
+      EntityTypeRecord entityTypeRecord =
+          EntityTypeRecord.builder().documentId(ID.uuid()).namespace(EntityTypeNamespace.PRESET)
+              .name(PresetEntity.LLM_PROMPT.getName()).build(siteId);
+      db.putItem(entityTypeRecord.getAttributes());
+
+      EntityRecord entity = EntityRecord.builder().entityTypeId(entityTypeRecord.documentId())
+          .documentId(ID.uuid()).name("Myllm").build(siteId);
+      db.putItem(entity.getAttributes());
+
+      AddActionParameters param = new AddActionParameters().llmPromptEntityName("Myllm");
+
+      AddDocumentActionsRequest req =
+          new AddDocumentActionsRequest().actions(Collections.singletonList(
+              new AddAction().type(DocumentActionType.DATA_CLASSIFICATION).parameters(param)));
+
+      // when
+      AddDocumentActionsResponse response =
+          this.documentActionsApi.addDocumentActions(documentId, siteId, req);
+
+      // then
+      assertEquals("Actions saved", response.getMessage());
+    }
+  }
+
+  /**
+   * POST /documents/{documentId}/actions for Data classification does not exist.
+   *
+   */
+  @Test
+  public void testDataClassificationPromptDoesNotExist() {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      String documentId = saveDocument(siteId);
+
+      AddActionParameters param = new AddActionParameters().llmPromptEntityName("myllm");
+
+      AddDocumentActionsRequest req =
+          new AddDocumentActionsRequest().actions(Collections.singletonList(
+              new AddAction().type(DocumentActionType.DATA_CLASSIFICATION).parameters(param)));
+
+      // when
+      try {
+        this.documentActionsApi.addDocumentActions(documentId, siteId, req);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"errors\":[{\"key\":\"entityTypeId\","
+            + "\"error\":\"EntityType 'LlmPrompt' is not found\"}]}", e.getResponseBody());
+      }
     }
   }
 }

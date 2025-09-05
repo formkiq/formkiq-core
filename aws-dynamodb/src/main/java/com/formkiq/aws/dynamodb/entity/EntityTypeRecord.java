@@ -197,7 +197,10 @@ public record EntityTypeRecord(DynamoDbKey key, String documentId, EntityTypeNam
       return new EntityTypeRecord(key, documentId, namespace, name, insertedDate);
     }
 
-    private void validate() {
+    /**
+     * Validate if {@link EntityTypeRecord} is valid.
+     */
+    public void validate() {
       ValidationBuilder vb = new ValidationBuilder();
 
       vb.isRequired("name", name);

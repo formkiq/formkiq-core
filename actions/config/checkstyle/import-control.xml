@@ -6,7 +6,9 @@
 <import-control pkg="com.formkiq.module">
 	
 	<subpackage name="actions">
-		
+
+        <allow pkg="com.formkiq.validation" />
+
 		<allow pkg="com.formkiq.aws.dynamodb" />
 		<allow pkg="com.formkiq.module.actions" />
 		<allow pkg="com.formkiq.graalvm.annotations" />
@@ -24,7 +26,6 @@
 			<allow pkg="com.formkiq.module.events" />
 			<allow pkg="com.formkiq.module.events.document" />
 			<allow pkg="com.formkiq.module.lambdaservices" />
-			<allow pkg="com.formkiq.validation" />
 			<allow pkg="software.amazon.awssdk.services.dynamodb" />
 			<allow pkg="software.amazon.awssdk.services.dynamodb.model" />	
 			<allow pkg="software.amazon.awssdk.utils" />

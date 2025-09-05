@@ -40,23 +40,27 @@ import static com.formkiq.aws.dynamodb.DbKeys.GSI1;
 /**
  * {@link DynamoDbQuery} for Converting an EntityTypeName to EntityTypeId.
  */
-public class EntityTypeNameToIdQuery implements DynamoDbFind<String, EntityTypeRecord> {
+public class FindEntityTypeByName
+    implements DynamoDbFind<String, FindEntityTypeByName.EntityTypeName> {
 
   /** {@link ValidationBuilder}. */
   private final ValidationBuilder vb;
 
+  public record EntityTypeName(EntityTypeNamespace namespace, String name) {
+  }
+
   /**
    * constructor.
    */
-  public EntityTypeNameToIdQuery() {
+  public FindEntityTypeByName() {
     vb = new ValidationBuilder();
   }
 
   @Override
   public QueryRequest build(final String tableName, final String siteId,
-      final EntityTypeRecord record) {
+      final FindEntityTypeByName.EntityTypeName record) {
 
-    DynamoDbKey key = EntityTypeRecord.builder().documentId("").name(record.documentId())
+    DynamoDbKey key = EntityTypeRecord.builder().documentId("").name(record.name())
         .namespace(record.namespace()).buildKey(siteId);
     return DynamoDbQueryBuilder.builder().indexName(GSI1).pk(key.gsi1Pk()).beginsWith(key.gsi1Sk())
         .limit("1").build(tableName);
@@ -64,19 +68,24 @@ public class EntityTypeNameToIdQuery implements DynamoDbFind<String, EntityTypeR
 
   @Override
   public String find(final DynamoDbService db, final String tableName, final String siteId,
-      final EntityTypeRecord record) {
+      final FindEntityTypeByName.EntityTypeName record) {
 
-    String id = record.documentId();
-    if (!Strings.isUuid(id)) {
+    String entityTypeId = record.name();
+    String name = record.name();
+    if (!Strings.isUuid(name)) {
+
+      EntityTypeRecord.builder().namespace(record.namespace()).name(name).documentId(entityTypeId)
+          .validate();
+
       QueryRequest query = build(tableName, siteId, record);
       Map<String, AttributeValue> attributes = db.getByQuery(query);
       vb.isRequired("entityTypeId", !attributes.isEmpty() && attributes.containsKey("documentId"),
-          "EntityType '" + id + "' is not found");
+          "EntityType '" + name + "' is not found");
       vb.check();
 
-      id = attributes.get("documentId").s();
+      entityTypeId = attributes.get("documentId").s();
     }
 
-    return id;
+    return entityTypeId;
   }
 }

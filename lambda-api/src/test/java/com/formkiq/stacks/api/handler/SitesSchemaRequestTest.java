@@ -783,10 +783,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       } catch (ApiException e) {
         // then
         assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
-        assertEquals(
-            "{\"errors\":[{\"key\":\"name\","
-                + "\"error\":\"unexpected value must be one of 'LlmPrompt'\"}]}",
-            e.getResponseBody());
+        assertEquals("{\"errors\":[{\"key\":\"entityTypeId\","
+            + "\"error\":\"EntityType 'LlmPrompt' is not found\"}]}", e.getResponseBody());
       }
     }
   }

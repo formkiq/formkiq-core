@@ -45,7 +45,7 @@ import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.useractivity.UserActivityContext;
-import com.formkiq.aws.dynamodb.entity.EntityTypeNameToIdQuery;
+import com.formkiq.aws.dynamodb.entity.FindEntityTypeByName;
 import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -135,10 +135,8 @@ public class EntityTypesRequestHandler
 
     String documentsTable = awsservice.environment("DOCUMENTS_TABLE");
 
-    EntityTypeRecord entityType =
-        EntityTypeRecord.builder().name(name).documentId(name).namespace(namespace).build(siteId);
-
-    QueryRequest req = new EntityTypeNameToIdQuery().build(documentsTable, siteId, entityType);
+    QueryRequest req = new FindEntityTypeByName().build(documentsTable, siteId,
+        new FindEntityTypeByName.EntityTypeName(namespace, name));
     vb.isRequired("name", !db.exists(req), "'name' already exists");
 
     vb.check();
