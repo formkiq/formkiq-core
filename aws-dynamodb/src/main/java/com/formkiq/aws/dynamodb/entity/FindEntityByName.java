@@ -25,58 +25,39 @@ package com.formkiq.aws.dynamodb.entity;
 
 import com.formkiq.aws.dynamodb.DynamoDbFind;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
-import com.formkiq.aws.dynamodb.DynamoDbQuery;
 import com.formkiq.aws.dynamodb.DynamoDbQueryBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
-import com.formkiq.aws.dynamodb.objects.Strings;
-import com.formkiq.validation.ValidationBuilder;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
+import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 
-import java.util.Map;
 
 import static com.formkiq.aws.dynamodb.DbKeys.GSI1;
 
 /**
- * {@link DynamoDbQuery} for Converting an EntityTypeName to EntityTypeId.
+ * Find Entity by Name.
  */
-public class EntityTypeNameToIdQuery implements DynamoDbFind<String, EntityTypeRecord> {
+public class FindEntityByName implements DynamoDbFind<EntityRecord, FindEntityByName.EntityName> {
 
-  /** {@link ValidationBuilder}. */
-  private final ValidationBuilder vb;
-
-  /**
-   * constructor.
-   */
-  public EntityTypeNameToIdQuery() {
-    vb = new ValidationBuilder();
+  public record EntityName(String entityTypeId, String name) {
   }
 
   @Override
   public QueryRequest build(final String tableName, final String siteId,
-      final EntityTypeRecord record) {
+      final FindEntityByName.EntityName record) {
 
-    DynamoDbKey key = EntityTypeRecord.builder().documentId("").name(record.documentId())
-        .namespace(record.namespace()).buildKey(siteId);
-    return DynamoDbQueryBuilder.builder().indexName(GSI1).pk(key.gsi1Pk()).beginsWith(key.gsi1Sk())
-        .limit("1").build(tableName);
+    DynamoDbKey key = EntityRecord.builder().entityTypeId(record.entityTypeId()).documentId("1")
+        .name(record.name()).buildKey(siteId);
+
+    return DynamoDbQueryBuilder.builder().indexName(GSI1).pk(key.gsi1Pk())
+        .beginsWith("entity#" + record.name()).limit(1).build(tableName);
   }
 
   @Override
-  public String find(final DynamoDbService db, final String tableName, final String siteId,
-      final EntityTypeRecord record) {
-
-    String id = record.documentId();
-    if (!Strings.isUuid(id)) {
-      QueryRequest query = build(tableName, siteId, record);
-      Map<String, AttributeValue> attributes = db.getByQuery(query);
-      vb.isRequired("entityTypeId", !attributes.isEmpty() && attributes.containsKey("documentId"),
-          "EntityType '" + id + "' is not found");
-      vb.check();
-
-      id = attributes.get("documentId").s();
-    }
-
-    return id;
+  public EntityRecord find(final DynamoDbService db, final String tableName, final String siteId,
+      final FindEntityByName.EntityName record) {
+    QueryRequest query = build(tableName, siteId, record);
+    QueryResponse response = db.query(query, true);
+    return response.items().isEmpty() ? null
+        : EntityRecord.fromAttributeMap(response.items().get(0));
   }
 }

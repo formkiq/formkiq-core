@@ -182,6 +182,10 @@ public class HttpRequestToApiHttpRequest implements Function<HttpRequest, ApiHtt
 
     Map<String, String> map = new HashMap<>();
 
+    if (resource == null) {
+      throw new RuntimeException("cannot find resource in path '" + path + "'");
+    }
+
     String[] resources = resource.split("/");
     String[] paths = path.split("/");
 

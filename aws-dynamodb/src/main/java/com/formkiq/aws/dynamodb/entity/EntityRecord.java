@@ -31,11 +31,11 @@ import com.formkiq.aws.dynamodb.builder.DynamoDbEntityBuilder;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * Record representing an entity, with its DynamoDB key structure and metadata.
@@ -66,7 +66,9 @@ public record EntityRecord(DynamoDbKey key, String entityTypeId, String document
     Objects.requireNonNull(attributes, "attributes must not be null");
     DynamoDbKey key = DynamoDbKey.fromAttributeMap(attributes);
 
-    Map<String, AttributeValue> entityAttributes = Collections.emptyMap();
+    Map<String, AttributeValue> entityAttributes =
+        attributes.entrySet().stream().filter(e -> e.getKey().startsWith("attr#")).collect(
+            Collectors.toMap(e -> e.getKey().substring("attr#".length()), Map.Entry::getValue));
 
     return new EntityRecord(key, DynamoDbTypes.toString(attributes.get("entityTypeId")),
         DynamoDbTypes.toString(attributes.get("documentId")),

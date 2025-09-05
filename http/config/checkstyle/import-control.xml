@@ -10,6 +10,7 @@
 		<allow pkg="com.google.gson" />
 	
 		<allow pkg="java.io" />
+        <allow pkg="java.time" />
 		<allow pkg="java.net" />
 		<allow pkg="java.net.http" />
 		<allow pkg="java.nio.charset" />
