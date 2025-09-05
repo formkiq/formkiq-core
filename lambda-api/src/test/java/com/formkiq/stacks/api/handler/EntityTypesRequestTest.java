@@ -424,6 +424,17 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
       assertEquals(1, entityTypes.size());
       EntityType entityType = entityTypes.get(0);
       assertEntityTypeEquals(entityType, "LlmPrompt", EntityTypeNamespace.PRESET);
+
+      // when - add prompt again
+      try {
+        this.entityApi.addEntityType(req, siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"errors\":[{\"key\":\"name\",\"error\":\"'name' already exists\"}]}",
+            e.getResponseBody());
+      }
     }
   }
 

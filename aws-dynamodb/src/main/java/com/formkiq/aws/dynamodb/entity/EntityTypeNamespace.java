@@ -23,9 +23,12 @@
  */
 package com.formkiq.aws.dynamodb.entity;
 
+import com.formkiq.graalvm.annotations.Reflectable;
+
 /**
  * {@link EntityTypeRecord} namespace.
  */
+@Reflectable
 public enum EntityTypeNamespace {
   /** Predefined namespace. */
   PRESET,
