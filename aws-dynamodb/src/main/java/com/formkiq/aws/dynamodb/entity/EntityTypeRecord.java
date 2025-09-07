@@ -198,6 +198,20 @@ public record EntityTypeRecord(DynamoDbKey key, String documentId, EntityTypeNam
     }
 
     /**
+     * Validate Namespace.
+     * 
+     * @return Builder
+     */
+    public Builder validateNamespace() {
+      ValidationBuilder vb = new ValidationBuilder();
+      if (!isUuid(documentId)) {
+        vb.isRequired("namespace", namespace, "'namespace' is required");
+      }
+      vb.check();
+      return this;
+    }
+
+    /**
      * Validate if {@link EntityTypeRecord} is valid.
      * 
      * @return Builder
