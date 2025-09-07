@@ -76,8 +76,8 @@ public class EntityTypesRequestHandler
     EntityTypeNamespace namespace = new QueryParameterNamespace().apply(event);
 
     String tableName = awsservice.environment("DOCUMENTS_TABLE");
-    DynamoDbKey key =
-        EntityTypeRecord.builder().documentId("").namespace(namespace).name("").buildKey(siteId);
+    DynamoDbKey key = EntityTypeRecord.builder().documentId("").namespace(namespace).name("")
+        .validate().buildKey(siteId);
 
     QueryRequest q = DynamoDbQueryBuilder.builder().indexName(GSI1).pk(key.gsi1Pk())
         .beginsWith(key.gsi1Sk()).nextToken(event.getQueryStringParameter("next"))

@@ -200,7 +200,7 @@ public record EntityTypeRecord(DynamoDbKey key, String documentId, EntityTypeNam
     /**
      * Validate if {@link EntityTypeRecord} is valid.
      */
-    public void validate() {
+    public Builder validate() {
       ValidationBuilder vb = new ValidationBuilder();
 
       vb.isRequired("name", name);
@@ -224,6 +224,8 @@ public record EntityTypeRecord(DynamoDbKey key, String documentId, EntityTypeNam
       }
 
       vb.check();
+      return this;
     }
+
   }
 }
