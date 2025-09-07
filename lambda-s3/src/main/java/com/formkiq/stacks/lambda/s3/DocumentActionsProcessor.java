@@ -563,6 +563,7 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
       case IN_QUEUE -> {
         action.status(processStatus.actionStatus());
         getActionsService().updateActionStatus(siteId, documentId, action);
+        updateDocumentWorkflow(siteId, documentId, action);
       }
       case PENDING -> {
         action.status(processStatus.actionStatus());
