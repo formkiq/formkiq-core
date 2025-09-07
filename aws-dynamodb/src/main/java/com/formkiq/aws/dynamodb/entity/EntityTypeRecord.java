@@ -199,6 +199,8 @@ public record EntityTypeRecord(DynamoDbKey key, String documentId, EntityTypeNam
 
     /**
      * Validate if {@link EntityTypeRecord} is valid.
+     * 
+     * @return Builder
      */
     public Builder validate() {
       ValidationBuilder vb = new ValidationBuilder();
