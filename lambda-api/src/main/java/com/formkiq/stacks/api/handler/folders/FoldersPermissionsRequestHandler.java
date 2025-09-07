@@ -36,6 +36,8 @@ import com.formkiq.validation.ValidationBuilder;
 import java.io.IOException;
 import java.util.Optional;
 
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+
 /** {@link ApiGatewayRequestHandler} for "/folders/permissions". */
 public class FoldersPermissionsRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
@@ -72,10 +74,9 @@ public class FoldersPermissionsRequestHandler
     vb.check();
 
     vb.isRequired("path", req.path());
-    vb.isRequired(null, req.roles(), "'roles' is required");
     vb.check();
 
-    req.roles().forEach(role -> {
+    notNull(req.roles()).forEach(role -> {
       vb.isRequired("roleName", role.roleName());
       vb.isRequired("permissions", role.permissions(), "'permissions' is required");
     });
