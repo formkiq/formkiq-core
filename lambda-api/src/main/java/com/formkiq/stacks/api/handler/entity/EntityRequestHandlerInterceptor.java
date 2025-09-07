@@ -24,10 +24,13 @@
 package com.formkiq.stacks.api.handler.entity;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.entity.EntityTypeNamespace;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerInterceptor;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+
+import static com.formkiq.aws.dynamodb.objects.Strings.isUuid;
 
 /**
  * {@link ApiRequestHandlerInterceptor} for /entities request handler.
@@ -59,6 +62,12 @@ public class EntityRequestHandlerInterceptor implements ApiRequestHandlerInterce
     String entityTypeId = event != null ? event.getPathParameter("entityTypeId") : null;
 
     if (entityTypeId != null) {
+
+      EntityTypeNamespace namespace = new QueryParameterNamespace().apply(event);
+      if (namespace == null && isUuid(entityTypeId)) {
+        event.addQueryParameter("namespace", EntityTypeNamespace.CUSTOM.name());
+      }
+
       String siteId = authorization.getSiteId();
       entityTypeId = new EntityTypeIdTransformer(awsservice).apply(siteId, event);
       event.getPathParameters().put("entityTypeId", entityTypeId);
