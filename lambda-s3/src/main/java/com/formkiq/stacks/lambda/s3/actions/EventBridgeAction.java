@@ -76,6 +76,6 @@ public class EventBridgeAction implements DocumentAction {
     EventBridgeMessage msg =
         new EventBridgeMessageBuilder().build(this.appEnvironment, detailType, detail);
     eventBridgeService.putEvents(eventBusName, msg);
-    return new ProcessActionStatus(ActionStatus.COMPLETE, true);
+    return new ProcessActionStatus(ActionStatus.COMPLETE);
   }
 }

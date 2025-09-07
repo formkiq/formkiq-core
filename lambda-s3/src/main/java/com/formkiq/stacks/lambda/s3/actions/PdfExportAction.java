@@ -83,7 +83,7 @@ public class PdfExportAction implements DocumentAction {
       throw new IllegalArgumentException("PdfExport only supports Google DeepLink");
     }
 
-    return new ProcessActionStatus(ActionStatus.COMPLETE, true);
+    return new ProcessActionStatus(ActionStatus.COMPLETE);
   }
 
   private boolean isValid(final String siteId, final String deepLink) {

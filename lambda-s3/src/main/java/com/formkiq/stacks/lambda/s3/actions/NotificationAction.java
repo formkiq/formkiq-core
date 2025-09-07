@@ -92,6 +92,6 @@ public class NotificationAction implements DocumentAction {
     }
 
     this.ses.sendEmail(this.source, cc, bcc, msg.build());
-    return new ProcessActionStatus(ActionStatus.COMPLETE, true);
+    return new ProcessActionStatus(ActionStatus.COMPLETE);
   }
 }

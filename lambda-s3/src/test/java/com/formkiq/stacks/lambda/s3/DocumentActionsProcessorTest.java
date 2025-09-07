@@ -973,12 +973,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
   public void testHandle02() throws ValidationException {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = ID.uuid();
-
-      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-      item.setContentType("text/plain");
-
-      documentService.saveDocument(siteId, item, null);
+      String documentId = createDocument2(siteId, "text/plain");
       List<Action> actions =
           Collections.singletonList(new Action().type(ActionType.FULLTEXT).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
@@ -1011,14 +1006,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
   public void testHandle03() throws ValidationException {
 
     // given
-    String documentId = DOCUMENT_ID_OCR;
-
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-      item.setContentType("application/pdf");
-
-      documentService.saveDocument(siteId, item, null);
+      String documentId = createDocument2(siteId, DOCUMENT_ID_OCR, "application/pdf");
       List<Action> actions =
           Collections.singletonList(new Action().type(ActionType.FULLTEXT).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
@@ -1082,11 +1072,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
   public void testHandle05() throws ValidationException {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = ID.uuid();
-
-      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-      item.setContentType("application/pdf");
-      documentService.saveDocument(siteId, item, null);
+      String documentId = createDocument2(siteId, "application/pdf");
 
       List<Action> actions = Collections.singletonList(new Action().type(ActionType.WEBHOOK)
           .userId("joe").parameters(Map.of("url", URL + "/callback")));
@@ -1237,11 +1223,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
   public void testHandle08() throws ValidationException {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = ID.uuid();
-
-      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-      item.setContentType("application/pdf");
-      documentService.saveDocument(siteId, item, null);
+      String documentId = createDocument2(siteId, "application/pdf");
 
       List<Action> actions = Arrays.asList(
           new Action().status(ActionStatus.RUNNING).type(ActionType.WEBHOOK).userId("joe")
@@ -1275,11 +1257,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
   public void testHandle09() throws ValidationException {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = ID.uuid();
-
-      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-      item.setContentType("application/pdf");
-      documentService.saveDocument(siteId, item, null);
+      String documentId = createDocument2(siteId, "application/pdf");
 
       List<Action> actions = Arrays.asList(
           new Action().status(ActionStatus.FAILED).type(ActionType.WEBHOOK).userId("joe")
@@ -1322,11 +1300,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
   public void testHandleFulltext01() throws ValidationException {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = ID.uuid();
-
-      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-      item.setContentType("application/pdf");
-      documentService.saveDocument(siteId, item, null);
+      String documentId = createDocument2(siteId, "application/pdf");
 
       List<Action> actions =
           Collections.singletonList(new Action().type(ActionType.FULLTEXT).userId("joe"));
@@ -1357,11 +1331,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
   public void testHandleFulltext02() throws ValidationException {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = ID.uuid();
-
-      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-      item.setContentType("application/pdf");
-      documentService.saveDocument(siteId, item, null);
+      String documentId = createDocument2(siteId, "application/pdf");
 
       List<Action> actions = Arrays.asList(
           new Action().type(ActionType.OCR).status(ActionStatus.COMPLETE).userId("joe"),
@@ -1396,12 +1366,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
   public void testHandleFulltext03() throws ValidationException {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = DOCUMENT_ID_404;
-
-      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-      item.setContentType("text/plain");
-
-      documentService.saveDocument(siteId, item, null);
+      String documentId = createDocument2(siteId, DOCUMENT_ID_404, "text/plain");
       List<Action> actions =
           Collections.singletonList(new Action().type(ActionType.FULLTEXT).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
@@ -2103,9 +2068,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
   private void processIdpRequest(final String siteId, final String documentId,
       final String contentType, final MappingRecord mappingRecord) throws ValidationException {
-    DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-    item.setContentType(contentType);
-    documentService.saveDocument(siteId, item, null);
+    createDocument2(siteId, documentId, contentType);
 
     List<Action> actions = Collections.singletonList(new Action().type(ActionType.IDP).userId("joe")
         .parameters(Map.of("mappingId", mappingRecord.getDocumentId())));
@@ -2139,10 +2102,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
   public void testPublishAction01() {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = ID.uuid();
-      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-      item.setContentType("text/plain");
-      documentService.saveDocument(siteId, item, null);
+      String documentId = createDocument2(siteId, "text/plain");
 
       String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
       String content = "this is some data";
@@ -2191,10 +2151,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
   public void testPdfExportAction01() {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = ID.uuid();
-      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-      item.setContentType("text/plain");
-      documentService.saveDocument(siteId, item, null);
+      String documentId = createDocument2(siteId, "text/plain");
 
       List<Action> actions =
           Collections.singletonList(new Action().type(ActionType.PDFEXPORT).userId("joe"));
@@ -2226,10 +2183,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
           .setWorkloadIdentityServiceAccount("123"));
       configService.save(siteId, siteConfig);
 
-      String documentId = ID.uuid();
-      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-      item.setContentType("text/plain");
-      documentService.saveDocument(siteId, item, null);
+      String documentId = createDocument2(siteId, "text/plain");
 
       List<Action> actions =
           Collections.singletonList(new Action().type(ActionType.PDFEXPORT).userId("joe"));
@@ -2599,7 +2553,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
   public void testHandleDataClassification01() {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = ID.uuid();
+      String documentId = createDocument2(siteId, "text/plain");
+
       List<Action> actions =
           Collections.singletonList(new Action().type(ActionType.DATA_CLASSIFICATION).userId("joe")
               .parameters(Map.of("llmPromptEntityName", "Myprompt")));
@@ -2625,4 +2580,75 @@ public class DocumentActionsProcessorTest implements DbKeys {
     }
   }
 
+  /**
+   * Handle Data_classification that needs OCR Action.
+   *
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testHandleDataClassification02() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      String documentId = createDocument2(siteId, "application/pdf");
+
+      List<Action> actions =
+          Collections.singletonList(new Action().type(ActionType.DATA_CLASSIFICATION).userId("joe")
+              .parameters(Map.of("llmPromptEntityName", "Myprompt")));
+      actionsService.saveNewActions(siteId, documentId, actions);
+
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+
+      // when
+      processor.handleRequest(map, null);
+
+      // then
+      List<Action> list = actionsService.getActions(siteId, documentId);
+      assertEquals(2, list.size());
+      assertEquals(ActionType.OCR, list.get(0).type());
+      assertEquals("{ocrEngine=tesseract}", list.get(0).parameters().toString());
+      assertEquals(ActionStatus.PENDING, list.get(0).status());
+      assertEquals(ActionType.DATA_CLASSIFICATION, list.get(1).type());
+      assertEquals(ActionStatus.PENDING, list.get(1).status());
+    }
+  }
+
+  /**
+   * Handle Antivirus Action.
+   *
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testHandleAntiVirus() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      String documentId = createDocument2(siteId, "application/pdf");
+
+      List<Action> actions = List.of(new Action().type(ActionType.ANTIVIRUS).userId("joe"));
+      actionsService.saveNewActions(siteId, documentId, actions);
+
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+
+      // when
+      processor.handleRequest(map, null);
+
+      // then
+      List<Action> list = actionsService.getActions(siteId, documentId);
+      assertEquals(1, list.size());
+      assertEquals(ActionType.ANTIVIRUS, list.get(0).type());
+      assertEquals(ActionStatus.RUNNING, list.get(0).status());
+    }
+  }
+
+  private String createDocument2(final String siteId, final String documentId,
+      final String contentType) {
+    DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+    item.setContentType(contentType);
+    documentService.saveDocument(siteId, item, null);
+    return documentId;
+  }
+
+  private String createDocument2(final String siteId, final String contentType) {
+    String documentId = ID.uuid();
+    return createDocument2(siteId, documentId, contentType);
+  }
 }

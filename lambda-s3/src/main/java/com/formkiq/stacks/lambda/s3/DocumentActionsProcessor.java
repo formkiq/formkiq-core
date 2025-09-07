@@ -52,7 +52,6 @@ import com.formkiq.aws.ssm.SsmServiceExtension;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
-import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionStatusPredicate;
 import com.formkiq.module.actions.services.ActionsNotificationService;
 import com.formkiq.module.actions.services.ActionsNotificationServiceExtension;
@@ -121,6 +120,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
+import static com.formkiq.module.actions.ActionStatus.PENDING;
 import static com.formkiq.module.events.document.DocumentEventType.ACTIONS;
 
 /** {@link RequestHandler} for handling Document Actions. */
@@ -289,9 +289,7 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
 
     logAction(logger, "action complete", siteId, documentId, action);
 
-    if (actionStatus.updateComplete()) {
-      updateComplete(logger, siteId, documentId, actions, action, actionStatus.actionStatus());
-    }
+    updateComplete(logger, siteId, documentId, actions, action, actionStatus);
   }
 
   private ProcessActionStatus performAction(final Logger logger, final String siteId,
@@ -299,7 +297,7 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
       throws IOException, InterruptedException {
     ProcessActionStatus actionStatus;
     switch (action.type()) {
-      case QUEUE -> actionStatus = new ProcessActionStatus(ActionStatus.IN_QUEUE, true);
+      case QUEUE -> actionStatus = new ProcessActionStatus(ActionStatus.IN_QUEUE);
 
       case DOCUMENTTAGGING -> {
         DocumentTaggingAction dtAction = new DocumentTaggingAction(serviceCache);
@@ -315,13 +313,10 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
       case ANTIVIRUS -> {
         new SendHttpRequest(serviceCache).sendRequest(siteId, "PUT",
             "/documents/" + documentId + "/antivirus", "");
-        actionStatus = new ProcessActionStatus(ActionStatus.COMPLETE, false);
+        actionStatus = new ProcessActionStatus(ActionStatus.RUNNING);
       }
 
-      case WEBHOOK -> {
-        sendWebhook(logger, siteId, documentId, actions, action);
-        actionStatus = new ProcessActionStatus(ActionStatus.COMPLETE, false);
-      }
+      case WEBHOOK -> actionStatus = sendWebhook(siteId, documentId, action);
 
       case NOTIFICATION -> {
         DocumentAction da = new NotificationAction(siteId, serviceCache);
@@ -379,7 +374,7 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
       Optional<Action> running =
           actions.stream().filter(new ActionStatusPredicate(ActionStatus.RUNNING)).findAny();
       Optional<Action> o =
-          actions.stream().filter((new ActionStatusPredicate(ActionStatus.PENDING))).findFirst();
+          actions.stream().filter((new ActionStatusPredicate(PENDING))).findFirst();
 
       if (running.isPresent()) {
 
@@ -510,17 +505,16 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
 
   /**
    * Sends Webhook.
-   * 
-   * @param logger {@link Logger}
+   *
    * @param siteId {@link String}
    * @param documentId {@link String}
-   * @param actions {@link List} {@link Action}
    * @param action {@link Action}
+   * @return {@link ProcessActionStatus}
    * @throws IOException IOException
    * @throws InterruptedException InterruptedException
    */
-  private void sendWebhook(final Logger logger, final String siteId, final String documentId,
-      final List<Action> actions, final Action action) throws IOException, InterruptedException {
+  private ProcessActionStatus sendWebhook(final String siteId, final String documentId,
+      final Action action) throws IOException, InterruptedException {
 
     String url = (String) action.parameters().get("url");
 
@@ -541,7 +535,7 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
 
       if (statusCode >= statusOk && statusCode < statusRedirect) {
 
-        updateComplete(logger, siteId, documentId, actions, action, ActionStatus.COMPLETE);
+        return new ProcessActionStatus(ActionStatus.COMPLETE);
 
       } else {
         throw new IOException(url + " response status code " + statusCode);
@@ -560,23 +554,31 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
    * @param documentId {@link String}
    * @param actions {@link List} {@link Action}
    * @param action {@link Action}
-   * @param completeStatus {@link ActionStatus}
+   * @param processStatus {@link ProcessActionStatus}
    */
   private void updateComplete(final Logger logger, final String siteId, final String documentId,
-      final List<Action> actions, final Action action, final ActionStatus completeStatus) {
+      final List<Action> actions, final Action action, final ProcessActionStatus processStatus) {
 
-    logger.trace(String.format("updating status of %s to %s", documentId, completeStatus));
+    switch (processStatus.actionStatus()) {
+      case IN_QUEUE -> {
+        action.status(processStatus.actionStatus());
+        getActionsService().updateActionStatus(siteId, documentId, action);
+      }
+      case PENDING -> {
+        action.status(processStatus.actionStatus());
+        getActionsService().updateActionStatus(siteId, documentId, action);
+        getNotificationService().publishNextActionEvent(siteId, documentId);
+      }
 
-    action.status(completeStatus);
-    getActionsService().updateActionStatus(siteId, documentId, action);
+      default -> {
+        ActionStatus completeStatus = processStatus.actionStatus();
+        logger.trace(String.format("updating status of %s to %s", documentId, completeStatus));
 
-    updateDocumentWorkflow(siteId, documentId, action);
+        action.status(completeStatus);
+        getActionsService().updateActionStatus(siteId, documentId, action);
 
-    if (!ActionType.QUEUE.equals(action.type())) {
-      boolean publishNextActionEvent =
-          getNotificationService().publishNextActionEvent(actions, siteId, documentId);
-      if (logger.isLogged(LogLevel.TRACE) && publishNextActionEvent) {
-        logger.trace(String.format("publishing next event for %s to %s", siteId, documentId));
+        updateDocumentWorkflow(siteId, documentId, action);
+        getNotificationService().publishNextActionEvent(siteId, documentId);
       }
     }
   }

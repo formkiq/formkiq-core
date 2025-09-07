@@ -75,7 +75,7 @@ public class AddOcrAction implements DocumentAction {
     }
 
     this.http.sendRequest(siteId, "post", "/documents/" + documentId + "/ocr", json);
-    return new ProcessActionStatus(ActionStatus.COMPLETE, false);
+    return new ProcessActionStatus(ActionStatus.RUNNING);
   }
 
   private Map<String, Object> buildAddOcrPayload(final Action action) {

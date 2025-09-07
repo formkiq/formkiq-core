@@ -29,7 +29,6 @@ import com.formkiq.module.actions.ActionStatus;
  * Process Action Status.
  * 
  * @param actionStatus {@link ActionStatus}
- * @param updateComplete boolean
  */
-public record ProcessActionStatus(ActionStatus actionStatus, boolean updateComplete) {
+public record ProcessActionStatus(ActionStatus actionStatus) {
 }

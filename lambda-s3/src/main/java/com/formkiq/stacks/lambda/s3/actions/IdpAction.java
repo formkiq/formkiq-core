@@ -127,7 +127,7 @@ public class IdpAction implements DocumentAction {
       }
     }
 
-    return new ProcessActionStatus(ActionStatus.COMPLETE, true);
+    return new ProcessActionStatus(ActionStatus.COMPLETE);
   }
 
   private List<String> createValues(final MappingAttribute mappingAttribute) {

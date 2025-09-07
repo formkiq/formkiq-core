@@ -74,7 +74,7 @@ public class ResizeAction implements DocumentAction {
     Image srcImage = createSrcImage(siteId, documentId);
     Image resImage = createResImage(srcImage, action.parameters());
     saveResImage(resImage, srcImage.documentId());
-    return new ProcessActionStatus(ActionStatus.COMPLETE, true);
+    return new ProcessActionStatus(ActionStatus.COMPLETE);
   }
 
   private Image createSrcImage(final String siteId, final String documentId) throws IOException {

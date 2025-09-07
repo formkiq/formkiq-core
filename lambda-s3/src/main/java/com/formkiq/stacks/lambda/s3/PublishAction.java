@@ -76,6 +76,6 @@ public class PublishAction implements DocumentAction {
 
     this.documentService.publishDocument(siteId, documentId, s3version, item.getPath(), contentType,
         action.userId());
-    return new ProcessActionStatus(ActionStatus.COMPLETE, true);
+    return new ProcessActionStatus(ActionStatus.COMPLETE);
   }
 }

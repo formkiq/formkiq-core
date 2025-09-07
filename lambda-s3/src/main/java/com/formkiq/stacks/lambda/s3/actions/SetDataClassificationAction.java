@@ -23,11 +23,16 @@
  */
 package com.formkiq.stacks.lambda.s3.actions;
 
+import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
+import com.formkiq.module.actions.ActionType;
+import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.logger.LogLevel;
 import com.formkiq.module.lambdaservices.logger.Logger;
+import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.lambda.s3.DocumentAction;
 import com.formkiq.stacks.lambda.s3.ProcessActionStatus;
 import com.google.gson.Gson;
@@ -47,6 +52,10 @@ public class SetDataClassificationAction implements DocumentAction {
   private final SendHttpRequest http;
   /** {@link Gson}. */
   private final Gson gson = new GsonBuilder().create();
+  /** {@link DocumentService}. */
+  private final DocumentService documentService;
+  /** {@link ActionsService}. */
+  private final ActionsService actionsService;
 
   /**
    * constructor.
@@ -55,22 +64,42 @@ public class SetDataClassificationAction implements DocumentAction {
    */
   public SetDataClassificationAction(final AwsServiceCache serviceCache) {
     this.http = new SendHttpRequest(serviceCache);
+    this.actionsService = serviceCache.getExtension(ActionsService.class);
+    this.documentService = serviceCache.getExtension(DocumentService.class);
   }
 
   @Override
   public ProcessActionStatus run(final Logger logger, final String siteId, final String documentId,
       final List<Action> actions, final Action action) throws IOException {
-    Map<String, Object> payload = buildPayload(action);
-    String json = this.gson.toJson(payload);
 
-    if (logger.isLogged(LogLevel.DEBUG)) {
-      String s = String.format("{\"type\",\"%s\",\"method\":\"%s\",\"url\":\"%s\",\"body\":\"%s\"}",
-          "ocr", "POST", "/documents/" + documentId + "/dataClassification", json);
-      logger.debug(s);
+    ActionStatus status = ActionStatus.RUNNING;
+
+    DocumentItem item = this.documentService.findDocument(siteId, documentId);
+    if (!MimeType.isPlainText(item.getContentType())
+        && actions.stream().noneMatch(a -> a.type().equals(ActionType.OCR))) {
+
+      Action ocrAction = new Action().userId("System").type(ActionType.OCR)
+          .parameters(Map.of("ocrEngine", "tesseract"));
+      this.actionsService.insertBeforeAction(siteId, documentId, actions, action, ocrAction);
+      status = ActionStatus.PENDING;
+
+    } else {
+
+      Map<String, Object> payload = buildPayload(action);
+      String json = this.gson.toJson(payload);
+
+      if (logger.isLogged(LogLevel.DEBUG)) {
+        String s =
+            String.format("{\"type\",\"%s\",\"method\":\"%s\",\"url\":\"%s\",\"body\":\"%s\"}",
+                "ocr", "POST", "/documents/" + documentId + "/dataClassification", json);
+        logger.debug(s);
+      }
+
+      this.http.sendRequest(siteId, "put", "/documents/" + documentId + "/dataClassification",
+          json);
     }
 
-    this.http.sendRequest(siteId, "put", "/documents/" + documentId + "/dataClassification", json);
-    return new ProcessActionStatus(ActionStatus.COMPLETE, false);
+    return new ProcessActionStatus(status);
   }
 
   private Map<String, Object> buildPayload(final Action action) {

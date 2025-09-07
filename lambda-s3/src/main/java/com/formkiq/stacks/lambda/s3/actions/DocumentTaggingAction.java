@@ -249,7 +249,7 @@ public class DocumentTaggingAction implements DocumentAction {
       throw new IOException("Unknown engine: " + engine);
     }
 
-    return new ProcessActionStatus(ActionStatus.COMPLETE, true);
+    return new ProcessActionStatus(ActionStatus.COMPLETE);
   }
 
   /**

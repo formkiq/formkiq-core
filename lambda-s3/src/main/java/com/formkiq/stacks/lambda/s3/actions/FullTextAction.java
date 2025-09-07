@@ -28,7 +28,6 @@ import com.formkiq.aws.dynamodb.model.DocumentMapToDocument;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
-import com.formkiq.module.actions.services.ActionsNotificationService;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.logger.LogLevel;
@@ -64,8 +63,6 @@ public class FullTextAction implements DocumentAction {
   private final DocumentService documentService;
   /** {@link DocumentContentFunction}. */
   private final DocumentContentFunction documentContentFunc;
-  /** {@link ActionsNotificationService}. */
-  private final ActionsNotificationService notificationService;
   /** {@link SendHttpRequest}. */
   private final SendHttpRequest http;
   /** {@link TypeSenseService}. */
@@ -86,7 +83,6 @@ public class FullTextAction implements DocumentAction {
     this.actionsService = serviceCache.getExtension(ActionsService.class);
     this.documentService = serviceCache.getExtension(DocumentService.class);
     this.documentContentFunc = new DocumentContentFunction(serviceCache);
-    this.notificationService = serviceCache.getExtension(ActionsNotificationService.class);
     this.typesense = serviceCache.getExtensionOrNull(TypeSenseService.class);
     this.moduleFulltext = serviceCache.hasModule("opensearch");
     this.moduleTypesense = serviceCache.hasModule("typesense");
@@ -131,15 +127,11 @@ public class FullTextAction implements DocumentAction {
           .parameters(Map.of("ocrEngine", "tesseract"));
       this.actionsService.insertBeforeAction(siteId, documentId, actions, action, ocrAction);
 
-      this.notificationService.publishNextActionEvent(siteId, documentId);
-
     } else {
       throw new IOException("no OCR document found");
     }
 
-    action.status(status);
-    this.actionsService.updateActionStatus(siteId, documentId, action);
-    return new ProcessActionStatus(ActionStatus.COMPLETE, false);
+    return new ProcessActionStatus(status);
   }
 
   private void debug(final Logger logger, final String siteId, final DocumentItem item) {
