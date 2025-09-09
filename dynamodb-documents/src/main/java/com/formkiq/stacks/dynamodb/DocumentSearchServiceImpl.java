@@ -504,6 +504,7 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
   public PaginationResults<DynamicDocumentItem> findInFolder(final String siteId,
       final String indexKey, final PaginationMapToken token, final int maxresults) {
 
+    String path = this.folderIndexProcesor.toPath(siteId, indexKey);
     DynamicObject o = this.folderIndexProcesor.getIndex(siteId, indexKey, false);
 
     String value = GLOBAL_FOLDER_METADATA + TAG_DELIMINATOR;
@@ -511,7 +512,7 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
       value += o.getString("documentId");
     }
 
-    return searchByMeta(siteId, value, null, token, maxresults);
+    return searchByMeta(siteId, value, null, token, maxresults, path);
   }
 
   private Map<String, Object> getAttributeValuesMap(
@@ -625,8 +626,8 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
         }
 
       } else {
-        updateFolderMetaData(meta);
-        results = searchByMeta(siteId, meta, token, maxresults);
+        String path = updateFolderMetaData(meta);
+        results = searchByMeta(siteId, meta, token, maxresults, path);
       }
 
     } else if (query.getAttribute() != null || !notNull(query.getAttributes()).isEmpty()) {
@@ -889,14 +890,16 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
    * @param meta {@link SearchMetaCriteria}
    * @param token {@link PaginationMapToken}
    * @param maxresults int
+   * @param path {@link String}
    * @return {@link PaginationResults}
    */
   private PaginationResults<DynamicDocumentItem> searchByMeta(final String siteId,
-      final SearchMetaCriteria meta, final PaginationMapToken token, final int maxresults) {
+      final SearchMetaCriteria meta, final PaginationMapToken token, final int maxresults,
+      final String path) {
 
     String value = getMetaDataKey(siteId, meta);
     PaginationResults<DynamicDocumentItem> results =
-        searchByMeta(siteId, value, meta.indexFilterBeginsWith(), token, maxresults);
+        searchByMeta(siteId, value, meta.indexFilterBeginsWith(), token, maxresults, path);
 
     if ("folder".equals(meta.indexType())) {
       results.getResults().removeIf(r -> r.get("documentId") == null);
@@ -907,7 +910,7 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
 
   private PaginationResults<DynamicDocumentItem> searchByMeta(final String siteId,
       final String value, final String indexFilterBeginsWith, final PaginationMapToken token,
-      final int maxresults) {
+      final int maxresults, final String path) {
 
     PaginationResults<DynamicDocumentItem> result;
 
@@ -925,7 +928,7 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
       QueryRequest q =
           createQueryRequest(null, expression, values, token, maxresults, Boolean.TRUE, null);
 
-      result = searchForMetaDocuments(q, siteId);
+      result = searchForMetaDocuments(q, siteId, path);
 
     } else {
       result = new PaginationResults<>(Collections.emptyList(), null);
@@ -1062,10 +1065,11 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
    *
    * @param q {@link QueryRequest}
    * @param siteId DynamoDB PK siteId
+   * @param path {@link String}
    * @return {@link PaginationResults} {@link DynamicDocumentItem}
    */
   private PaginationResults<DynamicDocumentItem> searchForMetaDocuments(final QueryRequest q,
-      final String siteId) {
+      final String siteId, final String path) {
 
     QueryResponse result = this.dbClient.query(q);
 
@@ -1082,17 +1086,17 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
     DocumentItemToDynamicDocumentItem transform = new DocumentItemToDynamicDocumentItem();
 
     FolderPermissionAttributePredicate pred =
-        new FolderPermissionAttributePredicate(ApiPermission.READ);
-    List<DynamicDocumentItem> results =
-        result.items().stream().filter(i -> pred.test(siteId, i)).map(r -> {
+        new FolderPermissionAttributePredicate(db, ApiPermission.READ, path);
+    List<Map<String, AttributeValue>> apply = pred.apply(siteId, result.items());
+    List<DynamicDocumentItem> results = apply.stream().map(r -> {
 
-          AttributeValue documentId = r.get("documentId");
-          boolean isDocument = documentId != null && documentMap.containsKey(documentId.s());
+      AttributeValue documentId = r.get("documentId");
+      boolean isDocument = documentId != null && documentMap.containsKey(documentId.s());
 
-          return isDocument ? transform.apply(documentMap.get(r.get("documentId").s()))
-              : new DynamicDocumentItem(metaFolder.apply(r));
+      return isDocument ? transform.apply(documentMap.get(r.get("documentId").s()))
+          : new DynamicDocumentItem(metaFolder.apply(r));
 
-        }).collect(Collectors.toList());
+    }).collect(Collectors.toList());
 
     return new PaginationResults<>(results, new QueryResponseToPagination().apply(result));
   }
@@ -1136,7 +1140,7 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
     return tags;
   }
 
-  private void updateFolderMetaData(final SearchMetaCriteria meta) {
+  private String updateFolderMetaData(final SearchMetaCriteria meta) {
 
     String folder = meta.folder();
 
@@ -1149,8 +1153,9 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
       meta.indexType("folder");
       meta.eq(folder);
       meta.folder(null);
-
     }
+
+    return folder;
   }
 
   /**

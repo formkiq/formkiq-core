@@ -23,11 +23,9 @@
  */
 package com.formkiq.stacks.dynamodb.folders;
 
-import static com.formkiq.aws.dynamodb.builder.DynamoDbTypes.toCustom;
 import static com.formkiq.aws.dynamodb.builder.DynamoDbTypes.toDate;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 
-import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 
@@ -51,9 +49,6 @@ public class FolderIndexRecord implements DynamodbRecord<FolderIndexRecord>, DbK
   public static final String INDEX_FILE_SK = "fi" + DbKeys.TAG_DELIMINATOR;
   /** Index Folder SK. */
   public static final String INDEX_FOLDER_SK = "ff" + DbKeys.TAG_DELIMINATOR;
-  /** {@link FolderRolePermissionAttributeBuilder}. */
-  private static final FolderRolePermissionAttributeBuilder FOLDER_ROLE_BUILDER =
-      new FolderRolePermissionAttributeBuilder();
 
   /** Document Id. */
   @Reflectable
@@ -76,9 +71,6 @@ public class FolderIndexRecord implements DynamodbRecord<FolderIndexRecord>, DbK
   /** Creator of record. */
   @Reflectable
   private String userId;
-  /** Folder Role {@link FolderRolePermission}. */
-  @Reflectable
-  private Collection<FolderRolePermission> rolePermissions;
 
   private void checkParentId() {
     if (this.parentDocumentId == null) {
@@ -133,7 +125,6 @@ public class FolderIndexRecord implements DynamodbRecord<FolderIndexRecord>, DbK
     return buildKey(siteId).getAttributesBuilder().withString("documentId", this.documentId)
         .withString("path", this.path).withString("type", this.type)
         .withString("userId", this.userId).withString("parentDocumentId", this.parentDocumentId)
-        .withCustom(null, this.rolePermissions, FOLDER_ROLE_BUILDER)
         .withDate("inserteddate", this.insertedDate)
         .withDate("lastModifiedDate", this.lastModifiedDate).build();
   }
@@ -153,7 +144,7 @@ public class FolderIndexRecord implements DynamodbRecord<FolderIndexRecord>, DbK
             .type(DynamoDbTypes.toString(attrs.get("type")))
             .userId(DynamoDbTypes.toString(attrs.get("userId")))
             .parentDocumentId(DynamoDbTypes.toString(attrs.get("parentDocumentId")))
-            .rolePermissions(getPermissions(attrs)).insertedDate(toDate(attrs.get("inserteddate")))
+            .insertedDate(toDate(attrs.get("inserteddate")))
             .lastModifiedDate(toDate(attrs.get("lastModifiedDate")));
 
     if (this.parentDocumentId == null) {
@@ -169,17 +160,6 @@ public class FolderIndexRecord implements DynamodbRecord<FolderIndexRecord>, DbK
     }
 
     return record;
-  }
-
-  /**
-   * Get Permissions from {@link Map}.
-   * 
-   * @param attrs {@link Map}
-   * @return Collection {@link FolderRolePermission}
-   */
-  public static Collection<FolderRolePermission> getPermissions(
-      final Map<String, AttributeValue> attrs) {
-    return toCustom(null, attrs, FOLDER_ROLE_BUILDER);
   }
 
   /**
@@ -220,26 +200,6 @@ public class FolderIndexRecord implements DynamodbRecord<FolderIndexRecord>, DbK
   public FolderIndexRecord lastModifiedDate(final Date date) {
     this.lastModifiedDate = date;
     return this;
-  }
-
-  /**
-   * Set Folder Roles.
-   *
-   * @param folderRoles {@link Collection} {@link FolderRolePermission}
-   * @return {@link FolderIndexRecord}
-   */
-  public FolderIndexRecord rolePermissions(final Collection<FolderRolePermission> folderRoles) {
-    this.rolePermissions = folderRoles;
-    return this;
-  }
-
-  /**
-   * Get {@link Collection} {@link FolderRolePermission}.
-   *
-   * @return {@link Collection} {@link FolderRolePermission}
-   */
-  public Collection<FolderRolePermission> rolePermissions() {
-    return this.rolePermissions;
   }
 
   /**

@@ -50,6 +50,7 @@ import com.formkiq.stacks.dynamodb.DocumentSearchService;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexRecord;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexRecordExtended;
+import com.formkiq.stacks.dynamodb.folders.StringToFolder;
 
 /** {@link ApiGatewayRequestHandler} for "/folders". */
 public class FoldersRequestHandler implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
@@ -70,9 +71,7 @@ public class FoldersRequestHandler implements ApiGatewayRequestHandler, ApiGatew
       throw new BadException("missing 'path' parameters");
     }
 
-    if (!path.endsWith("/")) {
-      path += "/";
-    }
+    path = new StringToFolder().apply(path);
 
     String siteId = authorization.getSiteId();
     FolderIndexProcessor indexProcessor = awsservice.getExtension(FolderIndexProcessor.class);

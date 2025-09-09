@@ -29,6 +29,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 
@@ -205,4 +206,40 @@ public interface FolderIndexProcessor {
    */
   void setPermissions(String siteId, String path, Collection<FolderRolePermission> roles)
       throws IOException;
+
+  /**
+   * Get Folder Permissions Record.
+   * 
+   * @param siteId {@link String}
+   * @param indexKey {@link String}
+   * @return {@link FolderPermissionRecord}
+   */
+  FolderPermissionRecord getFolderPermissionsByIndexKey(String siteId, String indexKey);
+
+  /**
+   * Get Folder Permissions Record.
+   * 
+   * @param siteId {@link String}
+   * @param path {@link String}
+   * @return {@link FolderPermissionRecord}
+   */
+  FolderPermissionRecord getFolderPermissions(String siteId, String path);
+
+  /**
+   * Validate Folder Permissions.
+   *
+   * @param siteId {@link String}
+   * @param path {@link String}
+   * @param permission {@link ApiPermission}
+   */
+  void validateFolderPermissions(String siteId, String path, ApiPermission permission);
+
+  /**
+   * Converts IndexKey to Path.
+   * 
+   * @param siteId {@link String}
+   * @param indexKey {@link String}
+   * @return {@link String}
+   */
+  String toPath(String siteId, String indexKey);
 }

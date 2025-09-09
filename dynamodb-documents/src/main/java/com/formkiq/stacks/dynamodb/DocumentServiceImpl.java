@@ -43,6 +43,7 @@ import com.formkiq.aws.dynamodb.QueryResponseToPagination;
 import com.formkiq.aws.dynamodb.ReadRequestBuilder;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.WriteRequestBuilder;
+import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentSyncRecord;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
@@ -71,16 +72,16 @@ import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
 import com.formkiq.stacks.dynamodb.attributes.DynamicObjectToDocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.documents.DocumentPublicationRecord;
 import com.formkiq.stacks.dynamodb.folders.FindFolderIndexTopLevelFolder;
+import com.formkiq.stacks.dynamodb.folders.FindFolderParentByPath;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessorImpl;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexRecord;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexRecordExtended;
-import com.formkiq.stacks.dynamodb.folders.FolderPermissionPredicate;
+import com.formkiq.stacks.dynamodb.folders.FolderPermissionValidate;
 import com.formkiq.stacks.dynamodb.schemas.Schema;
 import com.formkiq.stacks.dynamodb.schemas.SchemaAttributes;
 import com.formkiq.stacks.dynamodb.schemas.SchemaService;
 import com.formkiq.stacks.dynamodb.schemas.SchemaServiceDynamodb;
-import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
@@ -123,6 +124,7 @@ import java.util.TimeZone;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
@@ -284,6 +286,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   @Override
   public void addTags(final String siteId, final String documentId,
       final Collection<DocumentTag> tags, final String timeToLive) {
+    validateDocumentPath(siteId, documentId);
     addTags(siteId, Map.of(documentId, tags), timeToLive);
   }
 
@@ -387,10 +390,6 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
           this.folderIndexProcessor.createFolders(siteId, document.getPath(), document.getUserId());
 
       FolderIndexRecord folder = last(folders);
-      if (folder != null) {
-        validateFolderPermissions(siteId, folder, ApiPermission.WRITE);
-      }
-
       folderIndexRecord = this.folderIndexProcessor.addFileToFolder(siteId,
           document.getDocumentId(), folder, document.getPath());
 
@@ -402,16 +401,6 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     }
 
     return folderIndexRecord;
-  }
-
-  private void validateFolderPermissions(final String siteId, final FolderIndexRecord folder,
-      final ApiPermission apiPermission) {
-
-    FolderPermissionPredicate pred = new FolderPermissionPredicate(apiPermission);
-
-    ValidationBuilder vb = new ValidationBuilder();
-    vb.authorized(pred.test(siteId, folder.rolePermissions()));
-    vb.check();
   }
 
   private String createPath(final List<FolderIndexRecord> folders,
@@ -459,7 +448,9 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     Map<String, AttributeValue> documentRecord = getDocumentRecord(siteId, documentId);
 
     if (documentRecord.containsKey("path")) {
-      deleteFolderIndex(siteId, documentRecord.get("path").s());
+      String path = DynamoDbTypes.toString(documentRecord.get("path"));
+      validateDocumentPath(siteId, path, Collections.emptyMap());
+      deleteFolderIndex(siteId, path);
     }
 
     Map<String, AttributeValue> keys = keysGeneric(siteId, PREFIX_DOCS + documentId, null);
@@ -659,7 +650,8 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
         FolderIndexRecord file = last(folderIndexRecords);
 
         if (folder != null) {
-          validateFolderPermissions(siteId, folder, ApiPermission.DELETE);
+          new FolderPermissionValidate(dbService, ApiPermission.DELETE).apply(siteId,
+              folder.path());
         }
 
         if (file != null && "file".equals(file.type())) {
@@ -1873,12 +1865,13 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       throws ValidationException {
 
     updatePathFromDeepLink(document);
-    validate(document);
 
     boolean documentExists = exists(siteId, document.getDocumentId());
 
     Map<String, AttributeValue> previous =
         documentExists ? loadPreviousDocument(keys) : Collections.emptyMap();
+
+    validate(siteId, document, previous);
 
     Map<String, AttributeValue> documentValues = new HashMap<>(previous);
     Map<String, AttributeValue> current =
@@ -2015,6 +2008,8 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       final Collection<DocumentAttributeRecord> attributes,
       final AttributeValidationType validation, final AttributeValidationAccess validationAccess)
       throws ValidationException {
+
+    validateDocumentPath(siteId, documentId);
 
     DynamodbRecordTx tx =
         getSaveDocumentAttributesTx(siteId, documentId, attributes, validation, validationAccess);
@@ -2424,9 +2419,12 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   /**
    * Validate {@link DocumentItem}.
    *
+   * @param siteId {@link String}
    * @param document {@link DocumentItem}
+   * @param previous {@link Map}
    */
-  private void validate(final DocumentItem document) throws ValidationException {
+  private void validate(final String siteId, final DocumentItem document,
+      final Map<String, AttributeValue> previous) throws ValidationException {
 
     Collection<ValidationError> errors = new ArrayList<>();
 
@@ -2436,10 +2434,30 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     validateDimension("width", document.getWidth(), errors);
     validateDimension("height", document.getHeight(), errors);
 
+    validateDocumentPath(siteId, document.getPath(), previous);
+
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }
   }
+
+  private void validateDocumentPath(final String siteId, final String documentId) {
+    Map<String, AttributeValue> key = keysDocument(siteId, documentId);
+    QueryConfig config = new QueryConfig().projectionExpression("#path")
+        .expressionAttributeNames(Map.of("#path", "path"));
+    Map<String, AttributeValue> attributes = this.dbService.get(config, key.get(PK), key.get(SK));
+    validateDocumentPath(siteId, DynamoDbTypes.toString(attributes.get("path")),
+        Collections.emptyMap());
+  }
+
+  private void validateDocumentPath(final String siteId, final String path,
+      final Map<String, AttributeValue> previous) {
+    List<String> paths = Stream.of(path, DynamoDbTypes.toString(previous.get("path")))
+        .map(new FindFolderParentByPath()).toList();
+    paths.forEach(
+        p -> folderIndexProcessor.validateFolderPermissions(siteId, p, ApiPermission.WRITE));
+  }
+
 
   private static void validateDocumentPath(final DocumentItem document,
       final Collection<ValidationError> errors) {
