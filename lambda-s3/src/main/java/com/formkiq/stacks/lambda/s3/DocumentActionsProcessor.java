@@ -560,6 +560,9 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
       final List<Action> actions, final Action action, final ProcessActionStatus processStatus) {
 
     switch (processStatus.actionStatus()) {
+      case RUNNING -> {
+        // skip
+      }
       case IN_QUEUE -> {
         action.status(processStatus.actionStatus());
         getActionsService().updateActionStatus(siteId, documentId, action);
