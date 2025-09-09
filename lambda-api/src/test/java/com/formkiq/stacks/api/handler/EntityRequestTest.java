@@ -221,35 +221,39 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
 
       String entityTypeId = addLlmPromptEntityType(siteId);
 
-      AddEntityRequest req =
-          new AddEntityRequest().entity(new AddEntity().name("MyPrompt").addAttributesItem(
-              new AddEntityAttribute().key("userPrompt").stringValue("This prompt")));
+      for (String namespace : Arrays.asList(null, "preset", "custom")) {
 
-      // when
-      AddEntityResponse response = this.entityApi.addEntity(entityTypeId, req, siteId, "preset");
+        String name = "MyPrompt_" + ID.uuid();
+        AddEntityRequest req =
+            new AddEntityRequest().entity(new AddEntity().name(name).addAttributesItem(
+                new AddEntityAttribute().key("userPrompt").stringValue("This prompt")));
 
-      // then
-      String entityId = response.getEntityId();
-      assertNotNull(entityId);
+        // when
+        AddEntityResponse response = this.entityApi.addEntity(entityTypeId, req, siteId, namespace);
 
-      // when - try with different namespaces
-      GetEntityResponse entityResponse0 =
-          this.entityApi.getEntity(entityTypeId, entityId, siteId, "preset");
-      GetEntityResponse entityResponse1 =
-          this.entityApi.getEntity(entityTypeId, entityId, siteId, "custom");
-      GetEntityResponse entityResponse2 =
-          this.entityApi.getEntity(entityTypeId, entityId, siteId, null);
+        // then
+        String entityId = response.getEntityId();
+        assertNotNull(entityId);
 
-      for (GetEntityResponse entityResponse : List.of(entityResponse0, entityResponse1,
-          entityResponse2)) {
-        Entity entity = entityResponse.getEntity();
-        assertNotNull(entity);
-        assertEquals("MyPrompt", entity.getName());
+        // when - try with different namespaces
+        GetEntityResponse entityResponse0 =
+            this.entityApi.getEntity(entityTypeId, entityId, siteId, "preset");
+        GetEntityResponse entityResponse1 =
+            this.entityApi.getEntity(entityTypeId, entityId, siteId, "custom");
+        GetEntityResponse entityResponse2 =
+            this.entityApi.getEntity(entityTypeId, entityId, siteId, null);
 
-        List<EntityAttribute> attributes = notNull(entity.getAttributes());
-        assertEquals(1, attributes.size());
-        assertEquals("userPrompt", attributes.get(0).getKey());
-        assertEquals("This prompt", attributes.get(0).getStringValue());
+        for (GetEntityResponse entityResponse : List.of(entityResponse0, entityResponse1,
+            entityResponse2)) {
+          Entity entity = entityResponse.getEntity();
+          assertNotNull(entity);
+          assertEquals(name, entity.getName());
+
+          List<EntityAttribute> attributes = notNull(entity.getAttributes());
+          assertEquals(1, attributes.size());
+          assertEquals("userPrompt", attributes.get(0).getKey());
+          assertEquals("This prompt", attributes.get(0).getStringValue());
+        }
       }
     }
   }
