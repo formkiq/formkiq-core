@@ -25,6 +25,7 @@ package com.formkiq.module.http;
 
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * A utility class for executing operations with retry logic and exponential backoff.
@@ -40,10 +41,12 @@ public class RetryExecutor {
    * @param <R> the return type of the operation
    * @param operation the function to execute; may throw an exception
    * @param retries the maximum number of retries before failing
+   * @param retryCondition a predicate that determines whether the result should be retried
    * @return the result of the successful operation
    * @throws RuntimeException if the operation fails after all retries
    */
-  public static <R> R executeWithRetry(final Function<Void, R> operation, final int retries) {
+  public static <R> R executeWithRetry(final Function<Void, R> operation, final int retries,
+      final Predicate<R> retryCondition) {
     int attempt = 0;
     long waitTime = INITIAL_DELAY_SECONDS;
 
