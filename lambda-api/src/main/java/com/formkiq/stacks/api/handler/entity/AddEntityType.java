@@ -23,14 +23,12 @@
  */
 package com.formkiq.stacks.api.handler.entity;
 
+import com.formkiq.aws.dynamodb.entity.EntityTypeNamespace;
 import com.formkiq.graalvm.annotations.Reflectable;
 
 /**
  * Add Entity Type.
  */
 @Reflectable
-record AddEntityType(String name, String namespace) {
-  public AddEntityType {
-    namespace = namespace != null ? namespace.toUpperCase() : null;
-  }
+public record AddEntityType(String name, EntityTypeNamespace namespace) {
 }

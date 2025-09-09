@@ -29,6 +29,7 @@ import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.logger.Logger;
@@ -40,6 +41,7 @@ import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecordBuilder;
 import com.formkiq.stacks.dynamodb.attributes.DocumentRelationshipType;
 import com.formkiq.stacks.lambda.s3.DocumentAction;
+import com.formkiq.stacks.lambda.s3.ProcessActionStatus;
 import com.formkiq.validation.ValidationException;
 
 import java.awt.image.BufferedImage;
@@ -67,11 +69,12 @@ public class ResizeAction implements DocumentAction {
   }
 
   @Override
-  public void run(final Logger logger, final String siteId, final String documentId,
+  public ProcessActionStatus run(final Logger logger, final String siteId, final String documentId,
       final List<Action> actions, final Action action) throws IOException, ValidationException {
     Image srcImage = createSrcImage(siteId, documentId);
     Image resImage = createResImage(srcImage, action.parameters());
     saveResImage(resImage, srcImage.documentId());
+    return new ProcessActionStatus(ActionStatus.COMPLETE);
   }
 
   private Image createSrcImage(final String siteId, final String documentId) throws IOException {

@@ -24,7 +24,10 @@
 package com.formkiq.aws.dynamodb;
 
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Configuration holder for converting DynamoDB AttributeValue maps.
@@ -34,10 +37,13 @@ public class AttributeValueToMapConfig {
   private final boolean removeDbKeys;
   /** {@link Map} of Keys to rename. */
   private final Map<String, String> renameKeys;
+  /** Delete Keys. */
+  private final Set<String> deleteKeys;
 
   private AttributeValueToMapConfig(final Builder builder) {
     this.removeDbKeys = builder.removeDbKeys;
     this.renameKeys = builder.renameKeys;
+    this.deleteKeys = builder.deleteKeys;
   }
 
   /**
@@ -59,6 +65,15 @@ public class AttributeValueToMapConfig {
   }
 
   /**
+   * Get Delete Keys.
+   *
+   * @return keys to delete
+   */
+  public Set<String> getDeleteKeys() {
+    return this.deleteKeys;
+  }
+
+  /**
    * {@link Builder}.
    *
    * @return a new Builder instance
@@ -72,6 +87,8 @@ public class AttributeValueToMapConfig {
     private boolean removeDbKeys = false;
     /** {@link Map} of Keys to rename. */
     private final Map<String, String> renameKeys = new HashMap<>();
+    /** Delete Keys. */
+    private final Set<String> deleteKeys = new HashSet<>();
 
     /**
      * {@link Builder}. If true, PK and SK keys will be omitted from the output map
@@ -93,6 +110,17 @@ public class AttributeValueToMapConfig {
      */
     public Builder addRenameKeys(final String fromKey, final String toKey) {
       this.renameKeys.put(fromKey, toKey);
+      return this;
+    }
+
+    /**
+     * Remove Keys from Map.
+     *
+     * @param keys {@link String}
+     * @return Builder
+     */
+    public Builder deleteKeys(final String... keys) {
+      this.deleteKeys.addAll(List.of(keys));
       return this;
     }
 

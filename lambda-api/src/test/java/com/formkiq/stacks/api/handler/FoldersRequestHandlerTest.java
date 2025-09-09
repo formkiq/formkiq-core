@@ -431,6 +431,16 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
       assertEquals("myrole", permissions.get(0).getRoleName());
       assertEquals("READ", notNull(permissions.get(0).getPermissions()).stream()
           .map(FolderPermissionType::getValue).collect(Collectors.joining(",")));
+
+      // when - set NO roles
+      setResponse = new SetFolderPermissionsRequestBuilder().path("path1").submit(client, siteId);
+
+      // then
+      assertNull(setResponse.exception());
+      assertEquals("Folder permissions set", setResponse.response().getMessage());
+
+      permissions = notNull(this.foldersApi.getFolderPermissions(indexKey, siteId).getRoles());
+      assertEquals(0, permissions.size());
     }
   }
 
@@ -598,8 +608,8 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
 
     // then
     assertEquals(SC_BAD_REQUEST.getStatusCode(), resp.exception().getCode());
-    assertEquals("{\"errors\":[{\"key\":\"path\",\"error\":\"'path' is required\"},"
-        + "{\"error\":\"'roles' is required\"}]}", resp.exception().getResponseBody());
+    assertEquals("{\"errors\":[{\"key\":\"path\",\"error\":\"'path' is required\"}]}",
+        resp.exception().getResponseBody());
   }
 
   /**

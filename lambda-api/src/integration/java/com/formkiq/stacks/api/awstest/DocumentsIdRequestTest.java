@@ -47,6 +47,7 @@ import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.client.model.AddDocumentResponse;
 import com.formkiq.client.model.ChecksumType;
 import com.formkiq.client.model.UpdateDocumentRequest;
+import com.formkiq.testutils.api.opensearch.OpenSearchIndexPurgeRequestBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import com.formkiq.client.api.AdvancedDocumentSearchApi;
@@ -75,10 +76,12 @@ public class DocumentsIdRequestTest extends AbstractAwsIntegrationTest {
   @Test
   @Timeout(value = TEST_TIMEOUT)
   public void testHandleSetDocumentRestore01() throws Exception {
+    // given
+    ApiClient client = getApiClients(null).get(0);
+    new OpenSearchIndexPurgeRequestBuilder().submit(client, null);
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
-      // given
-      ApiClient client = getApiClients(siteId).get(0);
+      client = getApiClients(siteId).get(0);
 
       DocumentsApi api = new DocumentsApi(client);
       AdvancedDocumentSearchApi sapi = new AdvancedDocumentSearchApi(client);
@@ -104,13 +107,15 @@ public class DocumentsIdRequestTest extends AbstractAwsIntegrationTest {
         assertEquals(SC_NOT_FOUND.getStatusCode(), e.getCode());
       }
 
-      try {
-        while (true) {
+      while (true) {
+        try {
           sapi.getDocumentFulltext(documentId, siteId, null);
           TimeUnit.SECONDS.sleep(1);
+        } catch (ApiException e) {
+          if (e.getCode() == SC_NOT_FOUND.getStatusCode()) {
+            break;
+          }
         }
-      } catch (ApiException e) {
-        assertEquals(SC_NOT_FOUND.getStatusCode(), e.getCode());
       }
 
       // when

@@ -7,30 +7,30 @@ def moduleName = "formkiq-module-lambda-ocr-tesseract"
 
 dependencies {
 
-	implementation project(':actions')
-	implementation project(':document-events')
-	implementation project(':aws-s3')
-	implementation project(':aws-sqs')
-	implementation project(':aws-sns')
-	implementation project(':aws-dynamodb')
-	implementation project(':ocr')
-	implementation project(':fkq-lambda-services')
-	implementation project(':fkq-lambda-core')
-	implementation("net.sourceforge.tess4j:tess4j:5.16.0")
-	implementation("org.slf4j:slf4j-simple:2.0.17")
-	implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.3.0'
-	implementation group: 'com.google.code.gson', name: 'gson', version: '2.13.1'
-	implementation group: 'net.java.dev.jna', name: 'jna', version: '5.17.0'
-	
-	implementation group: 'org.apache.poi', name: 'poi-ooxml', version: '5.4.1'
-	implementation group: 'org.apache.poi', name: 'poi-scratchpad', version: '5.4.1'
-	
-	testImplementation project(':fkq-test-utils')
+  implementation project(':actions')
+  implementation project(':document-events')
+  implementation project(':aws-s3')
+  implementation project(':aws-sqs')
+  implementation project(':aws-sns')
+  implementation project(':aws-dynamodb')
+  implementation project(':ocr')
+  implementation project(':fkq-lambda-services')
+  implementation project(':fkq-lambda-core')
+  implementation("net.sourceforge.tess4j:tess4j:5.16.0")
+  implementation("org.slf4j:slf4j-simple:2.0.17")
+  implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.3.0'
+  implementation group: 'com.google.code.gson', name: 'gson', version: '2.13.1'
+  implementation group: 'net.java.dev.jna', name: 'jna', version: '5.17.0'
 
-	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.11.4'
-    testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.21.1'
-	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.21.1'
-    testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.21.1'
+  implementation group: 'org.apache.poi', name: 'poi-ooxml', version: '5.4.1'
+  implementation group: 'org.apache.poi', name: 'poi-scratchpad', version: '5.4.1'
+
+  testImplementation project(':fkq-test-utils')
+
+  testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.11.4'
+  testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.21.1'
+  testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.21.1'
+  testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.21.1'
 }
 
 test {
@@ -40,48 +40,48 @@ test {
 }
 
 task downloadZipFile(type: Download) {
-    src 'https://github.com/bweigel/aws-lambda-tesseract-layer/releases/download/v5.3.9/tesseract-al2-x86.zip'
-    dest new File(buildDir, 'tesseract-al2-x86.zip')
-    overwrite false
+  src 'https://github.com/bweigel/aws-lambda-tesseract-layer/releases/download/v5.3.9/tesseract-al2-x86.zip'
+  dest new File(buildDir, 'tesseract-al2-x86.zip')
+  overwrite false
 }
 
 task downloadAndUnzipFile(dependsOn: downloadZipFile, type: Copy) {
-    from zipTree(downloadZipFile.dest)
-    into new File(buildDir, 'tesseract')
+  from zipTree(downloadZipFile.dest)
+  into new File(buildDir, 'tesseract')
 }
 
 task updateTesseractFiles(type: Delete) {
-	dependsOn downloadAndUnzipFile
-	def directory = file("${buildDir}/tesseract/tesseract/share/tessdata/")
-    
-    doLast {
-    	file("${buildDir}/tesseract/lib/libtesseract.so.5").renameTo(file("${buildDir}/tesseract/lib/libtesseract.so"))
-        directory.eachFile { file ->
-            if (file.name != "eng.traineddata" && file.name != "osd.traineddata") {
-                file.delete()
-            }
-        }
+  dependsOn downloadAndUnzipFile
+  def directory = file("${buildDir}/tesseract/tesseract/share/tessdata/")
+
+  doLast {
+    file("${buildDir}/tesseract/lib/libtesseract.so.5").renameTo(file("${buildDir}/tesseract/lib/libtesseract.so"))
+    directory.eachFile { file ->
+      if (file.name != "eng.traineddata" && file.name != "osd.traineddata") {
+        file.delete()
+      }
     }
+  }
 }
 
 task buildTesseractLayer(type: Zip) {
-	dependsOn updateTesseractFiles
-    from "${buildDir}/tesseract"
-    archiveFileName.set("layer-tesseract-5.3.1.zip")
-    destinationDirectory = file("${buildDir}/distributions/api")
+  dependsOn updateTesseractFiles
+  from "${buildDir}/tesseract"
+  archiveFileName.set("layer-tesseract-5.3.1.zip")
+  destinationDirectory = file("${buildDir}/distributions/api")
 }
 
 task buildTemplate {
-	inputs.files("src/main/resources/cloudformation/template-ocr.yaml")
-	outputs.files("${buildDir}/distributions/api/template-ocr.yaml")
-  
-	doLast {
-		copy {
-		  from layout.buildDirectory.dir("${buildDir}/../src/main/resources/cloudformation")
-		  include "template*"
-	      into "${buildDir}/distributions/api"
-	    }
-	}
+  inputs.files("src/main/resources/cloudformation/template-ocr.yaml")
+  outputs.files("${buildDir}/distributions/api/template-ocr.yaml")
+
+  doLast {
+    copy {
+      from layout.buildDirectory.dir("${buildDir}/../src/main/resources/cloudformation")
+      include "template*"
+      into "${buildDir}/distributions/api"
+    }
+  }
 }
 
 distZip.dependsOn buildTemplate, buildTesseractLayer
@@ -89,18 +89,18 @@ distZip.dependsOn buildTemplate, buildTesseractLayer
 tasks.distTar.enabled = false
 
 distZip {
-    archiveFileName = "api/${moduleName}.zip"
+  archiveFileName = "api/${moduleName}.zip"
 }
 
 distributions {
-    main {
-        contents {
-            from compileJava
-    		from processResources              
-    		into('lib') {
-        		from configurations.runtimeClasspath
-    		}    
-            into '/'
-        }
+  main {
+    contents {
+      from compileJava
+      from processResources
+      into('lib') {
+        from configurations.runtimeClasspath
+      }
+      into '/'
     }
+  }
 }

@@ -32,6 +32,7 @@ import com.formkiq.aws.dynamodb.DynamoDbQueryBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.base64.MapAttributeValueToString;
+import com.formkiq.aws.dynamodb.entity.EntityTypeNamespace;
 import com.formkiq.aws.dynamodb.entity.EntityTypeRecord;
 import com.formkiq.aws.dynamodb.useractivities.ActivityResourceType;
 import com.formkiq.aws.dynamodb.useractivities.AttributeValuesToChangeRecordFunction;
@@ -44,7 +45,7 @@ import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.useractivity.UserActivityContext;
-import com.formkiq.stacks.api.handler.entity.query.EntityTypeNameToIdQuery;
+import com.formkiq.aws.dynamodb.entity.FindEntityTypeByName;
 import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -72,11 +73,11 @@ public class EntityTypesRequestHandler
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorization.getSiteId();
-    String namespace = getNamespace(event);
+    EntityTypeNamespace namespace = new QueryParameterNamespace().apply(event);
 
     String tableName = awsservice.environment("DOCUMENTS_TABLE");
-    DynamoDbKey key =
-        EntityTypeRecord.builder().documentId("").namespace(namespace).name("").buildKey(siteId);
+    DynamoDbKey key = EntityTypeRecord.builder().documentId("").namespace(namespace).name("")
+        .validateNamespace().buildKey(siteId);
 
     QueryRequest q = DynamoDbQueryBuilder.builder().indexName(GSI1).pk(key.gsi1Pk())
         .beginsWith(key.gsi1Sk()).nextToken(event.getQueryStringParameter("next"))
@@ -92,20 +93,6 @@ public class EntityTypesRequestHandler
 
     return ApiRequestHandlerResponse.builder().status(SC_OK).body("entityTypes", items)
         .body("next", nextToken).build();
-  }
-
-  private String getNamespace(final ApiGatewayRequestEvent event) throws ValidationException {
-    String namespace = event.getQueryStringParameter("namespace");
-
-    if (namespace != null) {
-      ValidationBuilder vb = new ValidationBuilder();
-      vb.isEquals("namespace", namespace, List.of("PRESET", "CUSTOM"));
-      vb.check();
-    } else {
-      namespace = "PRESET";
-    }
-
-    return namespace;
   }
 
   @Override
@@ -143,15 +130,13 @@ public class EntityTypesRequestHandler
   }
 
   private void validateExist(final AwsServiceCache awsservice, final DynamoDbService db,
-      final String siteId, final String name, final String namespace) {
+      final String siteId, final String name, final EntityTypeNamespace namespace) {
     ValidationBuilder vb = new ValidationBuilder();
 
     String documentsTable = awsservice.environment("DOCUMENTS_TABLE");
 
-    EntityTypeRecord entityType =
-        EntityTypeRecord.builder().name("").documentId(name).namespace(namespace).build(siteId);
-
-    QueryRequest req = new EntityTypeNameToIdQuery().build(documentsTable, siteId, entityType);
+    QueryRequest req = new FindEntityTypeByName().build(documentsTable, siteId,
+        new FindEntityTypeByName.EntityTypeName(namespace, name));
     vb.isRequired("name", !db.exists(req), "'name' already exists");
 
     vb.check();
@@ -159,17 +144,9 @@ public class EntityTypesRequestHandler
 
   private void validate(final AddEntityTypeRequest request)
       throws BadException, ValidationException {
+
     if (request == null || request.entityType() == null) {
       throw new BadException("Missing required parameter 'entityType'");
     }
-
-    ValidationBuilder vb = new ValidationBuilder();
-    vb.isRequired("name", request.entityType().name());
-    vb.isRequired("namespace", request.entityType().namespace());
-    vb.check();
-
-    vb.isValidByRegex("name", request.entityType().name(), "^[A-Z][A-Za-z0-9]+$");
-    vb.isEquals("namespace", request.entityType().namespace(), "CUSTOM");
-    vb.check();
   }
 }

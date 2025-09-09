@@ -34,12 +34,14 @@ import java.util.List;
 
 import com.formkiq.aws.ses.SesService;
 import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import com.formkiq.stacks.lambda.s3.DocumentAction;
+import com.formkiq.stacks.lambda.s3.ProcessActionStatus;
 import software.amazon.awssdk.services.ses.model.Body;
 import software.amazon.awssdk.services.ses.model.Content;
 import software.amazon.awssdk.services.ses.model.Message;
@@ -70,7 +72,7 @@ public class NotificationAction implements DocumentAction {
   }
 
   @Override
-  public void run(final Logger logger, final String siteId, final String documentId,
+  public ProcessActionStatus run(final Logger logger, final String siteId, final String documentId,
       final List<Action> actions, final Action action) throws IOException {
 
     String cc = (String) action.parameters().get(PARAMETER_NOTIFICATION_TO_CC);
@@ -90,5 +92,6 @@ public class NotificationAction implements DocumentAction {
     }
 
     this.ses.sendEmail(this.source, cc, bcc, msg.build());
+    return new ProcessActionStatus(ActionStatus.COMPLETE);
   }
 }

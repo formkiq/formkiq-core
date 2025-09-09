@@ -3,133 +3,148 @@ description = "Lambda API Graalvm"
 apply plugin: 'distribution'
 
 def getCmd() {
-    String os = System.getProperty("os.name").toLowerCase()
-    return os.contains("win") ? "cmd" : "bash"
+  String os = System.getProperty("os.name").toLowerCase()
+  return os.contains("win") ? "cmd" : "bash"
 }
 
 def getCmdParam() {
-    String os = System.getProperty("os.name").toLowerCase()
-    return os.contains("win") ? "/c" : "-c"
+  String os = System.getProperty("os.name").toLowerCase()
+  return os.contains("win") ? "/c" : "-c"
 }
 
 dependencies {
-	implementation project(':lambda-api')
+  implementation project(':lambda-api')
 }
 
 compileJava {
-    options.annotationProcessorPath += configurations.runtimeClasspath
+  options.annotationProcessorPath += configurations.runtimeClasspath
 }
 
 nativeImage {
-	outputFileName = "server"
-	mainClassName = "com.formkiq.lambda.runtime.graalvm.LambdaRuntime"
-	dockerImage = "ghcr.io/graalvm/native-image-community:24"
-    enableHttp = true
-    enableHttps = true
-	buildOptions = "-Os -H:-ReduceImplicitExceptionStackTraceInformation"
-	systemProperty = ["java.net.preferIPv4Stack=true"]
+  outputFileName = "server"
+  mainClassName = "com.formkiq.lambda.runtime.graalvm.LambdaRuntime"
+  dockerImage = "ghcr.io/graalvm/native-image-community:24"
+  enableHttp = true
+  enableHttps = true
+  buildOptions = "-Os -H:-ReduceImplicitExceptionStackTraceInformation"
+  systemProperty = [
+    "java.net.preferIPv4Stack=true"
+  ]
 }
 
 test {
   failFast = true
-  useJUnitPlatform()  
+  useJUnitPlatform()
 }
 
 task buildTemplate {
-	inputs.files("src/main/resources/cloudformation/template.yaml", "src/main/resources/cloudformation/module-extra-core-ocr.yaml", "src/main/resources/cloudformation/api.yaml", "src/main/resources/cloudformation/api-iam.yaml", "src/main/resources/cloudformation/api-apikey.yaml", "src/main/resources/cloudformation/api-lambda.yaml", "src/main/resources/cloudformation/api-auth.yaml")
-	outputs.files("${buildDir}/distributions/api/template.yaml")
-	
-	def randomtext = ('0'..'z').shuffled().take(10).join();
-	def sha256 = randomtext.digest('SHA-256')
+  inputs.files("src/main/resources/cloudformation/template.yaml", "src/main/resources/cloudformation/module-extra-core-ocr.yaml", "src/main/resources/cloudformation/api.yaml", "src/main/resources/cloudformation/api-iam.yaml", "src/main/resources/cloudformation/api-apikey.yaml", "src/main/resources/cloudformation/api-lambda.yaml", "src/main/resources/cloudformation/api-auth.yaml")
+  outputs.files("${buildDir}/distributions/api/template.yaml")
 
-	doLast {
-	
-		/*
-		copy {
-		  from layout.buildDirectory.file("${buildDir}/lambda-api-graalvm.zip")
-		  from layout.buildDirectory.file("${buildDir}/layer-tesseract-5.3.1.zip")
-	      into "${buildDir}/distributions/formkiq-core/sam/api"
-	    }*/
+  def randomtext = ('0'..'z').shuffled().take(10).join();
+  def sha256 = randomtext.digest('SHA-256')
 
-		// build API Lambda
-		exec {
-			commandLine getCmd(), getCmdParam(), "ytt --data-value hash=${sha256} -f src/main/resources/cloudformation/api-lambda.yaml > ${buildDir}/distributions/api/api-lambda.yaml"
-		}
-				
-		// build APIs
-		exec {
-			commandLine getCmd(), getCmdParam(), "ytt --data-value hash=${sha256} --data-value version=${project.version} -f src/main/resources/cloudformation/api.yaml -f src/main/resources/cloudformation/openapi-jwt.yaml > ${buildDir}/distributions/api/api.yaml"
-		}
-		
-		exec {
-			commandLine getCmd(), getCmdParam(), "ytt --data-value hash=${sha256} --data-value version=${project.version} -f src/main/resources/cloudformation/api-iam.yaml -f src/main/resources/cloudformation/openapi-iam.yaml > ${buildDir}/distributions/api/api-iam.yaml"
-		}
-		
-		exec {
-			commandLine getCmd(), getCmdParam(), "ytt --data-value hash=${sha256} --data-value version=${project.version} -f src/main/resources/cloudformation/api-apikey.yaml -f src/main/resources/cloudformation/openapi-key.yaml > ${buildDir}/distributions/api/api-apikey.yaml"
-		}
+  doLast {
 
-		exec {
-			commandLine getCmd(), getCmdParam(), "ytt --data-value hash=${sha256} --data-value version=${project.version} -f src/main/resources/cloudformation/api-auth.yaml -f src/main/resources/cloudformation/openapi-auth.yaml > ${buildDir}/distributions/api/api-auth.yaml"
-		}
+    /*
+     copy {
+     from layout.buildDirectory.file("${buildDir}/lambda-api-graalvm.zip")
+     from layout.buildDirectory.file("${buildDir}/layer-tesseract-5.3.1.zip")
+     into "${buildDir}/distributions/formkiq-core/sam/api"
+     }*/
 
-		// build template
-		exec {
-			commandLine getCmd(), getCmdParam(), "ytt --data-value hash=${sha256} -f src/main/resources/cloudformation/template.yaml -f src/main/resources/cloudformation/module-extra-core-ocr.yaml  > ${buildDir}/distributions/api/template.yaml"
-		}
-	}
+    // build API Lambda
+    exec {
+      commandLine getCmd(), getCmdParam(), "ytt --data-value hash=${sha256} -f src/main/resources/cloudformation/api-lambda.yaml > ${buildDir}/distributions/api/api-lambda.yaml"
+    }
+
+    // build APIs
+    exec {
+      commandLine getCmd(), getCmdParam(), "ytt --data-value hash=${sha256} --data-value version=${project.version} -f src/main/resources/cloudformation/api.yaml -f src/main/resources/cloudformation/openapi-jwt.yaml > ${buildDir}/distributions/api/api.yaml"
+    }
+
+    exec {
+      commandLine getCmd(), getCmdParam(), "ytt --data-value hash=${sha256} --data-value version=${project.version} -f src/main/resources/cloudformation/api-iam.yaml -f src/main/resources/cloudformation/openapi-iam.yaml > ${buildDir}/distributions/api/api-iam.yaml"
+    }
+
+    exec {
+      commandLine getCmd(), getCmdParam(), "ytt --data-value hash=${sha256} --data-value version=${project.version} -f src/main/resources/cloudformation/api-apikey.yaml -f src/main/resources/cloudformation/openapi-key.yaml > ${buildDir}/distributions/api/api-apikey.yaml"
+    }
+
+    exec {
+      commandLine getCmd(), getCmdParam(), "ytt --data-value hash=${sha256} --data-value version=${project.version} -f src/main/resources/cloudformation/api-auth.yaml -f src/main/resources/cloudformation/openapi-auth.yaml > ${buildDir}/distributions/api/api-auth.yaml"
+    }
+
+    // build template
+    exec {
+      commandLine getCmd(), getCmdParam(), "ytt --data-value hash=${sha256} -f src/main/resources/cloudformation/template.yaml -f src/main/resources/cloudformation/module-extra-core-ocr.yaml  > ${buildDir}/distributions/api/template.yaml"
+    }
+  }
 }
 
 task downloadOpenApiGenerator(type: Download) {
-	dependsOn check
-    src "https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/7.13.0/openapi-generator-cli-7.13.0.jar"
-    dest buildDir
-    overwrite false
+  dependsOn check
+  src "https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/7.13.0/openapi-generator-cli-7.13.0.jar"
+  dest buildDir
+  overwrite false
 }
 
 task assembleOpenApiTemplate {
-    dependsOn downloadOpenApiGenerator
-	inputs.files("src/main/resources/cloudformation/api.yaml", "src/main/resources/cloudformation/api-iam.yaml", "src/main/resources/cloudformation/api-key.yaml")
-	
-	doLast {
+  dependsOn downloadOpenApiGenerator
+  inputs.files("src/main/resources/cloudformation/api.yaml", "src/main/resources/cloudformation/api-iam.yaml", "src/main/resources/cloudformation/api-key.yaml")
 
-		def fileSpec = new File("${buildDir}/openapi-spec.yaml")
-		fileSpec.text = ["Resources:"].join(System.lineSeparator())
-		
-		for (fileName in ["openapi-jwt", "openapi-iam", "openapi-key", "openapi-auth"]) {
-			exec {
-				commandLine getCmd(), getCmdParam(), "ytt --data-value version=${project.version} -f ${buildDir}/openapi-spec.yaml -f ${buildDir}/../src/main/resources/cloudformation/${fileName}.yaml > ${buildDir}/temp-${fileName}.yaml"
-			}
-		}
+  doLast {
 
-		for (fileName in ["openapi-jwt", "openapi-iam", "openapi-key", "openapi-auth"]) {
-		
-			def lines = new File("${buildDir}/temp-${fileName}.yaml").readLines()
-			for (int i = 0; i < 4; i++) {
-			  lines.removeAt(0)
-			}
+    def fileSpec = new File("${buildDir}/openapi-spec.yaml")
+    fileSpec.text = ["Resources:"].join(System.lineSeparator())
 
-			def apiTitle = fileName == "openapi-jwt" ? "FormKiQ API JWT" :
-					fileName == "openapi-iam" ? "FormKiQ API IAM" :
-							fileName == "openapi-key" ? "FormKiQ API Key" : "FormKiQ API"
+    for (fileName in [
+          "openapi-jwt",
+          "openapi-iam",
+          "openapi-key",
+          "openapi-auth"
+        ]) {
+      exec {
+        commandLine getCmd(), getCmdParam(), "ytt --data-value version=${project.version} -f ${buildDir}/openapi-spec.yaml -f ${buildDir}/../src/main/resources/cloudformation/${fileName}.yaml > ${buildDir}/temp-${fileName}.yaml"
+      }
+    }
 
-			def file = new File("${buildDir}/../../docs/openapi/${fileName}.yaml")
-			file.text = lines
-				.findAll { line -> !line.contains("API - ") }
-				.collect { e -> e.startsWith("          title:") ? "          title: ${apiTitle}" : e}.join(System.lineSeparator())
-			
-			javaexec { 
-    			main="-jar";
-    			args = [
-            		"${buildDir}/openapi-generator-cli-7.13.0.jar",
-            		"generate",
-            		"-i", "${buildDir}/../../docs/openapi/${fileName}.yaml",
-            		"-g", "asciidoc", 
-            		"-o", "${buildDir}/${fileName}"
-           		]
-  			} 
-		}
-	}
+    for (fileName in [
+          "openapi-jwt",
+          "openapi-iam",
+          "openapi-key",
+          "openapi-auth"
+        ]) {
+
+      def lines = new File("${buildDir}/temp-${fileName}.yaml").readLines()
+      for (int i = 0; i < 4; i++) {
+        lines.removeAt(0)
+      }
+
+      def apiTitle = fileName == "openapi-jwt" ? "FormKiQ API JWT" :
+          fileName == "openapi-iam" ? "FormKiQ API IAM" :
+          fileName == "openapi-key" ? "FormKiQ API Key" : "FormKiQ API"
+
+      def file = new File("${buildDir}/../../docs/openapi/${fileName}.yaml")
+      file.text = lines
+          .findAll { line -> !line.contains("API - ") }
+          .collect { e -> e.startsWith("          title:") ? "          title: ${apiTitle}" : e}.join(System.lineSeparator())
+
+      javaexec {
+        main="-jar";
+        args = [
+          "${buildDir}/openapi-generator-cli-7.13.0.jar",
+          "generate",
+          "-i",
+          "${buildDir}/../../docs/openapi/${fileName}.yaml",
+          "-g",
+          "asciidoc",
+          "-o",
+          "${buildDir}/${fileName}"
+        ]
+      }
+    }
+  }
 }
 
 graalvmNativeImage.dependsOn(downloadOpenApiGenerator)
@@ -139,19 +154,19 @@ distZip.dependsOn buildTemplate, assembleOpenApiTemplate, graalvmNativeImage
 tasks.distTar.enabled = false
 
 distZip {
-    archiveFileName = "api/lambda-api-graalvm.zip"
+  archiveFileName = "api/lambda-api-graalvm.zip"
 }
 
 distributions {
-    main {
-        contents {
-            from("runtime/") {
-            	include "bootstrap"
-            }
-            from ("${buildDir}/graalvm/output") {
-                include("server")
-            }
-            into '/'
-        }
+  main {
+    contents {
+      from("runtime/") {
+        include "bootstrap"
+      }
+      from ("${buildDir}/graalvm/output") {
+        include("server")
+      }
+      into '/'
     }
+  }
 }

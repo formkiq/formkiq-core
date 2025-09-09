@@ -24,10 +24,12 @@
 package com.formkiq.stacks.lambda.s3.actions;
 
 import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.logger.LogLevel;
 import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.stacks.lambda.s3.DocumentAction;
+import com.formkiq.stacks.lambda.s3.ProcessActionStatus;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -61,7 +63,7 @@ public class AddOcrAction implements DocumentAction {
   }
 
   @Override
-  public void run(final Logger logger, final String siteId, final String documentId,
+  public ProcessActionStatus run(final Logger logger, final String siteId, final String documentId,
       final List<Action> actions, final Action action) throws IOException {
     Map<String, Object> payload = buildAddOcrPayload(action);
     String json = this.gson.toJson(payload);
@@ -73,6 +75,7 @@ public class AddOcrAction implements DocumentAction {
     }
 
     this.http.sendRequest(siteId, "post", "/documents/" + documentId + "/ocr", json);
+    return new ProcessActionStatus(ActionStatus.RUNNING);
   }
 
   private Map<String, Object> buildAddOcrPayload(final Action action) {

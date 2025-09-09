@@ -52,7 +52,6 @@ import com.formkiq.aws.ssm.SsmServiceExtension;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
-import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionStatusPredicate;
 import com.formkiq.module.actions.services.ActionsNotificationService;
 import com.formkiq.module.actions.services.ActionsNotificationServiceExtension;
@@ -91,6 +90,7 @@ import com.formkiq.stacks.lambda.s3.actions.FullTextAction;
 import com.formkiq.stacks.lambda.s3.actions.IdpAction;
 import com.formkiq.stacks.lambda.s3.actions.NotificationAction;
 import com.formkiq.stacks.lambda.s3.actions.PdfExportAction;
+import com.formkiq.stacks.lambda.s3.actions.SetDataClassificationAction;
 import com.formkiq.stacks.lambda.s3.actions.resize.ResizeAction;
 import com.formkiq.stacks.lambda.s3.actions.SendHttpRequest;
 import com.formkiq.stacks.lambda.s3.event.AwsEvent;
@@ -120,6 +120,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
+import static com.formkiq.module.actions.ActionStatus.PENDING;
 import static com.formkiq.module.events.document.DocumentEventType.ACTIONS;
 
 /** {@link RequestHandler} for handling Document Actions. */
@@ -282,78 +283,75 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
       final List<Action> actions, final Action action)
       throws IOException, InterruptedException, ValidationException {
 
-    ActionStatus completeStatus = ActionStatus.COMPLETE;
-
     logAction(logger, "action start", siteId, documentId, action);
 
-    boolean updateComplete = false;
+    ProcessActionStatus actionStatus = performAction(logger, siteId, documentId, actions, action);
+
+    logAction(logger, "action complete", siteId, documentId, action);
+
+    updateComplete(logger, siteId, documentId, actions, action, actionStatus);
+  }
+
+  private ProcessActionStatus performAction(final Logger logger, final String siteId,
+      final String documentId, final List<Action> actions, final Action action)
+      throws IOException, InterruptedException {
+    ProcessActionStatus actionStatus;
     switch (action.type()) {
-      case QUEUE -> {
-        completeStatus = ActionStatus.IN_QUEUE;
-        updateComplete = true;
-      }
+      case QUEUE -> actionStatus = new ProcessActionStatus(ActionStatus.IN_QUEUE);
 
       case DOCUMENTTAGGING -> {
         DocumentTaggingAction dtAction = new DocumentTaggingAction(serviceCache);
-        dtAction.run(logger, siteId, documentId, actions, action);
-
-        updateComplete = true;
+        actionStatus = dtAction.run(logger, siteId, documentId, actions, action);
       }
 
-      case OCR -> new AddOcrAction(serviceCache).run(logger, siteId, documentId, actions, action);
+      case OCR -> actionStatus =
+          new AddOcrAction(serviceCache).run(logger, siteId, documentId, actions, action);
 
-      case FULLTEXT ->
-        new FullTextAction(serviceCache).run(logger, siteId, documentId, actions, action);
+      case FULLTEXT -> actionStatus =
+          new FullTextAction(serviceCache).run(logger, siteId, documentId, actions, action);
 
-      case ANTIVIRUS -> new SendHttpRequest(serviceCache).sendRequest(siteId, "PUT",
-          "/documents/" + documentId + "/antivirus", "");
+      case ANTIVIRUS -> {
+        new SendHttpRequest(serviceCache).sendRequest(siteId, "PUT",
+            "/documents/" + documentId + "/antivirus", "");
+        actionStatus = new ProcessActionStatus(ActionStatus.RUNNING);
+      }
 
-      case WEBHOOK -> sendWebhook(logger, siteId, documentId, actions, action);
+      case WEBHOOK -> actionStatus = sendWebhook(siteId, documentId, action);
 
       case NOTIFICATION -> {
         DocumentAction da = new NotificationAction(siteId, serviceCache);
-        da.run(logger, siteId, documentId, actions, action);
-
-        updateComplete = true;
+        actionStatus = da.run(logger, siteId, documentId, actions, action);
       }
 
       case IDP -> {
         DocumentAction da = new IdpAction(serviceCache);
-        da.run(logger, siteId, documentId, actions, action);
-        updateComplete = true;
+        actionStatus = da.run(logger, siteId, documentId, actions, action);
       }
 
       case PUBLISH -> {
         DocumentAction da = new PublishAction(serviceCache);
-        da.run(logger, siteId, documentId, actions, action);
-        updateComplete = true;
+        actionStatus = da.run(logger, siteId, documentId, actions, action);
       }
 
       case PDFEXPORT -> {
         DocumentAction da = new PdfExportAction(serviceCache);
-        da.run(logger, siteId, documentId, actions, action);
-        updateComplete = true;
+        actionStatus = da.run(logger, siteId, documentId, actions, action);
       }
 
       case EVENTBRIDGE -> {
         DocumentAction da = new EventBridgeAction(serviceCache);
-        da.run(logger, siteId, documentId, actions, action);
-        updateComplete = true;
+        actionStatus = da.run(logger, siteId, documentId, actions, action);
       }
 
-      case RESIZE -> {
-        new ResizeAction(serviceCache).run(logger, siteId, documentId, actions, action);
-        updateComplete = true;
-      }
+      case RESIZE -> actionStatus =
+          new ResizeAction(serviceCache).run(logger, siteId, documentId, actions, action);
+
+      case DATA_CLASSIFICATION -> actionStatus = new SetDataClassificationAction(serviceCache)
+          .run(logger, siteId, documentId, actions, action);
 
       default -> throw new IOException("Unhandled Action Type: " + action.type());
     }
-
-    logAction(logger, "action complete", siteId, documentId, action);
-
-    if (updateComplete) {
-      updateComplete(logger, siteId, documentId, actions, action, completeStatus);
-    }
+    return actionStatus;
   }
 
   /**
@@ -376,7 +374,7 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
       Optional<Action> running =
           actions.stream().filter(new ActionStatusPredicate(ActionStatus.RUNNING)).findAny();
       Optional<Action> o =
-          actions.stream().filter((new ActionStatusPredicate(ActionStatus.PENDING))).findFirst();
+          actions.stream().filter((new ActionStatusPredicate(PENDING))).findFirst();
 
       if (running.isPresent()) {
 
@@ -455,37 +453,40 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
     String eventName = map.eventName();
     AwsEventDynamodbEntity dynamodb = map.dynamodb();
     AwsEventDynamodbNewImage newImage = dynamodb.newImage();
-    String siteId = newImage.siteId().s();
-    String documentId = newImage.documentId().s();
-    DynamodbAttributeValue activityKeys = newImage.activityKeys();
 
-    List<DynamoDbKey> keys = activityKeys.l().stream()
-        .map(a -> new DynamoDbKey(a.m().get(PK).s(), a.m().get(SK).s(), null, null, null, null))
-        .toList();
-    DynamoDbService db = serviceCache.getExtension(DynamoDbService.class);
-    Collection<Map<String, AttributeValue>> activities =
-        db.get(serviceCache.environment("DOCUMENTS_AUDIT_TABLE"), keys);
-    String detailType = new DetailTypeResolver().apply(activities);
+    if (newImage != null) {
+      String siteId = newImage.siteId().s();
+      String documentId = newImage.documentId().s();
+      DynamodbAttributeValue activityKeys = newImage.activityKeys();
 
-    String pk = dynamodb.keys().pk().s();
-    String sk = dynamodb.keys().sk().s();
-    String s = String.format(
-        "{\"eventName\": \"%s\",\"PK\": \"%s\",\"SK\":\"%s\","
-            + "\"siteId\":\"%s\",\"documentId\":\"%s\",\"type\":\"%s\"}",
-        eventName, pk, sk, siteId, documentId, detailType);
-    logger.info(s);
+      List<DynamoDbKey> keys = activityKeys.l().stream()
+          .map(a -> new DynamoDbKey(a.m().get(PK).s(), a.m().get(SK).s(), null, null, null, null))
+          .toList();
 
+      DynamoDbService db = serviceCache.getExtension(DynamoDbService.class);
+      Collection<Map<String, AttributeValue>> activities =
+          db.get(serviceCache.environment("DOCUMENTS_AUDIT_TABLE"), keys);
+      String detailType = new DetailTypeResolver().apply(activities);
 
-    String detail = new DocumentExternalSystemExport(serviceCache).apply(siteId, documentId,
-        activities.stream().map(new AttributeValueToMap()).toList());
+      String pk = dynamodb.keys().pk().s();
+      String sk = dynamodb.keys().sk().s();
+      String s = String.format(
+          "{\"eventName\": \"%s\",\"PK\": \"%s\",\"SK\":\"%s\","
+              + "\"siteId\":\"%s\",\"documentId\":\"%s\",\"type\":\"%s\"}",
+          eventName, pk, sk, siteId, documentId, detailType);
+      logger.info(s);
 
-    String appEnvironment = serviceCache.environment("APP_ENVIRONMENT");
-    EventBridgeMessage msg =
-        new EventBridgeMessageBuilder().build(appEnvironment, detailType, detail);
-    EventBridgeService eventBridgeService = serviceCache.getExtension(EventBridgeService.class);
+      String detail = new DocumentExternalSystemExport(serviceCache).apply(siteId, documentId,
+          activities.stream().map(new AttributeValueToMap()).toList());
 
-    String documentEventsBus = serviceCache.environment("DOCUMENT_EVENTS_BUS");
-    eventBridgeService.putEvents(documentEventsBus, msg);
+      String appEnvironment = serviceCache.environment("APP_ENVIRONMENT");
+      EventBridgeMessage msg =
+          new EventBridgeMessageBuilder().build(appEnvironment, detailType, detail);
+      EventBridgeService eventBridgeService = serviceCache.getExtension(EventBridgeService.class);
+
+      String documentEventsBus = serviceCache.environment("DOCUMENT_EVENTS_BUS");
+      eventBridgeService.putEvents(documentEventsBus, msg);
+    }
   }
 
   private void processDocumentEvent(final Logger logger, final AwsEventSnsNotification map) {
@@ -504,17 +505,16 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
 
   /**
    * Sends Webhook.
-   * 
-   * @param logger {@link Logger}
+   *
    * @param siteId {@link String}
    * @param documentId {@link String}
-   * @param actions {@link List} {@link Action}
    * @param action {@link Action}
+   * @return {@link ProcessActionStatus}
    * @throws IOException IOException
    * @throws InterruptedException InterruptedException
    */
-  private void sendWebhook(final Logger logger, final String siteId, final String documentId,
-      final List<Action> actions, final Action action) throws IOException, InterruptedException {
+  private ProcessActionStatus sendWebhook(final String siteId, final String documentId,
+      final Action action) throws IOException, InterruptedException {
 
     String url = (String) action.parameters().get("url");
 
@@ -535,7 +535,7 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
 
       if (statusCode >= statusOk && statusCode < statusRedirect) {
 
-        updateComplete(logger, siteId, documentId, actions, action, ActionStatus.COMPLETE);
+        return new ProcessActionStatus(ActionStatus.COMPLETE);
 
       } else {
         throw new IOException(url + " response status code " + statusCode);
@@ -554,23 +554,35 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
    * @param documentId {@link String}
    * @param actions {@link List} {@link Action}
    * @param action {@link Action}
-   * @param completeStatus {@link ActionStatus}
+   * @param processStatus {@link ProcessActionStatus}
    */
   private void updateComplete(final Logger logger, final String siteId, final String documentId,
-      final List<Action> actions, final Action action, final ActionStatus completeStatus) {
+      final List<Action> actions, final Action action, final ProcessActionStatus processStatus) {
 
-    logger.trace(String.format("updating status of %s to %s", documentId, completeStatus));
+    switch (processStatus.actionStatus()) {
+      case RUNNING -> {
+        // skip
+      }
+      case IN_QUEUE -> {
+        action.status(processStatus.actionStatus());
+        getActionsService().updateActionStatus(siteId, documentId, action);
+        updateDocumentWorkflow(siteId, documentId, action);
+      }
+      case PENDING -> {
+        action.status(processStatus.actionStatus());
+        getActionsService().updateActionStatus(siteId, documentId, action);
+        getNotificationService().publishNextActionEvent(siteId, documentId);
+      }
 
-    action.status(completeStatus);
-    getActionsService().updateActionStatus(siteId, documentId, action);
+      default -> {
+        ActionStatus completeStatus = processStatus.actionStatus();
+        logger.trace(String.format("updating status of %s to %s", documentId, completeStatus));
 
-    updateDocumentWorkflow(siteId, documentId, action);
+        action.status(completeStatus);
+        getActionsService().updateActionStatus(siteId, documentId, action);
 
-    if (!ActionType.QUEUE.equals(action.type())) {
-      boolean publishNextActionEvent =
-          getNotificationService().publishNextActionEvent(actions, siteId, documentId);
-      if (logger.isLogged(LogLevel.TRACE) && publishNextActionEvent) {
-        logger.trace(String.format("publishing next event for %s to %s", siteId, documentId));
+        updateDocumentWorkflow(siteId, documentId, action);
+        getNotificationService().publishNextActionEvent(siteId, documentId);
       }
     }
   }

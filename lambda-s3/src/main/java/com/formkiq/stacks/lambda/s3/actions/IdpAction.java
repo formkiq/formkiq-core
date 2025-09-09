@@ -26,6 +26,7 @@ package com.formkiq.stacks.lambda.s3.actions;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.MappingRecord;
 import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.stacks.dynamodb.DocumentService;
@@ -43,6 +44,7 @@ import com.formkiq.stacks.dynamodb.mappings.MappingAttributeSourceType;
 import com.formkiq.stacks.dynamodb.mappings.MappingService;
 import com.formkiq.stacks.lambda.s3.DocumentAction;
 import com.formkiq.stacks.lambda.s3.DocumentContentFunction;
+import com.formkiq.stacks.lambda.s3.ProcessActionStatus;
 import com.formkiq.stacks.lambda.s3.text.BeginsWithMatcher;
 import com.formkiq.stacks.lambda.s3.text.ContainsMatcher;
 import com.formkiq.stacks.lambda.s3.text.ExactMatcher;
@@ -101,7 +103,7 @@ public class IdpAction implements DocumentAction {
 
 
   @Override
-  public void run(final Logger logger, final String siteId, final String documentId,
+  public ProcessActionStatus run(final Logger logger, final String siteId, final String documentId,
       final List<Action> actions, final Action action) throws IOException, ValidationException {
 
     String mappingId = (String) action.parameters().get("mappingId");
@@ -124,6 +126,8 @@ public class IdpAction implements DocumentAction {
         default -> throw new IllegalArgumentException("Unsupported source type: " + sourceType);
       }
     }
+
+    return new ProcessActionStatus(ActionStatus.COMPLETE);
   }
 
   private List<String> createValues(final MappingAttribute mappingAttribute) {

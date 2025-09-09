@@ -23,27 +23,16 @@
  */
 package com.formkiq.module.actions.services;
 
-import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
-import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION_HTML;
-import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION_SUBJECT;
-import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION_TEXT;
-import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION_TO_BCC;
-import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION_TO_CC;
-import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION_TYPE;
+
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import com.formkiq.aws.dynamodb.DynamoDbService;
-import com.formkiq.aws.dynamodb.model.MappingRecord;
-import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.module.actions.Action;
-import com.formkiq.module.actions.ActionType;
-import com.formkiq.module.actions.Queue;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
 
@@ -57,10 +46,6 @@ public class ActionsValidatorImpl implements ActionsValidator {
   /** {@link DynamoDbService}. */
   private final DynamoDbService db;
 
-  /** Valid image formats for resize action. */
-  private static final List<String> VALID_IMAGE_FORMATS =
-      List.of("bmp", "gif", "jpeg", "png", "tif");
-
   /**
    * constructor.
    * 
@@ -72,170 +57,6 @@ public class ActionsValidatorImpl implements ActionsValidator {
 
   private Map<String, Object> getParameters(final Action action) {
     return action.parameters() != null ? action.parameters() : Collections.emptyMap();
-  }
-
-  private boolean hasValue(final Map<String, Object> parameters, final String key) {
-    return parameters != null && parameters.containsKey(key)
-        && !isEmpty(parameters.get(key).toString().trim());
-  }
-
-  /**
-   * Validate Document Tagging.
-   * 
-   * @param chatGptApiKey {@link String}
-   * @param parameters {@link Map}
-   * @param errors {@link Collections} {@link ValidationError}
-   */
-  private void validateDocumentTagging(final String chatGptApiKey,
-      final Map<String, Object> parameters, final Collection<ValidationError> errors) {
-
-    if (!parameters.containsKey("tags")) {
-      errors.add(new ValidationErrorImpl().key("parameters.tags")
-          .error("action 'tags' parameter is required"));
-    }
-
-    if (!parameters.containsKey("engine")) {
-      errors.add(new ValidationErrorImpl().key("parameters.engine")
-          .error("action 'engine' parameter is required"));
-    } else if (!"chatgpt".equals(parameters.getOrDefault("engine", ""))) {
-      errors.add(
-          new ValidationErrorImpl().key("parameters.engine").error("invalid 'engine' parameter"));
-    } else if (Strings.isEmpty(chatGptApiKey)) {
-      errors.add(new ValidationErrorImpl().error("chatgpt 'api key' is not configured"));
-    }
-  }
-
-  /**
-   * Validate Notification Email.
-   * 
-   * @param notificationEmail {@link String}
-   * @param action {@link Action}
-   * @param errors {@link Collection} {@link ValidationError}
-   */
-  private void validateNotificationEmail(final String notificationEmail, final Action action,
-      final Collection<ValidationError> errors) {
-
-    if (isEmpty(notificationEmail)) {
-      errors.add(new ValidationErrorImpl().key("parameters.notificationEmail")
-          .error("notificationEmail is not configured"));
-    } else {
-
-      Map<String, Object> parameters = getParameters(action);
-
-      for (String parameter : Arrays.asList(PARAMETER_NOTIFICATION_TYPE,
-          PARAMETER_NOTIFICATION_SUBJECT)) {
-        if (!hasValue(parameters, parameter)) {
-          errors.add(new ValidationErrorImpl().key("parameters." + parameter)
-              .error("action '" + parameter + "' parameter is required"));
-        }
-      }
-
-      if (!hasValue(parameters, PARAMETER_NOTIFICATION_TO_CC)
-          && !hasValue(parameters, PARAMETER_NOTIFICATION_TO_BCC)) {
-        errors.add(new ValidationErrorImpl().key("parameters." + PARAMETER_NOTIFICATION_TO_CC)
-            .error("action '" + PARAMETER_NOTIFICATION_TO_CC + "' or '"
-                + PARAMETER_NOTIFICATION_TO_BCC + "' is required"));
-      }
-
-      if (!hasValue(parameters, PARAMETER_NOTIFICATION_TEXT)
-          && !hasValue(parameters, PARAMETER_NOTIFICATION_HTML)) {
-        errors.add(new ValidationErrorImpl().key("parameters." + PARAMETER_NOTIFICATION_TEXT)
-            .error("action '" + PARAMETER_NOTIFICATION_TEXT + "' or '" + PARAMETER_NOTIFICATION_HTML
-                + "' is required"));
-      }
-    }
-  }
-
-  private void validateQueue(final String siteId, final Action action,
-      final Collection<ValidationError> errors) {
-
-    if (isEmpty(action.queueId())) {
-      errors.add(new ValidationErrorImpl().key("queueId").error("'queueId' is required"));
-    } else {
-      Queue q = new Queue().documentId(action.queueId());
-      if (!this.db.exists(q.fromS(q.pk(siteId)), q.fromS(q.sk()))) {
-        errors.add(new ValidationErrorImpl().key("queueId").error("'queueId' does not exist"));
-      }
-    }
-  }
-
-  private void validateIdp(final String siteId, final Action action,
-      final Collection<ValidationError> errors) {
-
-    Map<String, Object> parameters = getParameters(action);
-
-    if (!hasValue(parameters, "mappingId")) {
-      errors.add(new ValidationErrorImpl().key("mappingId").error("'mappingId' is required"));
-
-    } else {
-      String mappingId = (String) parameters.get("mappingId");
-      MappingRecord m = new MappingRecord().setDocumentId(mappingId);
-
-      if (!this.db.exists(m.fromS(m.pk(siteId)), m.fromS(m.sk()))) {
-        errors.add(new ValidationErrorImpl().key("mappingId").error("'mappingId' does not exist"));
-      }
-    }
-  }
-
-  private void validateEventBridge(final Action action, final Collection<ValidationError> errors) {
-
-    Map<String, Object> parameters = getParameters(action);
-
-    if (!hasValue(parameters, "eventBusName")) {
-      errors.add(new ValidationErrorImpl().key("parameters.eventBusName")
-          .error("'eventBusName' parameter is required"));
-    }
-  }
-
-  private void validateResize(final Action action, final Collection<ValidationError> errors) {
-    Map<String, Object> parameters = getParameters(action);
-
-    String widthParameterName = "width";
-    String heightParameterName = "height";
-
-    if ("auto".equals(parameters.get(widthParameterName))
-        && "auto".equals(parameters.get(heightParameterName))) {
-      errors.add(new ValidationErrorImpl().key("parameters." + widthParameterName)
-          .error("'" + widthParameterName + "' and '" + heightParameterName
-              + "' parameters cannot be both set to auto"));
-    }
-
-    validateDimension(parameters, errors, widthParameterName);
-    validateDimension(parameters, errors, heightParameterName);
-    validateImageFormat(parameters, errors);
-  }
-
-  private void validateDimension(final Map<String, Object> parameters,
-      final Collection<ValidationError> errors, final String dimension) {
-    if (!hasValue(parameters, dimension)) {
-      errors.add(new ValidationErrorImpl().key("parameters." + dimension)
-          .error("'" + dimension + "' parameter is required"));
-    } else {
-      String value = (String) parameters.get(dimension);
-
-      if (!isGreaterThanZeroInteger(value) && !"auto".equals(value)) {
-        errors.add(new ValidationErrorImpl().key("parameters." + dimension)
-            .error("'" + dimension + "' parameter must be an integer > 0 or 'auto'"));
-      }
-    }
-  }
-
-  private static boolean isGreaterThanZeroInteger(final String value) {
-    try {
-      return Integer.parseInt(value) > 0;
-    } catch (NumberFormatException e) {
-      return false;
-    }
-  }
-
-  private void validateImageFormat(final Map<String, Object> parameters,
-      final Collection<ValidationError> errors) {
-    String outputType = (String) parameters.get("outputType");
-
-    if (outputType != null && !VALID_IMAGE_FORMATS.contains(outputType.toLowerCase())) {
-      errors.add(new ValidationErrorImpl().key("parameters.outputType")
-          .error("'outputType' parameter must be one of " + VALID_IMAGE_FORMATS));
-    }
   }
 
   @Override
@@ -280,47 +101,7 @@ public class ActionsValidatorImpl implements ActionsValidator {
       final Collection<ValidationError> errors) {
 
     Map<String, Object> parameters = getParameters(action);
-    if (ActionType.WEBHOOK.equals(action.type()) && !parameters.containsKey("url")) {
-      errors.add(new ValidationErrorImpl().key("parameters.url")
-          .error("action 'url' parameter is required"));
-    } else if (ActionType.DOCUMENTTAGGING.equals(action.type())) {
-      validateDocumentTagging(chatGptApiKey, parameters, errors);
-    } else if (ActionType.NOTIFICATION.equals(action.type())) {
-      validateNotificationEmail(notificationsEmail, action, errors);
-    } else if (ActionType.QUEUE.equals(action.type())) {
-      validateQueue(siteId, action, errors);
-    } else if (ActionType.IDP.equals(action.type())) {
-      validateIdp(siteId, action, errors);
-    } else if (ActionType.EVENTBRIDGE.equals(action.type())) {
-      validateEventBridge(action, errors);
-    } else if (ActionType.RESIZE.equals(action.type())) {
-      validateResize(action, errors);
-    } else if (ActionType.OCR.equals(action.type())) {
-      validateOcr(action, errors);
-    }
-  }
-
-  private void validateOcr(final Action action, final Collection<ValidationError> errors) {
-    Map<String, Object> parameters = getParameters(action);
-    String ocrParseTypes = (String) parameters.get("ocrParseTypes");
-    if (ocrParseTypes != null) {
-      ocrParseTypes = ocrParseTypes.toLowerCase();
-      Collection<Map<String, Object>> ocrTextractQueries =
-          notNull((Collection<Map<String, Object>>) parameters.getOrDefault("ocrTextractQueries",
-              Collections.emptyList()));
-
-      if (ocrParseTypes.contains("queries") && ocrTextractQueries.isEmpty()) {
-        errors.add(new ValidationErrorImpl().key("parameters.ocrTextractQueries")
-            .error("action 'ocrTextractQueries' parameter is required"));
-      }
-
-      ocrTextractQueries.forEach(q -> {
-        String text = (String) q.get("text");
-        if (isEmpty(text)) {
-          errors.add(new ValidationErrorImpl().key("parameters.ocrTextractQueries.text")
-              .error("action 'ocrTextractQueries.text' parameter is required"));
-        }
-      });
-    }
+    action.type().validate(db, siteId, action, parameters, chatGptApiKey, notificationsEmail,
+        errors);
   }
 }

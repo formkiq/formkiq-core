@@ -91,7 +91,7 @@ public class EntityRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
   public ApiRequestHandlerResponse patch(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
-    new AddEntityRequestToEntityRecordTransformer(awsservice, authorization, true).apply(event);
+    new AddEntityRequestToEntityRecordTransformer(awsservice, true).apply(authorization, event);
 
     return ApiRequestHandlerResponse.builder().ok().body("message", "Entity updated").build();
   }

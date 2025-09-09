@@ -334,4 +334,17 @@ public class ApiGatewayRequestEvent {
 
     return result;
   }
+
+  /**
+   * Add Query Parameter.
+   * 
+   * @param key {@link String}
+   * @param value {@link String}
+   */
+  public void addQueryParameter(final String key, final String value) {
+    Map<String, String> q =
+        queryStringParameters != null ? new HashMap<>(queryStringParameters) : new HashMap<>();
+    q.put(key, value);
+    this.queryStringParameters = q;
+  }
 }

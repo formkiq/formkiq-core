@@ -82,6 +82,7 @@ public class AddActionsToAction implements Function<AddAction, Action> {
       put(map, "height", parameters.height());
       put(map, "path", parameters.path());
       put(map, "outputType", parameters.outputType());
+      put(map, "llmPromptEntityName", parameters.llmPromptEntityName());
     }
 
     return map;

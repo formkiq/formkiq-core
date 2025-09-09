@@ -1,10 +1,14 @@
+import com.github.jk1.license.filter.LicenseBundleNormalizer
+import com.github.jk1.license.render.InventoryHtmlReportRenderer
+import com.github.jk1.license.render.JsonReportRenderer
+import org.openapitools.generator.gradle.plugin.tasks.ValidateTask
 
 plugins {
   id 'java-library'
   id 'checkstyle'
   id 'distribution'
   id 'com.github.spotbugs'  version '6.1.13'
-  id 'com.diffplug.spotless' version '7.0.3'
+  id 'com.diffplug.spotless' version '7.2.1'
   id 'com.github.ben-manes.versions' version '0.52.0'
   id 'com.formkiq.gradle.graalvm-native-plugin' version '1.7.2'
   id 'de.undercouch.download' version '5.6.0'
@@ -12,16 +16,14 @@ plugins {
   id 'com.github.jk1.dependency-license-report' version '2.9'
 }
 
-def moduleName = "formkiq-core"
-
-def getCmd() {
-    String os = System.getProperty("os.name").toLowerCase()
-    return os.contains("win") ? "cmd" : "bash"
+static String getCmd() {
+  String os = System.getProperty("os.name").toLowerCase()
+  return os.contains("win") ? "cmd" : "bash"
 }
 
-def getCmdParam() {
-    String os = System.getProperty("os.name").toLowerCase()
-    return os.contains("win") ? "/c" : "-c"
+static String getCmdParam() {
+  String os = System.getProperty("os.name").toLowerCase()
+  return os.contains("win") ? "/c" : "-c"
 }
 
 repositories { mavenCentral() }
@@ -29,69 +31,75 @@ repositories { mavenCentral() }
 allprojects {
 
   version = '1.18.0'
-  
+
   ext.awsCognitoVersion = '1.6.2'
   group = 'com.formkiq.stacks'
-  
-	apply plugin: 'com.diffplug.spotless'
-    apply plugin: 'java-library'
-    apply plugin: 'checkstyle'
-    apply plugin: 'com.github.spotbugs'
-    apply plugin: 'com.github.ben-manes.versions'
-    apply plugin: 'com.formkiq.gradle.graalvm-native-plugin'
-    // apply plugin: 'com.github.jk1.dependency-license-report'
-	
-	java {
-		toolchain {
-			languageVersion.set(JavaLanguageVersion.of(17))
-		}
-	}
-  
-	spotless { 
-	  java { 
-	    eclipse().configFile project.rootProject.file("spotless.eclipseformat.xml")
-	    licenseHeaderFile project.rootProject.file("LICENSE")  
-	  } 
-	}
 
-    checkstyle {
-        toolVersion = '10.12.1'
-        configFile file("config/checkstyle/checkstyle.xml")
-        configProperties = [project_loc: "${projectDir}"]
-        maxWarnings = 0
-        maxErrors = 0
+  apply plugin: 'com.diffplug.spotless'
+  apply plugin: 'java-library'
+  apply plugin: 'checkstyle'
+  apply plugin: 'com.github.spotbugs'
+  apply plugin: 'com.github.ben-manes.versions'
+  apply plugin: 'com.formkiq.gradle.graalvm-native-plugin'
+  // apply plugin: 'com.github.jk1.dependency-license-report'
+
+  java {
+    toolchain {
+      languageVersion.set(JavaLanguageVersion.of(17))
+    }
+  }
+
+  spotless {
+    java {
+      eclipse().configFile rootProject.file("spotless.eclipseformat.xml")
+      removeUnusedImports()
+      removeWildcardImports()
+      licenseHeaderFile rootProject.file("LICENSE")
     }
 
-    licenseReport {
-      // optional: aggregate root + all subprojects
-      projects = [project] + project.subprojects
-
-      // optional: limit which configs to scan
-      configurations = ['runtimeClasspath']
-
-      outputDir = "$rootDir/docs/licenses"
-
-      renderers = [
-        new com.github.jk1.license.render.JsonReportRenderer('licenses.json'),
-        new com.github.jk1.license.render.InventoryHtmlReportRenderer('index.html', 'FormKiQ Core')
-      ]
-      filters = [
-        new com.github.jk1.license.filter.LicenseBundleNormalizer()
-      ]
+    groovyGradle {
+      target '*.gradle'
+      greclipse()
+      leadingTabsToSpaces(2)
+      trimTrailingWhitespace()
+      endWithNewline()
     }
+  }
+
+  checkstyle {
+    toolVersion = '10.12.1'
+    configFile file("config/checkstyle/checkstyle.xml")
+    configProperties = [project_loc: "${projectDir}"]
+    maxWarnings = 0
+    maxErrors = 0
+  }
+
+  licenseReport {
+    configurations = ['runtimeClasspath']
+
+    outputDir = "$rootDir/docs/licenses"
+
+    renderers = [
+      new JsonReportRenderer('licenses.json'),
+      new InventoryHtmlReportRenderer('index.html', 'FormKiQ Core')
+    ]
+    filters = [
+      new LicenseBundleNormalizer()
+    ]
+  }
 }
 
 subprojects {
 
   repositories {
-  	mavenLocal()
+    mavenLocal()
     mavenCentral()
     maven {
       url "https://central.sonatype.com/repository/maven-snapshots/"
     }
   }
 
-  tasks.withType(Test) {
+  tasks.withType(Test).configureEach {
     systemProperties['testregion'] = project.getProperty('testregion')
     systemProperties['testprofile'] = project.getProperty('testprofile')
     systemProperties['testappenvironment'] = project.getProperty('testappenvironment')
@@ -101,20 +109,20 @@ subprojects {
   spotbugs {
     excludeFilter = file("$rootDir/config/gradle/spotbugs-exclude.xml")
   }
-     
+
   spotbugsMain {
     reports {
-        html {
-            enabled = true
-        }
+      html {
+        required = true
+      }
     }
-  } 
-  
+  }
+
   spotbugsTest {
     reports {
-        html {
-            enabled = true
-        }
+      html {
+        required = true
+      }
     }
   }
 }
@@ -123,36 +131,36 @@ description = "FormKiQ Core"
 
 apply plugin: 'distribution'
 
-task buildDistribution(type: Copy) {
-	dependsOn subprojects.build
-	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-	outputs.upToDateWhen {false}
+tasks.register("buildDistribution", Copy) {
+  dependsOn subprojects.build
+  duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+  outputs.upToDateWhen {false}
 
-    from 'console/build/distributions'
-    from 'lambda-api-graalvm/build/distributions'
-    from 'lambda-s3-graalvm/build/distributions'
-    from 'lambda-typesense/build/distributions'
-    from 'lambda-ocr-tesseract/build/distributions'
-    from 'module-email-notify/build/distributions'
-    from 'websocket-api/build/distributions'
-    from 'lambda-apikey-authorizer/build/distributions'
-    into "${buildDir}/modules"
+  from 'console/build/distributions'
+  from 'lambda-api-graalvm/build/distributions'
+  from 'lambda-s3-graalvm/build/distributions'
+  from 'lambda-typesense/build/distributions'
+  from 'lambda-ocr-tesseract/build/distributions'
+  from 'module-email-notify/build/distributions'
+  from 'websocket-api/build/distributions'
+  from 'lambda-apikey-authorizer/build/distributions'
+  into "$buildDir/modules"
 }
 
-task downloadAwsCognito(type: Download) {
-    src "https://github.com/formkiq/aws-cognito/releases/download/v${awsCognitoVersion}/aws-cognito-v${awsCognitoVersion}.zip"
-    dest buildDir
-    overwrite false
+tasks.register("downloadAwsCognito", Download) {
+  src "https://github.com/formkiq/aws-cognito/releases/download/v${awsCognitoVersion}/aws-cognito-v${awsCognitoVersion}.zip"
+  dest buildDir
+  overwrite false
 }
 
 /*
-task downloadAwsCognito(type: Copy) {
-    dependsOn jar
-    from file("$buildDir/../../../github/aws-cognito/build/aws-cognito-v${awsCognitoVersion}.zip")
-    into file("${buildDir}")
-}*/
+ task downloadAwsCognito(type: Copy) {
+ dependsOn jar
+ from file("$buildDir/../../../github/aws-cognito/build/aws-cognito-v${awsCognitoVersion}.zip")
+ into file("${buildDir}")
+ }*/
 
-task unzipAwsCognito(type: Copy) {
+tasks.register("unzipAwsCognito", Copy) {
   dependsOn downloadAwsCognito
   def zipFile = file("${buildDir}/aws-cognito-v${awsCognitoVersion}.zip")
   def outputDir = file("${buildDir}/modules/cognito")
@@ -161,21 +169,21 @@ task unzipAwsCognito(type: Copy) {
   into outputDir
 }
 
-task buildTemplate {
-    dependsOn buildDistribution, unzipAwsCognito
-    
-	outputs.upToDateWhen { false }
-    
-	doLast {	
-		copy {
-		  from layout.buildDirectory.dir("${buildDir}/../src/main/resources/cloudformation")
-		  include "*"
-	      into "${buildDir}/modules"
-	    }
-		exec {
-			commandLine getCmd(), getCmdParam(), "ytt --data-value version=${project.version} -f ${buildDir}/modules/template.yaml --output-files ${buildDir}/modules"
-		}	
-	}
+tasks.register("buildTemplate") {
+  dependsOn buildDistribution, unzipAwsCognito
+
+  outputs.upToDateWhen { false }
+
+  doLast {
+    copy {
+      from layout.buildDirectory.dir("${buildDir}/../src/main/resources/cloudformation")
+      include "*"
+      into "${buildDir}/modules"
+    }
+    exec {
+      commandLine getCmd(), getCmdParam(), "ytt --data-value version=${project.version} -f ${buildDir}/modules/template.yaml --output-files ${buildDir}/modules"
+    }
+  }
 }
 
 distZip.dependsOn buildTemplate
@@ -183,42 +191,48 @@ distZip.dependsOn buildTemplate
 tasks.distTar.enabled = false
 
 distributions {
-    main {
-        contents {
-            from(".") {
-            	include "INSTALL.md"
-            	include "LICENSE"
-            }
-            from("${buildDir}/modules") {
-            	include "**/**"
-            }
-            into '/'
-        }
+  main {
+    contents {
+      from(".") {
+        include "INSTALL.md"
+        include "LICENSE"
+      }
+      from("${buildDir}/modules") {
+        include "**/**"
+      }
+      into '/'
     }
+  }
 }
 
-task validateOpenApiJwtSpec(type: org.openapitools.generator.gradle.plugin.tasks.ValidateTask){
-    inputSpec = "$rootDir/docs/openapi/openapi-jwt.yaml".toString()
-    recommend = true
+tasks.register("validateOpenApiJwtSpec", ValidateTask) {
+  inputSpec = "$rootDir/docs/openapi/openapi-jwt.yaml".toString()
+  recommend = true
 }
 
-task validateOpenApiIamSpec(type: org.openapitools.generator.gradle.plugin.tasks.ValidateTask){
-    inputSpec = "$rootDir/docs/openapi/openapi-iam.yaml".toString()
-    recommend = true
+tasks.register("validateOpenApiIamSpec", ValidateTask) {
+  inputSpec = "$rootDir/docs/openapi/openapi-iam.yaml".toString()
+  recommend = true
 }
 
-task validateOpenApiKeySpec(type: org.openapitools.generator.gradle.plugin.tasks.ValidateTask){
-    inputSpec = "$rootDir/docs/openapi/openapi-key.yaml".toString()
-    recommend = true
+tasks.register("validateOpenApiKeySpec", ValidateTask) {
+  inputSpec = "$rootDir/docs/openapi/openapi-key.yaml".toString()
+  recommend = true
 }
 
-task validateOpenApiSpecs(dependsOn: ['validateOpenApiJwtSpec', 'validateOpenApiIamSpec', 'validateOpenApiKeySpec'])
+tasks.register("validateOpenApiSpecs") {
+  dependsOn(
+      "validateOpenApiJwtSpec",
+      "validateOpenApiIamSpec",
+      "validateOpenApiKeySpec"
+      )
+}
 
 openApiGenerate {
-    generatorName.set("spring")
-    inputSpec.set("$rootDir/docs/openapi/openapi-jwt.yaml")
-    outputDir.set("$buildDir/generated")
-    apiPackage.set("com.formkiq.springboot.api")
-    invokerPackage.set("com.formkiq.springboot.invoker")
-    modelPackage.set("com.formkiq.springboot.model")
+  generatorName.set("spring")
+  inputSpec.set("$rootDir/docs/openapi/openapi-jwt.yaml")
+  outputDir.set("$buildDir/generated")
+  apiPackage.set("com.formkiq.springboot.api")
+  invokerPackage.set("com.formkiq.springboot.invoker")
+  modelPackage.set("com.formkiq.springboot.model")
 }

@@ -2957,6 +2957,7 @@
                 | OCR | ocrOutputType     | Convert OCR result to an Output format (textract table only) | true |
                 | OCR | ocrNumberOfPages  | Number of pages to OCR (from start) | -1 |
                 | OCR    | addPdfDetectedCharactersAsText | PDF Documents convert images to text | true or false |
+                | DATA_CLASSIFICATION | llmPromptEntityName | LLM Prompt Entity Name |
                 | FULLTEXT    | characterMax    | Maximum number of characters to add to Fulltext destination | -1 |
                 | DOCUMENTTAGGING    | engine    | Tagging Engine to use | chatgpt |
                 | DOCUMENTTAGGING    | tags    | Comma-deliminted list of keywords | author,title,description |
@@ -4411,6 +4412,69 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+          /documents/{documentId}/dataClassification:
+            get:
+              operationId: GetDocumentDataClassification
+              summary: Get document's data classification
+              description: Retrieve an document's data classification; available as an Add-On Module
+              tags:
+              - Document Data Classification
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/limitParam'
+              - $ref: '#/components/parameters/nextParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetDocumentDataClassificationResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/dataClassificationLambdaApi200'
+            put:
+              operationId: SetDocumentDataClassification
+              summary: Set document's data classification
+              description: Generate Data Classfication attributes within a document; available as an Add-On Module
+              tags:
+              - Document Data Classification
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              requestBody:
+                required: false
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/SetDocumentDataClassificationRequest'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/SetDocumentDataClassificationResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/dataClassificationLambdaApi200'
           /userActivities:
             get:
               operationId: GetUserActivities
@@ -9240,6 +9304,63 @@
                 message:
                   type: string
                   description: Document sync message
+            SetDocumentDataClassificationRequest:
+              type: object
+              properties:
+                llmPromptEntityName:
+                  type: string
+                  description: Name of the LLM Prompt Entity
+            SetDocumentDataClassificationResponse:
+              type: object
+              properties:
+                content:
+                  type: string
+                  description: Result content
+                attributes:
+                  description: Attributes extracted from result content
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/DataClassificationAttribute'
+            DataClassification:
+              type: object
+              properties:
+                llmPromptEntityName:
+                  type: string
+                  description: Name of the LLM Prompt Entity
+                insertedDate:
+                  type: string
+                  description: Inserted Timestamp
+                content:
+                  type: string
+                  description: Result content
+                userId:
+                  type: string
+                  description: UserId that created Result
+                attributes:
+                  description: Attributes extracted from result content
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/DataClassificationAttribute'
+            DataClassificationAttribute:
+              type: object
+              properties:
+                key:
+                  type: string
+                  description: Data Classification Attribute Key
+                value:
+                  type: string
+                  description: Data Classification Attribute Value
+            GetDocumentDataClassificationResponse:
+              type: object
+              properties:
+                next:
+                  type: string
+                  description: Next page of results token
+                dataClassifications:
+                  type: array
+                  description: List of Data Classifications
+                  items:
+                    $ref: '#/components/schemas/DataClassification'
             GetActivitesResponse:
               type: object
               properties:
@@ -10983,6 +11104,7 @@
               - PDFEXPORT
               - EVENTBRIDGE
               - RESIZE
+              - DATA_CLASSIFICATION
             DocumentAction:
               type: object
               properties:
@@ -11339,6 +11461,9 @@
                 addPdfDetectedCharactersAsText:
                   type: string
                   description: 'OCR: For the rewriting of the PDF document, converting any image text to searchable text'
+                llmPromptEntityName:
+                  type: string
+                  description: 'DATA_CLASSIFICATION: Set the LLM Prompt Entity Name'
                 url:
                   type: string
                   description: 'Webhook: Callback URL'
@@ -13238,6 +13363,20 @@
               responses:
                 default:
                   statusCode: "201"
+                  responseParameters:
+                    method.response.header.Access-Control-Allow-Methods: '''*'''
+                    method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key'''
+                    method.response.header.Access-Control-Allow-Origin: '''*'''
+              passthroughBehavior: when_no_templates
+              httpMethod: POST
+              type: aws_proxy
+              payloadFormatVersion: "1.0"
+            dataClassificationLambdaApi200:
+              uri:
+                Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
+              responses:
+                default:
+                  statusCode: "200"
                   responseParameters:
                     method.response.header.Access-Control-Allow-Methods: '''*'''
                     method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key'''

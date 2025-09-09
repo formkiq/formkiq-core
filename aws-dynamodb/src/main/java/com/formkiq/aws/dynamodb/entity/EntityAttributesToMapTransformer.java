@@ -35,7 +35,7 @@ public class EntityAttributesToMapTransformer
     implements Function<List<EntityAttribute>, Map<String, Object>> {
 
   /** {@link EntityAttributeToObjectTransformer}. */
-  private EntityAttributeToObjectTransformer toObjectTransformer =
+  private final EntityAttributeToObjectTransformer toObjectTransformer =
       new EntityAttributeToObjectTransformer();
 
   @Override
