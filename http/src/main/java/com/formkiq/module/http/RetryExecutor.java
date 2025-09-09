@@ -41,12 +41,13 @@ public class RetryExecutor {
    * @param <R> the return type of the operation
    * @param operation the function to execute; may throw an exception
    * @param retries the maximum number of retries before failing
-   * @param retryCondition a predicate that determines whether the result should be retried
+   * @param retryExceptionCondition a predicate that determines whether the exception should be
+   *        retried
    * @return the result of the successful operation
    * @throws RuntimeException if the operation fails after all retries
    */
   public static <R> R executeWithRetry(final Function<Void, R> operation, final int retries,
-      final Predicate<R> retryCondition) {
+      final Predicate<Exception> retryExceptionCondition) {
     int attempt = 0;
     long waitTime = INITIAL_DELAY_SECONDS;
 
@@ -54,20 +55,23 @@ public class RetryExecutor {
       try {
         return operation.apply(null);
       } catch (Exception e) {
-        attempt++;
-        if (attempt > retries) {
-          throw new RuntimeException(String.format("Operation failed after %d retries", retries),
-              e);
-        }
 
-        try {
-          TimeUnit.SECONDS.sleep(waitTime);
-        } catch (InterruptedException ie) {
-          Thread.currentThread().interrupt();
-          throw new RuntimeException("Retry interrupted", ie);
-        }
+        if (retryExceptionCondition.test(e)) {
+          attempt++;
+          if (attempt > retries) {
+            throw new RuntimeException(String.format("Operation failed after %d retries", retries),
+                e);
+          }
 
-        waitTime *= 2;
+          try {
+            TimeUnit.SECONDS.sleep(waitTime);
+          } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Retry interrupted", ie);
+          }
+
+          waitTime *= 2;
+        }
       }
     }
   }
