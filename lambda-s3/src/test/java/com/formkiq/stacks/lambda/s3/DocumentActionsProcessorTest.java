@@ -2573,10 +2573,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertEquals("Myprompt", resultmap.get("llmPromptEntityName").toString());
 
       Action action = actionsService.getActions(siteId, documentId).get(0);
-      assertEquals(ActionStatus.RUNNING, action.status());
+      assertEquals(ActionStatus.COMPLETE, action.status());
       assertNotNull(action.startDate());
       assertNotNull(action.insertedDate());
-      assertNull(action.completedDate());
+      assertNotNull(action.completedDate());
     }
   }
 
