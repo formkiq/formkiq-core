@@ -32,6 +32,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
@@ -150,7 +151,7 @@ public class ApiAuthorizationBuilder {
       }
     }
 
-    if (defaultSiteId != null && !isGlobalAdmin(admin, defaultSiteId)
+    if (defaultSiteId != null && !isReservedSite(admin, defaultSiteId)
         && !isValidSiteId(defaultSiteId, groups) && !event.getPath().startsWith("/public/")) {
       String s = String.format("fkq access denied to siteId (%s)", defaultSiteId);
       throw new ForbiddenException(s);
@@ -159,8 +160,9 @@ public class ApiAuthorizationBuilder {
     return authorization;
   }
 
-  private boolean isGlobalAdmin(final boolean admin, final String siteId) {
-    return admin && "global".equals(siteId);
+  private boolean isReservedSite(final boolean admin, final String siteId) {
+    Optional<ReservedSiteId> o = ReservedSiteId.fromString(siteId);
+    return o.isPresent() && (!ReservedSiteId.GLOBAL.equals(o.get()) || admin);
   }
 
   /**
@@ -411,6 +413,7 @@ public class ApiAuthorizationBuilder {
       }
     }
 
+    groups.remove("API_KEY");
     groups.remove("global");
     groups.remove("authentication_only");
 
