@@ -9306,6 +9306,8 @@
                   description: Document sync message
             SetDocumentDataClassificationRequest:
               type: object
+              required:
+              - llmPromptEntityName
               properties:
                 llmPromptEntityName:
                   type: string
