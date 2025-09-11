@@ -111,7 +111,6 @@ public class FulltextSearchDocumentRequestBuilder implements HttpRequestBuilder 
       List<FulltextSearchItem> documents = notNull(obj.getDocuments());
 
       while (expected != null && expected > 0 && expected != documents.size()) {
-        System.out.println("GOT: " + documents.size() + " EXPECTED: " + expected);
         if (documents.size() != expected) {
           TimeUnit.SECONDS.sleep(1);
           obj = new AdvancedDocumentSearchApi(apiClient).searchFulltext(this.request, siteId, null,
