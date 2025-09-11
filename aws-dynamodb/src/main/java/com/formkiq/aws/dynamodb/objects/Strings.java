@@ -153,8 +153,12 @@ public class Strings {
 
     } else {
 
-      int pos = name.lastIndexOf("/");
+      int pos = name.lastIndexOf("/", name.length() - 2);
       name = pos > -1 ? name.substring(pos + 1) : name;
+    }
+
+    if (name.endsWith("/")) {
+      name = name.substring(0, name.length() - 1);
     }
 
     return name;

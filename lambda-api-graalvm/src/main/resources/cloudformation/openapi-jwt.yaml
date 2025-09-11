@@ -9381,6 +9381,8 @@ Resources:
 
             SetDocumentDataClassificationRequest:
               type: "object"
+              required:
+                - llmPromptEntityName
               properties:
                 llmPromptEntityName:
                   type: "string"

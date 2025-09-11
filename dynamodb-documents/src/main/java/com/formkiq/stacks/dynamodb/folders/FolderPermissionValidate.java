@@ -26,65 +26,49 @@ package com.formkiq.stacks.dynamodb.folders;
 import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbService;
-import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
-import com.formkiq.aws.dynamodb.objects.Strings;
+import com.formkiq.validation.ValidationBuilder;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
-import java.util.Collection;
-import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.BiFunction;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 /**
- * {@link Predicate} to test {@link FolderRolePermission}.
+ * Validate Folder Permissions to Role.
  */
-public class FolderPermissionAttributePredicate implements
-    BiFunction<String, List<Map<String, AttributeValue>>, List<Map<String, AttributeValue>>> {
+public class FolderPermissionValidate implements BiFunction<String, String, Void> {
 
   /** {@link FolderPermissionPredicate}. */
   private final FolderPermissionPredicate pred;
   /** {@link DynamoDbService}. */
   private final DynamoDbService db;
-  /** Root Folder. */
-  private final String root;
 
   /**
    * constructor.
-   *
+   * 
    * @param dbService {@link DynamoDbService}
    * @param apiPermission {@link ApiPermission}
-   * @param rootFolder {@link String}
    */
-  public FolderPermissionAttributePredicate(final DynamoDbService dbService,
-      final ApiPermission apiPermission, final String rootFolder) {
+  public FolderPermissionValidate(final DynamoDbService dbService,
+      final ApiPermission apiPermission) {
     pred = new FolderPermissionPredicate(apiPermission);
     this.db = dbService;
-    this.root = rootFolder;
   }
 
   @Override
-  public List<Map<String, AttributeValue>> apply(final String siteId,
-      final List<Map<String, AttributeValue>> attrs) {
+  public Void apply(final String siteId, final String path) {
 
-    List<DynamoDbKey> pathKeys = attrs.stream()
-        .map(a -> FolderPermissionRecord.builder()
-            .path(root + "/" + DynamoDbTypes.toString(a.get("path"))).buildKey(siteId))
-        .filter(Objects::nonNull).toList();
+    DynamoDbKey key = FolderPermissionRecord.builder().path(path).buildKey(siteId);
+    Map<String, AttributeValue> attributes = db.get(key);
 
-    List<FolderPermissionRecord> perm = db.get(db.getTableName(), pathKeys).stream()
-        .map(FolderPermissionRecord::fromAttributeMap).toList();
+    if (!attributes.isEmpty()) {
+      FolderPermissionRecord folderPermissions =
+          FolderPermissionRecord.fromAttributeMap(attributes);
 
-    Map<String, Collection<FolderRolePermission>> permMap = perm.stream()
-        .collect(Collectors.toMap(p -> new StringToFolder().apply(Strings.getFilename(p.path())),
-            FolderPermissionRecord::rolePermissions));
+      ValidationBuilder vb = new ValidationBuilder();
+      vb.authorized(pred.test(siteId, folderPermissions.rolePermissions()));
+      vb.check();
+    }
 
-    return !permMap.isEmpty() ? attrs.stream().filter(a -> {
-      Collection<FolderRolePermission> perms =
-          permMap.get(new StringToFolder().apply(DynamoDbTypes.toString(a.get("path"))));
-      return pred.test(siteId, perms);
-    }).toList() : attrs;
+    return null;
   }
 }

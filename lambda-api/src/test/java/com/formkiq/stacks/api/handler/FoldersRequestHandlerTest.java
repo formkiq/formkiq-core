@@ -28,6 +28,8 @@ import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_BAD_REQUEST;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_FOUND;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_UNAUTHORIZED;
+import static com.formkiq.client.model.FolderPermissionType.DELETE;
+import static com.formkiq.client.model.FolderPermissionType.WRITE;
 import static com.formkiq.testutils.aws.FkqDocumentService.addDocument;
 import static java.lang.Boolean.TRUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -49,15 +51,19 @@ import java.util.stream.Collectors;
 
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.client.model.AddDocumentResponse;
-import com.formkiq.client.model.DeleteResponse;
 import com.formkiq.client.model.DocumentSearch;
 import com.formkiq.client.model.DocumentSearchMeta;
 import com.formkiq.client.model.DocumentSearchRequest;
 import com.formkiq.client.model.FolderPermissionType;
 import com.formkiq.client.model.SetResponse;
 import com.formkiq.testutils.api.ApiHttpResponse;
+import com.formkiq.testutils.api.HttpRequestBuilder;
+import com.formkiq.testutils.api.attributes.AddAttributeRequestBuilder;
+import com.formkiq.testutils.api.documents.AddDocumentAttributeRequestBuilder;
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
+import com.formkiq.testutils.api.documents.AddDocumentTagRequestBuilder;
 import com.formkiq.testutils.api.documents.DeleteDocumentRequestBuilder;
+import com.formkiq.testutils.api.folders.AddFolderRequestBuilder;
 import com.formkiq.testutils.api.folders.GetFoldersRequestBuilder;
 import com.formkiq.testutils.api.folders.SetFolderPermissionsRequestBuilder;
 import org.junit.jupiter.api.Test;
@@ -524,52 +530,78 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
   void testWriteDocumentWithPermissions() throws Exception {
     // given
     String siteId = "school";
+    String path = setupTeacherFolder(siteId);
+    new AddAttributeRequestBuilder().keyAsString("myKey").submit(client, siteId);
+
+    AddDocumentRequestBuilder addDocumentReq = new AddDocumentRequestBuilder().content().path(path);
+
+    // write document
+    submit("student", addDocumentReq, siteId, true);
+
+    ApiHttpResponse<AddDocumentResponse> resp = submit("teacher", addDocumentReq, siteId, false);
+    String documentId = resp.response().getDocumentId();
+
+    // add attribute
+    AddDocumentAttributeRequestBuilder addAttributeReq = new AddDocumentAttributeRequestBuilder()
+        .setDocumentId(documentId).addAttribute("myKey", "1234");
+    submit("student", addAttributeReq, siteId, true);
+    submit("teacher", addAttributeReq, siteId, false);
+
+    // add tag
+    AddDocumentTagRequestBuilder addTagReq =
+        new AddDocumentTagRequestBuilder().setDocumentId(documentId).addTag("myTag", "111");
+    submit("student", addTagReq, siteId, true);
+    submit("teacher", addTagReq, siteId, false);
+
+    // add subfolder
+    AddFolderRequestBuilder addFolderReq = new AddFolderRequestBuilder().path("path10/mysubfolder");
+    submit("student", addFolderReq, siteId, true);
+    submit("teacher", addFolderReq, siteId, false);
+
+    // delete document
+    DeleteDocumentRequestBuilder deleteReq = new DeleteDocumentRequestBuilder(documentId);
+
+    submit("student", deleteReq, siteId, true);
+    submit("teacher", deleteReq, siteId, false);
+  }
+
+  private <T> ApiHttpResponse<T> submit(final String role, final HttpRequestBuilder requestBuilder,
+      final String siteId, final boolean unauthorized) {
+    setBearerToken(new String[] {siteId, role});
+    ApiHttpResponse<?> response = requestBuilder.submit(client, siteId);
+    if (unauthorized) {
+      assertNotNull(response.exception());
+      assertNull(response.response());
+      assertEquals(SC_UNAUTHORIZED.getStatusCode(), response.exception().getCode());
+    } else {
+      assertNull(response.exception());
+      assertNotNull(response.response());
+    }
+
+    return (ApiHttpResponse<T>) response;
+  }
+
+  /**
+   * Set up a Teacher READ/WRITE and student READ folder.
+   * 
+   * @param siteId {@link String}
+   * @return {@link String}
+   * @throws ApiException ApiException
+   */
+  private String setupTeacherFolder(final String siteId) throws ApiException {
     final String folder = "path10";
     final String path = folder + "/" + ID.uuid();
 
     setBearerToken(new String[] {siteId, "Admins"});
 
-    // when - add folder / permissions
+    // add folder / permissions
     addFolder(siteId, "path10");
     var error = new SetFolderPermissionsRequestBuilder().path("path10")
-        .addRole("teacher", FolderPermissionType.WRITE).addReadRole("student")
-        .submit(client, siteId).exception();
+        .addRole("teacher", List.of(WRITE, DELETE)).addReadRole("student").submit(client, siteId)
+        .exception();
 
-    // then
     assertNull(error);
-
-    // given
-    setBearerToken(new String[] {siteId, "student"});
-    AddDocumentRequestBuilder req = new AddDocumentRequestBuilder().content().path(path);
-
-    // when - write file as student
-    ApiHttpResponse<AddDocumentResponse> resp = req.submit(client, siteId);
-
-    // then
-    assertEquals(SC_UNAUTHORIZED.getStatusCode(), resp.exception().getCode());
-
-    // given
-    setBearerToken(new String[] {siteId, "teacher"});
-
-    // when - write file as teacher
-    resp = req.submit(client, siteId);
-
-    // then
-    assertNull(resp.exception());
-    String documentId = resp.response().getDocumentId();
-    ApiHttpResponse<DeleteResponse> deleteRep =
-        new DeleteDocumentRequestBuilder(documentId).submit(client, siteId);
-    assertEquals(SC_UNAUTHORIZED.getStatusCode(), deleteRep.exception().getCode());
-
-    // given
-    setBearerToken(new String[] {siteId, "teacher", "Admins"});
-
-    // when
-    deleteRep = new DeleteDocumentRequestBuilder(documentId).submit(client, siteId);
-
-    // then
-    assertNull(deleteRep.exception());
-    assertEquals("'" + documentId + "' object deleted", deleteRep.response().getMessage());
+    return path;
   }
 
   /**
@@ -585,8 +617,8 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
 
     // when - add folder / permissions
     addFolder(siteId, "myfolder");
-    var resp = new SetFolderPermissionsRequestBuilder().path("myfolder")
-        .addRole("teacher", FolderPermissionType.WRITE).submit(client, siteId);
+    var resp = new SetFolderPermissionsRequestBuilder().path("myfolder").addRole("teacher", WRITE)
+        .submit(client, siteId);
 
     // then
     assertEquals(SC_UNAUTHORIZED.getStatusCode(), resp.exception().getCode());

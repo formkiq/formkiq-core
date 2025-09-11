@@ -31,11 +31,10 @@ import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.handler.IndexKeyToString;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
-import com.formkiq.stacks.dynamodb.folders.FolderIndexRecord;
-import com.formkiq.stacks.dynamodb.folders.FolderRolePermission;
+import com.formkiq.stacks.dynamodb.folders.FolderPermissionRecord;
 
-import java.util.Collection;
 import java.util.Collections;
+
 
 /** {@link ApiGatewayRequestHandler} for "/folders/{indexKey}/permissions". */
 public class FoldersPermissionRequestHandler
@@ -55,11 +54,10 @@ public class FoldersPermissionRequestHandler
     String indexKey = new IndexKeyToString().apply(event.getPathParameters().get("indexKey"));
 
     FolderIndexProcessor processor = awsservice.getExtension(FolderIndexProcessor.class);
-    FolderIndexRecord obj = processor.getIndexAsRecord(siteId, indexKey, false);
-    Collection<FolderRolePermission> roles =
-        obj.rolePermissions() != null ? obj.rolePermissions() : Collections.emptyList();
+    FolderPermissionRecord permissions = processor.getFolderPermissionsByIndexKey(siteId, indexKey);
 
-    return ApiRequestHandlerResponse.builder().ok().body("roles", roles).build();
+    return ApiRequestHandlerResponse.builder().ok().body("roles",
+        permissions != null ? permissions.rolePermissions() : Collections.emptyList()).build();
   }
 
   @Override

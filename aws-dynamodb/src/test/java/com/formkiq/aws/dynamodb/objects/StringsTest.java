@@ -81,6 +81,7 @@ class StringsTest {
     assertEquals("something.pdf", Strings.getFilename("http://www.google.com/something.pdf"));
     assertEquals("else.txt", Strings.getFilename("s3://something/else.txt"));
     assertEquals("else.txt", Strings.getFilename("s3://else.txt"));
+    assertEquals("path2", Strings.getFilename("path1/path2/"));
   }
 
   @Test

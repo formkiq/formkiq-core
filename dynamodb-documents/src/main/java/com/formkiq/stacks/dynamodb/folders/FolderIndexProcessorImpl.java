@@ -24,6 +24,7 @@
 package com.formkiq.stacks.dynamodb.folders;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.last;
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static com.formkiq.aws.dynamodb.objects.Strings.removeBackSlashes;
 import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.fromS;
@@ -43,15 +44,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.dynamodb.AttributeValueToDynamicObject;
 import com.formkiq.aws.dynamodb.AttributeValueToMap;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
+import com.formkiq.aws.dynamodb.DynamoDbQueryBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -211,9 +217,11 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
     int len = folders.length;
 
     List<FolderIndexRecord> list = new ArrayList<>();
+    StringBuilder sb = new StringBuilder();
 
     for (String folder : folders) {
 
+      sb.append(folder + "/");
       if (allDirectories || !isFileToken(folder, i, len)) {
 
         FolderIndexRecord record = createFolder(siteId, parentId, folder, insertedDate, userId);
@@ -222,6 +230,8 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
         list.add(record);
 
         parentId = record.documentId();
+
+        validateFolderPermissions(siteId, sb.toString(), ApiPermission.WRITE);
       }
 
       i++;
@@ -547,6 +557,18 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
     return o;
   }
 
+  private String toPathFromIndexKey(final String indexKey) {
+    String path = null;
+    String index = URLDecoder.decode(indexKey, StandardCharsets.UTF_8);
+
+    int pos = index.indexOf(TAG_DELIMINATOR);
+    if (pos != -1) {
+      path = index.substring(pos + 1);
+    }
+
+    return path;
+  }
+
   @Override
   public List<FolderIndexRecord> getFolderIndexRecords(final String siteId, final String path)
       throws IOException {
@@ -801,11 +823,80 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
   public void setPermissions(final String siteId, final String path,
       final Collection<FolderRolePermission> roles) throws IOException {
 
-    String folderPath = path.endsWith("/") ? path : path + "/";
-    Map<String, AttributeValue> attributes = getIndexByAttributeValues(siteId, folderPath);
-    FolderIndexRecord record = new FolderIndexRecord().getFromAttributes(siteId, attributes);
-    record = record.rolePermissions(roles);
-    this.db.putItem(record.getAttributes(siteId));
+    getIndex(siteId, new StringToFolder().apply(path));
+
+    String folderPath = new StringToFolder().apply(path);
+    String userId = ApiAuthorization.getAuthorization().getUsername();
+    FolderPermissionRecord.Builder builder =
+        FolderPermissionRecord.builder().path(folderPath).type("folder").userId(userId);
+
+    if (!notNull(roles).isEmpty()) {
+      FolderPermissionRecord record = builder.rolePermissions(roles).build(siteId);
+      this.db.putItem(record.getAttributes());
+    } else {
+      DynamoDbKey key = builder.buildKey(siteId);
+      this.db.deleteItem(key);
+    }
+  }
+
+  @Override
+  public FolderPermissionRecord getFolderPermissionsByIndexKey(final String siteId,
+      final String indexKey) {
+    String path = toPathFromIndexKey(indexKey);
+    return getFolderPermissions(siteId, path);
+  }
+
+  @Override
+  public FolderPermissionRecord getFolderPermissions(final String siteId, final String path) {
+    DynamoDbKey key = FolderPermissionRecord.builder().path(path).buildKey(siteId);
+    Map<String, AttributeValue> attributes = db.get(key);
+    return !attributes.isEmpty() ? FolderPermissionRecord.fromAttributeMap(attributes) : null;
+  }
+
+  @Override
+  public void validateFolderPermissions(final String siteId, final String path,
+      final ApiPermission permission) {
+    if (!isEmpty(path)) {
+      new FolderPermissionValidate(db, permission).apply(siteId, new StringToFolder().apply(path));
+    }
+  }
+
+  @Override
+  public String toPath(final String siteId, final String indexKey) {
+    List<String> sb = new ArrayList<>();
+    if (!isEmpty(indexKey)) {
+      String index = URLDecoder.decode(indexKey, StandardCharsets.UTF_8);
+
+      int pos = index.indexOf(TAG_DELIMINATOR);
+      if (pos != -1) {
+
+        String parentId = index.substring(0, pos);
+        String path = index.substring(pos + 1);
+
+        FolderIndexRecord record =
+            new FolderIndexRecord().parentDocumentId(parentId).path(path).type("folder");
+        Map<String, AttributeValue> attr = db.get(fromS(record.pk(siteId)), fromS(record.sk()));
+        sb.add(DynamoDbTypes.toString(attr.get("path")));
+
+        while (!isEmpty(parentId)) {
+
+          record = new FolderIndexRecord().documentId(parentId).path(path).type("folder");
+
+          QueryRequest req = DynamoDbQueryBuilder.builder().indexName(GSI1)
+              .pk(record.pkGsi1(siteId)).eq(record.skGsi1()).build(db.getTableName());
+          QueryResponse response = this.db.query(req);
+
+          if (!response.items().isEmpty()) {
+            parentId = DynamoDbTypes.toString(response.items().get(0).get("parentDocumentId"));
+            sb.add(0, DynamoDbTypes.toString(response.items().get(0).get("path")));
+          } else {
+            parentId = null;
+          }
+        }
+      }
+    }
+
+    return String.join("/", sb);
   }
 
   /**

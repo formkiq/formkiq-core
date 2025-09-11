@@ -72,7 +72,7 @@ public class SetDataClassificationAction implements DocumentAction {
   public ProcessActionStatus run(final Logger logger, final String siteId, final String documentId,
       final List<Action> actions, final Action action) throws IOException {
 
-    ActionStatus status = ActionStatus.RUNNING;
+    ActionStatus status = ActionStatus.COMPLETE;
 
     DocumentItem item = this.documentService.findDocument(siteId, documentId);
     if (!MimeType.isPlainText(item.getContentType())
@@ -89,9 +89,9 @@ public class SetDataClassificationAction implements DocumentAction {
       String json = this.gson.toJson(payload);
 
       if (logger.isLogged(LogLevel.DEBUG)) {
-        String s =
-            String.format("{\"type\",\"%s\",\"method\":\"%s\",\"url\":\"%s\",\"body\":\"%s\"}",
-                "ocr", "POST", "/documents/" + documentId + "/dataClassification", json);
+        String s = String.format(
+            "{\"type\",\"%s\",\"method\":\"%s\",\"url\":\"%s\",\"body\":\"%s\"}",
+            action.type().name(), "PUT", "/documents/" + documentId + "/dataClassification", json);
         logger.debug(s);
       }
 

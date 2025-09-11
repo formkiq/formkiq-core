@@ -83,7 +83,7 @@ public class SendHttpRequest {
     }
 
     if (!HttpResponseStatus.is2XX(response)) {
-      throw new IOException(url + " returned " + response.statusCode());
+      throw new IOException(u + " returned " + response.statusCode());
     }
   }
 }

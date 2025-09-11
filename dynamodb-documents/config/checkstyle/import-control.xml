@@ -15,7 +15,8 @@
 		<allow pkg="software.amazon.awssdk.utils" />
 		<allow pkg="com.amazonaws.util" />
 		<allow pkg="com.amazonaws.xray" />
-		
+
+        <allow pkg="com.formkiq.strings" />
 		<allow pkg="com.formkiq.aws.dynamodb" />
 		<allow pkg="com.formkiq.graalvm.annotations" />
 		<allow pkg="com.formkiq.module.lambdaservices" />
