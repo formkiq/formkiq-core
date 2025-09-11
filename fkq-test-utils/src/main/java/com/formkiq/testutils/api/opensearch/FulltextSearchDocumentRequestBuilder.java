@@ -43,6 +43,8 @@ import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
  */
 public class FulltextSearchDocumentRequestBuilder implements HttpRequestBuilder {
 
+  /** Maximum Retry. */
+  private static final int MAX_RETRY = 10;
   /** {@link DocumentFulltextRequest}. */
   private final DocumentFulltextRequest request;
   /** Limit. */
@@ -99,19 +101,27 @@ public class FulltextSearchDocumentRequestBuilder implements HttpRequestBuilder 
    */
   public ApiHttpResponse<DocumentFulltextResponse> submit(final ApiClient apiClient,
       final String siteId) {
-    DocumentFulltextResponse obj = null;
+
+    int retry = 0;
     ApiException ex = null;
+    DocumentFulltextResponse obj = null;
     try {
       obj = new AdvancedDocumentSearchApi(apiClient).searchFulltext(this.request, siteId, null,
           limit);
       List<FulltextSearchItem> documents = notNull(obj.getDocuments());
 
       while (expected != null && expected > 0 && expected != documents.size()) {
+        System.out.println("GOT: " + documents.size() + " EXPECTED: " + expected);
         if (documents.size() != expected) {
           TimeUnit.SECONDS.sleep(1);
           obj = new AdvancedDocumentSearchApi(apiClient).searchFulltext(this.request, siteId, null,
               limit);
           documents = notNull(obj.getDocuments());
+
+          retry++;
+          if (retry > MAX_RETRY) {
+            break;
+          }
         }
       }
 

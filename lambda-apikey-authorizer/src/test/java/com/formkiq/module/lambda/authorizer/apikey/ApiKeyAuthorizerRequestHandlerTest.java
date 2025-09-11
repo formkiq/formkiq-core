@@ -146,9 +146,9 @@ class ApiKeyAuthorizerRequestHandlerTest {
       Map<String, Object> claims = (Map<String, Object>) ctx.get("apiKeyClaims");
 
       if (siteId != null) {
-        assertEquals("[" + siteId + ",API_KEY]", claims.get("cognito:groups"));
+        assertEquals("[" + siteId + " API_KEY]", claims.get("cognito:groups"));
       } else {
-        assertEquals("[default,API_KEY]", claims.get("cognito:groups"));
+        assertEquals("[default API_KEY]", claims.get("cognito:groups"));
       }
 
       assertEquals(name, claims.get("cognito:username"));
