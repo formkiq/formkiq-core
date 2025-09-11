@@ -432,7 +432,8 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
     } catch (Exception e) {
 
-      ApiRequestHandlerResponse response = ApiRequestHandlerResponse.builder().exception(e).build();
+      ApiRequestHandlerResponse response =
+          ApiRequestHandlerResponse.builder().exception(logger, e).build();
 
       if (ua == null) {
         ua = new ApiGatewayRequestToUserActivityFunction().apply(authorization, null, null);
