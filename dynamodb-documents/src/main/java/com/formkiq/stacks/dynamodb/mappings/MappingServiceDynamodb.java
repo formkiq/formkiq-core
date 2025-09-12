@@ -217,7 +217,7 @@ public class MappingServiceDynamodb implements MappingService, DbKeys {
             .error("'defaultValue' or 'defaultValues' is required"));
       }
 
-    } else {
+    } else if (!MappingAttributeSourceType.DATA_CLASSIFICATION.equals(attribute.getSourceType())) {
 
       if (attribute.getLabelMatchingType() == null) {
         errors.add(new ValidationErrorImpl().key("attribute[" + index + "].labelMatchingType")

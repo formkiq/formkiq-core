@@ -21,23 +21,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb.mappings;
+package com.formkiq.stacks.lambda.s3.actions;
 
 import com.formkiq.graalvm.annotations.Reflectable;
 
-/**
- * Mapping Attribute Source Type.
- */
+import java.util.List;
+
 @Reflectable
-public enum MappingAttributeSourceType {
-  /** Source Type Content. */
-  CONTENT,
-  /** Source Type Content Key value. */
-  CONTENT_KEY_VALUE,
-  /** Source Type Metadata. */
-  METADATA,
-  /** Manual. */
-  MANUAL,
-  /** Data Classification. */
-  DATA_CLASSIFICATION
+public record DataClassification(String llmPromptEntityName, String insertedDate, String content,
+    String userId, List<DataClassificationAttribute> attributes) {
 }
