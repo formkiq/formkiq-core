@@ -45,7 +45,7 @@ jobs:
         ytt --version
     - name: Execute Gradle build
       timeout-minutes: 35
-      run: ./gradlew clean build --refresh-dependencies
+      run: ./gradlew clean build
     - name: Upload test reports
       uses: actions/upload-artifact@v4
       if: always()

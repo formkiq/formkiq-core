@@ -2,6 +2,7 @@ import com.github.jk1.license.filter.LicenseBundleNormalizer
 import com.github.jk1.license.render.InventoryHtmlReportRenderer
 import com.github.jk1.license.render.JsonReportRenderer
 import org.openapitools.generator.gradle.plugin.tasks.ValidateTask
+import java.util.concurrent.TimeUnit
 
 plugins {
   id 'java-library'
@@ -42,6 +43,10 @@ allprojects {
   apply plugin: 'com.github.ben-manes.versions'
   apply plugin: 'com.formkiq.gradle.graalvm-native-plugin'
   // apply plugin: 'com.github.jk1.dependency-license-report'
+
+  configurations.configureEach {
+    resolutionStrategy.cacheChangingModulesFor(0, TimeUnit.SECONDS)
+  }
 
   java {
     toolchain {
