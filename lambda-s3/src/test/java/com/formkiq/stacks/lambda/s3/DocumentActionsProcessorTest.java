@@ -171,6 +171,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
   private static final String DOCUMENT_ID_404 = ID.uuid();
   /** Document Id with OCR. */
   private static final String DOCUMENT_ID_OCR = ID.uuid();
+  /** Document Id for Data Classification. */
+  private static final String DOCUMENT_ID_DATACLASSIFICATION = ID.uuid();
   /** Document Id with OCR Key/Value. */
   private static final String DOCUMENT_ID_OCR_KEY_VALUE = ID.uuid();
   /** {@link Gson}. */
@@ -303,6 +305,14 @@ public class DocumentActionsProcessorTest implements DbKeys {
     mockServer.when(request().withMethod("GET").withPath("/documents/" + DOCUMENT_ID_OCR + "/ocr*"))
         .respond(org.mockserver.model.HttpResponse
             .response("{\"contentUrls\":[\"" + URL + "/" + DOCUMENT_ID_OCR + "\"]}"));
+
+    Map<String, Object> dataClassification = Map.of("dataClassifications",
+        List.of(Map.of("attributes", List.of(Map.of("key", "certificate_number", "value", "12"),
+            Map.of("key", "certificate_number", "value", "12")))));
+    mockServer
+        .when(request().withMethod("GET")
+            .withPath("/documents/" + DOCUMENT_ID_DATACLASSIFICATION + "/dataClassification*"))
+        .respond(org.mockserver.model.HttpResponse.response(GSON.toJson(dataClassification)));
 
     addKeyValueOcrMock();
 
@@ -1486,9 +1496,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
         List<DocumentAttributeRecord> results =
             documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
         assertEquals(1, results.size());
-        DocumentAttributeRecord record = results.get(0);
-        assertEquals("invoice", record.getKey());
-        assertEquals("6200041751", record.getStringValue());
+        assertDocumentAttributeEquals(results.get(0), "invoice", "6200041751", null);
+        // DocumentAttributeRecord record = results.get(0);
+        // assertEquals("invoice", record.getKey());
+        // assertEquals("6200041751", record.getStringValue());
       }
     }
   }
@@ -1529,9 +1540,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
         List<DocumentAttributeRecord> results =
             documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
         assertEquals(1, results.size());
-        DocumentAttributeRecord record = results.get(0);
-        assertEquals("invoice", record.getKey());
-        assertEquals("6.200041751E9", record.getNumberValue().toString());
+        assertDocumentAttributeEquals(results.get(0), "invoice", null, "6.200041751E9");
+        // DocumentAttributeRecord record = results.get(0);
+        // assertEquals("invoice", record.getKey());
+        // assertEquals("6.200041751E9", record.getNumberValue().toString());
       }
     }
   }
@@ -1613,9 +1625,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
         List<DocumentAttributeRecord> results =
             documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
         assertEquals(1, results.size());
-        DocumentAttributeRecord record = results.get(0);
-        assertEquals("invoice", record.getKey());
-        assertEquals("somevalue", record.getStringValue());
+        assertDocumentAttributeEquals(results.get(0), "invoice", "somevalue", null);
+        // DocumentAttributeRecord record = results.get(0);
+        // assertEquals("invoice", record.getKey());
+        // assertEquals("somevalue", record.getStringValue());
       }
     }
   }
@@ -1657,13 +1670,15 @@ public class DocumentActionsProcessorTest implements DbKeys {
         List<DocumentAttributeRecord> results =
             documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
         assertEquals(2, results.size());
-        DocumentAttributeRecord record = results.get(0);
-        assertEquals("invoice", record.getKey());
-        assertEquals("123", record.getStringValue());
-
-        record = results.get(1);
-        assertEquals("invoice", record.getKey());
-        assertEquals("abc", record.getStringValue());
+        assertDocumentAttributeEquals(results.get(0), "invoice", "123", null);
+        assertDocumentAttributeEquals(results.get(1), "invoice", "abc", null);
+        // DocumentAttributeRecord record = results.get(0);
+        // assertEquals("invoice", record.getKey());
+        // assertEquals("123", record.getStringValue());
+        //
+        // record = results.get(1);
+        // assertEquals("invoice", record.getKey());
+        // assertEquals("abc", record.getStringValue());
       }
     }
   }
@@ -1704,9 +1719,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
         List<DocumentAttributeRecord> results =
             documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
         assertEquals(1, results.size());
-        DocumentAttributeRecord record = results.get(0);
-        assertEquals("invoice", record.getKey());
-        assertEquals("6200041751", record.getStringValue());
+        assertDocumentAttributeEquals(results.get(0), "invoice", "6200041751", null);
+        // DocumentAttributeRecord record = results.get(0);
+        // assertEquals("invoice", record.getKey());
+        // assertEquals("6200041751", record.getStringValue());
       }
     }
   }
@@ -1747,9 +1763,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
         List<DocumentAttributeRecord> results =
             documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
         assertEquals(1, results.size());
-        DocumentAttributeRecord record = results.get(0);
-        assertEquals("path", record.getKey());
-        assertEquals("joe", record.getStringValue());
+        assertDocumentAttributeEquals(results.get(0), "path", "joe", null);
+        // DocumentAttributeRecord record = results.get(0);
+        // assertEquals("path", record.getKey());
+        // assertEquals("joe", record.getStringValue());
       }
     }
   }
@@ -1847,9 +1864,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
         List<DocumentAttributeRecord> results =
             documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
         assertEquals(1, results.size());
-        DocumentAttributeRecord record = results.get(0);
-        assertEquals("certificate_number", record.getKey());
-        assertEquals("100232", record.getStringValue());
+        assertDocumentAttributeEquals(results.get(0), "certificate_number", "100232", null);
+        // DocumentAttributeRecord record = results.get(0);
+        // assertEquals("certificate_number", record.getKey());
+        // assertEquals("100232", record.getStringValue());
       }
     }
   }
@@ -1890,9 +1908,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
         List<DocumentAttributeRecord> results =
             documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
         assertEquals(1, results.size());
-        DocumentAttributeRecord record = results.get(0);
-        assertEquals("certificate_number", record.getKey());
-        assertEquals("28937423", record.getStringValue());
+        assertDocumentAttributeEquals(results.get(0), "certificate_number", "28937423", null);
+        // DocumentAttributeRecord record = results.get(0);
+        // assertEquals("certificate_number", record.getKey());
+        // assertEquals("28937423", record.getStringValue());
       }
     }
   }
@@ -1931,9 +1950,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       List<DocumentAttributeRecord> results =
           documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
       assertEquals(1, results.size());
-      DocumentAttributeRecord record = results.get(0);
-      assertEquals("certificate_number", record.getKey());
-      assertEquals("54", record.getStringValue());
+      assertDocumentAttributeEquals(results.get(0), "certificate_number", "54", null);
     }
   }
 
@@ -2011,17 +2028,20 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertEquals(expected, results.size());
 
       int i = 0;
-      DocumentAttributeRecord record = results.get(i++);
-      assertEquals("certificate_number", record.getKey());
-      assertEquals("111", record.getStringValue());
+      assertDocumentAttributeEquals(results.get(i++), "certificate_number", "111", null);
+      assertDocumentAttributeEquals(results.get(i++), "certificate_number", "123", null);
+      assertDocumentAttributeEquals(results.get(i), "certificate_number", "222", null);
+      // DocumentAttributeRecord record = results.get(i++);
+      // assertEquals("certificate_number", record.getKey());
+      // assertEquals("111", record.getStringValue());
 
-      record = results.get(i++);
-      assertEquals("certificate_number", record.getKey());
-      assertEquals("123", record.getStringValue());
-
-      record = results.get(i);
-      assertEquals("certificate_number", record.getKey());
-      assertEquals("222", record.getStringValue());
+      // record = results.get(i++);
+      // assertEquals("certificate_number", record.getKey());
+      // assertEquals("123", record.getStringValue());
+      //
+      // record = results.get(i);
+      // assertEquals("certificate_number", record.getKey());
+      // assertEquals("222", record.getStringValue());
     }
   }
 
@@ -2059,10 +2079,124 @@ public class DocumentActionsProcessorTest implements DbKeys {
           documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
 
       assertEquals(1, results.size());
+      assertDocumentAttributeEquals(results.get(0), "certificate_number", null, null);
+    }
+  }
 
-      DocumentAttributeRecord record = results.get(0);
-      assertEquals("certificate_number", record.getKey());
-      assertNull(record.getStringValue());
+  private void assertDocumentAttributeEquals(final DocumentAttributeRecord record, final String key,
+      final String stringValue, final String numberValue) {
+    assertEquals(key, record.getKey());
+    assertEquals(stringValue, record.getStringValue());
+    assertEquals(numberValue,
+        record.getNumberValue() != null ? record.getNumberValue().toString() : null);
+  }
+
+  /**
+   * Handle Idp with Mapping Action DATA_CLASSIFICATION, missing.
+   *
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testIdpSourceDataClassificationMissing() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      String documentId = ID.uuid();
+
+      attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "certificate_number",
+          AttributeDataType.STRING, null);
+
+      Mapping mapping = createMapping("certificate_number", null, null,
+          MappingAttributeSourceType.DATA_CLASSIFICATION, null, null, null);
+
+      MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
+
+      processIdpRequest(siteId, documentId, "application/pdf", mappingRecord);
+
+      // then
+      Action action = actionsService.getActions(siteId, documentId).get(0);
+      assertEquals("No Data Classifications found", action.message());
+      assertEquals(ActionStatus.FAILED, action.status());
+      assertEquals(ActionType.IDP, action.type());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertNotNull(action.completedDate());
+
+      List<DocumentAttributeRecord> results =
+          documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
+      assertEquals(0, results.size());
+    }
+  }
+
+  /**
+   * Handle Idp with Mapping Action DATA_CLASSIFICATION.
+   *
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testIdpSourceDataClassification() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      String documentId = DOCUMENT_ID_DATACLASSIFICATION;
+
+      attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "certificate_number",
+          AttributeDataType.STRING, null);
+
+      Mapping mapping = createMapping("certificate_number", null, null,
+          MappingAttributeSourceType.DATA_CLASSIFICATION, null, null, null);
+
+      MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
+
+      processIdpRequest(siteId, documentId, "application/pdf", mappingRecord);
+
+      // then
+      Action action = actionsService.getActions(siteId, documentId).get(0);
+      assertNull(action.message());
+      assertEquals(ActionStatus.COMPLETE, action.status());
+      assertEquals(ActionType.IDP, action.type());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertNotNull(action.completedDate());
+
+      List<DocumentAttributeRecord> results =
+          documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
+      assertEquals(1, results.size());
+      assertDocumentAttributeEquals(results.get(0), "certificate_number", "12", null);
+    }
+  }
+
+  /**
+   * Handle Idp with Mapping Action DATA_CLASSIFICATION with missing attribute value.
+   *
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testIdpSourceDataClassificationMissingAttributeValue() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      String documentId = DOCUMENT_ID_DATACLASSIFICATION;
+
+      attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "someattr",
+          AttributeDataType.STRING, null);
+
+      Mapping mapping = createMapping("someattr", null, null,
+          MappingAttributeSourceType.DATA_CLASSIFICATION, null, null, null);
+
+      MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
+
+      processIdpRequest(siteId, documentId, "application/pdf", mappingRecord);
+
+      // then
+      Action action = actionsService.getActions(siteId, documentId).get(0);
+      assertNull(action.message());
+      assertEquals(ActionStatus.COMPLETE, action.status());
+      assertEquals(ActionType.IDP, action.type());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertNotNull(action.completedDate());
+
+      List<DocumentAttributeRecord> results =
+          documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
+      assertEquals(0, results.size());
     }
   }
 

@@ -10985,6 +10985,7 @@ Resources:
                 - CONTENT_KEY_VALUE
                 - METADATA
                 - MANUAL
+                - DATA_CLASSIFICATION
 
             GetAttributeAllowedValuesResponse:
               type: "object"

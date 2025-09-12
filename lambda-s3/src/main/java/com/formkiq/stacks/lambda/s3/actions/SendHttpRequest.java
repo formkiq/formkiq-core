@@ -53,15 +53,16 @@ public class SendHttpRequest {
 
   /**
    * Send Http Request.
-   * 
+   *
    * @param siteId {@link String}
    * @param method {@link String}
    * @param url {@link String}
    * @param payload {@link String}
+   * @return {@link HttpResponse}
    * @throws IOException IOException
    */
-  public void sendRequest(final String siteId, final String method, final String url,
-      final String payload) throws IOException {
+  public HttpResponse<String> sendRequest(final String siteId, final String method,
+      final String url, final String payload) throws IOException {
 
     String u = this.documentsIamUrl + url;
 
@@ -72,7 +73,9 @@ public class SendHttpRequest {
     }
 
     HttpResponse<String> response;
-    if ("put".equalsIgnoreCase(method)) {
+    if ("get".equalsIgnoreCase(method)) {
+      response = this.http.get(u, Optional.empty(), parameters, payload);
+    } else if ("put".equalsIgnoreCase(method)) {
       response = this.http.put(u, Optional.empty(), parameters, payload);
     } else if ("post".equalsIgnoreCase(method)) {
       response = this.http.post(u, Optional.empty(), parameters, payload);
@@ -85,5 +88,7 @@ public class SendHttpRequest {
     if (!HttpResponseStatus.is2XX(response)) {
       throw new IOException(u + " returned " + response.statusCode());
     }
+
+    return response;
   }
 }

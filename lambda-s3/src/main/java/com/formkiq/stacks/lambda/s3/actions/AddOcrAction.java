@@ -28,10 +28,10 @@ import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.logger.LogLevel;
 import com.formkiq.module.lambdaservices.logger.Logger;
+import com.formkiq.stacks.dynamodb.GsonUtil;
 import com.formkiq.stacks.lambda.s3.DocumentAction;
 import com.formkiq.stacks.lambda.s3.ProcessActionStatus;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -51,7 +51,7 @@ public class AddOcrAction implements DocumentAction {
   /** {@link SendHttpRequest}. */
   private final SendHttpRequest http;
   /** {@link Gson}. */
-  private final Gson gson = new GsonBuilder().create();
+  private final Gson gson = GsonUtil.getInstance();
 
   /**
    * constructor.
