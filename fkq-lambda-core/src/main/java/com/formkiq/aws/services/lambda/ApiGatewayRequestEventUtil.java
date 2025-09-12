@@ -32,6 +32,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
@@ -65,8 +66,9 @@ public interface ApiGatewayRequestEventUtil {
   default String getPathParameterSiteId(final ApiGatewayRequestEvent event)
       throws UnauthorizedException {
     String siteId = event.getPathParameters().get("siteId");
-    if ("global".equals(siteId)) {
-      throw new UnauthorizedException("'global' siteId is reserved");
+    Optional<ReservedSiteId> reserved = ReservedSiteId.fromString(siteId);
+    if (reserved.isPresent()) {
+      throw new UnauthorizedException("'" + siteId + "' siteId is reserved");
     }
     return siteId;
   }

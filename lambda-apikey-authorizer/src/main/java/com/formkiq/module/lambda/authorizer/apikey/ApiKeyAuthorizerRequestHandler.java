@@ -113,7 +113,7 @@ public class ApiKeyAuthorizerRequestHandler
     boolean isAuthorized = apiKey != null && apiKey.equals(api.apiKey());
 
     String apiKeyName = api.name();
-    String group = isAuthorized ? "[" + siteId + "]" : "[]";
+    String group = isAuthorized ? "[" + siteId + " API_KEY]" : "[API_KEY]";
     String permissions =
         api.permissions().stream().map(Enum::name).sorted().collect(Collectors.joining(","));
 

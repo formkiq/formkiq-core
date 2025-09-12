@@ -114,7 +114,7 @@ class ApiKeyAuthorizerRequestHandlerTest {
     assertEquals(Boolean.FALSE, map.get("isAuthorized"));
     Map<String, Object> ctx = (Map<String, Object>) map.get("context");
     Map<String, Object> claims = (Map<String, Object>) ctx.get("apiKeyClaims");
-    assertEquals("[]", claims.get("cognito:groups"));
+    assertEquals("[API_KEY]", claims.get("cognito:groups"));
     assertEquals("", claims.get("cognito:username"));
     assertEquals("", claims.get("permissions"));
   }
@@ -146,9 +146,9 @@ class ApiKeyAuthorizerRequestHandlerTest {
       Map<String, Object> claims = (Map<String, Object>) ctx.get("apiKeyClaims");
 
       if (siteId != null) {
-        assertEquals("[" + siteId + "]", claims.get("cognito:groups"));
+        assertEquals("[" + siteId + " API_KEY]", claims.get("cognito:groups"));
       } else {
-        assertEquals("[default]", claims.get("cognito:groups"));
+        assertEquals("[default API_KEY]", claims.get("cognito:groups"));
       }
 
       assertEquals(name, claims.get("cognito:username"));
@@ -173,7 +173,7 @@ class ApiKeyAuthorizerRequestHandlerTest {
 
     Map<String, Object> ctx = (Map<String, Object>) map.get("context");
     Map<String, Object> claims = (Map<String, Object>) ctx.get("apiKeyClaims");
-    assertEquals("[]", claims.get("cognito:groups"));
+    assertEquals("[API_KEY]", claims.get("cognito:groups"));
     assertEquals("", claims.get("cognito:username"));
     assertEquals("", claims.get("permissions"));
   }
@@ -197,7 +197,7 @@ class ApiKeyAuthorizerRequestHandlerTest {
     assertEquals(Boolean.FALSE, map.get("isAuthorized"));
     Map<String, Object> ctx = (Map<String, Object>) map.get("context");
     Map<String, Object> claims = (Map<String, Object>) ctx.get("apiKeyClaims");
-    assertEquals("[]", claims.get("cognito:groups"));
+    assertEquals("[API_KEY]", claims.get("cognito:groups"));
     assertEquals("", claims.get("cognito:username"));
     assertEquals("", claims.get("permissions"));
   }

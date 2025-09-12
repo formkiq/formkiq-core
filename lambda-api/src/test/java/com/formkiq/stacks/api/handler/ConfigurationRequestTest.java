@@ -228,6 +228,25 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     }
   }
 
+  /**
+   * Get /config for API_KEY SiteId.
+   *
+   */
+  @Test
+  public void testHandleGetConfigurationApiKey() {
+    // given
+    new SetBearers().apply(this.client, new String[] {"Admins", "other"});
+
+    // when
+    try {
+      this.systemApi.getConfiguration("API_KEY");
+      fail();
+    } catch (ApiException e) {
+      // then
+      assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
+      assertEquals("{\"message\":\"'API_KEY' siteId is reserved\"}", e.getResponseBody());
+    }
+  }
 
   /**
    * PUT /config default as Admin.

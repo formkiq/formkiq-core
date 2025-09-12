@@ -30,6 +30,7 @@ import com.formkiq.aws.services.lambda.exceptions.ForbiddenException;
 import com.formkiq.aws.services.lambda.exceptions.NotImplementedException;
 import com.formkiq.aws.services.lambda.exceptions.TooManyRequestsException;
 import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
+import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.validation.UnAuthorizedValidationError;
 import com.formkiq.validation.ValidationException;
 
@@ -48,6 +49,7 @@ import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_TEMPORARY_REDIRECT;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_TOO_MANY_REQUESTS;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_UNAUTHORIZED;
+import static com.formkiq.strings.Strings.isEmpty;
 
 /**
  * Immutable HTTP‐style response holder.
@@ -212,11 +214,12 @@ public record ApiRequestHandlerResponse(int statusCode, Map<String, String> head
 
     /**
      * Build with {@link Exception}.
-     * 
+     *
+     * @param logger {@link Logger}
      * @param exception {@link Exception}
      * @return Builder
      */
-    public Builder exception(final Exception exception) {
+    public Builder exception(final Logger logger, final Exception exception) {
 
       this.body.put("message", exception.getMessage());
 
@@ -236,8 +239,12 @@ public record ApiRequestHandlerResponse(int statusCode, Map<String, String> head
 
       } else if (isBadRequestException(exception)) {
         this.statusCode = SC_BAD_REQUEST.getStatusCode();
-      } else if (exception instanceof ForbiddenException
-          || exception instanceof UnauthorizedException) {
+      } else if (exception instanceof ForbiddenException e) {
+        this.statusCode = SC_UNAUTHORIZED.getStatusCode();
+        if (!isEmpty(e.getDebug())) {
+          logger.trace(e.getDebug());
+        }
+      } else if (exception instanceof UnauthorizedException) {
         this.statusCode = SC_UNAUTHORIZED.getStatusCode();
       } else if (exception instanceof NotImplementedException) {
         this.statusCode = SC_NOT_IMPLEMENTED.getStatusCode();
