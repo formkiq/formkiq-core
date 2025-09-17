@@ -75,7 +75,7 @@ public class ApiAuthorizationBuilder {
   private void addPermissions(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final Collection<String> groups, final boolean admin) {
 
-    Map<String, Object> claims = getAuthorizerClaims(event);
+    Map<String, Object> claims = getAuthorizerClaimsOrSitesClaims(event);
 
     for (String group : groups) {
 
@@ -171,7 +171,7 @@ public class ApiAuthorizationBuilder {
    * @param event {@link ApiGatewayRequestEvent}
    * @return {@link Map}
    */
-  private Map<String, Object> getAuthorizerClaims(final ApiGatewayRequestEvent event) {
+  private Map<String, Object> getAuthorizerClaimsOrSitesClaims(final ApiGatewayRequestEvent event) {
 
     Map<String, Object> claims = Collections.emptyMap();
 
@@ -180,18 +180,15 @@ public class ApiAuthorizationBuilder {
     if (requestContext != null) {
       Map<String, Object> authorizer = requestContext.getAuthorizer();
 
-      claims = getAuthorizerClaims(authorizer);
+      claims = getAuthorizerClaimsOrSitesClaims(authorizer);
     }
 
     return claims;
   }
 
-  private Map<String, Object> getAuthorizerClaims(final Map<String, Object> authorizer) {
-    Map<String, Object> claims = Collections.emptyMap();
-
-    if (authorizer != null && authorizer.containsKey("claims")) {
-      claims = (Map<String, Object>) authorizer.get("claims");
-    }
+  private Map<String, Object> getAuthorizerClaimsOrSitesClaims(
+      final Map<String, Object> authorizer) {
+    Map<String, Object> claims = getAuthorizerClaims(authorizer);
 
     if (claims != null && claims.containsKey("sitesClaims")) {
       String sitesClaims = (String) claims.get("sitesClaims");
@@ -201,6 +198,15 @@ public class ApiAuthorizationBuilder {
       claims = (Map<String, Object>) authorizer.get("apiKeyClaims");
     }
 
+    return claims;
+  }
+
+  private static Map<String, Object> getAuthorizerClaims(final Map<String, Object> authorizer) {
+    Map<String, Object> claims = Collections.emptyMap();
+
+    if (authorizer != null && authorizer.containsKey("claims")) {
+      claims = (Map<String, Object>) authorizer.get("claims");
+    }
     return claims;
   }
 
@@ -282,7 +288,7 @@ public class ApiAuthorizationBuilder {
   private Collection<String> getRoles(final ApiGatewayRequestEvent event) {
     Collection<String> groups = new HashSet<>();
 
-    Map<String, Object> claims = getAuthorizerClaims(event);
+    Map<String, Object> claims = getAuthorizerClaimsOrSitesClaims(event);
 
     if (claims.containsKey("cognito:groups")) {
       Object obj = claims.get("cognito:groups");
