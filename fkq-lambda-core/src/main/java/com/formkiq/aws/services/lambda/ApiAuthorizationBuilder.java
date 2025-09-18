@@ -207,6 +207,11 @@ public class ApiAuthorizationBuilder {
     if (authorizer != null && authorizer.containsKey("claims")) {
       claims = (Map<String, Object>) authorizer.get("claims");
     }
+
+    if (authorizer != null && authorizer.containsKey("apiKeyClaims")) {
+      claims = (Map<String, Object>) authorizer.get("apiKeyClaims");
+    }
+
     return claims;
   }
 

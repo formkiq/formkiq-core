@@ -27,6 +27,7 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -63,6 +64,26 @@ class ApiAuthorizationBuilderTest {
     Map<String, Object> claims = Map.of("username", "oktaidp_test@formkiq.com", "sitesClaims", gson
         .toJson(Map.of("cognito:groups", String.join(" ", groups), "permissionsMap", permissions)));
     content.setAuthorizer(Map.of("claims", claims));
+    event.setRequestContext(content);
+
+    return event;
+  }
+
+  /**
+   * Get {@link ApiGatewayRequestEvent}.
+   *
+   * @return {@link ApiGatewayRequestEvent}
+   */
+  private ApiGatewayRequestEvent getApiKeyClaimsEvent() {
+    ApiGatewayRequestEvent event = new ApiGatewayRequestEvent();
+    ApiGatewayRequestContext content = new ApiGatewayRequestContext();
+
+    Map<String, Object> claims = Map.of("cognito:groups", "[apitestsite API_KEY]",
+        "cognito:username", "Test Read/Write/Delete Key", "permissions", "DELETE,READ,WRITE");
+
+    Map<String, Object> authorizer = new HashMap<>(Map.of("apiKeyClaims", claims));
+    authorizer.put("claims", null);
+    content.setAuthorizer(authorizer);
     event.setRequestContext(content);
 
     return event;
@@ -877,6 +898,29 @@ class ApiAuthorizationBuilderTest {
     assertEquals("no groups", api0.getAccessSummary());
     assertEquals("API_KEY", String.join(",", api0.getRoles()));
     assertEquals("oktaidp_test@formkiq.com", api0.getUsername());
+  }
+
+  /**
+   * Sites permissionsMap with 'API_KEY' with apiKeyClaims.
+   */
+  @Test
+  void testApiAuthorizerApiKeyExplicitNoUsername() throws Exception {
+    // given
+    ApiGatewayRequestEvent event0 = getApiKeyClaimsEvent();
+
+    // when
+    final ApiAuthorization api0 = new ApiAuthorizationBuilder().build(event0);
+
+    // then
+    assertEquals("apitestsite", api0.getSiteId());
+    assertEquals("apitestsite", String.join(",", api0.getSiteIds()));
+    assertEquals("DELETE,READ,WRITE",
+        api0.getPermissions().stream().map(Enum::name).collect(Collectors.joining(",")));
+    assertEquals("READ",
+        api0.getPermissions("global").stream().map(Enum::name).collect(Collectors.joining(",")));
+    assertEquals("groups: apitestsite (DELETE,READ,WRITE)", api0.getAccessSummary());
+    assertEquals("API_KEY,apitestsite", String.join(",", api0.getRoles()));
+    assertEquals("Test Read/Write/Delete Key", api0.getUsername());
   }
 
   /**
