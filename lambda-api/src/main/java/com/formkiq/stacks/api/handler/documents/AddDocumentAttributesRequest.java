@@ -28,19 +28,21 @@ import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
 
 import java.util.Collections;
+import java.util.List;
 
 /**
- * Document Attribute Value Request.
+ * Add list of document attributes to a document.
  */
 @Reflectable
-public record DocumentAttributeValueRequest(AddDocumentAttributeValue attribute) {
+public record AddDocumentAttributesRequest(List<AddDocumentAttribute> attributes) {
   /**
    * Validate.
    */
   public void validate() {
-    if (attribute == null) {
+    if (attributes == null) {
       throw new ValidationException(
-          Collections.singletonList(new ValidationErrorImpl().error("no attribute values found")));
+          Collections.singletonList(new ValidationErrorImpl().error("no attributes found")));
     }
+
   }
 }

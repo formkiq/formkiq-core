@@ -61,6 +61,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.dynamodb.cache.CacheService;
 import com.formkiq.module.actions.ActionStatus;
@@ -291,7 +292,7 @@ public class DocumentsRequestHandler
     DocumentsUploadRequestHandler handler = new DocumentsUploadRequestHandler();
 
     String siteId = authorization.getSiteId();
-    AddDocumentRequest request = fromBodyToObject(event, AddDocumentRequest.class);
+    AddDocumentRequest request = JsonToObject.fromJson(awsservice, event, AddDocumentRequest.class);
 
     validatePost(request);
 

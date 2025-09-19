@@ -31,13 +31,16 @@ import com.formkiq.aws.dynamodb.entity.EntityRecord;
 import com.formkiq.aws.dynamodb.entity.EntityTypeNamespace;
 import com.formkiq.aws.dynamodb.entity.EntityTypeRecord;
 import com.formkiq.aws.dynamodb.entity.PresetEntity;
-import com.formkiq.aws.dynamodb.entity.PresetLlmPromptEntityBuilder;
+import com.formkiq.aws.dynamodb.entity.PresetEntityBuilder;
+import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.dynamodb.useractivities.ActivityResourceType;
 import com.formkiq.aws.dynamodb.useractivities.AttributeValuesToChangeRecordFunction;
 import com.formkiq.aws.dynamodb.useractivities.ChangeRecord;
 import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
+import com.formkiq.aws.services.lambda.JsonToObject;
+import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.useractivity.UserActivityContext;
@@ -51,6 +54,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
@@ -130,10 +134,26 @@ public class AddEntityRequestToEntityRecordTransformer implements ApiGatewayRequ
     if (EntityTypeNamespace.PRESET.equals(entityType.namespace())) {
 
       PresetEntity presetEntity = PresetEntity.fromString(entityType.name());
+
       if (presetEntity != null) {
 
-        entity = new PresetLlmPromptEntityBuilder().documentId(entityId).name(addEntity.name())
-            .entityTypeId(entityType.documentId()).attributes(entityAttributes).build(siteId);
+        if (PresetEntity.CHECKOUT.equals(presetEntity)) {
+
+          if (!notNull(entityAttributes).isEmpty()) {
+            throw new BadException("'Checkout' entity type does not support attributes in request");
+          }
+
+          entityAttributes = List.of(
+              EntityAttribute.builder().key("LockedBy")
+                  .addStringValue(ApiAuthorization.getAuthorization().getUsername()).build(),
+              EntityAttribute.builder().key("LockedDate")
+                  .addStringValue(DateUtil.getIsoDateFormatter().format(new Date())).build());
+        }
+
+        // check attributes exist
+        entity = new PresetEntityBuilder().documentId(entityId).presetEntity(presetEntity)
+            .name(addEntity.name()).entityTypeId(entityType.documentId())
+            .attributes(entityAttributes).build(siteId);
 
       } else {
         throw new NotFoundException("Entity Type '" + entityType.name() + "' not found");
@@ -151,7 +171,7 @@ public class AddEntityRequestToEntityRecordTransformer implements ApiGatewayRequ
   private AddEntityRequest getEntityRequest(final String siteId, final ApiGatewayRequestEvent event,
       final String entityTypeId, final String entityId) {
 
-    AddEntityRequest req = fromBodyToObject(event, AddEntityRequest.class);
+    AddEntityRequest req = JsonToObject.fromJson(this.awsServices, event, AddEntityRequest.class);
 
     if (update) {
 

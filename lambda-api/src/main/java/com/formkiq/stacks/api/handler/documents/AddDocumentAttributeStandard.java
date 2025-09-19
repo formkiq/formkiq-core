@@ -24,23 +24,15 @@
 package com.formkiq.stacks.api.handler.documents;
 
 import com.formkiq.graalvm.annotations.Reflectable;
-import com.formkiq.validation.ValidationErrorImpl;
-import com.formkiq.validation.ValidationException;
 
-import java.util.Collections;
+import java.util.List;
 
 /**
- * Document Attribute Value Request.
+ * Standard key/value attribute. Only one of the value forms is typically used by the server, but
+ * the model allows any combination to be present.
  */
 @Reflectable
-public record DocumentAttributeValueRequest(AddDocumentAttributeValue attribute) {
-  /**
-   * Validate.
-   */
-  public void validate() {
-    if (attribute == null) {
-      throw new ValidationException(
-          Collections.singletonList(new ValidationErrorImpl().error("no attribute values found")));
-    }
-  }
+public record AddDocumentAttributeStandard(String key, String stringValue,
+    List<String> stringValues, Double numberValue, List<Double> numberValues,
+    Boolean booleanValue) implements AddDocumentAttribute {
 }

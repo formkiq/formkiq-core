@@ -27,6 +27,7 @@ import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.builder.DynamoDbEntityBuilder;
 import com.formkiq.validation.ValidationBuilder;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -35,12 +36,14 @@ import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 /**
  * Record representing an Preset LlmPrompt Entity, with its DynamoDB key structure and metadata.
  */
-public class PresetLlmPromptEntityBuilder implements DynamoDbEntityBuilder<EntityRecord> {
+public class PresetEntityBuilder implements DynamoDbEntityBuilder<EntityRecord> {
 
   /** {@link EntityRecord.Builder}. */
   private EntityRecord.Builder builder = EntityRecord.builder();
   /** Entity Attributes. */
   private List<EntityAttribute> attributes;
+  /** {@link PresetEntity}. */
+  private PresetEntity entityType;
 
   /**
    * Sets the document identifier.
@@ -48,7 +51,7 @@ public class PresetLlmPromptEntityBuilder implements DynamoDbEntityBuilder<Entit
    * @param entityName the entity name
    * @return this Builder
    */
-  public PresetLlmPromptEntityBuilder name(final String entityName) {
+  public PresetEntityBuilder name(final String entityName) {
     builder = builder.name(entityName);
     return this;
   }
@@ -59,7 +62,7 @@ public class PresetLlmPromptEntityBuilder implements DynamoDbEntityBuilder<Entit
    * @param entityTypeId the entity type ID
    * @return this Builder
    */
-  public PresetLlmPromptEntityBuilder entityTypeId(final String entityTypeId) {
+  public PresetEntityBuilder entityTypeId(final String entityTypeId) {
     builder = builder.entityTypeId(entityTypeId);
     return this;
   }
@@ -70,8 +73,19 @@ public class PresetLlmPromptEntityBuilder implements DynamoDbEntityBuilder<Entit
    * @param entityDocumentId the document ID
    * @return this Builder
    */
-  public PresetLlmPromptEntityBuilder documentId(final String entityDocumentId) {
+  public PresetEntityBuilder documentId(final String entityDocumentId) {
     builder = builder.documentId(entityDocumentId);
+    return this;
+  }
+
+  /**
+   * Sets the document identifier.
+   *
+   * @param presetEntity {@link PresetEntity}
+   * @return this Builder
+   */
+  public PresetEntityBuilder presetEntity(final PresetEntity presetEntity) {
+    this.entityType = presetEntity;
     return this;
   }
 
@@ -81,7 +95,7 @@ public class PresetLlmPromptEntityBuilder implements DynamoDbEntityBuilder<Entit
    * @param entityAttributes the entity attributes
    * @return this Builder
    */
-  public PresetLlmPromptEntityBuilder attributes(final List<EntityAttribute> entityAttributes) {
+  public PresetEntityBuilder attributes(final List<EntityAttribute> entityAttributes) {
     this.attributes = entityAttributes;
     return this;
   }
@@ -100,9 +114,24 @@ public class PresetLlmPromptEntityBuilder implements DynamoDbEntityBuilder<Entit
   private void validate() {
     ValidationBuilder vb = new ValidationBuilder();
 
-    Optional<EntityAttribute> userPrompt = notNull(attributes).stream()
-        .filter(new EntityAttributeKeyPredicate("userPrompt")).findFirst();
-    vb.isRequired("userPrompt", userPrompt);
+    switch (this.entityType) {
+      case LLM_PROMPT, CHECKOUT -> validateAttributes(vb, this.entityType.getAttributeKeys());
+      default -> throw new IllegalStateException("Unexpected value: " + this.entityType);
+    }
+
     vb.check();
+  }
+
+  private void validateAttributes(final ValidationBuilder vb,
+      final Collection<String> attributeKeys) {
+    for (String attributeKey : attributeKeys) {
+      Optional<EntityAttribute> attribute = findAttribute(attributeKey);
+      vb.isRequired(attributeKey, attribute);
+    }
+  }
+
+  private Optional<EntityAttribute> findAttribute(final String attributeKey) {
+    return notNull(attributes).stream().filter(new EntityAttributeKeyPredicate(attributeKey))
+        .findFirst();
   }
 }

@@ -33,4 +33,12 @@ import com.formkiq.client.invoker.ApiException;
  * @param <T> Type of Object response
  */
 public record ApiHttpResponse<T>(T response, ApiException exception) {
+  /**
+   * Is Error Response.
+   * 
+   * @return boolean
+   */
+  public boolean isError() {
+    return exception != null;
+  }
 }

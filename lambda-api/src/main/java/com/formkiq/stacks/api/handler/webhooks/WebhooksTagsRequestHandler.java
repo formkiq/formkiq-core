@@ -37,6 +37,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -85,7 +86,7 @@ public class WebhooksTagsRequestHandler
   public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
 
-    DocumentTag tag = fromBodyToObject(event, DocumentTag.class);
+    DocumentTag tag = JsonToObject.fromJson(awsServices, event, DocumentTag.class);
 
     if (tag.getKey() == null || tag.getKey().isEmpty()) {
       throw new BadException("invalid json body");

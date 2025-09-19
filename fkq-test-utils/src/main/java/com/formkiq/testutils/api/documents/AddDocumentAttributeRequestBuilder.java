@@ -27,9 +27,11 @@ import com.formkiq.client.api.DocumentAttributesApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddDocumentAttribute;
+import com.formkiq.client.model.AddDocumentAttributeEntity;
 import com.formkiq.client.model.AddDocumentAttributeStandard;
 import com.formkiq.client.model.AddDocumentAttributesRequest;
 import com.formkiq.client.model.AddResponse;
+import com.formkiq.client.model.EntityTypeNamespace;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
 
@@ -75,6 +77,22 @@ public class AddDocumentAttributeRequestBuilder implements HttpRequestBuilder {
       final String stringValue) {
     this.request.addAttributesItem(new AddDocumentAttribute(
         new AddDocumentAttributeStandard().key(key).stringValue(stringValue)));
+    return this;
+  }
+
+  /**
+   * Add Document Attribute.
+   *
+   * @param key {@link String}
+   * @param entityTypeId {@link String}
+   * @param entityId {@link String}
+   * @param namespace {@link EntityTypeNamespace}
+   * @return AddDocumentAttributesRequestBuilder
+   */
+  public AddDocumentAttributeRequestBuilder addAttribute(final String key,
+      final String entityTypeId, final String entityId, final EntityTypeNamespace namespace) {
+    this.request.addAttributesItem(new AddDocumentAttribute(new AddDocumentAttributeEntity()
+        .key(key).entityId(entityId).entityTypeId(entityTypeId).namespace(namespace)));
     return this;
   }
 

@@ -34,6 +34,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
+import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
@@ -304,7 +305,7 @@ public class DocumentsOcrRequestHandler
 
     verifyDocument(awsservice, siteId, documentId);
 
-    OcrRequest request = fromBodyToObject(event, OcrRequest.class);
+    OcrRequest request = JsonToObject.fromJson(awsservice, event, OcrRequest.class);
     validate(request);
 
     String userId = authorization.getUsername();

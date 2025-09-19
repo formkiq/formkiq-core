@@ -28,6 +28,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.locale.LocaleTypeRecord;
@@ -54,7 +55,7 @@ public class SitesLocaleResourceItemRequestHandler
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     AddLocaleResourceItemRequest record =
-        fromBodyToObject(event, AddLocaleResourceItemRequest.class);
+        JsonToObject.fromJson(awsservice, event, AddLocaleResourceItemRequest.class);
 
     String siteId = authorization.getSiteId();
     String locale = event.getPathParameter("locale");

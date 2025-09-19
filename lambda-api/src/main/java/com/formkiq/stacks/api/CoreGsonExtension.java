@@ -21,26 +21,39 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api.handler.documents;
+package com.formkiq.stacks.api;
 
-import com.formkiq.graalvm.annotations.Reflectable;
-import com.formkiq.validation.ValidationErrorImpl;
-import com.formkiq.validation.ValidationException;
-
-import java.util.Collections;
+import com.formkiq.aws.services.lambda.GsonService;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.AwsServiceExtension;
+import com.formkiq.stacks.api.handler.documents.AddDocumentAttribute;
+import com.formkiq.stacks.api.handler.documents.AddDocumentAttributeDeserializer;
+import com.google.gson.Gson;
 
 /**
- * Document Attribute Value Request.
+ *
+ * {@link AwsServiceExtension} for {@link Gson}.
+ *
  */
-@Reflectable
-public record DocumentAttributeValueRequest(AddDocumentAttributeValue attribute) {
+public class CoreGsonExtension implements AwsServiceExtension<Gson> {
+
+  /** {@link Gson}. */
+  private Gson gson;
+
   /**
-   * Validate.
+   * constructor.
    */
-  public void validate() {
-    if (attribute == null) {
-      throw new ValidationException(
-          Collections.singletonList(new ValidationErrorImpl().error("no attribute values found")));
+  public CoreGsonExtension() {}
+
+  @Override
+  public Gson loadService(final AwsServiceCache awsServiceCache) {
+    if (this.gson == null) {
+      GsonService service = new GsonService();
+      this.gson = service
+          .registerTypeAdapter(AddDocumentAttribute.class, new AddDocumentAttributeDeserializer())
+          .build();
     }
+
+    return this.gson;
   }
 }

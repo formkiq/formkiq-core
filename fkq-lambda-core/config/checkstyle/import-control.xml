@@ -11,6 +11,8 @@
 		<allow pkg="java.time" />
 		<allow pkg="java.net" />
 		<allow pkg="java.util" />
+        <allow pkg="java.lang.reflect" />
+
 		<allow pkg="com.amazonaws.services.lambda.runtime" />
 
 		<allow pkg="com.formkiq.strings" />

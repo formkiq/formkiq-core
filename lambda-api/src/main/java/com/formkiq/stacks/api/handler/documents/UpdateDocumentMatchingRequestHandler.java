@@ -35,6 +35,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.apimodels.UpdateMatchingDocumentTagsRequest;
 import com.formkiq.stacks.dynamodb.apimodels.UpdateMatchingDocumentTagsRequestValidator;
@@ -65,8 +66,7 @@ public class UpdateDocumentMatchingRequestHandler
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     UpdateMatchingDocumentTagsRequest o =
-        fromBodyToObject(event, UpdateMatchingDocumentTagsRequest.class);
-
+        JsonToObject.fromJson(awsservice, event, UpdateMatchingDocumentTagsRequest.class);
     validate(o);
 
     String siteId = authorization.getSiteId();

@@ -34,6 +34,7 @@ import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.base64.MapAttributeValueToString;
 import com.formkiq.aws.dynamodb.entity.EntityTypeNamespace;
 import com.formkiq.aws.dynamodb.entity.EntityTypeRecord;
+import com.formkiq.aws.dynamodb.entity.PresetEntity;
 import com.formkiq.aws.dynamodb.useractivities.ActivityResourceType;
 import com.formkiq.aws.dynamodb.useractivities.AttributeValuesToChangeRecordFunction;
 import com.formkiq.aws.dynamodb.useractivities.ChangeRecord;
@@ -42,16 +43,21 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.useractivity.UserActivityContext;
 import com.formkiq.aws.dynamodb.entity.FindEntityTypeByName;
+import com.formkiq.stacks.dynamodb.attributes.AttributeDataType;
+import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
+import com.formkiq.stacks.dynamodb.attributes.AttributeType;
 import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -106,7 +112,8 @@ public class EntityTypesRequestHandler
 
     String siteId = authorization.getSiteId();
 
-    AddEntityTypeRequest request = fromBodyToObject(event, AddEntityTypeRequest.class);
+    AddEntityTypeRequest request =
+        JsonToObject.fromJson(awsservice, event, AddEntityTypeRequest.class);
     validate(request);
 
     AddEntityType addEntityType = request.entityType();
@@ -114,19 +121,45 @@ public class EntityTypesRequestHandler
     EntityTypeRecord entityType = EntityTypeRecord.builder().documentId(ID.uuid())
         .name(addEntityType.name()).namespace(addEntityType.namespace()).build(siteId);
 
+    PresetEntity.fromString(addEntityType.name());
+
     DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
-    Map<String, AttributeValue> attributes = entityType.getAttributes();
     validateExist(awsservice, db, siteId, addEntityType.name(), addEntityType.namespace());
+
+    List<Map<String, AttributeValue>> attributeList = new ArrayList<>();
+
+    Map<String, AttributeValue> attributes = entityType.getAttributes();
+    attributeList.add(attributes);
+
+    attributeList.addAll(addPresetAttributes(siteId, addEntityType));
 
     Map<String, ChangeRecord> changes =
         new AttributeValuesToChangeRecordFunction(Map.of("documentId", "entityTypeId")).apply(null,
             attributes);
     UserActivityContext.set(ActivityResourceType.ENTITY_TYPE, UserActivityType.CREATE, changes,
         Map.of());
-    db.putItem(attributes);
+    db.putItems(attributeList);
 
     return ApiRequestHandlerResponse.builder().status(SC_CREATED)
         .body("entityTypeId", entityType.documentId()).build();
+  }
+
+  private List<Map<String, AttributeValue>> addPresetAttributes(final String siteId,
+      final AddEntityType addEntityType) {
+    final List<Map<String, AttributeValue>> attributeList = new ArrayList<>();
+
+    if (EntityTypeNamespace.PRESET.equals(addEntityType.namespace())) {
+      PresetEntity presetEntity = PresetEntity.fromString(addEntityType.name());
+      if (presetEntity != null) {
+        presetEntity.getAttributeKeys().forEach(k -> {
+          AttributeRecord a = new AttributeRecord().type(AttributeType.STANDARD)
+              .dataType(AttributeDataType.STRING).key(k).documentId(ID.uuid());
+          attributeList.add(a.getAttributes(siteId));
+        });
+      }
+    }
+
+    return attributeList;
   }
 
   private void validateExist(final AwsServiceCache awsservice, final DynamoDbService db,

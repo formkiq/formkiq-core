@@ -33,6 +33,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.ConflictException;
 import com.formkiq.module.actions.Action;
@@ -129,7 +130,7 @@ public class DocumentsUploadRequestHandler
   @Override
   public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
-    AddDocumentRequest request = fromBodyToObject(event, AddDocumentRequest.class);
+    AddDocumentRequest request = JsonToObject.fromJson(awsservice, event, AddDocumentRequest.class);
     return post(event, authorization, awsservice, request);
   }
 
@@ -162,10 +163,10 @@ public class DocumentsUploadRequestHandler
 
     String documentId = request.getDocumentId();
 
-    List<DocumentAttribute> attributes = notNull(request.getAttributes());
+    List<AddDocumentAttribute> attributes = notNull(request.getAttributes());
 
-    DocumentAttributeToDocumentAttributeRecord tr = new DocumentAttributeToDocumentAttributeRecord(
-        awsservice, siteId, documentId, authorization.getUsername());
+    AddDocumentAttributeToDocumentAttributeRecord tr =
+        new AddDocumentAttributeToDocumentAttributeRecord(awsservice, siteId, documentId);
 
     List<DocumentAttributeRecord> documentAttributes =
         attributes.stream().flatMap(a -> tr.apply(a).stream()).toList();

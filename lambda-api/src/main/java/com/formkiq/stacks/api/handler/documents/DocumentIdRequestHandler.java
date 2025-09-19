@@ -52,6 +52,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.aws.dynamodb.cache.CacheService;
@@ -187,7 +188,7 @@ public class DocumentIdRequestHandler
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
 
-    AddDocumentRequest request = fromBodyToObject(event, AddDocumentRequest.class);
+    AddDocumentRequest request = JsonToObject.fromJson(awsservice, event, AddDocumentRequest.class);
     request.setDocumentId(documentId);
 
     DocumentService docService = awsservice.getExtension(DocumentService.class);
@@ -212,7 +213,7 @@ public class DocumentIdRequestHandler
     DocumentService service = awsservice.getExtension(DocumentService.class);
 
     List<DocumentAttributeRecord> documentAttributes =
-        getDocumentAttributeRecords(request, authorization, awsservice, siteId);
+        getDocumentAttributeRecords(request, awsservice, siteId);
 
     SaveDocumentOptions options = new SaveDocumentOptions()
         .validationAccess(getAttributeValidationAccess(authorization, siteId));
@@ -283,19 +284,18 @@ public class DocumentIdRequestHandler
    * Get Document Attribute Records.
    *
    * @param request {@link AddDocumentRequest}
-   * @param authorization {@link ApiAuthorization}
    * @param awsservice {@link AwsServiceCache}
    * @param siteId {@link String}
    * @return {@link List} {@link DocumentAttributeRecord}
    */
   private List<DocumentAttributeRecord> getDocumentAttributeRecords(
-      final AddDocumentRequest request, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice, final String siteId) {
+      final AddDocumentRequest request, final AwsServiceCache awsservice, final String siteId) {
 
-    DocumentAttributeToDocumentAttributeRecord tr = new DocumentAttributeToDocumentAttributeRecord(
-        awsservice, siteId, request.getDocumentId(), authorization.getUsername());
+    AddDocumentAttributeToDocumentAttributeRecord tr =
+        new AddDocumentAttributeToDocumentAttributeRecord(awsservice, siteId,
+            request.getDocumentId());
 
-    List<DocumentAttribute> attributes = notNull(request.getAttributes());
+    List<AddDocumentAttribute> attributes = notNull(request.getAttributes());
     return attributes.stream().flatMap(a -> tr.apply(a).stream()).toList();
   }
 

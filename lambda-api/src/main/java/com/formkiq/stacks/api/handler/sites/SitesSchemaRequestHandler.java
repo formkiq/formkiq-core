@@ -31,6 +31,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -85,7 +86,7 @@ public class SitesSchemaRequestHandler
 
     String siteId = authorizer.getSiteId();
 
-    Schema schema = fromBodyToObject(event, Schema.class);
+    Schema schema = JsonToObject.fromJson(awsServices, event, Schema.class);
     Collection<ValidationError> errors = service.setSitesSchema(siteId, schema.getName(), schema);
 
     if (!errors.isEmpty()) {

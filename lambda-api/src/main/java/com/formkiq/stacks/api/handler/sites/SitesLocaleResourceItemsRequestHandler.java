@@ -28,6 +28,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.base64.Pagination;
@@ -57,7 +58,7 @@ public class SitesLocaleResourceItemsRequestHandler
     LocaleService service = awsservice.getExtension(LocaleService.class);
 
     AddLocaleResourceItemRequest record =
-        fromBodyToObject(event, AddLocaleResourceItemRequest.class);
+        JsonToObject.fromJson(awsservice, event, AddLocaleResourceItemRequest.class);
 
     if (record == null) {
       throw new BadException("Invalid request");

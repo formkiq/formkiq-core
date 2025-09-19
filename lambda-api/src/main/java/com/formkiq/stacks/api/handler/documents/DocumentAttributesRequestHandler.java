@@ -39,6 +39,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.dynamodb.cache.CacheService;
@@ -98,19 +99,17 @@ public class DocumentAttributesRequestHandler
   }
 
   private List<DocumentAttributeRecord> getDocumentAttributesFromRequest(
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice, final String siteId, final String documentId)
-      throws BadException, ValidationException {
+      final ApiGatewayRequestEvent event, final AwsServiceCache awsservice, final String siteId,
+      final String documentId) throws BadException, ValidationException {
 
-    DocumentAttributesRequest request = fromBodyToObject(event, DocumentAttributesRequest.class);
-    if (request.getAttributes() == null) {
-      throw new ValidationException(
-          Collections.singletonList(new ValidationErrorImpl().error("no attributes found")));
-    }
+    AddDocumentAttributesRequest request =
+        JsonToObject.fromJson(awsservice, event, AddDocumentAttributesRequest.class);
+    request.validate();
 
-    List<DocumentAttributeRecord> records = request.getAttributes().stream()
-        .flatMap(a -> new DocumentAttributeToDocumentAttributeRecord(awsservice, siteId, documentId,
-            authorization.getUsername()).apply(a).stream())
+    List<DocumentAttributeRecord> records = request.attributes().stream()
+        .flatMap(
+            a -> new AddDocumentAttributeToDocumentAttributeRecord(awsservice, siteId, documentId)
+                .apply(a).stream())
         .toList();
 
     if (notNull(records).isEmpty()) {
@@ -135,7 +134,7 @@ public class DocumentAttributesRequestHandler
     verifyDocument(awsservice, siteId, documentId);
 
     List<DocumentAttributeRecord> attributes =
-        getDocumentAttributesFromRequest(event, authorization, awsservice, siteId, documentId);
+        getDocumentAttributesFromRequest(event, awsservice, siteId, documentId);
 
     AttributeValidationAccess validationAccess = getAttributeValidationAccess(authorization, siteId,
         AttributeValidationAccess.ADMIN_CREATE, AttributeValidationAccess.CREATE);
@@ -163,7 +162,7 @@ public class DocumentAttributesRequestHandler
     verifyDocument(awsservice, siteId, documentId);
 
     List<DocumentAttributeRecord> attributes =
-        getDocumentAttributesFromRequest(event, authorization, awsservice, siteId, documentId);
+        getDocumentAttributesFromRequest(event, awsservice, siteId, documentId);
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
 

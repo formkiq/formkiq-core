@@ -35,6 +35,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.dynamodb.cache.CacheService;
+import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.attributes.AttributeDataType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
@@ -87,8 +88,8 @@ public class AttributesRequestHandler
 
     String siteId = authorizer.getSiteId();
 
-    AddAttributeRequest addAttribute = fromBodyToObject(event, AddAttributeRequest.class);
-
+    AddAttributeRequest addAttribute =
+        JsonToObject.fromJson(awsServices, event, AddAttributeRequest.class);
     AddAttribute attribute = addAttribute.getAttribute();
 
     String key = attribute.getKey();

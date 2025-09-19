@@ -3247,6 +3247,37 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+          /documents/{documentId}/checkout:
+            put:
+              operationId: SetDocumentCheckout
+              summary: Perform document checkout
+              description: |
+                Creates a checkout for the document. Fails with **409 Conflict** if the document is already checkedout by another user.
+                If `byUserId` is omitted, lock is created for the authenticated user. If provided and different from caller,
+                this is treated as a proxied checkout and `proxiedBy` will be recorded as the caller's userId; available as an Add-On Module
+              tags:
+              - Documents
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              responses:
+                "201":
+                  description: 201 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/SetResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /documents/{documentId}/attributes/{attributeKey}/versions:
             get:
               operationId: GetDocumentAttributeVersions

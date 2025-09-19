@@ -24,7 +24,6 @@
 package com.formkiq.stacks.api.handler.documents;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -34,6 +33,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
@@ -44,7 +44,6 @@ import com.formkiq.stacks.dynamodb.attributes.AttributeValidationType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
-import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/attributes/{attributeKey}". */
@@ -118,21 +117,19 @@ public class DocumentAttributeRequestHandler
   }
 
   private Collection<DocumentAttributeRecord> getDocumentAttributesFromRequest(
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice, final String siteId, final String documentId,
-      final String attributeKey) throws BadException, ValidationException {
+      final ApiGatewayRequestEvent event, final AwsServiceCache awsservice, final String siteId,
+      final String documentId, final String attributeKey) throws BadException, ValidationException {
 
     DocumentAttributeValueRequest request =
-        fromBodyToObject(event, DocumentAttributeValueRequest.class);
-    if (request.getAttribute() == null) {
-      throw new ValidationException(
-          Collections.singletonList(new ValidationErrorImpl().error("no attribute values found")));
-    }
+        JsonToObject.fromJson(awsservice, event, DocumentAttributeValueRequest.class);
+    request.validate();
 
-    request.getAttribute().key(attributeKey);
+    AddDocumentAttributeValue a = request.attribute();
+    AddDocumentAttribute addAttribute = new AddDocumentAttributeStandard(attributeKey,
+        a.stringValue(), a.stringValues(), a.numberValue(), a.numberValues(), a.booleanValue());
 
-    return new DocumentAttributeToDocumentAttributeRecord(awsservice, siteId, documentId,
-        authorization.getUsername()).apply(request.getAttribute());
+    return new AddDocumentAttributeToDocumentAttributeRecord(awsservice, siteId, documentId)
+        .apply(addAttribute);
   }
 
   @Override
@@ -152,8 +149,8 @@ public class DocumentAttributeRequestHandler
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
-    Collection<DocumentAttributeRecord> documentAttributes = getDocumentAttributesFromRequest(event,
-        authorization, awsservice, siteId, documentId, attributeKey);
+    Collection<DocumentAttributeRecord> documentAttributes =
+        getDocumentAttributesFromRequest(event, awsservice, siteId, documentId, attributeKey);
 
     AttributeValidationAccess validationAccess =
         getAttributeValidationAccess(authorization, siteId);

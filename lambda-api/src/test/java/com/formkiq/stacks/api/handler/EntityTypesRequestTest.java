@@ -25,6 +25,7 @@ package com.formkiq.stacks.api.handler;
 
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.entity.PresetEntity;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddEntityType;
@@ -35,6 +36,7 @@ import com.formkiq.client.model.EntityType;
 import com.formkiq.client.model.EntityTypeNamespace;
 import com.formkiq.client.model.GetEntityTypeResponse;
 import com.formkiq.client.model.GetEntityTypesResponse;
+import com.formkiq.testutils.api.attributes.GetAttributeRequestBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -44,6 +46,7 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /** Unit Tests for request /entityTypes. */
@@ -121,7 +124,7 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
         assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
         assertEquals(
             "{\"errors\":[{\"key\":\"name\","
-                + "\"error\":\"unexpected value must be one of 'LlmPrompt'\"}]}",
+                + "\"error\":\"unexpected value must be one of 'LlmPrompt, Checkout'\"}]}",
             e.getResponseBody());
       }
     }
@@ -402,38 +405,43 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * Post /entityTypes with LlmPrompt Entity Type.
+   * Post /entityTypes with Preset Entity Type.
    *
    */
   @Test
-  public void testAddLlmPromptEntityType() throws ApiException {
+  public void testAddPresetEntityType() throws ApiException {
     // given
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
       setBearerToken(new String[] {siteId});
 
-      AddEntityTypeRequest req = new AddEntityTypeRequest()
-          .entityType(new AddEntityType().name("LlmPrompt").namespace(EntityTypeNamespace.PRESET));
+      for (PresetEntity value : PresetEntity.values()) {
 
-      // when
-      AddEntityTypeResponse response = this.entityApi.addEntityType(req, siteId);
+        AddEntityTypeRequest req = new AddEntityTypeRequest().entityType(
+            new AddEntityType().name(value.getName()).namespace(EntityTypeNamespace.PRESET));
 
-      // then
-      assertNotNull(response.getEntityTypeId());
-      GetEntityTypesResponse results = this.entityApi.getEntityTypes(siteId, "preset", null, null);
-      List<EntityType> entityTypes = notNull(results.getEntityTypes());
-      assertEquals(1, entityTypes.size());
-      EntityType entityType = entityTypes.get(0);
-      assertEntityTypeEquals(entityType, "LlmPrompt", EntityTypeNamespace.PRESET);
+        // when
+        AddEntityTypeResponse response = this.entityApi.addEntityType(req, siteId);
 
-      // when - add prompt again
-      try {
-        this.entityApi.addEntityType(req, siteId);
-        fail();
-      } catch (ApiException e) {
         // then
-        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
-        assertEquals("{\"errors\":[{\"key\":\"name\",\"error\":\"'name' already exists\"}]}",
-            e.getResponseBody());
+        assertNotNull(response.getEntityTypeId());
+        GetEntityTypesResponse results =
+            this.entityApi.getEntityTypes(siteId, "preset", null, null);
+        List<EntityType> entityTypes = notNull(results.getEntityTypes());
+        assertTrue(entityTypes.size() <= PresetEntity.values().length);
+        EntityType entityType = entityTypes.get(0);
+        assertEntityTypeEquals(siteId, entityType, value.getName(), EntityTypeNamespace.PRESET,
+            value);
+
+        // when - add prompt again
+        try {
+          this.entityApi.addEntityType(req, siteId);
+          fail();
+        } catch (ApiException e) {
+          // then
+          assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+          assertEquals("{\"errors\":[{\"key\":\"name\",\"error\":\"'name' already exists\"}]}",
+              e.getResponseBody());
+        }
       }
     }
   }
@@ -460,22 +468,33 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
         assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
         assertEquals(
             "{\"errors\":[{\"key\":\"name\","
-                + "\"error\":\"unexpected value must be one of 'LlmPrompt'\"}]}",
+                + "\"error\":\"unexpected value must be one of 'LlmPrompt, Checkout'\"}]}",
             e.getResponseBody());
       }
     }
   }
 
   private void assertEntityTypeEquals(final EntityType entityType, final String name) {
-    assertEntityTypeEquals(entityType, name, EntityTypeNamespace.CUSTOM);
+    assertEntityTypeEquals(null, entityType, name, EntityTypeNamespace.CUSTOM, null);
   }
 
-  private void assertEntityTypeEquals(final EntityType entityType, final String name,
-      final EntityTypeNamespace namespace) {
+  private void assertEntityTypeEquals(final String siteId, final EntityType entityType,
+      final String name, final EntityTypeNamespace namespace, final PresetEntity presetEntity) {
     assertEquals(name, entityType.getName());
     assertEquals(namespace, entityType.getNamespace());
     assertNotNull(entityType.getEntityTypeId());
     assertNotNull(entityType.getInsertedDate());
     assertNotNull(DynamoDbTypes.toDate(entityType.getInsertedDate()));
+
+    if (EntityTypeNamespace.PRESET.equals(namespace)) {
+      assertNotNull(presetEntity);
+      List<String> attributes = notNull(
+          new GetAttributeRequestBuilder().submit(client, siteId).response().getAttributes())
+          .stream().map(s -> s.getKey()).toList();
+
+      presetEntity.getAttributeKeys().forEach(attr -> {
+        assertTrue(attributes.contains(attr));
+      });
+    }
   }
 }

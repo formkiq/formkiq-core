@@ -23,6 +23,8 @@
  */
 package com.formkiq.stacks.dynamodb.attributes;
 
+import com.formkiq.aws.dynamodb.ApiAuthorization;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -34,7 +36,7 @@ public class DocumentAttributeRecordBuilder {
 
   public Collection<DocumentAttributeRecord> apply(final String fromDocumentId,
       final String toDocumentId, final DocumentRelationshipType toRelationship,
-      final DocumentRelationshipType inverseRelationship, final String user) {
+      final DocumentRelationshipType inverseRelationship) {
 
     Collection<DocumentAttributeRecord> records = new ArrayList<>();
 
@@ -53,9 +55,10 @@ public class DocumentAttributeRecordBuilder {
     }
 
     Date now = new Date();
+    String username = ApiAuthorization.getAuthorization().getUsername();
     records.forEach(r -> {
       r.setKey(AttributeKeyReserved.RELATIONSHIPS.getKey());
-      r.setUserId(user);
+      r.setUserId(username);
       r.setInsertedDate(now);
       r.updateValueType();
     });
