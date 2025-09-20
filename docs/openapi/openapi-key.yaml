@@ -11937,13 +11937,25 @@
                 matchUsername:
                   type: boolean
                   description: Match Input Username
+            OpaImplicitAccess:
+              type: string
+              description: |
+                Fallback decision when no rule matches.
+                - ALLOW: allow if no rule matches.
+                - DENY: deny if no rule matches.
+              enum:
+              - ALLOW
+              - DENY
             OpaPolicyItemType:
               type: string
               description: Type of Opa Policy Item
               enum:
               - ALLOW
+              - DENY
             OpaPolicyItem:
               type: object
+              required:
+              - type
               properties:
                 type:
                   $ref: '#/components/schemas/OpaPolicyItemType'
@@ -11961,9 +11973,26 @@
                 attributes:
                   items:
                     $ref: '#/components/schemas/OpaPolicyAttribute'
-            SetOpaAccessPolicyItemsRequest:
+                inputs:
+                  items:
+                    $ref: '#/components/schemas/OpaPolicyInput'
+            OpaPolicyInput:
               type: object
               properties:
+                httpMethod:
+                  type: string
+                  description: Http Method
+                resource:
+                  type: string
+                  description: Http Resource
+            SetOpaAccessPolicyItemsRequest:
+              type: object
+              required:
+              - implicitAccess
+              - policyItems
+              properties:
+                implicitAccess:
+                  $ref: '#/components/schemas/OpaImplicitAccess'
                 policyItems:
                   type: array
                   description: List of OPA policy items
@@ -11978,6 +12007,8 @@
             GetOpaAccessPolicyItemsResponse:
               type: object
               properties:
+                implicitAccess:
+                  $ref: '#/components/schemas/OpaImplicitAccess'
                 policyItems:
                   items:
                     $ref: '#/components/schemas/OpaPolicyItem'
