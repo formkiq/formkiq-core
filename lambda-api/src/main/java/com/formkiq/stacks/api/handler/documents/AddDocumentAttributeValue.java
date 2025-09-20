@@ -23,11 +23,14 @@
  */
 package com.formkiq.stacks.api.handler.documents;
 
+import com.formkiq.graalvm.annotations.Reflectable;
+
 import java.util.List;
 
 /**
  * Document Attribute Value.
  */
+@Reflectable
 public record AddDocumentAttributeValue(String stringValue, List<String> stringValues,
     Double numberValue, List<Double> numberValues, Boolean booleanValue) {
 }
