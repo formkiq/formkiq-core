@@ -35,6 +35,10 @@
 			<allow pkg="com.formkiq.testutils.api" />
 		</subpackage>
 
+        <subpackage name="entity">
+            <allow pkg="com.formkiq.testutils.api" />
+        </subpackage>
+
 		<subpackage name="activities">
 			<allow pkg="com.formkiq.testutils.api" />
 			<allow pkg="org.junit.jupiter.api" />
