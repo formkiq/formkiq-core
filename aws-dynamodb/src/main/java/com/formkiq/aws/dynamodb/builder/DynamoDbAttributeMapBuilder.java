@@ -230,16 +230,35 @@ public class DynamoDbAttributeMapBuilder {
 
   /**
    * Adds {@link Collection} of {@link Enum}.
-   * 
+   *
    * @param name {@link String}
    * @param values {@link Collection}
    * @param <E> Type of Enum.
+   * @return {@link DynamoDbAttributeMapBuilder}
    */
-  public <E extends Enum<E>> void withEnumList(final String name, final Collection<E> values) {
+  public <E extends Enum<E>> DynamoDbAttributeMapBuilder withEnumList(final String name,
+      final Collection<E> values) {
     if (!isEmpty(values)) {
       Collection<AttributeValue> val =
           values.stream().map(v -> AttributeValue.builder().s(v.name()).build()).toList();
       attributes.put(name, AttributeValue.builder().l(val).build());
     }
+    return this;
+  }
+
+  /**
+   * Adds {@link Collection} of {@link Enum}.
+   *
+   * @param name {@link String}
+   * @param value {@link Enum}
+   * @param <E> Type of Enum.
+   * @return {@link DynamoDbAttributeMapBuilder}
+   */
+  public <E extends Enum<E>> DynamoDbAttributeMapBuilder withEnum(final String name,
+      final E value) {
+    if (value != null) {
+      attributes.put(name, AttributeValue.builder().s(value.name()).build());
+    }
+    return this;
   }
 }
