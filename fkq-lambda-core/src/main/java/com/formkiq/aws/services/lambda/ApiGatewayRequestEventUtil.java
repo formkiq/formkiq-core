@@ -145,7 +145,9 @@ public interface ApiGatewayRequestEventUtil {
    * @param event {@link ApiGatewayRequestEvent}
    * @param classOfT {@link Class}
    * @return T
+   * @deprecated Use JsonToObject.fromJson(awsservice, event, classOfT)
    */
+  @Deprecated
   default <T> T fromBodyToObject(final ApiGatewayRequestEvent event, final Class<T> classOfT) {
     try (Reader reader = new InputStreamReader(new ByteArrayInputStream(event.getBodyAsBytes()),
         StandardCharsets.UTF_8)) {

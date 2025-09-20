@@ -35,21 +35,30 @@ import com.formkiq.client.model.AddEntityRequest;
 import com.formkiq.client.model.AddEntityResponse;
 import com.formkiq.client.model.AddEntityType;
 import com.formkiq.client.model.AddEntityTypeRequest;
+import com.formkiq.client.model.AddResponse;
+import com.formkiq.client.model.Attribute;
 import com.formkiq.client.model.AttributeDataType;
 import com.formkiq.client.model.AttributeValueType;
 import com.formkiq.client.model.DeleteResponse;
 import com.formkiq.client.model.Entity;
 import com.formkiq.client.model.EntityAttribute;
 import com.formkiq.client.model.EntityTypeNamespace;
+import com.formkiq.client.model.GetDocumentAttributeResponse;
 import com.formkiq.client.model.GetEntitiesResponse;
 import com.formkiq.client.model.GetEntityResponse;
 import com.formkiq.client.model.UpdateEntityRequest;
 import com.formkiq.client.model.UpdateResponse;
+import com.formkiq.testutils.api.ApiHttpResponse;
+import com.formkiq.testutils.api.attributes.GetAttributeRequestBuilder;
+import com.formkiq.testutils.api.documents.AddDocumentAttributeRequestBuilder;
+import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentAttributeRequestBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
@@ -254,6 +263,181 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
           assertEquals("userPrompt", attributes.get(0).getKey());
           assertEquals("This prompt", attributes.get(0).getStringValue());
         }
+      }
+    }
+  }
+
+  /**
+   * Post /entities/{entityTypeId} for Checkout.
+   *
+   */
+  @Test
+  public void testAddEntityCheckoutByEntityId() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(new String[] {siteId});
+
+      String entityTypeId = addCheckoutEntityType(siteId);
+
+      String name = "MyCheckout_" + ID.uuid();
+      AddEntityRequest req = new AddEntityRequest().entity(new AddEntity().name(name));
+
+      // when
+      AddEntityResponse response = this.entityApi.addEntity(entityTypeId, req, siteId, "preset");
+
+      // then
+      String entityId = response.getEntityId();
+      assertNotNull(entityId);
+
+      // when - try with different namespaces
+      GetEntityResponse entityResponse0 =
+          this.entityApi.getEntity(entityTypeId, entityId, siteId, "preset");
+      GetEntityResponse entityResponse1 =
+          this.entityApi.getEntity(entityTypeId, entityId, siteId, "custom");
+      GetEntityResponse entityResponse2 =
+          this.entityApi.getEntity(entityTypeId, entityId, siteId, null);
+
+      for (GetEntityResponse entityResponse : List.of(entityResponse0, entityResponse1,
+          entityResponse2)) {
+        Entity entity = entityResponse.getEntity();
+        assertNotNull(entity);
+        assertEquals(name, entity.getName());
+
+        int i = 0;
+        List<EntityAttribute> attributes = notNull(entity.getAttributes());
+        assertEquals(2, attributes.size());
+        assertEquals("LockedBy", attributes.get(i).getKey());
+        assertEquals("joesmith", attributes.get(i++).getStringValue());
+        assertEquals("LockedDate", attributes.get(i).getKey());
+        assertNotNull(attributes.get(i).getStringValue());
+
+        validateCheckoutAttributes(siteId);
+      }
+    }
+  }
+
+  /**
+   * Post /entities/{entityTypeId} for Checkout.
+   *
+   */
+  @Test
+  public void testAddEntityCheckoutByEntityName() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(new String[] {siteId});
+
+      final String documentId = new AddDocumentRequestBuilder().content().submit(client, siteId)
+          .response().getDocumentId();
+
+      addCheckoutEntityType(siteId);
+      validateCheckoutAttributes(siteId);
+
+      String name = "MyCheckout_" + ID.uuid();
+      AddEntityRequest req = new AddEntityRequest().entity(new AddEntity().name(name));
+
+      // when
+      AddEntityResponse response = this.entityApi.addEntity("Checkout", req, siteId, "preset");
+
+      // then
+      String entityId = response.getEntityId();
+      assertNotNull(entityId);
+
+      // when - try with different namespaces
+      GetEntityResponse entityResponse =
+          this.entityApi.getEntity("Checkout", entityId, siteId, "preset");
+
+      // then
+      Entity entity = entityResponse.getEntity();
+      assertNotNull(entity);
+      assertEquals(name, entity.getName());
+
+      int i = 0;
+      List<EntityAttribute> attributes = notNull(entity.getAttributes());
+      assertEquals(2, attributes.size());
+      assertEquals("LockedBy", attributes.get(i).getKey());
+      assertEquals("joesmith", attributes.get(i++).getStringValue());
+      assertEquals("LockedDate", attributes.get(i).getKey());
+      assertNotNull(attributes.get(i).getStringValue());
+
+      validateCheckoutAttributes(siteId);
+
+      ApiHttpResponse<AddResponse> addResp =
+          new AddDocumentAttributeRequestBuilder().setDocumentId(documentId)
+              .addAttribute("Checkout", "Checkout", entityId, EntityTypeNamespace.PRESET)
+              .submit(client, siteId);
+      assertFalse(addResp.isError());
+
+      ApiHttpResponse<GetDocumentAttributeResponse> attr =
+          new GetDocumentAttributeRequestBuilder(documentId, "Checkout").submit(client, siteId);
+      assertFalse(attr.isError());
+      assertNotNull(Objects.requireNonNull(attr.response().getAttribute()).getStringValue());
+    }
+  }
+
+  /**
+   * Post /entities/{entityTypeId} for Checkout and try and override values.
+   *
+   */
+  @Test
+  public void testAddEntityCheckoutByOverrideValues() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(new String[] {siteId});
+
+      addCheckoutEntityType(siteId);
+
+      String name = "MyCheckout_" + ID.uuid();
+      AddEntityRequest req = new AddEntityRequest().entity(new AddEntity().name(name)
+          .addAttributesItem(new AddEntityAttribute().key("LockedBy").stringValue("asd")));
+
+      // when
+      try {
+        this.entityApi.addEntity("Checkout", req, siteId, "preset");
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"message\":\"'Checkout' entity type does not " + "support attributes in request\"}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  private void validateCheckoutAttributes(final String siteId) {
+    List<Attribute> attributes =
+        notNull(new GetAttributeRequestBuilder().submit(client, siteId).response().getAttributes());
+    assertEquals(2, attributes.size());
+    assertEquals("LockedBy", attributes.get(0).getKey());
+    assertEquals("LockedDate", attributes.get(1).getKey());
+  }
+
+  /**
+   * Post /entities/{entityTypeId} for missing Checkout EntityType.
+   *
+   */
+  @Test
+  public void testAddEntityCheckoutMissing() {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(new String[] {siteId});
+
+      String name = "MyCheckout_" + ID.uuid();
+      AddEntityRequest req = new AddEntityRequest().entity(new AddEntity().name(name));
+
+      // when
+      try {
+        this.entityApi.addEntity("Checkout", req, siteId, "preset");
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"errors\":[{\"key\":\"entityTypeId\","
+            + "\"error\":\"EntityType 'Checkout' is not found\"}]}", e.getResponseBody());
       }
     }
   }
@@ -561,6 +745,16 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
     assertNotNull(entityTypeId);
 
     addAttribute(siteId, "userPrompt", AttributeDataType.STRING);
+
+    return entityTypeId;
+  }
+
+  private String addCheckoutEntityType(final String siteId) throws ApiException {
+    String entityTypeId = this.entityApi
+        .addEntityType(new AddEntityTypeRequest().entityType(
+            new AddEntityType().name("Checkout").namespace(EntityTypeNamespace.PRESET)), siteId)
+        .getEntityTypeId();
+    assertNotNull(entityTypeId);
 
     return entityTypeId;
   }

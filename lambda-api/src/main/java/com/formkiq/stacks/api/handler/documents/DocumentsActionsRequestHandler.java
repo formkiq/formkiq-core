@@ -40,6 +40,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.dynamodb.cache.CacheService;
 import com.formkiq.module.actions.Action;
@@ -133,7 +134,8 @@ public class DocumentsActionsRequestHandler
     DocumentItem item = getDocument(awsservice, siteId, documentId);
     throwIfNull(item, new DocumentNotFoundException(documentId));
 
-    AddDocumentActionsRequest body = fromBodyToObject(event, AddDocumentActionsRequest.class);
+    AddDocumentActionsRequest body =
+        JsonToObject.fromJson(awsservice, event, AddDocumentActionsRequest.class);
 
     List<Action> actions = body.actions().stream().map(new AddActionsToAction()).toList();
 

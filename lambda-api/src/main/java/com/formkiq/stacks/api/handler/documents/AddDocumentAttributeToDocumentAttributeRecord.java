@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api.handler.documents;
 
+import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.entity.EntityTypeNamespace;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -42,13 +43,11 @@ import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 
 /**
- * Convert {@link DocumentAttribute} to {@link DocumentAttributeRecord}.
+ * Convert {@link AddDocumentAttribute} to {@link DocumentAttributeRecord}.
  */
-public class DocumentAttributeToDocumentAttributeRecord
-    implements Function<DocumentAttribute, Collection<DocumentAttributeRecord>> {
+public class AddDocumentAttributeToDocumentAttributeRecord
+    implements Function<AddDocumentAttribute, Collection<DocumentAttributeRecord>> {
 
-  /** User Identifier. */
-  private final String user;
   /** Document Id. */
   private final String docId;
   /** Site Id. */
@@ -64,74 +63,83 @@ public class DocumentAttributeToDocumentAttributeRecord
    * @param serviceCache {@link AwsServiceCache}
    * @param siteId {@link String}
    * @param documentId {@link String}
-   * @param userId {@link String}
    */
-  public DocumentAttributeToDocumentAttributeRecord(final AwsServiceCache serviceCache,
-      final String siteId, final String documentId, final String userId) {
+  public AddDocumentAttributeToDocumentAttributeRecord(final AwsServiceCache serviceCache,
+      final String siteId, final String documentId) {
     this.docId = documentId;
-    this.user = userId;
     this.site = siteId;
     this.db = serviceCache.getExtension(DynamoDbService.class);
     this.tableName = serviceCache.environment("DOCUMENTS_TABLE");
   }
 
   @Override
-  public Collection<DocumentAttributeRecord> apply(final DocumentAttribute a) {
+  public Collection<DocumentAttributeRecord> apply(final AddDocumentAttribute a) {
     return buildAttributeRecords(a);
   }
 
   /**
-   * Build {@link Collection} {@link DocumentAttributeRecord} from {@link DocumentAttribute}.
+   * Build {@link Collection} {@link DocumentAttributeRecord} from {@link AddDocumentAttribute}.
    *
-   * @param a {@link DocumentAttribute}
+   * @param a {@link AddDocumentAttribute}
    * @return {@link Collection} {@link DocumentAttributeRecord}
    */
-  private Collection<DocumentAttributeRecord> buildAttributeRecords(final DocumentAttribute a)
+  private Collection<DocumentAttributeRecord> buildAttributeRecords(final AddDocumentAttribute a)
       throws ValidationException {
     Collection<DocumentAttributeRecord> c = new ArrayList<>();
 
     if (a != null) {
       boolean used = false;
-      String key = a.getKey();
 
-      if (isEntity(a)) {
-        addEntity(a, c);
-      } else if (isRelationship(a)) {
-        addRelationship(a, c);
-      } else if (isClassification(a)) {
-        addClassification(a, c);
-      } else {
-        addDefault(a, c, used, key);
+      if (a instanceof AddDocumentAttributeEntity e) {
+        addEntity(e, c);
+      } else if (a instanceof AddDocumentAttributeRelationship e) {
+        addRelationship(e, c);
+      } else if (a instanceof AddDocumentAttributeClassification e) {
+        addClassification(e, c);
+      } else if (a instanceof AddDocumentAttributeStandard e) {
+
+        if (AttributeKeyReserved.CLASSIFICATION.getKey().equals(e.key())) {
+          if (!isEmpty(e.stringValue())) {
+            addToList(c, DocumentAttributeValueType.CLASSIFICATION, e.key(), e.stringValue(), null,
+                null);
+          }
+
+          notNull(e.stringValues()).forEach(
+              v -> addToList(c, DocumentAttributeValueType.CLASSIFICATION, e.key(), v, null, null));
+        } else {
+          addDocumentAttributeStandard(e, c, used);
+        }
       }
     }
 
     return c;
   }
 
-  private void addDefault(final DocumentAttribute a, final Collection<DocumentAttributeRecord> c,
-      final boolean isUsed, final String key) {
+  private void addDocumentAttributeStandard(final AddDocumentAttributeStandard a,
+      final Collection<DocumentAttributeRecord> c, final boolean isUsed) {
     boolean used = isUsed;
-    if (!isEmpty(a.getStringValue())) {
+    String key = a.key();
+    if (!isEmpty(a.stringValue())) {
       used = true;
-      addToList(c, DocumentAttributeValueType.STRING, key, a.getStringValue(), null, null);
+      addToList(c, DocumentAttributeValueType.STRING, key, a.stringValue(), null, null);
     }
 
-    if (a.getNumberValue() != null) {
+    if (a.numberValue() != null) {
       used = true;
-      addToList(c, DocumentAttributeValueType.NUMBER, key, null, null, a.getNumberValue());
+      addToList(c, DocumentAttributeValueType.NUMBER, key, null, null, a.numberValue());
     }
 
-    if (a.getBooleanValue() != null) {
+    if (a.booleanValue() != null) {
       used = true;
-      addToList(c, DocumentAttributeValueType.BOOLEAN, key, null, a.getBooleanValue(), null);
+      addToList(c, DocumentAttributeValueType.BOOLEAN, key, null, a.booleanValue(), null);
     }
 
-    for (String stringValue : notNull(a.getStringValues())) {
+    for (String stringValue : notNull(a.stringValues())) {
       used = true;
       addToList(c, DocumentAttributeValueType.STRING, key, stringValue, null, null);
     }
 
-    for (Double numberValue : notNull(a.getNumberValues())) {
+    for (Double numberValue : notNull(a.numberValues())) {
       used = true;
       addToList(c, DocumentAttributeValueType.NUMBER, key, null, null, numberValue);
     }
@@ -142,53 +150,37 @@ public class DocumentAttributeToDocumentAttributeRecord
 
   }
 
-  private void addClassification(final DocumentAttribute a,
+  private void addClassification(final AddDocumentAttributeClassification a,
       final Collection<DocumentAttributeRecord> c) {
     String k = AttributeKeyReserved.CLASSIFICATION.getKey();
 
-    if (!isEmpty(a.getClassificationId())) {
-      addToList(c, DocumentAttributeValueType.CLASSIFICATION, k, a.getClassificationId(), null,
-          null);
+    if (!isEmpty(a.classificationId())) {
+      addToList(c, DocumentAttributeValueType.CLASSIFICATION, k, a.classificationId(), null, null);
     }
-
-    if (!isEmpty(a.getStringValue())) {
-      addToList(c, DocumentAttributeValueType.CLASSIFICATION, k, a.getStringValue(), null, null);
-    }
-
-    notNull(a.getStringValues())
-        .forEach(v -> addToList(c, DocumentAttributeValueType.CLASSIFICATION, k, v, null, null));
   }
 
-  private static boolean isRelationship(final DocumentAttribute a) {
-    return !isEmpty(a.getDocumentId()) && a.getRelationship() != null;
-  }
-
-  private static boolean isEntity(final DocumentAttribute a) {
-    return !isEmpty(a.getEntityTypeId()) || !isEmpty(a.getEntityId());
-  }
-
-  private void addEntity(final DocumentAttribute a, final Collection<DocumentAttributeRecord> c)
-      throws ValidationException {
+  private void addEntity(final AddDocumentAttributeEntity a,
+      final Collection<DocumentAttributeRecord> c) throws ValidationException {
 
     ValidationBuilder vb = new ValidationBuilder();
-    vb.isRequired("entityId", a.getEntityId());
-    vb.isRequired("entityTypeId", a.getEntityTypeId());
+    vb.isRequired("entityId", a.entityId());
+    vb.isRequired("entityTypeId", a.entityTypeId());
     vb.check();
 
-    EntityTypeNamespace namespace = EntityTypeNamespace.fromString(a.getNamespace());
+    EntityTypeNamespace namespace = a.namespace();
     String entityTypeId = new FindEntityTypeByName().find(db, tableName, site,
-        new FindEntityTypeByName.EntityTypeName(namespace, a.getEntityTypeId()));
+        new FindEntityTypeByName.EntityTypeName(namespace, a.entityTypeId()));
 
-    String stringValue = entityTypeId + "#" + a.getEntityId();
+    String stringValue = entityTypeId + "#" + a.entityId();
 
-    addToList(c, DocumentAttributeValueType.ENTITY, a.getKey(), stringValue, null, null);
+    addToList(c, DocumentAttributeValueType.ENTITY, a.key(), stringValue, null, null);
   }
 
-  private void addRelationship(final DocumentAttribute a,
+  private void addRelationship(final AddDocumentAttributeRelationship a,
       final Collection<DocumentAttributeRecord> c) {
 
-    Collection<DocumentAttributeRecord> records = new DocumentAttributeRecordBuilder().apply(
-        this.docId, a.getDocumentId(), a.getRelationship(), a.getInverseRelationship(), this.user);
+    Collection<DocumentAttributeRecord> records = new DocumentAttributeRecordBuilder()
+        .apply(this.docId, a.documentId(), a.relationship(), a.inverseRelationship());
     c.addAll(records);
   }
 
@@ -202,6 +194,7 @@ public class DocumentAttributeToDocumentAttributeRecord
       final DocumentAttributeValueType valueType, final String key, final String stringValue,
       final Boolean boolValue, final Double numberValue) {
 
+    String username = ApiAuthorization.getAuthorization().getUsername();
     DocumentAttributeRecord a = new DocumentAttributeRecord();
     a.setKey(key);
     a.setDocumentId(documentId);
@@ -209,13 +202,8 @@ public class DocumentAttributeToDocumentAttributeRecord
     a.setBooleanValue(boolValue);
     a.setNumberValue(numberValue);
     a.setValueType(valueType);
-    a.setUserId(this.user);
+    a.setUserId(username);
 
     list.add(a);
-  }
-
-  private boolean isClassification(final DocumentAttribute a) {
-    String k = AttributeKeyReserved.CLASSIFICATION.getKey();
-    return k.equalsIgnoreCase(a.getKey()) || !isEmpty(a.getClassificationId());
   }
 }

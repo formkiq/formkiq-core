@@ -28,6 +28,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.transformers.MappingRecordToMap;
@@ -89,7 +90,7 @@ public class MappingsIdRequestHandler
     String siteId = authorizer.getSiteId();
     String mappingId = event.getPathParameters().get("mappingId");
 
-    AddMappingRequest req = fromBodyToObject(event, AddMappingRequest.class);
+    AddMappingRequest req = JsonToObject.fromJson(awsServices, event, AddMappingRequest.class);
     service.saveMapping(siteId, mappingId, req.getMapping());
 
     return ApiRequestHandlerResponse.builder().ok().body("message", "Mapping set").build();

@@ -173,7 +173,7 @@ public class ResizeAction implements DocumentAction {
       throws ValidationException {
     String username = ApiAuthorization.getAuthorization().getUsername();
     DocumentItem item = createDocumentItem(resImage, username);
-    saveDocumentItem(resImage, sourceDocumentId, username, item);
+    saveDocumentItem(resImage, sourceDocumentId, item);
   }
 
   private static DocumentItem createDocumentItem(final Image resImage, final String username) {
@@ -186,10 +186,9 @@ public class ResizeAction implements DocumentAction {
   }
 
   private void saveDocumentItem(final Image resImage, final String sourceDocumentId,
-      final String username, final DocumentItem item) throws ValidationException {
-    Collection<DocumentAttributeRecord> documentAttributes =
-        new DocumentAttributeRecordBuilder().apply(sourceDocumentId, resImage.documentId(),
-            DocumentRelationshipType.RENDITION, null, username);
+      final DocumentItem item) throws ValidationException {
+    Collection<DocumentAttributeRecord> documentAttributes = new DocumentAttributeRecordBuilder()
+        .apply(sourceDocumentId, resImage.documentId(), DocumentRelationshipType.RENDITION, null);
     SaveDocumentOptions options =
         new SaveDocumentOptions().validationAccess(AttributeValidationAccess.ADMIN_CREATE);
     documentService.saveDocument(resImage.siteId(), item, null, documentAttributes, options);

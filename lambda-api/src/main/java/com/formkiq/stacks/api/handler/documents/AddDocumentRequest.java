@@ -37,7 +37,7 @@ public class AddDocumentRequest {
   /** Document Actions. */
   private List<Action> actions;
   /** Document Attribute. */
-  private List<DocumentAttribute> attributes;
+  private List<AddDocumentAttribute> attributes;
   /** Document content. */
   private String content;
   /** Content Type. */
@@ -171,18 +171,18 @@ public class AddDocumentRequest {
   /**
    * Get Document Attributes.
    *
-   * @return {@link List} {@link DocumentAttribute}
+   * @return {@link List} {@link AddDocumentAttribute}
    */
-  public List<DocumentAttribute> getAttributes() {
+  public List<AddDocumentAttribute> getAttributes() {
     return this.attributes;
   }
 
   /**
    * Set Document Attributes.
    *
-   * @param documentAttributes {@link List} {@link DocumentAttribute}
+   * @param documentAttributes {@link List} {@link AddDocumentAttribute}
    */
-  public void setAttributes(final List<DocumentAttribute> documentAttributes) {
+  public void setAttributes(final List<AddDocumentAttribute> documentAttributes) {
     this.attributes = documentAttributes;
   }
 

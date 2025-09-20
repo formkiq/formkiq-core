@@ -82,7 +82,7 @@ public class IndicesSearchRequestHandler
         pagination != null ? pagination.getLimit() : getLimit(awsservice.getLogger(), event);
     PaginationMapToken ptoken = pagination != null ? pagination.getStartkey() : null;
 
-    Map<String, Object> body = fromBodyToObject(event, Map.class);
+    Map<String, Object> body = fromBodyToMap(event);
 
     validatePost(body);
 

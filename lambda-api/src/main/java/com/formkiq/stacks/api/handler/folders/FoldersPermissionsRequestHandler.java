@@ -28,6 +28,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
@@ -53,7 +54,8 @@ public class FoldersPermissionsRequestHandler
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorization.getSiteId();
-    SetFolderPermissionsRequest req = fromBodyToObject(event, SetFolderPermissionsRequest.class);
+    SetFolderPermissionsRequest req =
+        JsonToObject.fromJson(awsservice, event, SetFolderPermissionsRequest.class);
 
     validate(req);
 

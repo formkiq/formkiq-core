@@ -158,6 +158,7 @@ import com.formkiq.stacks.dynamodb.mappings.MappingService;
 import com.formkiq.stacks.dynamodb.mappings.MappingServiceExtension;
 import com.formkiq.stacks.dynamodb.schemas.SchemaService;
 import com.formkiq.stacks.dynamodb.schemas.SchemaServiceExtension;
+import com.google.gson.Gson;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -228,6 +229,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     serviceCache.register(SchemaService.class, new SchemaServiceExtension());
     serviceCache.register(MappingService.class, new MappingServiceExtension());
     serviceCache.register(LocaleService.class, new LocaleServiceExtension());
+    serviceCache.register(Gson.class, new CoreGsonExtension());
 
     serviceCache.registerAppend(ApiRequestHandlerInterceptor.class,
         new ClassServiceExtension<>(new EntityRequestHandlerInterceptor(serviceCache)));

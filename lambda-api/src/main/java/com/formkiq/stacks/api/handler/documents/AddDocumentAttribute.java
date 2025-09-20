@@ -23,24 +23,10 @@
  */
 package com.formkiq.stacks.api.handler.documents;
 
-import com.formkiq.graalvm.annotations.Reflectable;
-import com.formkiq.validation.ValidationErrorImpl;
-import com.formkiq.validation.ValidationException;
-
-import java.util.Collections;
-
 /**
- * Document Attribute Value Request.
+ * Discriminated union (oneOf) for attribute payloads.
  */
-@Reflectable
-public record DocumentAttributeValueRequest(AddDocumentAttributeValue attribute) {
-  /**
-   * Validate.
-   */
-  public void validate() {
-    if (attribute == null) {
-      throw new ValidationException(
-          Collections.singletonList(new ValidationErrorImpl().error("no attribute values found")));
-    }
-  }
+public sealed interface AddDocumentAttribute
+    permits AddDocumentAttributeStandard, AddDocumentAttributeClassification,
+    AddDocumentAttributeRelationship, AddDocumentAttributeEntity {
 }

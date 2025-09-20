@@ -30,6 +30,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.InvalidParameterException;
@@ -78,7 +79,7 @@ public class UsersRequestHandler implements ApiGatewayRequestHandler, ApiGateway
     CognitoIdentityProviderService service =
         awsservice.getExtension(CognitoIdentityProviderService.class);
 
-    AddUserRequest request = fromBodyToObject(event, AddUserRequest.class);
+    AddUserRequest request = JsonToObject.fromJson(awsservice, event, AddUserRequest.class);
 
     String username = request.getUser().getUsername();
 

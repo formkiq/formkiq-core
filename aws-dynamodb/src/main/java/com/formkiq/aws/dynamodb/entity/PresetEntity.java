@@ -23,18 +23,25 @@
  */
 package com.formkiq.aws.dynamodb.entity;
 
+import java.util.List;
+
 /**
  * Present Entity.
  */
 public enum PresetEntity {
   /** LLM Prompt entity. */
-  LLM_PROMPT("LlmPrompt");
+  LLM_PROMPT("LlmPrompt", List.of("userPrompt")),
+  /** Lock Entity. */
+  CHECKOUT("Checkout", List.of("LockedBy", "LockedDate"));
 
   /** Entity Name. */
   private final String name;
+  /** Attribute Keys. */
+  private final List<String> attributeKeys;
 
-  PresetEntity(final String entityName) {
+  PresetEntity(final String entityName, final List<String> entityAttributeKeys) {
     this.name = entityName;
+    this.attributeKeys = entityAttributeKeys;
   }
 
   /**
@@ -44,6 +51,15 @@ public enum PresetEntity {
    */
   public String getName() {
     return name;
+  }
+
+  /**
+   * Get Attribute Keys.
+   * 
+   * @return {@link List} {@link String}
+   */
+  public List<String> getAttributeKeys() {
+    return attributeKeys;
   }
 
   /**

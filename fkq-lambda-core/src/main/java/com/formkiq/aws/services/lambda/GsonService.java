@@ -21,26 +21,56 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api.handler.documents;
+package com.formkiq.aws.services.lambda;
 
-import com.formkiq.graalvm.annotations.Reflectable;
-import com.formkiq.validation.ValidationErrorImpl;
-import com.formkiq.validation.ValidationException;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
-import java.util.Collections;
+import java.lang.reflect.Type;
 
 /**
- * Document Attribute Value Request.
+ * {@link Gson} service.
  */
-@Reflectable
-public record DocumentAttributeValueRequest(AddDocumentAttributeValue attribute) {
+public class GsonService {
+
+  /** Date Format. */
+  private static final String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ssZ";
+
+  /** {@link Gson}. */
+  private final GsonBuilder builder;
+  /** {@link Gson}. */
+  private Gson gson;
+
   /**
-   * Validate.
+   * constructor.
    */
-  public void validate() {
-    if (attribute == null) {
-      throw new ValidationException(
-          Collections.singletonList(new ValidationErrorImpl().error("no attribute values found")));
+  public GsonService() {
+    builder = new GsonBuilder().disableHtmlEscaping().setDateFormat(DATE_FORMAT)
+        .registerTypeAdapterFactory(new CaseInsensitiveEnumTypeAdapterFactory());
+  }
+
+  /**
+   * Register Type Adapter.
+   * 
+   * @param type {@link Type}
+   * @param typeAdapter {@link Object}
+   * @return {@link GsonService}
+   */
+  public GsonService registerTypeAdapter(final Type type, final Object typeAdapter) {
+    builder.registerTypeAdapter(type, typeAdapter);
+    return this;
+  }
+
+  /**
+   * Create {@link Gson}.
+   * 
+   * @return {@link Gson}
+   */
+  public Gson build() {
+    if (gson == null) {
+      gson = builder.create();
     }
+
+    return gson;
   }
 }

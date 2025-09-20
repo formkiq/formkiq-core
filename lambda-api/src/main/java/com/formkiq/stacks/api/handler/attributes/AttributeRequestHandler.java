@@ -31,6 +31,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
@@ -74,7 +75,8 @@ public class AttributeRequestHandler
     String siteId = authorizer.getSiteId();
     String key = event.getPathParameters().get("key");
 
-    AddAttributeRequest addAttribute = fromBodyToObject(event, AddAttributeRequest.class);
+    AddAttributeRequest addAttribute =
+        JsonToObject.fromJson(awsServices, event, AddAttributeRequest.class);
     AddAttribute attribute = addAttribute.getAttribute();
 
     AttributeType type = attribute.getType();

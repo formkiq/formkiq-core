@@ -38,6 +38,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.dynamodb.cache.CacheService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -149,8 +150,7 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
   public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
-    QueryRequest q = fromBodyToObject(event, QueryRequest.class);
-
+    QueryRequest q = JsonToObject.fromJson(awsservice, event, QueryRequest.class);
     validatePost(q);
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);

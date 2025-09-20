@@ -21,26 +21,37 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api.handler.documents;
+package com.formkiq.testutils.api.attributes;
 
-import com.formkiq.graalvm.annotations.Reflectable;
-import com.formkiq.validation.ValidationErrorImpl;
-import com.formkiq.validation.ValidationException;
-
-import java.util.Collections;
+import com.formkiq.client.api.AttributesApi;
+import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.model.AddAttributeRequest;
+import com.formkiq.client.model.GetAttributesResponse;
+import com.formkiq.testutils.api.ApiHttpResponse;
+import com.formkiq.testutils.api.HttpRequestBuilder;
 
 /**
- * Document Attribute Value Request.
+ * Builder for {@link AddAttributeRequest}.
  */
-@Reflectable
-public record DocumentAttributeValueRequest(AddDocumentAttributeValue attribute) {
+public class GetAttributeRequestBuilder implements HttpRequestBuilder {
+
   /**
-   * Validate.
+   * constructor.
    */
-  public void validate() {
-    if (attribute == null) {
-      throw new ValidationException(
-          Collections.singletonList(new ValidationErrorImpl().error("no attribute values found")));
+  public GetAttributeRequestBuilder() {}
+
+  @Override
+  public ApiHttpResponse<GetAttributesResponse> submit(final ApiClient apiClient,
+      final String siteId) {
+
+    GetAttributesResponse obj = null;
+    ApiException ex = null;
+    try {
+      obj = new AttributesApi(apiClient).getAttributes(siteId, null, null);
+    } catch (ApiException e) {
+      ex = e;
     }
+    return new ApiHttpResponse<>(obj, ex);
   }
 }

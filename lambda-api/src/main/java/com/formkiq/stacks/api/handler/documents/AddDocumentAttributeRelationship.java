@@ -24,23 +24,14 @@
 package com.formkiq.stacks.api.handler.documents;
 
 import com.formkiq.graalvm.annotations.Reflectable;
-import com.formkiq.validation.ValidationErrorImpl;
-import com.formkiq.validation.ValidationException;
-
-import java.util.Collections;
+import com.formkiq.stacks.dynamodb.attributes.DocumentRelationshipType;
 
 /**
- * Document Attribute Value Request.
+ * Relationship to another document.
  */
 @Reflectable
-public record DocumentAttributeValueRequest(AddDocumentAttributeValue attribute) {
-  /**
-   * Validate.
-   */
-  public void validate() {
-    if (attribute == null) {
-      throw new ValidationException(
-          Collections.singletonList(new ValidationErrorImpl().error("no attribute values found")));
-    }
-  }
+public record AddDocumentAttributeRelationship(String documentId, // required
+    DocumentRelationshipType relationship, // required
+    DocumentRelationshipType inverseRelationship // optional
+) implements AddDocumentAttribute {
 }

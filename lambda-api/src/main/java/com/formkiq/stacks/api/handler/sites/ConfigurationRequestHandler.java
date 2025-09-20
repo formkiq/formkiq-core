@@ -38,6 +38,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.GsonUtil;
+import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
 import com.formkiq.aws.ses.SesAwsServiceRegistry;
@@ -152,8 +153,7 @@ public class ConfigurationRequestHandler
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = getPathParameterSiteId(event);
-    SiteConfiguration config = fromBodyToObject(event, SiteConfiguration.class);
-
+    SiteConfiguration config = JsonToObject.fromJson(awsservice, event, SiteConfiguration.class);
     validate(awsservice, config);
 
     ConfigService configService = awsservice.getExtension(ConfigService.class);

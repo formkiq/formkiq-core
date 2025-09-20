@@ -43,6 +43,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.dynamodb.cache.CacheService;
@@ -134,7 +135,8 @@ public class DocumentsSyncsRequestHandler
   public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
-    AddDocumentSyncRequest req = fromBodyToObject(event, AddDocumentSyncRequest.class);
+    AddDocumentSyncRequest req =
+        JsonToObject.fromJson(awsservice, event, AddDocumentSyncRequest.class);
     AddDocumentSync sync = req.getSync();
     validate(sync);
 

@@ -32,6 +32,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.dynamodb.cache.CacheService;
+import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.transformers.MappingRecordToMap;
 import com.formkiq.aws.dynamodb.model.MappingRecord;
@@ -86,7 +87,7 @@ public class MappingsRequestHandler
 
     String siteId = authorizer.getSiteId();
 
-    AddMappingRequest req = fromBodyToObject(event, AddMappingRequest.class);
+    AddMappingRequest req = JsonToObject.fromJson(awsServices, event, AddMappingRequest.class);
     MappingRecord record = service.saveMapping(siteId, null, req.getMapping());
 
     return ApiRequestHandlerResponse.builder().created().body("mappingId", record.getDocumentId())

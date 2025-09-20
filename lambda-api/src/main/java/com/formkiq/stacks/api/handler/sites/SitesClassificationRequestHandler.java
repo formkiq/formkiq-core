@@ -33,6 +33,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.dynamodb.cache.CacheService;
+import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.schemas.ClassificationRecord;
 import com.formkiq.stacks.dynamodb.schemas.Schema;
@@ -95,7 +96,8 @@ public class SitesClassificationRequestHandler
 
     String siteId = authorizer.getSiteId();
 
-    AddClassificationRequest request = fromBodyToObject(event, AddClassificationRequest.class);
+    AddClassificationRequest request =
+        JsonToObject.fromJson(awsServices, event, AddClassificationRequest.class);
     Schema schema = request.getClassification();
     ClassificationRecord classification =
         service.setClassification(siteId, null, schema.getName(), schema, authorizer.getUsername());

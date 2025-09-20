@@ -34,6 +34,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.dynamodb.cache.CacheService;
@@ -146,7 +147,7 @@ public class DocumentTagsRequestHandler
     final String siteId = authorization.getSiteId();
     final String documentId = event.getPathParameters().get("documentId");
 
-    DocumentTags tags = fromBodyToObject(event, DocumentTags.class);
+    DocumentTags tags = JsonToObject.fromJson(awsservice, event, DocumentTags.class);
 
     validate(tags);
     verifyDocument(awsservice, siteId, documentId);
@@ -168,8 +169,8 @@ public class DocumentTagsRequestHandler
     final String siteId = authorization.getSiteId();
     final String documentId = event.getPathParameters().get("documentId");
 
-    DocumentTag tag = fromBodyToObject(event, DocumentTag.class);
-    DocumentTags tags = fromBodyToObject(event, DocumentTags.class);
+    DocumentTag tag = JsonToObject.fromJson(awsservice, event, DocumentTag.class);
+    DocumentTags tags = JsonToObject.fromJson(awsservice, event, DocumentTags.class);
 
     boolean tagValid = isValid(tag);
     boolean tagsValid = isValid(tags);
@@ -213,8 +214,7 @@ public class DocumentTagsRequestHandler
     final String siteId = authorization.getSiteId();
     final String documentId = event.getPathParameters().get("documentId");
 
-    DocumentTags tags = fromBodyToObject(event, DocumentTags.class);
-
+    DocumentTags tags = JsonToObject.fromJson(awsservice, event, DocumentTags.class);
     validate(tags);
 
     verifyDocument(awsservice, siteId, documentId);

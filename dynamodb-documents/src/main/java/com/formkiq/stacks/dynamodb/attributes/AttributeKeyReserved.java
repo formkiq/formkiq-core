@@ -38,6 +38,12 @@ public enum AttributeKeyReserved {
   MALWARE_SCAN_RESULT("MalwareScanResult"),
   /** Relationships. */
   RELATIONSHIPS("Relationships"),
+  /** Checkout. */
+  CHECKOUT("Checkout"),
+  /** Checkout. */
+  LOCKED_BY("LockedBy"),
+  /** Checkout. */
+  LOCKED_DATE("LockedDate"),
   /** Esignature Docusign Envelope id. */
   ESIGNATURE_DOCUSIGN_ENVELOPE_ID("EsignatureDocusignEnvelopeId"),
   /** Esignature Docusign Status. */

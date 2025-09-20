@@ -32,6 +32,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -83,7 +84,8 @@ public class SitesClassificationIdRequestHandler
     String siteId = authorizer.getSiteId();
     String classificationId = event.getPathParameters().get("classificationId");
 
-    AddClassificationRequest request = fromBodyToObject(event, AddClassificationRequest.class);
+    AddClassificationRequest request =
+        JsonToObject.fromJson(awsServices, event, AddClassificationRequest.class);
     Schema schema = request.getClassification();
 
     SchemaService service = awsServices.getExtension(SchemaService.class);

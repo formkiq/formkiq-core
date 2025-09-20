@@ -30,6 +30,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.handler.users.AddUserRequest;
 import com.formkiq.stacks.api.handler.users.UserTypeComparator;
@@ -80,7 +81,7 @@ public class GroupsUsersRequestHandler
 
     String groupName = event.getPathParameters().get("groupName");
 
-    AddUserRequest request = fromBodyToObject(event, AddUserRequest.class);
+    AddUserRequest request = JsonToObject.fromJson(awsservice, event, AddUserRequest.class);
     String username = request.getUsername();
 
     CognitoIdentityProviderService service =
