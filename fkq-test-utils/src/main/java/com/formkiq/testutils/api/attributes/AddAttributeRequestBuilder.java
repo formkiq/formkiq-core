@@ -50,7 +50,7 @@ public class AddAttributeRequestBuilder implements HttpRequestBuilder {
   }
 
   /**
-   * Set Attribute Key.
+   * Set String Attribute Key.
    * 
    * @param attributeKey {@link String}
    * @return AddDocumentRequestBuilder
@@ -58,6 +58,42 @@ public class AddAttributeRequestBuilder implements HttpRequestBuilder {
   public AddAttributeRequestBuilder keyAsString(final String attributeKey) {
     this.request.setAttribute(new AddAttribute().key(attributeKey)
         .dataType(AttributeDataType.STRING).type(AttributeType.STANDARD));
+    return this;
+  }
+
+  /**
+   * Set Number Attribute Key.
+   *
+   * @param attributeKey {@link String}
+   * @return AddDocumentRequestBuilder
+   */
+  public AddAttributeRequestBuilder keyAsNumber(final String attributeKey) {
+    this.request.setAttribute(new AddAttribute().key(attributeKey)
+        .dataType(AttributeDataType.NUMBER).type(AttributeType.STANDARD));
+    return this;
+  }
+
+  /**
+   * Set Boolean Attribute Key.
+   *
+   * @param attributeKey {@link String}
+   * @return AddDocumentRequestBuilder
+   */
+  public AddAttributeRequestBuilder keyAsBoolean(final String attributeKey) {
+    this.request.setAttribute(new AddAttribute().key(attributeKey)
+        .dataType(AttributeDataType.BOOLEAN).type(AttributeType.STANDARD));
+    return this;
+  }
+
+  /**
+   * Set Key Only Attribute Key.
+   *
+   * @param attributeKey {@link String}
+   * @return AddDocumentRequestBuilder
+   */
+  public AddAttributeRequestBuilder key(final String attributeKey) {
+    this.request.setAttribute(new AddAttribute().key(attributeKey)
+        .dataType(AttributeDataType.KEY_ONLY).type(AttributeType.STANDARD));
     return this;
   }
 
