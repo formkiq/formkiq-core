@@ -46,7 +46,7 @@ import com.formkiq.stacks.dynamodb.DocumentValidator;
 import com.formkiq.stacks.dynamodb.DocumentValidatorImpl;
 import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
-import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
+import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import com.formkiq.validation.ValidationError;

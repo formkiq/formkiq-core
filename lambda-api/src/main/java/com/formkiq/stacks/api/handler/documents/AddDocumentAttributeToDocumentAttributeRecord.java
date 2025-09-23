@@ -25,13 +25,14 @@ package com.formkiq.stacks.api.handler.documents;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeEntityKeyValue;
 import com.formkiq.aws.dynamodb.entity.EntityTypeNamespace;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.aws.dynamodb.entity.FindEntityTypeByName;
 import com.formkiq.stacks.dynamodb.attributes.AttributeKeyReserved;
-import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
+import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecordBuilder;
-import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
+import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeValueType;
 import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationException;
 
@@ -171,9 +172,10 @@ public class AddDocumentAttributeToDocumentAttributeRecord
     String entityTypeId = new FindEntityTypeByName().find(db, tableName, site,
         new FindEntityTypeByName.EntityTypeName(namespace, a.entityTypeId()));
 
-    String stringValue = entityTypeId + "#" + a.entityId();
+    DocumentAttributeEntityKeyValue val =
+        new DocumentAttributeEntityKeyValue(entityTypeId, a.entityId());
 
-    addToList(c, DocumentAttributeValueType.ENTITY, a.key(), stringValue, null, null);
+    addToList(c, DocumentAttributeValueType.ENTITY, a.key(), val.getStringValue(), null, null);
   }
 
   private void addRelationship(final AddDocumentAttributeRelationship a,

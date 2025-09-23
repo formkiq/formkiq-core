@@ -308,8 +308,10 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
         List<EntityAttribute> attributes = notNull(entity.getAttributes());
         assertEquals(2, attributes.size());
         assertEquals("LockedBy", attributes.get(i).getKey());
+        assertEquals(AttributeValueType.STRING, attributes.get(i).getValueType());
         assertEquals("joesmith", attributes.get(i++).getStringValue());
         assertEquals("LockedDate", attributes.get(i).getKey());
+        assertEquals(AttributeValueType.STRING, attributes.get(i).getValueType());
         assertNotNull(attributes.get(i).getStringValue());
 
         validateCheckoutAttributes(siteId);

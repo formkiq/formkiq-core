@@ -24,6 +24,7 @@
 package com.formkiq.stacks.dynamodb.attributes;
 
 import com.formkiq.aws.dynamodb.DynamodbRecordToMap;
+import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
 
 import java.util.ArrayList;
 import java.util.Collection;

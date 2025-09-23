@@ -80,7 +80,7 @@ import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeServiceDynamodb;
 import com.formkiq.stacks.dynamodb.attributes.AttributeType;
-import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
+import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import com.formkiq.stacks.dynamodb.config.SiteConfigurationGoogle;
 import com.formkiq.stacks.dynamodb.documents.DocumentPublicationRecord;

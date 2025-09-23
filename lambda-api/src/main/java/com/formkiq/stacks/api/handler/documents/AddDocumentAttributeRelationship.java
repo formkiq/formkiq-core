@@ -24,7 +24,7 @@
 package com.formkiq.stacks.api.handler.documents;
 
 import com.formkiq.graalvm.annotations.Reflectable;
-import com.formkiq.stacks.dynamodb.attributes.DocumentRelationshipType;
+import com.formkiq.aws.dynamodb.documentattributes.DocumentRelationshipType;
 
 /**
  * Relationship to another document.

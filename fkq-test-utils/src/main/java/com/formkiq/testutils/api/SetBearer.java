@@ -32,9 +32,28 @@ import java.util.function.BiFunction;
  * {@link BiFunction} to setup SetBearer.
  */
 public class SetBearer implements BiFunction<ApiClient, String, Void> {
+  /** Username. */
+  private final String user;
+
+  /**
+   * constructor.
+   */
+  public SetBearer() {
+    this.user = null;
+  }
+
+  /**
+   * constructor.
+   * 
+   * @param username {@link String}
+   */
+  public SetBearer(final String username) {
+    this.user = username;
+  }
+
   @Override
   public Void apply(final ApiClient client, final String group) {
-    new SetBearers().apply(client,
+    new SetBearers(this.user).apply(client,
         group != null ? new String[] {group} : new String[] {SiteIdKeyGenerator.DEFAULT_SITE_ID});
     return null;
   }

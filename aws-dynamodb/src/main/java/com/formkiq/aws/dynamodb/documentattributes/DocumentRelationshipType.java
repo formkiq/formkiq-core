@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb.attributes;
+package com.formkiq.aws.dynamodb.documentattributes;
 
 import com.formkiq.graalvm.annotations.Reflectable;
 

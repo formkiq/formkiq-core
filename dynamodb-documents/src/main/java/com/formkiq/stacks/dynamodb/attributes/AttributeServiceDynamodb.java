@@ -35,6 +35,7 @@ import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.PaginationToAttributeValue;
 import com.formkiq.aws.dynamodb.QueryConfig;
 import com.formkiq.aws.dynamodb.QueryResponseToPagination;
+import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.schemas.SchemaAttributeKeyRecord;
 import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationError;

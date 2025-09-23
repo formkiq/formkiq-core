@@ -24,6 +24,8 @@
 package com.formkiq.stacks.dynamodb.attributes;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
+import com.formkiq.aws.dynamodb.documentattributes.DocumentRelationshipType;
 
 import java.util.ArrayList;
 import java.util.Collection;

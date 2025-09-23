@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb.attributes;
+package com.formkiq.aws.dynamodb.documentattributes;
 
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamodbVersionRecord;
@@ -38,7 +38,6 @@ import java.util.Map;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.objects.Objects.formatDouble;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
-import static com.formkiq.stacks.dynamodb.attributes.AttributeRecord.ATTR;
 
 /**
  * 
@@ -49,6 +48,8 @@ import static com.formkiq.stacks.dynamodb.attributes.AttributeRecord.ATTR;
 public class DocumentAttributeRecord
     implements DynamodbVersionRecord<DocumentAttributeRecord>, DbKeys {
 
+  /** Attribute constant. */
+  private static final String ATTR = "attr#";
   /** {@link SimpleDateFormat}. */
   private final SimpleDateFormat df = DateUtil.getIsoDateFormatter();
   /** Boolean value. */

@@ -26,7 +26,7 @@ package com.formkiq.stacks.dynamodb.documents.query;
 import com.formkiq.aws.dynamodb.DynamoDbGet;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbQuery;
-import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
+import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
 import com.formkiq.validation.ValidationBuilder;
 
 import java.util.ArrayList;

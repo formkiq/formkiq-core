@@ -21,35 +21,41 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb.attributes;
+package com.formkiq.aws.dynamodb.documentattributes;
 
-import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
-
-import java.util.Collection;
-import java.util.Set;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
+import com.formkiq.aws.dynamodb.DynamoDbQuery;
+import com.formkiq.aws.dynamodb.DynamoDbQueryBuilder;
+import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 
 /**
- * {@link Predicate} for finding matching Keys.
+ * {@link DynamoDbQuery} to find all Document Attribute Key.
  */
-public class DocumentAttributeKeyPredicate implements Predicate<DocumentAttributeRecord> {
+public class QueryDocumentAttributesByKey implements DynamoDbQuery {
 
-  /** Attribute Keys. */
-  private final Set<String> attributeKeys;
+  /** Document Id. */
+  private final String document;
+  /** Attribute Key. */
+  private final String key;
 
   /**
    * constructor.
    * 
-   * @param c {@link Collection} {@link DocumentAttributeRecord}
+   * @param documentId {@link String}
+   * @param attributeKey {@link String}
    */
-  public DocumentAttributeKeyPredicate(final Collection<DocumentAttributeRecord> c) {
-    this.attributeKeys =
-        c.stream().map(DocumentAttributeRecord::getKey).collect(Collectors.toSet());
+  public QueryDocumentAttributesByKey(final String documentId, final String attributeKey) {
+    this.document = documentId;
+    this.key = attributeKey;
   }
 
   @Override
-  public boolean test(final DocumentAttributeRecord dar) {
-    return this.attributeKeys.contains(dar.getKey());
+  public QueryRequest build(final String tableName, final String siteId, final String nextToken,
+      final int limit) {
+    DocumentAttributeRecord r = new DocumentAttributeRecord().setKey(key).setDocumentId(document)
+        .setValueType(DocumentAttributeValueType.KEY_ONLY);
+    String pk = r.pk(siteId);
+    String sk = r.sk();
+    return DynamoDbQueryBuilder.builder().pk(pk).beginsWith(sk).nextToken(nextToken).limit(limit)
+        .build(tableName);
   }
 }

@@ -21,20 +21,43 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.services.lambda.exceptions;
+package com.formkiq.aws.dynamodb.documentattributes;
 
-/** {@link Exception} that will return a 401 error. */
-public class UnauthorizedException extends Exception {
+import java.util.Objects;
 
-  /** serialVersionUID. */
-  private static final long serialVersionUID = -3307625920614270509L;
+/**
+ * Document Attribute Entity Key Value.
+ * 
+ * @param entityTypeId {@link String}
+ * @param entityId {@link String}
+ */
+public record DocumentAttributeEntityKeyValue(String entityTypeId, String entityId) {
+
+  /** Delimiter. */
+  private static final String DELIMITER = "#";
+
+  public DocumentAttributeEntityKeyValue {
+    Objects.requireNonNull(entityTypeId, "entityTypeId must not be null");
+    Objects.requireNonNull(entityId, "entityId must not be null");
+  }
 
   /**
-   * constructor.
-   *
-   * @param msg {@link String}
+   * Compact representation: "type#id".
+   * 
+   * @return {@link String}
    */
-  public UnauthorizedException(final String msg) {
-    super(msg);
+  public String getStringValue() {
+    return entityTypeId + DELIMITER + entityId;
+  }
+
+  /**
+   * Parse back from stringValue into DocumentAttributeEntityKeyValue.
+   * 
+   * @param stringValue {@link String}
+   * @return {@link DocumentAttributeEntityKeyValue}
+   */
+  public static DocumentAttributeEntityKeyValue fromString(final String stringValue) {
+    String[] parts = stringValue.split(DELIMITER, 2);
+    return new DocumentAttributeEntityKeyValue(parts[0], parts[1]);
   }
 }

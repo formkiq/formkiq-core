@@ -29,16 +29,38 @@ import com.formkiq.client.invoker.ApiClient;
 import java.util.Arrays;
 import java.util.function.BiFunction;
 
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
+
 /**
  * {@link BiFunction} to setup SetBearer.
  */
 public class SetBearers implements BiFunction<ApiClient, String[], Void> {
+  /** Default Username. */
+  private static final String DEFAULT_USERNAME = "joesmith";
+  /** Username. */
+  private final String user;
+
+  /** Username. */
+  public SetBearers() {
+    this(DEFAULT_USERNAME);
+  }
+
+  /**
+   * Username.
+   * 
+   * @param username {@link String}
+   */
+  public SetBearers(final String username) {
+    this.user = !isEmpty(username) ? username : DEFAULT_USERNAME;
+  }
+
+
   @Override
   public Void apply(final ApiClient client, final String[] groups) {
 
     String[] a = Arrays.stream(groups).map(m -> m != null ? m : SiteIdKeyGenerator.DEFAULT_SITE_ID)
         .toArray(String[]::new);
-    String jwt = JwtTokenEncoder.encodeCognito(a, "joesmith");
+    String jwt = JwtTokenEncoder.encodeCognito(a, user);
     client.addDefaultHeader("Authorization", jwt);
     return null;
   }
