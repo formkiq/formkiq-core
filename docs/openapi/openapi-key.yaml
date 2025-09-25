@@ -11975,6 +11975,10 @@
                   items:
                     type: string
                   description: User must match any role
+                excludedRoles:
+                  items:
+                    type: string
+                  description: User must NOT have these roles
                 attributes:
                   items:
                     $ref: '#/components/schemas/OpaPolicyAttribute'
