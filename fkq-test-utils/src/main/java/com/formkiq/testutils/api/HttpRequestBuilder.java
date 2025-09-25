@@ -24,6 +24,7 @@
 package com.formkiq.testutils.api;
 
 import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.invoker.ApiException;
 
 public interface HttpRequestBuilder {
 
@@ -32,7 +33,24 @@ public interface HttpRequestBuilder {
    * 
    * @param apiClient ApiClient
    * @param siteId Site ID
+   * @param <T> Type of response object
    * @return ApiHttpResponse
    */
-  ApiHttpResponse submit(ApiClient apiClient, String siteId);
+  <T> ApiHttpResponse<T> submit(ApiClient apiClient, String siteId);
+
+  default <T> ApiHttpResponse<T> executeApiCall(ApiCallable<T> callable) {
+    T response = null;
+    ApiException ex = null;
+    try {
+      response = callable.call();
+    } catch (ApiException e) {
+      ex = e;
+    }
+    return new ApiHttpResponse<>(response, ex);
+  }
+
+  @FunctionalInterface
+  interface ApiCallable<T> {
+    T call() throws ApiException;
+  }
 }

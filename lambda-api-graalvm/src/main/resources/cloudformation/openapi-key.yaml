@@ -12048,6 +12048,10 @@ Resources:
                   $ref: "#/components/schemas/OpaPolicyAttributeLte"
                 neq:
                   $ref: "#/components/schemas/OpaPolicyAttributeNeq"
+                in:
+                  $ref: "#/components/schemas/OpaPolicyAttributeIn"
+                notIn:
+                  $ref: "#/components/schemas/OpaPolicyAttributeNotIn"
             OpaPolicyAttributeEq:
               type: "object"
               description: "Attribute EQ criteria"
@@ -12098,34 +12102,35 @@ Resources:
                 stringValue:
                   type: "string"
                   description: "The value to compare the Attribute Key value to"
+            OpaPolicyAttributeIn:
+              type: "object"
+              description: "Attribute In to criteria"
+              properties:
+                stringValues:
+                  type: "array"
+                  items:
+                    type: "string"
+                  description: "The value to compare the Attribute Key value to"
+            OpaPolicyAttributeNotIn:
+              type: "object"
+              description: "Attribute Not In to criteria"
+              properties:
+                stringValues:
+                  type: "array"
+                  items:
+                    type: "string"
+                  description: "The value to compare the Attribute Key value to"
             OpaPolicyAttributeInput:
               type: "object"
               properties:
                 matchUsername:
                   type: "boolean"
                   description: "Match Input Username"
-            OpaImplicitAccess:
-              type: string
-              description: |
-                Fallback decision when no rule matches.
-                - ALLOW: allow if no rule matches.
-                - DENY: deny if no rule matches.
-              enum:
-                - ALLOW
-                - DENY
-            OpaPolicyItemType:
-              type: string
-              description: Type of Opa Policy Item
-              enum:
-                - ALLOW
-                - DENY
             OpaPolicyItem:
               type: "object"
               required:
                 - type
               properties:
-                type:
-                  $ref: "#/components/schemas/OpaPolicyItemType"
                 policy:
                   type: "string"
                   description: "OPA Policy in REGO format"
@@ -12140,28 +12145,50 @@ Resources:
                 attributes:
                   items:
                     $ref: "#/components/schemas/OpaPolicyAttribute"
-                inputs:
-                  items:
-                    $ref: "#/components/schemas/OpaPolicyInput"
+                input:
+                  $ref: "#/components/schemas/OpaPolicyInput"
 
             OpaPolicyInput:
               type: "object"
               properties:
                 httpMethod:
-                  type: "string"
-                  description: "Http Method"
+                  $ref: "#/components/schemas/OpaPolicyInputMethod"
                 resource:
-                  type: "string"
-                  description: "Http Resource"
+                  $ref: "#/components/schemas/OpaPolicyInputResource"
+
+            OpaPolicyInputMethod:
+              type: "object"
+              properties:
+                in:
+                  type: "array"
+                  description: "List of HTTP Methods"
+                  items:
+                    type: "string"
+                notIn:
+                  type: "array"
+                  description: "List of HTTP Methods"
+                  items:
+                    type: "string"
+
+            OpaPolicyInputResource:
+              type: "object"
+              properties:
+                in:
+                  type: "array"
+                  description: "List of Resources"
+                  items:
+                    type: "string"
+                notIn:
+                  type: "array"
+                  description: "List of Resources"
+                  items:
+                    type: "string"
 
             SetOpaAccessPolicyItemsRequest:
               type: object
               required:
-                - implicitAccess
                 - policyItems
               properties:
-                implicitAccess:
-                  $ref: "#/components/schemas/OpaImplicitAccess"
                 policyItems:
                   type: "array"
                   description: "List of OPA policy items"
@@ -12176,8 +12203,6 @@ Resources:
             GetOpaAccessPolicyItemsResponse:
               type: object
               properties:
-                implicitAccess:
-                  $ref: "#/components/schemas/OpaImplicitAccess"
                 policyItems:
                   items:
                     $ref: "#/components/schemas/OpaPolicyItem"
