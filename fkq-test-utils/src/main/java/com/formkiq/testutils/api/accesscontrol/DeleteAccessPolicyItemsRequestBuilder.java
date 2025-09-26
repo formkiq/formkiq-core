@@ -32,7 +32,7 @@ import com.formkiq.testutils.api.HttpRequestBuilder;
 /**
  * Builder for Delete Access Policy Items.
  */
-public class DeleteAccessPolicyItemsRequestBuilder implements HttpRequestBuilder {
+public class DeleteAccessPolicyItemsRequestBuilder implements HttpRequestBuilder<DeleteResponse> {
 
   /**
    * constructor.

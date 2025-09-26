@@ -38,7 +38,8 @@ import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 /**
  * Builder for Purging OpenSearch Indexes.
  */
-public class OpenSearchIndexPurgeRequestBuilder implements HttpRequestBuilder {
+public class OpenSearchIndexPurgeRequestBuilder
+    implements HttpRequestBuilder<GetOpenSearchIndiceResponse> {
 
   /**
    * constructor.

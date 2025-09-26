@@ -32,7 +32,7 @@ import com.formkiq.testutils.api.HttpRequestBuilder;
 /**
  * Builder for Get Document Folders.
  */
-public class GetFoldersRequestBuilder implements HttpRequestBuilder {
+public class GetFoldersRequestBuilder implements HttpRequestBuilder<GetFoldersResponse> {
 
   /** {@link String}. */
   private String indexKey;

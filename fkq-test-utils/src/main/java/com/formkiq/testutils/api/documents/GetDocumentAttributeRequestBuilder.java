@@ -32,7 +32,8 @@ import com.formkiq.testutils.api.HttpRequestBuilder;
 /**
  * Builder for Get Document Attribute Request.
  */
-public class GetDocumentAttributeRequestBuilder implements HttpRequestBuilder {
+public class GetDocumentAttributeRequestBuilder
+    implements HttpRequestBuilder<GetDocumentAttributeResponse> {
 
   /** {@link String}. */
   private final String docId;

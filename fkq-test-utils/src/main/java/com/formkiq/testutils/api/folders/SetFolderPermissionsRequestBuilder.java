@@ -37,7 +37,7 @@ import java.util.List;
 /**
  * Builder for Get Document Folders.
  */
-public class SetFolderPermissionsRequestBuilder implements HttpRequestBuilder {
+public class SetFolderPermissionsRequestBuilder implements HttpRequestBuilder<SetResponse> {
 
   /** {@link SetFolderPermissionsRequest}. */
   private final SetFolderPermissionsRequest req;

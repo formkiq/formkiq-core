@@ -32,7 +32,8 @@ import com.formkiq.testutils.api.HttpRequestBuilder;
 /**
  * Builder for Get Document Folders Permissions.
  */
-public class GetFolderPermissionsRequestBuilder implements HttpRequestBuilder {
+public class GetFolderPermissionsRequestBuilder
+    implements HttpRequestBuilder<GetFolderPermissionsResponse> {
 
   /** {@link String}. */
   private String indexKey;

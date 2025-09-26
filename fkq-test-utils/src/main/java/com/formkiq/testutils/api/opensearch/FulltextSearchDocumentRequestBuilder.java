@@ -41,7 +41,8 @@ import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 /**
  * Builder for {@link DocumentFulltextRequest}.
  */
-public class FulltextSearchDocumentRequestBuilder implements HttpRequestBuilder {
+public class FulltextSearchDocumentRequestBuilder
+    implements HttpRequestBuilder<DocumentFulltextResponse> {
 
   /** Maximum Retry. */
   private static final int MAX_RETRY = 10;

@@ -32,7 +32,7 @@ import com.formkiq.testutils.api.HttpRequestBuilder;
 /**
  * Builder for Delete Document Request.
  */
-public class DeleteDocumentRequestBuilder implements HttpRequestBuilder {
+public class DeleteDocumentRequestBuilder implements HttpRequestBuilder<DeleteResponse> {
 
   /** {@link String}. */
   private final String id;

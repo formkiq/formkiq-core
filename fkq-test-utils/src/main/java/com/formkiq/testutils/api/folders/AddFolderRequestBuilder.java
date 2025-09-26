@@ -33,7 +33,7 @@ import com.formkiq.testutils.api.HttpRequestBuilder;
 /**
  * Builder for Add Folder.
  */
-public class AddFolderRequestBuilder implements HttpRequestBuilder {
+public class AddFolderRequestBuilder implements HttpRequestBuilder<AddFolderResponse> {
 
   /** {@link AddFolderRequest}. */
   private final AddFolderRequest req;

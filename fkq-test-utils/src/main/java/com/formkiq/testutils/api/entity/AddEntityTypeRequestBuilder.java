@@ -35,7 +35,7 @@ import com.formkiq.testutils.api.HttpRequestBuilder;
 /**
  * Builder for {@link AddEntityTypeRequest}.
  */
-public class AddEntityTypeRequestBuilder implements HttpRequestBuilder {
+public class AddEntityTypeRequestBuilder implements HttpRequestBuilder<AddEntityTypeResponse> {
 
   /** {@link AddEntityTypeRequest}. */
   private final AddEntityTypeRequest request;
