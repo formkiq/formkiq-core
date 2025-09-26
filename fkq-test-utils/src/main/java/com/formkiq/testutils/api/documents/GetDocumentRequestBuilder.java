@@ -32,7 +32,7 @@ import com.formkiq.testutils.api.HttpRequestBuilder;
 /**
  * Builder for Get Document Request.
  */
-public class GetDocumentRequestBuilder implements HttpRequestBuilder {
+public class GetDocumentRequestBuilder implements HttpRequestBuilder<GetDocumentResponse> {
 
   /** {@link String}. */
   private final String id;

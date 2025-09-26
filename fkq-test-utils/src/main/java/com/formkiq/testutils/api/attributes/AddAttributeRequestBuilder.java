@@ -36,7 +36,7 @@ import com.formkiq.testutils.api.HttpRequestBuilder;
 /**
  * Builder for {@link AddAttributeRequest}.
  */
-public class AddAttributeRequestBuilder implements HttpRequestBuilder {
+public class AddAttributeRequestBuilder implements HttpRequestBuilder<AddResponse> {
 
   /** {@link AddAttributeRequest}. */
   private final AddAttributeRequest request;

@@ -33,7 +33,8 @@ import com.formkiq.testutils.api.HttpRequestBuilder;
 /**
  * Builder for {@link DocumentFulltextRequest}.
  */
-public class GetFulltextDocumentRequestBuilder implements HttpRequestBuilder {
+public class GetFulltextDocumentRequestBuilder
+    implements HttpRequestBuilder<GetDocumentFulltextResponse> {
 
   /** Document Id. */
   private final String id;

@@ -33,7 +33,7 @@ import com.formkiq.testutils.api.HttpRequestBuilder;
 /**
  * Builder for Get Entity Type.
  */
-public class GetEntityTypeRequestBuilder implements HttpRequestBuilder {
+public class GetEntityTypeRequestBuilder implements HttpRequestBuilder<GetEntityTypeResponse> {
 
   /** Entity Type Id. */
   private final String entityType;

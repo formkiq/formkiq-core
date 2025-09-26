@@ -34,7 +34,7 @@ import com.formkiq.testutils.api.HttpRequestBuilder;
 /**
  * Builder for {@link AddDocumentTagsRequest}.
  */
-public class AddDocumentTagRequestBuilder implements HttpRequestBuilder {
+public class AddDocumentTagRequestBuilder implements HttpRequestBuilder<AddResponse> {
 
   /** {@link AddDocumentTagsRequest}. */
   private final AddDocumentTagsRequest request;

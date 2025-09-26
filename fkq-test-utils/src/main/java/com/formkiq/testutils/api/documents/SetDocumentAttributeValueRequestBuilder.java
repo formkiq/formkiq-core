@@ -34,7 +34,7 @@ import com.formkiq.testutils.api.HttpRequestBuilder;
 /**
  * Builder for {@link SetDocumentAttributeRequest}.
  */
-public class SetDocumentAttributeValueRequestBuilder implements HttpRequestBuilder {
+public class SetDocumentAttributeValueRequestBuilder implements HttpRequestBuilder<SetResponse> {
 
   /** {@link SetDocumentAttributeRequest}. */
   private final SetDocumentAttributeRequest request;

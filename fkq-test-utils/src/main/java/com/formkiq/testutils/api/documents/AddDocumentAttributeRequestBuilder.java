@@ -39,7 +39,7 @@ import java.math.BigDecimal;
 /**
  * Builder for {@link AddDocumentAttributesRequest}.
  */
-public class AddDocumentAttributeRequestBuilder implements HttpRequestBuilder {
+public class AddDocumentAttributeRequestBuilder implements HttpRequestBuilder<AddResponse> {
 
   /** {@link AddDocumentAttributesRequest}. */
   private final AddDocumentAttributesRequest request;

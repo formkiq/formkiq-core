@@ -35,7 +35,7 @@ import com.formkiq.testutils.api.HttpRequestBuilder;
 /**
  * Builder for {@link DocumentSearchRequest}.
  */
-public class SearchDocumentRequestBuilder implements HttpRequestBuilder {
+public class SearchDocumentRequestBuilder implements HttpRequestBuilder<DocumentSearchResponse> {
 
   /** {@link DocumentSearchRequest}. */
   private final DocumentSearchRequest request;

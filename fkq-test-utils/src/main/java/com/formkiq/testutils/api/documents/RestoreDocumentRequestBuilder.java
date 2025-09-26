@@ -34,7 +34,8 @@ import com.formkiq.testutils.api.HttpRequestBuilder;
  *
  * @param documentId {@link String}.
  */
-public record RestoreDocumentRequestBuilder(String documentId) implements HttpRequestBuilder {
+public record RestoreDocumentRequestBuilder(
+    String documentId) implements HttpRequestBuilder<SetDocumentRestoreResponse> {
 
   @Override
   public ApiHttpResponse<SetDocumentRestoreResponse> submit(final ApiClient apiClient,

@@ -37,7 +37,7 @@ import java.math.BigDecimal;
 /**
  * Builder for {@link SetDocumentAttributesRequest}.
  */
-public class SetDocumentAttributeRequestBuilder implements HttpRequestBuilder {
+public class SetDocumentAttributeRequestBuilder implements HttpRequestBuilder<SetResponse> {
 
   /** {@link SetDocumentAttributesRequest}. */
   private final SetDocumentAttributesRequest request;

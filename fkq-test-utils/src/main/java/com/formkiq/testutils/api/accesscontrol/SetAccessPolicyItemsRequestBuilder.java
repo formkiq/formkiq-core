@@ -36,7 +36,7 @@ import java.util.List;
 /**
  * Builder for Set Access Policy Items.
  */
-public class SetAccessPolicyItemsRequestBuilder implements HttpRequestBuilder {
+public class SetAccessPolicyItemsRequestBuilder implements HttpRequestBuilder<SetResponse> {
 
   /** {@link SetOpaAccessPolicyItemsRequest}. */
   private final SetOpaAccessPolicyItemsRequest req;

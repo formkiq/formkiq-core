@@ -43,7 +43,7 @@ import java.util.Objects;
 /**
  * Builder for {@link UpdateDocumentRequest}.
  */
-public class UpdateDocumentRequestBuilder implements HttpRequestBuilder {
+public class UpdateDocumentRequestBuilder implements HttpRequestBuilder<AddDocumentResponse> {
 
   /** {@link UpdateDocumentRequest}. */
   private final UpdateDocumentRequest request;
