@@ -25,7 +25,6 @@ package com.formkiq.testutils.api.documents;
 
 import com.formkiq.client.api.DocumentSearchApi;
 import com.formkiq.client.invoker.ApiClient;
-import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.DocumentSearch;
 import com.formkiq.client.model.DocumentSearchMeta;
 import com.formkiq.client.model.DocumentSearchRequest;
@@ -107,14 +106,7 @@ public class SearchDocumentRequestBuilder implements HttpRequestBuilder {
    */
   public ApiHttpResponse<DocumentSearchResponse> submit(final ApiClient apiClient,
       final String siteId) {
-    DocumentSearchResponse obj = null;
-    ApiException ex = null;
-    try {
-      obj = new DocumentSearchApi(apiClient).documentSearch(this.request, siteId, limit, next,
-          previous);
-    } catch (ApiException e) {
-      ex = e;
-    }
-    return new ApiHttpResponse<>(obj, ex);
+    return executeApiCall(() -> new DocumentSearchApi(apiClient).documentSearch(this.request,
+        siteId, limit, next, previous));
   }
 }

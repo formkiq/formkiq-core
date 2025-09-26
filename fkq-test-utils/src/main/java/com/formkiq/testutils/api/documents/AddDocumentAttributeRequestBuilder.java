@@ -25,7 +25,6 @@ package com.formkiq.testutils.api.documents;
 
 import com.formkiq.client.api.DocumentAttributesApi;
 import com.formkiq.client.invoker.ApiClient;
-import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddDocumentAttribute;
 import com.formkiq.client.model.AddDocumentAttributeEntity;
 import com.formkiq.client.model.AddDocumentAttributeStandard;
@@ -36,7 +35,6 @@ import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
 
 import java.math.BigDecimal;
-import java.util.Objects;
 
 /**
  * Builder for {@link AddDocumentAttributesRequest}.
@@ -118,15 +116,7 @@ public class AddDocumentAttributeRequestBuilder implements HttpRequestBuilder {
    * @return AddDocumentResponse
    */
   public ApiHttpResponse<AddResponse> submit(final ApiClient apiClient, final String siteId) {
-    AddResponse obj = null;
-    ApiException ex = null;
-    Objects.requireNonNull(id, "documentId must not be null");
-    try {
-      obj =
-          new DocumentAttributesApi(apiClient).addDocumentAttributes(this.id, this.request, siteId);
-    } catch (ApiException e) {
-      ex = e;
-    }
-    return new ApiHttpResponse<>(obj, ex);
+    return executeApiCall(() -> new DocumentAttributesApi(apiClient).addDocumentAttributes(this.id,
+        this.request, siteId));
   }
 }

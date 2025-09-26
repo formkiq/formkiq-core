@@ -25,7 +25,6 @@ package com.formkiq.testutils.api.documents;
 
 import com.formkiq.client.api.DocumentAttributesApi;
 import com.formkiq.client.invoker.ApiClient;
-import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.DeleteResponse;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
@@ -53,15 +52,7 @@ public class DeleteDocumentAttributeRequestBuilder implements HttpRequestBuilder
 
   @Override
   public ApiHttpResponse<DeleteResponse> submit(final ApiClient apiClient, final String siteId) {
-    ApiException ex = null;
-    DeleteResponse response = null;
-
-    try {
-      response = new DocumentAttributesApi(apiClient).deleteDocumentAttribute(this.id, key, siteId);
-    } catch (ApiException e) {
-      ex = e;
-    }
-
-    return new ApiHttpResponse<>(response, ex);
+    return executeApiCall(
+        () -> new DocumentAttributesApi(apiClient).deleteDocumentAttribute(this.id, key, siteId));
   }
 }

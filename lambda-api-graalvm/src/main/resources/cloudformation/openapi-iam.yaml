@@ -2158,7 +2158,18 @@ Resources:
                           values: [person,canadian]
               responses:
                 '201':
-                  $ref: '#/components/responses/200Cors'
+                  description: 201 CREATED
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/AddResponse'
               security:
                 - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -12128,8 +12139,6 @@ Resources:
                   description: "Match Input Username"
             OpaPolicyItem:
               type: "object"
-              required:
-                - type
               properties:
                 policy:
                   type: "string"

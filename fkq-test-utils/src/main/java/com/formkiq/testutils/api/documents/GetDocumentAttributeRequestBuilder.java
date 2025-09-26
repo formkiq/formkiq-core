@@ -25,7 +25,6 @@ package com.formkiq.testutils.api.documents;
 
 import com.formkiq.client.api.DocumentAttributesApi;
 import com.formkiq.client.invoker.ApiClient;
-import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.GetDocumentAttributeResponse;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
@@ -54,16 +53,7 @@ public class GetDocumentAttributeRequestBuilder implements HttpRequestBuilder {
   @Override
   public ApiHttpResponse<GetDocumentAttributeResponse> submit(final ApiClient apiClient,
       final String siteId) {
-    ApiException ex = null;
-    GetDocumentAttributeResponse response = null;
-
-    try {
-      response =
-          new DocumentAttributesApi(apiClient).getDocumentAttribute(this.docId, this.key, siteId);
-    } catch (ApiException e) {
-      ex = e;
-    }
-
-    return new ApiHttpResponse<>(response, ex);
+    return executeApiCall(() -> new DocumentAttributesApi(apiClient)
+        .getDocumentAttribute(this.docId, this.key, siteId));
   }
 }

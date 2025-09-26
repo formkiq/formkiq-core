@@ -25,7 +25,6 @@ package com.formkiq.testutils.api.documents;
 
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.invoker.ApiClient;
-import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.SetDocumentRestoreResponse;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
@@ -40,15 +39,7 @@ public record RestoreDocumentRequestBuilder(String documentId) implements HttpRe
   @Override
   public ApiHttpResponse<SetDocumentRestoreResponse> submit(final ApiClient apiClient,
       final String siteId) {
-    ApiException ex = null;
-    SetDocumentRestoreResponse response = null;
-
-    try {
-      response = new DocumentsApi(apiClient).setDocumentRestore(this.documentId, siteId);
-    } catch (ApiException e) {
-      ex = e;
-    }
-
-    return new ApiHttpResponse<>(response, ex);
+    return executeApiCall(
+        () -> new DocumentsApi(apiClient).setDocumentRestore(this.documentId, siteId));
   }
 }

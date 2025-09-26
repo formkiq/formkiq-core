@@ -25,14 +25,11 @@ package com.formkiq.testutils.api.documents;
 
 import com.formkiq.client.api.DocumentTagsApi;
 import com.formkiq.client.invoker.ApiClient;
-import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddDocumentTag;
 import com.formkiq.client.model.AddDocumentTagsRequest;
 import com.formkiq.client.model.AddResponse;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
-
-import java.util.Objects;
 
 /**
  * Builder for {@link AddDocumentTagsRequest}.
@@ -82,15 +79,7 @@ public class AddDocumentTagRequestBuilder implements HttpRequestBuilder {
    * @return AddDocumentResponse
    */
   public ApiHttpResponse<AddResponse> submit(final ApiClient apiClient, final String siteId) {
-    AddResponse obj = null;
-    ApiException ex = null;
-    Objects.requireNonNull(id, "documentId must not be null");
-    try {
-      new DocumentTagsApi(apiClient).addDocumentTags(this.id, this.request, siteId);
-      obj = new AddResponse();
-    } catch (ApiException e) {
-      ex = e;
-    }
-    return new ApiHttpResponse<>(obj, ex);
+    return executeApiCall(
+        () -> new DocumentTagsApi(apiClient).addDocumentTags(this.id, this.request, siteId));
   }
 }

@@ -21,43 +21,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.testutils.api.folders;
+package com.formkiq.testutils.api.accesscontrol;
 
-import com.formkiq.client.api.DocumentFoldersApi;
+import com.formkiq.client.api.AccessControlApi;
 import com.formkiq.client.invoker.ApiClient;
-import com.formkiq.client.model.AddFolderResponse;
-import com.formkiq.client.model.AddFolderRequest;
+import com.formkiq.client.model.DeleteResponse;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
 
 /**
- * Builder for Add Folder.
+ * Builder for Delete Access Policy Items.
  */
-public class AddFolderRequestBuilder implements HttpRequestBuilder {
-
-  /** {@link AddFolderRequest}. */
-  private final AddFolderRequest req;
+public class DeleteAccessPolicyItemsRequestBuilder implements HttpRequestBuilder {
 
   /**
    * constructor.
    */
-  public AddFolderRequestBuilder() {
-    req = new AddFolderRequest();
-  }
-
-  /**
-   * Set the folder folderPath to retrieve documents from.
-   * 
-   * @param folderPath {@link String}
-   * @return this builder
-   */
-  public AddFolderRequestBuilder path(final String folderPath) {
-    this.req.path(folderPath);
-    return this;
-  }
+  public DeleteAccessPolicyItemsRequestBuilder() {}
 
   @Override
-  public ApiHttpResponse<AddFolderResponse> submit(final ApiClient apiClient, final String siteId) {
-    return executeApiCall(() -> new DocumentFoldersApi(apiClient).addFolder(req, siteId, null));
+  public ApiHttpResponse<DeleteResponse> submit(final ApiClient apiClient, final String siteId) {
+    return executeApiCall(() -> new AccessControlApi(apiClient).deleteOpaAccessPolicyItems(siteId));
   }
 }

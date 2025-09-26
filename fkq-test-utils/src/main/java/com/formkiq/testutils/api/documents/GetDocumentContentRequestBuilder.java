@@ -25,7 +25,6 @@ package com.formkiq.testutils.api.documents;
 
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.invoker.ApiClient;
-import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.GetDocumentContentResponse;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
@@ -50,15 +49,7 @@ public class GetDocumentContentRequestBuilder implements HttpRequestBuilder {
   @Override
   public ApiHttpResponse<GetDocumentContentResponse> submit(final ApiClient apiClient,
       final String siteId) {
-    ApiException ex = null;
-    GetDocumentContentResponse response = null;
-
-    try {
-      response = new DocumentsApi(apiClient).getDocumentContent(this.id, siteId, null, null);
-    } catch (ApiException e) {
-      ex = e;
-    }
-
-    return new ApiHttpResponse<>(response, ex);
+    return executeApiCall(
+        () -> new DocumentsApi(apiClient).getDocumentContent(this.id, siteId, null, null));
   }
 }

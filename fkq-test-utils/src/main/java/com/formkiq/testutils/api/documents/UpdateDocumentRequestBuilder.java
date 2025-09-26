@@ -26,7 +26,6 @@ package com.formkiq.testutils.api.documents;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.invoker.ApiClient;
-import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAction;
 import com.formkiq.client.model.AddDocumentAttribute;
 import com.formkiq.client.model.AddDocumentAttributeStandard;
@@ -200,13 +199,7 @@ public class UpdateDocumentRequestBuilder implements HttpRequestBuilder {
   public ApiHttpResponse<AddDocumentResponse> submit(final ApiClient apiClient,
       final String siteId) {
     Objects.requireNonNull(id, "documentId must not be null");
-    AddDocumentResponse obj = null;
-    ApiException ex = null;
-    try {
-      obj = new DocumentsApi(apiClient).updateDocument(id, this.request, siteId, null);
-    } catch (ApiException e) {
-      ex = e;
-    }
-    return new ApiHttpResponse<>(obj, ex);
+    return executeApiCall(
+        () -> new DocumentsApi(apiClient).updateDocument(id, this.request, siteId, null));
   }
 }

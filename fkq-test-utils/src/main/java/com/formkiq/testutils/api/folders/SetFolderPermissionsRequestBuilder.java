@@ -25,7 +25,6 @@ package com.formkiq.testutils.api.folders;
 
 import com.formkiq.client.api.DocumentFoldersApi;
 import com.formkiq.client.invoker.ApiClient;
-import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddFolderPermission;
 import com.formkiq.client.model.FolderPermissionType;
 import com.formkiq.client.model.SetFolderPermissionsRequest;
@@ -120,15 +119,7 @@ public class SetFolderPermissionsRequestBuilder implements HttpRequestBuilder {
 
   @Override
   public ApiHttpResponse<SetResponse> submit(final ApiClient apiClient, final String siteId) {
-    ApiException ex = null;
-    SetResponse response = null;
-
-    try {
-      response = new DocumentFoldersApi(apiClient).setFolderPermissions(req, siteId);
-    } catch (ApiException e) {
-      ex = e;
-    }
-
-    return new ApiHttpResponse<>(response, ex);
+    return executeApiCall(
+        () -> new DocumentFoldersApi(apiClient).setFolderPermissions(req, siteId));
   }
 }

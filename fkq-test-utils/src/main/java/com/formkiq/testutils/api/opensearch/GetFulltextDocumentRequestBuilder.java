@@ -25,7 +25,6 @@ package com.formkiq.testutils.api.opensearch;
 
 import com.formkiq.client.api.AdvancedDocumentSearchApi;
 import com.formkiq.client.invoker.ApiClient;
-import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.DocumentFulltextRequest;
 import com.formkiq.client.model.GetDocumentFulltextResponse;
 import com.formkiq.testutils.api.ApiHttpResponse;
@@ -57,15 +56,7 @@ public class GetFulltextDocumentRequestBuilder implements HttpRequestBuilder {
    */
   public ApiHttpResponse<GetDocumentFulltextResponse> submit(final ApiClient apiClient,
       final String siteId) {
-
-    ApiException ex = null;
-    GetDocumentFulltextResponse obj = null;
-    try {
-      obj = new AdvancedDocumentSearchApi(apiClient).getDocumentFulltext(this.id, siteId, null);
-    } catch (ApiException e) {
-      ex = e;
-    }
-
-    return new ApiHttpResponse<>(obj, ex);
+    return executeApiCall(
+        () -> new AdvancedDocumentSearchApi(apiClient).getDocumentFulltext(this.id, siteId, null));
   }
 }
