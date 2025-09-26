@@ -21,35 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.testutils.api;
-
-import com.formkiq.client.invoker.ApiException;
+package com.formkiq.aws.dynamodb.documents;
 
 /**
- * Api Http Response.
- * 
- * @param response Object response
- * @param exception {@link ApiException}
- * @param <T> Type of Object response
+ * Environment Cache Keys for Document Data.
  */
-public record ApiHttpResponse<T>(T response, ApiException exception) {
-  /**
-   * Is Error Response.
-   * 
-   * @return boolean
-   */
-  public boolean isError() {
-    return exception != null;
-  }
-
-  /**
-   * Throw {@link ApiException} if error.
-   * 
-   * @throws ApiException Api exception
-   */
-  public void throwIfError() throws ApiException {
-    if (isError()) {
-      throw exception;
-    }
-  }
+public enum DocumentCacheKey {
+  /** Cache for Document. */
+  CACHE_DOCUMENT,
+  /** Document Folder Permission. */
+  CACHE_DOCUMENT_FOLDER_PERMISSION
 }

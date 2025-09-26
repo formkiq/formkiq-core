@@ -29,8 +29,10 @@ import com.formkiq.aws.dynamodb.builder.DynamoDbAttributeMapBuilder;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * {@link CustomDynamoDbAttributeBuilder} for {@link FolderRolePermission}.
@@ -43,16 +45,23 @@ public class FolderRolePermissionAttributeBuilder implements CustomDynamoDbAttri
   @Override
   public Map<String, AttributeValue> encode(final String name, final Object value) {
 
+    boolean encodedValue = false;
     DynamoDbAttributeMapBuilder builder = DynamoDbAttributeMapBuilder.builder();
 
     if (value instanceof Collection<?> c) {
-      c.forEach(val -> {
-        if (val instanceof FolderRolePermission p) {
-          builder.withEnumList(ATTRIBUTE_KEY_PREFIX + p.roleName(), p.permissions());
+      for (Object o : c) {
+        if (o instanceof FolderRolePermission p) {
+          Collection<ApiPermission> permissions =
+              Objects.requireNonNullElse(p.permissions(), Collections.emptyList());
+          builder.withEnumList(ATTRIBUTE_KEY_PREFIX + p.roleName(), permissions);
+          encodedValue = true;
         }
-      });
+      }
     }
 
+    if (!encodedValue) {
+      throw new IllegalArgumentException("Folder Permissions are missing");
+    }
     return builder.build();
   }
 

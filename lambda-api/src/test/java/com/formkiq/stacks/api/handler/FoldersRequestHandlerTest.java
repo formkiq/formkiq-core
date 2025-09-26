@@ -51,6 +51,7 @@ import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.client.model.AddDocumentResponse;
 import com.formkiq.client.model.DocumentSearch;
 import com.formkiq.client.model.DocumentSearchMeta;
@@ -60,11 +61,14 @@ import com.formkiq.client.model.FolderPermissionType;
 import com.formkiq.client.model.SetResponse;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
+import com.formkiq.testutils.api.SetBearers;
 import com.formkiq.testutils.api.attributes.AddAttributeRequestBuilder;
 import com.formkiq.testutils.api.documents.AddDocumentAttributeRequestBuilder;
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.AddDocumentTagRequestBuilder;
 import com.formkiq.testutils.api.documents.DeleteDocumentRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentContentRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentUrlRequestBuilder;
 import com.formkiq.testutils.api.folders.AddFolderRequestBuilder;
 import com.formkiq.testutils.api.folders.GetFolderPermissionsRequestBuilder;
 import com.formkiq.testutils.api.folders.GetFoldersRequestBuilder;
@@ -474,6 +478,20 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
         resp.exception().getResponseBody());
   }
 
+  private String createFolder(final String siteId, final String path) throws ApiException {
+    var response = addFolder(siteId, path);
+    assertEquals("created folder", response.getMessage());
+
+    int pos = path.lastIndexOf('/');
+    var parentFolder = pos > 0 ? path.substring(0, pos) : "";
+    var filename = Strings.getFilename(path);
+    var files = new GetFoldersRequestBuilder().path(parentFolder).limit("100").submit(client, null);
+
+    List<SearchResultDocument> docs = notNull(files.response().getDocuments());
+    return docs.stream().filter(d -> d.getIndexKey() != null && filename.equals(d.getPath()))
+        .map(SearchResultDocument::getIndexKey).findFirst().orElse(null);
+  }
+
   /**
    * Test add folders permissions, then remove.
    *
@@ -483,25 +501,14 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
     // given
     setBearerToken("Admins");
     var path = "somefolder23";
-    var response = addFolder(null, path);
-    assertEquals("created folder", response.getMessage());
+    var indexKey = createFolder(null, path);
 
     // when
     var resp = setPathReadPermissions(null, "myrole", path);
 
     // then
     assertFalse(resp.isError());
-    var files = new GetFoldersRequestBuilder().path("").submit(client, null);
-    List<SearchResultDocument> docs = notNull(files.response().getDocuments());
-    assertEquals(1, docs.size());
-    assertEquals("somefolder23", docs.get(0).getPath());
-    String indexKey = docs.get(0).getIndexKey();
-
-    List<FolderPermission> roles = getFolderPermissions(indexKey);
-    assertEquals(1, roles.size());
-    assertEquals("myrole", roles.get(0).getRoleName());
-    assertEquals("READ", notNull(roles.get(0).getPermissions()).stream()
-        .map(FolderPermissionType::getValue).collect(Collectors.joining(",")));
+    assertFolderPermission(null, indexKey, "myrole", "READ");
 
     // when
     var set = new SetFolderPermissionsRequestBuilder().path(path).addRole("john", List.of())
@@ -509,16 +516,102 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
 
     // then
     assertFalse(set.isError());
-
-    roles = getFolderPermissions(indexKey);
-    assertEquals(1, roles.size());
-    assertEquals("john", roles.get(0).getRoleName());
-    assertEquals("", notNull(roles.get(0).getPermissions()).stream()
-        .map(FolderPermissionType::getValue).collect(Collectors.joining(",")));
+    assertFolderPermission(null, indexKey, "john", "");
   }
 
-  private List<FolderPermission> getFolderPermissions(final String indexKey) {
-    var perm = new GetFolderPermissionsRequestBuilder().indexKey(indexKey).submit(client, null);
+  /**
+   * Test Set Permissions missing PermissionType.
+   *
+   */
+  @Test
+  void testSetPermissionsWithoutPermissionSet() throws ApiException {
+    // given
+    String siteId = DEFAULT_SITE_ID;
+    new SetBearers().apply(client, new String[] {"Admins", siteId});
+    var path = "somefolder3";
+
+    // when - create folder
+    createFolder(siteId, path);
+
+    // when
+    var resp = setPathPermissions(siteId, "aRole", path, (FolderPermissionType) null);
+
+    // then
+    assertTrue(resp.isError());
+    assertEquals(SC_BAD_REQUEST.getStatusCode(), resp.exception().getCode());
+    assertEquals(
+        "{\"errors\":[{\"key\":\"permissions\"," + "\"error\":\"'permissions' is required\"}]}",
+        resp.exception().getResponseBody());
+  }
+
+  /**
+   * Test READ permission for GET /url and /content.
+   *
+   */
+  @Test
+  void testGetUrlContentUrlsWithPermissions()
+      throws ApiException, IOException, URISyntaxException, InterruptedException {
+    // given
+    String siteId = DEFAULT_SITE_ID;
+    new SetBearers().apply(client, new String[] {"Admins", siteId});
+    var path = "somefolder3";
+
+    // when - create folder
+    createFolder(siteId, path);
+
+    // set folder permissions
+    assertFalse(setPathPermissions(siteId, "aRole", path, List.of()).isError());
+
+    // given
+    String content = "mycontent";
+
+    // when - add doc
+    var documentId = addDocument(client, siteId,
+        new AddDocumentRequestBuilder().path(path + "/test.txt").content(content), content);
+
+    // given
+    new SetBearers().apply(client, new String[] {"aRole", siteId});
+
+    // when - get doc url / content
+    var url = new GetDocumentUrlRequestBuilder(documentId).submit(client, siteId);
+
+    // then
+    assertTrue(url.isError());
+    assertEquals(SC_UNAUTHORIZED.getStatusCode(), url.exception().getCode());
+    assertEquals("{\"message\":\"fkq access denied\"}", url.exception().getResponseBody());
+
+    var docContent = new GetDocumentContentRequestBuilder(documentId).submit(client, siteId);
+    assertTrue(docContent.isError());
+    assertEquals(SC_UNAUTHORIZED.getStatusCode(), docContent.exception().getCode());
+    assertEquals("{\"message\":\"fkq access denied\"}", docContent.exception().getResponseBody());
+
+    // given
+    new SetBearers().apply(client, new String[] {siteId, "Admins"});
+    assertFalse(setPathPermissions(siteId, siteId, path, FolderPermissionType.READ).isError());
+
+    new SetBearers().apply(client, new String[] {siteId});
+
+    // when - get doc url / content
+    url = new GetDocumentUrlRequestBuilder(documentId).submit(client, siteId);
+    docContent = new GetDocumentContentRequestBuilder(documentId).submit(client, siteId);
+
+    // then
+    assertFalse(url.isError());
+    assertFalse(docContent.isError());
+  }
+
+  private void assertFolderPermission(final String siteId, final String indexKey,
+      final String roleName, final String permissions) {
+    List<FolderPermission> roles = getFolderPermissions(siteId, indexKey);
+    assertEquals(1, roles.size());
+    assertEquals(roleName, roles.get(0).getRoleName());
+    assertEquals(permissions, notNull(roles.get(0).getPermissions()).stream()
+        .map(FolderPermissionType::getValue).collect(Collectors.joining(",")));
+
+  }
+
+  private List<FolderPermission> getFolderPermissions(final String siteId, final String indexKey) {
+    var perm = new GetFolderPermissionsRequestBuilder().indexKey(indexKey).submit(client, siteId);
     return notNull(perm.response().getRoles());
   }
 
@@ -541,7 +634,9 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
     // then
     assertNull(resp.response());
     assertEquals(SC_BAD_REQUEST.getStatusCode(), resp.exception().getCode());
-    assertEquals("{\"errors\":[{\"key\":\"roleName\",\"error\":\"'roleName' is required\"}]}",
+    assertEquals(
+        "{\"errors\":[{\"key\":\"roleName\",\"error\":\"'roleName' is required\"},"
+            + "{\"key\":\"permissions\",\"error\":\"'permissions' is required\"}]}",
         resp.exception().getResponseBody());
   }
 
@@ -768,9 +863,21 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
 
   private ApiHttpResponse<SetResponse> setPathReadPermissions(final String siteId,
       final String roleName, final String path) {
-    return new SetFolderPermissionsRequestBuilder().path(path)
-        .addRole(roleName, FolderPermissionType.READ).submit(client, siteId);
+    return setPathPermissions(siteId, roleName, path, FolderPermissionType.READ);
   }
+
+  private ApiHttpResponse<SetResponse> setPathPermissions(final String siteId,
+      final String roleName, final String path, final FolderPermissionType permission) {
+    return new SetFolderPermissionsRequestBuilder().path(path).addRole(roleName, permission)
+        .submit(client, siteId);
+  }
+
+  private ApiHttpResponse<SetResponse> setPathPermissions(final String siteId,
+      final String roleName, final String path, final List<FolderPermissionType> permission) {
+    return new SetFolderPermissionsRequestBuilder().path(path).addRole(roleName, permission)
+        .submit(client, siteId);
+  }
+
 
   /**
    * Test Get Invalid Folder permissions.

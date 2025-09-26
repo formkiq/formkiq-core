@@ -113,4 +113,15 @@ public class StringsTest {
     assertFalse(Strings.isAllUpperCase(""));
     assertFalse(Strings.isAllUpperCase(null));
   }
+
+  @Test
+  void isLastSplit() {
+    Strings.SplitResult r = Strings.lastIndexOf("mystring/something", "/");
+    assertNotNull(r);
+    assertEquals("mystring", r.before());
+    assertEquals("something", r.after());
+
+    r = Strings.lastIndexOf("mystringsomething", "/");
+    assertNull(r);
+  }
 }

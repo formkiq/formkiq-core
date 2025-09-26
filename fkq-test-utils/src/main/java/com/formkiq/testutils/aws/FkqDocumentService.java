@@ -31,6 +31,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
@@ -61,6 +62,9 @@ import com.formkiq.client.model.GetDocumentResponse;
 import com.formkiq.client.model.GetDocumentTagResponse;
 import com.formkiq.client.model.GetDocumentUrlResponse;
 import com.formkiq.client.model.GetDocumentVersionsResponse;
+import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentUrlRequestBuilder;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -134,6 +138,41 @@ public class FkqDocumentService {
     }
 
     return response.getDocumentId();
+  }
+
+  /**
+   * Add "file" but this just creates DynamoDB record and the S3 file.
+   *
+   * @param apiClient {@link ApiClient}
+   * @param siteId {@link String}
+   * @param builder {@link AddDocumentRequestBuilder}
+   * @param content {@link String}
+   * @return {@link String}
+   * @throws IOException IOException
+   * @throws InterruptedException InterruptedException
+   * @throws URISyntaxException URISyntaxException
+   * @throws ApiException ApiException
+   */
+  public static String addDocument(final ApiClient apiClient, final String siteId,
+      final AddDocumentRequestBuilder builder, final String content)
+      throws IOException, InterruptedException, URISyntaxException, ApiException {
+
+    var resp = builder.submit(apiClient, siteId);
+    resp.throwIfError();
+
+    String documentId = resp.response().getDocumentId();
+    var get = new GetDocumentRequestBuilder(documentId).submit(apiClient, siteId);
+    get.throwIfError();
+
+    if (content.isEmpty()) {
+      var url = new GetDocumentUrlRequestBuilder(documentId).submit(apiClient, siteId);
+      url.throwIfError();
+
+      uploadDocumentContent(url.response().getUrl(), content.getBytes(StandardCharsets.UTF_8),
+          get.response().getContentType(), Map.of());
+    }
+
+    return documentId;
   }
 
   /**

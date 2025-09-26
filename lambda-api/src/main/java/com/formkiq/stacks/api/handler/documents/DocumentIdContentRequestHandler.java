@@ -30,6 +30,7 @@ import java.net.URL;
 import java.time.Duration;
 import java.util.Map;
 
+import com.formkiq.aws.dynamodb.documents.DocumentCacheKey;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
@@ -100,6 +101,7 @@ public class DocumentIdContentRequestHandler
       plugin.addDocumentViewActivity(siteId, documentId, versionKey);
     }
 
+    authorization.addCacheObject(DocumentCacheKey.CACHE_DOCUMENT.name(), item);
     return response.ok().build();
   }
 

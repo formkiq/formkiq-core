@@ -121,7 +121,7 @@ public class ApiAuthorization {
   }
 
   /**
-   * Returns whether the user has Admin or Govern permission.
+   * Returns whether the user has Admin permission.
    *
    * @param siteId {@link String}
    * @return boolean

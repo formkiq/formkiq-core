@@ -39,6 +39,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.formkiq.aws.dynamodb.documents.DocumentCacheKey;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.aws.dynamodb.objects.Strings;
@@ -103,6 +104,7 @@ public class DocumentIdUrlRequestHandler
       }
     }
 
+    authorization.addCacheObject(DocumentCacheKey.CACHE_DOCUMENT.name(), item);
     return ApiRequestHandlerResponse.builder().status(url != null ? SC_OK : SC_NOT_FOUND)
         .body("url", url != null ? url.toString() : null).body("documentId", documentId).build();
   }

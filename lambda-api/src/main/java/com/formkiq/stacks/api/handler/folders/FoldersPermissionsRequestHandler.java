@@ -78,7 +78,10 @@ public class FoldersPermissionsRequestHandler
     vb.isRequired("path", req.path());
     vb.check();
 
-    notNull(req.roles()).forEach(role -> vb.isRequired("roleName", role.roleName()));
+    notNull(req.roles()).forEach(role -> {
+      vb.isRequired("roleName", role.roleName());
+      vb.isRequired("permissions", role.permissions() != null, "'permissions' is required");
+    });
     vb.check();
   }
 

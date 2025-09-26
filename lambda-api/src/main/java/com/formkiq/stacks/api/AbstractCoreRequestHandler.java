@@ -86,6 +86,7 @@ import com.formkiq.stacks.api.handler.documents.DocumentsFulltextRequestTagsKeyV
 import com.formkiq.stacks.api.handler.documents.DocumentsIdUploadRequestHandler;
 import com.formkiq.stacks.api.handler.documents.DocumentsOptionsRequestHandler;
 import com.formkiq.stacks.api.handler.documents.DocumentsRequestHandler;
+import com.formkiq.stacks.api.handler.documents.DocumentsRequestHandlerInterceptor;
 import com.formkiq.stacks.api.handler.documents.DocumentsSyncsRequestHandler;
 import com.formkiq.stacks.api.handler.documents.DocumentsUploadRequestHandler;
 import com.formkiq.stacks.api.handler.documents.PublicDocumentsRequestHandler;
@@ -230,6 +231,9 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     serviceCache.register(MappingService.class, new MappingServiceExtension());
     serviceCache.register(LocaleService.class, new LocaleServiceExtension());
     serviceCache.register(Gson.class, new CoreGsonExtension());
+
+    serviceCache.registerAppend(ApiRequestHandlerInterceptor.class,
+        new ClassServiceExtension<>(new DocumentsRequestHandlerInterceptor(serviceCache)));
 
     serviceCache.registerAppend(ApiRequestHandlerInterceptor.class,
         new ClassServiceExtension<>(new EntityRequestHandlerInterceptor(serviceCache)));

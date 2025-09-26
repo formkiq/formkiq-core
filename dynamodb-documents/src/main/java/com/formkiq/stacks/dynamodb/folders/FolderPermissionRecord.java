@@ -55,6 +55,9 @@ public record FolderPermissionRecord(DynamoDbKey key, String path, String type, 
     Objects.requireNonNull(type, "type must not be null");
     Objects.requireNonNull(userId, "userId must not be null");
     Objects.requireNonNull(rolePermissions, "rolePermissions must not be null");
+    if (rolePermissions.isEmpty()) {
+      throw new IllegalArgumentException("rolePermissions must not be empty");
+    }
     Objects.requireNonNull(insertedDate, "insertedDate must not be null");
     insertedDate = new Date(insertedDate.getTime());
   }

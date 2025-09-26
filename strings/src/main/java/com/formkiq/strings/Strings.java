@@ -244,4 +244,19 @@ public class Strings {
     Collection<T> set1 = new HashSet<>(list2);
     return list1.stream().filter(element -> !set1.contains(element)).collect(Collectors.toList());
   }
+
+  /**
+   * Split a {@link String} using lastIndexOf.
+   * 
+   * @param s {@link String}
+   * @param split {@link String}
+   * @return {@link SplitResult}
+   */
+  public static SplitResult lastIndexOf(final String s, final String split) {
+    int pos = s.lastIndexOf(split);
+    return pos > 0 ? new SplitResult(s.substring(0, pos), s.substring(pos + 1)) : null;
+  }
+
+  public record SplitResult(String before, String after) {
+  }
 }
