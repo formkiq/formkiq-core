@@ -25,7 +25,6 @@ package com.formkiq.testutils.api.entity;
 
 import com.formkiq.client.api.EntityApi;
 import com.formkiq.client.invoker.ApiClient;
-import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddEntityType;
 import com.formkiq.client.model.AddEntityTypeRequest;
 import com.formkiq.client.model.AddEntityTypeResponse;
@@ -64,14 +63,6 @@ public class AddEntityTypeRequestBuilder implements HttpRequestBuilder {
   @Override
   public ApiHttpResponse<AddEntityTypeResponse> submit(final ApiClient apiClient,
       final String siteId) {
-
-    AddEntityTypeResponse obj = null;
-    ApiException ex = null;
-    try {
-      obj = new EntityApi(apiClient).addEntityType(this.request, siteId);
-    } catch (ApiException e) {
-      ex = e;
-    }
-    return new ApiHttpResponse<>(obj, ex);
+    return executeApiCall(() -> new EntityApi(apiClient).addEntityType(this.request, siteId));
   }
 }

@@ -25,7 +25,6 @@ package com.formkiq.testutils.api.attributes;
 
 import com.formkiq.client.api.AttributesApi;
 import com.formkiq.client.invoker.ApiClient;
-import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAttribute;
 import com.formkiq.client.model.AddAttributeRequest;
 import com.formkiq.client.model.AddResponse;
@@ -99,14 +98,6 @@ public class AddAttributeRequestBuilder implements HttpRequestBuilder {
 
   @Override
   public ApiHttpResponse<AddResponse> submit(final ApiClient apiClient, final String siteId) {
-
-    AddResponse obj = null;
-    ApiException ex = null;
-    try {
-      obj = new AttributesApi(apiClient).addAttribute(this.request, siteId);
-    } catch (ApiException e) {
-      ex = e;
-    }
-    return new ApiHttpResponse<>(obj, ex);
+    return executeApiCall(() -> new AttributesApi(apiClient).addAttribute(this.request, siteId));
   }
 }

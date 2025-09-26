@@ -25,7 +25,6 @@ package com.formkiq.testutils.api.activities;
 
 import com.formkiq.client.api.UserActivitiesApi;
 import com.formkiq.client.invoker.ApiClient;
-import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.GetActivitesResponse;
 import com.formkiq.client.model.GetUserActivitesResponse;
 import com.formkiq.testutils.api.ApiHttpResponse;
@@ -136,19 +135,9 @@ public class GetActivitiesRequestBuilder implements HttpRequestBuilder {
   @Override
   public ApiHttpResponse<GetActivitesResponse> submit(final ApiClient apiClient,
       final String siteId) {
-    ApiException ex = null;
-    GetActivitesResponse response = null;
-
-    try {
-      // response = new UserActivitiesApi(apiClient).getDocumentUserActivities(this.documentId,
-      // siteId, next, limit);
-      response = new UserActivitiesApi(apiClient).getResourceActivities(siteId, this.documentId,
-          this.entityTypeId, this.namespace, this.entityId, next, limit, this.userId);
-    } catch (ApiException e) {
-      ex = e;
-    }
-
-    return new ApiHttpResponse<>(response, ex);
+    return executeApiCall(
+        () -> new UserActivitiesApi(apiClient).getResourceActivities(siteId, this.documentId,
+            this.entityTypeId, this.namespace, this.entityId, next, limit, this.userId));
   }
 
   /**
@@ -160,17 +149,8 @@ public class GetActivitiesRequestBuilder implements HttpRequestBuilder {
    */
   public ApiHttpResponse<GetUserActivitesResponse> submitDocumentActivities(
       final ApiClient apiClient, final String siteId) {
-    ApiException ex = null;
-    GetUserActivitesResponse response = null;
-
-    try {
-      response = new UserActivitiesApi(apiClient).getDocumentUserActivities(this.documentId, siteId,
-          next, limit);
-    } catch (ApiException e) {
-      ex = e;
-    }
-
-    return new ApiHttpResponse<>(response, ex);
+    return executeApiCall(() -> new UserActivitiesApi(apiClient)
+        .getDocumentUserActivities(this.documentId, siteId, next, limit));
   }
 
   /**
@@ -182,15 +162,7 @@ public class GetActivitiesRequestBuilder implements HttpRequestBuilder {
    */
   public ApiHttpResponse<GetUserActivitesResponse> submitUserActivities(final ApiClient apiClient,
       final String siteId) {
-    ApiException ex = null;
-    GetUserActivitesResponse response = null;
-
-    try {
-      response = new UserActivitiesApi(apiClient).getUserActivities(siteId, next, limit, userId);
-    } catch (ApiException e) {
-      ex = e;
-    }
-
-    return new ApiHttpResponse<>(response, ex);
+    return executeApiCall(
+        () -> new UserActivitiesApi(apiClient).getUserActivities(siteId, next, limit, userId));
   }
 }

@@ -25,7 +25,6 @@ package com.formkiq.testutils.api.folders;
 
 import com.formkiq.client.api.DocumentFoldersApi;
 import com.formkiq.client.invoker.ApiClient;
-import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.GetFoldersResponse;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
@@ -96,16 +95,7 @@ public class GetFoldersRequestBuilder implements HttpRequestBuilder {
   @Override
   public ApiHttpResponse<GetFoldersResponse> submit(final ApiClient apiClient,
       final String siteId) {
-    ApiException ex = null;
-    GetFoldersResponse response = null;
-
-    try {
-      response = new DocumentFoldersApi(apiClient).getFolderDocuments(siteId, indexKey, path, limit,
-          null, next);
-    } catch (ApiException e) {
-      ex = e;
-    }
-
-    return new ApiHttpResponse<>(response, ex);
+    return executeApiCall(() -> new DocumentFoldersApi(apiClient).getFolderDocuments(siteId,
+        indexKey, path, limit, null, next));
   }
 }
