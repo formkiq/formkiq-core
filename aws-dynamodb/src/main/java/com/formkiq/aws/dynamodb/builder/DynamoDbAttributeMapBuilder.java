@@ -32,7 +32,6 @@ import java.util.HashMap;
 
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
-import static com.formkiq.aws.dynamodb.objects.Objects.isEmpty;
 
 /**
  * Builder for assembling a DynamoDB item attribute map.
@@ -238,7 +237,7 @@ public class DynamoDbAttributeMapBuilder {
    */
   public <E extends Enum<E>> DynamoDbAttributeMapBuilder withEnumList(final String name,
       final Collection<E> values) {
-    if (!isEmpty(values)) {
+    if (values != null) {
       Collection<AttributeValue> val =
           values.stream().map(v -> AttributeValue.builder().s(v.name()).build()).toList();
       attributes.put(name, AttributeValue.builder().l(val).build());

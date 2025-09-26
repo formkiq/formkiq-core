@@ -33,6 +33,7 @@ import static com.formkiq.client.model.FolderPermissionType.WRITE;
 import static com.formkiq.testutils.aws.FkqDocumentService.addDocument;
 import static java.lang.Boolean.TRUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -54,6 +55,7 @@ import com.formkiq.client.model.AddDocumentResponse;
 import com.formkiq.client.model.DocumentSearch;
 import com.formkiq.client.model.DocumentSearchMeta;
 import com.formkiq.client.model.DocumentSearchRequest;
+import com.formkiq.client.model.FolderPermission;
 import com.formkiq.client.model.FolderPermissionType;
 import com.formkiq.client.model.SetResponse;
 import com.formkiq.testutils.api.ApiHttpResponse;
@@ -64,6 +66,7 @@ import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.AddDocumentTagRequestBuilder;
 import com.formkiq.testutils.api.documents.DeleteDocumentRequestBuilder;
 import com.formkiq.testutils.api.folders.AddFolderRequestBuilder;
+import com.formkiq.testutils.api.folders.GetFolderPermissionsRequestBuilder;
 import com.formkiq.testutils.api.folders.GetFoldersRequestBuilder;
 import com.formkiq.testutils.api.folders.SetFolderPermissionsRequestBuilder;
 import org.junit.jupiter.api.Test;
@@ -472,6 +475,54 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * Test add folders permissions, then remove.
+   *
+   */
+  @Test
+  void testAddFolderPermissionsThenRemove() throws ApiException {
+    // given
+    setBearerToken("Admins");
+    var path = "somefolder23";
+    var response = addFolder(null, path);
+    assertEquals("created folder", response.getMessage());
+
+    // when
+    var resp = setPathReadPermissions(null, "myrole", path);
+
+    // then
+    assertFalse(resp.isError());
+    var files = new GetFoldersRequestBuilder().path("").submit(client, null);
+    List<SearchResultDocument> docs = notNull(files.response().getDocuments());
+    assertEquals(1, docs.size());
+    assertEquals("somefolder23", docs.get(0).getPath());
+    String indexKey = docs.get(0).getIndexKey();
+
+    List<FolderPermission> roles = getFolderPermissions(indexKey);
+    assertEquals(1, roles.size());
+    assertEquals("myrole", roles.get(0).getRoleName());
+    assertEquals("READ", notNull(roles.get(0).getPermissions()).stream()
+        .map(FolderPermissionType::getValue).collect(Collectors.joining(",")));
+
+    // when
+    var set = new SetFolderPermissionsRequestBuilder().path(path).addRole("john", List.of())
+        .submit(client, null);
+
+    // then
+    assertFalse(set.isError());
+
+    roles = getFolderPermissions(indexKey);
+    assertEquals(1, roles.size());
+    assertEquals("john", roles.get(0).getRoleName());
+    assertEquals("", notNull(roles.get(0).getPermissions()).stream()
+        .map(FolderPermissionType::getValue).collect(Collectors.joining(",")));
+  }
+
+  private List<FolderPermission> getFolderPermissions(final String indexKey) {
+    var perm = new GetFolderPermissionsRequestBuilder().indexKey(indexKey).submit(client, null);
+    return notNull(perm.response().getRoles());
+  }
+
+  /**
    * Test add folders permissions to invalid permission.
    *
    */
@@ -490,9 +541,7 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
     // then
     assertNull(resp.response());
     assertEquals(SC_BAD_REQUEST.getStatusCode(), resp.exception().getCode());
-    assertEquals(
-        "{\"errors\":[{\"key\":\"roleName\",\"error\":\"'roleName' is required\"},"
-            + "{\"key\":\"permissions\",\"error\":\"'permissions' is required\"}]}",
+    assertEquals("{\"errors\":[{\"key\":\"roleName\",\"error\":\"'roleName' is required\"}]}",
         resp.exception().getResponseBody());
   }
 
