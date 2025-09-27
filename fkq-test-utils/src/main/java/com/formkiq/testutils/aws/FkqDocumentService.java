@@ -63,13 +63,13 @@ import com.formkiq.client.model.GetDocumentTagResponse;
 import com.formkiq.client.model.GetDocumentUrlResponse;
 import com.formkiq.client.model.GetDocumentVersionsResponse;
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentContentRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentUrlRequestBuilder;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
-import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 
 /**
  * 
@@ -519,7 +519,7 @@ public class FkqDocumentService {
    * @throws InterruptedException InterruptedException
    */
   public static GetDocumentContentResponse waitForDocumentContent(final ApiClient client,
-      final String siteId, final String documentId) throws InterruptedException {
+      final String siteId, final String documentId) throws InterruptedException, ApiException {
     return waitForDocumentContent(client, siteId, documentId, null);
   }
 
@@ -535,7 +535,7 @@ public class FkqDocumentService {
    */
   public static GetDocumentContentResponse waitForDocumentContent(final ApiClient client,
       final String siteId, final String documentId, final String content)
-      throws InterruptedException {
+      throws InterruptedException, ApiException {
     return waitForDocumentContent(client, siteId, documentId, null, content);
   }
 
@@ -552,23 +552,27 @@ public class FkqDocumentService {
    */
   public static GetDocumentContentResponse waitForDocumentContent(final ApiClient client,
       final String siteId, final String documentId, final String versionKey, final String content)
-      throws InterruptedException {
-
-    DocumentsApi api = new DocumentsApi(client);
+      throws InterruptedException, ApiException {
 
     while (true) {
 
-      try {
-        GetDocumentContentResponse response =
-            api.getDocumentContent(documentId, siteId, versionKey, null);
+      var getContent = new GetDocumentContentRequestBuilder(documentId).versionKey(versionKey)
+          .submit(client, siteId);
 
-        if (content == null || content.equals(response.getContent())
-            || !isEmpty(response.getContentUrl())) {
+      if (!getContent.isError()) {
+        GetDocumentContentResponse response = getContent.response();
+
+        if (content != null && content.equals(response.getContent())) {
           return response;
         }
 
-      } catch (ApiException e) {
-        // ignore error
+        if (content == null) {
+          return response;
+        }
+      }
+
+      if (getContent.is5XX()) {
+        throw getContent.exception();
       }
 
       TimeUnit.SECONDS.sleep(1);

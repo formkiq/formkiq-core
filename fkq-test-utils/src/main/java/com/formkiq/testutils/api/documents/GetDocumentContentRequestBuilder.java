@@ -36,7 +36,9 @@ public class GetDocumentContentRequestBuilder
     implements HttpRequestBuilder<GetDocumentContentResponse> {
 
   /** {@link String}. */
-  private final String id;
+  private final String document;
+  /** Version Key. */
+  private String versionKey;
 
   /**
    * constructor.
@@ -44,13 +46,24 @@ public class GetDocumentContentRequestBuilder
    * @param documentId {@link String}
    */
   public GetDocumentContentRequestBuilder(final String documentId) {
-    this.id = documentId;
+    this.document = documentId;
   }
 
   @Override
   public ApiHttpResponse<GetDocumentContentResponse> submit(final ApiClient apiClient,
       final String siteId) {
-    return executeApiCall(
-        () -> new DocumentsApi(apiClient).getDocumentContent(this.id, siteId, null, null));
+    return executeApiCall(() -> new DocumentsApi(apiClient).getDocumentContent(this.document,
+        siteId, this.versionKey, null));
+  }
+
+  /**
+   * Set Version Key.
+   * 
+   * @param documentVersionKey {@link String}
+   * @return GetDocumentContentRequestBuilder
+   */
+  public GetDocumentContentRequestBuilder versionKey(final String documentVersionKey) {
+    this.versionKey = documentVersionKey;
+    return this;
   }
 }

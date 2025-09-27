@@ -715,12 +715,9 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
         content = "this is a test";
 
         // when
-        HttpResponse<String> httpresp =
-            this.http.send(
-                HttpRequest.newBuilder(new URI(response.getUploadUrl()))
-                    .header("Content-Type", MimeType.MIME_HTML.getContentType())
-                    .method("PUT", BodyPublishers.ofString(content)).build(),
-                BodyHandlers.ofString());
+        var httpresp = this.http.send(HttpRequest.newBuilder(new URI(response.getUploadUrl()))
+            .header("Content-Type", MimeType.MIME_HTML.getContentType())
+            .method("PUT", BodyPublishers.ofString(content)).build(), BodyHandlers.ofString());
 
         // then
         String documentId = response.getDocumentId();

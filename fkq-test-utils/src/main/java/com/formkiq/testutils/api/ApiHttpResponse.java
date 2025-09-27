@@ -33,6 +33,11 @@ import com.formkiq.client.invoker.ApiException;
  * @param <T> Type of Object response
  */
 public record ApiHttpResponse<T>(T response, ApiException exception) {
+  /** 500 Http Code. */
+  private static final int STATUS_INTERNAL_SERVER_ERROR = 500;
+  /** 600 Http Code. */
+  private static final int STATUS_SERVER_ERROR_UPPER_BOUND = 600;
+
   /**
    * Is Error Response.
    * 
@@ -51,5 +56,16 @@ public record ApiHttpResponse<T>(T response, ApiException exception) {
     if (isError()) {
       throw exception;
     }
+  }
+
+  /**
+   * Is 5XX status code.
+   * 
+   * @return boolean
+   */
+  public boolean is5XX() {
+    int statusCode = exception != null ? exception().getCode() : -1;
+    return statusCode >= STATUS_INTERNAL_SERVER_ERROR
+        && statusCode < STATUS_SERVER_ERROR_UPPER_BOUND;
   }
 }
