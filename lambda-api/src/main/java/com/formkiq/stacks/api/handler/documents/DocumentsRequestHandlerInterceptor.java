@@ -61,7 +61,7 @@ public class DocumentsRequestHandlerInterceptor implements ApiRequestHandlerInte
     String siteId = authorization.getSiteId();
     if (!authorization.isAdmin(siteId) && isDocumentUrl(event)) {
       DocumentItem item = authorization.getCacheObject(DocumentCacheKey.CACHE_DOCUMENT.name());
-      if (item != null) {
+      if (item != null && item.getPath() != null) {
         Strings.SplitResult r = Strings.lastIndexOf(item.getPath(), "/");
         String parent = r != null ? r.before() : "";
         new FolderPermissionValidate(db, ApiPermission.READ).apply(siteId,
