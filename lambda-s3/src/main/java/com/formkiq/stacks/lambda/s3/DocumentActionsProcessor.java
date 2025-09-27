@@ -31,6 +31,7 @@ import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceExtension;
+import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.eventbridge.EventBridgeAwsServiceRegistry;
@@ -118,10 +119,12 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static com.formkiq.module.actions.ActionStatus.PENDING;
 import static com.formkiq.module.events.document.DocumentEventType.ACTIONS;
+import static com.formkiq.stacks.lambda.s3.DetailTypeResolver.DEFAULT_DETAIL;
 
 /** {@link RequestHandler} for handling Document Actions. */
 @Reflectable
@@ -457,36 +460,78 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
     if (newImage != null) {
       String siteId = newImage.siteId().s();
       String documentId = newImage.documentId().s();
-      DynamodbAttributeValue activityKeys = newImage.activityKeys();
+      Collection<List<Map<String, AttributeValue>>> activities = fetchActivityKeys(newImage);
+      activities = filterActivities(activities);
 
-      List<DynamoDbKey> keys = activityKeys.l().stream()
-          .map(a -> new DynamoDbKey(a.m().get(PK).s(), a.m().get(SK).s(), null, null, null, null))
-          .toList();
+      DetailTypeResolver resolver = new DetailTypeResolver();
 
-      DynamoDbService db = serviceCache.getExtension(DynamoDbService.class);
-      Collection<Map<String, AttributeValue>> activities =
-          db.get(serviceCache.environment("DOCUMENTS_AUDIT_TABLE"), keys);
-      String detailType = new DetailTypeResolver().apply(activities);
+      for (List<Map<String, AttributeValue>> activity : activities) {
 
-      String pk = dynamodb.keys().pk().s();
-      String sk = dynamodb.keys().sk().s();
-      String s = String.format(
-          "{\"eventName\": \"%s\",\"PK\": \"%s\",\"SK\":\"%s\","
-              + "\"siteId\":\"%s\",\"documentId\":\"%s\",\"type\":\"%s\"}",
-          eventName, pk, sk, siteId, documentId, detailType);
-      logger.info(s);
+        String detailType = resolver.apply(activity);
+        if (!detailType.equals(DEFAULT_DETAIL)) {
 
-      String detail = new DocumentExternalSystemExport(serviceCache).apply(siteId, documentId,
-          activities.stream().map(new AttributeValueToMap()).toList());
+          String pk = dynamodb.keys().pk().s();
+          String sk = dynamodb.keys().sk().s();
+          String s = String.format(
+              "{\"eventName\": \"%s\",\"PK\": \"%s\",\"SK\":\"%s\","
+                  + "\"siteId\":\"%s\",\"documentId\":\"%s\",\"type\":\"%s\"}",
+              eventName, pk, sk, siteId, documentId, detailType);
+          logger.info(s);
 
-      String appEnvironment = serviceCache.environment("APP_ENVIRONMENT");
-      EventBridgeMessage msg =
-          new EventBridgeMessageBuilder().build(appEnvironment, detailType, detail);
-      EventBridgeService eventBridgeService = serviceCache.getExtension(EventBridgeService.class);
+          String detail = new DocumentExternalSystemExport(serviceCache).apply(siteId, documentId,
+              activity.stream().map(new AttributeValueToMap()).toList());
 
-      String documentEventsBus = serviceCache.environment("DOCUMENT_EVENTS_BUS");
-      eventBridgeService.putEvents(documentEventsBus, msg);
+          String appEnvironment = serviceCache.environment("APP_ENVIRONMENT");
+          EventBridgeMessage msg =
+              new EventBridgeMessageBuilder().build(appEnvironment, detailType, detail);
+          EventBridgeService eventBridgeService =
+              serviceCache.getExtension(EventBridgeService.class);
+
+          String documentEventsBus = serviceCache.environment("DOCUMENT_EVENTS_BUS");
+          eventBridgeService.putEvents(documentEventsBus, msg);
+        }
+      }
     }
+  }
+
+  /**
+   * Filter out activities we don't want to send event bridge messages for.
+   * 
+   * @param activities {@link Collection}
+   * @return {@link Collection}
+   */
+  private Collection<List<Map<String, AttributeValue>>> filterActivities(
+      final Collection<List<Map<String, AttributeValue>>> activities) {
+
+    boolean exists = activities.stream().flatMap(List::stream)
+        .anyMatch(av -> "documents".equals(DynamoDbTypes.toString(av.get("resource")))
+            && "DELETE".equals(DynamoDbTypes.toString(av.get("type"))));
+
+    // Join Document Delete activities together
+    if (exists) {
+      return List.of(activities.stream().flatMap(List::stream).toList());
+    }
+
+    return activities;
+  }
+
+  private static Collection<List<Map<String, AttributeValue>>> fetchActivityKeys(
+      final AwsEventDynamodbNewImage newImage) {
+    DynamodbAttributeValue activityKeys = newImage.activityKeys();
+
+    List<DynamoDbKey> keys = activityKeys.l().stream()
+        .map(a -> new DynamoDbKey(a.m().get(PK).s(), a.m().get(SK).s(), null, null, null, null))
+        .toList();
+
+    DynamoDbService db = serviceCache.getExtension(DynamoDbService.class);
+    Collection<Map<String, AttributeValue>> activities =
+        db.get(serviceCache.environment("DOCUMENTS_AUDIT_TABLE"), keys);
+
+    Map<String, List<Map<String, AttributeValue>>> map = activities.stream()
+        .collect(Collectors.groupingBy(e -> DynamoDbTypes.toString(e.get("resource")) + "#"
+            + DynamoDbTypes.toString(e.get("type"))));
+
+    return map.values();
   }
 
   private void processDocumentEvent(final Logger logger, final AwsEventSnsNotification map) {

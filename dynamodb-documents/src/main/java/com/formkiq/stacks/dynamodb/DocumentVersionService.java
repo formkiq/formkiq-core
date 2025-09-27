@@ -23,12 +23,9 @@
  */
 package com.formkiq.stacks.dynamodb;
 
-import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
-import com.formkiq.aws.dynamodb.DynamodbVersionRecord;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
@@ -82,16 +79,6 @@ public interface DocumentVersionService {
    * @param connection {@link DynamoDbConnectionBuilder}
    */
   void initialize(Map<String, String> map, DynamoDbConnectionBuilder connection);
-
-  /**
-   * Add Versioning {@link DynamodbVersionRecord} records.
-   *
-   * @param siteId {@link String}
-   * @param records {@link Collection} {@link DynamodbVersionRecord}
-   * @return List
-   */
-  List<Map<String, AttributeValue>> addRecords(String siteId,
-      Collection<? extends DynamodbVersionRecord<?>> records);
 
   /**
    * Get {@link DocumentItem} either current or versioned.

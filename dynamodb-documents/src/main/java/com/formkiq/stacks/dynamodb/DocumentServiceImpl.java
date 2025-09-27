@@ -553,19 +553,25 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
           return match;
         }).toList();
 
-    deleteDocumentAttributes(siteId, documentAttributes);
+    deleteDocumentAttributes(siteId, documentId, documentAttributes);
 
     return documentAttributes;
   }
 
-  private void deleteDocumentAttributes(final String siteId,
+  private void deleteDocumentAttributes(final String siteId, final String documentId,
       final Collection<DocumentAttributeRecord> documentAttributes) {
 
     List<Map<String, AttributeValue>> keys = documentAttributes.stream()
         .map(a -> Map.of(PK, a.fromS(a.pk(siteId)), SK, a.fromS(a.sk()))).toList();
     this.dbService.deleteItems(keys);
 
-    this.versionsService.addRecords(siteId, documentAttributes);
+    if (this.interceptor != null) {
+      AttributeValueToMap toMap = new AttributeValueToMap();
+      documentAttributes.forEach(a -> {
+        this.interceptor.deleteDocumentAttribute(siteId, documentId, false,
+            toMap.apply(a.getAttributes(siteId)));
+      });
+    }
   }
 
   @Override
@@ -1906,7 +1912,8 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       String documentId = document.getDocumentId();
 
       // delete old composite keys
-      deleteDocumentAttributes(siteId, (Collection<DocumentAttributeRecord>) tx.deletes());
+      deleteDocumentAttributes(siteId, documentId,
+          (Collection<DocumentAttributeRecord>) tx.deletes());
 
       saveDocumentInterceptor(siteId, documentId, current, previous, tx);
 
@@ -2030,7 +2037,8 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
       if (builder.batchWriteItem(this.dbClient)) {
         // delete old composite keys
-        deleteDocumentAttributes(siteId, (Collection<DocumentAttributeRecord>) tx.deletes());
+        deleteDocumentAttributes(siteId, documentId,
+            (Collection<DocumentAttributeRecord>) tx.deletes());
       }
 
       saveDocumentInterceptor(siteId, documentId, Collections.emptyMap(), Collections.emptyMap(),

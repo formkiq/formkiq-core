@@ -29,7 +29,6 @@ import static com.formkiq.aws.dynamodb.DbKeys.SK;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static software.amazon.awssdk.utils.StringUtils.isEmpty;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -38,7 +37,6 @@ import com.formkiq.aws.dynamodb.AttributeValueToMap;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
-import com.formkiq.aws.dynamodb.DynamodbVersionRecord;
 import com.formkiq.aws.dynamodb.QueryConfig;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
@@ -115,18 +113,6 @@ public class DocumentVersionServiceDynamoDb implements DocumentVersionService {
       final DynamoDbConnectionBuilder connection) {
     this.tableName = map.get("DOCUMENT_VERSIONS_TABLE");
     this.db = new DynamoDbServiceImpl(connection, this.tableName);
-  }
-
-  @Override
-  public List<Map<String, AttributeValue>> addRecords(final String siteId,
-      final Collection<? extends DynamodbVersionRecord<?>> records) {
-
-    List<Map<String, AttributeValue>> attrs =
-        records.stream().map(r -> r.getVersionedAttributes(siteId)).toList();
-
-    this.db.putItems(attrs);
-
-    return attrs;
   }
 
   @Override

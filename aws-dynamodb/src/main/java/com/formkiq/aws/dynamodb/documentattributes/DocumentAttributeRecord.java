@@ -24,7 +24,7 @@
 package com.formkiq.aws.dynamodb.documentattributes;
 
 import com.formkiq.aws.dynamodb.DbKeys;
-import com.formkiq.aws.dynamodb.DynamodbVersionRecord;
+import com.formkiq.aws.dynamodb.DynamodbRecord;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.graalvm.annotations.Reflectable;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -45,8 +45,7 @@ import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
  *
  */
 @Reflectable
-public class DocumentAttributeRecord
-    implements DynamodbVersionRecord<DocumentAttributeRecord>, DbKeys {
+public class DocumentAttributeRecord implements DynamodbRecord<DocumentAttributeRecord>, DbKeys {
 
   /** Attribute constant. */
   private static final String ATTR = "attr#";
@@ -135,7 +134,7 @@ public class DocumentAttributeRecord
     }
 
     if (this.insertedDate != null) {
-      map.put("inserteddate", AttributeValue.fromS(df.format(this.insertedDate)));
+      map.put("inserteddate", fromS(df.format(this.insertedDate)));
     }
 
     return map;
@@ -386,12 +385,6 @@ public class DocumentAttributeRecord
     }
 
     return this;
-  }
-
-  @Override
-  public String skVersion() {
-    String sk = ATTR + this.key + "#" + this.df.format(getInsertedDate()) + "#";
-    return getSkValue(sk);
   }
 
   /**

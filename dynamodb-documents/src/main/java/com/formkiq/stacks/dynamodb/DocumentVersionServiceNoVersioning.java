@@ -23,13 +23,10 @@
  */
 package com.formkiq.stacks.dynamodb;
 
-import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
-import com.formkiq.aws.dynamodb.DynamodbVersionRecord;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.graalvm.annotations.Reflectable;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -67,13 +64,6 @@ public class DocumentVersionServiceNoVersioning implements DocumentVersionServic
   public void initialize(final Map<String, String> map,
       final DynamoDbConnectionBuilder connection) {
     // empty
-  }
-
-  @Override
-  public List<Map<String, AttributeValue>> addRecords(final String siteId,
-      final Collection<? extends DynamodbVersionRecord<?>> records) {
-    // empty
-    return null;
   }
 
   @Override

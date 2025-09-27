@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.lambda.s3;
 
+import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.Collection;
@@ -40,7 +41,7 @@ public class DetailTypeResolver
     implements Function<Collection<Map<String, AttributeValue>>, String> {
 
   /** Default {@link String}. */
-  private static final String DEFAULT_DETAIL = "Unknown";
+  static final String DEFAULT_DETAIL = "Unknown";
 
   private String avToString(final Map<String, AttributeValue> map, final String key) {
     AttributeValue av = map.get(key);
@@ -57,8 +58,8 @@ public class DetailTypeResolver
   private Predicate<Map<String, AttributeValue>> hasTypeResource(final String type,
       final String resource) {
     return a -> {
-      String t = avToString(a, "type");
-      String r = avToString(a, "resource");
+      String t = DynamoDbTypes.toString(a.get("type"));
+      String r = DynamoDbTypes.toString(a.get("resource"));
       return type.equalsIgnoreCase(t) && resource.equalsIgnoreCase(r);
     };
   }

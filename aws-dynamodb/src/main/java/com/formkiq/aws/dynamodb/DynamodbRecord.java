@@ -24,6 +24,8 @@
 package com.formkiq.aws.dynamodb;
 
 import java.util.Map;
+
+import com.formkiq.aws.dynamodb.objects.Strings;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
@@ -161,5 +163,10 @@ public interface DynamodbRecord<T> {
   default int toInt(final Map<String, AttributeValue> attrs, final String key) {
     AttributeValue av = attrs.get(key);
     return av != null ? Integer.parseInt(av.n()) : -1;
+  }
+
+  default String truncateSk(final String sk) {
+    final int len = 800;
+    return Strings.truncate(sk, len);
   }
 }
