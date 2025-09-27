@@ -78,13 +78,14 @@ compileJava {
 test {
   failFast = true
   useJUnitPlatform()
-  maxHeapSize = '1G'
+  maxHeapSize = '2G'
 }
 
 task integrationTest(type: Test) {
   testClassesDirs = sourceSets.integration.output.classesDirs
   classpath = sourceSets.integration.runtimeClasspath
   useJUnitPlatform()
+  maxHeapSize = '2G'
 }
 
 task buildJava11Zip(type: Zip) {

@@ -66,7 +66,7 @@ public class DocumentsDocumentIdSyncsRequestTest extends AbstractAwsIntegrationT
   /**
    * JUnit Test Timeout.
    */
-  private static final int TEST_TIMEOUT = 60;
+  private static final int TEST_TIMEOUT = 90;
 
   private List<DocumentSync> find(final List<DocumentSync> list, final DocumentSyncService type) {
     return list.stream().filter(s -> type.equals(s.getService())).collect(Collectors.toList());

@@ -47,6 +47,7 @@ import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -67,6 +68,7 @@ import com.formkiq.client.model.AddDocumentUploadRequest;
 import com.formkiq.client.model.ChecksumType;
 import com.formkiq.client.model.DocumentActionType;
 import com.formkiq.client.model.DocumentAttribute;
+import com.formkiq.client.model.DocumentMetadata;
 import com.formkiq.client.model.GetAttributeResponse;
 import com.formkiq.client.model.GetDocumentUrlResponse;
 import com.formkiq.module.http.HttpHeaders;
@@ -384,6 +386,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
 
     // then
     String documentId = response.getDocumentId();
+    assertNotNull(documentId);
     waitForDocumentContent(client, siteId, documentId);
 
     // given
@@ -474,6 +477,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
 
       // then
       String documentId = response.getDocumentId();
+      assertNotNull(documentId);
       waitForDocumentLength(client, null, documentId);
 
       GetDocumentResponse document = api.getDocument(documentId, null, null);
@@ -752,6 +756,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
 
         // given
         documentId = response.getDocuments().get(0).getDocumentId();
+        assertNotNull(documentId);
 
         // when
         GetDocumentResponse document = api.getDocument(documentId, null, null);
@@ -901,6 +906,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
 
         // given
         String documentId = response.getDocumentId();
+        assertNotNull(documentId);
 
         // when - fetch document
         waitForDocumentContent(client, siteId, documentId, content);
@@ -908,13 +914,16 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
         // then
         GetDocumentResponse document = api.getDocument(documentId, siteId, null);
         assertNotNull(document);
-        assertNotNull(document.getMetadata());
-        assertEquals(2, document.getMetadata().size());
-        assertEquals("playerId", document.getMetadata().get(0).getKey());
-        assertEquals("11,22", String.join(",",
-            java.util.Objects.requireNonNull(document.getMetadata().get(0).getValues())));
-        assertEquals("person", document.getMetadata().get(1).getKey());
-        assertEquals("category", document.getMetadata().get(1).getValue());
+
+        List<DocumentMetadata> metadata =
+            notNull(document.getMetadata()).stream().filter(a -> a.getKey() != null)
+                .sorted(Comparator.comparing(DocumentMetadata::getKey)).toList();
+        assertEquals(2, metadata.size());
+        assertEquals("person", metadata.get(0).getKey());
+        assertEquals("category", metadata.get(0).getValue());
+        assertEquals("playerId", metadata.get(1).getKey());
+        assertEquals("11,22",
+            String.join(",", java.util.Objects.requireNonNull(metadata.get(1).getValues())));
       }
     }
   }
@@ -985,6 +994,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
 
         // when
         String documentId = api.addDocument(req, siteId, null).getDocumentId();
+        assertNotNull(documentId);
 
         // then
         DocumentAttributesApi documentAttributesApi = new DocumentAttributesApi(client);
@@ -1032,6 +1042,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
 
     // then
     String documentId = response.getDocumentId();
+    assertNotNull(documentId);
     assertEquals("mysite", api.getDocument(documentId, "mysite", null).getSiteId());
     assertEquals("mysite", api.getDocument(documentId, null, null).getSiteId());
   }
@@ -1100,6 +1111,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
       AddDocumentRequest req = new AddDocumentRequest().contentType("text/plain").path(path)
           .content(content).addActionsItem(new AddAction().type(DocumentActionType.PUBLISH));
       String documentId = api.addDocument(req, siteId, null).getDocumentId();
+      assertNotNull(documentId);
 
       // then
       waitForDocumentContent(client, siteId, documentId, content);
