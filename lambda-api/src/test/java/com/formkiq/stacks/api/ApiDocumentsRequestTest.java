@@ -547,7 +547,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
     assertEquals("401.0", String.valueOf(m.get("statusCode")));
     assertCorsHeaders((Map<String, Object>) m.get("headers"));
     Map<String, Object> resp = fromJson((String) m.get("body"), Map.class);
-    assertEquals("fkq access denied (no groups)", resp.get("message"));
+    assertEquals("fkq access denied to siteId (" + siteId + ")", resp.get("message"));
   }
 
   /**
@@ -574,7 +574,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
     assertEquals("401.0", String.valueOf(m.get("statusCode")));
     assertCorsHeaders((Map<String, Object>) m.get("headers"));
     Map<String, Object> resp = fromJson((String) m.get("body"), Map.class);
-    assertEquals("fkq access denied (groups: default (DELETE,READ,WRITE))", resp.get("message"));
+    assertEquals("fkq access denied to siteId (" + siteId + ")", resp.get("message"));
   }
 
   /**
@@ -628,8 +628,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
     assertEquals(mapsize, m.size());
     assertEquals("401.0", String.valueOf(m.get("statusCode")));
     assertCorsHeaders((Map<String, Object>) m.get("headers"));
-    assertEquals("{\"message\":\"fkq access denied (groups: Bleh (DELETE,READ,WRITE), "
-        + "Finance (DELETE,READ,WRITE))\"}", m.get("body"));
+    assertEquals("{\"message\":\"fkq access denied to siteId (default)\"}", m.get("body"));
   }
 
   /**
@@ -1152,7 +1151,8 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
     Map<String, Object> m = fromJson(response, Map.class);
     assertCorsHeaders((Map<String, Object>) m.get("headers"));
     assertEquals("401.0", String.valueOf(m.get("statusCode")));
-    assertEquals("{\"message\":\"fkq access denied (no groups)\"}", String.valueOf(m.get("body")));
+    assertEquals("{\"message\":\"fkq access denied to siteId (demo)\"}",
+        String.valueOf(m.get("body")));
   }
 
   /**

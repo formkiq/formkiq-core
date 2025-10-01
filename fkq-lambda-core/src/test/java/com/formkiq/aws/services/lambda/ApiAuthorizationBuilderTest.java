@@ -26,6 +26,8 @@ package com.formkiq.aws.services.lambda;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -59,6 +61,7 @@ class ApiAuthorizationBuilderTest {
   private ApiGatewayRequestEvent getExplicitSitesJwtEvent(final List<String> groups,
       final Map<String, List<String>> permissions) {
     ApiGatewayRequestEvent event = new ApiGatewayRequestEvent();
+    event.setPath("/mypath");
     ApiGatewayRequestContext content = new ApiGatewayRequestContext();
 
     Map<String, Object> claims = Map.of("username", "oktaidp_test@formkiq.com", "sitesClaims", gson
@@ -559,6 +562,27 @@ class ApiAuthorizationBuilderTest {
   }
 
   /**
+   * trying to access random site id.
+   */
+  @Test
+  void testApiAuthorizerWithRandomSiteId() throws Exception {
+    // given
+    String s0 = "[default]";
+    ApiGatewayRequestEvent event0 = getJwtEvent(s0);
+    event0.setPath("/random");
+    event0.setQueryStringParameters(Map.of("siteId", "anothersite"));
+
+    // when
+    try {
+      new ApiAuthorizationBuilder().build(event0);
+      fail();
+    } catch (Exception e) {
+      // then
+      assertEquals("fkq access denied to siteId (anothersite)", e.getMessage());
+    }
+  }
+
+  /**
    * Empty groups access.
    */
   @Test
@@ -754,19 +778,13 @@ class ApiAuthorizationBuilderTest {
     ApiGatewayRequestEvent event0 = getExplicitSitesJwtEvent(List.of("Admins"), Map.of());
 
     // when
-    final ApiAuthorization api0 = new ApiAuthorizationBuilder().build(event0);
-
-    // then
-    assertEquals(DEFAULT_SITE_ID, api0.getSiteId());
-    assertEquals("", String.join(",", api0.getSiteIds()));
-    assertEquals("",
-        api0.getPermissions().stream().map(Enum::name).collect(Collectors.joining(",")));
-    assertEquals("", api0.getPermissions(DEFAULT_SITE_ID).stream().map(Enum::name)
-        .collect(Collectors.joining(",")));
-    assertEquals("",
-        api0.getPermissions("test").stream().map(Enum::name).collect(Collectors.joining(",")));
-    assertEquals("no groups", api0.getAccessSummary());
-    assertEquals("Admins", String.join(",", api0.getRoles()));
+    try {
+      new ApiAuthorizationBuilder().build(event0);
+      fail();
+    } catch (Exception e) {
+      // then
+      assertEquals("fkq access denied to siteId (default)", e.getMessage());
+    }
   }
 
   /**

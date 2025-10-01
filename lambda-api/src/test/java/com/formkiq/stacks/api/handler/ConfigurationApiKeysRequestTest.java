@@ -65,9 +65,7 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
       } catch (ApiException e) {
         // then
         assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
-        assertEquals(
-            "{\"message\":\"fkq access denied (groups: " + siteId + " (DELETE,READ,WRITE))\"}",
-            e.getResponseBody());
+        assertEquals("{\"message\":\"fkq access denied to siteId (ABC)\"}", e.getResponseBody());
       }
     }
   }

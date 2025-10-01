@@ -79,6 +79,7 @@ public class ApiAuthorizationBuilder {
 
     if (claims.containsKey("permissionsMap")) {
 
+      String siteId = event.getQueryStringParameter("siteId");
       Map<String, List<String>> map = (Map<String, List<String>>) claims.get("permissionsMap");
 
       map.forEach((group, perms) -> {
@@ -87,7 +88,7 @@ public class ApiAuthorizationBuilder {
         authorization.addPermission(group, permissions);
       });
 
-      if (map.size() == 1) {
+      if (map.size() == 1 && siteId == null) {
         authorization.siteId(map.keySet().iterator().next());
       }
 
@@ -160,7 +161,7 @@ public class ApiAuthorizationBuilder {
     }
 
     if (defaultSiteId != null && !isReservedSite(admin, defaultSiteId)
-        && authorization.getPermissions(defaultSiteId) == null
+        && notNull(authorization.getPermissions(defaultSiteId)).isEmpty()
         && !event.getPath().startsWith("/public/")) {
       String s = String.format("fkq access denied to siteId (%s)", defaultSiteId);
       throw new ForbiddenException(s);
