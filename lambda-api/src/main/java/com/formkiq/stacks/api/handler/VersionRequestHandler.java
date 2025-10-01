@@ -25,6 +25,7 @@ package com.formkiq.stacks.api.handler;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
@@ -63,5 +64,11 @@ public class VersionRequestHandler implements ApiGatewayRequestHandler, ApiGatew
   @Override
   public String getRequestUrl() {
     return "/version";
+  }
+
+  @Override
+  public Optional<Boolean> isAuthorized(final AwsServiceCache awsServiceCache, final String method,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
+    return !authorization.getSiteIds().isEmpty() ? Optional.of(Boolean.TRUE) : Optional.empty();
   }
 }
