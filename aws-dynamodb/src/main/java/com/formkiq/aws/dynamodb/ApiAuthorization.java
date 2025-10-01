@@ -212,13 +212,12 @@ public class ApiAuthorization {
 
         permissions = Arrays.stream(ApiPermission.values()).sorted().collect(Collectors.toList());
 
-      } else if (!this.permissionsBySiteId.isEmpty()) {
-        long count = this.permissionsBySiteId.values().stream()
-            .filter(t -> t.contains(ApiPermission.READ)).count();
-        if (count == this.permissionsBySiteId.size()) {
-          permissions = List.of(ApiPermission.READ);
-        }
-      }
+      } /*
+         * else if (!this.permissionsBySiteId.isEmpty()) { long count =
+         * this.permissionsBySiteId.values().stream() .filter(t ->
+         * t.contains(ApiPermission.READ)).count(); if (count == this.permissionsBySiteId.size()) {
+         * permissions = List.of(ApiPermission.READ); } }
+         */
     }
 
     return permissions;

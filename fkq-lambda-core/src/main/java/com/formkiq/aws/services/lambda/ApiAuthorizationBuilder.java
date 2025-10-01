@@ -77,39 +77,46 @@ public class ApiAuthorizationBuilder {
 
     Map<String, Object> claims = getAuthorizerClaimsOrSitesClaims(event);
 
-    for (String group : groups) {
+    if (claims.containsKey("permissionsMap")) {
 
-      if (!COGNITO_ADMIN_GROUP.equalsIgnoreCase(group)) {
-        if (group.endsWith(COGNITO_READ_SUFFIX)) {
-          authorization.addPermission(group.replace(COGNITO_READ_SUFFIX, ""),
-              List.of(ApiPermission.READ));
-        } else if (group.endsWith(COGNITO_GOVERN_SUFFIX)) {
-          authorization.addPermission(group.replace(COGNITO_GOVERN_SUFFIX, ""), List.of(
-              ApiPermission.GOVERN, ApiPermission.READ, ApiPermission.WRITE, ApiPermission.DELETE));
-        } else if (admin) {
-          authorization.addPermission(group, Arrays.asList(ApiPermission.READ, ApiPermission.WRITE,
-              ApiPermission.DELETE, ApiPermission.ADMIN));
-        } else if (claims.containsKey("permissions")) {
+      Map<String, List<String>> map = (Map<String, List<String>>) claims.get("permissionsMap");
 
-          String[] list = claims.get("permissions").toString().split(",");
-          List<ApiPermission> permissions = Arrays.stream(list)
-              .map(ApiAuthorizationBuilder::toApiPermission).collect(Collectors.toList());
-          authorization.addPermission(group, permissions);
+      map.forEach((group, perms) -> {
+        List<ApiPermission> permissions = perms.stream()
+            .map(ApiAuthorizationBuilder::toApiPermission).filter(Objects::nonNull).toList();
+        authorization.addPermission(group, permissions);
+      });
 
-        } else if (claims.containsKey("permissionsMap")) {
+      if (map.size() == 1) {
+        authorization.siteId(map.keySet().iterator().next());
+      }
 
-          Map<String, List<String>> map = (Map<String, List<String>>) claims.get("permissionsMap");
+    } else {
 
-          if (map.containsKey(group)) {
-            List<String> strs = map.get(group);
-            List<ApiPermission> permissions = strs.stream()
-                .map(ApiAuthorizationBuilder::toApiPermission).filter(Objects::nonNull).toList();
+      for (String group : groups) {
+
+        if (!COGNITO_ADMIN_GROUP.equalsIgnoreCase(group)) {
+          if (group.endsWith(COGNITO_READ_SUFFIX)) {
+            authorization.addPermission(group.replace(COGNITO_READ_SUFFIX, ""),
+                List.of(ApiPermission.READ));
+          } else if (group.endsWith(COGNITO_GOVERN_SUFFIX)) {
+            authorization.addPermission(group.replace(COGNITO_GOVERN_SUFFIX, ""),
+                List.of(ApiPermission.GOVERN, ApiPermission.READ, ApiPermission.WRITE,
+                    ApiPermission.DELETE));
+          } else if (admin) {
+            authorization.addPermission(group, Arrays.asList(ApiPermission.READ,
+                ApiPermission.WRITE, ApiPermission.DELETE, ApiPermission.ADMIN));
+          } else if (claims.containsKey("permissions")) {
+
+            String[] list = claims.get("permissions").toString().split(",");
+            List<ApiPermission> permissions = Arrays.stream(list)
+                .map(ApiAuthorizationBuilder::toApiPermission).collect(Collectors.toList());
             authorization.addPermission(group, permissions);
-          }
 
-        } else {
-          authorization.addPermission(group,
-              Arrays.asList(ApiPermission.READ, ApiPermission.WRITE, ApiPermission.DELETE));
+          } else {
+            authorization.addPermission(group,
+                Arrays.asList(ApiPermission.READ, ApiPermission.WRITE, ApiPermission.DELETE));
+          }
         }
       }
     }
@@ -303,6 +310,7 @@ public class ApiAuthorizationBuilder {
         groups.removeIf(String::isEmpty);
       }
     }
+
     return groups;
   }
 
