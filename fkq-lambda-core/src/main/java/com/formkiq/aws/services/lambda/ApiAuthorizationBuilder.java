@@ -151,6 +151,7 @@ public class ApiAuthorizationBuilder {
         new ApiAuthorization().siteId(defaultSiteId).username(getUsername(event)).roles(roles);
 
     addPermissions(event, authorization, groups, admin);
+    defaultSiteId = authorization.getSiteId();
 
     if (this.interceptors != null) {
       for (ApiAuthorizationInterceptor i : this.interceptors) {
@@ -159,7 +160,8 @@ public class ApiAuthorizationBuilder {
     }
 
     if (defaultSiteId != null && !isReservedSite(admin, defaultSiteId)
-        && !isValidSiteId(defaultSiteId, groups) && !event.getPath().startsWith("/public/")) {
+        && authorization.getPermissions(defaultSiteId) == null
+        && !event.getPath().startsWith("/public/")) {
       String s = String.format("fkq access denied to siteId (%s)", defaultSiteId);
       throw new ForbiddenException(s);
     }
@@ -251,11 +253,6 @@ public class ApiAuthorizationBuilder {
     }
 
     return siteId;
-  }
-
-  private boolean isValidSiteId(final String siteId, final Collection<String> groups) {
-    return groups.contains(siteId) || groups.contains(siteId + COGNITO_READ_SUFFIX)
-        || groups.contains(siteId + COGNITO_GOVERN_SUFFIX);
   }
 
   /**

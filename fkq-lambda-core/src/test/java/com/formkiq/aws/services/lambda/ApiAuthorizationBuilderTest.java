@@ -962,20 +962,25 @@ class ApiAuthorizationBuilderTest {
   @Test
   void testDefinedSitesOktaIdp() throws Exception {
     // given
-    ApiGatewayRequestEvent event =
-        getExplicitSitesJwtEvent(List.of("Everyone FormKiQ_ConfigurationAdmin regantest"),
-            Map.of("LoanAgency", List.of("read", "write")));
+    for (Map<String, String> query : Arrays.asList(null, Map.of("siteId", "LoanAgency"))) {
+      ApiGatewayRequestEvent event =
+          getExplicitSitesJwtEvent(List.of("Everyone FormKiQ_ConfigurationAdmin regantest"),
+              Map.of("LoanAgency", List.of("read", "write")));
+      event.setQueryStringParameters(query);
+      event.setPath("/version");
 
-    // when
-    final ApiAuthorization api = new ApiAuthorizationBuilder().build(event);
+      // when
+      final ApiAuthorization api = new ApiAuthorizationBuilder().build(event);
 
-    // then
-    assertEquals("LoanAgency", api.getSiteId());
-    assertEquals("LoanAgency", String.join(",", api.getSiteIds()));
-    assertEquals("READ,WRITE",
-        api.getPermissions().stream().map(Enum::name).collect(Collectors.joining(",")));
-    assertEquals("groups: LoanAgency (READ,WRITE)", api.getAccessSummary());
-    assertEquals("Everyone,FormKiQ_ConfigurationAdmin,regantest", String.join(",", api.getRoles()));
-    assertEquals("oktaidp_test@formkiq.com", api.getUsername());
+      // then
+      assertEquals("LoanAgency", api.getSiteId());
+      assertEquals("LoanAgency", String.join(",", api.getSiteIds()));
+      assertEquals("READ,WRITE",
+          api.getPermissions().stream().map(Enum::name).collect(Collectors.joining(",")));
+      assertEquals("groups: LoanAgency (READ,WRITE)", api.getAccessSummary());
+      assertEquals("Everyone,FormKiQ_ConfigurationAdmin,regantest",
+          String.join(",", api.getRoles()));
+      assertEquals("oktaidp_test@formkiq.com", api.getUsername());
+    }
   }
 }
