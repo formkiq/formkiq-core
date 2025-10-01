@@ -152,13 +152,14 @@ public class ApiAuthorizationBuilder {
         new ApiAuthorization().siteId(defaultSiteId).username(getUsername(event)).roles(roles);
 
     addPermissions(event, authorization, groups, admin);
-    defaultSiteId = authorization.getSiteId();
 
     if (this.interceptors != null) {
       for (ApiAuthorizationInterceptor i : this.interceptors) {
         i.update(event, authorization);
       }
     }
+
+    defaultSiteId = authorization.getSiteId();
 
     if (defaultSiteId != null && !isReservedSite(admin, defaultSiteId)
         && notNull(authorization.getPermissions(defaultSiteId)).isEmpty()
