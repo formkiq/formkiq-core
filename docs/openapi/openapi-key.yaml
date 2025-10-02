@@ -10911,6 +10911,7 @@
               - METADATA
               - MANUAL
               - DATA_CLASSIFICATION
+              - MALWARE_SCAN
             GetAttributeAllowedValuesResponse:
               type: object
               properties:
