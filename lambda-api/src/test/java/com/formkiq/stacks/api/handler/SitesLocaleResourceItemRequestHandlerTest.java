@@ -46,7 +46,7 @@ import com.formkiq.client.model.DeleteResponse;
 import com.formkiq.client.model.GetAttributeAllowedValuesResponse;
 import com.formkiq.client.model.GetLocaleResourceItemResponse;
 import com.formkiq.client.model.GetSitesSchemaResponse;
-import com.formkiq.client.model.Locale;
+import com.formkiq.client.model.LocaleInfo;
 import com.formkiq.client.model.LocaleResourceType;
 import com.formkiq.client.model.ResourceItem;
 import com.formkiq.client.model.SetLocaleResourceItemRequest;
@@ -100,7 +100,8 @@ public class SitesLocaleResourceItemRequestHandlerTest extends AbstractApiClient
       this.systemApi.addLocale(siteId, new AddLocaleRequest().locale(locale));
 
       // then
-      List<Locale> locales = notNull(this.systemApi.getLocales(siteId, null, null).getLocales());
+      List<LocaleInfo> locales =
+          notNull(this.systemApi.getLocales(siteId, null, null).getLocales());
       assertEquals(1, locales.size());
       assertEquals("en", locales.get(0).getLocale());
 
