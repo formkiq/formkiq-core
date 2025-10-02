@@ -4263,7 +4263,7 @@ Resources:
               security:
                 - ApiAuthorization: []
               x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+                $ref: "#/components/x-amazon-apigateway-integrations/antivirusLambdaApi200"
             put:
               operationId: SetMalwareScan
               summary: MalwareScan document scan
