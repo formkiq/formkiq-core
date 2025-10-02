@@ -10840,7 +10840,7 @@ Resources:
               type: "object"
               properties:
                 locale:
-                  $ref: "#/components/schemas/Locale"
+                  $ref: "#/components/schemas/LocaleInfo"
                 insertDocuments:
                   type: "array"
                   description: "List of documents to insert"
@@ -11992,7 +11992,7 @@ Resources:
                 itemKey:
                   type: "string"
                   description: "Item Key of resource"
-            Locale:
+            LocaleInfo:
               type: object
               properties:
                 locale:
@@ -12014,7 +12014,7 @@ Resources:
                   type: "array"
                   description: "List of Locale"
                   items:
-                    $ref: "#/components/schemas/Locale"
+                    $ref: "#/components/schemas/LocaleInfo"
             GetLocaleResourceItemsResponse:
               type: object
               properties:
