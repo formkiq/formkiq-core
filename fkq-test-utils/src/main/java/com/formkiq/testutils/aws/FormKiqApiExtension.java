@@ -194,4 +194,13 @@ public class FormKiqApiExtension
   public void afterAll(final ExtensionContext context) {
     closeServer();
   }
+
+  /**
+   * Get {@link AbstractFormKiqApiResponseCallback}.
+   * 
+   * @return {@link AbstractFormKiqApiResponseCallback}
+   */
+  public AbstractFormKiqApiResponseCallback getCallback() {
+    return this.callback;
+  }
 }
