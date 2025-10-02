@@ -145,6 +145,13 @@ public class IdpAction implements DocumentAction {
                 createDocumentAttribute(siteId, documentId, mappingAttribute, List.of(value)));
           }
         }
+        case MALWARE_SCAN -> {
+          String value = getScanStatus(siteId, documentId);
+          if (!isEmpty(value)) {
+            records.addAll(
+                createDocumentAttribute(siteId, documentId, mappingAttribute, List.of(value)));
+          }
+        }
         default -> throw new IllegalArgumentException("Unsupported source type: " + sourceType);
       }
     }
@@ -155,6 +162,18 @@ public class IdpAction implements DocumentAction {
     }
 
     return new ProcessActionStatus(ActionStatus.COMPLETE);
+  }
+
+  private String getScanStatus(final String siteId, final String documentId) throws IOException {
+    HttpResponse<String> response =
+        this.http.sendRequest(siteId, "get", "/documents/" + documentId + "/malwareScan", "");
+    String body = response.body();
+    MalwareScanResponse data = gson.fromJson(body, MalwareScanResponse.class);
+    if (data == null || notNull(data.malwareScanResults()).isEmpty()) {
+      throw new IllegalArgumentException("No Malware Scans found");
+    }
+
+    return data.malwareScanResults().get(0).scanStatus();
   }
 
   private Map<String, String> createDataClassificationMap(final String siteId,

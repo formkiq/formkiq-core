@@ -205,19 +205,9 @@ public class MappingServiceDynamodb implements MappingService, DbKeys {
 
     if (MappingAttributeSourceType.MANUAL.equals(attribute.getSourceType())) {
 
-      if (isKeysOnlyAttribute(attributes, attribute)) {
+      validateManual(attributes, attribute, index, errors);
 
-        if (!isMissingDefaultValue(attribute)) {
-          errors.add(new ValidationErrorImpl().key("attribute[" + index + "].defaultValue")
-              .error("'defaultValue' or 'defaultValues' cannot be used with KEY_ONLY attribute"));
-        }
-
-      } else if (isMissingDefaultValue(attribute)) {
-        errors.add(new ValidationErrorImpl().key("attribute[" + index + "].defaultValue")
-            .error("'defaultValue' or 'defaultValues' is required"));
-      }
-
-    } else if (!MappingAttributeSourceType.DATA_CLASSIFICATION.equals(attribute.getSourceType())) {
+    } else if (isLabelRequired(attribute.getSourceType())) {
 
       if (attribute.getLabelMatchingType() == null) {
         errors.add(new ValidationErrorImpl().key("attribute[" + index + "].labelMatchingType")
@@ -228,6 +218,27 @@ public class MappingServiceDynamodb implements MappingService, DbKeys {
         errors.add(new ValidationErrorImpl().key("attribute[" + index + "].labelTexts")
             .error("'labelTexts' is required"));
       }
+    }
+  }
+
+  private boolean isLabelRequired(final MappingAttributeSourceType type) {
+    return !MappingAttributeSourceType.DATA_CLASSIFICATION.equals(type)
+        && !MappingAttributeSourceType.MALWARE_SCAN.equals(type);
+  }
+
+  private void validateManual(final Map<String, AttributeRecord> attributes,
+      final MappingAttribute attribute, final int index, final Collection<ValidationError> errors) {
+
+    if (isKeysOnlyAttribute(attributes, attribute)) {
+
+      if (!isMissingDefaultValue(attribute)) {
+        errors.add(new ValidationErrorImpl().key("attribute[" + index + "].defaultValue")
+            .error("'defaultValue' or 'defaultValues' cannot be used with KEY_ONLY attribute"));
+      }
+
+    } else if (isMissingDefaultValue(attribute)) {
+      errors.add(new ValidationErrorImpl().key("attribute[" + index + "].defaultValue")
+          .error("'defaultValue' or 'defaultValues' is required"));
     }
   }
 

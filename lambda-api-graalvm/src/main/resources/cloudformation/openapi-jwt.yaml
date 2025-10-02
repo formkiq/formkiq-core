@@ -97,9 +97,9 @@ Resources:
           - name: userActivities
             description: User Activities API
             x-displayName: User Activities
-          - name: antivirus
-            description: Antivirus API
-            x-displayName: Antivirus
+          - name: malwareScan
+            description: MalwareScan API
+            x-displayName: MalwareScan
           - name: examineObjects
             description: Examine Objects API
             x-displayName: ExamineObjects
@@ -4188,9 +4188,12 @@ Resources:
             put:
               operationId: SetAntivirus
               summary: Antivirus document scan
-              description: Perform an Anti-Malware / Antivirus scan on a document; available as an Add-On Module
+              description: |
+                Perform an Anti-Malware / Antivirus scan on a document; available as an Add-On Module
+                **Deprecated**. This endpoint is no longer recommended.  
+                Please use the **`/documents/{document}/malwareScan`** endpoint instead.
               tags:
-                - Antivirus
+                - MalwareScan
               parameters:
                 - $ref: '#/components/parameters/siteIdParam'
                 - $ref: '#/components/parameters/documentIdParam'
@@ -4214,7 +4217,83 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/SetAntivirusResponse'
+                        $ref: '#/components/schemas/SetResponse'
+              security:
+                - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/antivirusLambdaApi200"
+          /documents/{documentId}/malwareScan:
+            get:
+              operationId: GetMalwareScanResults
+              summary: Get Malware Scan results
+              description: Gets a Malware Scan results; available as an Add-On Module
+              tags:
+                - MalwareScan
+              parameters:
+                - $ref: '#/components/parameters/siteIdParam'
+                - $ref: '#/components/parameters/documentIdParam'
+                - $ref: '#/components/parameters/limitParam'
+              responses:
+                '200':
+                  description: 200 CREATED
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetMalwareScanResponse'
+                '400':
+                  description: 400 BAD REQUEST
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/ErrorsResponse'
+              security:
+                - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+            put:
+              operationId: SetMalwareScan
+              summary: MalwareScan document scan
+              description: |
+                Perform an Anti-Malware / Antivirus scan on a document; available as an Add-On Module
+              tags:
+                - MalwareScan
+              parameters:
+                - $ref: '#/components/parameters/siteIdParam'
+                - $ref: '#/components/parameters/documentIdParam'
+              requestBody:
+                required: false
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/SetMalwareScanRequest'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/SetResponse'
               security:
                 - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -11274,6 +11353,7 @@ Resources:
                 - EVENTBRIDGE
                 - RESIZE
                 - DATA_CLASSIFICATION
+                - MALWARE_SCAN
             DocumentAction:
               type: object
               properties:
@@ -11558,12 +11638,41 @@ Resources:
                     $ref: "#/components/schemas/FulltextAttribute"
             SetAntivirusRequest:
               type: object
-            SetAntivirusResponse:
+            SetMalwareScanRequest:
+              type: object
+            GetMalwareScanResponse:
               type: object
               properties:
-                message:
-                  type: string
-                  description: Antivirus processing message
+                malwareScanResults:
+                  type: array
+                  description: "List of Malware Scan Results"
+                  items:
+                    $ref: "#/components/schemas/MalwareScanResult"
+            MalwareScanResult:
+              type: object
+              properties:
+                scanStatus:
+                  $ref: "#/components/schemas/MalwareScanStatus"
+                scanEngine:
+                  $ref: "#/components/schemas/MalwareEngine"
+                s3version:
+                  type: "string"
+                  description: "Document storage version"
+                scannedDate:
+                  type: "string"
+                  description: "Scanned Timestamp"
+            MalwareEngine:
+              type: string
+              description: Type of Malware Engine used
+              enum:
+                - CLAM_AV
+            MalwareScanStatus:
+              type: string
+              description: Document Malware scan result
+              enum:
+                - MALICIOUS
+                - ERROR
+                - CLEAN
             AddDocumentActionsRequest:
               type: object
               properties:
