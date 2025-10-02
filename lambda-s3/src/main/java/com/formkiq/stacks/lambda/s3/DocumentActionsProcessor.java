@@ -313,9 +313,9 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
       case FULLTEXT -> actionStatus =
           new FullTextAction(serviceCache).run(logger, siteId, documentId, actions, action);
 
-      case ANTIVIRUS -> {
+      case ANTIVIRUS, MALWARE_SCAN -> {
         new SendHttpRequest(serviceCache).sendRequest(siteId, "PUT",
-            "/documents/" + documentId + "/antivirus", "");
+            "/documents/" + documentId + "/malwareScan", "");
         actionStatus = new ProcessActionStatus(ActionStatus.RUNNING);
       }
 
@@ -503,11 +503,13 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
   private Collection<List<Map<String, AttributeValue>>> filterActivities(
       final Collection<List<Map<String, AttributeValue>>> activities) {
 
-    boolean exists = activities.stream().flatMap(List::stream)
-        .anyMatch(av -> "documents".equals(DynamoDbTypes.toString(av.get("resource")))
-            && "DELETE".equals(DynamoDbTypes.toString(av.get("type"))));
+    boolean exists = activities.stream().flatMap(List::stream).anyMatch(av -> {
+      String resource = DynamoDbTypes.toString(av.get("resource"));
+      String type = DynamoDbTypes.toString(av.get("type"));
+      return "documents".equals(resource) && ("CREATE".equals(type) || "DELETE".equals(type));
+    });
 
-    // Join Document Delete activities together
+    // Join Document Create / Delete activities together
     if (exists) {
       return List.of(activities.stream().flatMap(List::stream).toList());
     }

@@ -66,6 +66,15 @@ public enum ActionType {
 
     }
   },
+  /** Malware Scan. */
+  MALWARE_SCAN {
+    @Override
+    public void validate(final DynamoDbService db, final String siteId, final Action action,
+        final Map<String, Object> parameters, final String chatGptApiKey,
+        final String notificationsEmail, final Collection<ValidationError> errors) {
+
+    }
+  },
   /** Document Tagging. */
   DOCUMENTTAGGING {
     @Override
