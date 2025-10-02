@@ -92,6 +92,8 @@ import com.formkiq.stacks.dynamodb.mappings.MappingAttributeSourceType;
 import com.formkiq.stacks.dynamodb.mappings.MappingService;
 import com.formkiq.stacks.dynamodb.mappings.MappingServiceDynamodb;
 import com.formkiq.stacks.lambda.s3.actions.AddOcrAction;
+import com.formkiq.stacks.lambda.s3.actions.MalwareScanResponse;
+import com.formkiq.stacks.lambda.s3.actions.MalwareScanResult;
 import com.formkiq.stacks.lambda.s3.event.AwsEvent;
 import com.formkiq.stacks.lambda.s3.util.FileUtils;
 import com.formkiq.testutils.aws.DynamoDbExtension;
@@ -313,6 +315,13 @@ public class DocumentActionsProcessorTest implements DbKeys {
         .when(request().withMethod("GET")
             .withPath("/documents/" + DOCUMENT_ID_DATACLASSIFICATION + "/dataClassification*"))
         .respond(org.mockserver.model.HttpResponse.response(GSON.toJson(dataClassification)));
+
+    MalwareScanResponse malwareScanResponse =
+        new MalwareScanResponse(List.of(new MalwareScanResult("CLEAN", "", "", "")));
+    mockServer
+        .when(request().withMethod("GET")
+            .withPath("/documents/" + DOCUMENT_ID_DATACLASSIFICATION + "/malwareScan*"))
+        .respond(org.mockserver.model.HttpResponse.response(GSON.toJson(malwareScanResponse)));
 
     addKeyValueOcrMock();
 
@@ -1493,13 +1502,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
         assertNotNull(action.insertedDate());
         assertNotNull(action.completedDate());
 
-        List<DocumentAttributeRecord> results =
-            documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
+        List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, documentId);
         assertEquals(1, results.size());
         assertDocumentAttributeEquals(results.get(0), "invoice", "6200041751", null);
-        // DocumentAttributeRecord record = results.get(0);
-        // assertEquals("invoice", record.getKey());
-        // assertEquals("6200041751", record.getStringValue());
       }
     }
   }
@@ -1537,13 +1542,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
         assertNotNull(action.insertedDate());
         assertNotNull(action.completedDate());
 
-        List<DocumentAttributeRecord> results =
-            documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
+        List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, documentId);
         assertEquals(1, results.size());
         assertDocumentAttributeEquals(results.get(0), "invoice", null, "6.200041751E9");
-        // DocumentAttributeRecord record = results.get(0);
-        // assertEquals("invoice", record.getKey());
-        // assertEquals("6.200041751E9", record.getNumberValue().toString());
       }
     }
   }
@@ -1581,8 +1582,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
         assertNotNull(action.insertedDate());
         assertNotNull(action.completedDate());
 
-        List<DocumentAttributeRecord> results =
-            documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
+        List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, documentId);
         assertEquals(0, results.size());
       }
     }
@@ -1622,13 +1622,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
         assertNotNull(action.insertedDate());
         assertNotNull(action.completedDate());
 
-        List<DocumentAttributeRecord> results =
-            documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
+        List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, documentId);
         assertEquals(1, results.size());
         assertDocumentAttributeEquals(results.get(0), "invoice", "somevalue", null);
-        // DocumentAttributeRecord record = results.get(0);
-        // assertEquals("invoice", record.getKey());
-        // assertEquals("somevalue", record.getStringValue());
       }
     }
   }
@@ -1667,18 +1663,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
         assertNotNull(action.insertedDate());
         assertNotNull(action.completedDate());
 
-        List<DocumentAttributeRecord> results =
-            documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
+        List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, documentId);
         assertEquals(2, results.size());
         assertDocumentAttributeEquals(results.get(0), "invoice", "123", null);
         assertDocumentAttributeEquals(results.get(1), "invoice", "abc", null);
-        // DocumentAttributeRecord record = results.get(0);
-        // assertEquals("invoice", record.getKey());
-        // assertEquals("123", record.getStringValue());
-        //
-        // record = results.get(1);
-        // assertEquals("invoice", record.getKey());
-        // assertEquals("abc", record.getStringValue());
       }
     }
   }
@@ -1716,13 +1704,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
         assertNotNull(action.insertedDate());
         assertNotNull(action.completedDate());
 
-        List<DocumentAttributeRecord> results =
-            documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
+        List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, documentId);
         assertEquals(1, results.size());
         assertDocumentAttributeEquals(results.get(0), "invoice", "6200041751", null);
-        // DocumentAttributeRecord record = results.get(0);
-        // assertEquals("invoice", record.getKey());
-        // assertEquals("6200041751", record.getStringValue());
       }
     }
   }
@@ -1760,13 +1744,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
         assertNotNull(action.insertedDate());
         assertNotNull(action.completedDate());
 
-        List<DocumentAttributeRecord> results =
-            documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
+        List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, documentId);
         assertEquals(1, results.size());
         assertDocumentAttributeEquals(results.get(0), "path", "joe", null);
-        // DocumentAttributeRecord record = results.get(0);
-        // assertEquals("path", record.getKey());
-        // assertEquals("joe", record.getStringValue());
       }
     }
   }
@@ -1811,8 +1791,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
         assertNotNull(action.insertedDate());
         assertNotNull(action.completedDate());
 
-        List<DocumentAttributeRecord> results =
-            documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
+        List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, documentId);
         assertEquals(1, results.size());
         DocumentAttributeRecord record = results.get(0);
         assertEquals("invoice", record.getKey());
@@ -1861,13 +1840,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
         assertNotNull(action.insertedDate());
         assertNotNull(action.completedDate());
 
-        List<DocumentAttributeRecord> results =
-            documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
+        List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, documentId);
         assertEquals(1, results.size());
         assertDocumentAttributeEquals(results.get(0), "certificate_number", "100232", null);
-        // DocumentAttributeRecord record = results.get(0);
-        // assertEquals("certificate_number", record.getKey());
-        // assertEquals("100232", record.getStringValue());
       }
     }
   }
@@ -1905,13 +1880,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
         assertNotNull(action.insertedDate());
         assertNotNull(action.completedDate());
 
-        List<DocumentAttributeRecord> results =
-            documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
+        List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, documentId);
         assertEquals(1, results.size());
         assertDocumentAttributeEquals(results.get(0), "certificate_number", "28937423", null);
-        // DocumentAttributeRecord record = results.get(0);
-        // assertEquals("certificate_number", record.getKey());
-        // assertEquals("28937423", record.getStringValue());
       }
     }
   }
@@ -1947,8 +1918,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertNotNull(action.insertedDate());
       assertNotNull(action.completedDate());
 
-      List<DocumentAttributeRecord> results =
-          documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
+      List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, documentId);
       assertEquals(1, results.size());
       assertDocumentAttributeEquals(results.get(0), "certificate_number", "54", null);
     }
@@ -1985,8 +1955,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertNotNull(action.insertedDate());
       assertNotNull(action.completedDate());
 
-      List<DocumentAttributeRecord> results =
-          documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
+      List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, documentId);
       assertEquals(0, results.size());
     }
   }
@@ -2021,8 +1990,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertNotNull(action.insertedDate());
       assertNotNull(action.completedDate());
 
-      List<DocumentAttributeRecord> results =
-          documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
+      List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, documentId);
 
       final int expected = 3;
       assertEquals(expected, results.size());
@@ -2031,17 +1999,6 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertDocumentAttributeEquals(results.get(i++), "certificate_number", "111", null);
       assertDocumentAttributeEquals(results.get(i++), "certificate_number", "123", null);
       assertDocumentAttributeEquals(results.get(i), "certificate_number", "222", null);
-      // DocumentAttributeRecord record = results.get(i++);
-      // assertEquals("certificate_number", record.getKey());
-      // assertEquals("111", record.getStringValue());
-
-      // record = results.get(i++);
-      // assertEquals("certificate_number", record.getKey());
-      // assertEquals("123", record.getStringValue());
-      //
-      // record = results.get(i);
-      // assertEquals("certificate_number", record.getKey());
-      // assertEquals("222", record.getStringValue());
     }
   }
 
@@ -2075,12 +2032,89 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertNotNull(action.insertedDate());
       assertNotNull(action.completedDate());
 
-      List<DocumentAttributeRecord> results =
-          documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
+      List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, documentId);
 
       assertEquals(1, results.size());
       assertDocumentAttributeEquals(results.get(0), "certificate_number", null, null);
     }
+  }
+
+  /**
+   * Handle Idp with Mapping Action application/pdf and SourceType MALWARE_SCAN.
+   *
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testIdpMalwareScan() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+
+      attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "malwareStatus",
+          AttributeDataType.STRING, null);
+
+      String documentId = DOCUMENT_ID_DATACLASSIFICATION;
+      Mapping mapping = createMapping("malwareStatus", null, null,
+          MappingAttributeSourceType.MALWARE_SCAN, null, null, null);
+
+      MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
+
+      processIdpRequest(siteId, documentId, "application/pdf", mappingRecord);
+
+      // then
+      Action action = actionsService.getActions(siteId, documentId).get(0);
+      assertNull(action.message());
+      assertEquals(ActionStatus.COMPLETE, action.status());
+      assertEquals(ActionType.IDP, action.type());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertNotNull(action.completedDate());
+
+      List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, documentId);
+
+      assertEquals(1, results.size());
+      assertDocumentAttributeEquals(results.get(0), "malwareStatus", "CLEAN", null);
+    }
+  }
+
+  /**
+   * Handle Idp SourceType MALWARE_SCAN and missing scan results.
+   *
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testIdpMalwareScanMissingResponse() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "malwareStatus",
+          AttributeDataType.STRING, null);
+
+      String documentId = ID.uuid();
+      Mapping mapping = createMapping("malwareStatus", null, null,
+          MappingAttributeSourceType.MALWARE_SCAN, null, null, null);
+
+      MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
+
+      processIdpRequest(siteId, documentId, "application/pdf", mappingRecord);
+
+      // then
+      Action action = actionsService.getActions(siteId, documentId).get(0);
+      assertEquals("No Malware Scans found", action.message());
+      assertEquals(ActionStatus.FAILED, action.status());
+      assertEquals(ActionType.IDP, action.type());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertNotNull(action.completedDate());
+
+      List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, documentId);
+
+      assertEquals(0, results.size());
+    }
+  }
+
+  private static List<DocumentAttributeRecord> findDocumentAttributes(final String siteId,
+      final String documentId) {
+    return notNull(
+        documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults());
   }
 
   private void assertDocumentAttributeEquals(final DocumentAttributeRecord record, final String key,
@@ -2121,8 +2155,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertNotNull(action.insertedDate());
       assertNotNull(action.completedDate());
 
-      List<DocumentAttributeRecord> results =
-          documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
+      List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, documentId);
       assertEquals(0, results.size());
     }
   }
@@ -2157,8 +2190,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertNotNull(action.insertedDate());
       assertNotNull(action.completedDate());
 
-      List<DocumentAttributeRecord> results =
-          documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
+      List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, documentId);
       assertEquals(1, results.size());
       assertDocumentAttributeEquals(results.get(0), "certificate_number", "12", null);
     }
@@ -2194,8 +2226,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertNotNull(action.insertedDate());
       assertNotNull(action.completedDate());
 
-      List<DocumentAttributeRecord> results =
-          documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults();
+      List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, documentId);
       assertEquals(0, results.size());
     }
   }
@@ -2753,23 +2784,25 @@ public class DocumentActionsProcessorTest implements DbKeys {
    */
   @Test
   public void testHandleAntiVirus() throws ValidationException {
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-      // given
-      String documentId = createDocument2(siteId, "application/pdf");
+    for (ActionType type : List.of(ActionType.ANTIVIRUS, ActionType.MALWARE_SCAN)) {
+      for (String siteId : Arrays.asList(null, ID.uuid())) {
+        // given
+        String documentId = createDocument2(siteId, "application/pdf");
 
-      List<Action> actions = List.of(new Action().type(ActionType.ANTIVIRUS).userId("joe"));
-      actionsService.saveNewActions(siteId, documentId, actions);
+        List<Action> actions = List.of(new Action().type(type).userId("joe"));
+        actionsService.saveNewActions(siteId, documentId, actions);
 
-      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+        AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
-      // when
-      processor.handleRequest(map, null);
+        // when
+        processor.handleRequest(map, null);
 
-      // then
-      List<Action> list = actionsService.getActions(siteId, documentId);
-      assertEquals(1, list.size());
-      assertEquals(ActionType.ANTIVIRUS, list.get(0).type());
-      assertEquals(ActionStatus.RUNNING, list.get(0).status());
+        // then
+        List<Action> list = actionsService.getActions(siteId, documentId);
+        assertEquals(1, list.size());
+        assertEquals(type, list.get(0).type());
+        assertEquals(ActionStatus.RUNNING, list.get(0).status());
+      }
     }
   }
 
