@@ -21,27 +21,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.services.lambda;
+package com.formkiq.testutils.api;
 
-import com.formkiq.aws.dynamodb.ApiAuthorization;
-import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.client.invoker.ApiException;
 
-import java.util.Optional;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-/** {@link ApiGatewayRequestHandler} for Admin permissions. */
-public abstract class AbstractAdminRequestHandler implements ApiGatewayRequestHandler {
+/**
+ * Api Asserts Helper.
+ */
+public interface ApiAsserts {
 
   /**
-   * constructor.
-   *
+   * Assert {@link ApiException}.
+   * 
+   * @param ex {@link ApiException}
+   * @param status int
+   * @param errorMessage {@link String}
    */
-  public AbstractAdminRequestHandler() {}
-
-  @Override
-  public Optional<Boolean> isAuthorized(final AwsServiceCache awsservice, final String method,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
-    String siteId = authorization.getSiteId();
-    boolean access = authorization.isAdminOrGovern(siteId);
-    return Optional.of(access);
+  default void assertApiException(final ApiException ex, final int status,
+      final String errorMessage) {
+    assertEquals(status, ex.getCode());
+    assertEquals(errorMessage, ex.getResponseBody());
   }
 }

@@ -40,6 +40,8 @@ public enum AttributeKeyReserved {
   RELATIONSHIPS("Relationships"),
   /** Checkout. */
   CHECKOUT("Checkout"),
+  /** CheckoutForLegalHold. */
+  CHECKOUT_FOR_LEGAL_HOLD("CheckoutForLegalHold"),
   /** Checkout. */
   LOCKED_BY("LockedBy"),
   /** Checkout. */
