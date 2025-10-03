@@ -31,6 +31,7 @@ import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddEntityType;
 import com.formkiq.client.model.AddEntityTypeRequest;
 import com.formkiq.client.model.AddEntityTypeResponse;
+import com.formkiq.client.model.Attribute;
 import com.formkiq.client.model.DeleteResponse;
 import com.formkiq.client.model.EntityType;
 import com.formkiq.client.model.EntityTypeNamespace;
@@ -122,10 +123,9 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
       } catch (ApiException e) {
         // then
         assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
-        assertEquals(
-            "{\"errors\":[{\"key\":\"name\","
-                + "\"error\":\"unexpected value must be one of 'LlmPrompt, Checkout'\"}]}",
-            e.getResponseBody());
+        assertEquals("{\"errors\":[{\"key\":\"name\","
+            + "\"error\":\"unexpected value must be one of 'LlmPrompt, Checkout, "
+            + "CheckoutForLegalHold'\"}]}", e.getResponseBody());
       }
     }
   }
@@ -428,7 +428,9 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
             this.entityApi.getEntityTypes(siteId, "preset", null, null);
         List<EntityType> entityTypes = notNull(results.getEntityTypes());
         assertTrue(entityTypes.size() <= PresetEntity.values().length);
-        EntityType entityType = entityTypes.get(0);
+        EntityType entityType = entityTypes.stream()
+            .filter(a -> value.getName().equals(a.getName())).findAny().orElse(null);
+        assertNotNull(entityType);
         assertEntityTypeEquals(siteId, entityType, value.getName(), EntityTypeNamespace.PRESET,
             value);
 
@@ -466,10 +468,9 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
       } catch (ApiException e) {
         // then
         assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
-        assertEquals(
-            "{\"errors\":[{\"key\":\"name\","
-                + "\"error\":\"unexpected value must be one of 'LlmPrompt, Checkout'\"}]}",
-            e.getResponseBody());
+        assertEquals("{\"errors\":[{\"key\":\"name\","
+            + "\"error\":\"unexpected value must be one of 'LlmPrompt, Checkout, "
+            + "CheckoutForLegalHold'\"}]}", e.getResponseBody());
       }
     }
   }
@@ -490,11 +491,9 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
       assertNotNull(presetEntity);
       List<String> attributes = notNull(
           new GetAttributeRequestBuilder().submit(client, siteId).response().getAttributes())
-          .stream().map(s -> s.getKey()).toList();
+          .stream().map(Attribute::getKey).toList();
 
-      presetEntity.getAttributeKeys().forEach(attr -> {
-        assertTrue(attributes.contains(attr));
-      });
+      presetEntity.getAttributeKeys().forEach(attr -> assertTrue(attributes.contains(attr)));
     }
   }
 }

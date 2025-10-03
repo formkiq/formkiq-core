@@ -36,6 +36,8 @@ import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectTaggingRequest;
 import software.amazon.awssdk.services.s3.model.GetBucketNotificationConfigurationRequest;
 import software.amazon.awssdk.services.s3.model.GetBucketNotificationConfigurationResponse;
+import software.amazon.awssdk.services.s3.model.GetObjectLegalHoldRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectLegalHoldResponse;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.GetObjectTaggingRequest;
@@ -51,8 +53,11 @@ import software.amazon.awssdk.services.s3.model.ListObjectsResponse;
 import software.amazon.awssdk.services.s3.model.MetadataDirective;
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
+import software.amazon.awssdk.services.s3.model.ObjectLockLegalHold;
+import software.amazon.awssdk.services.s3.model.ObjectLockLegalHoldStatus;
 import software.amazon.awssdk.services.s3.model.ObjectVersion;
 import software.amazon.awssdk.services.s3.model.PutBucketVersioningRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectLegalHoldRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectTaggingRequest;
@@ -181,7 +186,18 @@ public class S3Service {
    * @param bucket {@link String}
    */
   public void createBucket(final String bucket) {
-    this.s3Client.createBucket(CreateBucketRequest.builder().bucket(bucket).build());
+    createBucket(bucket, false);
+  }
+
+  /**
+   * Create S3 Bucket.
+   *
+   * @param bucket {@link String}
+   * @param enableObjectLock boolean
+   */
+  public void createBucket(final String bucket, final boolean enableObjectLock) {
+    this.s3Client.createBucket(CreateBucketRequest.builder().bucket(bucket)
+        .objectLockEnabledForBucket(enableObjectLock).build());
     this.s3Client.putBucketVersioning(PutBucketVersioningRequest.builder().bucket(bucket)
         .versioningConfiguration(
             VersioningConfiguration.builder().status(BucketVersioningStatus.ENABLED).build())
@@ -558,5 +574,40 @@ public class S3Service {
     PutObjectTaggingRequest req =
         PutObjectTaggingRequest.builder().bucket(bucket).key(key).tagging(tagging).build();
     this.s3Client.putObjectTagging(req);
+  }
+
+  /**
+   * Set Object Lock.
+   * 
+   * @param bucket {@link String}
+   * @param key {@link String}
+   * @param versionId {@link String}
+   * @param lockOn boolean
+   */
+  public void setObjectLock(final String bucket, final String key, final String versionId,
+      final boolean lockOn) {
+    ObjectLockLegalHold hold = ObjectLockLegalHold.builder()
+        .status(lockOn ? ObjectLockLegalHoldStatus.ON : ObjectLockLegalHoldStatus.OFF).build();
+    PutObjectLegalHoldRequest req = PutObjectLegalHoldRequest.builder().bucket(bucket).key(key)
+        .versionId(versionId).legalHold(hold).build();
+
+    this.s3Client.putObjectLegalHold(req);
+  }
+
+  /**
+   * Check if a specific S3 object version has Object Lock (retention or legal hold).
+   *
+   * @param bucket Bucket name
+   * @param s3Key Object key
+   * @param versionId Object version ID (required)
+   * @return true if the object has a lock (retention or legal hold ON)
+   */
+  public boolean isObjectLock(final String bucket, final String s3Key, final String versionId) {
+    GetObjectLegalHoldRequest getHoldReq =
+        GetObjectLegalHoldRequest.builder().bucket(bucket).key(s3Key).versionId(versionId).build();
+
+    GetObjectLegalHoldResponse holdResp = this.s3Client.getObjectLegalHold(getHoldReq);
+    return holdResp.legalHold() != null
+        && holdResp.legalHold().status() == ObjectLockLegalHoldStatus.ON;
   }
 }

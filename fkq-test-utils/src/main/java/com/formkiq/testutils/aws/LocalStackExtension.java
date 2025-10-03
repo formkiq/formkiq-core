@@ -113,7 +113,7 @@ public class LocalStackExtension
   private void createS3Buckets(final S3Service s3service) {
 
     if (!s3service.exists(BUCKET_NAME)) {
-      s3service.createBucket(BUCKET_NAME);
+      s3service.createBucket(BUCKET_NAME, true);
     }
 
     if (!s3service.exists(STAGE_BUCKET_NAME)) {

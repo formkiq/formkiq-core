@@ -48,7 +48,7 @@ import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 public class DocumentAttributeRecord implements DynamodbRecord<DocumentAttributeRecord>, DbKeys {
 
   /** Attribute constant. */
-  private static final String ATTR = "attr#";
+  public static final String ATTR = "attr#";
   /** {@link SimpleDateFormat}. */
   private final SimpleDateFormat df = DateUtil.getIsoDateFormatter();
   /** Boolean value. */
