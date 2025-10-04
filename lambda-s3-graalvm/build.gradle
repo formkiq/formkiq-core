@@ -59,6 +59,7 @@ def graalvmZip = layout.buildDirectory.file('graalvm.zip')
 
 tasks.register('dockerBuild', Exec) {
   description = 'Builds amazonlinux-graalvm:latest'
+  dependsOn(tasks.named('jar'))
   workingDir = layout.projectDirectory.asFile
   commandLine 'docker', 'build', '-t', 'amazonlinux-graalvm:latest', '.'
 }
@@ -104,7 +105,6 @@ tasks.register('unzipFile', Copy) {
   into(layout.buildDirectory.dir("graalvm"))
 }
 
-buildDockerAndCopyServer.dependsOn test, jar
 unzipFile.dependsOn buildDockerAndCopyServer
 buildZip.dependsOn unzipFile
 distZip.dependsOn buildZip
