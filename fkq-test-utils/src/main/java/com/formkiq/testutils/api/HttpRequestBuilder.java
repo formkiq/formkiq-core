@@ -26,7 +26,18 @@ package com.formkiq.testutils.api;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
 
+import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
+
+/**
+ * Generic Http Request Builder.
+ * 
+ * @param <T> Type of response object
+ */
 public interface HttpRequestBuilder<T> {
+
+  /** Max number of reties. */
+  int MAX_RETRIES = 5;
 
   /**
    * Run the API request.
@@ -36,6 +47,30 @@ public interface HttpRequestBuilder<T> {
    * @return ApiHttpResponse
    */
   ApiHttpResponse<T> submit(ApiClient apiClient, String siteId);
+
+  /**
+   * Polls {@link #submit(ApiClient, String)} until {@code isDone} is true, or attempts are
+   * exhausted.
+   * 
+   * @param apiClient {@link ApiClient}
+   * @param siteId {@link String}
+   * @param isDone {@link Predicate}
+   * @return the last response (which may or may not satisfy the condition).
+   */
+  default ApiHttpResponse<T> submitUntil(ApiClient apiClient, String siteId,
+      Predicate<ApiHttpResponse<T>> isDone) throws InterruptedException {
+    ApiHttpResponse<T> last;
+
+    for (int attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      last = submit(apiClient, siteId);
+      if (isDone.test(last)) {
+        return last;
+      }
+      TimeUnit.SECONDS.sleep(1);
+    }
+
+    throw new RuntimeException("Reached maximum number of retries");
+  }
 
   default ApiHttpResponse<T> executeApiCall(ApiCallable<T> callable) {
     T response = null;
