@@ -54,7 +54,7 @@ apply plugin: 'distribution'
 
 tasks.register("downloadAwsCognito", Download) {
   src "https://github.com/formkiq/aws-cognito/releases/download/v${awsCognitoVersion}/aws-cognito-v${awsCognitoVersion}.zip"
-  dest(layout.buildDirectory.dir("aws-cognito.zip"))
+  dest(layout.buildDirectory.file("aws-cognito-v${awsCognitoVersion}.zip").get().asFile)
   overwrite false
 }
 
@@ -67,7 +67,7 @@ tasks.register("downloadAwsCognito", Download) {
 
 tasks.register("unzipAwsCognito", Copy) {
   dependsOn downloadAwsCognito
-  from({ zipTree(layout.buildDirectory.file("aws-cognito.zip").get().asFile) })
+  from({ zipTree(layout.buildDirectory.file("aws-cognito-v${awsCognitoVersion}.zip").get().asFile) })
   into(layout.buildDirectory.dir("modules/cognito"))
 }
 
