@@ -137,16 +137,6 @@ public class DocumentItemDynamoDb implements DocumentItem {
   }
 
   @Override
-  public String getWidth() {
-    return this.width;
-  }
-
-  @Override
-  public String getHeight() {
-    return this.height;
-  }
-
-  @Override
   public String getDocumentId() {
     return this.documentId;
   }
@@ -154,6 +144,11 @@ public class DocumentItemDynamoDb implements DocumentItem {
   @Override
   public List<DocumentItem> getDocuments() {
     return this.documents;
+  }
+
+  @Override
+  public String getHeight() {
+    return this.height;
   }
 
   @Override
@@ -197,6 +192,11 @@ public class DocumentItemDynamoDb implements DocumentItem {
   }
 
   @Override
+  public String getWidth() {
+    return this.width;
+  }
+
+  @Override
   public void setBelongsToDocumentId(final String id) {
     this.belongsToDocumentId = id;
   }
@@ -227,16 +227,6 @@ public class DocumentItemDynamoDb implements DocumentItem {
   }
 
   @Override
-  public void setWidth(final String documentWidth) {
-    this.width = documentWidth;
-  }
-
-  @Override
-  public void setHeight(final String documentHeight) {
-    this.height = documentHeight;
-  }
-
-  @Override
   public void setDocumentId(final String id) {
     this.documentId = id;
   }
@@ -244,6 +234,11 @@ public class DocumentItemDynamoDb implements DocumentItem {
   @Override
   public void setDocuments(final List<DocumentItem> objects) {
     this.documents = objects;
+  }
+
+  @Override
+  public void setHeight(final String documentHeight) {
+    this.height = documentHeight;
   }
 
   @Override
@@ -284,6 +279,11 @@ public class DocumentItemDynamoDb implements DocumentItem {
   @Override
   public void setVersion(final String documentVersion) {
     this.version = documentVersion;
+  }
+
+  @Override
+  public void setWidth(final String documentWidth) {
+    this.width = documentWidth;
   }
 
   @Override

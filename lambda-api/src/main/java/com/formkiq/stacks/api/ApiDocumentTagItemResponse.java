@@ -57,86 +57,13 @@ public class ApiDocumentTagItemResponse implements ApiResponse {
   /** constructor. */
   public ApiDocumentTagItemResponse() {}
 
-  @Override
-  public String getNext() {
-    return null;
-  }
-
-  @Override
-  public String getPrevious() {
-    return null;
-  }
-
   /**
-   * Get Key.
+   * Get Document Id.
    * 
    * @return {@link String}
    */
-  public String getKey() {
-    return this.key;
-  }
-
-  /**
-   * Set Key.
-   * 
-   * @param tagkey {@link String}
-   */
-  public void setKey(final String tagkey) {
-    this.key = tagkey;
-  }
-
-  /**
-   * Get Value.
-   * 
-   * @return {@link String}
-   */
-  public String getValue() {
-    return this.value;
-  }
-
-  /**
-   * Set Value.
-   * 
-   * @param s {@link String}
-   */
-  public void setValue(final String s) {
-    this.value = s;
-  }
-
-  /**
-   * Get Values.
-   * 
-   * @return {@link List} {@link String}
-   */
-  public List<String> getValues() {
-    return this.values;
-  }
-
-  /**
-   * Set Values.
-   * 
-   * @param list {@link List} {@link String}
-   */
-  public void setValues(final List<String> list) {
-    this.values = list;
-  }
-
-  /**
-   * Get UserId.
-   * 
-   * @return {@link String}
-   */
-  public String getUserId() {
-    return this.userId;
-  }
-
-  /**
-   * Set User Id.
-   *
-   * @param user {@link String}
-   */
-  public void setUserId(final String user) {
-    this.userId = user;
+  public String getDocumentId() {
+    return this.documentId;
   }
 
   /**
@@ -149,12 +76,22 @@ public class ApiDocumentTagItemResponse implements ApiResponse {
   }
 
   /**
-   * Set Inserted Date.
-   *
-   * @param date {@link Date}
+   * Get Key.
+   * 
+   * @return {@link String}
    */
-  public void setInsertedDate(final Date date) {
-    this.insertedDate = date != null ? (Date) date.clone() : null;
+  public String getKey() {
+    return this.key;
+  }
+
+  @Override
+  public String getNext() {
+    return null;
+  }
+
+  @Override
+  public String getPrevious() {
+    return null;
   }
 
   /**
@@ -167,21 +104,30 @@ public class ApiDocumentTagItemResponse implements ApiResponse {
   }
 
   /**
-   * Set Tag Type.
-   * 
-   * @param tagtype {@link String}
-   */
-  public void setType(final String tagtype) {
-    this.type = tagtype;
-  }
-
-  /**
-   * Get Document Id.
+   * Get UserId.
    * 
    * @return {@link String}
    */
-  public String getDocumentId() {
-    return this.documentId;
+  public String getUserId() {
+    return this.userId;
+  }
+
+  /**
+   * Get Value.
+   * 
+   * @return {@link String}
+   */
+  public String getValue() {
+    return this.value;
+  }
+
+  /**
+   * Get Values.
+   * 
+   * @return {@link List} {@link String}
+   */
+  public List<String> getValues() {
+    return this.values;
   }
 
   /**
@@ -191,5 +137,59 @@ public class ApiDocumentTagItemResponse implements ApiResponse {
    */
   public void setDocumentId(final String id) {
     this.documentId = id;
+  }
+
+  /**
+   * Set Inserted Date.
+   *
+   * @param date {@link Date}
+   */
+  public void setInsertedDate(final Date date) {
+    this.insertedDate = date != null ? (Date) date.clone() : null;
+  }
+
+  /**
+   * Set Key.
+   * 
+   * @param tagkey {@link String}
+   */
+  public void setKey(final String tagkey) {
+    this.key = tagkey;
+  }
+
+  /**
+   * Set Tag Type.
+   * 
+   * @param tagtype {@link String}
+   */
+  public void setType(final String tagtype) {
+    this.type = tagtype;
+  }
+
+  /**
+   * Set User Id.
+   *
+   * @param user {@link String}
+   */
+  public void setUserId(final String user) {
+    this.userId = user;
+  }
+
+  /**
+   * Set Value.
+   * 
+   * @param s {@link String}
+   */
+  public void setValue(final String s) {
+    this.value = s;
+  }
+
+  /**
+   * Set Values.
+   * 
+   * @param list {@link List} {@link String}
+   */
+  public void setValues(final List<String> list) {
+    this.values = list;
   }
 }

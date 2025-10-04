@@ -73,6 +73,18 @@ public class UsersRequestHandler implements ApiGatewayRequestHandler, ApiGateway
   }
 
   @Override
+  public String getRequestUrl() {
+    return URL;
+  }
+
+  @Override
+  public Optional<Boolean> isAuthorized(final AwsServiceCache awsServiceCache, final String method,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
+    boolean access = authorization.getPermissions().contains(ApiPermission.ADMIN);
+    return Optional.of(access);
+  }
+
+  @Override
   public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
@@ -91,17 +103,5 @@ public class UsersRequestHandler implements ApiGatewayRequestHandler, ApiGateway
 
     return ApiRequestHandlerResponse.builder().created()
         .body("message", "user '" + username + "' has been created").build();
-  }
-
-  @Override
-  public String getRequestUrl() {
-    return URL;
-  }
-
-  @Override
-  public Optional<Boolean> isAuthorized(final AwsServiceCache awsServiceCache, final String method,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
-    boolean access = authorization.getPermissions().contains(ApiPermission.ADMIN);
-    return Optional.of(access);
   }
 }

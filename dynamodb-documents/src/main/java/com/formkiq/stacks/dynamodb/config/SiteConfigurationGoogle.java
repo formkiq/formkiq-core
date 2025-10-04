@@ -50,6 +50,15 @@ public class SiteConfigurationGoogle {
   }
 
   /**
+   * Get WorkloadIdentityServiceAccount.
+   * 
+   * @return String
+   */
+  public String getWorkloadIdentityServiceAccount() {
+    return this.workloadIdentityServiceAccount;
+  }
+
+  /**
    * Set WorkloadIdentityAudience.
    *
    * @param identityAudience {@link String}
@@ -58,15 +67,6 @@ public class SiteConfigurationGoogle {
   public SiteConfigurationGoogle setWorkloadIdentityAudience(final String identityAudience) {
     this.workloadIdentityAudience = identityAudience;
     return this;
-  }
-
-  /**
-   * Get WorkloadIdentityServiceAccount.
-   * 
-   * @return String
-   */
-  public String getWorkloadIdentityServiceAccount() {
-    return this.workloadIdentityServiceAccount;
   }
 
   /**

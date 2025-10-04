@@ -35,13 +35,13 @@ public class DocumentsOptionsRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
   @Override
-  public ApiRequestHandlerResponse options(final ApiGatewayRequestEvent event,
-      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
-    return ApiRequestHandlerResponse.builder().ok().build();
+  public String getRequestUrl() {
+    return null;
   }
 
   @Override
-  public String getRequestUrl() {
-    return null;
+  public ApiRequestHandlerResponse options(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
+    return ApiRequestHandlerResponse.builder().ok().build();
   }
 }

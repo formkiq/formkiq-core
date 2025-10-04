@@ -67,48 +67,6 @@ public class FkqAttributeService {
   }
 
   /**
-   * Add Attribute.
-   *
-   * @param client {@link ApiClient}
-   * @param siteId {@link String}
-   * @param attributeKey {@link String}
-   * @return Attribute
-   * @throws ApiException ApiException
-   */
-  public static Attribute getAttribute(final ApiClient client, final String siteId,
-      final String attributeKey) throws ApiException {
-    AttributesApi attributesApi = new AttributesApi(client);
-    return attributesApi.getAttribute(attributeKey, siteId).getAttribute();
-  }
-
-  /**
-   * Create String {@link AddDocumentAttribute}.
-   * 
-   * @param key {@link String}
-   * @param stringValue {@link String}
-   * @return {@link AddDocumentAttribute}
-   */
-  public static AddDocumentAttribute createStringAttribute(final String key,
-      final String stringValue) {
-    return new AddDocumentAttribute(
-        new AddDocumentAttributeStandard().key(key).stringValue(stringValue));
-  }
-
-  /**
-   * Create Strings {@link AddDocumentAttribute}.
-   * 
-   * @param key {@link String}
-   * @param stringValues {@link List} {@link String}
-   * @return {@link AddDocumentAttribute}
-   */
-  public static AddDocumentAttribute createStringsAttribute(final String key,
-      final List<String> stringValues) {
-    return new AddDocumentAttribute(
-        new AddDocumentAttributeStandard().key(key).stringValues(stringValues));
-  }
-
-
-  /**
    * Create Number {@link AddDocumentAttribute}.
    * 
    * @param key {@link String}
@@ -132,5 +90,47 @@ public class FkqAttributeService {
       final List<BigDecimal> numberValues) {
     return new AddDocumentAttribute(
         new AddDocumentAttributeStandard().key(key).numberValues(numberValues));
+  }
+
+  /**
+   * Create String {@link AddDocumentAttribute}.
+   * 
+   * @param key {@link String}
+   * @param stringValue {@link String}
+   * @return {@link AddDocumentAttribute}
+   */
+  public static AddDocumentAttribute createStringAttribute(final String key,
+      final String stringValue) {
+    return new AddDocumentAttribute(
+        new AddDocumentAttributeStandard().key(key).stringValue(stringValue));
+  }
+
+
+  /**
+   * Create Strings {@link AddDocumentAttribute}.
+   * 
+   * @param key {@link String}
+   * @param stringValues {@link List} {@link String}
+   * @return {@link AddDocumentAttribute}
+   */
+  public static AddDocumentAttribute createStringsAttribute(final String key,
+      final List<String> stringValues) {
+    return new AddDocumentAttribute(
+        new AddDocumentAttributeStandard().key(key).stringValues(stringValues));
+  }
+
+  /**
+   * Add Attribute.
+   *
+   * @param client {@link ApiClient}
+   * @param siteId {@link String}
+   * @param attributeKey {@link String}
+   * @return Attribute
+   * @throws ApiException ApiException
+   */
+  public static Attribute getAttribute(final ApiClient client, final String siteId,
+      final String attributeKey) throws ApiException {
+    AttributesApi attributesApi = new AttributesApi(client);
+    return attributesApi.getAttribute(attributeKey, siteId).getAttribute();
   }
 }

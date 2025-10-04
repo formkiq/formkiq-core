@@ -147,9 +147,9 @@ task assembleOpenApiTemplate {
   }
 }
 
-graalvmNativeImage.dependsOn(downloadOpenApiGenerator)
-buildTemplate.dependsOn(graalvmNativeImage)
-distZip.dependsOn buildTemplate, assembleOpenApiTemplate, graalvmNativeImage
+//graalvmNativeImage.dependsOn(downloadOpenApiGenerator)
+//buildTemplate.dependsOn(graalvmNativeImage)
+//distZip.dependsOn buildTemplate, assembleOpenApiTemplate, graalvmNativeImage
 
 tasks.distTar.enabled = false
 

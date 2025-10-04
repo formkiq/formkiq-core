@@ -73,48 +73,6 @@ public class DocumentExternalSystemExport implements BiFunction<String, String, 
     this.s3Presigner = serviceCache.getExtension(S3PresignerService.class);
   }
 
-  @Override
-  public String apply(final String siteId, final String documentId) {
-    return apply(siteId, documentId, null);
-  }
-
-  /**
-   * Convert {@link DocumentItem} to JSON.
-   * 
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param activities {@link Collection}
-   * @return {@link String}
-   */
-  public String apply(final String siteId, final String documentId,
-      final Collection<Map<String, Object>> activities) {
-
-    DocumentItem result = this.documentService.findDocument(siteId, documentId);
-    if (result == null) {
-      result = new DynamicDocumentItem(Map.of("documentId", documentId));
-    }
-
-    DynamicDocumentItem item = new DocumentItemToDynamicDocumentItem().apply(result);
-
-    String site = siteId != null ? siteId : SiteIdKeyGenerator.DEFAULT_SITE_ID;
-    item.put("siteId", site);
-
-    URL s3Url = getS3Url(siteId, documentId, item);
-    item.put("url", s3Url);
-
-    Collection<Map<String, Object>> attributes = addDocumentAttributes(siteId, documentId);
-    if (!attributes.isEmpty()) {
-      item.put("attributes", attributes);
-    }
-
-    addChanged(activities, item);
-    addChangedAttributes(activities, item);
-
-    addDocumentTags(siteId, documentId, item);
-
-    return this.gson.toJson(Map.of("document", item));
-  }
-
   private void addChanged(final Collection<Map<String, Object>> activities,
       final DynamicDocumentItem item) {
     if (!notNull(activities).isEmpty()) {
@@ -221,6 +179,48 @@ public class DocumentExternalSystemExport implements BiFunction<String, String, 
 
     String timestamp = values.getOrDefault("CLAMAV_SCAN_TIMESTAMP", null);
     item.put("timestamp", timestamp);
+  }
+
+  @Override
+  public String apply(final String siteId, final String documentId) {
+    return apply(siteId, documentId, null);
+  }
+
+  /**
+   * Convert {@link DocumentItem} to JSON.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param activities {@link Collection}
+   * @return {@link String}
+   */
+  public String apply(final String siteId, final String documentId,
+      final Collection<Map<String, Object>> activities) {
+
+    DocumentItem result = this.documentService.findDocument(siteId, documentId);
+    if (result == null) {
+      result = new DynamicDocumentItem(Map.of("documentId", documentId));
+    }
+
+    DynamicDocumentItem item = new DocumentItemToDynamicDocumentItem().apply(result);
+
+    String site = siteId != null ? siteId : SiteIdKeyGenerator.DEFAULT_SITE_ID;
+    item.put("siteId", site);
+
+    URL s3Url = getS3Url(siteId, documentId, item);
+    item.put("url", s3Url);
+
+    Collection<Map<String, Object>> attributes = addDocumentAttributes(siteId, documentId);
+    if (!attributes.isEmpty()) {
+      item.put("attributes", attributes);
+    }
+
+    addChanged(activities, item);
+    addChangedAttributes(activities, item);
+
+    addDocumentTags(siteId, documentId, item);
+
+    return this.gson.toJson(Map.of("document", item));
   }
 
   /**

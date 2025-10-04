@@ -162,40 +162,34 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
     return valid;
   }
 
-  private boolean isValidOcrConfiguration(final ConfigService configService, final String siteId,
-      final OcrRequest request) {
-    boolean invalid = false;
+  /**
+   * OCR Convert Document.
+   *
+   * @param awsservice {@link AwsServiceCache}
+   * @param request {@link OcrRequest}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param s3key original s3 key
+   * @param documentS3toConvert Document S3 Key to convert.
+   * @param contentType {@link String}
+   * @return {@link String}
+   */
+  protected String convertDocument(final AwsServiceCache awsservice, final OcrRequest request,
+      final String siteId, final String documentId, final String s3key,
+      final String documentS3toConvert, final String contentType) {
 
-    SiteConfiguration config = configService.get(siteId);
-    SiteConfigurationOcr ocr = config.getOcr();
+    String jobId = ID.uuid();
 
-    if (ocr != null) {
+    OcrSqsMessage msg = new OcrSqsMessage().jobId(jobId).siteId(siteId).documentId(documentId)
+        .contentType(contentType).request(request);
 
-      if (ocr.getMaxTransactions() > 0) {
+    String json = this.gson.toJson(msg);
 
-        long count = configService.getIncrement(siteId, CONFIG_OCR_COUNT);
-        if (count >= ocr.getMaxTransactions()) {
-          invalid = true;
-        } else {
-          configService.increment(siteId, CONFIG_OCR_COUNT);
-        }
-      }
+    String sqsQueueUrl = awsservice.environment("OCR_SQS_QUEUE_URL");
+    SqsService sqsService = awsservice.getExtension(SqsService.class);
+    sqsService.sendMessage(sqsQueueUrl, json);
 
-      if (ocr.getMaxPagesPerTransaction() > 0
-          && (getOcrNumberOfPages(request) > ocr.getMaxPagesPerTransaction())) {
-        request.setOcrNumberOfPages("" + ocr.getMaxPagesPerTransaction());
-      }
-    }
-
-    return !invalid;
-  }
-
-  private long getOcrNumberOfPages(final OcrRequest request) {
-    try {
-      return Long.parseLong(request.getOcrNumberOfPages());
-    } catch (NumberFormatException e) {
-      return Long.MAX_VALUE;
-    }
+    return jobId;
   }
 
   @Override
@@ -228,6 +222,18 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
     return ocr;
   }
 
+  protected OcrEngine getOcrEngine(final OcrRequest request) {
+    return OcrEngine.TESSERACT;
+  }
+
+  private long getOcrNumberOfPages(final OcrRequest request) {
+    try {
+      return Long.parseLong(request.getOcrNumberOfPages());
+    } catch (NumberFormatException e) {
+      return Long.MAX_VALUE;
+    }
+  }
+
   @Override
   public List<String> getOcrS3Keys(final String siteId, final String documentId,
       final String jobId) {
@@ -241,9 +247,63 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
         .collect(Collectors.toList());
   }
 
+  /**
+   * Get S3 File Content-Type.
+   *
+   * @param bucket {@link String}
+   * @param key {@link String}
+   * @return {@link String}
+   */
+  private String getS3FileContentType(final String bucket, final String key) {
+
+    S3ObjectMetadata meta = this.s3.getObjectMetadata(bucket, key, null);
+    return meta.getContentType();
+  }
+
   @Override
   public String getS3Key(final String siteId, final String documentId, final String jobId) {
     return SiteIdKeyGenerator.createS3Key(siteId, documentId);
+  }
+
+  private boolean isValidOcrConfiguration(final ConfigService configService, final String siteId,
+      final OcrRequest request) {
+    boolean invalid = false;
+
+    SiteConfiguration config = configService.get(siteId);
+    SiteConfigurationOcr ocr = config.getOcr();
+
+    if (ocr != null) {
+
+      if (ocr.getMaxTransactions() > 0) {
+
+        long count = configService.getIncrement(siteId, CONFIG_OCR_COUNT);
+        if (count >= ocr.getMaxTransactions()) {
+          invalid = true;
+        } else {
+          configService.increment(siteId, CONFIG_OCR_COUNT);
+        }
+      }
+
+      if (ocr.getMaxPagesPerTransaction() > 0
+          && (getOcrNumberOfPages(request) > ocr.getMaxPagesPerTransaction())) {
+        request.setOcrNumberOfPages("" + ocr.getMaxPagesPerTransaction());
+      }
+    }
+
+    return !invalid;
+  }
+
+  /**
+   * Document Formats Key {@link AttributeValue}.
+   *
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @return {@link Map}
+   */
+  private Map<String, AttributeValue> keysDocumentOcr(final String siteId,
+      final String documentId) {
+    Ocr ocr = new Ocr().documentId(documentId);
+    return Map.of(PK, AttributeValue.fromS(ocr.pk(siteId)), SK, AttributeValue.fromS(ocr.sk()));
   }
 
   @Override
@@ -269,6 +329,16 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
     save(siteId, ocr);
 
     updateOcrScanStatus(awsservice, siteId, documentId, OcrScanStatus.SUCCESSFUL);
+  }
+
+  @Override
+  public List<Map<String, Object>> toKeyValue(final List<String> contents) {
+    return Collections.emptyList();
+  }
+
+  @Override
+  public Object toTables(final List<String> contents) {
+    return null;
   }
 
   @Override
@@ -312,76 +382,6 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
         Map.of("ocrStatus", AttributeValue.builder().s(status.name().toLowerCase()).build());
 
     this.db.updateValues(pkvalues.get(PK), pkvalues.get(SK), attributeValues);
-  }
-
-  @Override
-  public List<Map<String, Object>> toKeyValue(final List<String> contents) {
-    return Collections.emptyList();
-  }
-
-  @Override
-  public Object toTables(final List<String> contents) {
-    return null;
-  }
-
-  /**
-   * OCR Convert Document.
-   *
-   * @param awsservice {@link AwsServiceCache}
-   * @param request {@link OcrRequest}
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param s3key original s3 key
-   * @param documentS3toConvert Document S3 Key to convert.
-   * @param contentType {@link String}
-   * @return {@link String}
-   */
-  protected String convertDocument(final AwsServiceCache awsservice, final OcrRequest request,
-      final String siteId, final String documentId, final String s3key,
-      final String documentS3toConvert, final String contentType) {
-
-    String jobId = ID.uuid();
-
-    OcrSqsMessage msg = new OcrSqsMessage().jobId(jobId).siteId(siteId).documentId(documentId)
-        .contentType(contentType).request(request);
-
-    String json = this.gson.toJson(msg);
-
-    String sqsQueueUrl = awsservice.environment("OCR_SQS_QUEUE_URL");
-    SqsService sqsService = awsservice.getExtension(SqsService.class);
-    sqsService.sendMessage(sqsQueueUrl, json);
-
-    return jobId;
-  }
-
-  protected OcrEngine getOcrEngine(final OcrRequest request) {
-    return OcrEngine.TESSERACT;
-  }
-
-  /**
-   * Get S3 File Content-Type.
-   *
-   * @param bucket {@link String}
-   * @param key {@link String}
-   * @return {@link String}
-   */
-  private String getS3FileContentType(final String bucket, final String key) {
-
-    S3ObjectMetadata meta = this.s3.getObjectMetadata(bucket, key, null);
-    return meta.getContentType();
-  }
-
-  /**
-   * Document Formats Key {@link AttributeValue}.
-   *
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @return {@link Map}
-   */
-  private Map<String, AttributeValue> keysDocumentOcr(final String siteId,
-      final String documentId) {
-    Ocr ocr = new Ocr().documentId(documentId);
-    return Map.of(PK, AttributeValue.fromS(ocr.pk(siteId)), SK, AttributeValue.fromS(ocr.sk()));
   }
 
   /**

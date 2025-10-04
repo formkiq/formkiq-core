@@ -45,6 +45,20 @@ public class UserRequestHandler implements ApiGatewayRequestHandler, ApiGatewayR
   public static final String URL = "/users/{username}";
 
   @Override
+  public ApiRequestHandlerResponse delete(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
+
+    CognitoIdentityProviderService service =
+        awsservice.getExtension(CognitoIdentityProviderService.class);
+
+    String username = event.getPathParameters().get("username");
+    service.deleteUser(username);
+
+    return ApiRequestHandlerResponse.builder().ok()
+        .body("message", "user '" + username + "' has been deleted").build();
+  }
+
+  @Override
   public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
@@ -64,20 +78,6 @@ public class UserRequestHandler implements ApiGatewayRequestHandler, ApiGatewayR
     } catch (UserNotFoundException e) {
       throw new NotFoundException("username '" + username + "' not found");
     }
-  }
-
-  @Override
-  public ApiRequestHandlerResponse delete(final ApiGatewayRequestEvent event,
-      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
-
-    CognitoIdentityProviderService service =
-        awsservice.getExtension(CognitoIdentityProviderService.class);
-
-    String username = event.getPathParameters().get("username");
-    service.deleteUser(username);
-
-    return ApiRequestHandlerResponse.builder().ok()
-        .body("message", "user '" + username + "' has been deleted").build();
   }
 
   @Override

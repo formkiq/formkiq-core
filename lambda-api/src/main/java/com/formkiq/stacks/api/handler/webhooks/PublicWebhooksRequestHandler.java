@@ -199,6 +199,13 @@ public class PublicWebhooksRequestHandler
     return "/public/webhooks";
   }
 
+  @Override
+  public Optional<Boolean> isAuthorized(final AwsServiceCache awsservice, final String method,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
+    boolean access = "true".equals(awsservice.environment("ENABLE_PUBLIC_URLS"));
+    return access ? Optional.of(Boolean.TRUE) : Optional.empty();
+  }
+
   /**
    * Is Webhook Enabled.
    * 
@@ -307,12 +314,5 @@ public class PublicWebhooksRequestHandler
 
     S3Service s3 = awsservice.getExtension(S3Service.class);
     s3.putObject(stages3bucket, key, bytes, "application/json");
-  }
-
-  @Override
-  public Optional<Boolean> isAuthorized(final AwsServiceCache awsservice, final String method,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
-    boolean access = "true".equals(awsservice.environment("ENABLE_PUBLIC_URLS"));
-    return access ? Optional.of(Boolean.TRUE) : Optional.empty();
   }
 }

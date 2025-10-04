@@ -73,8 +73,13 @@ public class FkqConfigService implements ConfigService {
   }
 
   @Override
-  public boolean save(final String siteId, final SiteConfiguration obj) {
-    return this.service.save(siteId, obj);
+  public long getIncrement(final String siteId, final String key) {
+    return this.service.getIncrement(siteId, key);
+  }
+
+  @Override
+  public Map<String, Long> getIncrements(final String siteId) {
+    return this.service.getIncrements(siteId);
   }
 
   @Override
@@ -83,12 +88,7 @@ public class FkqConfigService implements ConfigService {
   }
 
   @Override
-  public long getIncrement(final String siteId, final String key) {
-    return this.service.getIncrement(siteId, key);
-  }
-
-  @Override
-  public Map<String, Long> getIncrements(final String siteId) {
-    return this.service.getIncrements(siteId);
+  public boolean save(final String siteId, final SiteConfiguration obj) {
+    return this.service.save(siteId, obj);
   }
 }

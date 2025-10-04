@@ -97,6 +97,9 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
   /** {@link FolderIndexProcessor}. */
   private static FolderIndexProcessor indexProcessor;
 
+  /** JUnit Test Timeout. */
+  private static final int TEST_TIMEOUT = 10;
+
   /**
    * Before All.
    */
@@ -106,9 +109,6 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
     db = new DynamoDbServiceImpl(dbConnection, DOCUMENTS_TABLE);
     indexProcessor = new FolderIndexProcessorImpl(dbConnection, DOCUMENTS_TABLE);
   }
-
-  /** JUnit Test Timeout. */
-  private static final int TEST_TIMEOUT = 10;
 
   private void addAttribute(final String siteId) throws ApiException {
     addAttribute(siteId, "category");

@@ -58,6 +58,41 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
    */
   public SitesRequestHandler() {}
 
+  private void addConfig(final AwsServiceCache awsservice, final String siteId,
+      final DynamicObject obj) {
+
+    ConfigService configService = awsservice.getExtension(ConfigService.class);
+
+    SiteConfiguration siteConfig = configService.get(siteId);
+
+    if (siteConfig != null) {
+
+      Map<String, Object> config = new HashMap<>();
+      obj.put("config", config);
+
+      config.put("maxContentLengthBytes", siteConfig.getMaxContentLengthBytes());
+      config.put("maxDocuments", siteConfig.getMaxDocuments());
+      config.put("maxWebhooks", siteConfig.getMaxWebhooks());
+
+      SiteConfigurationOcr ocr = siteConfig.getOcr();
+      if (ocr != null) {
+        Map<String, Object> o = new HashMap<>();
+        o.put("maxTransactions", ocr.getMaxTransactions());
+        o.put("maxPagesPerTransaction", ocr.getMaxPagesPerTransaction());
+        config.put("ocr", o);
+      }
+
+      Map<String, Long> increments = configService.getIncrements(siteId);
+      if (increments != null) {
+        Map<String, Object> usage = new HashMap<>();
+        obj.put("usage", usage);
+
+        usage.put("documentCount", increments.get(ConfigService.DOCUMENT_COUNT));
+        usage.put("ocrTransactionCount", increments.get(DocumentOcrService.CONFIG_OCR_COUNT));
+      }
+    }
+  }
+
   /**
    * Generate Upload Email address.
    *
@@ -103,41 +138,6 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
 
     return ApiRequestHandlerResponse.builder().ok().body(Map.of("username", userId, "sites", sites))
         .build();
-  }
-
-  private void addConfig(final AwsServiceCache awsservice, final String siteId,
-      final DynamicObject obj) {
-
-    ConfigService configService = awsservice.getExtension(ConfigService.class);
-
-    SiteConfiguration siteConfig = configService.get(siteId);
-
-    if (siteConfig != null) {
-
-      Map<String, Object> config = new HashMap<>();
-      obj.put("config", config);
-
-      config.put("maxContentLengthBytes", siteConfig.getMaxContentLengthBytes());
-      config.put("maxDocuments", siteConfig.getMaxDocuments());
-      config.put("maxWebhooks", siteConfig.getMaxWebhooks());
-
-      SiteConfigurationOcr ocr = siteConfig.getOcr();
-      if (ocr != null) {
-        Map<String, Object> o = new HashMap<>();
-        o.put("maxTransactions", ocr.getMaxTransactions());
-        o.put("maxPagesPerTransaction", ocr.getMaxPagesPerTransaction());
-        config.put("ocr", o);
-      }
-
-      Map<String, Long> increments = configService.getIncrements(siteId);
-      if (increments != null) {
-        Map<String, Object> usage = new HashMap<>();
-        obj.put("usage", usage);
-
-        usage.put("documentCount", increments.get(ConfigService.DOCUMENT_COUNT));
-        usage.put("ocrTransactionCount", increments.get(DocumentOcrService.CONFIG_OCR_COUNT));
-      }
-    }
   }
 
   /**

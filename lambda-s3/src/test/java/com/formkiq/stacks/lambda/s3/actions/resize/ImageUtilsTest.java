@@ -33,6 +33,14 @@ import java.io.InputStream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ImageUtilsTest {
+  private static void getImageFormatTemplate(final String inputFileName,
+      final String expectedImageFormat) throws IOException {
+    try (InputStream is = new FileInputStream("src/test/resources/resize/" + inputFileName)) {
+      byte[] imageBytes = IoUtils.toByteArray(is);
+      assertEquals(expectedImageFormat, ImageUtils.getImageFormat(imageBytes));
+    }
+  }
+
   @Test
   public void testGetImageFormat() throws IOException {
     getImageFormatTemplate("input.bmp", "bmp");
@@ -40,13 +48,5 @@ public class ImageUtilsTest {
     getImageFormatTemplate("input.jpg", "jpeg");
     getImageFormatTemplate("input.png", "png");
     getImageFormatTemplate("input.tif", "tif");
-  }
-
-  private static void getImageFormatTemplate(final String inputFileName,
-      final String expectedImageFormat) throws IOException {
-    try (InputStream is = new FileInputStream("src/test/resources/resize/" + inputFileName)) {
-      byte[] imageBytes = IoUtils.toByteArray(is);
-      assertEquals(expectedImageFormat, ImageUtils.getImageFormat(imageBytes));
-    }
   }
 }

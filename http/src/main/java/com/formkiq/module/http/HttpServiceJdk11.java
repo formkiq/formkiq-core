@@ -101,10 +101,6 @@ public class HttpServiceJdk11 implements HttpService {
     return builder;
   }
 
-  private String encode(final String s) {
-    return URLEncoder.encode(s, StandardCharsets.UTF_8);
-  }
-
   @Override
   public HttpResponse<String> delete(final String url, final Optional<HttpHeaders> headers,
       final Optional<Map<String, String>> parameters) throws IOException {
@@ -116,16 +112,8 @@ public class HttpServiceJdk11 implements HttpService {
     }
   }
 
-  @Override
-  public HttpResponse<String> head(final String url, final Optional<HttpHeaders> headers,
-      final Optional<Map<String, String>> parameters) throws IOException {
-    HttpRequest request =
-        build(url, headers, parameters).method("HEAD", HttpRequest.BodyPublishers.noBody()).build();
-    try {
-      return this.client.send(request, HttpResponse.BodyHandlers.ofString());
-    } catch (InterruptedException e) {
-      throw new IOException(e);
-    }
+  private String encode(final String s) {
+    return URLEncoder.encode(s, StandardCharsets.UTF_8);
   }
 
   @Override
@@ -160,6 +148,18 @@ public class HttpServiceJdk11 implements HttpService {
     HttpRequest request = build(url, headers, parameters).GET().build();
     try {
       return this.client.send(request, HttpResponse.BodyHandlers.ofInputStream());
+    } catch (InterruptedException e) {
+      throw new IOException(e);
+    }
+  }
+
+  @Override
+  public HttpResponse<String> head(final String url, final Optional<HttpHeaders> headers,
+      final Optional<Map<String, String>> parameters) throws IOException {
+    HttpRequest request =
+        build(url, headers, parameters).method("HEAD", HttpRequest.BodyPublishers.noBody()).build();
+    try {
+      return this.client.send(request, HttpResponse.BodyHandlers.ofString());
     } catch (InterruptedException e) {
       throw new IOException(e);
     }

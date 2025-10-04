@@ -71,22 +71,42 @@ public class DocumentEvent {
   }
 
   /**
-   * Get S3 presigned url.
+   * Get {@link DocumentEvent} Content.
    * 
-   * @return String
+   * @return {@link String}
    */
-  public String url() {
-    return this.url;
+  public String content() {
+    return this.content;
   }
 
   /**
-   * Set S3 presigned url.
+   * Set {@link DocumentEvent} Content.
    * 
-   * @param s3PresignedUrl {@link String}
+   * @param data {@link String}
+   * @return {@link DocumentEvent}
+   */
+  public DocumentEvent content(final String data) {
+    this.content = data;
+    return this;
+  }
+
+  /**
+   * Get {@link DocumentEvent} Content-Type.
+   * 
    * @return {@link String}
    */
-  public DocumentEvent url(final String s3PresignedUrl) {
-    this.url = s3PresignedUrl;
+  public String contentType() {
+    return this.contentType;
+  }
+
+  /**
+   * Set {@link DocumentEvent} Content.
+   * 
+   * @param data {@link String}
+   * @return {@link DocumentEvent}
+   */
+  public DocumentEvent contentType(final String data) {
+    this.contentType = data;
     return this;
   }
 
@@ -107,6 +127,26 @@ public class DocumentEvent {
    */
   public DocumentEvent documentId(final String id) {
     this.documentId = id;
+    return this;
+  }
+
+  /**
+   * Get {@link DocumentEvent} Path.
+   * 
+   * @return {@link String}
+   */
+  public String path() {
+    return this.path;
+  }
+
+  /**
+   * Set {@link DocumentEvent} Path.
+   * 
+   * @param s {@link String}
+   * @return {@link DocumentEvent}
+   */
+  public DocumentEvent path(final String s) {
+    this.path = s;
     return this;
   }
 
@@ -191,6 +231,26 @@ public class DocumentEvent {
   }
 
   /**
+   * Get S3 presigned url.
+   * 
+   * @return String
+   */
+  public String url() {
+    return this.url;
+  }
+
+  /**
+   * Set S3 presigned url.
+   * 
+   * @param s3PresignedUrl {@link String}
+   * @return {@link String}
+   */
+  public DocumentEvent url(final String s3PresignedUrl) {
+    this.url = s3PresignedUrl;
+    return this;
+  }
+
+  /**
    * Get {@link DocumentEvent} UserId.
    * 
    * @return {@link String}
@@ -207,66 +267,6 @@ public class DocumentEvent {
    */
   public DocumentEvent userId(final String user) {
     this.userId = user;
-    return this;
-  }
-
-  /**
-   * Get {@link DocumentEvent} Content.
-   * 
-   * @return {@link String}
-   */
-  public String content() {
-    return this.content;
-  }
-
-  /**
-   * Set {@link DocumentEvent} Content.
-   * 
-   * @param data {@link String}
-   * @return {@link DocumentEvent}
-   */
-  public DocumentEvent content(final String data) {
-    this.content = data;
-    return this;
-  }
-
-  /**
-   * Get {@link DocumentEvent} Content-Type.
-   * 
-   * @return {@link String}
-   */
-  public String contentType() {
-    return this.contentType;
-  }
-
-  /**
-   * Set {@link DocumentEvent} Content.
-   * 
-   * @param data {@link String}
-   * @return {@link DocumentEvent}
-   */
-  public DocumentEvent contentType(final String data) {
-    this.contentType = data;
-    return this;
-  }
-
-  /**
-   * Get {@link DocumentEvent} Path.
-   * 
-   * @return {@link String}
-   */
-  public String path() {
-    return this.path;
-  }
-
-  /**
-   * Set {@link DocumentEvent} Path.
-   * 
-   * @param s {@link String}
-   * @return {@link DocumentEvent}
-   */
-  public DocumentEvent path(final String s) {
-    this.path = s;
     return this;
   }
 }

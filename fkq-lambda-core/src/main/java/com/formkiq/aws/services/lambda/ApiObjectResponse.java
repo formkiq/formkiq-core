@@ -55,11 +55,6 @@ public class ApiObjectResponse implements ApiResponse {
     return this.next;
   }
 
-  @Override
-  public String getPrevious() {
-    return this.previous;
-  }
-
   /**
    * Get {@link Object}.
    *
@@ -67,5 +62,10 @@ public class ApiObjectResponse implements ApiResponse {
    */
   public Object getObject() {
     return this.object;
+  }
+
+  @Override
+  public String getPrevious() {
+    return this.previous;
   }
 }

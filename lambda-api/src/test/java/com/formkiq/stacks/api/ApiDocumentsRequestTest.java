@@ -140,6 +140,21 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   }
 
   /**
+   * POST /documents request.
+   * 
+   * @param siteId {@link String}
+   * @param group {@link String}
+   * @param body {@link String}
+   * @return {@link ApiGatewayRequestEvent}
+   */
+  private ApiGatewayRequestEvent postDocumentsRequest(final String siteId, final String group,
+      final String body) {
+    return new ApiGatewayRequestEventBuilder().method("post").resource("/documents")
+        .path("/documents").group(group).user("joesmith")
+        .queryParameters(siteId != null ? Map.of("siteId", siteId) : null).body(body).build();
+  }
+
+  /**
    * DELETE /documents request.
    *
    * @throws Exception an error has occurred
@@ -844,21 +859,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   }
 
   /**
-   * POST /documents request.
-   * 
-   * @param siteId {@link String}
-   * @param group {@link String}
-   * @param body {@link String}
-   * @return {@link ApiGatewayRequestEvent}
-   */
-  private ApiGatewayRequestEvent postDocumentsRequest(final String siteId, final String group,
-      final String body) {
-    return new ApiGatewayRequestEventBuilder().method("post").resource("/documents")
-        .path("/documents").group(group).user("joesmith")
-        .queryParameters(siteId != null ? Map.of("siteId", siteId) : null).body(body).build();
-  }
-
-  /**
    * POST /documents request non Base64 body.
    *
    * @throws Exception an error has occurred
@@ -893,96 +893,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
 
       String content = getS3().getContentAsString(BUCKET_NAME, key, null);
       assertEquals("this is a test", content);
-    }
-  }
-
-  /**
-   * POST /documents request webhook invalid action.
-   *
-   * @throws Exception an error has occurred
-   */
-  @Test
-  public void testHandlePostDocuments19() throws Exception {
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-      // given
-      String body = "{\"content\": \"dGhpcyBpcyBhIHRlc3Q=\",\"path\": \"/file/test.txt\","
-          + "\"actions\":[{\"type\":\"webhook\"}]}";
-
-      // when
-      DynamicObject obj = handleRequestDynamic(
-          postDocumentsRequest(siteId, siteId != null ? siteId : DEFAULT_SITE_ID, body));
-
-      // then
-      assertEquals("400.0", obj.getString("statusCode"));
-      assertEquals("{\"errors\":[{\"key\":\"parameters.url\","
-          + "\"error\":\"action 'url' parameter is required\"}]}", obj.getString("body"));
-    }
-  }
-
-  /**
-   * POST /documents request webhook valid action.
-   *
-   * @throws Exception an error has occurred
-   */
-  @Test
-  public void testHandlePostDocuments20() throws Exception {
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-      // given
-      String body = "{\"content\": \"dGhpcyBpcyBhIHRlc3Q=\",\"path\": \"/file/test.txt\","
-          + "\"actions\":[{\"type\":\"webhook\",\"parameters\":{\"url\":\"http://localhost\"}}]}";
-
-      // when
-      DynamicObject obj = handleRequestDynamic(
-          postDocumentsRequest(siteId, siteId != null ? siteId : DEFAULT_SITE_ID, body));
-
-      // then
-      assertEquals("201.0", obj.getString("statusCode"));
-    }
-  }
-
-  /**
-   * POST /documents request webhook invalid type.
-   *
-   * @throws Exception an error has occurred
-   */
-  @Test
-  public void testHandlePostDocuments21() throws Exception {
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-      // given
-      String body = "{\"content\": \"dGhpcyBpcyBhIHRlc3Q=\",\"path\": \"/file/test.txt\","
-          + "\"actions\":[{\"type\":\"something\"}]}";
-
-      // when
-      DynamicObject obj = handleRequestDynamic(
-          postDocumentsRequest(siteId, siteId != null ? siteId : DEFAULT_SITE_ID, body));
-
-      // then
-      assertEquals("400.0", obj.getString("statusCode"));
-      assertEquals("{\"errors\":[{\"key\":\"type\",\"error\":\"action 'type' is required\"}]}",
-          obj.getString("body"));
-    }
-  }
-
-  /**
-   * POST /documents request missing type.
-   *
-   * @throws Exception an error has occurred
-   */
-  @Test
-  public void testHandlePostDocuments22() throws Exception {
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-      // given
-      String body = "{\"content\": \"dGhpcyBpcyBhIHRlc3Q=\",\"path\": \"/file/test.txt\","
-          + "\"actions\":[{\"type2\":\"something\"}]}";
-
-      // when
-      DynamicObject obj = handleRequestDynamic(
-          postDocumentsRequest(siteId, siteId != null ? siteId : DEFAULT_SITE_ID, body));
-
-      // then
-      assertEquals("400.0", obj.getString("statusCode"));
-      assertEquals("{\"errors\":[{\"key\":\"type\",\"error\":\"action 'type' is required\"}]}",
-          obj.getString("body"));
     }
   }
 
@@ -1479,6 +1389,96 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       assertHeaders(obj.getMap("headers"));
       assertEquals("400.0", obj.getString("statusCode"));
       assertEquals("{errors=[{key=CLAMAV_SCAN_STATUS, error=unallowed tag key}]}", o.toString());
+    }
+  }
+
+  /**
+   * POST /documents request webhook invalid action.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePostDocuments19() throws Exception {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      // given
+      String body = "{\"content\": \"dGhpcyBpcyBhIHRlc3Q=\",\"path\": \"/file/test.txt\","
+          + "\"actions\":[{\"type\":\"webhook\"}]}";
+
+      // when
+      DynamicObject obj = handleRequestDynamic(
+          postDocumentsRequest(siteId, siteId != null ? siteId : DEFAULT_SITE_ID, body));
+
+      // then
+      assertEquals("400.0", obj.getString("statusCode"));
+      assertEquals("{\"errors\":[{\"key\":\"parameters.url\","
+          + "\"error\":\"action 'url' parameter is required\"}]}", obj.getString("body"));
+    }
+  }
+
+  /**
+   * POST /documents request webhook valid action.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePostDocuments20() throws Exception {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      // given
+      String body = "{\"content\": \"dGhpcyBpcyBhIHRlc3Q=\",\"path\": \"/file/test.txt\","
+          + "\"actions\":[{\"type\":\"webhook\",\"parameters\":{\"url\":\"http://localhost\"}}]}";
+
+      // when
+      DynamicObject obj = handleRequestDynamic(
+          postDocumentsRequest(siteId, siteId != null ? siteId : DEFAULT_SITE_ID, body));
+
+      // then
+      assertEquals("201.0", obj.getString("statusCode"));
+    }
+  }
+
+  /**
+   * POST /documents request webhook invalid type.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePostDocuments21() throws Exception {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      // given
+      String body = "{\"content\": \"dGhpcyBpcyBhIHRlc3Q=\",\"path\": \"/file/test.txt\","
+          + "\"actions\":[{\"type\":\"something\"}]}";
+
+      // when
+      DynamicObject obj = handleRequestDynamic(
+          postDocumentsRequest(siteId, siteId != null ? siteId : DEFAULT_SITE_ID, body));
+
+      // then
+      assertEquals("400.0", obj.getString("statusCode"));
+      assertEquals("{\"errors\":[{\"key\":\"type\",\"error\":\"action 'type' is required\"}]}",
+          obj.getString("body"));
+    }
+  }
+
+  /**
+   * POST /documents request missing type.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePostDocuments22() throws Exception {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      // given
+      String body = "{\"content\": \"dGhpcyBpcyBhIHRlc3Q=\",\"path\": \"/file/test.txt\","
+          + "\"actions\":[{\"type2\":\"something\"}]}";
+
+      // when
+      DynamicObject obj = handleRequestDynamic(
+          postDocumentsRequest(siteId, siteId != null ? siteId : DEFAULT_SITE_ID, body));
+
+      // then
+      assertEquals("400.0", obj.getString("statusCode"));
+      assertEquals("{\"errors\":[{\"key\":\"type\",\"error\":\"action 'type' is required\"}]}",
+          obj.getString("body"));
     }
   }
 }

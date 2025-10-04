@@ -2,54 +2,13 @@ description = "FormKiQ Core - Lambda S3 Graalvm"
 
 apply plugin: 'distribution'
 
-def getCmd() {
-  String os = System.getProperty("os.name").toLowerCase()
-  return os.contains("win") ? "cmd" : "bash"
-}
-
-def getCmdParam() {
-  String os = System.getProperty("os.name").toLowerCase()
-  return os.contains("win") ? "/c" : "-c"
-}
-
 dependencies {
   implementation project(':lambda-s3')
-}
-
-compileJava {
-  options.annotationProcessorPath += configurations.runtimeClasspath
-}
-
-nativeImage {
-  outputFileName = "server"
-  dockerImage = "ghcr.io/graalvm/graalvm-ce:ol9-java17-22.3.3"
-  mainClassName = "com.formkiq.lambda.runtime.graalvm.LambdaRuntime"
-  enableHttp = true
-  enableHttps = true
-  enableStatic = true
-  systemProperty = [
-    "java.net.preferIPv4Stack=true"
-  ]
 }
 
 test {
   failFast = true
   useJUnitPlatform()
-}
-
-task buildTemplate {
-  inputs.files("src/main/resources/cloudformation/template-sar.yaml")
-  outputs.files("${buildDir}/distributions/storage/template.yaml")
-
-  def randomtext = ('0'..'z').shuffled().take(10).join();
-  def sha256 = randomtext.digest('SHA-256')
-
-  doLast {
-
-    exec {
-      commandLine getCmd(), getCmdParam(), "ytt --data-value hash=${sha256} -f src/main/resources/cloudformation/template-sar.yaml > ${buildDir}/distributions/storage/template.yaml"
-    }
-  }
 }
 
 tasks.distTar.enabled = false
@@ -83,58 +42,69 @@ tasks.register('buildZip', Zip) {
   from("${project.projectDir}/runtime") {
     include 'bootstrap'
   }
-  from("${buildDir}/graalvm") {
+  from("build/graalvm") {
     include '**/**'
   }
 }
 
-task copyRuntimeClasspath(type: Copy) {
+tasks.register('copyRuntimeClasspath', Copy) {
   description = 'Copies all runtime classpath dependencies to build/libs'
-  from configurations.runtimeClasspath
-  into "$buildDir/libs"
+  from({ configurations.runtimeClasspath })
+  into(layout.buildDirectory.dir('libs'))
 }
 
 jar.dependsOn(copyRuntimeClasspath)
 
-task buildDockerAndCopyServer {
-  description = 'Builds Docker image, creates a container, copies the server ZIP, and removes the container.'
+def graalvmZip = layout.buildDirectory.file('graalvm.zip')
 
-  // Ensure that the Docker commands are executed in order
-  doLast {
-    // Step 1: Build the Docker image
-    println 'Building Docker image: amazonlinux-graalvm:latest'
-    exec {
-      commandLine 'docker', 'build', '-t', 'amazonlinux-graalvm:latest', '.'
-    }
+tasks.register('dockerBuild', Exec) {
+  description = 'Builds amazonlinux-graalvm:latest'
+  workingDir = layout.projectDirectory.asFile
+  commandLine 'docker', 'build', '-t', 'amazonlinux-graalvm:latest', '.'
+}
 
-    // Step 2: Create a container from the image
-    println 'Creating Docker container: temp-container'
-    exec {
-      commandLine 'docker', 'create', '--name', 'temp-container', 'amazonlinux-graalvm:latest'
-    }
+tasks.register('dockerCreate', Exec) {
+  description = 'Creates a temporary container named temp-container'
+  dependsOn(tasks.named('dockerBuild'))
+  commandLine 'docker', 'create', '--name', 'temp-container', 'amazonlinux-graalvm:latest'
+}
 
-    // Step 4: Copy the ZIP file from the container to the host
-    println 'Copying /graalvm.zip from Docker container'
-    exec {
-      commandLine 'docker', 'cp', 'temp-container:/graalvm.zip', "$buildDir/graalvm.zip"
-    }
+tasks.register('dockerCp', Exec) {
+  description = 'Copies /graalvm.zip from temp-container to build dir'
+  dependsOn(tasks.named('dockerCreate'))
 
-    // Step 5: Remove the temporary container
-    println 'Removing temporary Docker container: temp-container'
-    exec {
-      commandLine 'docker', 'rm', 'temp-container'
-    }
+  doFirst {
+    graalvmZip.get().asFile.parentFile.mkdirs()
 
-    println 'Docker build and copy process completed successfully.'
+    commandLine 'docker', 'cp',
+        'temp-container:/graalvm.zip',
+        graalvmZip.get().asFile.absolutePath
   }
+
+  outputs.file(graalvmZip)
+}
+
+tasks.register('dockerRm', Exec) {
+  description = 'Removes the temporary container'
+  mustRunAfter(tasks.named('dockerCp'))
+  ignoreExitValue = true
+  commandLine 'docker', 'rm', 'temp-container'
+}
+
+tasks.register('buildDockerAndCopyServer') {
+  description = 'Build image, create container, copy ZIP, remove container'
+  dependsOn(tasks.named('dockerCp'))
+  finalizedBy(tasks.named('dockerRm'))
 }
 
 tasks.register('unzipFile', Copy) {
-  from zipTree("$buildDir/graalvm.zip")
-  into "$buildDir/graalvm"
+  from({
+    zipTree(layout.buildDirectory.file("graalvm.zip").get().asFile)
+  })
+  into(layout.buildDirectory.dir("graalvm"))
 }
 
 buildDockerAndCopyServer.dependsOn test, jar
 unzipFile.dependsOn buildDockerAndCopyServer
 buildZip.dependsOn unzipFile
-distZip.dependsOn buildZip, buildTemplate
+distZip.dependsOn buildZip

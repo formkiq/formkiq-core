@@ -33,10 +33,47 @@ import software.amazon.awssdk.services.iam.model.NoSuchEntityException;
 import software.amazon.awssdk.services.iam.model.PutRolePolicyRequest;
 
 public class IamRoleCreator {
+  public static class Builder {
+    /** {@link String}. */
+    public String profileName;
+    /** {@link String}. */
+    private String roleName;
+    /** {@link String}. */
+    private String queueArn;
+
+    public IamRoleCreator build() {
+      if (roleName == null || queueArn == null) {
+        throw new IllegalStateException("roleName, queueArn must be provided");
+      }
+      return new IamRoleCreator(this);
+    }
+
+    public Builder profileName(final String iamProfileName) {
+      this.profileName = iamProfileName;
+      return this;
+    }
+
+    public Builder queueArn(final String iamQueueArn) {
+      this.queueArn = iamQueueArn;
+      return this;
+    }
+
+    public Builder roleName(final String iamRoleName) {
+      this.roleName = iamRoleName;
+      return this;
+    }
+  }
+
+  public static Builder builder() {
+    return new Builder();
+  }
+
   /** {@link IamClient}. */
   private final IamClient iam;
+
   /** {@link String}. */
   private final String roleName;
+
   /** {@link String}. */
   private final String queueArn;
 
@@ -45,10 +82,6 @@ public class IamRoleCreator {
     this.queueArn = builder.queueArn;
     this.iam = IamClient.builder()
         .credentialsProvider(ProfileCredentialsProvider.create(builder.profileName)).build();
-  }
-
-  public static Builder builder() {
-    return new Builder();
   }
 
   /**
@@ -91,36 +124,5 @@ public class IamRoleCreator {
     iam.close();
 
     return createRes.role().arn();
-  }
-
-  public static class Builder {
-    /** {@link String}. */
-    public String profileName;
-    /** {@link String}. */
-    private String roleName;
-    /** {@link String}. */
-    private String queueArn;
-
-    public Builder roleName(final String iamRoleName) {
-      this.roleName = iamRoleName;
-      return this;
-    }
-
-    public Builder queueArn(final String iamQueueArn) {
-      this.queueArn = iamQueueArn;
-      return this;
-    }
-
-    public Builder profileName(final String iamProfileName) {
-      this.profileName = iamProfileName;
-      return this;
-    }
-
-    public IamRoleCreator build() {
-      if (roleName == null || queueArn == null) {
-        throw new IllegalStateException("roleName, queueArn must be provided");
-      }
-      return new IamRoleCreator(this);
-    }
   }
 }

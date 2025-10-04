@@ -31,35 +31,6 @@ import java.util.Objects;
 import java.util.UUID;
 
 public class SqsEventBuilder {
-  /** {@link List} {@link SqsEventRecord}. */
-  private final List<SqsEventRecord> records;
-
-  private SqsEventBuilder() {
-    this.records = new java.util.ArrayList<>();
-  }
-
-  public static SqsEventBuilder builder() {
-    return new SqsEventBuilder();
-  }
-
-  /**
-   * Begin building a new SQSEventRecord within this SQSEvent.
-   * 
-   * @return RecordBuilder
-   */
-  public RecordBuilder record() {
-    return new RecordBuilder(this);
-  }
-
-  /**
-   * Build the finalized SQSEvent containing all added records.
-   * 
-   * @return SqsEvent
-   */
-  public SqsEvent build() {
-    return new SqsEvent(List.copyOf(records));
-  }
-
   /**
    * Nested builder for a single SQSEventRecord.
    */
@@ -91,41 +62,6 @@ public class SqsEventBuilder {
       attributes.put("ApproximateFirstReceiveTimestamp", ts);
     }
 
-    public RecordBuilder messageId(final String sqsMessageId) {
-      this.messageId = sqsMessageId;
-      return this;
-    }
-
-    public RecordBuilder receiptHandle(final String sqsReceiptHandle) {
-      this.receiptHandle = sqsReceiptHandle;
-      return this;
-    }
-
-    public RecordBuilder body(final String sqsBody) {
-      this.body = sqsBody;
-      return this;
-    }
-
-    public RecordBuilder attribute(final String key, final String value) {
-      this.attributes.put(key, value);
-      return this;
-    }
-
-    public RecordBuilder messageAttribute(final String key, final MessageAttribute attr) {
-      this.messageAttributes.put(key, attr);
-      return this;
-    }
-
-    public RecordBuilder eventSourceArn(final String sqsEventSourceArn) {
-      this.eventSourceArn = sqsEventSourceArn;
-      return this;
-    }
-
-    public RecordBuilder awsRegion(final String sqsAwsRegion) {
-      this.awsRegion = sqsAwsRegion;
-      return this;
-    }
-
     /**
      * Finalize this record and add to parent SQSEventBuilder.
      * 
@@ -140,5 +76,69 @@ public class SqsEventBuilder {
       parent.records.add(rec);
       return parent;
     }
+
+    public RecordBuilder attribute(final String key, final String value) {
+      this.attributes.put(key, value);
+      return this;
+    }
+
+    public RecordBuilder awsRegion(final String sqsAwsRegion) {
+      this.awsRegion = sqsAwsRegion;
+      return this;
+    }
+
+    public RecordBuilder body(final String sqsBody) {
+      this.body = sqsBody;
+      return this;
+    }
+
+    public RecordBuilder eventSourceArn(final String sqsEventSourceArn) {
+      this.eventSourceArn = sqsEventSourceArn;
+      return this;
+    }
+
+    public RecordBuilder messageAttribute(final String key, final MessageAttribute attr) {
+      this.messageAttributes.put(key, attr);
+      return this;
+    }
+
+    public RecordBuilder messageId(final String sqsMessageId) {
+      this.messageId = sqsMessageId;
+      return this;
+    }
+
+    public RecordBuilder receiptHandle(final String sqsReceiptHandle) {
+      this.receiptHandle = sqsReceiptHandle;
+      return this;
+    }
+  }
+
+  public static SqsEventBuilder builder() {
+    return new SqsEventBuilder();
+  }
+
+  /** {@link List} {@link SqsEventRecord}. */
+  private final List<SqsEventRecord> records;
+
+  private SqsEventBuilder() {
+    this.records = new java.util.ArrayList<>();
+  }
+
+  /**
+   * Build the finalized SQSEvent containing all added records.
+   * 
+   * @return SqsEvent
+   */
+  public SqsEvent build() {
+    return new SqsEvent(List.copyOf(records));
+  }
+
+  /**
+   * Begin building a new SQSEventRecord within this SQSEvent.
+   * 
+   * @return RecordBuilder
+   */
+  public RecordBuilder record() {
+    return new RecordBuilder(this);
   }
 }

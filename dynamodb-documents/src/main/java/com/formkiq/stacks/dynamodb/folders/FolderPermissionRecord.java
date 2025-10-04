@@ -116,6 +116,23 @@ public record FolderPermissionRecord(DynamoDbKey key, String path, String type, 
     /** Role Permissions. */
     private Collection<FolderRolePermission> rolePermissions = null;
 
+    @Override
+    public FolderPermissionRecord build(final String siteId) {
+      DynamoDbKey key = buildKey(siteId);
+      return new FolderPermissionRecord(key, path, type, insertedDate, userId, rolePermissions);
+    }
+
+    @Override
+    public DynamoDbKey buildKey(final String siteId) {
+
+      Objects.requireNonNull(path, "path must not be null");
+
+      String pk = "global#folders#permissions";
+      String sk = INDEX_FOLDER_SK + path;
+
+      return DynamoDbKey.builder().pk(siteId, pk).sk(sk).build();
+    }
+
     /**
      * Sets the path.
      *
@@ -126,6 +143,18 @@ public record FolderPermissionRecord(DynamoDbKey key, String path, String type, 
       this.path = new StringToFolder().apply(folderPath);
       return this;
     }
+
+    /**
+     * Sets the Role Permission.
+     *
+     * @param permissions {@link FolderRolePermission}
+     * @return this Builder
+     */
+    public Builder rolePermissions(final Collection<FolderRolePermission> permissions) {
+      this.rolePermissions = permissions;
+      return this;
+    }
+
 
     /**
      * Sets the Type.
@@ -147,35 +176,6 @@ public record FolderPermissionRecord(DynamoDbKey key, String path, String type, 
     public Builder userId(final String pathUserId) {
       this.userId = pathUserId;
       return this;
-    }
-
-    /**
-     * Sets the Role Permission.
-     *
-     * @param permissions {@link FolderRolePermission}
-     * @return this Builder
-     */
-    public Builder rolePermissions(final Collection<FolderRolePermission> permissions) {
-      this.rolePermissions = permissions;
-      return this;
-    }
-
-
-    @Override
-    public DynamoDbKey buildKey(final String siteId) {
-
-      Objects.requireNonNull(path, "path must not be null");
-
-      String pk = "global#folders#permissions";
-      String sk = INDEX_FOLDER_SK + path;
-
-      return DynamoDbKey.builder().pk(siteId, pk).sk(sk).build();
-    }
-
-    @Override
-    public FolderPermissionRecord build(final String siteId) {
-      DynamoDbKey key = buildKey(siteId);
-      return new FolderPermissionRecord(key, path, type, insertedDate, userId, rolePermissions);
     }
   }
 }

@@ -66,6 +66,11 @@ public class WebhooksRequestTest extends AbstractApiClientRequestTest {
   /** To Milliseconds. */
   private static final long TO_MILLIS = 1000L;
 
+  private void putSsmParameter() {
+    SsmService ssm = getAwsServices().getExtension(SsmService.class);
+    ssm.putParameter("/formkiq/test/api/DocumentsPublicHttpUrl", "http://localhost:8080");
+  }
+
   /**
    * Get /webhooks empty.
    *
@@ -180,11 +185,6 @@ public class WebhooksRequestTest extends AbstractApiClientRequestTest {
       assertEquals("test_3", webhooks.get(1).getName());
       assertEquals("test_4", webhooks.get(2).getName());
     }
-  }
-
-  private void putSsmParameter() {
-    SsmService ssm = getAwsServices().getExtension(SsmService.class);
-    ssm.putParameter("/formkiq/test/api/DocumentsPublicHttpUrl", "http://localhost:8080");
   }
 
   /**

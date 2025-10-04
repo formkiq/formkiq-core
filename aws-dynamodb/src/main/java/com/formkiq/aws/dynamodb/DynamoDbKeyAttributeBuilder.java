@@ -41,6 +41,21 @@ import static com.formkiq.aws.dynamodb.DbKeys.SK;
 public class DynamoDbKeyAttributeBuilder implements CustomDynamoDbAttributeBuilder {
 
   @Override
+  public <T> T decode(final String name, final Map<String, AttributeValue> attrs) {
+
+    Collection<DynamoDbKey> keys = null;
+    AttributeValue av = attrs.get(name);
+
+    if (av != null) {
+      keys = av.l().stream()
+          .map(a -> new DynamoDbKey(a.m().get(PK).s(), a.m().get(SK).s(), null, null, null, null))
+          .toList();
+    }
+
+    return (T) keys;
+  }
+
+  @Override
   public Map<String, AttributeValue> encode(final String name, final Object value) {
 
     List<Map<String, Object>> list = new ArrayList<>();
@@ -54,20 +69,5 @@ public class DynamoDbKeyAttributeBuilder implements CustomDynamoDbAttributeBuild
     }
 
     return DynamoDbAttributeMapBuilder.builder().withList(name, list).build();
-  }
-
-  @Override
-  public <T> T decode(final String name, final Map<String, AttributeValue> attrs) {
-
-    Collection<DynamoDbKey> keys = null;
-    AttributeValue av = attrs.get(name);
-
-    if (av != null) {
-      keys = av.l().stream()
-          .map(a -> new DynamoDbKey(a.m().get(PK).s(), a.m().get(SK).s(), null, null, null, null))
-          .toList();
-    }
-
-    return (T) keys;
   }
 }

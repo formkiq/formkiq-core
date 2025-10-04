@@ -83,16 +83,6 @@ public class DocumentVersionServiceDynamoDb implements DocumentVersionService {
   }
 
   @Override
-  public String getDocumentVersionsTableName() {
-    return this.tableName;
-  }
-
-  @Override
-  public String getVersionId(final Map<String, AttributeValue> attrs) {
-    return attrs.containsKey(S3VERSION_ATTRIBUTE) ? attrs.get(S3VERSION_ATTRIBUTE).s() : null;
-  }
-
-  @Override
   public Map<String, AttributeValue> get(final String siteId, final String documentId,
       final String versionKey) {
 
@@ -109,10 +99,8 @@ public class DocumentVersionServiceDynamoDb implements DocumentVersionService {
   }
 
   @Override
-  public void initialize(final Map<String, String> map,
-      final DynamoDbConnectionBuilder connection) {
-    this.tableName = map.get("DOCUMENT_VERSIONS_TABLE");
-    this.db = new DynamoDbServiceImpl(connection, this.tableName);
+  public DynamoDbService getDb() {
+    return this.db;
   }
 
   @Override
@@ -133,7 +121,19 @@ public class DocumentVersionServiceDynamoDb implements DocumentVersionService {
   }
 
   @Override
-  public DynamoDbService getDb() {
-    return this.db;
+  public String getDocumentVersionsTableName() {
+    return this.tableName;
+  }
+
+  @Override
+  public String getVersionId(final Map<String, AttributeValue> attrs) {
+    return attrs.containsKey(S3VERSION_ATTRIBUTE) ? attrs.get(S3VERSION_ATTRIBUTE).s() : null;
+  }
+
+  @Override
+  public void initialize(final Map<String, String> map,
+      final DynamoDbConnectionBuilder connection) {
+    this.tableName = map.get("DOCUMENT_VERSIONS_TABLE");
+    this.db = new DynamoDbServiceImpl(connection, this.tableName);
   }
 }

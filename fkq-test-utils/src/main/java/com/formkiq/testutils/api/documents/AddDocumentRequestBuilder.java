@@ -56,14 +56,83 @@ public class AddDocumentRequestBuilder implements HttpRequestBuilder<AddDocument
   }
 
   /**
-   * Add Metadata.
+   * Add Document Action.
+   * 
+   * @param type {@link DocumentActionType}
+   * @return AddDocumentRequestBuilder
+   */
+  public AddDocumentRequestBuilder addAction(final DocumentActionType type) {
+    AddAction action = new AddAction().type(type);
+    this.request.addActionsItem(action);
+    return this;
+  }
+
+  /**
+   * Add Document Attribute.
    *
+   * @param key {@link String}
+   * @return AddDocumentRequestBuilder
+   */
+  public AddDocumentRequestBuilder addAttribute(final String key) {
+    AddDocumentAttribute attr =
+        new AddDocumentAttribute(new AddDocumentAttributeStandard().key(key));
+    this.request.addAttributesItem(attr);
+    return this;
+  }
+
+  /**
+   * Add Document Attribute.
+   * 
+   * @param key {@link String}
+   * @param value {@link BigDecimal}
+   * @return AddDocumentRequestBuilder
+   */
+  public AddDocumentRequestBuilder addAttribute(final String key, final BigDecimal value) {
+    AddDocumentAttribute attr =
+        new AddDocumentAttribute(new AddDocumentAttributeStandard().key(key).numberValue(value));
+    this.request.addAttributesItem(attr);
+    return this;
+  }
+
+  /**
+   * Add Document Attribute.
+   * 
+   * @param key {@link String}
+   * @param value {@link Boolean}
+   * @return AddDocumentRequestBuilder
+   */
+  public AddDocumentRequestBuilder addAttribute(final String key, final Boolean value) {
+    AddDocumentAttribute attr =
+        new AddDocumentAttribute(new AddDocumentAttributeStandard().key(key).booleanValue(value));
+    this.request.addAttributesItem(attr);
+    return this;
+  }
+
+  /**
+   * Add Document Attribute.
+   *
+   * @param key {@link String}
+   * @param values {@link List} {@link String}
+   * @return AddDocumentRequestBuilder
+   */
+  public AddDocumentRequestBuilder addAttribute(final String key, final List<String> values) {
+    AddDocumentAttribute attr =
+        new AddDocumentAttribute(new AddDocumentAttributeStandard().key(key).stringValues(values));
+    this.request.addAttributesItem(attr);
+    return this;
+  }
+
+  /**
+   * Add Document Attribute.
+   * 
    * @param key {@link String}
    * @param value {@link String}
    * @return AddDocumentRequestBuilder
    */
-  public AddDocumentRequestBuilder addMetadata(final String key, final String value) {
-    this.request.addMetadataItem(new AddDocumentMetadata().key(key).value(value));
+  public AddDocumentRequestBuilder addAttribute(final String key, final String value) {
+    AddDocumentAttribute attr =
+        new AddDocumentAttribute(new AddDocumentAttributeStandard().key(key).stringValue(value));
+    this.request.addAttributesItem(attr);
     return this;
   }
 
@@ -76,6 +145,18 @@ public class AddDocumentRequestBuilder implements HttpRequestBuilder<AddDocument
    */
   public AddDocumentRequestBuilder addMetadata(final String key, final List<String> values) {
     this.request.addMetadataItem(new AddDocumentMetadata().key(key).values(values));
+    return this;
+  }
+
+  /**
+   * Add Metadata.
+   *
+   * @param key {@link String}
+   * @param value {@link String}
+   * @return AddDocumentRequestBuilder
+   */
+  public AddDocumentRequestBuilder addMetadata(final String key, final String value) {
+    this.request.addMetadataItem(new AddDocumentMetadata().key(key).value(value));
     return this;
   }
 
@@ -113,17 +194,6 @@ public class AddDocumentRequestBuilder implements HttpRequestBuilder<AddDocument
   }
 
   /**
-   * Set Path.
-   * 
-   * @param path {@link String}
-   * @return AddDocumentRequestBuilder
-   */
-  public AddDocumentRequestBuilder path(final String path) {
-    this.request.setPath(path);
-    return this;
-  }
-
-  /**
    * Set Content Type.
    * 
    * @param contentType {@link String}
@@ -135,83 +205,13 @@ public class AddDocumentRequestBuilder implements HttpRequestBuilder<AddDocument
   }
 
   /**
-   * Add Document Attribute.
-   *
-   * @param key {@link String}
-   * @return AddDocumentRequestBuilder
-   */
-  public AddDocumentRequestBuilder addAttribute(final String key) {
-    AddDocumentAttribute attr =
-        new AddDocumentAttribute(new AddDocumentAttributeStandard().key(key));
-    this.request.addAttributesItem(attr);
-    return this;
-  }
-
-  /**
-   * Add Document Attribute.
+   * Set Path.
    * 
-   * @param key {@link String}
-   * @param value {@link String}
+   * @param path {@link String}
    * @return AddDocumentRequestBuilder
    */
-  public AddDocumentRequestBuilder addAttribute(final String key, final String value) {
-    AddDocumentAttribute attr =
-        new AddDocumentAttribute(new AddDocumentAttributeStandard().key(key).stringValue(value));
-    this.request.addAttributesItem(attr);
-    return this;
-  }
-
-  /**
-   * Add Document Attribute.
-   *
-   * @param key {@link String}
-   * @param values {@link List} {@link String}
-   * @return AddDocumentRequestBuilder
-   */
-  public AddDocumentRequestBuilder addAttribute(final String key, final List<String> values) {
-    AddDocumentAttribute attr =
-        new AddDocumentAttribute(new AddDocumentAttributeStandard().key(key).stringValues(values));
-    this.request.addAttributesItem(attr);
-    return this;
-  }
-
-  /**
-   * Add Document Attribute.
-   * 
-   * @param key {@link String}
-   * @param value {@link BigDecimal}
-   * @return AddDocumentRequestBuilder
-   */
-  public AddDocumentRequestBuilder addAttribute(final String key, final BigDecimal value) {
-    AddDocumentAttribute attr =
-        new AddDocumentAttribute(new AddDocumentAttributeStandard().key(key).numberValue(value));
-    this.request.addAttributesItem(attr);
-    return this;
-  }
-
-  /**
-   * Add Document Attribute.
-   * 
-   * @param key {@link String}
-   * @param value {@link Boolean}
-   * @return AddDocumentRequestBuilder
-   */
-  public AddDocumentRequestBuilder addAttribute(final String key, final Boolean value) {
-    AddDocumentAttribute attr =
-        new AddDocumentAttribute(new AddDocumentAttributeStandard().key(key).booleanValue(value));
-    this.request.addAttributesItem(attr);
-    return this;
-  }
-
-  /**
-   * Add Document Action.
-   * 
-   * @param type {@link DocumentActionType}
-   * @return AddDocumentRequestBuilder
-   */
-  public AddDocumentRequestBuilder addAction(final DocumentActionType type) {
-    AddAction action = new AddAction().type(type);
-    this.request.addActionsItem(action);
+  public AddDocumentRequestBuilder path(final String path) {
+    this.request.setPath(path);
     return this;
   }
 

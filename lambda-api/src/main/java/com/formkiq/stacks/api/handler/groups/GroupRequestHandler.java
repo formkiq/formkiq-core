@@ -44,6 +44,19 @@ public class GroupRequestHandler implements ApiGatewayRequestHandler, ApiGateway
   public static final String URL = "/groups/{groupName}";
 
   @Override
+  public ApiRequestHandlerResponse delete(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
+
+    String groupName = event.getPathParameters().get("groupName");
+    CognitoIdentityProviderService service =
+        awsservice.getExtension(CognitoIdentityProviderService.class);
+    service.deleteGroup(groupName);
+
+    return ApiRequestHandlerResponse.builder().ok()
+        .body("message", "Group " + groupName + " deleted").build();
+  }
+
+  @Override
   public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
@@ -58,27 +71,14 @@ public class GroupRequestHandler implements ApiGatewayRequestHandler, ApiGateway
   }
 
   @Override
-  public Optional<Boolean> isAuthorized(final AwsServiceCache awsServiceCache, final String method,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
-    boolean access = authorization.getPermissions().contains(ApiPermission.ADMIN);
-    return !"get".equalsIgnoreCase(method) ? Optional.of(access) : Optional.empty();
-  }
-
-  @Override
   public String getRequestUrl() {
     return URL;
   }
 
   @Override
-  public ApiRequestHandlerResponse delete(final ApiGatewayRequestEvent event,
-      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
-
-    String groupName = event.getPathParameters().get("groupName");
-    CognitoIdentityProviderService service =
-        awsservice.getExtension(CognitoIdentityProviderService.class);
-    service.deleteGroup(groupName);
-
-    return ApiRequestHandlerResponse.builder().ok()
-        .body("message", "Group " + groupName + " deleted").build();
+  public Optional<Boolean> isAuthorized(final AwsServiceCache awsServiceCache, final String method,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
+    boolean access = authorization.getPermissions().contains(ApiPermission.ADMIN);
+    return !"get".equalsIgnoreCase(method) ? Optional.of(access) : Optional.empty();
   }
 }

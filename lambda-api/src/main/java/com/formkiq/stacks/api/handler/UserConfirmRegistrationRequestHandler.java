@@ -47,6 +47,17 @@ public class UserConfirmRegistrationRequestHandler
   public static final String URL = "/confirmRegistration";
 
   @Override
+  public String getRequestUrl() {
+    return URL;
+  }
+
+  @Override
+  public Optional<Boolean> isAuthorized(final AwsServiceCache awsServiceCache, final String method,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
+    return Optional.of(true);
+  }
+
+  @Override
   public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
@@ -70,16 +81,5 @@ public class UserConfirmRegistrationRequestHandler
       throw new ValidationException(
           List.of(new ValidationErrorImpl().error("'username' and 'code' are required")));
     }
-  }
-
-  @Override
-  public String getRequestUrl() {
-    return URL;
-  }
-
-  @Override
-  public Optional<Boolean> isAuthorized(final AwsServiceCache awsServiceCache, final String method,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
-    return Optional.of(true);
   }
 }

@@ -33,15 +33,6 @@ import java.util.Map;
 public interface CustomDynamoDbAttributeBuilder {
 
   /**
-   * Builds {@link AttributeValue} for DynamoDb.
-   * 
-   * @param name {@link String}
-   * @param value {@link Object}
-   * @return Map {@link AttributeValue}
-   */
-  Map<String, AttributeValue> encode(String name, Object value);
-
-  /**
    * Decode {@link Map} {@link AttributeValue} to {@link Object}.
    *
    * @param name {@link String}
@@ -50,4 +41,13 @@ public interface CustomDynamoDbAttributeBuilder {
    * @param <T> Type of object
    */
   <T> T decode(String name, Map<String, AttributeValue> attrs);
+
+  /**
+   * Builds {@link AttributeValue} for DynamoDb.
+   * 
+   * @param name {@link String}
+   * @param value {@link Object}
+   * @return Map {@link AttributeValue}
+   */
+  Map<String, AttributeValue> encode(String name, Object value);
 }

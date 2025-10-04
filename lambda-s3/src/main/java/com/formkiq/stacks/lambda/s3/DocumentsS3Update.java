@@ -254,6 +254,35 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     serviceCache = awsServiceCache;
   }
 
+  private void buildAttributes(final Map<String, AttributeValue> current,
+      final Map<String, Object> prev, final DocumentItem item, final S3ObjectMetadata resp,
+      final String contentType, final Long contentLength) {
+
+    if (!Strings.isEmpty(contentType)) {
+      current.put("contentType", AttributeValue.fromS(contentType));
+      prev.put("contentType", item.getContentType());
+    }
+
+    String checksum = resp.getChecksum();
+    current.put("checksum", AttributeValue.fromS(checksum));
+    prev.put("checksum", item.getChecksum());
+
+    if (resp.getChecksumType() != null) {
+      current.put("checksumType", AttributeValue.fromS(resp.getChecksumType()));
+      prev.put("checksumType", item.getChecksumType());
+    }
+
+    if (contentLength != null) {
+      current.put("contentLength", AttributeValue.fromN("" + contentLength));
+      prev.put("contentLength", item.getContentLength());
+    }
+
+    if (resp.getVersionId() != null) {
+      current.put(S3VERSION_ATTRIBUTE, AttributeValue.fromS(resp.getVersionId()));
+      prev.put(S3VERSION_ATTRIBUTE, item.getVersion());
+    }
+  }
+
   /**
    * Builds Document Event.
    * 
@@ -290,6 +319,53 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
       throw new IOException(String.format("Unable to delete document %s from site %s in module %s",
           documentId, siteId, module));
     }
+  }
+
+  private Map<String, Object> convertToObjectMap(final Map<String, ChangeRecord> changes) {
+    return changes.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> {
+      ChangeRecord cr = entry.getValue();
+      Map<String, Object> innerMap = new HashMap<>();
+      innerMap.put("oldValue", cr.oldValue());
+      innerMap.put("newValue", cr.newValue());
+      return innerMap;
+    }));
+  }
+
+  private String findContentType(final DocumentItem item, final String contentType) {
+
+    MimeType mimeType = MimeType.fromContentType(contentType);
+    if (contentType != null && contentType.endsWith("/octet-stream")) {
+
+      if (!com.formkiq.strings.Strings.isEmpty(item.getContentType())) {
+        mimeType = MimeType.fromContentType(item.getContentType());
+      } else if (!com.formkiq.strings.Strings.isEmpty(item.getPath())) {
+        mimeType = MimeType.findByPath(item.getPath());
+      }
+    }
+
+    return MimeType.MIME_UNKNOWN.equals(mimeType) ? contentType : mimeType.getContentType();
+  }
+
+  private DocumentItem findDocument(final String siteId, final String documentId) {
+    return service.findDocument(siteId, documentId);
+  }
+
+  private String getContent(final DocumentEvent event) {
+
+    String content = null;
+
+    String s3bucket = event.s3bucket();
+    String key = event.s3key();
+    String contentType = event.contentType();
+    S3Service s3Service = serviceCache.getExtension(S3Service.class);
+    S3ObjectMetadata resp = s3Service.getObjectMetadata(s3bucket, key, null);
+
+    if (MimeType.isPlainText(contentType) && resp.getContentLength() != null
+        && resp.getContentLength() < EventServiceSns.MAX_SNS_CONTENT_SIZE) {
+      content = s3Service.getContentAsString(s3bucket, key, null);
+    }
+
+    return content;
   }
 
   /**
@@ -599,6 +675,23 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
    *
    * @param event {@link DocumentEvent}
    */
+  private void sendNextActionsSnsMessage(final DocumentEvent event) {
+
+    String eventType = event.type();
+    String siteId = event.siteId();
+    String documentId = event.documentId();
+
+    if (CREATE.equals(eventType)) {
+      List<Action> actions = actionsService.getActions(siteId, documentId);
+      notificationService.publishNextActionEvent(actions, siteId, documentId);
+    }
+  }
+
+  /**
+   * Either sends the Create Message to SNS.
+   *
+   * @param event {@link DocumentEvent}
+   */
   private void sendSnsMessage(final DocumentEvent event) {
 
     String contentType = event.contentType();
@@ -619,98 +712,5 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
     EventService documentEventService = serviceCache.getExtension(EventService.class);
     documentEventService.publish(serviceCache.getLogger(), event);
-  }
-
-  private String getContent(final DocumentEvent event) {
-
-    String content = null;
-
-    String s3bucket = event.s3bucket();
-    String key = event.s3key();
-    String contentType = event.contentType();
-    S3Service s3Service = serviceCache.getExtension(S3Service.class);
-    S3ObjectMetadata resp = s3Service.getObjectMetadata(s3bucket, key, null);
-
-    if (MimeType.isPlainText(contentType) && resp.getContentLength() != null
-        && resp.getContentLength() < EventServiceSns.MAX_SNS_CONTENT_SIZE) {
-      content = s3Service.getContentAsString(s3bucket, key, null);
-    }
-
-    return content;
-  }
-
-  private Map<String, Object> convertToObjectMap(final Map<String, ChangeRecord> changes) {
-    return changes.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> {
-      ChangeRecord cr = entry.getValue();
-      Map<String, Object> innerMap = new HashMap<>();
-      innerMap.put("oldValue", cr.oldValue());
-      innerMap.put("newValue", cr.newValue());
-      return innerMap;
-    }));
-  }
-
-  private String findContentType(final DocumentItem item, final String contentType) {
-
-    MimeType mimeType = MimeType.fromContentType(contentType);
-    if (contentType != null && contentType.endsWith("/octet-stream")) {
-
-      if (!com.formkiq.strings.Strings.isEmpty(item.getContentType())) {
-        mimeType = MimeType.fromContentType(item.getContentType());
-      } else if (!com.formkiq.strings.Strings.isEmpty(item.getPath())) {
-        mimeType = MimeType.findByPath(item.getPath());
-      }
-    }
-
-    return MimeType.MIME_UNKNOWN.equals(mimeType) ? contentType : mimeType.getContentType();
-  }
-
-  private void buildAttributes(final Map<String, AttributeValue> current,
-      final Map<String, Object> prev, final DocumentItem item, final S3ObjectMetadata resp,
-      final String contentType, final Long contentLength) {
-
-    if (!Strings.isEmpty(contentType)) {
-      current.put("contentType", AttributeValue.fromS(contentType));
-      prev.put("contentType", item.getContentType());
-    }
-
-    String checksum = resp.getChecksum();
-    current.put("checksum", AttributeValue.fromS(checksum));
-    prev.put("checksum", item.getChecksum());
-
-    if (resp.getChecksumType() != null) {
-      current.put("checksumType", AttributeValue.fromS(resp.getChecksumType()));
-      prev.put("checksumType", item.getChecksumType());
-    }
-
-    if (contentLength != null) {
-      current.put("contentLength", AttributeValue.fromN("" + contentLength));
-      prev.put("contentLength", item.getContentLength());
-    }
-
-    if (resp.getVersionId() != null) {
-      current.put(S3VERSION_ATTRIBUTE, AttributeValue.fromS(resp.getVersionId()));
-      prev.put(S3VERSION_ATTRIBUTE, item.getVersion());
-    }
-  }
-
-  private DocumentItem findDocument(final String siteId, final String documentId) {
-    return service.findDocument(siteId, documentId);
-  }
-
-  /**
-   * Either sends the Create Message to SNS.
-   *
-   * @param event {@link DocumentEvent}
-   */
-  private void sendNextActionsSnsMessage(final DocumentEvent event) {
-
-    String eventType = event.type();
-    String siteId = event.siteId();
-    String documentId = event.documentId();
-
-    if (CREATE.equals(eventType)) {
-      List<Action> actions = actionsService.getActions(siteId, documentId);
-      notificationService.publishNextActionEvent(actions, siteId, documentId);
-    }
   }
 }

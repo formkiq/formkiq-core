@@ -73,6 +73,90 @@ import static org.junit.jupiter.api.Assertions.fail;
  */
 public class SiteSchemaRequestTest extends AbstractAwsIntegrationTest {
 
+  private static ResourceItem getResourceItem(final SystemManagementApi api, final String siteId,
+      final String locale, final String itemKey) throws ApiException {
+    return api.getLocaleResourceItem(siteId, locale, itemKey).getResourceItem();
+  }
+
+  private static List<ResourceItem> getResourceItems(final SystemManagementApi api,
+      final String siteId, final String locale) throws ApiException {
+    return notNull(api.getLocaleResourceItems(siteId, locale, null, null).getResourceItems());
+  }
+
+  /**
+   * Add AddLocaleResourceInterfaceItem.
+   *
+   * POST /sites/{siteId}/locales/{locale}/resourceItems GET
+   * /sites/{siteId}/locales/{locale}/resourceItems DELETE
+   * /sites/{siteId}/locales/{locale}/resourceItems/{itemKey} GET
+   * /sites/{siteId}/locales/{locale}/resourceItems/{itemKey}
+   * 
+   * @throws ApiException ApiException
+   */
+  @Test
+  void addResourceItem01() throws ApiException {
+    // given
+    String locale = "en";
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      List<ApiClient> apiClients = getApiClients(siteId);
+      for (ApiClient apiClient : apiClients) {
+
+        String key = ID.uuid();
+        SystemManagementApi api = new SystemManagementApi(apiClient);
+        api.addLocale(siteId, new AddLocaleRequest().locale(locale));
+
+        AddLocaleResourceInterfaceItem item = new AddLocaleResourceInterfaceItem()
+            .itemType(LocaleResourceType.INTERFACE).interfaceKey(key).localizedValue("123");
+        AddLocaleResourceItemRequest addReq =
+            new AddLocaleResourceItemRequest().resourceItem(new AddResourceItem(item));
+
+        // when
+        AddLocaleResourceItemResponse response = api.addLocaleResourceItem(siteId, locale, addReq);
+
+        // then
+        assertEquals("INTERFACE##" + key, response.getItemKey());
+        assertFalse(getResourceItems(api, siteId, "en").isEmpty());
+        assertTrue(getResourceItems(api, siteId, "fr").isEmpty());
+
+        assertInterfaceResourceItem(getResourceItem(api, siteId, "en", response.getItemKey()), key,
+            "123");
+
+        // given
+        item.setLocalizedValue("555");
+        SetLocaleResourceItemRequest setReq =
+            new SetLocaleResourceItemRequest().resourceItem(new AddResourceItem(item));
+
+        // when
+        api.setLocaleResourceItem(siteId, "en", response.getItemKey(), setReq);
+
+        // then
+        assertInterfaceResourceItem(getResourceItem(api, siteId, "en", response.getItemKey()), key,
+            "555");
+
+        // when
+        api.deleteLocaleResourceItem(siteId, "en", response.getItemKey());
+
+        // then
+        try {
+          getResourceItem(api, siteId, "en", response.getItemKey());
+          fail();
+        } catch (ApiException e) {
+          assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
+          assertEquals("{\"message\":\"ItemKey '" + response.getItemKey() + "' not found\"}",
+              e.getResponseBody());
+        }
+      }
+    }
+  }
+
+  private void assertInterfaceResourceItem(final ResourceItem item, final String interfaceKey,
+      final String value) {
+    assertNotNull(item.getItemKey());
+    assertEquals(interfaceKey, item.getInterfaceKey());
+    assertEquals(value, item.getLocalizedValue());
+  }
+
   /**
    * GET /sites/{siteId}/schema/document, not set.
    *
@@ -159,89 +243,5 @@ public class SiteSchemaRequestTest extends AbstractAwsIntegrationTest {
       assertEquals(1, required.size());
       assertEquals(0, notNull(required.get(0).getLocalizedAllowedValues()).size());
     }
-  }
-
-  /**
-   * Add AddLocaleResourceInterfaceItem.
-   *
-   * POST /sites/{siteId}/locales/{locale}/resourceItems GET
-   * /sites/{siteId}/locales/{locale}/resourceItems DELETE
-   * /sites/{siteId}/locales/{locale}/resourceItems/{itemKey} GET
-   * /sites/{siteId}/locales/{locale}/resourceItems/{itemKey}
-   * 
-   * @throws ApiException ApiException
-   */
-  @Test
-  void addResourceItem01() throws ApiException {
-    // given
-    String locale = "en";
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-
-      List<ApiClient> apiClients = getApiClients(siteId);
-      for (ApiClient apiClient : apiClients) {
-
-        String key = ID.uuid();
-        SystemManagementApi api = new SystemManagementApi(apiClient);
-        api.addLocale(siteId, new AddLocaleRequest().locale(locale));
-
-        AddLocaleResourceInterfaceItem item = new AddLocaleResourceInterfaceItem()
-            .itemType(LocaleResourceType.INTERFACE).interfaceKey(key).localizedValue("123");
-        AddLocaleResourceItemRequest addReq =
-            new AddLocaleResourceItemRequest().resourceItem(new AddResourceItem(item));
-
-        // when
-        AddLocaleResourceItemResponse response = api.addLocaleResourceItem(siteId, locale, addReq);
-
-        // then
-        assertEquals("INTERFACE##" + key, response.getItemKey());
-        assertFalse(getResourceItems(api, siteId, "en").isEmpty());
-        assertTrue(getResourceItems(api, siteId, "fr").isEmpty());
-
-        assertInterfaceResourceItem(getResourceItem(api, siteId, "en", response.getItemKey()), key,
-            "123");
-
-        // given
-        item.setLocalizedValue("555");
-        SetLocaleResourceItemRequest setReq =
-            new SetLocaleResourceItemRequest().resourceItem(new AddResourceItem(item));
-
-        // when
-        api.setLocaleResourceItem(siteId, "en", response.getItemKey(), setReq);
-
-        // then
-        assertInterfaceResourceItem(getResourceItem(api, siteId, "en", response.getItemKey()), key,
-            "555");
-
-        // when
-        api.deleteLocaleResourceItem(siteId, "en", response.getItemKey());
-
-        // then
-        try {
-          getResourceItem(api, siteId, "en", response.getItemKey());
-          fail();
-        } catch (ApiException e) {
-          assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
-          assertEquals("{\"message\":\"ItemKey '" + response.getItemKey() + "' not found\"}",
-              e.getResponseBody());
-        }
-      }
-    }
-  }
-
-  private void assertInterfaceResourceItem(final ResourceItem item, final String interfaceKey,
-      final String value) {
-    assertNotNull(item.getItemKey());
-    assertEquals(interfaceKey, item.getInterfaceKey());
-    assertEquals(value, item.getLocalizedValue());
-  }
-
-  private static ResourceItem getResourceItem(final SystemManagementApi api, final String siteId,
-      final String locale, final String itemKey) throws ApiException {
-    return api.getLocaleResourceItem(siteId, locale, itemKey).getResourceItem();
-  }
-
-  private static List<ResourceItem> getResourceItems(final SystemManagementApi api,
-      final String siteId, final String locale) throws ApiException {
-    return notNull(api.getLocaleResourceItems(siteId, locale, null, null).getResourceItems());
   }
 }

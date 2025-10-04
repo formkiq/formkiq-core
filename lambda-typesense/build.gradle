@@ -59,22 +59,22 @@ test {
   useJUnitPlatform()
 }
 
-task buildTemplate {
-  inputs.files("src/main/resources/cloudformation/typesense/template.yaml")
-  outputs.files("${buildDir}/distributions/typesense/template.yaml")
+// task buildTemplate {
+//   inputs.files("src/main/resources/cloudformation/typesense/template.yaml")
+//   outputs.files("${buildDir}/distributions/typesense/template.yaml")
 
-  def randomtext = ('0'..'z').shuffled().take(10).join();
-  def sha256 = randomtext.digest('SHA-256')
+//   def randomtext = ('0'..'z').shuffled().take(10).join();
+//   def sha256 = randomtext.digest('SHA-256')
 
-  doLast {
-    exec {
-      commandLine getCmd(), getCmdParam(), "ytt --data-value hash=${sha256} -f src/main/resources/cloudformation/typesense/template.yaml > ${buildDir}/distributions/typesense/template.yaml"
-    }
-  }
-}
+//   doLast {
+//     exec {
+//       commandLine getCmd(), getCmdParam(), "ytt --data-value hash=${sha256} -f src/main/resources/cloudformation/typesense/template.yaml > ${buildDir}/distributions/typesense/template.yaml"
+//     }
+//   }
+// }
 
-graalvmNativeImage.dependsOn(buildTemplate)
-distZip.dependsOn buildTemplate, graalvmNativeImage
+// graalvmNativeImage.dependsOn(buildTemplate)
+// distZip.dependsOn buildTemplate, graalvmNativeImage
 
 tasks.distTar.enabled = false
 

@@ -36,17 +36,6 @@ public enum ReservedSiteId {
   /** API Key. */
   API_KEY("API_KEY");
 
-  /** Reserveed Site id. */
-  private final String siteId;
-
-  ReservedSiteId(final String reservedSiteId) {
-    this.siteId = reservedSiteId;
-  }
-
-  public String getSiteId() {
-    return this.siteId;
-  }
-
   /**
    * Convert a string to a {@link ReservedSiteId}.
    *
@@ -58,5 +47,16 @@ public enum ReservedSiteId {
       return Optional.empty();
     }
     return Arrays.stream(values()).filter(v -> v.getSiteId().equalsIgnoreCase(value)).findFirst();
+  }
+
+  /** Reserveed Site id. */
+  private final String siteId;
+
+  ReservedSiteId(final String reservedSiteId) {
+    this.siteId = reservedSiteId;
+  }
+
+  public String getSiteId() {
+    return this.siteId;
   }
 }

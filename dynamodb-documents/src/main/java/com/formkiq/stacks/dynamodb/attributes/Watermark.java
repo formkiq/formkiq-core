@@ -49,43 +49,12 @@ public class Watermark {
   }
 
   /**
-   * Get {@link WatermarkScale}.
+   * Get Image Document Id.
    * 
-   * @return {@link WatermarkScale}
+   * @return String
    */
-  public WatermarkScale getScale() {
-    return this.scale;
-  }
-
-  /**
-   * Set Scale.
-   * 
-   * @param watermarkScale {@link WatermarkScale}
-   * @return Watermark
-   */
-  public Watermark setScale(final WatermarkScale watermarkScale) {
-    this.scale = watermarkScale;
-    return this;
-  }
-
-  /**
-   * Get {@link Double} rotation.
-   * 
-   * @return Double
-   */
-  public Double getRotation() {
-    return this.rotation;
-  }
-
-  /**
-   * Set Rotation.
-   * 
-   * @param watermarkRotation {@link Double}
-   * @return Watermark
-   */
-  public Watermark setRotation(final Double watermarkRotation) {
-    this.rotation = watermarkRotation;
-    return this;
+  public String getImageDocumentId() {
+    return this.imageDocumentId;
   }
 
   /**
@@ -98,23 +67,30 @@ public class Watermark {
   }
 
   /**
-   * Set {@link WatermarkPosition}.
+   * Get {@link Double} rotation.
    * 
-   * @param watermarkPosition {@link WatermarkPosition}
-   * @return Watermark
+   * @return Double
    */
-  public Watermark setPosition(final WatermarkPosition watermarkPosition) {
-    this.position = watermarkPosition;
-    return this;
+  public Double getRotation() {
+    return this.rotation;
   }
 
   /**
-   * Get Image Document Id.
+   * Get {@link WatermarkScale}.
+   * 
+   * @return {@link WatermarkScale}
+   */
+  public WatermarkScale getScale() {
+    return this.scale;
+  }
+
+  /**
+   * Get Watermark text.
    * 
    * @return String
    */
-  public String getImageDocumentId() {
-    return this.imageDocumentId;
+  public String getText() {
+    return this.text;
   }
 
   /**
@@ -129,12 +105,36 @@ public class Watermark {
   }
 
   /**
-   * Get Watermark text.
+   * Set {@link WatermarkPosition}.
    * 
-   * @return String
+   * @param watermarkPosition {@link WatermarkPosition}
+   * @return Watermark
    */
-  public String getText() {
-    return this.text;
+  public Watermark setPosition(final WatermarkPosition watermarkPosition) {
+    this.position = watermarkPosition;
+    return this;
+  }
+
+  /**
+   * Set Rotation.
+   * 
+   * @param watermarkRotation {@link Double}
+   * @return Watermark
+   */
+  public Watermark setRotation(final Double watermarkRotation) {
+    this.rotation = watermarkRotation;
+    return this;
+  }
+
+  /**
+   * Set Scale.
+   * 
+   * @param watermarkScale {@link WatermarkScale}
+   * @return Watermark
+   */
+  public Watermark setScale(final WatermarkScale watermarkScale) {
+    this.scale = watermarkScale;
+    return this;
   }
 
   /**

@@ -43,13 +43,21 @@ public interface DynamoDbTypes {
   String DATE_PATTERN = "yyyy-MM-dd'T'HH:mm:ssZ";
 
   /**
-   * Convert {@link AttributeValue} to {@link String}.
+   * Formats {@link Date} for DynamoDb storage.
    *
-   * @param attributeValue {@link AttributeValue}
+   * @param value {@link Date}
    * @return String
    */
-  static String toString(final AttributeValue attributeValue) {
-    return attributeValue != null ? attributeValue.s() : null;
+  static String fromDate(final Date value) {
+    DateFormat df = getDateFormat();
+    return df.format(value);
+  }
+
+  private static DateFormat getDateFormat() {
+    DateFormat df = new SimpleDateFormat(DATE_PATTERN);
+    TimeZone tz = TimeZone.getTimeZone("UTC");
+    df.setTimeZone(tz);
+    return df;
   }
 
   static <T> T toCustom(final String name, final Map<String, AttributeValue> attrs,
@@ -90,24 +98,6 @@ public interface DynamoDbTypes {
     return date;
   }
 
-  private static DateFormat getDateFormat() {
-    DateFormat df = new SimpleDateFormat(DATE_PATTERN);
-    TimeZone tz = TimeZone.getTimeZone("UTC");
-    df.setTimeZone(tz);
-    return df;
-  }
-
-  /**
-   * Formats {@link Date} for DynamoDb storage.
-   *
-   * @param value {@link Date}
-   * @return String
-   */
-  static String fromDate(final Date value) {
-    DateFormat df = getDateFormat();
-    return df.format(value);
-  }
-
   /**
    * Convert {@link AttributeValue} to {@link List} {@link Map}.
    * 
@@ -116,5 +106,15 @@ public interface DynamoDbTypes {
    */
   static List<Map<String, Object>> toList(AttributeValue av) {
     return av.l().stream().map(l -> new AttributeValueToMap(null).apply(l.m())).toList();
+  }
+
+  /**
+   * Convert {@link AttributeValue} to {@link String}.
+   *
+   * @param attributeValue {@link AttributeValue}
+   * @return String
+   */
+  static String toString(final AttributeValue attributeValue) {
+    return attributeValue != null ? attributeValue.s() : null;
   }
 }

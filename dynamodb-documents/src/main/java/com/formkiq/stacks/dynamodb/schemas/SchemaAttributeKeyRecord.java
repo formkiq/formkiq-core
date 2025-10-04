@@ -55,26 +55,6 @@ public class SchemaAttributeKeyRecord implements DynamodbRecord<SchemaAttributeK
 
   }
 
-  /**
-   * Get Attribute Key.
-   * 
-   * @return String
-   */
-  public String getKey() {
-    return this.key;
-  }
-
-  /**
-   * Set Attribute Key.
-   * 
-   * @param attributeKey {@link String}
-   * @return SchemaAttributeKeyRecord
-   */
-  public SchemaAttributeKeyRecord setKey(final String attributeKey) {
-    this.key = attributeKey;
-    return this;
-  }
-
   @Override
   public Map<String, AttributeValue> getAttributes(final String siteId) {
 
@@ -93,10 +73,28 @@ public class SchemaAttributeKeyRecord implements DynamodbRecord<SchemaAttributeK
     return Map.of("key", fromS(this.key));
   }
 
+  /**
+   * Get Document Id.
+   * 
+   * @return String
+   */
+  public String getDocumentId() {
+    return this.documentId;
+  }
+
   @Override
   public SchemaAttributeKeyRecord getFromAttributes(final String siteId,
       final Map<String, AttributeValue> attrs) {
     return this;
+  }
+
+  /**
+   * Get Attribute Key.
+   * 
+   * @return String
+   */
+  public String getKey() {
+    return this.key;
   }
 
   @Override
@@ -119,6 +117,28 @@ public class SchemaAttributeKeyRecord implements DynamodbRecord<SchemaAttributeK
     return null;
   }
 
+  /**
+   * Set DocumentId.
+   * 
+   * @param id {@link String}
+   * @return SiteSchemaCompositeKeyRecord
+   */
+  public SchemaAttributeKeyRecord setDocumentId(final String id) {
+    this.documentId = id;
+    return this;
+  }
+
+  /**
+   * Set Attribute Key.
+   * 
+   * @param attributeKey {@link String}
+   * @return SchemaAttributeKeyRecord
+   */
+  public SchemaAttributeKeyRecord setKey(final String attributeKey) {
+    this.key = attributeKey;
+    return this;
+  }
+
   @Override
   public String sk() {
     return SK + this.key;
@@ -132,25 +152,5 @@ public class SchemaAttributeKeyRecord implements DynamodbRecord<SchemaAttributeK
   @Override
   public String skGsi2() {
     return null;
-  }
-
-  /**
-   * Get Document Id.
-   * 
-   * @return String
-   */
-  public String getDocumentId() {
-    return this.documentId;
-  }
-
-  /**
-   * Set DocumentId.
-   * 
-   * @param id {@link String}
-   * @return SiteSchemaCompositeKeyRecord
-   */
-  public SchemaAttributeKeyRecord setDocumentId(final String id) {
-    this.documentId = id;
-    return this;
   }
 }

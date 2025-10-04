@@ -49,13 +49,9 @@ public class ApiDocumentTagsItemResponse implements ApiResponse {
     return this.next;
   }
 
-  /**
-   * Set Next Token.
-   *
-   * @param token {@link String}
-   */
-  public void setNext(final String token) {
-    this.next = token;
+  @Override
+  public String getPrevious() {
+    return this.previous;
   }
 
   /**
@@ -68,17 +64,12 @@ public class ApiDocumentTagsItemResponse implements ApiResponse {
   }
 
   /**
-   * Set {@link ApiDocumentTagItemResponse}.
+   * Set Next Token.
    *
-   * @param list {@link List} {@link Object}
+   * @param token {@link String}
    */
-  public void setTags(final List<ApiDocumentTagItemResponse> list) {
-    this.tags = list;
-  }
-
-  @Override
-  public String getPrevious() {
-    return this.previous;
+  public void setNext(final String token) {
+    this.next = token;
   }
 
   /**
@@ -88,5 +79,14 @@ public class ApiDocumentTagsItemResponse implements ApiResponse {
    */
   public void setPrevious(final String prev) {
     this.previous = prev;
+  }
+
+  /**
+   * Set {@link ApiDocumentTagItemResponse}.
+   *
+   * @param list {@link List} {@link Object}
+   */
+  public void setTags(final List<ApiDocumentTagItemResponse> list) {
+    this.tags = list;
   }
 }

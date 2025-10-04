@@ -139,6 +139,37 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
     this.db = new DynamoDbServiceImpl(connection, documentsTable);
   }
 
+  @Override
+  public FolderIndexRecord addFileToFolder(final String siteId, final String documentId,
+      final FolderIndexRecord parent, final String path) {
+
+    String filename = Strings.getFilename(path);
+
+    String parentId = parent != null ? parent.documentId() : "";
+
+    // update last modified timestamp on folder.
+    if (parent != null) {
+      parent.lastModifiedDate(new Date());
+      Map<String, AttributeValue> attributes = parent.getAttributes(siteId);
+      Map<String, AttributeValueUpdate> values = Map.of("lastModifiedDate",
+          AttributeValueUpdate.builder().value(attributes.get("lastModifiedDate")).build());
+      this.db.updateItem(parent.fromS(parent.pk(siteId)), parent.fromS(parent.sk()), values);
+    }
+
+    FolderIndexRecord r = new FolderIndexRecord().parentDocumentId(parentId).documentId(documentId)
+        .path(filename).type("file");
+
+    Map<String, AttributeValue> a = this.db.get(r.fromS(r.pk(siteId)), r.fromS(r.sk()));
+    if (!a.isEmpty() && !documentId.equals(a.get("documentId").s())) {
+      String extension = Strings.getExtension(r.path());
+      String newFilename =
+          r.path().replaceAll("\\." + extension, " (" + documentId + ")" + "." + extension);
+      r.path(newFilename);
+    }
+
+    return r;
+  }
+
   private void checkParentId(final FolderIndexRecord record, final String parentId) {
     if (record.parentDocumentId() == null) {
       record.parentDocumentId(parentId);
@@ -248,37 +279,6 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
     String[] folders = tokens(path);
 
     return createFolderPaths(siteId, folders, insertedDate, userId, allDirectories);
-  }
-
-  @Override
-  public FolderIndexRecord addFileToFolder(final String siteId, final String documentId,
-      final FolderIndexRecord parent, final String path) {
-
-    String filename = Strings.getFilename(path);
-
-    String parentId = parent != null ? parent.documentId() : "";
-
-    // update last modified timestamp on folder.
-    if (parent != null) {
-      parent.lastModifiedDate(new Date());
-      Map<String, AttributeValue> attributes = parent.getAttributes(siteId);
-      Map<String, AttributeValueUpdate> values = Map.of("lastModifiedDate",
-          AttributeValueUpdate.builder().value(attributes.get("lastModifiedDate")).build());
-      this.db.updateItem(parent.fromS(parent.pk(siteId)), parent.fromS(parent.sk()), values);
-    }
-
-    FolderIndexRecord r = new FolderIndexRecord().parentDocumentId(parentId).documentId(documentId)
-        .path(filename).type("file");
-
-    Map<String, AttributeValue> a = this.db.get(r.fromS(r.pk(siteId)), r.fromS(r.sk()));
-    if (!a.isEmpty() && !documentId.equals(a.get("documentId").s())) {
-      String extension = Strings.getExtension(r.path());
-      String newFilename =
-          r.path().replaceAll("\\." + extension, " (" + documentId + ")" + "." + extension);
-      r.path(newFilename);
-    }
-
-    return r;
   }
 
   @Override
@@ -449,6 +449,14 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
     return list;
   }
 
+  private String getFileToken(final String path, final String[] tokens) {
+    if (path.endsWith("/")) {
+      return null;
+    }
+
+    return last(tokens);
+  }
+
   @Override
   public FolderIndexRecord getFolderByDocumentId(final String siteId, final String documentId) {
 
@@ -489,6 +497,53 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
     }
 
     return new FolderIndexRecord().getFromAttributes(siteId, map);
+  }
+
+  @Override
+  public List<FolderIndexRecord> getFolderIndexRecords(final String siteId, final String path)
+      throws IOException {
+
+    if (StringUtils.isEmpty(path)) {
+      return Collections.emptyList();
+    }
+
+    String[] tokens = tokens(path);
+    String fileToken = getFileToken(path, tokens);
+    String lastUuid = "";
+    List<FolderIndexRecord> records = new ArrayList<>();
+
+    for (String folder : tokens) {
+
+      String pk = getPk(siteId, lastUuid);
+      String sk = getSk(folder, folder.equals(fileToken));
+      DynamoDbKey key = new DynamoDbKey(pk, sk, null, null, null, null);
+
+      Map<String, AttributeValue> attr = this.db.get(key);
+      if (!attr.isEmpty()) {
+        FolderIndexRecord record = new FolderIndexRecord().getFromAttributes(siteId, attr);
+        records.add(record);
+        lastUuid = record.documentId();
+      } else {
+        throw new IOException("Cannot find folder '" + path + "'");
+      }
+
+    }
+
+    return records;
+  }
+
+  @Override
+  public FolderPermissionRecord getFolderPermissions(final String siteId, final String path) {
+    DynamoDbKey key = FolderPermissionRecord.builder().path(path).buildKey(siteId);
+    Map<String, AttributeValue> attributes = db.get(key);
+    return !attributes.isEmpty() ? FolderPermissionRecord.fromAttributeMap(attributes) : null;
+  }
+
+  @Override
+  public FolderPermissionRecord getFolderPermissionsByIndexKey(final String siteId,
+      final String indexKey) {
+    String path = toPathFromIndexKey(indexKey);
+    return getFolderPermissions(siteId, path);
   }
 
   @Override
@@ -557,75 +612,6 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
     return o;
   }
 
-  private String toPathFromIndexKey(final String indexKey) {
-    String path = null;
-    String index = URLDecoder.decode(indexKey, StandardCharsets.UTF_8);
-
-    int pos = index.indexOf(TAG_DELIMINATOR);
-    if (pos != -1) {
-      path = index.substring(pos + 1);
-    }
-
-    return path;
-  }
-
-  @Override
-  public List<FolderIndexRecord> getFolderIndexRecords(final String siteId, final String path)
-      throws IOException {
-
-    if (StringUtils.isEmpty(path)) {
-      return Collections.emptyList();
-    }
-
-    String[] tokens = tokens(path);
-    String fileToken = getFileToken(path, tokens);
-    String lastUuid = "";
-    List<FolderIndexRecord> records = new ArrayList<>();
-
-    for (String folder : tokens) {
-
-      String pk = getPk(siteId, lastUuid);
-      String sk = getSk(folder, folder.equals(fileToken));
-      DynamoDbKey key = new DynamoDbKey(pk, sk, null, null, null, null);
-
-      Map<String, AttributeValue> attr = this.db.get(key);
-      if (!attr.isEmpty()) {
-        FolderIndexRecord record = new FolderIndexRecord().getFromAttributes(siteId, attr);
-        records.add(record);
-        lastUuid = record.documentId();
-      } else {
-        throw new IOException("Cannot find folder '" + path + "'");
-      }
-
-    }
-
-    return records;
-  }
-
-  private String getFileToken(final String path, final String[] tokens) {
-    if (path.endsWith("/")) {
-      return null;
-    }
-
-    return last(tokens);
-  }
-
-  private Map<String, AttributeValue> getIndexByAttributeValues(final String siteId,
-      final String path) throws IOException {
-
-    Map<String, AttributeValue> attributes = Collections.emptyMap();
-
-    if (!StringUtils.isEmpty(path)) {
-      String[] folders = tokens(path);
-      Map<String, Map<String, AttributeValue>> keys = generateFileKeys(siteId, path, folders, null);
-
-      String key = folders[folders.length - 1];
-      attributes = keys.get(key);
-    }
-
-    return attributes;
-  }
-
   @Override
   public FolderIndexRecord getIndexAsRecord(final String siteId, final String indexKey,
       final boolean isFile) {
@@ -647,6 +633,22 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
     }
 
     return o;
+  }
+
+  private Map<String, AttributeValue> getIndexByAttributeValues(final String siteId,
+      final String path) throws IOException {
+
+    Map<String, AttributeValue> attributes = Collections.emptyMap();
+
+    if (!StringUtils.isEmpty(path)) {
+      String[] folders = tokens(path);
+      Map<String, Map<String, AttributeValue>> keys = generateFileKeys(siteId, path, folders, null);
+
+      String key = folders[folders.length - 1];
+      attributes = keys.get(key);
+    }
+
+    return attributes;
   }
 
   private String getPk(final String siteId, final String id) {
@@ -819,6 +821,19 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
     }
   }
 
+  /**
+   * Query GSI1 for Folder by DocumentId.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @return {@link QueryResponse}
+   */
+  private QueryResponse queryForFolderByDocumentId(final String siteId, final String documentId) {
+    FolderIndexRecord record = new FolderIndexRecord().documentId(documentId);
+    String pk = record.pkGsi1(siteId);
+    return this.db.queryIndex(GSI1, fromS(pk), null, 1);
+  }
+
   @Override
   public void setPermissions(final String siteId, final String path,
       final Collection<FolderRolePermission> roles) throws IOException {
@@ -836,28 +851,6 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
     } else {
       DynamoDbKey key = builder.buildKey(siteId);
       this.db.deleteItem(key);
-    }
-  }
-
-  @Override
-  public FolderPermissionRecord getFolderPermissionsByIndexKey(final String siteId,
-      final String indexKey) {
-    String path = toPathFromIndexKey(indexKey);
-    return getFolderPermissions(siteId, path);
-  }
-
-  @Override
-  public FolderPermissionRecord getFolderPermissions(final String siteId, final String path) {
-    DynamoDbKey key = FolderPermissionRecord.builder().path(path).buildKey(siteId);
-    Map<String, AttributeValue> attributes = db.get(key);
-    return !attributes.isEmpty() ? FolderPermissionRecord.fromAttributeMap(attributes) : null;
-  }
-
-  @Override
-  public void validateFolderPermissions(final String siteId, final String path,
-      final ApiPermission permission) {
-    if (!isEmpty(path)) {
-      new FolderPermissionValidate(db, permission).apply(siteId, new StringToFolder().apply(path));
     }
   }
 
@@ -899,17 +892,16 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
     return String.join("/", sb);
   }
 
-  /**
-   * Query GSI1 for Folder by DocumentId.
-   * 
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @return {@link QueryResponse}
-   */
-  private QueryResponse queryForFolderByDocumentId(final String siteId, final String documentId) {
-    FolderIndexRecord record = new FolderIndexRecord().documentId(documentId);
-    String pk = record.pkGsi1(siteId);
-    return this.db.queryIndex(GSI1, fromS(pk), null, 1);
+  private String toPathFromIndexKey(final String indexKey) {
+    String path = null;
+    String index = URLDecoder.decode(indexKey, StandardCharsets.UTF_8);
+
+    int pos = index.indexOf(TAG_DELIMINATOR);
+    if (pos != -1) {
+      path = index.substring(pos + 1);
+    }
+
+    return path;
   }
 
   /**
@@ -927,6 +919,14 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
     if (o.isPresent()) {
       String msg = "folder '" + path + "' does not exist";
       throw new IOException(msg);
+    }
+  }
+
+  @Override
+  public void validateFolderPermissions(final String siteId, final String path,
+      final ApiPermission permission) {
+    if (!isEmpty(path)) {
+      new FolderPermissionValidate(db, permission).apply(siteId, new StringToFolder().apply(path));
     }
   }
 }

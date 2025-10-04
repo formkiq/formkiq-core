@@ -206,6 +206,26 @@ public class DocumentWorkflowRecord implements DynamodbRecord<DocumentWorkflowRe
     return record;
   }
 
+  /**
+   * Get Inserted Date.
+   *
+   * @return {@link Date}
+   */
+  public Date insertedDate() {
+    return this.insertedDate;
+  }
+
+  /**
+   * Set Inserted Date.
+   *
+   * @param date {@link Date}
+   * @return {@link DocumentWorkflowRecord}
+   */
+  public DocumentWorkflowRecord insertedDate(final Date date) {
+    this.insertedDate = date;
+    return this;
+  }
+
   @Override
   public String pk(final String siteId) {
     if (this.documentId == null) {
@@ -311,26 +331,6 @@ public class DocumentWorkflowRecord implements DynamodbRecord<DocumentWorkflowRe
    */
   public DocumentWorkflowRecord workflowName(final String name) {
     this.workflowName = name;
-    return this;
-  }
-
-  /**
-   * Get Inserted Date.
-   *
-   * @return {@link Date}
-   */
-  public Date insertedDate() {
-    return this.insertedDate;
-  }
-
-  /**
-   * Set Inserted Date.
-   *
-   * @param date {@link Date}
-   * @return {@link DocumentWorkflowRecord}
-   */
-  public DocumentWorkflowRecord insertedDate(final Date date) {
-    this.insertedDate = date;
     return this;
   }
 }

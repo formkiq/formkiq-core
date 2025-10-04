@@ -37,48 +37,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Unit Test for {@link Strings}.
  */
 public class StringsTest {
-  /**
-   * Is Empty.
-   */
-  @Test
-  void testIsEmpty() {
-    assertTrue(Strings.isEmpty(null));
-    assertTrue(Strings.isEmpty(""));
-    assertFalse(Strings.isEmpty(" "));
-    assertFalse(Strings.isEmpty("a"));
-  }
-
-  @Test
-  void testSplitByChar() {
-    assertEquals("a d sa add", String.join(" ", Strings.splitByChar("a:d:sa:add", ':')));
-    assertEquals("adsa add", String.join(" ", Strings.splitByChar("adsa:add", ':')));
-    assertEquals("adsa:add", String.join(" ", Strings.splitByChar("adsa:add", '!')));
-    assertEquals("", String.join(" ", Strings.splitByChar(null, '!')));
-  }
-
-  @Test
-  void isNumeric() {
-    assertFalse(Strings.isNumeric(null));
-    assertFalse(Strings.isNumeric(""));
-    assertTrue(Strings.isNumeric("1"));
-    assertTrue(Strings.isNumeric("1.234"));
-  }
-
-  @Test
-  void testParseLocale() {
-    assertLocale(Strings.parseLocale("en"), "", "en", null);
-    assertLocale(Strings.parseLocale("fr"), "", "fr", null);
-    assertLocale(Strings.parseLocale("fr-124"), "124", "fr", null);
-    assertLocale(Strings.parseLocale("en-US"), "US", "en", null);
-    assertLocale(Strings.parseLocale("fr_FR"), "FR", "fr", null);
-    assertLocale(Strings.parseLocale("en-US-POSIX"), "US", "en", "POSIX");
-    assertLocale(Strings.parseLocale("eng"), "", "eng", null);
-    assertNull(Strings.parseLocale("boourns"));
-    assertNull(Strings.parseLocale("a"));
-    assertNull(Strings.parseLocale(""));
-    assertNull(Strings.parseLocale(null));
-  }
-
   private void assertLocale(final Locale locale, final String country, final String language,
       final String variant) {
     assertNotNull(locale);
@@ -87,13 +45,6 @@ public class StringsTest {
     if (variant != null) {
       assertEquals(variant, locale.getVariant());
     }
-  }
-
-  @Test
-  void notNull() {
-    assertNull(Strings.notEmpty(null, null, ""));
-    assertEquals("a", Strings.notEmpty(null, "", "a"));
-    assertEquals("b", Strings.notEmpty(null, "b", "a"));
   }
 
   @Test
@@ -123,5 +74,54 @@ public class StringsTest {
 
     r = Strings.lastIndexOf("mystringsomething", "/");
     assertNull(r);
+  }
+
+  @Test
+  void isNumeric() {
+    assertFalse(Strings.isNumeric(null));
+    assertFalse(Strings.isNumeric(""));
+    assertTrue(Strings.isNumeric("1"));
+    assertTrue(Strings.isNumeric("1.234"));
+  }
+
+  @Test
+  void notNull() {
+    assertNull(Strings.notEmpty(null, null, ""));
+    assertEquals("a", Strings.notEmpty(null, "", "a"));
+    assertEquals("b", Strings.notEmpty(null, "b", "a"));
+  }
+
+  /**
+   * Is Empty.
+   */
+  @Test
+  void testIsEmpty() {
+    assertTrue(Strings.isEmpty(null));
+    assertTrue(Strings.isEmpty(""));
+    assertFalse(Strings.isEmpty(" "));
+    assertFalse(Strings.isEmpty("a"));
+  }
+
+  @Test
+  void testParseLocale() {
+    assertLocale(Strings.parseLocale("en"), "", "en", null);
+    assertLocale(Strings.parseLocale("fr"), "", "fr", null);
+    assertLocale(Strings.parseLocale("fr-124"), "124", "fr", null);
+    assertLocale(Strings.parseLocale("en-US"), "US", "en", null);
+    assertLocale(Strings.parseLocale("fr_FR"), "FR", "fr", null);
+    assertLocale(Strings.parseLocale("en-US-POSIX"), "US", "en", "POSIX");
+    assertLocale(Strings.parseLocale("eng"), "", "eng", null);
+    assertNull(Strings.parseLocale("boourns"));
+    assertNull(Strings.parseLocale("a"));
+    assertNull(Strings.parseLocale(""));
+    assertNull(Strings.parseLocale(null));
+  }
+
+  @Test
+  void testSplitByChar() {
+    assertEquals("a d sa add", String.join(" ", Strings.splitByChar("a:d:sa:add", ':')));
+    assertEquals("adsa add", String.join(" ", Strings.splitByChar("adsa:add", ':')));
+    assertEquals("adsa:add", String.join(" ", Strings.splitByChar("adsa:add", '!')));
+    assertEquals("", String.join(" ", Strings.splitByChar(null, '!')));
   }
 }

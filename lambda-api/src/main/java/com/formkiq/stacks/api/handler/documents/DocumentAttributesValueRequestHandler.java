@@ -47,13 +47,6 @@ public class DocumentAttributesValueRequestHandler
    */
   public DocumentAttributesValueRequestHandler() {}
 
-  private AttributeValidationAccess getAttributeValidationAccessDelete(
-      final ApiAuthorization authorization, final String siteId) {
-
-    boolean isAdmin = authorization.isAdminOrGovern(siteId);
-    return isAdmin ? AttributeValidationAccess.ADMIN_DELETE : AttributeValidationAccess.DELETE;
-  }
-
   @Override
   public ApiRequestHandlerResponse delete(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
@@ -77,6 +70,13 @@ public class DocumentAttributesValueRequestHandler
         .builder().ok().body("message", "attribute value '" + attributeValue
             + "' removed from attribute '" + attributeKey + "', document '" + documentId + "'")
         .build();
+  }
+
+  private AttributeValidationAccess getAttributeValidationAccessDelete(
+      final ApiAuthorization authorization, final String siteId) {
+
+    boolean isAdmin = authorization.isAdminOrGovern(siteId);
+    return isAdmin ? AttributeValidationAccess.ADMIN_DELETE : AttributeValidationAccess.DELETE;
   }
 
   @Override

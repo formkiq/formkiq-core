@@ -42,19 +42,6 @@ public class MapChangesFunctionTest {
   private final MapChangesFunction function = new MapChangesFunction();
 
   @Test
-  void testNoChanges() {
-    // given
-    Map<String, Object> previous = Map.of("key1", "value1", "key2", 2);
-    Map<String, Object> current = Map.of("key1", "value1", "key2", 2);
-
-    // when
-    Map<String, ChangeRecord> result = function.apply(previous, current);
-
-    // then
-    assertTrue(result.isEmpty(), "Expected no differences");
-  }
-
-  @Test
   void testAddedKey() {
     // given
     Map<String, Object> previous = Map.of("key1", "value1");
@@ -102,6 +89,19 @@ public class MapChangesFunctionTest {
     assertNull(result.get("c").newValue());
     assertNull(result.get("d").oldValue());
     assertEquals("9", result.get("d").newValue());
+  }
+
+  @Test
+  void testNoChanges() {
+    // given
+    Map<String, Object> previous = Map.of("key1", "value1", "key2", 2);
+    Map<String, Object> current = Map.of("key1", "value1", "key2", 2);
+
+    // when
+    Map<String, ChangeRecord> result = function.apply(previous, current);
+
+    // then
+    assertTrue(result.isEmpty(), "Expected no differences");
   }
 
   @Test

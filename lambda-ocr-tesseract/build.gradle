@@ -2,7 +2,6 @@ description = "FormKiQ Core - Lambda OCR Tesseract"
 
 apply plugin: 'distribution'
 
-def tesseract_version = "5.3.1"
 def moduleName = "formkiq-module-lambda-ocr-tesseract"
 
 dependencies {
@@ -39,50 +38,44 @@ test {
   maxHeapSize = '2G'
 }
 
-task downloadZipFile(type: Download) {
-  src 'https://github.com/bweigel/aws-lambda-tesseract-layer/releases/download/v5.3.9/tesseract-al2-x86.zip'
-  dest new File(buildDir, 'tesseract-al2-x86.zip')
-  overwrite false
+tasks.register('downloadZipFile', Download) {
+  src('https://github.com/bweigel/aws-lambda-tesseract-layer/releases/download/v5.3.9/tesseract-al2-x86.zip')
+  dest(layout.buildDirectory.file('tesseract-al2-x86.zip'))
+  overwrite(false)
 }
 
-task downloadAndUnzipFile(dependsOn: downloadZipFile, type: Copy) {
-  from zipTree(downloadZipFile.dest)
-  into new File(buildDir, 'tesseract')
+tasks.register('downloadAndUnzipFile', Copy) {
+  dependsOn(tasks.named('downloadZipFile'))
+  from({ zipTree(layout.buildDirectory.file('tesseract-al2-x86.zip')) })
+  into(layout.buildDirectory.dir('tesseract'))
 }
 
-task updateTesseractFiles(type: Delete) {
-  dependsOn downloadAndUnzipFile
-  def directory = file("${buildDir}/tesseract/tesseract/share/tessdata/")
+tasks.register('buildTesseractLayer', Zip) {
+  dependsOn 'downloadAndUnzipFile'
+  archiveFileName = 'layer-tesseract-5.3.1.zip'
+  destinationDirectory = layout.buildDirectory.dir('distributions/api')
 
-  doLast {
-    file("${buildDir}/tesseract/lib/libtesseract.so.5").renameTo(file("${buildDir}/tesseract/lib/libtesseract.so"))
-    directory.eachFile { file ->
-      if (file.name != "eng.traineddata" && file.name != "osd.traineddata") {
-        file.delete()
+  from(layout.buildDirectory.dir('tesseract')) { spec ->
+    eachFile { details ->
+      if (details.path == 'tesseract/lib/libtesseract.so.5') {
+        details.path = 'tesseract/lib/libtesseract.so'
       }
+    }
+    includeEmptyDirs = false
+
+    // 2) keep only eng/osd traineddata; drop the rest
+    exclude { details ->
+      if (details.path.startsWith('tesseract/tesseract/share/tessdata/')) {
+        def name = details.file.name
+        return !(name in [
+          'eng.traineddata',
+          'osd.traineddata'
+        ])
+      }
+      return false
     }
   }
 }
-
-task buildTesseractLayer(type: Zip) {
-  dependsOn updateTesseractFiles
-  from "${buildDir}/tesseract"
-  archiveFileName.set("layer-tesseract-5.3.1.zip")
-  destinationDirectory = file("${buildDir}/distributions/api")
-}
-
-//task buildTemplate {
-//  inputs.files("src/main/resources/cloudformation/template-ocr.yaml")
-//  outputs.files("${buildDir}/distributions/api/template-ocr.yaml")
-//
-//  doLast {
-//    copy {
-//      from layout.buildDirectory.dir("${buildDir}/../src/main/resources/cloudformation")
-//      include "template*"
-//      into "${buildDir}/distributions/api"
-//    }
-//  }
-//}
 
 distZip.dependsOn buildTesseractLayer
 

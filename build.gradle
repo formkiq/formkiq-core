@@ -2,29 +2,13 @@ import com.github.jk1.license.filter.LicenseBundleNormalizer
 import com.github.jk1.license.render.InventoryHtmlReportRenderer
 import com.github.jk1.license.render.JsonReportRenderer
 import org.openapitools.generator.gradle.plugin.tasks.ValidateTask
-import java.util.concurrent.TimeUnit
 
 plugins {
-  id 'java-library'
-  id 'checkstyle'
-  id 'distribution'
-  id 'com.github.spotbugs'  version '6.1.13'
-  id 'com.diffplug.spotless' version '7.2.1'
-  id 'com.github.ben-manes.versions' version '0.52.0'
-  id 'com.formkiq.gradle.graalvm-native-plugin' version '1.7.2'
+  id 'com.formkiq.gradle.java-base' version '1.0.0'
+  id 'com.formkiq.gradle.ytt' version '1.0.1'
   id 'de.undercouch.download' version '5.6.0'
   id 'org.openapi.generator' version '7.13.0'
   id 'com.github.jk1.dependency-license-report' version '2.9'
-}
-
-static String getCmd() {
-  String os = System.getProperty("os.name").toLowerCase()
-  return os.contains("win") ? "cmd" : "bash"
-}
-
-static String getCmdParam() {
-  String os = System.getProperty("os.name").toLowerCase()
-  return os.contains("win") ? "/c" : "-c"
 }
 
 repositories { mavenCentral() }
@@ -36,48 +20,9 @@ allprojects {
   ext.awsCognitoVersion = '1.6.2'
   group = 'com.formkiq.stacks'
 
-  apply plugin: 'com.diffplug.spotless'
-  apply plugin: 'java-library'
-  apply plugin: 'checkstyle'
-  apply plugin: 'com.github.spotbugs'
-  apply plugin: 'com.github.ben-manes.versions'
-  apply plugin: 'com.formkiq.gradle.graalvm-native-plugin'
-  // apply plugin: 'com.github.jk1.dependency-license-report'
-
-  configurations.configureEach {
-    resolutionStrategy.cacheChangingModulesFor(0, TimeUnit.SECONDS)
-  }
-
-  java {
-    toolchain {
-      languageVersion.set(JavaLanguageVersion.of(17))
-    }
-  }
-
-  spotless {
-    java {
-      eclipse().configFile rootProject.file("spotless.eclipseformat.xml")
-      removeUnusedImports()
-      removeWildcardImports()
-      licenseHeaderFile rootProject.file("LICENSE")
-    }
-
-    groovyGradle {
-      target '*.gradle'
-      greclipse()
-      leadingTabsToSpaces(2)
-      trimTrailingWhitespace()
-      endWithNewline()
-    }
-  }
-
-  checkstyle {
-    toolVersion = '10.12.1'
-    configFile file("config/checkstyle/checkstyle.xml")
-    configProperties = [project_loc: "${projectDir}"]
-    maxWarnings = 0
-    maxErrors = 0
-  }
+  // configurations.configureEach {
+  //   resolutionStrategy.cacheChangingModulesFor(0, TimeUnit.SECONDS)
+  // }
 
   licenseReport {
     configurations = ['runtimeClasspath']
@@ -95,40 +40,11 @@ allprojects {
 }
 
 subprojects {
-
-  repositories {
-    mavenLocal()
-    mavenCentral()
-    maven {
-      url "https://central.sonatype.com/repository/maven-snapshots/"
-    }
-  }
-
   tasks.withType(Test).configureEach {
     systemProperties['testregion'] = project.getProperty('testregion')
     systemProperties['testprofile'] = project.getProperty('testprofile')
     systemProperties['testappenvironment'] = project.getProperty('testappenvironment')
     systemProperties['testchatgptapikey'] = project.getProperty('testchatgptapikey')
-  }
-
-  spotbugs {
-    excludeFilter = file("$rootDir/config/gradle/spotbugs-exclude.xml")
-  }
-
-  spotbugsMain {
-    reports {
-      html {
-        required = true
-      }
-    }
-  }
-
-  spotbugsTest {
-    reports {
-      html {
-        required = true
-      }
-    }
   }
 }
 
@@ -136,25 +52,9 @@ description = "FormKiQ Core"
 
 apply plugin: 'distribution'
 
-tasks.register("buildDistribution", Copy) {
-  dependsOn subprojects.build
-  duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-  outputs.upToDateWhen {false}
-
-  from 'console/build/distributions'
-  from 'lambda-api-graalvm/build/distributions'
-  from 'lambda-s3-graalvm/build/distributions'
-  from 'lambda-typesense/build/distributions'
-  from 'lambda-ocr-tesseract/build/distributions'
-  from 'module-email-notify/build/distributions'
-  from 'websocket-api/build/distributions'
-  from 'lambda-apikey-authorizer/build/distributions'
-  into "$buildDir/modules"
-}
-
 tasks.register("downloadAwsCognito", Download) {
   src "https://github.com/formkiq/aws-cognito/releases/download/v${awsCognitoVersion}/aws-cognito-v${awsCognitoVersion}.zip"
-  dest buildDir
+  dest(layout.buildDirectory.dir("aws-cognito-v${awsCognitoVersion}.zip"))
   overwrite false
 }
 
@@ -167,44 +67,117 @@ tasks.register("downloadAwsCognito", Download) {
 
 tasks.register("unzipAwsCognito", Copy) {
   dependsOn downloadAwsCognito
-  def zipFile = file("${buildDir}/aws-cognito-v${awsCognitoVersion}.zip")
-  def outputDir = file("${buildDir}/modules/cognito")
-
-  from zipTree(zipFile)
-  into outputDir
+  from({ zipTree(layout.buildDirectory.file("aws-cognito-v${awsCognitoVersion}.zip").get().asFile) })
+  into(layout.buildDirectory.dir("modules/cognito"))
 }
 
-tasks.register("buildTemplate") {
-  dependsOn buildDistribution, unzipAwsCognito
+ytt {
+  defaultDataValues.put("version", project.version.toString())
 
-  outputs.upToDateWhen { false }
-
-  doLast {
-    copy {
-      from layout.buildDirectory.dir("${buildDir}/../src/main/resources/cloudformation")
-      include "*"
-      into "${buildDir}/modules"
+  specs {
+    apiLambda {
+      from("src/main/resources/cloudformation/api/api-lambda.yaml")
+      into("api/api-lambda.yaml")
+      hash "sha256"
     }
-    exec {
-      commandLine getCmd(), getCmdParam(), "ytt --data-value version=${project.version} -f ${buildDir}/modules/template.yaml --output-files ${buildDir}/modules"
+
+    api {
+      from("src/main/resources/cloudformation/api/api.yaml",
+          "src/main/resources/cloudformation/api/openapi-jwt.yaml")
+      into("api/api.yaml")
+      hash "sha256"
+    }
+
+    apiIam {
+      from("src/main/resources/cloudformation/api/api-iam.yaml",
+          "src/main/resources/cloudformation/api/openapi-iam.yaml")
+      into("api/api-iam.yaml")
+      hash "sha256"
+    }
+
+    apiApikey {
+      from("src/main/resources/cloudformation/api/api-apikey.yaml",
+          "src/main/resources/cloudformation/api/openapi-key.yaml")
+      into("api/api-apikey.yaml")
+      hash "sha256"
+    }
+
+    apiAuth {
+      from("src/main/resources/cloudformation/api/api-auth.yaml",
+          "src/main/resources/cloudformation/api/openapi-auth.yaml")
+      into("api/api-auth.yaml")
+      hash "sha256"
+    }
+
+    apiTemplate {
+      from("src/main/resources/cloudformation/api/template.yaml",
+          "src/main/resources/cloudformation/api/module-extra-core-ocr.yaml")
+      into("api/template.yaml")
+      hash "sha256"
+    }
+
+    ocr {
+      from("src/main/resources/cloudformation/api/template-ocr.yaml")
+      into("api/template-ocr.yaml")
+      hash "sha256"
+    }
+
+    typesense {
+      from("src/main/resources/cloudformation/typesense/template.yaml")
+      into("typesense/template.yaml")
+      hash "sha256"
+    }
+
+    storage {
+      from("src/main/resources/cloudformation/storage/template.yaml")
+      into("storage/template.yaml")
+      hash "sha256"
+    }
+
+    console {
+      from("src/main/resources/cloudformation/console/template-install.yaml")
+      into("console/template-install.yaml")
+      hash "sha256"
+    }
+
+    template {
+      from("src/main/resources/cloudformation/template.yaml")
+      into("template.yaml")
+      hash "sha256"
     }
   }
 }
 
-distZip.dependsOn buildTemplate
+tasks.named('distZip') {
+  dependsOn subprojects.collect { it.tasks.named('build') }, unzipAwsCognito, yttRenderAll
+}
 
 tasks.distTar.enabled = false
 
 distributions {
   main {
     contents {
+      duplicatesStrategy = DuplicatesStrategy.FAIL
+
       from(".") {
         include "INSTALL.md"
         include "LICENSE"
       }
-      from("${buildDir}/modules") {
-        include "**/**"
+      from("src/main/resources/cloudformation") {
+        exclude "api/**"
+        exclude "typesense/**"
+        exclude "storage/**"
+        exclude "console/template-install.yaml"
+        exclude "template.yaml"
       }
+      from 'build/ytt'
+      from 'console/build/distributions'
+      from 'build/modules'
+      from 'lambda-api-graalvm/build/distributions'
+      from 'lambda-s3-graalvm/build/distributions'
+      from 'lambda-typesense/build/distributions'
+      from 'lambda-ocr-tesseract/build/distributions'
+      from 'lambda-apikey-authorizer/build/distributions'
       into '/'
     }
   }
@@ -235,8 +208,17 @@ tasks.register("validateOpenApiSpecs") {
 
 openApiGenerate {
   generatorName.set("spring")
-  inputSpec.set("$rootDir/docs/openapi/openapi-jwt.yaml")
-  outputDir.set("$buildDir/generated")
+  inputSpec.set(layout.projectDirectory
+      .file("docs/openapi/openapi-jwt.yaml")
+      .asFile
+      .absolutePath)
+
+  outputDir.set(layout.buildDirectory
+      .dir("generated")
+      .get()
+      .asFile
+      .absolutePath)
+
   apiPackage.set("com.formkiq.springboot.api")
   invokerPackage.set("com.formkiq.springboot.invoker")
   modelPackage.set("com.formkiq.springboot.model")

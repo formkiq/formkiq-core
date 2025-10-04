@@ -46,6 +46,17 @@ public class FindAttributesForDocumentsGet implements DynamoDbGet {
 
   public FindAttributesForDocumentsGet() {}
 
+  @Override
+  public Collection<DynamoDbKey> build(final String siteId) {
+
+    validate();
+
+    return eq.entrySet().stream()
+        .flatMap(e -> e.getValue().stream().map(r -> new DynamoDbKey(r.pk(siteId), r.sk(),
+            r.pkGsi1(siteId), r.skGsi1(), r.pkGsi2(siteId), r.skGsi2())).toList().stream())
+        .toList();
+  }
+
   /**
    * Set the folder path to retrieve documents from.
    * 
@@ -85,17 +96,6 @@ public class FindAttributesForDocumentsGet implements DynamoDbGet {
     });
 
     return this;
-  }
-
-  @Override
-  public Collection<DynamoDbKey> build(final String siteId) {
-
-    validate();
-
-    return eq.entrySet().stream()
-        .flatMap(e -> e.getValue().stream().map(r -> new DynamoDbKey(r.pk(siteId), r.sk(),
-            r.pkGsi1(siteId), r.skGsi1(), r.pkGsi2(siteId), r.skGsi2())).toList().stream())
-        .toList();
   }
 
   private void validate() {

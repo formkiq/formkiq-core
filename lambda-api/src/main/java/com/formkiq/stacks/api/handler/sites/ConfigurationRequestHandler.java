@@ -135,6 +135,11 @@ public class ConfigurationRequestHandler
     }
   }
 
+  private boolean isValidRsaPrivateKey(final String privateKeyPem) {
+    return privateKeyPem.contains("-----BEGIN RSA PRIVATE KEY-----")
+        && privateKeyPem.contains("-----END RSA PRIVATE KEY-----");
+  }
+
   /**
    * Mask {@link String}.
    *
@@ -193,23 +198,6 @@ public class ConfigurationRequestHandler
     }
   }
 
-  private void validateGoogle(final SiteConfiguration config,
-      final Collection<ValidationError> errors) {
-
-    SiteConfigurationGoogle google = config.getGoogle();
-
-    if (google != null) {
-      String googleWorkloadIdentityAudience = google.getWorkloadIdentityAudience();
-      String googleWorkloadIdentityServiceAccount = google.getWorkloadIdentityServiceAccount();
-
-      if (!Strings.isEmpty(googleWorkloadIdentityAudience, googleWorkloadIdentityServiceAccount)) {
-        errors.add(new ValidationErrorImpl().key("google")
-            .error("all 'googleWorkloadIdentityAudience', 'googleWorkloadIdentityServiceAccount' "
-                + "are required for google setup"));
-      }
-    }
-  }
-
   private void validateDocusign(final SiteConfiguration config,
       final Collection<ValidationError> errors) {
 
@@ -231,8 +219,20 @@ public class ConfigurationRequestHandler
     }
   }
 
-  private boolean isValidRsaPrivateKey(final String privateKeyPem) {
-    return privateKeyPem.contains("-----BEGIN RSA PRIVATE KEY-----")
-        && privateKeyPem.contains("-----END RSA PRIVATE KEY-----");
+  private void validateGoogle(final SiteConfiguration config,
+      final Collection<ValidationError> errors) {
+
+    SiteConfigurationGoogle google = config.getGoogle();
+
+    if (google != null) {
+      String googleWorkloadIdentityAudience = google.getWorkloadIdentityAudience();
+      String googleWorkloadIdentityServiceAccount = google.getWorkloadIdentityServiceAccount();
+
+      if (!Strings.isEmpty(googleWorkloadIdentityAudience, googleWorkloadIdentityServiceAccount)) {
+        errors.add(new ValidationErrorImpl().key("google")
+            .error("all 'googleWorkloadIdentityAudience', 'googleWorkloadIdentityServiceAccount' "
+                + "are required for google setup"));
+      }
+    }
   }
 }

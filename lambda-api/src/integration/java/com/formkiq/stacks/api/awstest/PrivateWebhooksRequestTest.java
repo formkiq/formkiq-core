@@ -66,6 +66,10 @@ public class PrivateWebhooksRequestTest extends AbstractAwsIntegrationTest {
   /** JUnit Test Timeout. */
   private static final int TEST_TIMEOUT = 20;
 
+  private String getRootHttpUrl() {
+    return getCognito().getRootJwtUrl();
+  }
+
   /**
    * Test POST /private/webhooks.
    * 
@@ -112,10 +116,6 @@ public class PrivateWebhooksRequestTest extends AbstractAwsIntegrationTest {
 
       api.deleteWebhook(id, null);
     }
-  }
-
-  private String getRootHttpUrl() {
-    return getCognito().getRootJwtUrl();
   }
 
   /**

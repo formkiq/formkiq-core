@@ -427,6 +427,51 @@ class FolderIndexProcessorTest implements DbKeys {
   }
 
   /**
+   * Get path from Index.
+   */
+  @Test
+  void testGetPathFromIndex() {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      String documentId = ID.uuid();
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      item.setPath("./aa/b/c/test.pdf");
+
+      // when
+      List<FolderIndexRecord> indexes =
+          index.createFolders(siteId, item.getPath(), item.getUserId());
+
+      // then
+      final int expected = 3;
+      assertEquals(expected, indexes.size());
+      assertEquals("c", indexes.get(2).path());
+
+      // given
+      String indexKey = indexes.get(2).createIndexKey(siteId);
+
+      // when
+      String path = index.toPath(siteId, indexKey);
+
+      // then
+      assertEquals("aa/b/c", path);
+    }
+  }
+
+  /**
+   * Get path from invalid Index.
+   */
+  @Test
+  void testGetPathFromIndexInvalid() {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      assertEquals("", index.toPath(siteId, ID.uuid()));
+      assertEquals("", index.toPath(siteId, null));
+      assertEquals("", index.toPath(siteId, ""));
+    }
+  }
+
+  /**
    * Move Directory to another directory.
    * 
    * @throws Exception Exception
@@ -690,51 +735,6 @@ class FolderIndexProcessorTest implements DbKeys {
       assertNull(map.lastModifiedDate());
       assertNull(map.userId());
       assertEquals("file", map.type());
-    }
-  }
-
-  /**
-   * Get path from Index.
-   */
-  @Test
-  void testGetPathFromIndex() {
-    // given
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-
-      String documentId = ID.uuid();
-      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-      item.setPath("./aa/b/c/test.pdf");
-
-      // when
-      List<FolderIndexRecord> indexes =
-          index.createFolders(siteId, item.getPath(), item.getUserId());
-
-      // then
-      final int expected = 3;
-      assertEquals(expected, indexes.size());
-      assertEquals("c", indexes.get(2).path());
-
-      // given
-      String indexKey = indexes.get(2).createIndexKey(siteId);
-
-      // when
-      String path = index.toPath(siteId, indexKey);
-
-      // then
-      assertEquals("aa/b/c", path);
-    }
-  }
-
-  /**
-   * Get path from invalid Index.
-   */
-  @Test
-  void testGetPathFromIndexInvalid() {
-    // given
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-      assertEquals("", index.toPath(siteId, ID.uuid()));
-      assertEquals("", index.toPath(siteId, null));
-      assertEquals("", index.toPath(siteId, ""));
     }
   }
 

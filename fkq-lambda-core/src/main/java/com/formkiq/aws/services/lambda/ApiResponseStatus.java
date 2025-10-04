@@ -73,18 +73,6 @@ public enum ApiResponseStatus {
   /** {@code 401 bad request} (HTTP/1.0 - RFC 1945). */
   SC_UNAUTHORIZED(401);
 
-  /** Http Status Code. */
-  private final int statusCode;
-
-  /**
-   * constructor.
-   *
-   * @param code int
-   */
-  ApiResponseStatus(final int code) {
-    this.statusCode = code;
-  }
-
   /**
    * Find {@link ApiResponseStatus}.
    * 
@@ -99,6 +87,18 @@ public enum ApiResponseStatus {
     }
 
     return SC_BAD_REQUEST;
+  }
+
+  /** Http Status Code. */
+  private final int statusCode;
+
+  /**
+   * constructor.
+   *
+   * @param code int
+   */
+  ApiResponseStatus(final int code) {
+    this.statusCode = code;
   }
 
   /**

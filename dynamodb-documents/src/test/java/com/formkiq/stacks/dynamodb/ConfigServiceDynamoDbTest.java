@@ -58,6 +58,49 @@ public class ConfigServiceDynamoDbTest {
         new ConfigServiceDynamoDb(DynamoDbTestServices.getDynamoDbConnection(), "Documents");
   }
 
+  @Test
+  void incrementKey01() {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      assertEquals(-1, this.service.getIncrement(siteId, "maxdocs"));
+
+      // when
+      assertEquals(1, this.service.increment(siteId, "maxdocs"));
+
+      // then
+      assertEquals(1, this.service.getIncrement(siteId, "maxdocs"));
+
+      // when
+      assertEquals(2, this.service.increment(siteId, "maxdocs"));
+
+      // then
+      assertEquals(2, this.service.getIncrement(siteId, "maxdocs"));
+    }
+  }
+
+  @Test
+  void incrementsKey01() {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      assertEquals(0, this.service.getIncrements(siteId).size());
+
+      this.service.increment(siteId, ConfigService.DOCUMENT_COUNT);
+      this.service.increment(siteId, "OcrCount");
+      this.service.increment(siteId, "OcrCount");
+
+      // when
+      Map<String, Long> increments = this.service.getIncrements(siteId);
+
+      // then
+      assertEquals(2, increments.size());
+
+      assertEquals(1, increments.get(ConfigService.DOCUMENT_COUNT));
+      assertEquals(2, increments.get("OcrCount"));
+    }
+  }
+
   /**
    * Test Finding Config.
    *
@@ -179,49 +222,6 @@ public class ConfigServiceDynamoDbTest {
       this.service.delete(siteId);
       assertEquals("", this.service.get(siteId).getMaxDocuments());
       assertEquals("", this.service.get(siteId).getMaxWebhooks());
-    }
-  }
-
-  @Test
-  void incrementKey01() {
-    // given
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-
-      assertEquals(-1, this.service.getIncrement(siteId, "maxdocs"));
-
-      // when
-      assertEquals(1, this.service.increment(siteId, "maxdocs"));
-
-      // then
-      assertEquals(1, this.service.getIncrement(siteId, "maxdocs"));
-
-      // when
-      assertEquals(2, this.service.increment(siteId, "maxdocs"));
-
-      // then
-      assertEquals(2, this.service.getIncrement(siteId, "maxdocs"));
-    }
-  }
-
-  @Test
-  void incrementsKey01() {
-    // given
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-
-      assertEquals(0, this.service.getIncrements(siteId).size());
-
-      this.service.increment(siteId, ConfigService.DOCUMENT_COUNT);
-      this.service.increment(siteId, "OcrCount");
-      this.service.increment(siteId, "OcrCount");
-
-      // when
-      Map<String, Long> increments = this.service.getIncrements(siteId);
-
-      // then
-      assertEquals(2, increments.size());
-
-      assertEquals(1, increments.get(ConfigService.DOCUMENT_COUNT));
-      assertEquals(2, increments.get("OcrCount"));
     }
   }
 }

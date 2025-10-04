@@ -83,9 +83,6 @@ import java.util.Map;
  */
 public class S3Service {
 
-  /** {@link S3ServiceInterceptor}. */
-  private final S3ServiceInterceptor interceptor;
-
   /**
    * URL Decode {@link String}.
    *
@@ -116,6 +113,9 @@ public class S3Service {
   public static byte[] toByteArray(final InputStream is) throws IOException {
     return IoUtils.toByteArray(is);
   }
+
+  /** {@link S3ServiceInterceptor}. */
+  private final S3ServiceInterceptor interceptor;
 
   /** {@link S3Client}. */
   private final S3Client s3Client;
@@ -226,6 +226,18 @@ public class S3Service {
   }
 
   /**
+   * Delete All S3 Object Tags.
+   * 
+   * @param bucket {@link String}
+   * @param key {@link String}
+   */
+  public void deleteAllObjectTags(final String bucket, final String key) {
+    DeleteObjectTaggingRequest req =
+        DeleteObjectTaggingRequest.builder().bucket(bucket).key(key).build();
+    this.s3Client.deleteObjectTagging(req);
+  }
+
+  /**
    * Deletes all versions (including delete markers) for the specified file in a versioned bucket.
    *
    * @param bucketName the name of the S3 bucket
@@ -278,18 +290,6 @@ public class S3Service {
   }
 
   /**
-   * Delete All S3 Object Tags.
-   * 
-   * @param bucket {@link String}
-   * @param key {@link String}
-   */
-  public void deleteAllObjectTags(final String bucket, final String key) {
-    DeleteObjectTaggingRequest req =
-        DeleteObjectTaggingRequest.builder().bucket(bucket).key(key).build();
-    this.s3Client.deleteObjectTagging(req);
-  }
-
-  /**
    * Delete Object.
    * 
    * @param bucket {@link String}
@@ -300,6 +300,21 @@ public class S3Service {
     this.s3Client.deleteObject(
         DeleteObjectRequest.builder().bucket(bucket).key(key).versionId(versionId).build());
 
+  }
+
+  /**
+   * Whether Bucket exists.
+   * 
+   * @param bucket {@link String}
+   * @return boolean
+   */
+  public boolean exists(final String bucket) {
+    try {
+      this.s3Client.headBucket(HeadBucketRequest.builder().bucket(bucket).build());
+      return true;
+    } catch (NoSuchBucketException e) {
+      return false;
+    }
   }
 
   /**
@@ -314,21 +329,6 @@ public class S3Service {
       this.s3Client.headObject(HeadObjectRequest.builder().bucket(bucket).key(key).build());
       return true;
     } catch (NoSuchKeyException e) {
-      return false;
-    }
-  }
-
-  /**
-   * Whether Bucket exists.
-   * 
-   * @param bucket {@link String}
-   * @return boolean
-   */
-  public boolean exists(final String bucket) {
-    try {
-      this.s3Client.headBucket(HeadBucketRequest.builder().bucket(bucket).build());
-      return true;
-    } catch (NoSuchBucketException e) {
       return false;
     }
   }
@@ -489,6 +489,22 @@ public class S3Service {
    * 
    * @param bucket {@link String}
    * @param key {@link String}
+   * @param is {@link InputStream}
+   * @param contentType {@link String}
+   * @return {@link PutObjectResponse}
+   * @throws IOException IOException
+   */
+  public PutObjectResponse putObject(final String bucket, final String key, final InputStream is,
+      final String contentType) throws IOException {
+    byte[] data = toByteArray(is);
+    return putObject(bucket, key, data, contentType);
+  }
+
+  /**
+   * Put Object in Bucket.
+   * 
+   * @param bucket {@link String}
+   * @param key {@link String}
    * @param data byte[]
    * @param contentType {@link String}
    * @return {@link PutObjectResponse}
@@ -529,22 +545,6 @@ public class S3Service {
     }
 
     return this.s3Client.putObject(request, RequestBody.fromBytes(data));
-  }
-
-  /**
-   * Put Object in Bucket.
-   * 
-   * @param bucket {@link String}
-   * @param key {@link String}
-   * @param is {@link InputStream}
-   * @param contentType {@link String}
-   * @return {@link PutObjectResponse}
-   * @throws IOException IOException
-   */
-  public PutObjectResponse putObject(final String bucket, final String key, final InputStream is,
-      final String contentType) throws IOException {
-    byte[] data = toByteArray(is);
-    return putObject(bucket, key, data, contentType);
   }
 
   /**

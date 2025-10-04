@@ -51,6 +51,49 @@ public class SitesLocaleResourceItemRequestHandler
   public SitesLocaleResourceItemRequestHandler() {}
 
   @Override
+  public ApiRequestHandlerResponse delete(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
+
+    String siteId = authorization.getSiteId();
+    String locale = event.getPathParameter("locale");
+    String itemKey = event.getPathParameter("itemKey");
+
+    LocaleService service = awsservice.getExtension(LocaleService.class);
+
+    boolean deleted = service.delete(siteId, locale, itemKey);
+    if (!deleted) {
+      throw new NotFoundException("ItemKey '" + itemKey + "' not found");
+    }
+
+    return ApiRequestHandlerResponse.builder().ok()
+        .body("message", "ItemKey '" + itemKey + "' successfully deleted").build();
+  }
+
+  @Override
+  public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
+
+    String siteId = authorization.getSiteId();
+    String locale = event.getPathParameter("locale");
+    String itemKey = event.getPathParameter("itemKey");
+
+    LocaleService service = awsservice.getExtension(LocaleService.class);
+
+    LocaleTypeRecord item = service.find(siteId, locale, itemKey);
+    if (item == null) {
+      throw new NotFoundException("ItemKey '" + itemKey + "' not found");
+    }
+
+    return ApiRequestHandlerResponse.builder().ok()
+        .body("resourceItem", new LocaleRecordToMap().apply(item)).build();
+  }
+
+  @Override
+  public String getRequestUrl() {
+    return "/sites/{siteId}/locales/{locale}/resourceItems/{itemKey}";
+  }
+
+  @Override
   public ApiRequestHandlerResponse put(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
@@ -76,48 +119,5 @@ public class SitesLocaleResourceItemRequestHandler
 
     return ApiRequestHandlerResponse.builder().ok()
         .body("message", "set item '" + item.getItemKey() + "' successfully").build();
-  }
-
-  @Override
-  public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
-      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
-
-    String siteId = authorization.getSiteId();
-    String locale = event.getPathParameter("locale");
-    String itemKey = event.getPathParameter("itemKey");
-
-    LocaleService service = awsservice.getExtension(LocaleService.class);
-
-    LocaleTypeRecord item = service.find(siteId, locale, itemKey);
-    if (item == null) {
-      throw new NotFoundException("ItemKey '" + itemKey + "' not found");
-    }
-
-    return ApiRequestHandlerResponse.builder().ok()
-        .body("resourceItem", new LocaleRecordToMap().apply(item)).build();
-  }
-
-  @Override
-  public ApiRequestHandlerResponse delete(final ApiGatewayRequestEvent event,
-      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
-
-    String siteId = authorization.getSiteId();
-    String locale = event.getPathParameter("locale");
-    String itemKey = event.getPathParameter("itemKey");
-
-    LocaleService service = awsservice.getExtension(LocaleService.class);
-
-    boolean deleted = service.delete(siteId, locale, itemKey);
-    if (!deleted) {
-      throw new NotFoundException("ItemKey '" + itemKey + "' not found");
-    }
-
-    return ApiRequestHandlerResponse.builder().ok()
-        .body("message", "ItemKey '" + itemKey + "' successfully deleted").build();
-  }
-
-  @Override
-  public String getRequestUrl() {
-    return "/sites/{siteId}/locales/{locale}/resourceItems/{itemKey}";
   }
 }

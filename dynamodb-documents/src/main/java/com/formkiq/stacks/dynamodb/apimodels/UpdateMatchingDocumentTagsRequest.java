@@ -44,48 +44,6 @@ public class UpdateMatchingDocumentTagsRequest {
    */
   public UpdateMatchingDocumentTagsRequest() {}
 
-  /**
-   * Set Match.
-   * 
-   * @param tagsMatch {@link UpdateMatchingDocumentTagsRequestMatch}
-   * @return {@link UpdateMatchingDocumentTagsRequest}
-   */
-  public UpdateMatchingDocumentTagsRequest match(
-      final UpdateMatchingDocumentTagsRequestMatch tagsMatch) {
-    this.match = tagsMatch;
-    return this;
-  }
-
-  /**
-   * Get match.
-   * 
-   * @return match {@link UpdateMatchingDocumentTagsRequestMatch}
-   **/
-  public UpdateMatchingDocumentTagsRequestMatch getMatch() {
-    return this.match;
-  }
-
-  /**
-   * Set {@link UpdateMatchingDocumentTagsRequestUpdate}.
-   * 
-   * @param updateRequest {@link UpdateMatchingDocumentTagsRequestUpdate}
-   * @return {@link UpdateMatchingDocumentTagsRequest}
-   */
-  public UpdateMatchingDocumentTagsRequest update(
-      final UpdateMatchingDocumentTagsRequestUpdate updateRequest) {
-    this.update = updateRequest;
-    return this;
-  }
-
-  /**
-   * Get update.
-   * 
-   * @return update
-   **/
-  public UpdateMatchingDocumentTagsRequestUpdate getUpdate() {
-    return this.update;
-  }
-
   @Override
   public boolean equals(final Object o) {
     if (this == o) {
@@ -100,19 +58,39 @@ public class UpdateMatchingDocumentTagsRequest {
         && Objects.equals(this.update, updateMatchingDocumentTagsRequest.update);
   }
 
+  /**
+   * Get match.
+   * 
+   * @return match {@link UpdateMatchingDocumentTagsRequestMatch}
+   **/
+  public UpdateMatchingDocumentTagsRequestMatch getMatch() {
+    return this.match;
+  }
+
+  /**
+   * Get update.
+   * 
+   * @return update
+   **/
+  public UpdateMatchingDocumentTagsRequestUpdate getUpdate() {
+    return this.update;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(this.match, this.update);
   }
 
-  @Override
-  public String toString() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("class UpdateMatchingDocumentTagsRequest {\n");
-    sb.append("    match: ").append(toIndentedString(this.match)).append("\n");
-    sb.append("    update: ").append(toIndentedString(this.update)).append("\n");
-    sb.append("}");
-    return sb.toString();
+  /**
+   * Set Match.
+   * 
+   * @param tagsMatch {@link UpdateMatchingDocumentTagsRequestMatch}
+   * @return {@link UpdateMatchingDocumentTagsRequest}
+   */
+  public UpdateMatchingDocumentTagsRequest match(
+      final UpdateMatchingDocumentTagsRequestMatch tagsMatch) {
+    this.match = tagsMatch;
+    return this;
   }
 
   /**
@@ -126,6 +104,28 @@ public class UpdateMatchingDocumentTagsRequest {
       return "null";
     }
     return o.toString().replace("\n", "\n    ");
+  }
+
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append("class UpdateMatchingDocumentTagsRequest {\n");
+    sb.append("    match: ").append(toIndentedString(this.match)).append("\n");
+    sb.append("    update: ").append(toIndentedString(this.update)).append("\n");
+    sb.append("}");
+    return sb.toString();
+  }
+
+  /**
+   * Set {@link UpdateMatchingDocumentTagsRequestUpdate}.
+   * 
+   * @param updateRequest {@link UpdateMatchingDocumentTagsRequestUpdate}
+   * @return {@link UpdateMatchingDocumentTagsRequest}
+   */
+  public UpdateMatchingDocumentTagsRequest update(
+      final UpdateMatchingDocumentTagsRequestUpdate updateRequest) {
+    this.update = updateRequest;
+    return this;
   }
 }
 

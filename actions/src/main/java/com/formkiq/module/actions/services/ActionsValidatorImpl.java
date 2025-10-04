@@ -59,6 +59,15 @@ public class ActionsValidatorImpl implements ActionsValidator {
     return action.parameters() != null ? action.parameters() : Collections.emptyMap();
   }
 
+  private void validateActionParameters(final String siteId, final Action action,
+      final String chatGptApiKey, final String notificationsEmail,
+      final Collection<ValidationError> errors) {
+
+    Map<String, Object> parameters = getParameters(action);
+    action.type().validate(db, siteId, action, parameters, chatGptApiKey, notificationsEmail,
+        errors);
+  }
+
   @Override
   public Collection<ValidationError> validation(final String siteId, final Action action,
       final String chatGptApiKey, final String notificationsEmail) {
@@ -94,14 +103,5 @@ public class ActionsValidatorImpl implements ActionsValidator {
     List<Collection<ValidationError>> errors = new ArrayList<>();
     actions.forEach(a -> errors.add(validation(siteId, a, chatGptApiKey, notificationsEmail)));
     return errors;
-  }
-
-  private void validateActionParameters(final String siteId, final Action action,
-      final String chatGptApiKey, final String notificationsEmail,
-      final Collection<ValidationError> errors) {
-
-    Map<String, Object> parameters = getParameters(action);
-    action.type().validate(db, siteId, action, parameters, chatGptApiKey, notificationsEmail,
-        errors);
   }
 }

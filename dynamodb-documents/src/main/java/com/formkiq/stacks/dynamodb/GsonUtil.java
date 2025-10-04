@@ -36,9 +36,6 @@ public final class GsonUtil {
   private static final Gson GSON =
       new GsonBuilder().disableHtmlEscaping().setDateFormat(DATE_FORMAT).create();
 
-  /** private constructor. */
-  private GsonUtil() {}
-
   /**
    * Get Instance of {@link Gson}.
    *
@@ -47,4 +44,7 @@ public final class GsonUtil {
   public static Gson getInstance() {
     return GSON;
   }
+
+  /** private constructor. */
+  private GsonUtil() {}
 }

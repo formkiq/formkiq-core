@@ -55,162 +55,19 @@ public class S3ObjectMetadata {
   public S3ObjectMetadata() {}
 
   /**
-   * Get Checksum Sha1.
-   * 
-   * @return String
-   */
-  public String getChecksumSha1() {
-    return this.checksumSha1;
-  }
-
-  /**
-   * Set Checksum Sha1.
-   * 
-   * @param checksum {@link String}
-   * @return S3ObjectMetadata
-   */
-  public S3ObjectMetadata setChecksumSha1(final String checksum) {
-    this.checksumSha1 = checksum;
-    return this;
-  }
-
-  /**
-   * Get Checksum SHA 256.
-   * 
-   * @return String
-   */
-  public String getChecksumSha256() {
-    return this.checksumSha256;
-  }
-
-  /**
-   * Set Checksum SHA 256.
-   * 
-   * @param checksum {@link String}
-   * @return S3ObjectMetadata
-   */
-  public S3ObjectMetadata setChecksumSha256(final String checksum) {
-    this.checksumSha256 = checksum;
-    return this;
-  }
-
-  /**
-   * Get Content Length.
-   * 
-   * @return {@link Long}
-   */
-  public Long getContentLength() {
-    return this.contentLength;
-  }
-
-  /**
-   * Set Content Length.
+   * Decode a Base64-encoded SHA-256 checksum into its hexadecimal representation.
    *
-   * @param length {@link Long}
+   * @param base64Checksum the Base64 string (e.g. "eXuwq/95jXIAr3aF3KeQHt/8Ur8mUA1b2XKCZY7iQVI=")
+   * @return lowercase hex digest (e.g.
+   *         "797bb0abff798d7200af7685dca7901edffc52bf26500d5bd97282658ee24152")
    */
-  public void setContentLength(final Long length) {
-    this.contentLength = length;
-  }
-
-  /**
-   * Get Content Type.
-   *
-   * @return {@link String}
-   */
-  public String getContentType() {
-    return this.contentType;
-  }
-
-  /**
-   * Set Object Content Type.
-   *
-   * @param objectContentType {@link String}
-   * @return {@link S3ObjectMetadata}
-   */
-  public S3ObjectMetadata setContentType(final String objectContentType) {
-    this.contentType = objectContentType;
-    return this;
-  }
-
-  /**
-   * Get Object ETag.
-   *
-   * @return {@link String}
-   */
-  public String getEtag() {
-    return this.etag;
-  }
-
-  /**
-   * Set Object ETag.
-   *
-   * @param objectEtag {@link String}
-   * @return {@link S3ObjectMetadata}
-   */
-  public S3ObjectMetadata setEtag(final String objectEtag) {
-    this.etag = objectEtag;
-    return this;
-  }
-
-  /**
-   * Get Metadata.
-   *
-   * @return {@link Map}
-   */
-  public Map<String, String> getMetadata() {
-    return this.metadata != null ? Collections.unmodifiableMap(this.metadata)
-        : Collections.emptyMap();
-  }
-
-  /**
-   * Set Metadata.
-   *
-   * @param map {@link Map}
-   * @return {@link S3ObjectMetadata}
-   */
-  public S3ObjectMetadata setMetadata(final Map<String, String> map) {
-    this.metadata = Collections.unmodifiableMap(map);
-    return this;
-  }
-
-  /**
-   * Get S3 Version Id.
-   *
-   * @return {@link String}
-   */
-  public String getVersionId() {
-    return this.versionId;
-  }
-
-  /**
-   * Set S3 Version Id.
-   *
-   * @param s3VersionId {@link String}
-   * @return {@link S3ObjectMetadata}
-   */
-  public S3ObjectMetadata setVersionId(final String s3VersionId) {
-    this.versionId = s3VersionId;
-    return this;
-  }
-
-  /**
-   * Does Object Exist.
-   *
-   * @return boolean
-   */
-  public boolean isObjectExists() {
-    return this.objectExists;
-  }
-
-  /**
-   * Sets Whether Object Exists.
-   *
-   * @param exists boolean
-   * @return {@link S3ObjectMetadata}
-   */
-  public S3ObjectMetadata setObjectExists(final boolean exists) {
-    this.objectExists = exists;
-    return this;
+  private String base64ToHex(final String base64Checksum) {
+    byte[] bytes = Base64.getDecoder().decode(base64Checksum);
+    StringBuilder hex = new StringBuilder(bytes.length * 2);
+    for (byte b : bytes) {
+      hex.append(String.format("%02x", b));
+    }
+    return hex.toString();
   }
 
   /**
@@ -235,19 +92,21 @@ public class S3ObjectMetadata {
   }
 
   /**
-   * Decode a Base64-encoded SHA-256 checksum into its hexadecimal representation.
-   *
-   * @param base64Checksum the Base64 string (e.g. "eXuwq/95jXIAr3aF3KeQHt/8Ur8mUA1b2XKCZY7iQVI=")
-   * @return lowercase hex digest (e.g.
-   *         "797bb0abff798d7200af7685dca7901edffc52bf26500d5bd97282658ee24152")
+   * Get Checksum Sha1.
+   * 
+   * @return String
    */
-  private String base64ToHex(final String base64Checksum) {
-    byte[] bytes = Base64.getDecoder().decode(base64Checksum);
-    StringBuilder hex = new StringBuilder(bytes.length * 2);
-    for (byte b : bytes) {
-      hex.append(String.format("%02x", b));
-    }
-    return hex.toString();
+  public String getChecksumSha1() {
+    return this.checksumSha1;
+  }
+
+  /**
+   * Get Checksum SHA 256.
+   * 
+   * @return String
+   */
+  public String getChecksumSha256() {
+    return this.checksumSha256;
   }
 
   /**
@@ -268,8 +127,63 @@ public class S3ObjectMetadata {
     return checksumType;
   }
 
+  /**
+   * Get Content Length.
+   * 
+   * @return {@link Long}
+   */
+  public Long getContentLength() {
+    return this.contentLength;
+  }
+
+  /**
+   * Get Content Type.
+   *
+   * @return {@link String}
+   */
+  public String getContentType() {
+    return this.contentType;
+  }
+
+  /**
+   * Get Object ETag.
+   *
+   * @return {@link String}
+   */
+  public String getEtag() {
+    return this.etag;
+  }
+
+  /**
+   * Get Metadata.
+   *
+   * @return {@link Map}
+   */
+  public Map<String, String> getMetadata() {
+    return this.metadata != null ? Collections.unmodifiableMap(this.metadata)
+        : Collections.emptyMap();
+  }
+
+  /**
+   * Get S3 Version Id.
+   *
+   * @return {@link String}
+   */
+  public String getVersionId() {
+    return this.versionId;
+  }
+
   private boolean isEmpty(final String s) {
     return s == null || s.isEmpty();
+  }
+
+  /**
+   * Does Object Exist.
+   *
+   * @return boolean
+   */
+  public boolean isObjectExists() {
+    return this.objectExists;
   }
 
   /**
@@ -280,5 +194,91 @@ public class S3ObjectMetadata {
    */
   private String removeQuotes(final String s) {
     return s.replaceAll("^['\"]|['\"]$", "");
+  }
+
+  /**
+   * Set Checksum Sha1.
+   * 
+   * @param checksum {@link String}
+   * @return S3ObjectMetadata
+   */
+  public S3ObjectMetadata setChecksumSha1(final String checksum) {
+    this.checksumSha1 = checksum;
+    return this;
+  }
+
+  /**
+   * Set Checksum SHA 256.
+   * 
+   * @param checksum {@link String}
+   * @return S3ObjectMetadata
+   */
+  public S3ObjectMetadata setChecksumSha256(final String checksum) {
+    this.checksumSha256 = checksum;
+    return this;
+  }
+
+  /**
+   * Set Content Length.
+   *
+   * @param length {@link Long}
+   */
+  public void setContentLength(final Long length) {
+    this.contentLength = length;
+  }
+
+  /**
+   * Set Object Content Type.
+   *
+   * @param objectContentType {@link String}
+   * @return {@link S3ObjectMetadata}
+   */
+  public S3ObjectMetadata setContentType(final String objectContentType) {
+    this.contentType = objectContentType;
+    return this;
+  }
+
+  /**
+   * Set Object ETag.
+   *
+   * @param objectEtag {@link String}
+   * @return {@link S3ObjectMetadata}
+   */
+  public S3ObjectMetadata setEtag(final String objectEtag) {
+    this.etag = objectEtag;
+    return this;
+  }
+
+  /**
+   * Set Metadata.
+   *
+   * @param map {@link Map}
+   * @return {@link S3ObjectMetadata}
+   */
+  public S3ObjectMetadata setMetadata(final Map<String, String> map) {
+    this.metadata = Collections.unmodifiableMap(map);
+    return this;
+  }
+
+  /**
+   * Sets Whether Object Exists.
+   *
+   * @param exists boolean
+   * @return {@link S3ObjectMetadata}
+   */
+  public S3ObjectMetadata setObjectExists(final boolean exists) {
+    this.objectExists = exists;
+    return this;
+  }
+
+  /**
+   * Set S3 Version Id.
+   *
+   * @param s3VersionId {@link String}
+   * @return {@link S3ObjectMetadata}
+   */
+  public S3ObjectMetadata setVersionId(final String s3VersionId) {
+    this.versionId = s3VersionId;
+    return this;
   }
 }

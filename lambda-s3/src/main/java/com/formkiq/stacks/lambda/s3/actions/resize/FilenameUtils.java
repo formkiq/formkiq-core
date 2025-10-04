@@ -24,16 +24,8 @@
 package com.formkiq.stacks.lambda.s3.actions.resize;
 
 public class FilenameUtils {
-  static String imageFormatToExtension(final String filePath, final String imageFormat) {
-    if (fileHasExtension(filePath, "jpg")) {
-      // imageFormat is always jpeg, but extension can be jpg or jpeg
-      return "jpg";
-    } else if (fileHasExtension(filePath, "tiff")) {
-      // imageFormat is always tif, but extension can be tif or tiff
-      return "tiff";
-    }
-
-    return imageFormat;
+  static boolean fileHasExtension(final String filePath, final String extension) {
+    return filePath.toLowerCase().endsWith("." + extension.toLowerCase());
   }
 
   static String getFileName(final String inputFilePath, final int width, final int height,
@@ -47,7 +39,15 @@ public class FilenameUtils {
     return filePath + "-" + width + "x" + height + "." + destinationFormat;
   }
 
-  static boolean fileHasExtension(final String filePath, final String extension) {
-    return filePath.toLowerCase().endsWith("." + extension.toLowerCase());
+  static String imageFormatToExtension(final String filePath, final String imageFormat) {
+    if (fileHasExtension(filePath, "jpg")) {
+      // imageFormat is always jpeg, but extension can be jpg or jpeg
+      return "jpg";
+    } else if (fileHasExtension(filePath, "tiff")) {
+      // imageFormat is always tif, but extension can be tif or tiff
+      return "tiff";
+    }
+
+    return imageFormat;
   }
 }

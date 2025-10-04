@@ -63,8 +63,25 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
   /** Define the size limit in bytes (6 MB = 6 * 1024 * 1024 bytes). */
   private static final long MAX_PAYLOAD_SIZE_MB = 6L * 1024 * 1024;
 
+  private static void resetThreadLocal() {
+    ApiAuthorization.logout();
+    UserActivityContext.clear();
+  }
+
   /** {@link Gson}. */
   protected Gson gson = GsonUtil.getInstance();
+
+  private ApiAuthorization buildApiAuthorization(final ApiGatewayRequestEvent event,
+      final List<ApiAuthorizationInterceptor> interceptors) throws Exception {
+
+    ApiAuthorization authorization =
+        new ApiAuthorizationBuilder().interceptors(interceptors).build(event);
+
+    log(event, authorization);
+    ApiAuthorization.login(authorization);
+
+    return authorization;
+  }
 
   /**
    * Call Handler Rest Method.
@@ -286,6 +303,22 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
       SqsEventRecord sqsEventRecord) throws IOException;
 
   /**
+   * Is caller Authorized to continue.
+   *
+   * @param event {@link ApiGatewayRequestEvent}
+   * @param authorization {@link ApiAuthorization}
+   * @param method {@link String}
+   * @param handler {@link ApiGatewayRequestHandler}
+   * @return boolean
+   * @throws Exception Exception
+   */
+  private boolean isAuthorized(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final String method,
+      final ApiGatewayRequestHandler handler) throws Exception {
+    return "options".equals(method) || isAuthorized(event, method, authorization, handler);
+  }
+
+  /**
    * Whether {@link ApiGatewayRequestEvent} has access.
    * 
    * @param event {@link ApiGatewayRequestEvent}
@@ -320,22 +353,6 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
     return hasAccess.orElse(Boolean.FALSE);
   }
 
-  /**
-   * Is caller Authorized to continue.
-   *
-   * @param event {@link ApiGatewayRequestEvent}
-   * @param authorization {@link ApiAuthorization}
-   * @param method {@link String}
-   * @param handler {@link ApiGatewayRequestHandler}
-   * @return boolean
-   * @throws Exception Exception
-   */
-  private boolean isAuthorized(final ApiGatewayRequestEvent event,
-      final ApiAuthorization authorization, final String method,
-      final ApiGatewayRequestHandler handler) throws Exception {
-    return "options".equals(method) || isAuthorized(event, method, authorization, handler);
-  }
-
   private Optional<Boolean> isAuthorizedHandler(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final Optional<Boolean> hasAccess) {
 
@@ -362,6 +379,17 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
    */
   private boolean isEmpty(final ApiGatewayRequestEvent event) {
     return event != null && event.getHeaders() == null && event.getPath() == null;
+  }
+
+  /**
+   * Determines if the size of the given string exceeds 6 MB.
+   *
+   * @param input The string to check.
+   * @return true if the string size is greater than 6 MB, false otherwise.
+   */
+  private boolean isResponseTooLarge(final String input) {
+    long sizeInBytes = input.getBytes(StandardCharsets.UTF_8).length;
+    return sizeInBytes > MAX_PAYLOAD_SIZE_MB;
   }
 
   private void log(final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
@@ -453,34 +481,6 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
     }
   }
 
-  private void writeUserActivity(final AwsServiceCache awsServices,
-      final ApiAuthorization authorization, final Collection<UserActivity.Builder> ua) {
-
-    if (awsServices.containsExtension(UserActivityPlugin.class)) {
-      String siteId = authorization != null ? authorization.getSiteId() : DEFAULT_SITE_ID;
-
-      UserActivityPlugin plugin = awsServices.getExtension(UserActivityPlugin.class);
-      plugin.addUserActivity(ua.stream().map(a -> a.build(siteId)).toList());
-    }
-  }
-
-  private static void resetThreadLocal() {
-    ApiAuthorization.logout();
-    UserActivityContext.clear();
-  }
-
-  private ApiAuthorization buildApiAuthorization(final ApiGatewayRequestEvent event,
-      final List<ApiAuthorizationInterceptor> interceptors) throws Exception {
-
-    ApiAuthorization authorization =
-        new ApiAuthorizationBuilder().interceptors(interceptors).build(event);
-
-    log(event, authorization);
-    ApiAuthorization.login(authorization);
-
-    return authorization;
-  }
-
   /**
    * Process {@link ApiGatewayRequestEvent}.
    *
@@ -556,14 +556,14 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
     writer.close();
   }
 
-  /**
-   * Determines if the size of the given string exceeds 6 MB.
-   *
-   * @param input The string to check.
-   * @return true if the string size is greater than 6 MB, false otherwise.
-   */
-  private boolean isResponseTooLarge(final String input) {
-    long sizeInBytes = input.getBytes(StandardCharsets.UTF_8).length;
-    return sizeInBytes > MAX_PAYLOAD_SIZE_MB;
+  private void writeUserActivity(final AwsServiceCache awsServices,
+      final ApiAuthorization authorization, final Collection<UserActivity.Builder> ua) {
+
+    if (awsServices.containsExtension(UserActivityPlugin.class)) {
+      String siteId = authorization != null ? authorization.getSiteId() : DEFAULT_SITE_ID;
+
+      UserActivityPlugin plugin = awsServices.getExtension(UserActivityPlugin.class);
+      plugin.addUserActivity(ua.stream().map(a -> a.build(siteId)).toList());
+    }
   }
 }

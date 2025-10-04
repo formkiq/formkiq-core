@@ -40,6 +40,32 @@ import java.util.regex.Pattern;
  */
 public class IdpTextMatcher implements TextMatcher {
 
+  private Token createToken(final Token token) {
+    return new Token().setOriginal(token.getOriginal()).setFormatted(token.getFormatted())
+        .setStart(token.getStart()).setEnd(token.getEnd());
+  }
+
+  /**
+   * Extracts text from the input string based on the provided regex pattern.
+   *
+   * @param input the input string to search within
+   * @param regex the regular expression pattern to match
+   * @return a list of extracted text that matches the regex
+   */
+  private String extractText(final String input, final String regex) {
+
+    String text = null;
+    Pattern pattern = Pattern.compile(regex);
+
+    Matcher matcher = pattern.matcher(input);
+
+    if (matcher.find()) {
+      text = matcher.group();
+    }
+
+    return text;
+  }
+
   @Override
   public TextMatch findMatch(final String text, final List<String> matches,
       final TokenGenerator tokenGenerator, final TextMatchAlgorithm matchAlgorithm,
@@ -66,6 +92,35 @@ public class IdpTextMatcher implements TextMatcher {
     }
 
     return bestMatch;
+  }
+
+  @Override
+  public String findMatchValue(final String text, final TextMatch textMatch,
+      final String validationRegex) {
+
+    String value = null;
+
+    if (textMatch != null) {
+      int pos = textMatch.getToken().getEnd();
+
+      if (pos > -1) {
+
+        String subText = text.substring(pos).trim();
+
+        if (!Strings.isEmpty(validationRegex)) {
+          value = extractText(subText, validationRegex);
+        } else {
+          int nextSpace = subText.indexOf(" ");
+          if (nextSpace > 0) {
+            value = subText.substring(0, nextSpace);
+          } else {
+            value = subText;
+          }
+        }
+      }
+    }
+
+    return value;
   }
 
   /**
@@ -108,60 +163,5 @@ public class IdpTextMatcher implements TextMatcher {
     }
 
     return groupedTokens;
-  }
-
-  private Token createToken(final Token token) {
-    return new Token().setOriginal(token.getOriginal()).setFormatted(token.getFormatted())
-        .setStart(token.getStart()).setEnd(token.getEnd());
-  }
-
-  @Override
-  public String findMatchValue(final String text, final TextMatch textMatch,
-      final String validationRegex) {
-
-    String value = null;
-
-    if (textMatch != null) {
-      int pos = textMatch.getToken().getEnd();
-
-      if (pos > -1) {
-
-        String subText = text.substring(pos).trim();
-
-        if (!Strings.isEmpty(validationRegex)) {
-          value = extractText(subText, validationRegex);
-        } else {
-          int nextSpace = subText.indexOf(" ");
-          if (nextSpace > 0) {
-            value = subText.substring(0, nextSpace);
-          } else {
-            value = subText;
-          }
-        }
-      }
-    }
-
-    return value;
-  }
-
-  /**
-   * Extracts text from the input string based on the provided regex pattern.
-   *
-   * @param input the input string to search within
-   * @param regex the regular expression pattern to match
-   * @return a list of extracted text that matches the regex
-   */
-  private String extractText(final String input, final String regex) {
-
-    String text = null;
-    Pattern pattern = Pattern.compile(regex);
-
-    Matcher matcher = pattern.matcher(input);
-
-    if (matcher.find()) {
-      text = matcher.group();
-    }
-
-    return text;
   }
 }

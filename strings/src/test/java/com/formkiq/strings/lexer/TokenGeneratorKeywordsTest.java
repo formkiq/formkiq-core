@@ -35,6 +35,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  */
 public class TokenGeneratorKeywordsTest {
 
+  private void assertTokenEquals(final Token token, final TokenType tokenType, final String text) {
+    assertEquals(tokenType, token.getType());
+    assertEquals(text, token.getOriginal());
+  }
+
+  private TokenGenerator create(final Collection<String> tokens) {
+    return new TokenGeneratorKeywords(tokens);
+  }
+
   @Test
   void generateTokens01() {
     // given
@@ -68,14 +77,5 @@ public class TokenGeneratorKeywordsTest {
     assertTokenEquals(tokens.get(i++), TokenType.RIGHT_BRACKET, "]");
     assertTokenEquals(tokens.get(i++), TokenType.RIGHT_BRACKET, "]");
     assertTokenEquals(tokens.get(i), TokenType.RIGHT_BRACKET, "]");
-  }
-
-  private void assertTokenEquals(final Token token, final TokenType tokenType, final String text) {
-    assertEquals(tokenType, token.getType());
-    assertEquals(text, token.getOriginal());
-  }
-
-  private TokenGenerator create(final Collection<String> tokens) {
-    return new TokenGeneratorKeywords(tokens);
   }
 }

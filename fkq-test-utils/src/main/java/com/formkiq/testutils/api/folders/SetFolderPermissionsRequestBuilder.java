@@ -50,6 +50,26 @@ public class SetFolderPermissionsRequestBuilder implements HttpRequestBuilder<Se
   }
 
   /**
+   * Add DELETE Role.
+   * 
+   * @param roleName {@link String}
+   * @return SetFolderPermissionsRequestBuilder
+   */
+  public SetFolderPermissionsRequestBuilder addDeleteRole(final String roleName) {
+    return addRole(roleName, FolderPermissionType.DELETE);
+  }
+
+  /**
+   * Add Read Role.
+   * 
+   * @param roleName {@link String}
+   * @return SetFolderPermissionsRequestBuilder
+   */
+  public SetFolderPermissionsRequestBuilder addReadRole(final String roleName) {
+    return addRole(roleName, FolderPermissionType.READ);
+  }
+
+  /**
    * Add Role.
    *
    * @param roleName {@link String}
@@ -84,26 +104,6 @@ public class SetFolderPermissionsRequestBuilder implements HttpRequestBuilder<Se
    */
   public SetFolderPermissionsRequestBuilder addWriteRole(final String roleName) {
     return addRole(roleName, FolderPermissionType.WRITE);
-  }
-
-  /**
-   * Add DELETE Role.
-   * 
-   * @param roleName {@link String}
-   * @return SetFolderPermissionsRequestBuilder
-   */
-  public SetFolderPermissionsRequestBuilder addDeleteRole(final String roleName) {
-    return addRole(roleName, FolderPermissionType.DELETE);
-  }
-
-  /**
-   * Add Read Role.
-   * 
-   * @param roleName {@link String}
-   * @return SetFolderPermissionsRequestBuilder
-   */
-  public SetFolderPermissionsRequestBuilder addReadRole(final String roleName) {
-    return addRole(roleName, FolderPermissionType.READ);
   }
 
   /**

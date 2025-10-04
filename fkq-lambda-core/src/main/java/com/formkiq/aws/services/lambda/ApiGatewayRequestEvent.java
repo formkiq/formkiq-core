@@ -86,12 +86,80 @@ public class ApiGatewayRequestEvent {
   }
 
   /**
+   * Add Query Parameter.
+   * 
+   * @param key {@link String}
+   * @param value {@link String}
+   */
+  public void addQueryParameter(final String key, final String value) {
+    Map<String, String> q =
+        queryStringParameters != null ? new HashMap<>(queryStringParameters) : new HashMap<>();
+    q.put(key, value);
+    this.queryStringParameters = q;
+  }
+
+  /**
    * Get Request Body.
    *
    * @return {@link String}
    */
   public String getBody() {
     return this.body;
+  }
+
+  /**
+   * Get Body as bytes.
+   * 
+   * @return byte[]
+   */
+  public byte[] getBodyAsBytes() {
+
+    if (body == null) {
+      throw new BadException("request body is required");
+    }
+
+    byte[] data = body.getBytes(StandardCharsets.UTF_8);
+
+    if (Boolean.TRUE.equals(isBase64Encoded)) {
+      data = Base64.getDecoder().decode(body);
+    }
+
+    return data;
+  }
+
+  /**
+   * Get {@link ApiGatewayRequestEvent} body as {@link String}.
+   *
+   * @return {@link String}
+   * @throws BadException BadException
+   */
+  public String getBodyAsString() throws BadException {
+
+    if (body == null) {
+      throw new BadException("request body is required");
+    }
+
+    String result = body;
+    if (Boolean.TRUE.equals(isBase64Encoded)) {
+      byte[] bytes = Base64.getDecoder().decode(body);
+      result = new String(bytes, StandardCharsets.UTF_8);
+    }
+
+    if (StringUtils.isEmpty(result)) {
+      throw new BadException("request body is required");
+    }
+
+    return result;
+  }
+
+  /**
+   * Get Header Value.
+   *
+   * @param key {@link String}
+   * @return String
+   */
+  public String getHeaderValue(final String key) {
+    return this.headers != null ? this.headers.get(key) : null;
   }
 
   /**
@@ -131,15 +199,6 @@ public class ApiGatewayRequestEvent {
   }
 
   /**
-   * Get Path Parameters.
-   *
-   * @return {@link Map}
-   */
-  public Map<String, String> getPathParameters() {
-    return this.pathParameters;
-  }
-
-  /**
    * Get Path Parameter.
    *
    * @param key {@link String}
@@ -150,13 +209,22 @@ public class ApiGatewayRequestEvent {
   }
 
   /**
-   * Get Header Value.
+   * Get Path Parameters.
+   *
+   * @return {@link Map}
+   */
+  public Map<String, String> getPathParameters() {
+    return this.pathParameters;
+  }
+
+  /**
+   * Get Query Parameter.
    *
    * @param key {@link String}
-   * @return String
+   * @return {@link String}
    */
-  public String getHeaderValue(final String key) {
-    return this.headers != null ? this.headers.get(key) : null;
+  public String getQueryStringParameter(final String key) {
+    return getQueryStringParameter(key, null);
   }
 
   /**
@@ -170,16 +238,6 @@ public class ApiGatewayRequestEvent {
     return getQueryStringParameters() != null
         ? getQueryStringParameters().getOrDefault(key, defaultValue)
         : defaultValue;
-  }
-
-  /**
-   * Get Query Parameter.
-   *
-   * @param key {@link String}
-   * @return {@link String}
-   */
-  public String getQueryStringParameter(final String key) {
-    return getQueryStringParameter(key, null);
   }
 
   /**
@@ -288,63 +346,5 @@ public class ApiGatewayRequestEvent {
    */
   public void setResource(final String requestResource) {
     this.resource = requestResource;
-  }
-
-  /**
-   * Get Body as bytes.
-   * 
-   * @return byte[]
-   */
-  public byte[] getBodyAsBytes() {
-
-    if (body == null) {
-      throw new BadException("request body is required");
-    }
-
-    byte[] data = body.getBytes(StandardCharsets.UTF_8);
-
-    if (Boolean.TRUE.equals(isBase64Encoded)) {
-      data = Base64.getDecoder().decode(body);
-    }
-
-    return data;
-  }
-
-  /**
-   * Get {@link ApiGatewayRequestEvent} body as {@link String}.
-   *
-   * @return {@link String}
-   * @throws BadException BadException
-   */
-  public String getBodyAsString() throws BadException {
-
-    if (body == null) {
-      throw new BadException("request body is required");
-    }
-
-    String result = body;
-    if (Boolean.TRUE.equals(isBase64Encoded)) {
-      byte[] bytes = Base64.getDecoder().decode(body);
-      result = new String(bytes, StandardCharsets.UTF_8);
-    }
-
-    if (StringUtils.isEmpty(result)) {
-      throw new BadException("request body is required");
-    }
-
-    return result;
-  }
-
-  /**
-   * Add Query Parameter.
-   * 
-   * @param key {@link String}
-   * @param value {@link String}
-   */
-  public void addQueryParameter(final String key, final String value) {
-    Map<String, String> q =
-        queryStringParameters != null ? new HashMap<>(queryStringParameters) : new HashMap<>();
-    q.put(key, value);
-    this.queryStringParameters = q;
   }
 }

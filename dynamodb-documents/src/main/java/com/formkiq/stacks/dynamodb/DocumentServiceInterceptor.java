@@ -31,28 +31,6 @@ import java.util.Map;
 public interface DocumentServiceInterceptor {
 
   /**
-   * Save Document Interceptor.
-   *
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param current {@link Map}
-   * @param previous {@link Map}
-   */
-  void saveDocument(String siteId, String documentId, Map<String, Object> current,
-      Map<String, Object> previous);
-
-  /**
-   * Save Document Attributes Interceptor.
-   *
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param current {@link Map}
-   * @param previous {@link Map}
-   */
-  void saveDocumentAttribute(String siteId, String documentId, Map<String, Object> current,
-      Map<String, Object> previous);
-
-  /**
    * Delete Document Interceptor.
    * 
    * @param siteId {@link String}
@@ -92,4 +70,26 @@ public interface DocumentServiceInterceptor {
    */
   void restoreSoftDeletedDocumentAttribute(String siteId, String documentId,
       Map<String, Object> current);
+
+  /**
+   * Save Document Interceptor.
+   *
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param current {@link Map}
+   * @param previous {@link Map}
+   */
+  void saveDocument(String siteId, String documentId, Map<String, Object> current,
+      Map<String, Object> previous);
+
+  /**
+   * Save Document Attributes Interceptor.
+   *
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param current {@link Map}
+   * @param previous {@link Map}
+   */
+  void saveDocumentAttribute(String siteId, String documentId, Map<String, Object> current,
+      Map<String, Object> previous);
 }

@@ -56,9 +56,6 @@ public class ApiKeyAuthorizerRequestHandler
   private static final int MAX_APIKEY_LENGTH = 100;
   /** {@link AwsServiceCache}. */
   private static AwsServiceCache awsServices;
-  /** {@link Gson}. */
-  private final Gson gson = new GsonBuilder().disableHtmlEscaping().create();
-
   static {
     if (System.getenv().containsKey("AWS_REGION")) {
       awsServices = new AwsServiceCacheBuilder(System.getenv(), Map.of(),
@@ -66,6 +63,9 @@ public class ApiKeyAuthorizerRequestHandler
           .addService(new DynamoDbAwsServiceRegistry()).build();
     }
   }
+
+  /** {@link Gson}. */
+  private final Gson gson = new GsonBuilder().disableHtmlEscaping().create();
 
   /**
    * constructor.

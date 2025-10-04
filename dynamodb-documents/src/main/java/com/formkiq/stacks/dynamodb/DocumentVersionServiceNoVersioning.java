@@ -45,25 +45,14 @@ public class DocumentVersionServiceNoVersioning implements DocumentVersionServic
   }
 
   @Override
-  public String getDocumentVersionsTableName() {
-    return null;
-  }
-
-  @Override
-  public String getVersionId(final Map<String, AttributeValue> attrs) {
-    return null;
-  }
-
-  @Override
   public Map<String, AttributeValue> get(final String siteId, final String documentId,
       final String versionKey) {
     return Collections.emptyMap();
   }
 
   @Override
-  public void initialize(final Map<String, String> map,
-      final DynamoDbConnectionBuilder connection) {
-    // empty
+  public DynamoDbService getDb() {
+    return null;
   }
 
   @Override
@@ -74,7 +63,18 @@ public class DocumentVersionServiceNoVersioning implements DocumentVersionServic
   }
 
   @Override
-  public DynamoDbService getDb() {
+  public String getDocumentVersionsTableName() {
     return null;
+  }
+
+  @Override
+  public String getVersionId(final Map<String, AttributeValue> attrs) {
+    return null;
+  }
+
+  @Override
+  public void initialize(final Map<String, String> map,
+      final DynamoDbConnectionBuilder connection) {
+    // empty
   }
 }

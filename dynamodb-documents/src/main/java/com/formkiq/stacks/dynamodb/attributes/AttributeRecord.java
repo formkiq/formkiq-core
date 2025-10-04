@@ -82,160 +82,6 @@ public class AttributeRecord implements DynamodbRecord<AttributeRecord> {
   }
 
   /**
-   * Get Watermark Rotation.
-   * 
-   * @return Double
-   */
-  public Double getWatermarkRotation() {
-    return this.watermarkRotation;
-  }
-
-  /**
-   * Set Watermark Rotation.
-   * 
-   * @param rotation Double
-   * @return AttributeRecord
-   */
-  public AttributeRecord setWatermarkRotation(final Double rotation) {
-    this.watermarkRotation = rotation;
-    return this;
-  }
-
-  /**
-   * Get {@link WatermarkScale}.
-   * 
-   * @return {@link WatermarkScale}
-   */
-  public WatermarkScale getWatermarkScale() {
-    return this.watermarkScale;
-  }
-
-  /**
-   * Set {@link WatermarkScale}.
-   * 
-   * @param scale {@link WatermarkScale}
-   * @return AttributeRecord
-   */
-  public AttributeRecord setWatermarkScale(final WatermarkScale scale) {
-    this.watermarkScale = scale;
-    return this;
-  }
-
-  /**
-   * Get Watermark X Anchor.
-   * 
-   * @return WatermarkXanchor
-   */
-  public WatermarkXanchor getWatermarkxAnchor() {
-    return this.watermarkxAnchor;
-  }
-
-  /**
-   * Set Watermark X Anchor.
-   *
-   * @param anchor {@link String}
-   * @return AttributeRecord
-   */
-  public AttributeRecord setWatermarkxAnchor(final WatermarkXanchor anchor) {
-    this.watermarkxAnchor = anchor;
-    return this;
-  }
-
-  /**
-   * Get Watermark Y Anchor.
-   * 
-   * @return String
-   */
-  public WatermarkYanchor getWatermarkyAnchor() {
-    return this.watermarkyAnchor;
-  }
-
-  /**
-   * Set Watermark Y Anchor.
-   *
-   * @param anchor {@link String}
-   * @return AttributeRecord
-   */
-  public AttributeRecord setWatermarkyAnchor(final WatermarkYanchor anchor) {
-    this.watermarkyAnchor = anchor;
-    return this;
-  }
-
-  /**
-   * Get Watermark X Offset.
-   * 
-   * @return float
-   */
-  public Double getWatermarkxOffset() {
-    return this.watermarkxOffset;
-  }
-
-  /**
-   * Set Watermark X Offset.
-   *
-   * @param offset float
-   * @return AttributeRecord
-   */
-  public AttributeRecord setWatermarkxOffset(final Double offset) {
-    this.watermarkxOffset = offset;
-    return this;
-  }
-
-  /**
-   * Get Watermark Y Offset.
-   * 
-   * @return float
-   */
-  public Double getWatermarkyOffset() {
-    return this.watermarkyOffset;
-  }
-
-  /**
-   * Set Watermark Y Offset.
-   *
-   * @param offset float
-   * @return AttributeRecord
-   */
-  public AttributeRecord setWatermarkyOffset(final Double offset) {
-    this.watermarkyOffset = offset;
-    return this;
-  }
-
-  /**
-   * Get Watermark Image Document Id.
-   * 
-   * @return String
-   */
-  public String getWatermarkImageDocumentId() {
-    return this.watermarkImageDocumentId;
-  }
-
-  public AttributeRecord setWatermarkImageDocumentId(final String imageDocumentId) {
-    this.watermarkImageDocumentId = imageDocumentId;
-    return this;
-  }
-
-  /**
-   * Get Watermark Text.
-   * 
-   * @return String
-   */
-  public String getWatermarkText() {
-    return this.watermarkText;
-  }
-
-  /**
-   * Set Watermark Text.
-   * 
-   * @param text {@link String}
-   * @return AttributeRecord
-   */
-  public AttributeRecord setWatermarkText(final String text) {
-    this.watermarkText = text;
-    return this;
-  }
-
-  /**
    * Set {@link AttributeDataType}.
    * 
    * @param attributeDataType {@link AttributeDataType}
@@ -354,6 +200,78 @@ public class AttributeRecord implements DynamodbRecord<AttributeRecord> {
   }
 
   /**
+   * Get Watermark Image Document Id.
+   * 
+   * @return String
+   */
+  public String getWatermarkImageDocumentId() {
+    return this.watermarkImageDocumentId;
+  }
+
+  /**
+   * Get Watermark Rotation.
+   * 
+   * @return Double
+   */
+  public Double getWatermarkRotation() {
+    return this.watermarkRotation;
+  }
+
+  /**
+   * Get {@link WatermarkScale}.
+   * 
+   * @return {@link WatermarkScale}
+   */
+  public WatermarkScale getWatermarkScale() {
+    return this.watermarkScale;
+  }
+
+  /**
+   * Get Watermark Text.
+   * 
+   * @return String
+   */
+  public String getWatermarkText() {
+    return this.watermarkText;
+  }
+
+  /**
+   * Get Watermark X Anchor.
+   * 
+   * @return WatermarkXanchor
+   */
+  public WatermarkXanchor getWatermarkxAnchor() {
+    return this.watermarkxAnchor;
+  }
+
+  /**
+   * Get Watermark X Offset.
+   * 
+   * @return float
+   */
+  public Double getWatermarkxOffset() {
+    return this.watermarkxOffset;
+  }
+
+  /**
+   * Get Watermark Y Anchor.
+   * 
+   * @return String
+   */
+  public WatermarkYanchor getWatermarkyAnchor() {
+    return this.watermarkyAnchor;
+  }
+
+  /**
+   * Get Watermark Y Offset.
+   * 
+   * @return float
+   */
+  public Double getWatermarkyOffset() {
+    return this.watermarkyOffset;
+  }
+
+  /**
    * Set Key.
    * 
    * @param attributeKey {@link String}
@@ -380,6 +298,88 @@ public class AttributeRecord implements DynamodbRecord<AttributeRecord> {
   @Override
   public String pkGsi2(final String siteId) {
     return !isEmpty(this.watermarkText) ? createDatabaseKey(siteId, ATTR) : null;
+  }
+
+  public AttributeRecord setWatermarkImageDocumentId(final String imageDocumentId) {
+    this.watermarkImageDocumentId = imageDocumentId;
+    return this;
+  }
+
+  /**
+   * Set Watermark Rotation.
+   * 
+   * @param rotation Double
+   * @return AttributeRecord
+   */
+  public AttributeRecord setWatermarkRotation(final Double rotation) {
+    this.watermarkRotation = rotation;
+    return this;
+  }
+
+  /**
+   * Set {@link WatermarkScale}.
+   * 
+   * @param scale {@link WatermarkScale}
+   * @return AttributeRecord
+   */
+  public AttributeRecord setWatermarkScale(final WatermarkScale scale) {
+    this.watermarkScale = scale;
+    return this;
+  }
+
+  /**
+   * Set Watermark Text.
+   * 
+   * @param text {@link String}
+   * @return AttributeRecord
+   */
+  public AttributeRecord setWatermarkText(final String text) {
+    this.watermarkText = text;
+    return this;
+  }
+
+  /**
+   * Set Watermark X Anchor.
+   *
+   * @param anchor {@link String}
+   * @return AttributeRecord
+   */
+  public AttributeRecord setWatermarkxAnchor(final WatermarkXanchor anchor) {
+    this.watermarkxAnchor = anchor;
+    return this;
+  }
+
+  /**
+   * Set Watermark X Offset.
+   *
+   * @param offset float
+   * @return AttributeRecord
+   */
+  public AttributeRecord setWatermarkxOffset(final Double offset) {
+    this.watermarkxOffset = offset;
+    return this;
+  }
+
+  /**
+   * Set Watermark Y Anchor.
+   *
+   * @param anchor {@link String}
+   * @return AttributeRecord
+   */
+  public AttributeRecord setWatermarkyAnchor(final WatermarkYanchor anchor) {
+    this.watermarkyAnchor = anchor;
+    return this;
+  }
+
+  /**
+   * Set Watermark Y Offset.
+   *
+   * @param offset float
+   * @return AttributeRecord
+   */
+  public AttributeRecord setWatermarkyOffset(final Double offset) {
+    this.watermarkyOffset = offset;
+    return this;
   }
 
   @Override

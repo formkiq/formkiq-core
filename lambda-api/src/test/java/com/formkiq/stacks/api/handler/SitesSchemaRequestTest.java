@@ -94,6 +94,117 @@ import static org.junit.jupiter.api.Assertions.fail;
 @ExtendWith(LocalStackExtension.class)
 public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
+  private void addAttribute(final String siteId, final String key,
+      final AttributeDataType dataType) {
+    addAttribute(siteId, key, dataType, null);
+  }
+
+  private void addAttribute(final String siteId, final String key, final AttributeDataType dataType,
+      final AttributeType type) {
+    try {
+      AddAttributeRequest req = new AddAttributeRequest()
+          .attribute(new AddAttribute().key(key).dataType(dataType).type(type));
+      this.attributesApi.addAttribute(req, siteId);
+    } catch (ApiException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private ApiException addDocumentAttributesWithError(final String siteId, final String documentId,
+      final AddDocumentAttributesRequest req) {
+    ApiException error = null;
+    try {
+      this.documentAttributesApi.addDocumentAttributes(documentId, req, siteId);
+      fail();
+    } catch (ApiException e) {
+      error = e;
+    }
+    return error;
+  }
+
+  private String addDocumentUpload(final String siteId, final AddDocumentUploadRequest request)
+      throws ApiException {
+    String documentId =
+        this.documentsApi.addDocumentUpload(request, siteId, null, null, null).getDocumentId();
+    assertNotNull(documentId);
+    return documentId;
+  }
+
+  private void assertAttributeSchemaRequired(final AttributeSchemaRequired r,
+      final String attributeKey, final String allowedValues, final int minNumberOfValues,
+      final int maxNumberOfValues) {
+    assertEquals(attributeKey, r.getAttributeKey());
+    if (allowedValues != null) {
+      assertEquals(allowedValues, String.join(",", notNull(r.getAllowedValues())));
+    } else {
+      assertTrue(notNull(r.getAllowedValues()).isEmpty());
+    }
+    if (r.getMinNumberOfValues() != null) {
+      assertEquals(minNumberOfValues, requireNonNull(r.getMinNumberOfValues()).intValue());
+    } else {
+      assertNull(r.getMinNumberOfValues());
+    }
+
+    if (r.getMaxNumberOfValues() != null) {
+      assertEquals(maxNumberOfValues, requireNonNull(r.getMaxNumberOfValues()).intValue());
+    } else {
+      assertNull(r.getMaxNumberOfValues());
+    }
+  }
+
+  private void assertDocumentAttributeEquals(final DocumentAttribute da, final String attributeKey,
+      final String stringValue, final String stringValues) {
+    assertEquals(attributeKey, da.getKey());
+
+    if (stringValue != null) {
+      assertEquals(stringValue, da.getStringValue());
+    }
+
+    if (stringValues != null) {
+      assertEquals(stringValues, String.join(",", notNull(da.getStringValues())));
+    }
+  }
+
+  /**
+   * Create Composite Key from {@link String}.
+   *
+   * @param attributeKeys {@link String}
+   * @return AttributeSchemaCompositeKey
+   */
+  private AttributeSchemaCompositeKey createCompositeKey(final String... attributeKeys) {
+    return new AttributeSchemaCompositeKey().attributeKeys(List.of(attributeKeys));
+  }
+
+  private AddAttributeSchemaOptional createOptional(final String attributeKey) {
+    return new AddAttributeSchemaOptional().attributeKey(attributeKey);
+  }
+
+  private void createRangeAttributeNumber(final String siteId, final String value)
+      throws ApiException {
+    AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
+        .addAttributesItem(new AddDocumentAttribute(
+            new AddDocumentAttributeStandard().key("category").stringValue("person")))
+        .addAttributesItem(new AddDocumentAttribute(
+            new AddDocumentAttributeStandard().key("date").numberValue(new BigDecimal(value))));
+
+    this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null);
+  }
+
+  private void createRangeAttributeString(final String siteId, final String value)
+      throws ApiException {
+    AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
+        .addAttributesItem(new AddDocumentAttribute(
+            new AddDocumentAttributeStandard().key("category").stringValue("person")))
+        .addAttributesItem(new AddDocumentAttribute(
+            new AddDocumentAttributeStandard().key("date").stringValue(value)));
+
+    this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null);
+  }
+
+  private AddAttributeSchemaRequired createRequired(final String attributeKey) {
+    return new AddAttributeSchemaRequired().attributeKey(attributeKey);
+  }
+
   /**
    * POST /documents Add attributes.
    *
@@ -125,22 +236,6 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
           .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
       assertEquals(1, attributes.size());
       assertDocumentAttributeEquals(attributes.get(0), "strings", "category", null);
-    }
-  }
-
-  private void addAttribute(final String siteId, final String key,
-      final AttributeDataType dataType) {
-    addAttribute(siteId, key, dataType, null);
-  }
-
-  private void addAttribute(final String siteId, final String key, final AttributeDataType dataType,
-      final AttributeType type) {
-    try {
-      AddAttributeRequest req = new AddAttributeRequest()
-          .attribute(new AddAttribute().key(key).dataType(dataType).type(type));
-      this.attributesApi.addAttribute(req, siteId);
-    } catch (ApiException e) {
-      throw new RuntimeException(e);
     }
   }
 
@@ -789,18 +884,6 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
     }
   }
 
-  private ApiException addDocumentAttributesWithError(final String siteId, final String documentId,
-      final AddDocumentAttributesRequest req) {
-    ApiException error = null;
-    try {
-      this.documentAttributesApi.addDocumentAttributes(documentId, req, siteId);
-      fail();
-    } catch (ApiException e) {
-      error = e;
-    }
-    return error;
-  }
-
   /**
    * POST /documents/upload with site schema required attribute.
    *
@@ -913,10 +996,6 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
         // assertEquals("abc,qwe", String.join(",", notNull(attributes.get(i).getStringValues())));
       }
     }
-  }
-
-  private AddAttributeSchemaRequired createRequired(final String attributeKey) {
-    return new AddAttributeSchemaRequired().attributeKey(attributeKey);
   }
 
   /**
@@ -1298,110 +1377,6 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * DELETE /documents/{documentId}/attributes/{attributeKey}. invalid attributeKey.
-   *
-   * @throws ApiException an error has occurred
-   */
-  @Test
-  public void testDeleteDocumentAttributes01() throws ApiException {
-    // given
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-
-      setBearerToken(siteId);
-
-      AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt");
-      String documentId = addDocumentUpload(siteId, ureq0);
-
-      // when
-      try {
-        this.documentAttributesApi.deleteDocumentAttribute(documentId, "strings", siteId);
-        fail();
-      } catch (ApiException e) {
-        // then
-        assertEquals(
-            "{\"message\":\"attribute 'strings' not found on document '" + documentId + "'\"}",
-            e.getResponseBody());
-      }
-    }
-  }
-
-  private String addDocumentUpload(final String siteId, final AddDocumentUploadRequest request)
-      throws ApiException {
-    String documentId =
-        this.documentsApi.addDocumentUpload(request, siteId, null, null, null).getDocumentId();
-    assertNotNull(documentId);
-    return documentId;
-  }
-
-  /**
-   * DELETE /documents/{documentId}/attributes/{attributeKey}. valid attributeKey.
-   *
-   * @throws ApiException an error has occurred
-   */
-  @Test
-  public void testDeleteDocumentAttributes02() throws ApiException {
-    // given
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-
-      setBearerToken(siteId);
-
-      addAttribute(siteId, "strings", null);
-
-      AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
-          .addAttributesItem(new AddDocumentAttribute(
-              new AddDocumentAttributeStandard().key("strings").addStringValuesItem("111")));
-      String documentId = addDocumentUpload(siteId, ureq0);
-
-      // when
-      DeleteResponse response =
-          this.documentAttributesApi.deleteDocumentAttribute(documentId, "strings", siteId);
-
-      // then
-      assertEquals("attribute 'strings' removed from document '" + documentId + "'",
-          response.getMessage());
-      List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
-      assertEquals(0, attributes.size());
-    }
-  }
-
-  /**
-   * DELETE /documents/{documentId}/attributes/{attributeKey}. schema required attribute.
-   *
-   * @throws ApiException an error has occurred
-   */
-  @Test
-  public void testDeleteDocumentAttributes03() throws ApiException {
-    // given
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-
-      setBearerToken(siteId);
-
-      addAttribute(siteId, "strings", null);
-
-      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
-          .attributes(new SetSchemaAttributes().addRequiredItem(createRequired("strings")));
-      this.schemasApi.setSitesSchema(siteId, req);
-
-      AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
-          .addAttributesItem(new AddDocumentAttribute(
-              new AddDocumentAttributeStandard().key("strings").addStringValuesItem("1")));
-      String documentId = addDocumentUpload(siteId, ureq0);
-
-      // when
-      try {
-        this.documentAttributesApi.deleteDocumentAttribute(documentId, "strings", siteId);
-        fail();
-      } catch (ApiException e) {
-        // then
-        assertEquals(
-            "{\"errors\":[{\"key\":\"strings\",\"error\":\"'strings' is a required attribute\"}]}",
-            e.getResponseBody());
-      }
-    }
-  }
-
-  /**
    * DELETE /documents/{documentId}/attributes/{attributeKey}/{attributeValue}. invalid
    * attributeKey.
    *
@@ -1499,6 +1474,102 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
           .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
       assertEquals(0, attributes.size());
+    }
+  }
+
+  /**
+   * DELETE /documents/{documentId}/attributes/{attributeKey}. invalid attributeKey.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testDeleteDocumentAttributes01() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt");
+      String documentId = addDocumentUpload(siteId, ureq0);
+
+      // when
+      try {
+        this.documentAttributesApi.deleteDocumentAttribute(documentId, "strings", siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(
+            "{\"message\":\"attribute 'strings' not found on document '" + documentId + "'\"}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * DELETE /documents/{documentId}/attributes/{attributeKey}. valid attributeKey.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testDeleteDocumentAttributes02() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "strings", null);
+
+      AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
+          .addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key("strings").addStringValuesItem("111")));
+      String documentId = addDocumentUpload(siteId, ureq0);
+
+      // when
+      DeleteResponse response =
+          this.documentAttributesApi.deleteDocumentAttribute(documentId, "strings", siteId);
+
+      // then
+      assertEquals("attribute 'strings' removed from document '" + documentId + "'",
+          response.getMessage());
+      List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
+          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+      assertEquals(0, attributes.size());
+    }
+  }
+
+  /**
+   * DELETE /documents/{documentId}/attributes/{attributeKey}. schema required attribute.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testDeleteDocumentAttributes03() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "strings", null);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes().addRequiredItem(createRequired("strings")));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
+          .addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key("strings").addStringValuesItem("1")));
+      String documentId = addDocumentUpload(siteId, ureq0);
+
+      // when
+      try {
+        this.documentAttributesApi.deleteDocumentAttribute(documentId, "strings", siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(
+            "{\"errors\":[{\"key\":\"strings\",\"error\":\"'strings' is a required attribute\"}]}",
+            e.getResponseBody());
+      }
     }
   }
 
@@ -1928,17 +1999,6 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
     }
   }
 
-  private void createRangeAttributeString(final String siteId, final String value)
-      throws ApiException {
-    AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
-        .addAttributesItem(new AddDocumentAttribute(
-            new AddDocumentAttributeStandard().key("category").stringValue("person")))
-        .addAttributesItem(new AddDocumentAttribute(
-            new AddDocumentAttributeStandard().key("date").stringValue(value)));
-
-    this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null);
-  }
-
   /**
    * Search document by strict composite key using POST /documents/upload String wrong order RANGE.
    *
@@ -2039,17 +2099,6 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       assertEquals("person::000000000000200.0000",
           requireNonNull(response0.getDocuments().get(i).getMatchedAttribute()).getStringValue());
     }
-  }
-
-  private void createRangeAttributeNumber(final String siteId, final String value)
-      throws ApiException {
-    AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
-        .addAttributesItem(new AddDocumentAttribute(
-            new AddDocumentAttributeStandard().key("category").stringValue("person")))
-        .addAttributesItem(new AddDocumentAttribute(
-            new AddDocumentAttributeStandard().key("date").numberValue(new BigDecimal(value))));
-
-    this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null);
   }
 
   /**
@@ -2351,20 +2400,6 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
     }
   }
 
-  private AddAttributeSchemaOptional createOptional(final String attributeKey) {
-    return new AddAttributeSchemaOptional().attributeKey(attributeKey);
-  }
-
-  /**
-   * Create Composite Key from {@link String}.
-   *
-   * @param attributeKeys {@link String}
-   * @return AttributeSchemaCompositeKey
-   */
-  private AttributeSchemaCompositeKey createCompositeKey(final String... attributeKeys) {
-    return new AttributeSchemaCompositeKey().attributeKeys(List.of(attributeKeys));
-  }
-
   /**
    * PUT /documents/{documentId}/attributes. Add attributes.
    *
@@ -2663,19 +2698,6 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
     }
   }
 
-  private void assertDocumentAttributeEquals(final DocumentAttribute da, final String attributeKey,
-      final String stringValue, final String stringValues) {
-    assertEquals(attributeKey, da.getKey());
-
-    if (stringValue != null) {
-      assertEquals(stringValue, da.getStringValue());
-    }
-
-    if (stringValues != null) {
-      assertEquals(stringValues, String.join(",", notNull(da.getStringValues())));
-    }
-  }
-
   /**
    * PUT /sites/{siteId}/schema/document with required attribute.
    *
@@ -2721,28 +2743,6 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       assertNotNull(schema.getAttributes());
       required = notNull(schema.getAttributes().getRequired());
       assertAttributeSchemaRequired(required.get(0), key, "123", 1, 2);
-    }
-  }
-
-  private void assertAttributeSchemaRequired(final AttributeSchemaRequired r,
-      final String attributeKey, final String allowedValues, final int minNumberOfValues,
-      final int maxNumberOfValues) {
-    assertEquals(attributeKey, r.getAttributeKey());
-    if (allowedValues != null) {
-      assertEquals(allowedValues, String.join(",", notNull(r.getAllowedValues())));
-    } else {
-      assertTrue(notNull(r.getAllowedValues()).isEmpty());
-    }
-    if (r.getMinNumberOfValues() != null) {
-      assertEquals(minNumberOfValues, requireNonNull(r.getMinNumberOfValues()).intValue());
-    } else {
-      assertNull(r.getMinNumberOfValues());
-    }
-
-    if (r.getMaxNumberOfValues() != null) {
-      assertEquals(maxNumberOfValues, requireNonNull(r.getMaxNumberOfValues()).intValue());
-    } else {
-      assertNull(r.getMaxNumberOfValues());
     }
   }
 

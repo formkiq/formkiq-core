@@ -155,16 +155,6 @@ tasks.named('test') {
 }
 
 // -------------------------------
-// CloudFormation template copy
-// -------------------------------
-tasks.register('buildTemplate', Copy) {
-  group = "build"
-  description = "Copies the CloudFormation template into the distribution dir."
-  from "src/main/resources/cloudformation/template.yaml"
-  into layout.buildDirectory.dir("distributions/module-email-notify")
-}
-
-// -------------------------------
 // Unzip npm pack for distribution
 // -------------------------------
 tasks.register('unzipPack', Copy) {
@@ -182,10 +172,7 @@ tasks.register('unzipPack', Copy) {
 tasks.named('distTar') { enabled = false }
 
 tasks.named('distZip') {
-  dependsOn tasks.named('buildTemplate'),
-      tasks.named('npmPack'),
-      tasks.named('unzipPack')
-
+  dependsOn tasks.named('npmPack'), tasks.named('unzipPack')
   archiveFileName = "module-email-notify/module-email-notify.zip"
 }
 

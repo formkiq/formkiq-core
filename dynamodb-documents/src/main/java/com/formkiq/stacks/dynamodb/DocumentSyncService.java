@@ -42,6 +42,18 @@ import java.util.Date;
 public interface DocumentSyncService {
 
   /**
+   * Add Document Sync.
+   *
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param service {@link DocumentSyncServiceType}
+   * @param type {@link DocumentSyncType}
+   * @return Collection {@link ValidationError}
+   */
+  Collection<ValidationError> addSync(String siteId, String documentId,
+      DocumentSyncServiceType service, DocumentSyncType type);
+
+  /**
    * Delete All.
    * 
    * @param siteId {@link String}
@@ -83,16 +95,4 @@ public interface DocumentSyncService {
    * @param syncDate {@link java.util.Date}
    */
   void update(String pk, String sk, DocumentSyncStatus status, Date syncDate);
-
-  /**
-   * Add Document Sync.
-   *
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param service {@link DocumentSyncServiceType}
-   * @param type {@link DocumentSyncType}
-   * @return Collection {@link ValidationError}
-   */
-  Collection<ValidationError> addSync(String siteId, String documentId,
-      DocumentSyncServiceType service, DocumentSyncType type);
 }

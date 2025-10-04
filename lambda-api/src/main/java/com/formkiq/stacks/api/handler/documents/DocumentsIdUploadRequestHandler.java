@@ -91,6 +91,13 @@ public class DocumentsIdUploadRequestHandler
     return "/documents/{documentId}/upload";
   }
 
+  @Override
+  public Optional<Boolean> isAuthorized(final AwsServiceCache awsservice, final String method,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
+    boolean access = authorization.getPermissions().contains(ApiPermission.WRITE);
+    return Optional.of(access);
+  }
+
   private void validate(final AddDocumentRequest request) throws ValidationException {
 
     Collection<ValidationError> errors = new ArrayList<>();
@@ -105,12 +112,5 @@ public class DocumentsIdUploadRequestHandler
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }
-  }
-
-  @Override
-  public Optional<Boolean> isAuthorized(final AwsServiceCache awsservice, final String method,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
-    boolean access = authorization.getPermissions().contains(ApiPermission.WRITE);
-    return Optional.of(access);
   }
 }

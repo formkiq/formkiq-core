@@ -83,16 +83,6 @@ public class WebhooksRequestHandler
         .next(list.getNextToken()).build();
   }
 
-  private String getUrl(final DynamicObject m, final String url, final String siteId) {
-    String path = "private".equals(m.getString("enabled")) ? "/private" : "/public";
-
-    String u = url + path + "/webhooks/" + m.getString("documentId");
-    if (siteId != null && !DEFAULT_SITE_ID.equals(siteId)) {
-      u += "?siteId=" + siteId;
-    }
-    return u;
-  }
-
   @Override
   public String getRequestUrl() {
     return "/webhooks";
@@ -112,6 +102,16 @@ public class WebhooksRequestHandler
     }
 
     return ttlDate;
+  }
+
+  private String getUrl(final DynamicObject m, final String url, final String siteId) {
+    String path = "private".equals(m.getString("enabled")) ? "/private" : "/public";
+
+    String u = url + path + "/webhooks/" + m.getString("documentId");
+    if (siteId != null && !DEFAULT_SITE_ID.equals(siteId)) {
+      u += "?siteId=" + siteId;
+    }
+    return u;
   }
 
   private boolean isOverMaxWebhooks(final AwsServiceCache awsservice,

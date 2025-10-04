@@ -79,180 +79,6 @@ public class DocumentSyncRecord implements DynamodbRecord<DocumentSyncRecord> {
    */
   public DocumentSyncRecord() {}
 
-  /**
-   * Get Time To Live.
-   * 
-   * @return Long
-   */
-  public Long getTimeToLive() {
-    return this.timeToLive;
-  }
-
-  /**
-   * Set Time To Live.
-   * 
-   * @param ttl Long
-   * @return DocumentSyncRecord
-   */
-  public DocumentSyncRecord setTimeToLive(final Long ttl) {
-    this.timeToLive = ttl;
-    return this;
-  }
-
-  /**
-   * Get Inserted Date.
-   * 
-   * @return Date
-   */
-  public Date getInsertedDate() {
-    return this.insertedDate;
-  }
-
-  /**
-   * Set Inserted Date.
-   * 
-   * @param date {@link Date}
-   * @return DocumentSyncRecord
-   */
-  public DocumentSyncRecord setInsertedDate(final Date date) {
-    this.insertedDate = date;
-    return this;
-  }
-
-  /**
-   * Get Document Id.
-   * 
-   * @return String
-   */
-  public String getDocumentId() {
-    return this.documentId;
-  }
-
-  /**
-   * Set Document Id.
-   * 
-   * @param id {@link String}
-   * @return DocumentSyncRecord
-   */
-  public DocumentSyncRecord setDocumentId(final String id) {
-    this.documentId = id;
-    return this;
-  }
-
-  /**
-   * Get Sync Date.
-   * 
-   * @return Date
-   */
-  public Date getSyncDate() {
-    return this.syncDate;
-  }
-
-  /**
-   * Set Sync Date.
-   * 
-   * @param date {@link Date}
-   * @return DocumentSyncRecord
-   */
-  public DocumentSyncRecord setSyncDate(final Date date) {
-    this.syncDate = date;
-    return this;
-  }
-
-  /**
-   * Get {@link DocumentSyncServiceType}.
-   * 
-   * @return {@link DocumentSyncServiceType}
-   */
-  public DocumentSyncServiceType getService() {
-    return this.service;
-  }
-
-  public DocumentSyncRecord setService(final DocumentSyncServiceType documetSyncServiceType) {
-    this.service = documetSyncServiceType;
-    return this;
-  }
-
-  /**
-   * Get Sync Status.
-   * 
-   * @return DocumentSyncStatus
-   */
-  public DocumentSyncStatus getStatus() {
-    return this.status;
-  }
-
-  /**
-   * Set {@link DocumentSyncStatus}.
-   * 
-   * @param documentSyncStatus {@link DocumentSyncStatus}
-   * @return DocumentSyncRecord
-   */
-  public DocumentSyncRecord setStatus(final DocumentSyncStatus documentSyncStatus) {
-    this.status = documentSyncStatus;
-    return this;
-  }
-
-  /**
-   * Get {@link DocumentSyncType}.
-   * 
-   * @return {@link DocumentSyncType}
-   */
-  public DocumentSyncType getType() {
-    return type;
-  }
-
-  /**
-   * Set Document Sync Type.
-   * 
-   * @param documentSyncType {@link DocumentSyncType}.
-   * @return DocumentSyncRecord
-   */
-  public DocumentSyncRecord setType(final DocumentSyncType documentSyncType) {
-    this.type = documentSyncType;
-    return this;
-  }
-
-  /**
-   * Get Create By user id.
-   * 
-   * @return String
-   */
-  public String getUserId() {
-    return this.userId;
-  }
-
-  /**
-   * Set UserId.
-   * 
-   * @param documentSyncUserId {@link String}
-   * @return DocumentSyncRecord
-   */
-  public DocumentSyncRecord setUserId(final String documentSyncUserId) {
-    this.userId = documentSyncUserId;
-    return this;
-  }
-
-  /**
-   * Get Document Sync Message.
-   * 
-   * @return String
-   */
-  public String getMessage() {
-    return this.message;
-  }
-
-  /**
-   * Set Sync Message.
-   * 
-   * @param syncMessage {@link String}
-   * @return DocumentSyncRecord
-   */
-  public DocumentSyncRecord setMessage(final String syncMessage) {
-    this.message = syncMessage;
-    return this;
-  }
-
   @Override
   public Map<String, AttributeValue> getAttributes(final String siteId) {
     Map<String, AttributeValue> map = getDataAttributes();
@@ -286,14 +112,12 @@ public class DocumentSyncRecord implements DynamodbRecord<DocumentSyncRecord> {
   }
 
   /**
-   * Set Sk.
+   * Get Document Id.
    * 
-   * @param skValue {@link String}
-   * @return DocumentSyncRecord
+   * @return String
    */
-  public DocumentSyncRecord setSk(final String skValue) {
-    this.sk = skValue;
-    return this;
+  public String getDocumentId() {
+    return this.documentId;
   }
 
   @Override
@@ -320,6 +144,78 @@ public class DocumentSyncRecord implements DynamodbRecord<DocumentSyncRecord> {
     return record;
   }
 
+  /**
+   * Get Inserted Date.
+   * 
+   * @return Date
+   */
+  public Date getInsertedDate() {
+    return this.insertedDate;
+  }
+
+  /**
+   * Get Document Sync Message.
+   * 
+   * @return String
+   */
+  public String getMessage() {
+    return this.message;
+  }
+
+  /**
+   * Get {@link DocumentSyncServiceType}.
+   * 
+   * @return {@link DocumentSyncServiceType}
+   */
+  public DocumentSyncServiceType getService() {
+    return this.service;
+  }
+
+  /**
+   * Get Sync Status.
+   * 
+   * @return DocumentSyncStatus
+   */
+  public DocumentSyncStatus getStatus() {
+    return this.status;
+  }
+
+  /**
+   * Get Sync Date.
+   * 
+   * @return Date
+   */
+  public Date getSyncDate() {
+    return this.syncDate;
+  }
+
+  /**
+   * Get Time To Live.
+   * 
+   * @return Long
+   */
+  public Long getTimeToLive() {
+    return this.timeToLive;
+  }
+
+  /**
+   * Get {@link DocumentSyncType}.
+   * 
+   * @return {@link DocumentSyncType}
+   */
+  public DocumentSyncType getType() {
+    return type;
+  }
+
+  /**
+   * Get Create By user id.
+   * 
+   * @return String
+   */
+  public String getUserId() {
+    return this.userId;
+  }
+
   @Override
   public String pk(final String siteId) {
     if (this.documentId == null) {
@@ -339,6 +235,110 @@ public class DocumentSyncRecord implements DynamodbRecord<DocumentSyncRecord> {
   @Override
   public String pkGsi2(final String siteId) {
     return null;
+  }
+
+  /**
+   * Set Document Id.
+   * 
+   * @param id {@link String}
+   * @return DocumentSyncRecord
+   */
+  public DocumentSyncRecord setDocumentId(final String id) {
+    this.documentId = id;
+    return this;
+  }
+
+  /**
+   * Set Inserted Date.
+   * 
+   * @param date {@link Date}
+   * @return DocumentSyncRecord
+   */
+  public DocumentSyncRecord setInsertedDate(final Date date) {
+    this.insertedDate = date;
+    return this;
+  }
+
+  /**
+   * Set Sync Message.
+   * 
+   * @param syncMessage {@link String}
+   * @return DocumentSyncRecord
+   */
+  public DocumentSyncRecord setMessage(final String syncMessage) {
+    this.message = syncMessage;
+    return this;
+  }
+
+  public DocumentSyncRecord setService(final DocumentSyncServiceType documetSyncServiceType) {
+    this.service = documetSyncServiceType;
+    return this;
+  }
+
+  /**
+   * Set Sk.
+   * 
+   * @param skValue {@link String}
+   * @return DocumentSyncRecord
+   */
+  public DocumentSyncRecord setSk(final String skValue) {
+    this.sk = skValue;
+    return this;
+  }
+
+  /**
+   * Set {@link DocumentSyncStatus}.
+   * 
+   * @param documentSyncStatus {@link DocumentSyncStatus}
+   * @return DocumentSyncRecord
+   */
+  public DocumentSyncRecord setStatus(final DocumentSyncStatus documentSyncStatus) {
+    this.status = documentSyncStatus;
+    return this;
+  }
+
+  /**
+   * Set Sync Date.
+   * 
+   * @param date {@link Date}
+   * @return DocumentSyncRecord
+   */
+  public DocumentSyncRecord setSyncDate(final Date date) {
+    this.syncDate = date;
+    return this;
+  }
+
+  /**
+   * Set Time To Live.
+   * 
+   * @param ttl Long
+   * @return DocumentSyncRecord
+   */
+  public DocumentSyncRecord setTimeToLive(final Long ttl) {
+    this.timeToLive = ttl;
+    return this;
+  }
+
+  /**
+   * Set Document Sync Type.
+   * 
+   * @param documentSyncType {@link DocumentSyncType}.
+   * @return DocumentSyncRecord
+   */
+  public DocumentSyncRecord setType(final DocumentSyncType documentSyncType) {
+    this.type = documentSyncType;
+    return this;
+  }
+
+  /**
+   * Set UserId.
+   * 
+   * @param documentSyncUserId {@link String}
+   * @return DocumentSyncRecord
+   */
+  public DocumentSyncRecord setUserId(final String documentSyncUserId) {
+    this.userId = documentSyncUserId;
+    return this;
   }
 
   @Override

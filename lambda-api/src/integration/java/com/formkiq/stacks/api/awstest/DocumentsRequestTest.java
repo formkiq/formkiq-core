@@ -430,35 +430,6 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
   }
 
   /**
-   * Wait For Document Content.
-   *
-   * @param client {@link ApiClient}
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @throws InterruptedException InterruptedException
-   */
-  private void waitForDocumentLength(final ApiClient client, final String siteId,
-      final String documentId) throws InterruptedException {
-
-    DocumentsApi api = new DocumentsApi(client);
-
-    while (true) {
-
-      try {
-        GetDocumentResponse response = api.getDocument(documentId, siteId, null);
-        if (response.getContentLength() != null) {
-          return;
-        }
-
-      } catch (ApiException e) {
-        // ignore error
-      }
-
-      TimeUnit.SECONDS.sleep(1);
-    }
-  }
-
-  /**
    * Save new File.
    * 
    * @throws Exception Exception
@@ -1127,6 +1098,35 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
       GetAttributeResponse attribute =
           attributesApi.getAttribute(AttributeKeyReserved.PUBLICATION.getKey(), siteId);
       assertNotNull(attribute);
+    }
+  }
+
+  /**
+   * Wait For Document Content.
+   *
+   * @param client {@link ApiClient}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @throws InterruptedException InterruptedException
+   */
+  private void waitForDocumentLength(final ApiClient client, final String siteId,
+      final String documentId) throws InterruptedException {
+
+    DocumentsApi api = new DocumentsApi(client);
+
+    while (true) {
+
+      try {
+        GetDocumentResponse response = api.getDocument(documentId, siteId, null);
+        if (response.getContentLength() != null) {
+          return;
+        }
+
+      } catch (ApiException e) {
+        // ignore error
+      }
+
+      TimeUnit.SECONDS.sleep(1);
     }
   }
 }

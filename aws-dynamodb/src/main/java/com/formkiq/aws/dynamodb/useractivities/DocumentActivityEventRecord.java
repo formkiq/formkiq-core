@@ -106,17 +106,6 @@ public record DocumentActivityEventRecord(DynamoDbKey key, String siteId, String
     private Collection<DynamoDbKey> activityKeys;
 
     /**
-     * Sets the document identifier.
-     *
-     * @param entityTypeDocumentId the document ID
-     * @return this Builder
-     */
-    public Builder documentId(final String entityTypeDocumentId) {
-      this.documentId = entityTypeDocumentId;
-      return this;
-    }
-
-    /**
      * Sets the activity {@link DynamoDbKey}.
      *
      * @param documentActivityKeys {@link Collection} {@link DynamoDbKey}
@@ -125,6 +114,13 @@ public record DocumentActivityEventRecord(DynamoDbKey key, String siteId, String
     public Builder activityKeys(final Collection<DynamoDbKey> documentActivityKeys) {
       this.activityKeys = documentActivityKeys;
       return this;
+    }
+
+    @Override
+    public DocumentActivityEventRecord build(final String siteId) {
+      DynamoDbKey key = buildKey(siteId);
+      return new DocumentActivityEventRecord(key, getSiteIdName(siteId), documentId, new Date(),
+          activityKeys);
     }
 
     @Override
@@ -138,11 +134,15 @@ public record DocumentActivityEventRecord(DynamoDbKey key, String siteId, String
       return DynamoDbKey.builder().pk(siteId, pk).sk(sk).build();
     }
 
-    @Override
-    public DocumentActivityEventRecord build(final String siteId) {
-      DynamoDbKey key = buildKey(siteId);
-      return new DocumentActivityEventRecord(key, getSiteIdName(siteId), documentId, new Date(),
-          activityKeys);
+    /**
+     * Sets the document identifier.
+     *
+     * @param entityTypeDocumentId the document ID
+     * @return this Builder
+     */
+    public Builder documentId(final String entityTypeDocumentId) {
+      this.documentId = entityTypeDocumentId;
+      return this;
     }
   }
 }

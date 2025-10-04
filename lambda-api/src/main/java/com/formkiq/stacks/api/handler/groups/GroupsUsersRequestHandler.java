@@ -76,6 +76,18 @@ public class GroupsUsersRequestHandler
   }
 
   @Override
+  public String getRequestUrl() {
+    return URL;
+  }
+
+  @Override
+  public Optional<Boolean> isAuthorized(final AwsServiceCache awsServiceCache, final String method,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
+    boolean access = authorization.getPermissions().contains(ApiPermission.ADMIN);
+    return Optional.of(access);
+  }
+
+  @Override
   public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
@@ -90,17 +102,5 @@ public class GroupsUsersRequestHandler
 
     String msg = "user '" + username + "' added to group '" + groupName + "'";
     return ApiRequestHandlerResponse.builder().created().body("message", msg).build();
-  }
-
-  @Override
-  public String getRequestUrl() {
-    return URL;
-  }
-
-  @Override
-  public Optional<Boolean> isAuthorized(final AwsServiceCache awsServiceCache, final String method,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
-    boolean access = authorization.getPermissions().contains(ApiPermission.ADMIN);
-    return Optional.of(access);
   }
 }

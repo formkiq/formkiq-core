@@ -49,17 +49,6 @@ public class AddDocumentTagRequestBuilder implements HttpRequestBuilder<AddRespo
   }
 
   /**
-   * Set Document Id.
-   *
-   * @param documentId {@link String}
-   * @return AddDocumentAttributeRequestBuilder
-   */
-  public AddDocumentTagRequestBuilder setDocumentId(final String documentId) {
-    this.id = documentId;
-    return this;
-  }
-
-  /**
    * Add Document Attribute.
    * 
    * @param key {@link String}
@@ -68,6 +57,17 @@ public class AddDocumentTagRequestBuilder implements HttpRequestBuilder<AddRespo
    */
   public AddDocumentTagRequestBuilder addTag(final String key, final String stringValue) {
     this.request.addTagsItem(new AddDocumentTag().key(key).value(stringValue));
+    return this;
+  }
+
+  /**
+   * Set Document Id.
+   *
+   * @param documentId {@link String}
+   * @return AddDocumentAttributeRequestBuilder
+   */
+  public AddDocumentTagRequestBuilder setDocumentId(final String documentId) {
+    this.id = documentId;
     return this;
   }
 

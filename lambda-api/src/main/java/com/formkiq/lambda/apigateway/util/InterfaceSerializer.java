@@ -38,6 +38,10 @@ import com.google.gson.JsonSerializer;
  * @param <T> Type of {@link Class}
  */
 public class InterfaceSerializer<T> implements JsonSerializer<T>, JsonDeserializer<T> {
+  static <T> InterfaceSerializer<T> interfaceSerializer(final Class<T> implementationClass) {
+    return new InterfaceSerializer<>(implementationClass);
+  }
+
   /** Interface {@link Class}. */
   private final Class<T> implementationClass;
 
@@ -50,8 +54,10 @@ public class InterfaceSerializer<T> implements JsonSerializer<T>, JsonDeserializ
     this.implementationClass = clazz;
   }
 
-  static <T> InterfaceSerializer<T> interfaceSerializer(final Class<T> implementationClass) {
-    return new InterfaceSerializer<>(implementationClass);
+  @Override
+  public T deserialize(final JsonElement jsonElement, final Type typeOfT,
+      final JsonDeserializationContext context) {
+    return context.deserialize(jsonElement, this.implementationClass);
   }
 
   @Override
@@ -59,11 +65,5 @@ public class InterfaceSerializer<T> implements JsonSerializer<T>, JsonDeserializ
       final JsonSerializationContext context) {
     final Type targetType = value != null ? value.getClass() : type;
     return context.serialize(value, targetType);
-  }
-
-  @Override
-  public T deserialize(final JsonElement jsonElement, final Type typeOfT,
-      final JsonDeserializationContext context) {
-    return context.deserialize(jsonElement, this.implementationClass);
   }
 }

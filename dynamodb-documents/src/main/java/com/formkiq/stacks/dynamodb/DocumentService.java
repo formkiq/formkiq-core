@@ -171,16 +171,6 @@ public interface DocumentService {
   void deletePreset(String siteId, String id);
 
   /**
-   * Delete Presets by type.
-   * 
-   * @param siteId Optional Grouping siteId
-   * @param type {@link String}
-   * @deprecated method needs to be updated
-   */
-  @Deprecated
-  void deletePresets(String siteId, String type);
-
-  /**
    * Delete Preset Tag.
    * 
    * @param siteId {@link String}
@@ -200,6 +190,25 @@ public interface DocumentService {
    */
   @Deprecated
   void deletePresetTags(String siteId, String id);
+
+  /**
+   * Delete Presets by type.
+   * 
+   * @param siteId Optional Grouping siteId
+   * @param type {@link String}
+   * @deprecated method needs to be updated
+   */
+  @Deprecated
+  void deletePresets(String siteId, String type);
+
+  /**
+   * Delete Publish Document.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @return boolean
+   */
+  boolean deletePublishDocument(String siteId, String documentId);
 
   /**
    * Returns whether document exists.
@@ -303,6 +312,29 @@ public interface DocumentService {
       PaginationMapToken token, int maxresults);
 
   /**
+   * Find Document Tag Value.
+   * 
+   * @param siteId Optional Grouping siteId
+   * @param documentId {@link String}
+   * @param tagKey {@link String}
+   * 
+   * @return {@link DocumentTag}
+   */
+  DocumentTag findDocumentTag(String siteId, String documentId, String tagKey);
+
+  /**
+   * Find Tags for {@link DocumentItem}.
+   * 
+   * @param siteId Optional Grouping siteId
+   * @param documentId {@link String}
+   * @param pagination {@link PaginationMapToken}
+   * @param maxresults int
+   * @return {@link PaginationResults} {@link DocumentTag}
+   */
+  PaginationResults<DocumentTag> findDocumentTags(String siteId, String documentId,
+      PaginationMapToken pagination, int maxresults);
+
+  /**
    * Find {@link DocumentItem}.
    * 
    * @param siteId Optional Grouping siteId
@@ -335,29 +367,6 @@ public interface DocumentService {
       Collection<String> documentIds, List<String> tags);
 
   /**
-   * Find Document Tag Value.
-   * 
-   * @param siteId Optional Grouping siteId
-   * @param documentId {@link String}
-   * @param tagKey {@link String}
-   * 
-   * @return {@link DocumentTag}
-   */
-  DocumentTag findDocumentTag(String siteId, String documentId, String tagKey);
-
-  /**
-   * Find Tags for {@link DocumentItem}.
-   * 
-   * @param siteId Optional Grouping siteId
-   * @param documentId {@link String}
-   * @param pagination {@link PaginationMapToken}
-   * @param maxresults int
-   * @return {@link PaginationResults} {@link DocumentTag}
-   */
-  PaginationResults<DocumentTag> findDocumentTags(String siteId, String documentId,
-      PaginationMapToken pagination, int maxresults);
-
-  /**
    * Find most recent inserted document {@link ZonedDateTime}.
    * 
    * @return {@link ZonedDateTime}
@@ -374,22 +383,6 @@ public interface DocumentService {
    */
   @Deprecated
   Optional<Preset> findPreset(String siteId, String id);
-
-  /**
-   * Get Presets.
-   * 
-   * @param siteId {@link String}
-   * @param id {@link String}
-   * @param type {@link String}
-   * @param name {@link String}
-   * @param token {@link PaginationMapToken}
-   * @param maxresults int
-   * @return {@link PaginationResults} {@link Preset}
-   * @deprecated method needs to be updated
-   */
-  @Deprecated
-  PaginationResults<Preset> findPresets(String siteId, String id, String type, String name,
-      PaginationMapToken token, int maxresults);
 
   /**
    * Find Preset Tag.
@@ -418,6 +411,31 @@ public interface DocumentService {
       int maxresults);
 
   /**
+   * Get Presets.
+   * 
+   * @param siteId {@link String}
+   * @param id {@link String}
+   * @param type {@link String}
+   * @param name {@link String}
+   * @param token {@link PaginationMapToken}
+   * @param maxresults int
+   * @return {@link PaginationResults} {@link Preset}
+   * @deprecated method needs to be updated
+   */
+  @Deprecated
+  PaginationResults<Preset> findPresets(String siteId, String id, String type, String name,
+      PaginationMapToken token, int maxresults);
+
+  /**
+   * Get Publish Document.
+   *
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @return DocumentPublicationRecord
+   */
+  DocumentPublicationRecord findPublishDocument(String siteId, String documentId);
+
+  /**
    * Find Deleted {@link DocumentItem}.
    * 
    * @param siteId Optional Grouping siteId
@@ -436,6 +454,27 @@ public interface DocumentService {
    * @return boolean
    */
   boolean isFolderExists(String siteId, String path);
+
+  /**
+   * Publish Document.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param s3version {@link String}
+   * @param path {@link String}
+   * @param contentType {@link String}
+   * @param userId {@link String}
+   */
+  void publishDocument(String siteId, String documentId, String s3version, String path,
+      String contentType, String userId);
+
+  /**
+   * Reindex Document Attributes.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   */
+  void reindexDocumentAttributes(String siteId, String documentId) throws ValidationException;
 
   /**
    * Remove Tag from Document.
@@ -547,43 +586,4 @@ public interface DocumentService {
    * @param attributes {@link Map}
    */
   void updateDocument(String siteId, String documentId, Map<String, AttributeValue> attributes);
-
-  /**
-   * Publish Document.
-   * 
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param s3version {@link String}
-   * @param path {@link String}
-   * @param contentType {@link String}
-   * @param userId {@link String}
-   */
-  void publishDocument(String siteId, String documentId, String s3version, String path,
-      String contentType, String userId);
-
-  /**
-   * Get Publish Document.
-   *
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @return DocumentPublicationRecord
-   */
-  DocumentPublicationRecord findPublishDocument(String siteId, String documentId);
-
-  /**
-   * Delete Publish Document.
-   * 
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @return boolean
-   */
-  boolean deletePublishDocument(String siteId, String documentId);
-
-  /**
-   * Reindex Document Attributes.
-   * 
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   */
-  void reindexDocumentAttributes(String siteId, String documentId) throws ValidationException;
 }

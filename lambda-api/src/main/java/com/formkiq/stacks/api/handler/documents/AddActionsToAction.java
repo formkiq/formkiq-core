@@ -120,11 +120,11 @@ public class AddActionsToAction implements Function<AddAction, Action> {
     return list;
   }
 
-  private String toString(final OcrOutputType ocrOutputType) {
-    return ocrOutputType != null ? ocrOutputType.name() : null;
-  }
-
   private String toString(final OcrEngine ocrEngine) {
     return ocrEngine != null ? ocrEngine.name() : null;
+  }
+
+  private String toString(final OcrOutputType ocrOutputType) {
+    return ocrOutputType != null ? ocrOutputType.name() : null;
   }
 }

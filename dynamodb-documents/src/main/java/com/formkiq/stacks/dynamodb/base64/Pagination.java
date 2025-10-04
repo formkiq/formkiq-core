@@ -56,20 +56,20 @@ public class Pagination<T> {
   }
 
   /**
-   * Get Results.
-   * 
-   * @return List
-   */
-  public List<T> getResults() {
-    return this.results;
-  }
-
-  /**
    * Get Next Token.
    * 
    * @return String
    */
   public String getNextToken() {
     return this.nextToken;
+  }
+
+  /**
+   * Get Results.
+   * 
+   * @return List
+   */
+  public List<T> getResults() {
+    return this.results;
   }
 }

@@ -60,6 +60,60 @@ import com.formkiq.testutils.aws.LocalStackExtension;
 public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
 
   /**
+   * Asserts 200 response.
+   *
+   * @param siteId {@link String}
+   * @param response {@link String}.
+   */
+  private void assert200Response(final String siteId, final String response) {
+
+    Map<String, Object> m = GsonUtil.getInstance().fromJson(response, Map.class);
+
+    final int mapsize = 3;
+    assertEquals(mapsize, m.size());
+    assertEquals("200.0", String.valueOf(m.get("statusCode")));
+    Map<String, Object> headers = (Map<String, Object>) m.get("headers");
+
+    assertCorsHeaders(headers);
+
+    DynamicObject resp = new DynamicObject(fromJson((String) m.get("body"), Map.class));
+
+    assertNotNull(resp.get("documentId"));
+
+    if (siteId != null) {
+      assertEquals(siteId, resp.get("siteId"));
+    }
+
+    assertNull(resp.get("next"));
+    assertNull(resp.get("previous"));
+
+    assertNotNull(UUID.fromString((String) resp.get("documentId")));
+  }
+
+  /**
+   * Asserts 404 response.
+   *
+   * @param response {@link String}.
+   */
+  private void assert404Response(final String response) {
+
+    Map<String, Object> m = GsonUtil.getInstance().fromJson(response, Map.class);
+
+    final int mapsize = 3;
+    assertEquals(mapsize, m.size());
+    assertEquals("404.0", String.valueOf(m.get("statusCode")));
+
+    Map<String, Object> headers = (Map<String, Object>) m.get("headers");
+    assertCorsHeaders(headers);
+
+    Map<String, Object> resp = GsonUtil.getInstance().fromJson((String) m.get("body"), Map.class);
+
+    assertNotNull(resp.get("message"));
+    assertNull(resp.get("next"));
+    assertNull(resp.get("previous"));
+  }
+
+  /**
    * PATCH /documents/{documentId} request.
    * 
    * @param siteId {@link String}
@@ -349,59 +403,5 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
           "{\"errors\":[{\"key\":\"CLAMAV_SCAN_TIMESTAMP\",\"error\":\"unallowed tag key\"}]}",
           String.valueOf(m.get("body")));
     }
-  }
-
-  /**
-   * Asserts 200 response.
-   *
-   * @param siteId {@link String}
-   * @param response {@link String}.
-   */
-  private void assert200Response(final String siteId, final String response) {
-
-    Map<String, Object> m = GsonUtil.getInstance().fromJson(response, Map.class);
-
-    final int mapsize = 3;
-    assertEquals(mapsize, m.size());
-    assertEquals("200.0", String.valueOf(m.get("statusCode")));
-    Map<String, Object> headers = (Map<String, Object>) m.get("headers");
-
-    assertCorsHeaders(headers);
-
-    DynamicObject resp = new DynamicObject(fromJson((String) m.get("body"), Map.class));
-
-    assertNotNull(resp.get("documentId"));
-
-    if (siteId != null) {
-      assertEquals(siteId, resp.get("siteId"));
-    }
-
-    assertNull(resp.get("next"));
-    assertNull(resp.get("previous"));
-
-    assertNotNull(UUID.fromString((String) resp.get("documentId")));
-  }
-
-  /**
-   * Asserts 404 response.
-   *
-   * @param response {@link String}.
-   */
-  private void assert404Response(final String response) {
-
-    Map<String, Object> m = GsonUtil.getInstance().fromJson(response, Map.class);
-
-    final int mapsize = 3;
-    assertEquals(mapsize, m.size());
-    assertEquals("404.0", String.valueOf(m.get("statusCode")));
-
-    Map<String, Object> headers = (Map<String, Object>) m.get("headers");
-    assertCorsHeaders(headers);
-
-    Map<String, Object> resp = GsonUtil.getInstance().fromJson((String) m.get("body"), Map.class);
-
-    assertNotNull(resp.get("message"));
-    assertNull(resp.get("next"));
-    assertNull(resp.get("previous"));
   }
 }

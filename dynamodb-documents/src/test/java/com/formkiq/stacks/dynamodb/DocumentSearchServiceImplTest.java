@@ -73,13 +73,6 @@ import com.formkiq.validation.ValidationException;
 @ExtendWith(DynamoDbExtension.class)
 public class DocumentSearchServiceImplTest implements DbKeys {
 
-  /** {@link SimpleDateFormat}. */
-  private final SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-  /** {@link DocumentService}. */
-  private DocumentSearchService searchService;
-  /** {@link DocumentService}. */
-  private DocumentService service;
-
   /**
    * Before All.
    */
@@ -87,6 +80,14 @@ public class DocumentSearchServiceImplTest implements DbKeys {
   public static void beforeAll() {
     ApiAuthorization.login(new ApiAuthorization().username("System"));
   }
+
+  /** {@link SimpleDateFormat}. */
+  private final SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+  /** {@link DocumentService}. */
+  private DocumentSearchService searchService;
+
+  /** {@link DocumentService}. */
+  private DocumentService service;
 
   /**
    * Before Test.
@@ -1000,44 +1001,6 @@ public class DocumentSearchServiceImplTest implements DbKeys {
   }
 
   /**
-   * Search by 'eq' / 'beginsWith' Tag Key & Value.
-   * 
-   * @throws ValidationException ValidationException
-   */
-  @Test
-  public void testSearchForDocumentIds01() throws ValidationException {
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-      // given
-      final String documentId0 = createDocument(siteId, "category", "person0");
-      final String documentId1 = createDocument(siteId, "category", "person1");
-      createDocument(siteId, "category", "other");
-
-      SearchTagCriteria c = new SearchTagCriteria("category").eq("person0");
-
-      // when
-      PaginationResults<String> results =
-          this.searchService.searchForDocumentIds(siteId, c, null, MAX_RESULTS);
-
-      // then
-      assertEquals(1, results.getResults().size());
-      assertNull(results.getToken());
-      assertEquals(documentId0, results.getResults().get(0));
-
-      // given
-      c = new SearchTagCriteria("category").beginsWith("per");
-
-      // when
-      results = this.searchService.searchForDocumentIds(siteId, c, null, MAX_RESULTS);
-
-      // then
-      assertNull(results.getToken());
-      assertEquals(2, results.getResults().size());
-      assertTrue(results.getResults().contains(documentId0));
-      assertTrue(results.getResults().contains(documentId1));
-    }
-  }
-
-  /**
    * Search by 'between' Tag Key & Value.
    * 
    * @throws ValidationException ValidationException
@@ -1084,6 +1047,44 @@ public class DocumentSearchServiceImplTest implements DbKeys {
         // then
         assertEquals("duplicate attributes in query", e.errors().iterator().next().error());
       }
+    }
+  }
+
+  /**
+   * Search by 'eq' / 'beginsWith' Tag Key & Value.
+   * 
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testSearchForDocumentIds01() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      final String documentId0 = createDocument(siteId, "category", "person0");
+      final String documentId1 = createDocument(siteId, "category", "person1");
+      createDocument(siteId, "category", "other");
+
+      SearchTagCriteria c = new SearchTagCriteria("category").eq("person0");
+
+      // when
+      PaginationResults<String> results =
+          this.searchService.searchForDocumentIds(siteId, c, null, MAX_RESULTS);
+
+      // then
+      assertEquals(1, results.getResults().size());
+      assertNull(results.getToken());
+      assertEquals(documentId0, results.getResults().get(0));
+
+      // given
+      c = new SearchTagCriteria("category").beginsWith("per");
+
+      // when
+      results = this.searchService.searchForDocumentIds(siteId, c, null, MAX_RESULTS);
+
+      // then
+      assertNull(results.getToken());
+      assertEquals(2, results.getResults().size());
+      assertTrue(results.getResults().contains(documentId0));
+      assertTrue(results.getResults().contains(documentId1));
     }
   }
 }

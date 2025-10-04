@@ -105,6 +105,32 @@ public record EntityTypeRecord(DynamoDbKey key, String documentId, EntityTypeNam
     /** Inserted Date. */
     private Date insertedDate = new Date();
 
+    @Override
+    public EntityTypeRecord build(final String siteId) {
+      Objects.requireNonNull(insertedDate, "insertedDate must not be null");
+
+      validate();
+      DynamoDbKey key = buildKey(siteId);
+      return new EntityTypeRecord(key, documentId, namespace, name, insertedDate);
+    }
+
+    @Override
+    public DynamoDbKey buildKey(final String siteId) {
+
+      Objects.requireNonNull(documentId, "documentId must not be null");
+      Objects.requireNonNull(namespace, "namespace must not be null");
+      Objects.requireNonNull(name, "name must not be null");
+
+      String pk = "entityType#" + documentId;
+      String sk = "entityType";
+      String gsi1Pk = "entityType#";
+      String gsi1Sk = name.isBlank() ? "entityType#" + namespace + "#"
+          : "entityType#" + namespace + "#" + name + "#";
+
+      return DynamoDbKey.builder().pk(siteId, pk).sk(sk).gsi1Pk(siteId, gsi1Pk).gsi1Sk(gsi1Sk)
+          .build();
+    }
+
     /**
      * Sets the document identifier.
      *
@@ -117,26 +143,14 @@ public record EntityTypeRecord(DynamoDbKey key, String documentId, EntityTypeNam
     }
 
     /**
-     * Sets the entityTypeNamespace of the document.
+     * Sets the insertion timestamp with millisecond precision.
      *
-     * @param entityTypeNamespace the entityTypeNamespace
+     * @param entityTypeInsertedDate the insertion date
      * @return this Builder
      */
-    public Builder namespace(final EntityTypeNamespace entityTypeNamespace) {
-      this.namespace = entityTypeNamespace;
+    public Builder insertedDate(final Date entityTypeInsertedDate) {
+      this.insertedDate = new Date(entityTypeInsertedDate.getTime());
       return this;
-    }
-
-    /**
-     * Sets the entityTypeNamespace of the document with default value.
-     *
-     * @param entityTypeNamespace the entityTypeNamespace
-     * @param defaultValue default Entity Type Namespace
-     * @return this Builder
-     */
-    public Builder namespace(final EntityTypeNamespace entityTypeNamespace,
-        final EntityTypeNamespace defaultValue) {
-      return namespace(entityTypeNamespace != null ? entityTypeNamespace : defaultValue);
     }
 
     /**
@@ -161,54 +175,26 @@ public record EntityTypeRecord(DynamoDbKey key, String documentId, EntityTypeNam
     }
 
     /**
-     * Sets the insertion timestamp with millisecond precision.
+     * Sets the entityTypeNamespace of the document.
      *
-     * @param entityTypeInsertedDate the insertion date
+     * @param entityTypeNamespace the entityTypeNamespace
      * @return this Builder
      */
-    public Builder insertedDate(final Date entityTypeInsertedDate) {
-      this.insertedDate = new Date(entityTypeInsertedDate.getTime());
+    public Builder namespace(final EntityTypeNamespace entityTypeNamespace) {
+      this.namespace = entityTypeNamespace;
       return this;
-    }
-
-    @Override
-    public DynamoDbKey buildKey(final String siteId) {
-
-      Objects.requireNonNull(documentId, "documentId must not be null");
-      Objects.requireNonNull(namespace, "namespace must not be null");
-      Objects.requireNonNull(name, "name must not be null");
-
-      String pk = "entityType#" + documentId;
-      String sk = "entityType";
-      String gsi1Pk = "entityType#";
-      String gsi1Sk = name.isBlank() ? "entityType#" + namespace + "#"
-          : "entityType#" + namespace + "#" + name + "#";
-
-      return DynamoDbKey.builder().pk(siteId, pk).sk(sk).gsi1Pk(siteId, gsi1Pk).gsi1Sk(gsi1Sk)
-          .build();
-    }
-
-    @Override
-    public EntityTypeRecord build(final String siteId) {
-      Objects.requireNonNull(insertedDate, "insertedDate must not be null");
-
-      validate();
-      DynamoDbKey key = buildKey(siteId);
-      return new EntityTypeRecord(key, documentId, namespace, name, insertedDate);
     }
 
     /**
-     * Validate Namespace.
-     * 
-     * @return Builder
+     * Sets the entityTypeNamespace of the document with default value.
+     *
+     * @param entityTypeNamespace the entityTypeNamespace
+     * @param defaultValue default Entity Type Namespace
+     * @return this Builder
      */
-    public Builder validateNamespace() {
-      ValidationBuilder vb = new ValidationBuilder();
-      if (!isUuid(documentId)) {
-        vb.isRequired("namespace", namespace, "'namespace' is required");
-      }
-      vb.check();
-      return this;
+    public Builder namespace(final EntityTypeNamespace entityTypeNamespace,
+        final EntityTypeNamespace defaultValue) {
+      return namespace(entityTypeNamespace != null ? entityTypeNamespace : defaultValue);
     }
 
     /**
@@ -239,6 +225,20 @@ public record EntityTypeRecord(DynamoDbKey key, String documentId, EntityTypeNam
             "unexpected value must be one of '" + presetEntities + "'");
       }
 
+      vb.check();
+      return this;
+    }
+
+    /**
+     * Validate Namespace.
+     * 
+     * @return Builder
+     */
+    public Builder validateNamespace() {
+      ValidationBuilder vb = new ValidationBuilder();
+      if (!isUuid(documentId)) {
+        vb.isRequired("namespace", namespace, "'namespace' is required");
+      }
       vb.check();
       return this;
     }

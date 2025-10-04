@@ -63,6 +63,78 @@ class ActionsValidatorTest {
     validator = new ActionsValidatorImpl(db);
   }
 
+  private static void testDimensionTemplate(final Map<String, Object> parameters,
+      final String errorKey, final String errorMessage) {
+    Action action = new Action().type(ActionType.RESIZE).userId("joe").parameters(parameters);
+    testTemplate(action, errorKey, errorMessage);
+  }
+
+  private static void testTemplate(final Action action, final String errorKey,
+      final String errorMessage) {
+    // when
+    Collection<ValidationError> errors = validator.validation(null, action, null, null);
+
+    // then
+    boolean shouldHaveError = errorMessage != null;
+    assertEquals(shouldHaveError ? 1 : 0, errors.size());
+
+    if (shouldHaveError) {
+      ValidationError error = errors.iterator().next();
+      assertEquals(errorKey, error.key());
+      assertEquals(errorMessage, error.error());
+    }
+  }
+
+  @Test
+  void testAutoWidthAndHeight() {
+    testDimensionTemplate(Map.of("height", "auto", "width", "auto"), "parameters.width",
+        "'width' and 'height' parameters cannot be both set to auto");
+  }
+
+  @Test
+  void testInvalidHeight() {
+    testDimensionTemplate(Map.of("width", "auto", "height", "invalidValue"), "parameters.height",
+        "'height' parameter must be an integer > 0 or 'auto'");
+  }
+
+  @Test
+  void testInvalidImageFormat() {
+    testDimensionTemplate(Map.of("height", "100", "width", "100", "outputType", "invalid"),
+        "parameters.outputType",
+        "'outputType' parameter must be one of [bmp, gif, jpeg, png, tif]");
+  }
+
+  @Test
+  void testInvalidWidth() {
+    testDimensionTemplate(Map.of("height", "auto", "width", "invalidValue"), "parameters.width",
+        "'width' parameter must be an integer > 0 or 'auto'");
+  }
+
+  @Test
+  void testNoHeight() {
+    testDimensionTemplate(Map.of("width", "auto"), "parameters.height",
+        "'height' parameter is required");
+  }
+
+  @Test
+  void testNoWidth() {
+    testDimensionTemplate(Map.of("height", "auto"), "parameters.width",
+        "'width' parameter is required");
+  }
+
+  @Test
+  void testNumericWidthAndHeight() {
+    testDimensionTemplate(Map.of("height", "100", "width", "100"), null, null);
+  }
+
+  @Test
+  void testValidImageFormats() {
+    for (String format : VALID_IMAGE_FORMATS) {
+      testDimensionTemplate(Map.of("height", "100", "width", "100", "outputType", format), null,
+          null);
+    }
+  }
+
   @Test
   void testValidation01() {
     testTemplate(null, null, "action is required");
@@ -125,69 +197,6 @@ class ActionsValidatorTest {
     testTemplate(action, "parameters.eventBusName", "'eventBusName' parameter is required");
   }
 
-  private static void testTemplate(final Action action, final String errorKey,
-      final String errorMessage) {
-    // when
-    Collection<ValidationError> errors = validator.validation(null, action, null, null);
-
-    // then
-    boolean shouldHaveError = errorMessage != null;
-    assertEquals(shouldHaveError ? 1 : 0, errors.size());
-
-    if (shouldHaveError) {
-      ValidationError error = errors.iterator().next();
-      assertEquals(errorKey, error.key());
-      assertEquals(errorMessage, error.error());
-    }
-  }
-
-  private static void testDimensionTemplate(final Map<String, Object> parameters,
-      final String errorKey, final String errorMessage) {
-    Action action = new Action().type(ActionType.RESIZE).userId("joe").parameters(parameters);
-    testTemplate(action, errorKey, errorMessage);
-  }
-
-  @Test
-  void testNoHeight() {
-    testDimensionTemplate(Map.of("width", "auto"), "parameters.height",
-        "'height' parameter is required");
-  }
-
-  @Test
-  void testNoWidth() {
-    testDimensionTemplate(Map.of("height", "auto"), "parameters.width",
-        "'width' parameter is required");
-  }
-
-  @Test
-  void testInvalidHeight() {
-    testDimensionTemplate(Map.of("width", "auto", "height", "invalidValue"), "parameters.height",
-        "'height' parameter must be an integer > 0 or 'auto'");
-  }
-
-  @Test
-  void testInvalidWidth() {
-    testDimensionTemplate(Map.of("height", "auto", "width", "invalidValue"), "parameters.width",
-        "'width' parameter must be an integer > 0 or 'auto'");
-  }
-
-  @Test
-  void testNumericWidthAndHeight() {
-    testDimensionTemplate(Map.of("height", "100", "width", "100"), null, null);
-  }
-
-  @Test
-  void testAutoWidthAndHeight() {
-    testDimensionTemplate(Map.of("height", "auto", "width", "auto"), "parameters.width",
-        "'width' and 'height' parameters cannot be both set to auto");
-  }
-
-  @Test
-  void testZeroWidth() {
-    testDimensionTemplate(Map.of("height", "100", "width", "0"), "parameters.width",
-        "'width' parameter must be an integer > 0 or 'auto'");
-  }
-
   @Test
   void testZeroHeight() {
     testDimensionTemplate(Map.of("height", "0", "width", "100"), "parameters.height",
@@ -195,17 +204,8 @@ class ActionsValidatorTest {
   }
 
   @Test
-  void testValidImageFormats() {
-    for (String format : VALID_IMAGE_FORMATS) {
-      testDimensionTemplate(Map.of("height", "100", "width", "100", "outputType", format), null,
-          null);
-    }
-  }
-
-  @Test
-  void testInvalidImageFormat() {
-    testDimensionTemplate(Map.of("height", "100", "width", "100", "outputType", "invalid"),
-        "parameters.outputType",
-        "'outputType' parameter must be one of [bmp, gif, jpeg, png, tif]");
+  void testZeroWidth() {
+    testDimensionTemplate(Map.of("height", "100", "width", "0"), "parameters.width",
+        "'width' parameter must be an integer > 0 or 'auto'");
   }
 }

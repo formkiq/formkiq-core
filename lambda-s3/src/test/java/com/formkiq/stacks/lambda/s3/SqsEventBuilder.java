@@ -36,12 +36,66 @@ import java.util.UUID;
  * documentId.
  */
 public class SqsEventBuilder {
-  /** Site Id. */
-  private final String siteId;
-  /** Document Id. */
-  private final String documentId;
+  /**
+   * Builder.
+   */
+  public static class Builder {
+    /** Site Id. */
+    private String siteId;
+    /** Document Id. */
+    private String documentId;
+
+    /**
+     * Builds and returns the event payload as a Map.
+     * 
+     * @return Map
+     */
+    public AwsEvent build() {
+      Map<String, Object> map = new SqsEventBuilder(this).build();
+      String json = GSON.toJson(map);
+      return GSON.fromJson(json, AwsEvent.class);
+    }
+
+    /**
+     * Sets the eventDocumentId to include in the SNS message.
+     * 
+     * @param eventDocumentId {@link String}
+     * @return Builder
+     */
+    public Builder documentId(final String eventDocumentId) {
+      this.documentId = eventDocumentId;
+      return this;
+    }
+
+    /**
+     * Sets the eventSiteId to include in the SNS message.
+     * 
+     * @param eventSiteId {@link String}
+     * @return Builder
+     */
+    public Builder siteId(final String eventSiteId) {
+      this.siteId = eventSiteId;
+      return this;
+    }
+  }
+
   /** {@link Gson}. */
   private static final Gson GSON = new Gson();
+
+  /**
+   * Entry point to the builder.
+   * 
+   * @return Builder
+   */
+  public static Builder builder() {
+    return new Builder();
+  }
+
+  /** Site Id. */
+  private final String siteId;
+
+  /** Document Id. */
+  private final String documentId;
 
   /**
    * constructor.
@@ -119,57 +173,5 @@ public class SqsEventBuilder {
     Map<String, Object> root = new LinkedHashMap<>();
     root.put("Records", Collections.singletonList(record));
     return root;
-  }
-
-  /**
-   * Entry point to the builder.
-   * 
-   * @return Builder
-   */
-  public static Builder builder() {
-    return new Builder();
-  }
-
-  /**
-   * Builder.
-   */
-  public static class Builder {
-    /** Site Id. */
-    private String siteId;
-    /** Document Id. */
-    private String documentId;
-
-    /**
-     * Sets the eventSiteId to include in the SNS message.
-     * 
-     * @param eventSiteId {@link String}
-     * @return Builder
-     */
-    public Builder siteId(final String eventSiteId) {
-      this.siteId = eventSiteId;
-      return this;
-    }
-
-    /**
-     * Sets the eventDocumentId to include in the SNS message.
-     * 
-     * @param eventDocumentId {@link String}
-     * @return Builder
-     */
-    public Builder documentId(final String eventDocumentId) {
-      this.documentId = eventDocumentId;
-      return this;
-    }
-
-    /**
-     * Builds and returns the event payload as a Map.
-     * 
-     * @return Map
-     */
-    public AwsEvent build() {
-      Map<String, Object> map = new SqsEventBuilder(this).build();
-      String json = GSON.toJson(map);
-      return GSON.fromJson(json, AwsEvent.class);
-    }
   }
 }

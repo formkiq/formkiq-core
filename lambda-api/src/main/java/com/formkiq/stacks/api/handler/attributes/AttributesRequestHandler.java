@@ -80,6 +80,10 @@ public class AttributesRequestHandler
     return "/attributes";
   }
 
+  private boolean isWatermark(final AddAttribute attribute) {
+    return AttributeDataType.WATERMARK.equals(attribute.getDataType());
+  }
+
   @Override
   public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorizer, final AwsServiceCache awsServices) throws Exception {
@@ -107,9 +111,5 @@ public class AttributesRequestHandler
 
     return ApiRequestHandlerResponse.builder().ok()
         .body("message", "Attribute '" + key + "' created").build();
-  }
-
-  private boolean isWatermark(final AddAttribute attribute) {
-    return AttributeDataType.WATERMARK.equals(attribute.getDataType());
   }
 }

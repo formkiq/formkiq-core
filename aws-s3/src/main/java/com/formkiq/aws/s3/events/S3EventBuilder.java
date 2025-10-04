@@ -33,29 +33,19 @@ import java.util.Collections;
  * objectKey.
  */
 public class S3EventBuilder {
-  /** Event Name. */
-  private String eventName = "ObjectCreated:Put";
-  /** S3 Bucket Name. */
-  private String bucketName;
-  /** S3 Object Key. */
-  private String objectKey;
-
-  private S3EventBuilder() {}
-
   public static S3EventBuilder builder() {
     return new S3EventBuilder();
   }
 
-  /**
-   * Override the S3 event name (e.g., "ObjectCreated:Put").
-   * 
-   * @param s3EventName {@link String}
-   * @return S3EventBuilder
-   */
-  public S3EventBuilder eventName(final String s3EventName) {
-    this.eventName = s3EventName;
-    return this;
-  }
+  /** Event Name. */
+  private String eventName = "ObjectCreated:Put";
+  /** S3 Bucket Name. */
+  private String bucketName;
+
+  /** S3 Object Key. */
+  private String objectKey;
+
+  private S3EventBuilder() {}
 
   /**
    * Set the S3 bucket name (e.g., "my-bucket").
@@ -65,17 +55,6 @@ public class S3EventBuilder {
    */
   public S3EventBuilder bucketName(final String s3BucketName) {
     this.bucketName = s3BucketName;
-    return this;
-  }
-
-  /**
-   * Set the S3 object key (e.g., "path/to/object.txt").
-   * 
-   * @param s3ObjectKey {@link String}
-   * @return S3EventBuilder
-   */
-  public S3EventBuilder objectKey(final String s3ObjectKey) {
-    this.objectKey = s3ObjectKey;
     return this;
   }
 
@@ -100,5 +79,27 @@ public class S3EventBuilder {
             new S3Object(objectKey, 0L, "", "")));
 
     return new S3Event(Collections.singletonList(record));
+  }
+
+  /**
+   * Override the S3 event name (e.g., "ObjectCreated:Put").
+   * 
+   * @param s3EventName {@link String}
+   * @return S3EventBuilder
+   */
+  public S3EventBuilder eventName(final String s3EventName) {
+    this.eventName = s3EventName;
+    return this;
+  }
+
+  /**
+   * Set the S3 object key (e.g., "path/to/object.txt").
+   * 
+   * @param s3ObjectKey {@link String}
+   * @return S3EventBuilder
+   */
+  public S3EventBuilder objectKey(final String s3ObjectKey) {
+    this.objectKey = s3ObjectKey;
+    return this;
   }
 }

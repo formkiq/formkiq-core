@@ -35,12 +35,22 @@ import java.util.concurrent.TimeUnit;
  */
 public class SqsMessageReceiver {
 
+  /** Retry Limit. */
+  private static final int RETRY_LIMIT = 10;
   /** {@link SqsService}. */
   private final SqsService sqs;
   /** Sqs Queue Url. */
   private final String queueUrl;
-  /** Retry Limit. */
-  private static final int RETRY_LIMIT = 10;
+
+  /**
+   * constructor.
+   * 
+   * @param awsServiceCache {@link AwsServiceCache}
+   * @param sqsQueueUrl {@link String}
+   */
+  public SqsMessageReceiver(final AwsServiceCache awsServiceCache, final String sqsQueueUrl) {
+    this(awsServiceCache.getExtension(SqsService.class), sqsQueueUrl);
+  }
 
   /**
    * constructor.
@@ -54,13 +64,11 @@ public class SqsMessageReceiver {
   }
 
   /**
-   * constructor.
-   * 
-   * @param awsServiceCache {@link AwsServiceCache}
-   * @param sqsQueueUrl {@link String}
+   * Clears all messages in queue.
    */
-  public SqsMessageReceiver(final AwsServiceCache awsServiceCache, final String sqsQueueUrl) {
-    this(awsServiceCache.getExtension(SqsService.class), sqsQueueUrl);
+  public void clear() {
+    ReceiveMessageResponse response = sqs.receiveMessages(queueUrl);
+    response.messages().forEach(m -> sqs.deleteMessage(queueUrl, m.receiptHandle()));
   }
 
   /**
@@ -83,13 +91,5 @@ public class SqsMessageReceiver {
 
     response.messages().forEach(m -> sqs.deleteMessage(queueUrl, m.receiptHandle()));
     return response;
-  }
-
-  /**
-   * Clears all messages in queue.
-   */
-  public void clear() {
-    ReceiveMessageResponse response = sqs.receiveMessages(queueUrl);
-    response.messages().forEach(m -> sqs.deleteMessage(queueUrl, m.receiptHandle()));
   }
 }

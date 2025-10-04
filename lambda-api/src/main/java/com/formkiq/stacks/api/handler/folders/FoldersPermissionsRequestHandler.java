@@ -50,6 +50,19 @@ public class FoldersPermissionsRequestHandler
   public FoldersPermissionsRequestHandler() {}
 
   @Override
+  public String getRequestUrl() {
+    return "/folders/permissions";
+  }
+
+  @Override
+  public Optional<Boolean> isAuthorized(final AwsServiceCache awsservice, final String method,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
+    String siteId = authorization.getSiteId();
+    boolean access = authorization.isAdminOrGovern(siteId);
+    return Optional.of(access);
+  }
+
+  @Override
   public ApiRequestHandlerResponse put(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
@@ -83,18 +96,5 @@ public class FoldersPermissionsRequestHandler
       vb.isRequired("permissions", role.permissions() != null, "'permissions' is required");
     });
     vb.check();
-  }
-
-  @Override
-  public String getRequestUrl() {
-    return "/folders/permissions";
-  }
-
-  @Override
-  public Optional<Boolean> isAuthorized(final AwsServiceCache awsservice, final String method,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
-    String siteId = authorization.getSiteId();
-    boolean access = authorization.isAdminOrGovern(siteId);
-    return Optional.of(access);
   }
 }

@@ -47,42 +47,6 @@ public class WatermarkPosition {
   }
 
   /**
-   * Get X Offset.
-   * 
-   * @return Double
-   */
-  public Double getxOffset() {
-    return this.xOffset;
-  }
-
-  /**
-   * Set x offset.
-   * 
-   * @param offset Double
-   */
-  public void setxOffset(final Double offset) {
-    this.xOffset = offset;
-  }
-
-  /**
-   * Get Y offset.
-   * 
-   * @return Double
-   */
-  public Double getyOffset() {
-    return this.yOffset;
-  }
-
-  /**
-   * Set Y Offset.
-   * 
-   * @param offset Double
-   */
-  public void setyOffset(final Double offset) {
-    this.yOffset = offset;
-  }
-
-  /**
    * Get X Anchor.
    * 
    * @return WatermarkAnchor
@@ -92,12 +56,12 @@ public class WatermarkPosition {
   }
 
   /**
-   * Set X Anchor.
+   * Get X Offset.
    * 
-   * @param anchor {@link WatermarkXanchor}
+   * @return Double
    */
-  public void setxAnchor(final WatermarkXanchor anchor) {
-    this.xAnchor = anchor;
+  public Double getxOffset() {
+    return this.xOffset;
   }
 
   /**
@@ -110,11 +74,47 @@ public class WatermarkPosition {
   }
 
   /**
+   * Get Y offset.
+   * 
+   * @return Double
+   */
+  public Double getyOffset() {
+    return this.yOffset;
+  }
+
+  /**
+   * Set X Anchor.
+   * 
+   * @param anchor {@link WatermarkXanchor}
+   */
+  public void setxAnchor(final WatermarkXanchor anchor) {
+    this.xAnchor = anchor;
+  }
+
+  /**
+   * Set x offset.
+   * 
+   * @param offset Double
+   */
+  public void setxOffset(final Double offset) {
+    this.xOffset = offset;
+  }
+
+  /**
    * Set Y Anchor.
    * 
    * @param anchor {@link WatermarkYanchor}
    */
   public void setyAnchor(final WatermarkYanchor anchor) {
     this.yAnchor = anchor;
+  }
+
+  /**
+   * Set Y Offset.
+   * 
+   * @param offset Double
+   */
+  public void setyOffset(final Double offset) {
+    this.yOffset = offset;
   }
 }

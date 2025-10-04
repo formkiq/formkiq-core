@@ -57,20 +57,6 @@ public class AttributeValueHelper {
 
   /**
    * Add {@link String} to {@link Map} if value is not empty.
-   * 
-   * @param map {@link Map}
-   * @param key {@link String}
-   * @param value {@link String}
-   */
-  public static void addStringIfNotEmpty(final Map<String, AttributeValue> map, final String key,
-      final String value) {
-    if (!isEmpty(value)) {
-      map.put(key, fromS(value));
-    }
-  }
-
-  /**
-   * Add {@link String} to {@link Map} if value is not empty.
    *
    * @param map {@link Map}
    * @param key {@link String}
@@ -112,15 +98,17 @@ public class AttributeValueHelper {
   }
 
   /**
-   * Convert {@link AttributeValue} to {@link String} or null.
+   * Add {@link String} to {@link Map} if value is not empty.
    * 
-   * @param attrs {@link Map}
+   * @param map {@link Map}
    * @param key {@link String}
-   * @return String
+   * @param value {@link String}
    */
-  public static String toStringValue(final Map<String, AttributeValue> attrs, final String key) {
-    AttributeValue av = attrs.get(key);
-    return av != null ? av.s() : null;
+  public static void addStringIfNotEmpty(final Map<String, AttributeValue> map, final String key,
+      final String value) {
+    if (!isEmpty(value)) {
+      map.put(key, fromS(value));
+    }
   }
 
   /**
@@ -176,5 +164,17 @@ public class AttributeValueHelper {
       val = Enum.valueOf(enumClass, sval);
     }
     return (E) val;
+  }
+
+  /**
+   * Convert {@link AttributeValue} to {@link String} or null.
+   * 
+   * @param attrs {@link Map}
+   * @param key {@link String}
+   * @return String
+   */
+  public static String toStringValue(final Map<String, AttributeValue> attrs, final String key) {
+    AttributeValue av = attrs.get(key);
+    return av != null ? av.s() : null;
   }
 }

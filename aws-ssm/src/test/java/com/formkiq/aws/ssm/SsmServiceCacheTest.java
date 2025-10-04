@@ -61,6 +61,14 @@ public class SsmServiceCacheTest {
   private static SsmServiceCache cache;
 
   /**
+   * AfterClass.
+   */
+  @AfterAll
+  public static void afterClass() {
+    localstack.stop();
+  }
+
+  /**
    * Before Class.
    * 
    * @throws IOException IOException
@@ -80,14 +88,6 @@ public class SsmServiceCacheTest {
             .setEndpointOverride(new URI(localstack.getEndpointOverride(Service.SSM).toString()));
 
     cache = new SsmServiceCache(connection, 1, TimeUnit.SECONDS);
-  }
-
-  /**
-   * AfterClass.
-   */
-  @AfterAll
-  public static void afterClass() {
-    localstack.stop();
   }
 
   /**

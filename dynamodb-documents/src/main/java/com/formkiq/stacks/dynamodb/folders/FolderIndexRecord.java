@@ -72,6 +72,16 @@ public class FolderIndexRecord implements DynamodbRecord<FolderIndexRecord>, DbK
   @Reflectable
   private String userId;
 
+  private DynamoDbKey buildKey(final String siteId) {
+    DynamoDbKey.Builder key = DynamoDbKey.builder().pk(siteId, pk(null)).sk(sk());
+
+    if ("folder".equals(this.type)) {
+      key = key.gsi1Pk(siteId, pkGsi1(null)).gsi1Sk(skGsi1());
+    }
+
+    return key.build();
+  }
+
   private void checkParentId() {
     if (this.parentDocumentId == null) {
       throw new IllegalArgumentException("'parentDocumentId' is required");
@@ -108,16 +118,6 @@ public class FolderIndexRecord implements DynamodbRecord<FolderIndexRecord>, DbK
   public FolderIndexRecord documentId(final String id) {
     this.documentId = id;
     return this;
-  }
-
-  private DynamoDbKey buildKey(final String siteId) {
-    DynamoDbKey.Builder key = DynamoDbKey.builder().pk(siteId, pk(null)).sk(sk());
-
-    if ("folder".equals(this.type)) {
-      key = key.gsi1Pk(siteId, pkGsi1(null)).gsi1Sk(skGsi1());
-    }
-
-    return key.build();
   }
 
   @Override
